@@ -24,6 +24,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.camel.Exchange;
+import org.apache.camel.LoggingLevel;
 import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileEndpoint;
 import org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy;
@@ -48,6 +49,7 @@ import org.apache.camel.component.file.GenericFileOperations;
  * ------------ ---------- ----------- --------------------------
  * Sep 2, 2010             rjpeter     Initial creation
  * May 9, 2013  1989       njensen     Camel 2.11 compatibility
+ * May 6, 2014  3115       bclement    Camel 2.12.3 compatibility
  * 
  * </pre>
  * 
@@ -140,5 +142,17 @@ public class FileChangedExclusiveReadLockStrategy implements
 
     @Override
     public void setCheckInterval(long checkInterval) {
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
+     * setReadLockLoggingLevel(org.apache.camel.LoggingLevel)
+     */
+    @Override
+    public void setReadLockLoggingLevel(LoggingLevel level) {
+        // new in camel 2.12.3
     }
 }
