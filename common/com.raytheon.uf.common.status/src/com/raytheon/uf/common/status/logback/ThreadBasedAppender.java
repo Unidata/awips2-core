@@ -19,23 +19,27 @@
  **/
 package com.raytheon.uf.common.status.logback;
 
-import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
 import ch.qos.logback.core.AppenderBase;
+import ch.qos.logback.core.rolling.RollingFileAppender;
+import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
 
 /**
- * Appender for logging based on the thread name of the logging event.
+ * Appender for logging based on the thread name of the logging event. Since
+ * spring can register patterns, the registration is kept at the class level.
+ * Also, if the configuration is changed the class will be recreated with the
+ * new configuration. NOTE: This appender does not support more than one
+ * instance being run at once.
  * 
  * <pre>
  * 
@@ -44,82 +48,137 @@ import ch.qos.logback.core.spi.AppenderAttachable;
  * ------------ ---------- ----------- --------------------------
  * Aug 25, 2010            rjpeter     Initial creation
  * Jun 24, 2013 2142       njensen     Changes for logback compatibility
- * 
+ * Apr 29, 2014 3114       rjpeter     Make plugin contributable.
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 
-public class ThreadBasedAppender<E extends ILoggingEvent> extends
-        AppenderBase<E> implements AppenderAttachable<E> {
-    private Map<String, Appender<E>> appenderMap = new HashMap<String, Appender<E>>();
+public class ThreadBasedAppender extends AppenderBase<ILoggingEvent> implements
+        AppenderAttachable<ILoggingEvent> {
+    private static final Pattern NAME_REPLACE_PATTERN = Pattern
+            .compile("%s\\{name\\}");
 
-    private Map<String, List<Pattern>> threadPatterns = new HashMap<String, List<Pattern>>();
+    /**
+     * Current instance of the ThreadBasedAppender.
+     */
+    private static volatile ThreadBasedAppender instance;
 
-    private Map<String, Appender<E>> threadAppenderCache = new HashMap<String, Appender<E>>();
+    /**
+     * Appenders that were created via plugins and registered.
+     */
+    private static final ConcurrentMap<String, Appender<ILoggingEvent>> registeredAppenderMap = new ConcurrentHashMap<String, Appender<ILoggingEvent>>();
 
-    private Map<String, Long> threadAppenderTimeCache = new HashMap<String, Long>();
+    /**
+     * Thread patterns that were registered.
+     */
+    private static final ConcurrentMap<Pattern, String> threadPatterns = new ConcurrentHashMap<Pattern, String>();
+
+    /**
+     * Default pattern layout.
+     */
+    private String patternLayout = "%-5p %d [%t] %c{0}: %m%n";
+
+    /**
+     * Default max history.
+     */
+    private int maxHistory = 30;
+
+    private String fileNameBase = "${edex.home}/logs/edex-${edex.run.mode}-%s{name}-%d{yyyyMMdd}.log";
 
     private String defaultAppenderName;
 
-    private Appender<E> defaultAppender;
+    private final ThreadLocal<Appender<ILoggingEvent>> threadAppender = new ThreadLocal<Appender<ILoggingEvent>>();
 
-    // keep thread names and their associated appender mapped for 10 minutes
-    private static final long RETENTION_TIME = 1000 * 60 * 1;
+    private final ThreadLocal<String> threadNameCache = new ThreadLocal<String>();
 
-    private Timer cacheTimer;
+    private final ConcurrentMap<String, Appender<ILoggingEvent>> appenderMap = new ConcurrentHashMap<String, Appender<ILoggingEvent>>();
+
+    private volatile Appender<ILoggingEvent> defaultAppender;
+
+    public ThreadBasedAppender() {
+        synchronized (ThreadBasedAppender.class) {
+            if (instance == null) {
+                instance = this;
+            } else {
+                throw new AssertionError(
+                        "ThreadBasedAppender already in use.  Cannot start another.");
+            }
+        }
+    }
 
     @Override
     public void start() {
         if (defaultAppenderName != null) {
-            defaultAppender = appenderMap.get(defaultAppenderName);
+            defaultAppender = getAppender(defaultAppenderName);
         }
 
-        // only keep around thread patterns that match the list of appenders
-        if (threadPatterns.size() > 0) {
-            Iterator<String> threadPatKeyIter = threadPatterns.keySet()
-                    .iterator();
-            while (threadPatKeyIter.hasNext()) {
-                String appender = threadPatKeyIter.next();
-                if (!appenderMap.containsKey(appender)) {
-                    threadPatKeyIter.remove();
-                }
-            }
-        }
+        appenderMap.putAll(registeredAppenderMap);
 
-        // setup a timed purge of the cached threads
-        cacheTimer = new Timer();
-
-        TimerTask purgeCache = new TimerTask() {
-            @Override
-            public void run() {
-                removeOldEntries();
-            }
-        };
-
-        cacheTimer.schedule(purgeCache, 1000, 60000);
         super.start();
     }
 
     @Override
-    public void addAppender(Appender<E> newAppender) {
-        if (newAppender != null && newAppender.getName() != null) {
+    public void addAppender(Appender<ILoggingEvent> newAppender) {
+        if ((newAppender != null) && (newAppender.getName() != null)) {
             appenderMap.put(newAppender.getName(), newAppender);
         }
     }
 
     @Override
-    public Appender<E> getAppender(String name) {
+    public Appender<ILoggingEvent> getAppender(String name) {
+        return getAppender(name, false);
+    }
+
+    /**
+     * Look up the appender by name. If create is true and appender is not
+     * currently known, an appender will be created using the default values of
+     * this appender.
+     * 
+     * @param name
+     * @param create
+     * @return
+     */
+    public Appender<ILoggingEvent> getAppender(String name, boolean create) {
         if (name != null) {
-            return appenderMap.get(name);
+            synchronized (this) {
+                Appender<ILoggingEvent> rval = appenderMap.get(name);
+                if ((rval == null) && create) {
+                    PatternLayoutEncoder encoder = new PatternLayoutEncoder();
+                    encoder.setContext(instance.getContext());
+                    encoder.setPattern(patternLayout);
+                    encoder.start();
+
+                    TimeBasedRollingPolicy<ILoggingEvent> policy = new TimeBasedRollingPolicy<ILoggingEvent>();
+                    policy.setContext(instance.getContext());
+                    policy.setMaxHistory(maxHistory);
+                    Matcher matcher = NAME_REPLACE_PATTERN
+                            .matcher(fileNameBase);
+                    String filePattern = matcher.replaceAll(name);
+                    policy.setFileNamePattern(filePattern);
+
+                    RollingFileAppender<ILoggingEvent> appender = new RollingFileAppender<ILoggingEvent>();
+                    appender.setContext(instance.getContext());
+                    appender.setName(name);
+                    appender.setEncoder(encoder);
+                    policy.setParent(appender);
+                    appender.setRollingPolicy(policy);
+                    policy.start();
+                    appender.start();
+                    rval = appender;
+                    appenderMap.put(name, rval);
+                }
+
+                return rval;
+            }
         }
 
         return null;
     }
 
     @Override
-    public boolean isAttached(Appender<E> appender) {
+    public boolean isAttached(Appender<ILoggingEvent> appender) {
         if (appender != null) {
             return appenderMap.containsKey(appender.getName());
         }
@@ -129,11 +188,21 @@ public class ThreadBasedAppender<E extends ILoggingEvent> extends
 
     @Override
     public void detachAndStopAllAppenders() {
+        /*
+         * keep the plugin registered appenders, they cannot be updated via
+         * configuration.
+         */
+        appenderMap.keySet().removeAll(registeredAppenderMap.keySet());
+
+        for (Appender<ILoggingEvent> app : appenderMap.values()) {
+            app.stop();
+        }
+
         appenderMap.clear();
     }
 
     @Override
-    public boolean detachAppender(Appender<E> appender) {
+    public boolean detachAppender(Appender<ILoggingEvent> appender) {
         boolean retVal = false;
         if (appender != null) {
             retVal = detachAppender(appender.getName());
@@ -145,7 +214,7 @@ public class ThreadBasedAppender<E extends ILoggingEvent> extends
     public boolean detachAppender(String name) {
         boolean retVal = false;
         if (name != null) {
-            Appender<E> app = appenderMap.remove(name);
+            Appender<ILoggingEvent> app = appenderMap.remove(name);
             if (app != null) {
                 retVal = true;
             }
@@ -155,104 +224,115 @@ public class ThreadBasedAppender<E extends ILoggingEvent> extends
     }
 
     @Override
-    protected void append(E event) {
+    protected void append(ILoggingEvent event) {
         String threadName = event.getThreadName();
-        Appender<E> app = null;
+        String currentThreadName = Thread.currentThread().getName();
+        Appender<ILoggingEvent> app = null;
+        boolean sameThread = currentThreadName.equals(threadName);
 
-        app = threadAppenderCache.get(threadName);
+        if (sameThread) {
+            // Double check someone hasn't called setThreadName
+            String prevThreadName = threadNameCache.get();
+            if (currentThreadName.equals(prevThreadName)) {
+                app = threadAppender.get();
+            }
+        }
 
-        // TODO: Is the null appender possible?
         if (app == null) {
             // determine which appender to use
-            APPENDER_SEARCH: for (Entry<String, List<Pattern>> entry : threadPatterns
-                    .entrySet()) {
-                for (Pattern pat : entry.getValue()) {
-                    if (pat.matcher(threadName).matches()) {
-                        String appenderName = entry.getKey();
-                        app = appenderMap.get(appenderName);
-                        break APPENDER_SEARCH;
-                    }
+            for (Entry<Pattern, String> entry : threadPatterns.entrySet()) {
+                Pattern pat = entry.getKey();
+                if (pat.matcher(threadName).matches()) {
+                    String name = entry.getValue();
+                    app = getAppender(name, true);
+                    break;
                 }
             }
 
-            if (app == null && defaultAppender != null) {
+            if ((app == null) && (defaultAppender != null)) {
                 app = defaultAppender;
             }
 
-            if (app != null) {
-                synchronized (this) {
-                    // not modifiying the map directly to avoid concurrent
-                    // exceptions without forcing synchronization
-                    Map<String, Appender<E>> tmp = new HashMap<String, Appender<E>>(
-                            threadAppenderCache);
-                    tmp.put(threadName, app);
-                    threadAppenderCache = tmp;
-                    Map<String, Long> tmpTime = new HashMap<String, Long>(
-                            threadAppenderTimeCache);
-                    tmpTime.put(threadName, System.currentTimeMillis());
-                    threadAppenderTimeCache = tmpTime;
-                }
+            if ((app != null) && sameThread) {
+                threadAppender.set(app);
+                threadNameCache.set(currentThreadName);
             }
         }
 
         if (app != null) {
-            // value already exists, no sync block necessary
-            threadAppenderTimeCache.put(threadName, System.currentTimeMillis());
             app.doAppend(event);
         }
     }
 
-    public void setThreadPatterns(String value) {
-        String[] appenderPatterns = value.split("[;\n]");
-        for (String appenderPattern : appenderPatterns) {
-            String[] tokens = appenderPattern.split("[:,]");
-            if (tokens.length > 1) {
-                String appender = tokens[0];
-                List<Pattern> patterns = new ArrayList<Pattern>(
-                        tokens.length - 1);
-                for (int i = 1; i < tokens.length; i++) {
-                    patterns.add(Pattern.compile(tokens[i]));
+    @Override
+    public Iterator<Appender<ILoggingEvent>> iteratorForAppenders() {
+        return appenderMap.values().iterator();
+    }
+
+    public static String registerThreadPattern(String appenderName,
+            String pattern) {
+        threadPatterns.put(Pattern.compile(pattern), appenderName);
+        return appenderName;
+    }
+
+    public static Appender<ILoggingEvent> registerAppenderPattern(
+            Appender<ILoggingEvent> appender, String pattern) {
+        if (appender != null) {
+            String name = appender.getName();
+            threadPatterns.put(Pattern.compile(pattern), name);
+            registeredAppenderMap.put(name, appender);
+
+            synchronized (ThreadBasedAppender.class) {
+                if (instance != null) {
+                    instance.addAppender(appender);
                 }
-                threadPatterns.put(appender, patterns);
             }
+        } else {
+            throw new AssertionError("Cannot register a null appender");
         }
+
+        return appender;
     }
 
-    public void setDefaultAppender(String defaultAppender) {
-        defaultAppenderName = defaultAppender;
+    public String getPatternLayout() {
+        return patternLayout;
     }
 
-    private void removeOldEntries() {
-        long curTime = System.currentTimeMillis();
-        List<String> keysToRemove = new ArrayList<String>(
-                threadAppenderCache.size());
+    public void setPatternLayout(String patternLayout) {
+        this.patternLayout = patternLayout;
+    }
 
-        for (Entry<String, Long> entry : threadAppenderTimeCache.entrySet()) {
-            if (curTime - entry.getValue() > RETENTION_TIME) {
-                keysToRemove.add(entry.getKey());
-            }
-        }
+    public int getMaxHistory() {
+        return maxHistory;
+    }
 
-        for (String key : keysToRemove) {
-            // synchornized inside the loop so that it is locked for short
-            // periods so new log threads can continue to run
-            synchronized (this) {
-                // not modifiying the map directly to avoid concurrent
-                // exceptions without forcing synchronization
-                Map<String, Appender<E>> tmp = new HashMap<String, Appender<E>>(
-                        threadAppenderCache);
-                tmp.remove(key);
-                threadAppenderCache = tmp;
-                Map<String, Long> tmpTime = new HashMap<String, Long>(
-                        threadAppenderTimeCache);
-                tmpTime.remove(key);
-                threadAppenderTimeCache = tmpTime;
-            }
-        }
+    public void setMaxHistory(int maxHistory) {
+        this.maxHistory = maxHistory;
+    }
+
+    public String getFileNameBase() {
+        return fileNameBase;
+    }
+
+    public void setFileNameBase(String fileNameBase) {
+        this.fileNameBase = fileNameBase;
+    }
+
+    public String getDefaultAppenderName() {
+        return defaultAppenderName;
+    }
+
+    public void setDefaultAppenderName(String defaultAppenderName) {
+        this.defaultAppenderName = defaultAppenderName;
     }
 
     @Override
-    public Iterator<Appender<E>> iteratorForAppenders() {
-        return appenderMap.values().iterator();
+    public void stop() {
+        synchronized (ThreadBasedAppender.class) {
+            instance = null;
+        }
+
+        detachAndStopAllAppenders();
+        super.stop();
     }
 }
