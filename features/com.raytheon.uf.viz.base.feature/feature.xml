@@ -38,7 +38,7 @@
          id="org.apache.activemq"
          download-size="0"
          install-size="0"
-         version="5.3.0"/>
+         version="5.9.1"/>
 
    <plugin
          id="com.raytheon.uf.viz.localization"
