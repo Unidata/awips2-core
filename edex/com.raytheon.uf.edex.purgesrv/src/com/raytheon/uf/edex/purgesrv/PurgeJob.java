@@ -48,7 +48,7 @@ import com.raytheon.uf.edex.database.purge.PurgeLogger;
  * Apr 19, 2012   #470      bphillip     Initial creation
  * Jun 20, 2012  NC#606     ghull        send purge-complete messages 
  * May 08, 2013  1814       rjpeter      Added time to live to topic
- * May 09, 2014  3138       ekladstr     Refactor dao purge calls to a method
+ * May 09, 2014  3138       ekladstr     Refactor dao purge calls to a method and notify waiting threads when purge is finished
  * </pre>
  * 
  * @author bphillip
@@ -78,6 +78,8 @@ public class PurgeJob extends Thread {
     private final long lastTimeOutMessage = 0;
 
     private PurgeManager purgeManager;
+
+    private volatile boolean finished = false;
 
     /**
      * Creates a new Purge job for the specified plugin.
@@ -215,6 +217,11 @@ public class PurgeJob extends Thread {
                                 this.pluginName, e);
             } finally {
                 ClusterLockUtils.unlock(purgeLock, false);
+
+                synchronized (this) {
+                    this.finished = true;
+                    this.notifyAll();
+                }
             }
         }
     }
@@ -314,5 +321,20 @@ public class PurgeJob extends Thread {
 
     public long getAge() {
         return System.currentTimeMillis() - startTime;
+    }
+
+    /**
+     * @return the finished
+     */
+    public boolean isFinished() {
+        return finished;
+    }
+
+    /**
+     * @param finished
+     *            the finished to set
+     */
+    public void setFinished(boolean finished) {
+        this.finished = finished;
     }
 }

@@ -9,6 +9,7 @@
 
 	<bean id="purge" class="com.raytheon.uf.edex.purgesrv.PurgeSrv">
 	 	<constructor-arg ref = "purgeManager"/>
+	 	<property name="jmsJobTimeout" value="${purge.jms.jobtimeout}" />
 	</bean>
 	
    <!-- Register database plugin -->

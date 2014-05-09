@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.database.status.StatusConstants;
  * 10/8/2008    1532        bphillip    Refactor to support custom purging
  * 02/06/09     1990        bphillip    Refactored to use plugin daos. Moved initialization code out
  * Apr 19, 2012 #470        bphillip    Refactored to use PurgeManager
+ * May 09, 2014 3138        ekladstr    Wait for purge jobs to finish before executing the next one
  * 
  * </pre>
  * 
@@ -75,6 +76,12 @@ public class PurgeSrv {
     public static final String PURGE_CRON = "PURGE_CRON";
     
     private PurgeManager purgeManager;
+
+    /**
+     * Timeout in milliseconds before moving to the next plugin anyway when
+     * running a purge on all plugins from a jms message
+     */
+    protected long jmsJobTimeoutMillis = 5 * 60 * 1000;
 
     /**
      * Constructs a new PurgeSrv. This method verifies the metadata database has
@@ -163,7 +170,8 @@ public class PurgeSrv {
                 .getInstance().getRegisteredObjects());
         for (String pluginName : availablePlugins) {
             if (PluginRegistry.getInstance().getRegisteredObject(pluginName) != null) {
-                purgeManager.purgeAllData(pluginName);
+                PurgeJob job = purgeManager.purgeAllData(pluginName);
+                waitForJob(job);
             }
         }
         PurgeLogger.logInfo("Purge All Data Completed at: " + new Date(),
@@ -186,7 +194,31 @@ public class PurgeSrv {
 
         for (String pluginName : availablePlugins) {
             if (PluginRegistry.getInstance().getRegisteredObject(pluginName) != null) {
-                purgeManager.purgeExpiredData(pluginName);
+                PurgeJob job = purgeManager.purgeExpiredData(pluginName);
+                waitForJob(job);
+            }
+        }
+    }
+
+    /**
+     * Wait for PurgeJob to finish executing or for the timeout period to pass
+     * 
+     * @param job
+     */
+    protected void waitForJob(PurgeJob job) {
+        long expire = System.currentTimeMillis() + jmsJobTimeoutMillis;
+        boolean finished = job.isFinished();
+        // Loop until job finishes or expire time passes, don't assume
+        // that notify is called when the job is finished
+        while (!finished && System.currentTimeMillis() < expire) {
+            try {
+                synchronized (job) {
+                    job.wait(jmsJobTimeoutMillis);
+                    finished = job.isFinished();
+                }
+            } catch (InterruptedException e) {
+                // assume we should move on and set finished to true
+                finished = true;
             }
         }
     }
@@ -226,6 +258,21 @@ public class PurgeSrv {
     }
 
     public void dispose() {
+    }
+
+    /**
+     * @return the job timeout (in minutes)
+     */
+    public long getJmsJobTimeout() {
+        return jmsJobTimeoutMillis / 1000 / 60;
+    }
+
+    /**
+     * @param jmsJobTimeout
+     *            the job timeout (in minutes) to set
+     */
+    public void setJmsJobTimeout(long jmsJobTimeout) {
+        this.jmsJobTimeoutMillis = jmsJobTimeout * 60 * 1000;
     }
 
 }
