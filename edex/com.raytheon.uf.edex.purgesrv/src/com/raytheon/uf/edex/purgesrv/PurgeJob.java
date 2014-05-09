@@ -26,7 +26,9 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
+import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils;
 import com.raytheon.uf.edex.database.cluster.ClusterTask;
 import com.raytheon.uf.edex.database.plugin.PluginDao;
@@ -46,6 +48,7 @@ import com.raytheon.uf.edex.database.purge.PurgeLogger;
  * Apr 19, 2012   #470      bphillip     Initial creation
  * Jun 20, 2012  NC#606     ghull        send purge-complete messages 
  * May 08, 2013  1814       rjpeter      Added time to live to topic
+ * May 09, 2014  3138       ekladstr     Refactor dao purge calls to a method
  * </pre>
  * 
  * @author bphillip
@@ -104,12 +107,7 @@ public class PurgeJob extends Thread {
         try {
             dao = PluginFactory.getInstance().getPluginDao(pluginName);
             if (dao.getDaoClass() != null) {
-                dao.purgeExpiredData();
-
-                PurgeLogger.logInfo("Data successfully Purged!", pluginName);
-
-                EDEXUtil.getMessageProducer().sendAsyncUri(PLUGIN_PURGED_TOPIC,
-                        pluginName);
+                doPurge(dao);
 
             } else {
                 Method m = dao.getClass().getMethod("purgeExpiredData",
@@ -121,17 +119,7 @@ public class PurgeJob extends Thread {
                                         "Unable to purge data.  This plugin does not specify a record class and does not implement a custom purger.",
                                         pluginName);
                     } else {
-                        if (this.purgeType.equals(PURGE_JOB_TYPE.PURGE_EXPIRED)) {
-                            dao.purgeExpiredData();
-                        } else {
-                            dao.purgeAllData();
-                        }
-
-                        PurgeLogger.logInfo("Data successfully Purged!",
-                                pluginName);
-
-                        EDEXUtil.getMessageProducer().sendAsyncUri(
-                                PLUGIN_PURGED_TOPIC, pluginName);
+                        doPurge(dao);
                     }
                 }
             }
@@ -229,6 +217,19 @@ public class PurgeJob extends Thread {
                 ClusterLockUtils.unlock(purgeLock, false);
             }
         }
+    }
+
+    protected void doPurge(PluginDao dao) throws PluginException, EdexException {
+        if (this.purgeType.equals(PURGE_JOB_TYPE.PURGE_ALL)) {
+            dao.purgeAllData();
+        } else {
+            dao.purgeExpiredData();
+        }
+
+        PurgeLogger.logInfo("Data successfully Purged!", pluginName);
+
+        EDEXUtil.getMessageProducer().sendAsyncUri(PLUGIN_PURGED_TOPIC,
+                pluginName);
     }
 
     public void printTimedOutMessage(int deadPurgeJobAge) {
