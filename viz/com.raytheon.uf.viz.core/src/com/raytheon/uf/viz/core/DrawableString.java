@@ -19,7 +19,9 @@
  **/
 package com.raytheon.uf.viz.core;
 
+import java.util.EnumMap;
 import java.util.EnumSet;
+import java.util.Map;
 
 import org.eclipse.swt.graphics.RGB;
 
@@ -40,6 +42,7 @@ import com.raytheon.uf.viz.core.drawables.IFont;
  * ------------- -------- ----------- --------------------------
  * Dec 14, 2010           mschenke    Initial creation
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
+ * May 12, 2014  3074     bsteffen    Add support for multicolor text styles.
  * 
  * </pre>
  * 
@@ -78,15 +81,15 @@ public class DrawableString extends AbstractDrawableObject {
     @Deprecated
     public TextStyle textStyle = TextStyle.NORMAL;
 
-    private EnumSet<TextStyle> textStyles = EnumSet.noneOf(TextStyle.class);
+    private EnumMap<TextStyle, RGB> textStyles = new EnumMap<TextStyle, RGB>(
+            TextStyle.class);
 
-    /** The color of the shadow created when using TextStyle.DROP_SHADOW */
+    /** @deprecated use {@link #addTextStyle(TextStyle, RGB)} */
+    @Deprecated
     public RGB shadowColor = new RGB(0, 0, 0);
 
-    /**
-     * The color of the background when using TextStyle.BOX. If null, normal
-     * target background color should be used.
-     */
+    /** @deprecated use {@link #addTextStyle(TextStyle, RGB)} */
+    @Deprecated
     public RGB boxColor;
 
     public DrawableString(DrawableString that) {
@@ -101,7 +104,7 @@ public class DrawableString extends AbstractDrawableObject {
         this.verticallAlignment = that.verticallAlignment;
         this.magnification = that.magnification;
         this.rotation = that.rotation;
-        this.textStyles = that.textStyles;
+        this.textStyles = new EnumMap<TextStyle, RGB>(that.textStyles);
         this.textStyle = that.textStyle;
         this.shadowColor = that.shadowColor;
         this.boxColor = that.boxColor;
@@ -191,8 +194,27 @@ public class DrawableString extends AbstractDrawableObject {
         return colors;
     }
 
+    /**
+     * Add a new textStyle to this string. For the BLANKED style the background
+     * color will be used, for DROP_SHADOR the shadow will be balck and for
+     * other styles the color of the text will be used.
+     * 
+     * @param textStyle
+     */
     public void addTextStyle(TextStyle textStyle) {
-        textStyles.add(textStyle);
+        this.addTextStyle(textStyle, null);
+    }
+
+    /**
+     * Add a new text style to this string.
+     * 
+     * @param textStyle
+     *            the style to add
+     * @param color
+     *            the color to render the style.
+     */
+    public void addTextStyle(TextStyle textStyle, RGB color) {
+        textStyles.put(textStyle, color);
         /*
          * This check is the best we can do to support targets that don't know
          * about textStyles yet.
@@ -200,8 +222,14 @@ public class DrawableString extends AbstractDrawableObject {
         if (this.textStyle == null) {
             this.textStyle = textStyle;
         }
+        if (textStyle == TextStyle.DROP_SHADOW && color != null) {
+            this.shadowColor = color;
+        }
     }
 
+    /**
+     * Remove a style from the the set of styles used to render this text.
+     */
     public void removeTextStyle(TextStyle textStyle) {
         textStyles.remove(textStyle);
         /*
@@ -212,22 +240,56 @@ public class DrawableString extends AbstractDrawableObject {
             if (textStyles.isEmpty()) {
                 this.textStyle = null;
             } else {
-                this.textStyle = textStyles.iterator().next();
+                this.textStyle = textStyles.keySet().iterator().next();
             }
         }
     }
 
+    /**
+     * @return true if the provided TextStyle is to be used when rendering this,
+     *         false otherwise.
+     */
+    public boolean hasTextStyle(TextStyle textStyle) {
+        return this.getTextStyleColorMap().containsKey(textStyle);
+    }
+
+    /**
+     * @deprecated to determine if a style is used use
+     *             {@link #hasTextStyle(TextStyle)}, for other cases
+     *             {@link #getTextStyleColorMap()} should be used to ensure the
+     *             color is used correctly.
+     * @return set of all styles to be used for rendering this.
+     */
+    @Deprecated
     public EnumSet<TextStyle> getTextStyles() {
-        EnumSet<TextStyle> textStyles = this.textStyles.clone();
+        return EnumSet.copyOf(getTextStyleColorMap().keySet());
+
+    }
+
+    /**
+     * @return The styles and colors to render this string. This map may contain
+     *         null values in which case the default colors described in
+     *         {@link #addTextStyle(TextStyle)} will be used.
+     */
+    public Map<TextStyle, RGB> getTextStyleColorMap() {
+        EnumMap<TextStyle, RGB> textStyles = this.textStyles.clone();
         /*
-         * Add in textStyle to support any renderables that don't know about
-         * textStyles yet.
+         * Add in support for deprecated options.
          */
-        if (textStyle != null) {
-            textStyles.add(textStyle);
+        if (this.textStyle != null
+                && !this.textStyles.containsKey(this.textStyle)) {
+            textStyles.put(this.textStyle, null);
+            /* BOXED used to imply BLANKED. */
+            if (this.textStyle == TextStyle.BOXED
+                    && this.textStyles.containsKey(TextStyle.BLANKED) == false) {
+                this.textStyles.put(TextStyle.BLANKED, this.boxColor);
+            }
+        }
+        if (this.shadowColor != null
+                && textStyles.containsKey(TextStyle.DROP_SHADOW)) {
+            textStyles.put(TextStyle.DROP_SHADOW, this.shadowColor);
         }
         return textStyles;
-
     }
 
 }

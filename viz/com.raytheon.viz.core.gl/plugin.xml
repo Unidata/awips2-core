@@ -59,5 +59,8 @@
          <graphicsExtension
                class="com.raytheon.viz.core.gl.internal.ext.mosaic.GLMosaicOrderedImageExtension">
    		 </graphicsExtension>
+         <graphicsExtension
+               class="com.raytheon.viz.core.gl.ext.GLStringRenderingExtension">
+         </graphicsExtension>
       </extension>
 </plugin>

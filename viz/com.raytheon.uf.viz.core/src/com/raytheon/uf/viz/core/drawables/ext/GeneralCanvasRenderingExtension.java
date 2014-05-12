@@ -21,6 +21,9 @@ package com.raytheon.uf.viz.core.drawables.ext;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map.Entry;
+
+import org.eclipse.swt.graphics.RGB;
 
 import com.raytheon.uf.viz.core.DrawableColorMap;
 import com.raytheon.uf.viz.core.DrawableImage;
@@ -51,6 +54,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                    by default.
  * Jan 14, 2014  2313     bsteffen    Add method to draw images.
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
+ * May 12, 2014  3074     bsteffen    Add support for multicolor text styles.
  * 
  * 
  * </pre>
@@ -72,14 +76,14 @@ public class GeneralCanvasRenderingExtension extends
         for (DrawableString screenString : parameters) {
             DrawableString mapString = new DrawableString(
                     screenString.getText(), screenString.getColors());
-            mapString.boxColor = screenString.boxColor;
             mapString.font = screenString.font;
             mapString.horizontalAlignment = screenString.horizontalAlignment;
             mapString.magnification = screenString.magnification;
             mapString.rotation = screenString.rotation;
-            mapString.shadowColor = screenString.shadowColor;
-            for (TextStyle textStyle : screenString.getTextStyles()) {
-                mapString.addTextStyle(textStyle);
+            for (Entry<TextStyle, RGB> textStyle : screenString.getTextStyleColorMap()
+                    .entrySet()) {
+                mapString
+                        .addTextStyle(textStyle.getKey(), textStyle.getValue());
             }
             mapString.verticallAlignment = screenString.verticallAlignment;
             mapString.basics.alpha = screenString.basics.alpha;

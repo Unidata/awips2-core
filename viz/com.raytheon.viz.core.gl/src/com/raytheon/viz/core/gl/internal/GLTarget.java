@@ -30,7 +30,6 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -89,6 +88,7 @@ import com.raytheon.viz.core.gl.GLStats;
 import com.raytheon.viz.core.gl.IGLFont;
 import com.raytheon.viz.core.gl.IGLTarget;
 import com.raytheon.viz.core.gl.dataformat.GLByteDataFormat;
+import com.raytheon.viz.core.gl.ext.GLStringRenderingExtension;
 import com.raytheon.viz.core.gl.ext.imaging.GLDefaultImagingExtension;
 import com.raytheon.viz.core.gl.glsl.GLSLFactory;
 import com.raytheon.viz.core.gl.glsl.GLSLStructFactory;
@@ -145,6 +145,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * Apr 08, 2014  2950     bsteffen    Reduce oversized colormaps.
  * May 08, 2014  2920     bsteffen    Fix default color of BOXED text.
+ * May 12, 2014  3074     bsteffen    Move string rendering to an extension.
  * 
  * </pre>
  * 
@@ -158,8 +159,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             .getHandler(GLTarget.class);
 
     protected static String DEFAULT_FONT = "Monospace";
-
-    protected static final int MIN_WRAP_LEN = 3;
 
     protected static final int TICK_SIZE = 3;
 
@@ -240,8 +239,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             .getBoolean(PreferenceConstants.P_DRAW_TILE_BOUNDARIES);
 
     protected final float textMagnification;
-
-    protected final RGB DEFAULT_LABEL_COLOR = new RGB(255, 255, 255);
 
     protected Listener canvasResizeListener;
 
@@ -870,7 +867,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
     }
 
-    private double calculateFontResizePercentage(IFont font) {
+    public double calculateFontResizePercentage(IFont font) {
         double paneWidth = this.canvasSize.width;
         if (this.theCanvas == null) {
             return 1.0;
@@ -1394,7 +1391,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         super.setBackgroundColor(backgroundColor);
         gl.glClearColor(backgroundColor.red / 255f,
                 backgroundColor.green / 255f, backgroundColor.blue / 255f, 1.0f);
+    }
 
+    public RGB getBackgroundColor() {
+        return backgroundColor;
     }
 
     /*
@@ -1850,404 +1850,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void drawStrings(Collection<DrawableString> parameters)
             throws VizException {
-        if (parameters.size() == 0) {
-            // Nothing to draw
-            return;
-        }
-
-        double glScaleX = getScaleX();
-        double glScaleY = getScaleY();
-        double stringScaleX = 1.0;
-        double stringScaleY = 1.0;
-        Rectangle bounds = getBounds();
-        List<DrawableString> copy = new ArrayList<DrawableString>(
-                parameters.size());
-        for (DrawableString dString : parameters) {
-            // Convert strings into canvas location
-            dString = new DrawableString(dString);
-            double[] screen = targetView.gridToScreen(new double[] {
-                    dString.basics.x, dString.basics.y, dString.basics.z },
-                    this);
-            dString.setCoordinates(bounds.x + screen[0], bounds.y + screen[1]);
-            copy.add(dString);
-        }
-        parameters = copy;
-
-        // TODO if parameters has different fonts we should ensure that all
-        // strings with the same font are rendered in a group, otherwise this
-        // function ends up calling begin/end rendering lots which slows it down
-        // to the speed of a not bulk operation
-        TextRenderer textRenderer = null;
-        boolean lastXOr = false;
-
-        pushGLState();
-        gl.glMatrixMode(GL.GL_MODELVIEW);
-        gl.glPushMatrix();
-        try {
-            IExtent extent = targetView.getExtent();
-            gl.glEnable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-            gl.glEnable(GL.GL_TEXTURE_2D);
-            gl.glTranslated(extent.getMinX(), extent.getMinY(), 0);
-            gl.glScaled(glScaleX, -glScaleY, 1.0);
-
-            // This loop just draws the box or a blank rectangle.
-            for (DrawableString dString : parameters) {
-                EnumSet<TextStyle> textStyles = dString.getTextStyles();
-                boolean boxed = textStyles.contains(TextStyle.BOXED);
-                boolean blanked = textStyles.contains(TextStyle.BLANKED);
-                boolean underline = textStyles.contains(TextStyle.UNDERLINE);
-                boolean overline = textStyles.contains(TextStyle.OVERLINE);
-                boolean strikethrough = textStyles
-                        .contains(TextStyle.STRIKETHROUGH);
-                if (boxed || blanked || underline || overline || strikethrough) {
-                    double yPos = dString.basics.y;
-                    VerticalAlignment verticalAlignment = dString.verticallAlignment;
-                    double fontPercentage = this
-                            .calculateFontResizePercentage(dString.font)
-                            * dString.magnification;
-                    float alpha = Math.min(dString.basics.alpha, 1.0f);
-                    if (verticalAlignment == VerticalAlignment.MIDDLE
-                            && dString.getText().length > 1) {
-                        Rectangle2D totalBounds = getStringsBounds(dString);
-                        double totalHeight = totalBounds.getHeight();
-                        yPos -= totalHeight * .5;
-                        verticalAlignment = VerticalAlignment.TOP;
-                    }
-
-                    double scaleX = stringScaleX;
-                    double scaleY = stringScaleY;
-
-                    float[] rotatedPoint = null;
-                    if (dString.rotation != 0.0) {
-                        rotatedPoint = getUpdatedCoordinates(
-                                new java.awt.Rectangle(0, 0, 0, 0),
-                                HorizontalAlignment.LEFT,
-                                VerticalAlignment.BOTTOM, dString.basics.x,
-                                dString.basics.y, 0.0, dString.rotation,
-                                fontPercentage);
-                        gl.glTranslated(rotatedPoint[0], rotatedPoint[1], 0.0);
-                        gl.glRotated(dString.rotation, 0.0, 0.0, 1.0);
-                        gl.glTranslated(-rotatedPoint[0], -rotatedPoint[1], 0.0);
-                    }
-
-                    for (int c = 0; c < dString.getText().length; c++) {
-                        String string = dString.getText()[c];
-
-                        Rectangle2D textBounds = getStringsBounds(dString,
-                                string);
-
-                        float[] xy = getUpdatedCoordinates(textBounds,
-                                dString.horizontalAlignment, verticalAlignment,
-                                dString.basics.x, yPos, dString.basics.z,
-                                dString.rotation, fontPercentage);
-
-                        double width = textBounds.getWidth();
-                        double height = textBounds.getHeight();
-                        double diff = height + textBounds.getY();
-
-                        double x1 = xy[0] - scaleX;
-                        double y1 = (xy[1] - diff) - scaleY;
-                        double x2 = xy[0] + width + scaleX;
-                        double y2 = (xy[1] - diff) + height + scaleY;
-
-                        if (boxed || blanked) {
-                            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-                            if (boxed && dString.boxColor != null) {
-                                gl.glColor4d(dString.boxColor.red / 255.0,
-                                        dString.boxColor.green / 255.0,
-                                        dString.boxColor.blue / 255.0, alpha);
-                            } else {
-                                gl.glColor4d(backgroundColor.red / 255.0,
-                                        backgroundColor.green / 255.0,
-                                        backgroundColor.blue / 255.0, alpha);
-                            }
-
-                            gl.glRectd(x1, y2, x2, y1);
-                        }
-
-                        if (boxed || underline || overline || strikethrough) {
-                            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
-
-                            RGB color = dString.getColors()[c];
-                            if (color == null) {
-                                color = DEFAULT_LABEL_COLOR;
-                            }
-                            gl.glColor4d(color.red / 255.0,
-                                    color.green / 255.0, color.blue / 255.0,
-                                    alpha);
-
-                            if (boxed) {
-                                gl.glLineWidth(2);
-                                gl.glRectd(x1, y2, x2, y1);
-                            }
-                            if (underline) {
-                                gl.glLineWidth(1);
-                                double lineY = y1 + (y2 - y1) * .2;
-                                gl.glBegin(GL.GL_LINES);
-                                gl.glVertex2d(x1, lineY);
-                                gl.glVertex2d(x2, lineY);
-                                gl.glEnd();
-                            }
-                            if (overline) {
-                                gl.glLineWidth(1);
-                                double lineY = y1 + (y2 - y1);
-                                gl.glBegin(GL.GL_LINES);
-                                gl.glVertex2d(x1, lineY);
-                                gl.glVertex2d(x2, lineY);
-                                gl.glEnd();
-                            }
-                            if (strikethrough) {
-                                gl.glLineWidth(1);
-                                double lineY = y1 + (y2 - y1) * .5;
-                                gl.glBegin(GL.GL_LINES);
-                                gl.glVertex2d(x1, lineY);
-                                gl.glVertex2d(x2, lineY);
-                                gl.glEnd();
-                            }
-                        }
-
-                        if (verticalAlignment == VerticalAlignment.TOP) {
-                            yPos += textBounds.getHeight();
-                        } else {
-                            yPos -= textBounds.getHeight();
-                        }
-                    }
-
-                    if (rotatedPoint != null) {
-                        gl.glTranslated(rotatedPoint[0], rotatedPoint[1], 0.0);
-                        gl.glRotated(-dString.rotation, 0.0, 0.0, 1.0);
-                        gl.glTranslated(-rotatedPoint[0], -rotatedPoint[1], 0.0);
-                    }
-                }
-            }
-
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-
-            IFont font = null;
-            double magnification = -1.0;
-            double fontPercentage = -1.0;
-            RGB lastColor = null;
-            // This loop renders the strings.
-            for (DrawableString dString : parameters) {
-                float[] rotatedPoint = null;
-                IFont stringFont = dString.font;
-                if (stringFont == null) {
-                    stringFont = getDefaultFont();
-                }
-
-                if (!(stringFont instanceof IGLFont)) {
-                    throw new VizException(
-                            "Font was not prepared using GLTarget");
-                }
-
-                if (dString.rotation != 0.0) {
-                    if (textRenderer != null) {
-                        textRenderer.flush();
-                    }
-                    rotatedPoint = getUpdatedCoordinates(
-                            new java.awt.Rectangle(0, 0, 0, 0),
-                            HorizontalAlignment.LEFT, VerticalAlignment.BOTTOM,
-                            dString.basics.x, dString.basics.y, 0.0,
-                            dString.rotation, fontPercentage);
-                    gl.glTranslated(rotatedPoint[0], rotatedPoint[1], 0.0);
-                    gl.glRotated(dString.rotation, 0.0, 0.0, 1.0);
-                    gl.glTranslated(-rotatedPoint[0], -rotatedPoint[1], 0.0);
-                }
-
-                if (stringFont != font) {
-                    // Font changes are one of the most expensive parts of
-                    // string rendering, avoid them.
-                    font = stringFont;
-                    if (textRenderer != null) {
-                        textRenderer.end3DRendering();
-                    }
-                    textRenderer = ((IGLFont) font).getTextRenderer();
-                    textRenderer.setSmoothing(font.getSmoothing());
-                    textRenderer.begin3DRendering();
-                    fontPercentage = -1.0;
-                    lastColor = null;
-                }
-
-                if (dString.magnification != magnification
-                        || fontPercentage == -1.0) {
-                    magnification = dString.magnification;
-                    fontPercentage = this.calculateFontResizePercentage(font)
-                            * magnification;
-                }
-
-                float scaleX = (float) (stringScaleX * fontPercentage);
-                float scaleY = (float) (stringScaleY * fontPercentage);
-
-                double yPos = dString.basics.y;
-                VerticalAlignment verticalAlignment = dString.verticallAlignment;
-                if (verticalAlignment == VerticalAlignment.MIDDLE
-                        && dString.getText().length > 1) {
-                    Rectangle2D totalBounds = getStringsBounds(dString);
-                    double totalHeight = totalBounds.getHeight();
-                    yPos -= totalHeight * .5;
-                    verticalAlignment = VerticalAlignment.TOP;
-                }
-                float alpha = Math.min(dString.basics.alpha, 1.0f);
-
-                if (lastXOr != dString.basics.xOrColors) {
-                    lastXOr = dString.basics.xOrColors;
-                    textRenderer.flush();
-                    if (lastXOr) {
-                        gl.glEnable(GL.GL_COLOR_LOGIC_OP);
-                        gl.glLogicOp(GL.GL_XOR);
-                    } else {
-                        gl.glDisable(GL.GL_COLOR_LOGIC_OP);
-                    }
-                }
-
-                for (int c = 0; c < dString.getText().length; c++) {
-
-                    String string = dString.getText()[c];
-                    RGB color = dString.getColors()[c];
-                    Rectangle2D textBounds = getStringsBounds(dString, string);
-
-                    if (color == null) {
-                        color = DEFAULT_LABEL_COLOR;
-                    }
-
-                    float[] xy = getUpdatedCoordinates(textBounds,
-                            dString.horizontalAlignment, verticalAlignment,
-                            dString.basics.x, yPos, dString.basics.z,
-                            dString.rotation, fontPercentage);
-
-                    if (color != lastColor) {
-                        lastColor = color;
-                        textRenderer.setColor(color.red / 255.0f,
-                                color.green / 255.0f, color.blue / 255.0f,
-                                alpha);
-                    }
-                    if (dString.getTextStyles().contains(TextStyle.WORD_WRAP)) {
-                        int i = 0;
-                        int j = -1;
-                        float y = xy[1];
-                        float x = xy[0];
-                        while (true) {
-                            j = string.indexOf(' ', j + 1);
-                            if (j < 0) {
-                                break;
-                            }
-                            if ((j - i) >= MIN_WRAP_LEN) {
-                                textRenderer.draw3D(string.substring(i, j), x,
-                                        y, 0.0f, scaleY);
-                                i = j + 1;
-                                y -= scaleY * textBounds.getHeight();
-                            }
-                        }
-                        // draw at the origin since we shifted the origin to the
-                        // point
-                        textRenderer.draw3D(string.substring(i), x, y, 0.0f,
-                                scaleY);
-
-                    } else if (dString.getTextStyles().contains(
-                            TextStyle.DROP_SHADOW)) {
-                        RGB shadowColor = dString.shadowColor;
-                        textRenderer.setColor(shadowColor.red / 255.0f,
-                                shadowColor.green / 255.0f,
-                                shadowColor.blue / 255.0f, alpha);
-                        float halfScaleX = (0.5f * scaleX);
-                        float halfScaleY = (0.5f * scaleY);
-                        textRenderer.draw3D(string, xy[0] - halfScaleX, xy[1]
-                                + halfScaleY, 0.0f, scaleY);
-                        textRenderer.draw3D(string, xy[0] + halfScaleX, xy[1]
-                                - halfScaleY, 0.0f, scaleY);
-                        textRenderer.setColor(color.red / 255.0f,
-                                color.green / 255.0f, color.blue / 255.0f,
-                                alpha);
-                        textRenderer.draw3D(string, xy[0], xy[1], 0.0f, scaleY);
-
-                    } else {
-                        // draw at the origin since we shifted the origin to the
-                        // point
-                        textRenderer.draw3D(string, xy[0], xy[1], 0.0f, scaleY);
-                    }
-                    if (verticalAlignment == VerticalAlignment.TOP) {
-                        yPos += textBounds.getHeight();
-                    } else {
-                        yPos -= textBounds.getHeight();
-                    }
-                }
-
-                if (rotatedPoint != null) {
-                    textRenderer.flush();
-                    gl.glTranslated(rotatedPoint[0], rotatedPoint[1], 0.0);
-                    gl.glRotated(-dString.rotation, 0.0, 0.0, 1.0);
-                    gl.glTranslated(-rotatedPoint[0], -rotatedPoint[1], 0.0);
-                }
-            }
-        } finally {
-            if (textRenderer != null) {
-                textRenderer.end3DRendering();
-            }
-            if (lastXOr) {
-                gl.glDisable(GL.GL_COLOR_LOGIC_OP);
-            }
-            gl.glDisable(GL.GL_TEXTURE_2D);
-            gl.glDisable(GL.GL_BLEND);
-
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
-            gl.glMatrixMode(GL.GL_MODELVIEW);
-            gl.glPopMatrix();
-            popGLState();
-        }
-    }
-
-    /**
-     * Set up the model view matrix to render a string. The baseline of the
-     * leftmose character will be at point 0,0,0. This will blindly reset the
-     * modelview matrix so if it is important it should be pushed before calling
-     * this and popped after rendering.
-     * 
-     * @param textBounds
-     * @param horizontalAlignment
-     * @param verticalAlignment
-     * @param xPos
-     * @param yPos
-     * @param zPos
-     * @param rotation
-     * @param fontPercentage
-     */
-    private float[] getUpdatedCoordinates(Rectangle2D textBounds,
-            HorizontalAlignment horizontalAlignment,
-            VerticalAlignment verticalAlignment, double xPos, double yPos,
-            double zPos, double rotation, double fontPercentage) {
-        double width = textBounds.getWidth();
-        double height = textBounds.getHeight();
-
-        double offset = (height + textBounds.getY());
-        // double adjustedOffset = (height + textBounds.getY()) * getScaleY();
-
-        double canvasX1 = 0.0;
-        double canvasY1 = 0.0;
-
-        // Calculate the horizontal point based on alignment
-        if (horizontalAlignment == HorizontalAlignment.LEFT) {
-            canvasX1 = xPos;
-
-        } else if (horizontalAlignment == HorizontalAlignment.CENTER) {
-            canvasX1 = xPos - width / 2;
-
-        } else if (horizontalAlignment == HorizontalAlignment.RIGHT) {
-            canvasX1 = xPos - width;
-        }
-
-        // Calculate the vertical point based on alignment
-        if (verticalAlignment == VerticalAlignment.BOTTOM) { // normal
-            canvasY1 = yPos;
-        } else if (verticalAlignment == VerticalAlignment.MIDDLE) {
-            canvasY1 = yPos + height / 2;
-        } else if (verticalAlignment == VerticalAlignment.TOP) {
-            canvasY1 = yPos + height;
-        }
-
-        canvasY1 -= (offset);
-
-        return new float[] { (float) canvasX1, (float) -canvasY1 };
+        getExtension(GLStringRenderingExtension.class).drawStrings(parameters);
     }
 
     @Override
