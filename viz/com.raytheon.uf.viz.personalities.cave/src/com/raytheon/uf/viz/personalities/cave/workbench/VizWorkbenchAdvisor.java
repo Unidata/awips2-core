@@ -58,6 +58,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                      accessing UI thread.
  * Oct 15, 2013 2361        njensen     Added startupTimer
  * Jan 27, 2014 2744        njensen     Add Local History pref back in
+ * May 09, 2014 3153        njensen     Updates for pydev 3.4.1
  * 
  * </pre>
  * 
@@ -111,7 +112,11 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
      */
     @SuppressWarnings("restriction")
     private void removeExtraMenus() {
-        // For standalone app, remove the stuff we don't use
+        /*
+         * For standalone app, remove the stuff we don't use. TODO Investigate
+         * how well the Navigate menu works in Localization perspective. That
+         * menu only appears if you have particular file editors open.
+         */
         org.eclipse.ui.internal.registry.ActionSetRegistry reg = org.eclipse.ui.internal.WorkbenchPlugin
                 .getDefault().getActionSetRegistry();
 
@@ -205,8 +210,13 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
                 }
                 root.remove("org.eclipse.search.preferences.SearchPreferencePage");
             } else if (rootId.equals("org.python.pydev.prefs")) {
-                root.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython");
-                root.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageIronpython");
+                IPreferenceNode node = root
+                        .findSubNode("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageGeneral");
+                if (node != null) {
+                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython");
+                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageIronpython");
+                }
+
                 root.remove("org.python.pydev.prefs.pylint");
                 root.remove("org.python.pydev.prefs.pyunitPage");
                 root.remove("org.python.pydev.jython.ui.JyScriptingPreferencesPage");
@@ -335,8 +345,7 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
             startupTimer.stop();
             System.out.println("Workbench startup time: "
                     + startupTimer.getElapsedTime() + " ms");
-    }
-
+        }
     }
 
     /**
