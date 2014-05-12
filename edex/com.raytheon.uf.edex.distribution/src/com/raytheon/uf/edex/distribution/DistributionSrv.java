@@ -51,6 +51,7 @@ import org.apache.commons.logging.LogFactory;
  * Aug 19, 2013 2257       bkowal      edexBridge to qpid 0.18 upgrade
  * Aug 30, 2013 2163       bkowal      edexBridge to qpid 0.18 RHEL6 upgrade
  * Sep 06, 2013 2327       rjpeter     Updated to use DistributionPatterns.
+ * May 09, 2014 3151       bclement    changed registration so only required plugins throw exception on error
  * </pre>
  * 
  * @author brockwoo
@@ -68,8 +69,7 @@ public class DistributionSrv {
     private final ConcurrentMap<String, String> pluginRoutes = new ConcurrentHashMap<String, String>();
 
     /**
-     * Allows a plugin to register itself with this bean. Note: if the plugin
-     * does not provide an XML or it is malformed, this will throw an exception.
+     * Allows a plugin to register itself with this bean.
      * 
      * @param pluginName
      *            the plugin name
@@ -80,12 +80,31 @@ public class DistributionSrv {
      */
     public DistributionSrv register(String pluginName, String destination)
             throws DistributionException {
+        return this.register(pluginName, destination, false);
+    }
+
+    /**
+     * @see #register(String, String)
+     * @param pluginName
+     * @param destination
+     * @param required
+     *            true if an exception should be thrown if plugin does not have
+     *            any valid distribution patterns
+     * @return
+     * @throws DistributionException
+     */
+    public DistributionSrv register(String pluginName, String destination,
+            boolean required) throws DistributionException {
         if (!DistributionPatterns.getInstance()
                 .hasPatternsForPlugin(pluginName)) {
-            throw new DistributionException(
-                    "Plugin "
-                            + pluginName
-                            + " does not have an accompanying patterns file in localization.");
+            String msg = "Plugin "
+                    + pluginName
+                    + " does not have a valid distribution patterns file in localization.";
+            if (required) {
+                throw new DistributionException(msg);
+            } else {
+                logger.error(msg);
+            }
         }
         pluginRoutes.put(pluginName, destination);
         return this;

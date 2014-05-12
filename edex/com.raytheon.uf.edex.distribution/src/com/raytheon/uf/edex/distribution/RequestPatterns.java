@@ -33,8 +33,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
  * A container of regular expressions, both original strings and the compiled
  * patterns. Used by the DistributionSrv bean to store regex patterns for
@@ -53,6 +51,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Mar 19, 2013 1794       djohnson     Add toString() for debugging.
  * Sep 10, 2013 2327       rjpeter      Sized ArrayList declarations.
  * Nov 21, 2013 2541       bgonzale     Exclusion patterns.
+ * May 09, 2014 3151       bclement     added noPossibleMatch() removed ISerializableObject
  * </pre>
  * 
  * @author brockwoo
@@ -61,7 +60,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
 
 @XmlRootElement(name = "requestPatterns")
 @XmlAccessorType(XmlAccessType.NONE)
-public class RequestPatterns implements ISerializableObject {
+public class RequestPatterns {
 
     /**
      * List of patterns requested by a plugin.
@@ -176,5 +175,12 @@ public class RequestPatterns implements ISerializableObject {
     @Override
     public String toString() {
         return patterns.toString();
+    }
+
+    /**
+     * @return true if {@link #isDesiredHeader(String)} can't return true
+     */
+    public boolean noPossibleMatch() {
+        return compiledPatterns.isEmpty();
     }
 }

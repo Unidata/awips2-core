@@ -21,10 +21,12 @@ package com.raytheon.uf.edex.distribution;
 
 import java.io.File;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -46,6 +48,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 6, 2013  2327      rjpeter     Initial creation
+ * May 09, 2014 3151      bclement    added checkForPluginsMissingPatterns()
  * 
  * </pre>
  * 
@@ -68,6 +71,9 @@ public class DistributionPatterns {
      * Patterns for the various plugins.
      */
     private final ConcurrentMap<String, RequestPatterns> patterns = new ConcurrentHashMap<String, RequestPatterns>();
+
+    private final Set<String> pluginsMissingPatterns = Collections
+            .newSetFromMap(new ConcurrentHashMap<String, Boolean>());
 
     /**
      * Returns the singleton instance.
@@ -127,8 +133,7 @@ public class DistributionPatterns {
 
     /**
      * Refreshes the distribution patterns if a plugin's distribution pattern
-     * file has been modified. This method is executed via a quartz timer every
-     * five seconds
+     * file has been modified. This method is executed via a quartz timer
      */
     public void refresh() {
         for (File file : getDistributionFiles()) {
@@ -161,6 +166,7 @@ public class DistributionPatterns {
                 }
             }
         }
+        checkForPluginsMissingPatterns();
     }
 
     /**
@@ -194,12 +200,26 @@ public class DistributionPatterns {
 
         for (String plugin : pluginsToCheck) {
             RequestPatterns pattern = patterns.get(plugin);
-            if ((pattern != null) && pattern.isDesiredHeader(header)) {
+            if (pattern == null || pattern.noPossibleMatch()) {
+                pluginsMissingPatterns.add(plugin);
+            } else if (pattern.isDesiredHeader(header)) {
                 plugins.add(plugin);
             }
         }
 
         return plugins;
+    }
+
+    /**
+     * check if there have been requests for distribution patterns for plugins
+     * that don't have valid patterns. Logs an error message if any are found.
+     */
+    public void checkForPluginsMissingPatterns() {
+        for (String plugin : pluginsMissingPatterns) {
+            String msg = "No valid distribution patterns for " + plugin;
+            statusHandler.error(msg);
+        }
+        pluginsMissingPatterns.clear();
     }
 
     /**
@@ -210,6 +230,7 @@ public class DistributionPatterns {
      * @return
      */
     public boolean hasPatternsForPlugin(String pluginName) {
-        return patterns.containsKey(pluginName);
+        RequestPatterns rp = patterns.get(pluginName);
+        return rp != null && !rp.noPossibleMatch();
     }
 }
