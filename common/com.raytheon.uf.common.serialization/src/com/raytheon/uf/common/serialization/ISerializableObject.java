@@ -19,9 +19,11 @@
  **/
 package com.raytheon.uf.common.serialization;
 
-import javax.persistence.Embeddable;
+import javax.xml.bind.JAXB;
 
 /**
+ * DEPRECATED! Former usage (no longer applies):
+ * 
  * Empty interface that should be implemented by any class that uses Hibernate,
  * JaxB, or DynamicSerialize annotations so it is detected at runtime.
  * 
@@ -35,6 +37,7 @@ import javax.persistence.Embeddable;
  * ------------ ----------  ----------- --------------------------
  * Aug 11, 2008             njensen     Initial creation
  * Oct 02, 2013 2361        njensen     Deprecated
+ * May 13, 2014 3165        njensen     Updated javadoc
  * 
  * </pre>
  * 
@@ -44,13 +47,15 @@ import javax.persistence.Embeddable;
  *             is completely removed from the system. DynamicSerialize no longer
  *             requires ISerializableObjects, just use the DynamicSerialize
  *             annotations. JAXB/XML only requires it if you use the global JAXB
- *             context through {@link SerializationUtil}, however that is a
- *             performance hit and deprecated and you should instead create your
- *             own {@link JAXBManager}. Hibernate no longer uses it, EDEX will
- *             automatically detect classes with {@link Entity} or
- *             {@link Embeddable} annotations if their package name starts with
- *             the same plugin FQN that is present in the PluginProperties or
- *             DatabasePluginProperties.
+ *             context available from {@link SerializationUtil}, however that is
+ *             a performance hit and deprecated and you should instead create
+ *             your own {@link JAXBManager} for thread safe operations against a
+ *             smaller set of classes. If working with a single type on one
+ *             thread, you can use {@link JAXB} directly. Hibernate no longer
+ *             uses ISerializableObject, EDEX will automatically detect classes
+ *             with javax.persistence.Entity or javax.persistence.Embeddable
+ *             annotations that exist in jars in the edex/lib/plugins directory.
+ *             See DatabaseClassAnnotationFinder for more details.
  * 
  */
 
