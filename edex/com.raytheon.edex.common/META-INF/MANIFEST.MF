@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common Plug-in
 Bundle-SymbolicName: com.raytheon.edex.common
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
 Eclipse-BuddyPolicy: registered, ext, global
 Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
@@ -22,22 +22,13 @@ Export-Package: com.raytheon.edex.colormap,
  com.raytheon.edex.urifilter,
  com.raytheon.edex.util,
  com.raytheon.edex.utility
-Require-Bundle: net.sf.ehcache,
- org.apache.commons.configuration,
- org.apache.velocity;bundle-version="1.6.0",
- org.geotools,
- org.jep,
- org.apache.commons.beanutils,
- org.apache.commons.lang,
+Require-Bundle: org.apache.commons.lang,
  javax.measure,
- org.apache.commons.collections,
  net.sf.cglib;visibility:=reexport,
  javax.persistence,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.status,
- org.postgres;bundle-version="1.0.0",
- org.apache.http,
  org.springframework;bundle-version="2.5.6";visibility:=reexport,
  com.raytheon.uf.common.time;visibility:=reexport,
  com.raytheon.uf.common.colormap;bundle-version="1.11.0";visibility:=reexport,

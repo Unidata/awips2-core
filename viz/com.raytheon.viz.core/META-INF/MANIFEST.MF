@@ -2,19 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Capabilities
 Bundle-SymbolicName: com.raytheon.viz.core;singleton:=true
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.14.0.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- org.apache.commons.lang,
- org.apache.commons.beanutils,
- org.apache.http,
- javax.vecmath,
- org.apache.commons.configuration,
- javax.measure,
- org.apache.velocity,
- org.jep,
- javax.persistence,
- net.sf.cglib,
  com.raytheon.uf.common.localization;visibility:=reexport,
  com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.geospatial;bundle-version="1.12.1174";visibility:=reexport,
