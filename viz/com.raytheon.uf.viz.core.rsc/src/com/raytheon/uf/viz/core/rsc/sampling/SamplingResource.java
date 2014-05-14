@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.rsc.sampling;
 
-import java.awt.geom.Rectangle2D;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,6 +28,7 @@ import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -62,11 +62,13 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 22, 2010            mschenke     Initial creation
- * Jan 31, 2012   14306    kshresth     Cursor readout as you sample the dispays
- * Mar  3, 2014    2804    mschenke     Set back up clipping pane
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Dec 22, 2010           mschenke     Initial creation
+ * Jan 31, 2012  14306    kshresth     Cursor readout as you sample the dispays
+ * Mar 03, 2014  2804     mschenke     Set back up clipping pane
+ * May 12, 2014  3074     bsteffen     Remove use of deprecated methods.
+ * 
  * 
  * </pre>
  * 
@@ -199,7 +201,7 @@ public class SamplingResource extends
     }
 
     protected SampleResult doHover(ReferencedCoordinate coord,
-            ResourceList resources) throws VizException {
+            ResourceList resources) {
         SampleResult result = new SampleResult();
         List<String> labelList = new ArrayList<String>();
         List<RGB> colorList = new ArrayList<RGB>();
@@ -259,7 +261,7 @@ public class SamplingResource extends
 
     protected void paintResult(IGraphicsTarget target,
             PaintProperties paintProps, ReferencedCoordinate coord,
-            SampleResult result) throws VizException {
+            SampleResult result) {
         verticalAlignment = VerticalAlignment.TOP;
         target.clearClippingPlane();
         try {
@@ -332,15 +334,19 @@ public class SamplingResource extends
                                     + ((AbstractRenderableDisplay.CURSOR_HEIGHT) / ratioX),
                             paintProps.getView().getExtent(), ratioX);
 
-                    if (horizontalAlignment == HorizontalAlignment.RIGHT) {
-                        c.x -= (target.getStringBounds(hoverFont, newStrs,
-                                TextStyle.BLANKED).getWidth() / ratioX);
-                    }
+                    DrawableString dString = new DrawableString(newStrs,
+                            colorsToUse.toArray(new RGB[colorsToUse.size()]));
+                    dString.font = hoverFont;
 
-                    target.drawStrings(hoverFont, newStrs, c.x, referencePtY,
-                            0.0, IGraphicsTarget.TextStyle.BLANKED,
-                            colorsToUse.toArray(new RGB[colorsToUse.size()]),
-                            HorizontalAlignment.LEFT, verticalAlignment);
+                    dString.addTextStyle(TextStyle.BLANKED);
+                    dString.verticallAlignment = verticalAlignment;
+                    if (horizontalAlignment == HorizontalAlignment.RIGHT) {
+                        c.x -= (target.getStringsBounds(dString).getWidth() / ratioX);
+
+                    }
+                    dString.setCoordinates(c.x, referencePtY);
+
+                    target.drawStrings(dString);
                 }
             }
             errorInHovering = false;
@@ -488,14 +494,10 @@ public class SamplingResource extends
         double referencePoint = x;
 
         // Find the max width of the label in pixels
-        double maxWidth = 0;
-        IFont font = hoverFont;
-        for (String label : labels) {
-            Rectangle2D bounds = target.getStringBounds(font, label);
-            if (bounds.getWidth() > maxWidth) {
-                maxWidth = bounds.getWidth();
-            }
-        }
+        DrawableString testString = new DrawableString(labels, (RGB) null);
+        testString.font = hoverFont;
+        testString.addTextStyle(TextStyle.BLANKED);
+        double maxWidth = target.getStringsBounds(testString).getWidth();
 
         // Get the width in gl space
         double widthInGl = maxWidth / ratio;
@@ -530,8 +532,10 @@ public class SamplingResource extends
             double y, IExtent extent, double ratio) {
         double referencePoint = y;
 
-        double totalHeight = target.getStringBounds(hoverFont, labels,
-                TextStyle.BLANKED).getHeight();
+        DrawableString testString = new DrawableString(labels, (RGB) null);
+        testString.font = hoverFont;
+        testString.addTextStyle(TextStyle.BLANKED);
+        double totalHeight = target.getStringsBounds(testString).getHeight();
 
         // convert to gl space
         double maxHeightInGl = (totalHeight) / ratio;
