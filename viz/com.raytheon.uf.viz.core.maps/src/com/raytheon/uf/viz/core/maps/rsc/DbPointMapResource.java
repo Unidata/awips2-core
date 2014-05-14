@@ -488,12 +488,11 @@ public class DbPointMapResource extends
                             points.add(new double[] { c.x, c.y, 0.0 });
                             if (isLabeled && (magnification != 0)) {
                                 String label = node.label;
-                                label = label
-                                        .replaceAll("(...\\S*)\\s", "$1\n");
+                                label = label.replaceAll("([^\n]{3}\\S*)\\s+",
+                                        "$1\n");
                                 DrawableString str = new DrawableString(label,
                                         color);
                                 str.setCoordinates(c.x + offsetX, c.y + offsetY);
-                                // str.textStyle = TextStyle.WORD_WRAP;
                                 str.horizontalAlignment = horizAlign;
                                 str.verticallAlignment = VerticalAlignment.MIDDLE;
                                 str.font = font;
