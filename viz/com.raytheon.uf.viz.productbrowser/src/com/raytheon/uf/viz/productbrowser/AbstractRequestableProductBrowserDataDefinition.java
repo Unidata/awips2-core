@@ -34,7 +34,6 @@ import org.eclipse.ui.IWorkbenchWindow;
 import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.responses.DbQueryResponse;
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -65,11 +64,12 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 3, 2010            mnash     Initial creation
- * May 02, 2013 1949       bsteffen    Switch Product Browser from uengine to
- *                                     DbQueryRequest.
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * May 03, 2010           mnash       Initial creation
+ * May 02, 2013  1949     bsteffen    Switch Product Browser from uengine to
+ *                                    DbQueryRequest.
+ * May 13, 2014  3135     bsteffen    Remove ISerializableObject.
  * 
  * </pre>
  * 
@@ -79,8 +79,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractRequestableProductBrowserDataDefinition<T extends AbstractRequestableResourceData>
-        extends AbstractProductBrowserDataDefinition<T> implements
-        ISerializableObject {
+        extends AbstractProductBrowserDataDefinition<T> {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractRequestableProductBrowserDataDefinition.class);
 
