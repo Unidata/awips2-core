@@ -20,13 +20,10 @@ package com.raytheon.uf.viz.productbrowser;
  * further licensing information.
  **/
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -39,8 +36,6 @@ import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
-import org.eclipse.jface.viewers.IStructuredSelection;
-import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
@@ -48,29 +43,19 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.ExpandBar;
-import org.eclipse.swt.widgets.ExpandItem;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
-import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
 import org.eclipse.ui.part.ViewPart;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
 import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
-import com.raytheon.uf.viz.productbrowser.bookmarks.ProductBrowserBookmark;
-import com.raytheon.uf.viz.productbrowser.bookmarks.ProductBrowserBookmarksContentProvider;
-import com.raytheon.uf.viz.productbrowser.bookmarks.ProductBrowserBookmarksLabelProvider;
-import com.raytheon.uf.viz.productbrowser.bookmarks.ProductBrowserFolder;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserInitializeJob;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
-import com.raytheon.uf.viz.productbrowser.plugins.ProductBrowserTextSelector;
-import com.raytheon.uf.viz.productbrowser.xml.ProductBrowserBookmarksXML;
 
 /**
  * Product browser view implementation
@@ -101,17 +86,9 @@ public class ProductBrowserView extends ViewPart {
 
     public static final String DEF_DATA_KEY = "defintion";
 
+    private static IExtension[] extensions;
+
     private Tree productTree;
-
-    private TreeViewer bookmarkTree;
-
-    private Text searchBar;
-
-    private Action bookmarkProductsAction;
-
-    private Action loadBookmarkAction;
-
-    private Action removeBookmarkAction;
 
     private Action loadProductAction;
 
@@ -119,36 +96,15 @@ public class ProductBrowserView extends ViewPart {
 
     private Action refreshAction;
 
-    private static IConfigurationElement[] config;
-
-    private static IExtension[] extensions;
-
-    public ProductBrowserView() {
-        super();
-    }
-
     @Override
     public void createPartControl(Composite parent) {
-        createFullVersion(parent);
-    }
-
-    /**
-     * Creates the large version of the product browser view
-     * 
-     * @param parent
-     */
-    private void createFullVersion(Composite parent) {
         Composite fullComp = new Composite(parent, SWT.FILL);
-        // folder = new CTabFolder(fullComp, SWT.BORDER);
         fullComp.setLayout(new GridLayout(1, true));
         getDataTypes();
         createActions();
         createToolbar();
-        // createBookmarks(fullComp);
-        // createBookmarkTreeContextMenu();
         createProductTree(fullComp);
         createProductBrowserContextMenu();
-        // createSearchBar(fullComp);
     }
 
     /**
@@ -158,13 +114,7 @@ public class ProductBrowserView extends ViewPart {
         refreshAction = new Action("Refresh Browser") {
             @Override
             public void run() {
-                // TODO, replace that (and fix it too)
-                // searchBar.setText("");
-                // // need to repopulate here eventually, but for speed sake as
-                // // this just essentially minimizes at this time, just
-                // minimize
                 populateInitialProductTree();
-                // productTree.setExpandedElements(new Object[0]);
             }
         };
         refreshAction.setId("refreshAction");
@@ -190,161 +140,8 @@ public class ProductBrowserView extends ViewPart {
         loadProductAction.setId("loadProductAction");
         loadProductAction.setImageDescriptor(ProductBrowserUtils
                 .getImageDescriptor("run.gif"));
-
-        loadBookmarkAction = new Action("Load Bookmark") {
-            @Override
-            public void run() {
-                loadBookmark();
-            }
-        };
-        loadBookmarkAction.setId("loadBookmarkAction");
-        loadBookmarkAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("run.gif"));
-
-        removeBookmarkAction = new Action("Remove Bookmark") {
-            @Override
-            @SuppressWarnings("unchecked")
-            public void run() {
-                ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>> bookmark = (ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>>) ((IStructuredSelection) bookmarkTree
-                        .getSelection()).getFirstElement();
-                ProductBrowserFolder folder = (ProductBrowserFolder) bookmarkTree
-                        .getInput();
-                folder.removeBookmark(bookmark);
-                bookmarkTree.setInput(folder);
-                ProductBrowserBookmarksXML
-                        .writeXML((ProductBrowserFolder) bookmarkTree
-                                .getInput());
-                bookmarkTree.refresh();
-            }
-        };
-        removeBookmarkAction.setId("removeBookmarkAction");
-        removeBookmarkAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("minus.gif"));
-
-        // FIXME change how products are named
-        bookmarkProductsAction = new Action("Add Bookmark...") {
-            @Override
-            public void run() {
-                TreeItem selection = productTree.getSelection()[0];
-                AbstractRequestableProductBrowserDataDefinition<?> prod = (AbstractRequestableProductBrowserDataDefinition<?>) getDataDef(selection);
-                // TODO fix this
-                String[] temp = getProductURI(selection, true);
-                String name = "";
-                for (int i = 0; i < temp.length; i++) {
-                    name += temp[i].trim() + File.separator;
-                }
-                name = name.substring(0, name.length() - 1);
-                ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>> bookmark = new ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>>(
-                        name, prod.getProductParameters(
-                                getProductURI(selection, false), prod.order),
-                        prod);
-                ProductBrowserFolder folder = (ProductBrowserFolder) bookmarkTree
-                        .getInput();
-                folder.addBookmark(bookmark);
-                bookmarkTree.setInput(folder);
-                ProductBrowserBookmarksXML
-                        .writeXML((ProductBrowserFolder) bookmarkTree
-                                .getInput());
-                bookmarkTree.refresh();
-            }
-        };
-        bookmarkProductsAction.setId("bookmarkProductsAction");
-        bookmarkProductsAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("plus.gif"));
     }
 
-    /**
-     * TODO include bookmarks
-     */
-    private void createBookmarks(Composite parent) {
-        // the expand bar
-        ExpandBar bar = new ExpandBar(parent, SWT.FILL);
-        bar.setLayout(new GridLayout(1, true));
-        GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, false);
-        bar.setLayoutData(gridData);
-        ExpandItem item = new ExpandItem(bar, SWT.FILL);
-        item.setText("Bookmarks");
-        item.setImage(ProductBrowserUtils.getImageDescriptor("bkmrk.gif")
-                .createImage());
-        createBookmarkTree(bar, item);
-    }
-
-    /**
-     * Creates the bookmark tree under the expand bar
-     * 
-     * @param bar
-     * @param item
-     */
-    private void createBookmarkTree(final ExpandBar bar, final ExpandItem item) {
-        final Composite group = new Composite(bar, SWT.NONE);
-        GridLayout layout = new GridLayout(1, true);
-        layout.marginBottom = 0;
-        layout.verticalSpacing = 0;
-        group.setLayout(layout);
-        bookmarkTree = new TreeViewer(group, SWT.BORDER | SWT.V_SCROLL
-                | SWT.H_SCROLL);
-        GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        bookmarkTree.getTree().setLayoutData(gridData);
-        bookmarkTree
-                .setContentProvider(new ProductBrowserBookmarksContentProvider());
-        bookmarkTree
-                .setLabelProvider(new ProductBrowserBookmarksLabelProvider());
-
-        bar.addListener(SWT.Expand, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                int count = bookmarkTree.getTree().getItemCount();
-                // had to figure on a maximum size and a minimum size
-                count = Math.min(count, 8);
-                count = Math.max(count, 3);
-                int height = bookmarkTree.getTree().getBounds().height / count;
-                GridData gridData = (GridData) item.getParent().getLayoutData();
-                gridData.heightHint = height + item.getHeaderHeight();
-                item.setHeight(gridData.heightHint - item.getHeaderHeight());
-                group.setEnabled(true);
-                bar.getParent().pack();
-            }
-        });
-
-        bar.addListener(SWT.Collapse, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                group.setEnabled(false);
-                bar.getParent().pack();
-            }
-        });
-
-        bookmarkTree.getTree().addListener(SWT.MouseDoubleClick,
-                new Listener() {
-                    @Override
-                    public void handleEvent(Event event) {
-                        if (event.button == 1
-                                && ((IStructuredSelection) bookmarkTree
-                                        .getSelection()).getFirstElement() != null) {
-                            loadBookmarkAction.run();
-                        }
-                    }
-                });
-        populateBookmarkTree();
-        item.setControl(group);
-    }
-
-    public void createSearchBar(Composite parent) {
-
-        Composite searchComp = new Composite(parent, SWT.NONE);
-        searchComp.setLayout(new GridLayout(2, false));
-        searchComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-                false));
-
-        GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-
-        searchBar = new Text(searchComp, SWT.SINGLE | SWT.BORDER);
-        searchBar.setEnabled(false);
-        searchBar.setLayoutData(gridData);
-        searchBar.setText("");
-        buildHistoryList();
-        gridData = new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false);
-    }
 
     /**
      * Creates the product browser that spans the entire view...
@@ -352,10 +149,6 @@ public class ProductBrowserView extends ViewPart {
      * @param parent
      */
     public void createProductTree(final Composite parent) {
-        // CTabItem productItem = new CTabItem(folder, SWT.CLOSE);
-        // productItem.setText("Products");
-        // productItem.setControl(parent);
-
         GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
         productTree = new Tree(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
                 | SWT.BORDER);
@@ -410,25 +203,6 @@ public class ProductBrowserView extends ViewPart {
         productTree.setMenu(menu);
     }
 
-    /**
-     * Creating the right click menu, for the bookmark tree
-     */
-    private void createBookmarkTreeContextMenu() {
-        MenuManager menuMgr = new MenuManager();
-        menuMgr.setRemoveAllWhenShown(true);
-        menuMgr.addMenuListener(new IMenuListener() {
-            @Override
-            public void menuAboutToShow(IMenuManager mgr) {
-                if (((IStructuredSelection) bookmarkTree.getSelection())
-                        .getFirstElement() != null) {
-                    fillBookmarkMenu(mgr);
-                }
-            }
-        });
-        Menu menu = menuMgr.createContextMenu(bookmarkTree.getControl());
-        bookmarkTree.getControl().setMenu(menu);
-        getSite().registerContextMenu(menuMgr, bookmarkTree);
-    }
 
     /**
      * Takes the menu during the right click and fills it with actions pertinent
@@ -485,20 +259,6 @@ public class ProductBrowserView extends ViewPart {
         return action;
     }
 
-    protected void fillBookmarkMenu(IMenuManager mgr) {
-        mgr.add(loadBookmarkAction);
-        mgr.add(removeBookmarkAction);
-    }
-
-    private void populateBookmarkTree() {
-        ProductBrowserFolder folders = ProductBrowserBookmarksXML.populate();
-        if (folders != null) {
-            ProductBrowserFolder main = new ProductBrowserFolder();
-            main.addFolder(folders);
-            bookmarkTree.setInput(folders);
-        }
-    }
-
     /**
      * Take the initial plugins available and populate them if they have any
      * data. This function does not populate the tree with the data, just the
@@ -508,9 +268,8 @@ public class ProductBrowserView extends ViewPart {
      */
     public void populateInitialProductTree() {
         productTree.removeAll();
-        long time = System.currentTimeMillis();
         for (IExtension ext : extensions) {
-            config = ext.getConfigurationElements();
+            IConfigurationElement[] config = ext.getConfigurationElements();
             for (IConfigurationElement element : config) {
                 AbstractProductBrowserDataDefinition<?> prod = null;
                 try {
@@ -553,53 +312,6 @@ public class ProductBrowserView extends ViewPart {
                 new ProductBrowserInitializeJob(ti).schedule();
             }
         }
-        System.out.println("Time to populate product browser : "
-                + (System.currentTimeMillis() - time) + "ms");
-    }
-
-    private void buildHistoryList() {
-        Thread thread = new Thread(new Runnable() {
-            @Override
-            public void run() {
-                final List<String> history = new ArrayList<String>();
-                // List<String> history = new ArrayList<String>();
-                long time = System.currentTimeMillis();
-                for (IExtension ext : extensions) {
-                    config = ext.getConfigurationElements();
-                    for (IConfigurationElement element : config) {
-                        try {
-                            AbstractProductBrowserDataDefinition<?> prod = (AbstractProductBrowserDataDefinition<?>) element
-                                    .createExecutableExtension("class");
-                            List<String> historyStrings = prod
-                                    .buildProductList(history);
-                            if (historyStrings != null) {
-                                history.addAll(prod.buildProductList(history));
-                            }
-                        } catch (CoreException e) {
-                            e.printStackTrace();
-                        }
-                    }
-                }
-                System.out.println(history.size());
-                System.out.println("Time taken to build product catalog : "
-                        + (System.currentTimeMillis() - time) + "ms");
-                final Set<String> set = new HashSet<String>(history);
-                history.clear();
-                history.addAll(set);
-                VizApp.runAsync(new Runnable() {
-                    @Override
-                    public void run() {
-                        if (!searchBar.isDisposed()) {
-                            new ProductBrowserTextSelector(searchBar, set
-                                    .toArray(new String[history.size()]));
-                            searchBar.setEnabled(true);
-                            searchBar.setText("Search");
-                        }
-                    }
-                });
-            }
-        });
-        thread.start();
     }
 
     /**
@@ -640,14 +352,6 @@ public class ProductBrowserView extends ViewPart {
                 }
             }
         }
-    }
-
-    @SuppressWarnings("unchecked")
-    private void loadBookmark() {
-        ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>> bookmark = (ProductBrowserBookmark<AbstractRequestableProductBrowserDataDefinition<?>>) ((IStructuredSelection) bookmarkTree
-                .getSelection()).getFirstElement();
-        bookmark.getResourceClass().constructResource(
-                bookmark.getRequestConstraints());
     }
 
     /**
