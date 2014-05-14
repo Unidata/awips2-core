@@ -58,6 +58,8 @@ import com.raytheon.uf.common.time.domain.api.ITimePoint;
  *                                     Added newGmtCalendar from a date method.
  * Jan 28, 2014  2636      mpduff      Removed unused methods.
  * Feb 19, 2014  2631      mpduff      Added buildThreadLocalSimpleDateFormat(String, TimeZone).
+ * May 14, 2014  3169      bclement    Added newGmtCalendar(int,int,int)
+ * 
  * </pre>
  * 
  * @author njensen
@@ -605,6 +607,31 @@ public final class TimeUtil {
             t.setTime(date);
         }
         return t;
+    }
+
+    /**
+     * Create a Greenwich Mean Time calendar for a given base date at 0 hours,
+     * minutes and seconds on a specified year, month, and day.
+     * 
+     * Note that the month argument should be 1 based (e.g. January = 1) and the
+     * returned calendar will have the month be 0 based (e.g. January = 0).
+     * 
+     * @param year
+     *            Calendar year.
+     * @param month
+     *            Month of the year [1..12].
+     * @param day
+     *            Day of the month [1..31] varies by month rules.
+     * @return
+     */
+    public static Calendar newGmtCalendar(int year, int month, int day) {
+        Calendar rval = newGmtCalendar();
+        minCalendarFields(rval, Calendar.HOUR_OF_DAY, Calendar.MINUTE,
+                Calendar.SECOND, Calendar.MILLISECOND);
+        rval.set(Calendar.YEAR, year);
+        rval.set(Calendar.MONTH, month - 1);
+        rval.set(Calendar.DAY_OF_MONTH, day);
+        return rval;
     }
 
     /**
