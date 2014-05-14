@@ -43,7 +43,6 @@ import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.HorizontalAlignment;
 import com.raytheon.uf.viz.core.IGraphicsTarget.PointStyle;
-import com.raytheon.uf.viz.core.IGraphicsTarget.TextStyle;
 import com.raytheon.uf.viz.core.IGraphicsTarget.VerticalAlignment;
 import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
@@ -67,10 +66,12 @@ import com.vividsolutions.jts.io.WKBReader;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 19, 2009            randerso    Initial creation
- * Apr 09, 2014 2997       randerso    Replaced buildEnvelope with buildBoundingGeometry
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Mar 19, 2009           randerso    Initial creation
+ * Apr 09, 2014  2997     randerso    Replaced buildEnvelope with buildBoundingGeometry
+ * May 14, 2014  3074     bsteffen    Remove WORD_WRAP TextStyle and handle
+ *                                    wrapping locally.
  * 
  * </pre>
  * 
@@ -452,7 +453,10 @@ public class DbPointMapResource extends
                 font.setScaleFont(false);
             }
 
-            Rectangle2D charSize = aTarget.getStringBounds(font, "N");
+            RGB color = getCapability(ColorableCapability.class).getColor();
+            DrawableString test = new DrawableString("N", color);
+            test.font = font;
+            Rectangle2D charSize = aTarget.getStringsBounds(test);
             double charWidth = charSize.getWidth();
             double charHeight = charSize.getHeight();
 
@@ -476,18 +480,20 @@ public class DbPointMapResource extends
                     / screenToWorldRatio;
             List<double[]> points = new ArrayList<double[]>();
             List<DrawableString> strings = new ArrayList<DrawableString>();
-            RGB color = getCapability(ColorableCapability.class).getColor();
             for (LabelNode node : labels) {
                 try {
                     if (node.getDistance() > threshold) {
-                        Coordinate c = node.screenLoc;
+                        Coordinate c = node.getScreenLocation();
                         if ((c != null) && screenExtent.contains(c.x, c.y)) {
                             points.add(new double[] { c.x, c.y, 0.0 });
                             if (isLabeled && (magnification != 0)) {
-                                DrawableString str = new DrawableString(
-                                        node.label, color);
+                                String label = node.label;
+                                label = label
+                                        .replaceAll("(...\\S*)\\s", "$1\n");
+                                DrawableString str = new DrawableString(label,
+                                        color);
                                 str.setCoordinates(c.x + offsetX, c.y + offsetY);
-                                str.textStyle = TextStyle.WORD_WRAP;
+                                // str.textStyle = TextStyle.WORD_WRAP;
                                 str.horizontalAlignment = horizAlign;
                                 str.verticallAlignment = VerticalAlignment.MIDDLE;
                                 str.font = font;

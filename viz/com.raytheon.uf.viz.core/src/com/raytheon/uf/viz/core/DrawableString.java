@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.core;
 import java.util.EnumMap;
 import java.util.EnumSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.eclipse.swt.graphics.RGB;
 
@@ -219,7 +220,7 @@ public class DrawableString extends AbstractDrawableObject {
          * This check is the best we can do to support targets that don't know
          * about textStyles yet.
          */
-        if (this.textStyle == null) {
+        if (this.textStyle == null || this.textStyle == TextStyle.NORMAL) {
             this.textStyle = textStyle;
         }
         if (textStyle == TextStyle.DROP_SHADOW && color != null) {
@@ -238,7 +239,7 @@ public class DrawableString extends AbstractDrawableObject {
          */
         if (textStyle == this.textStyle) {
             if (textStyles.isEmpty()) {
-                this.textStyle = null;
+                this.textStyle = TextStyle.NORMAL;
             } else {
                 this.textStyle = textStyles.keySet().iterator().next();
             }
@@ -262,7 +263,12 @@ public class DrawableString extends AbstractDrawableObject {
      */
     @Deprecated
     public EnumSet<TextStyle> getTextStyles() {
-        return EnumSet.copyOf(getTextStyleColorMap().keySet());
+        Set<TextStyle> mapSet = getTextStyleColorMap().keySet();
+        if (mapSet.isEmpty()) {
+            return EnumSet.noneOf(TextStyle.class);
+        } else {
+            return EnumSet.copyOf(mapSet);
+        }
 
     }
 
@@ -276,7 +282,7 @@ public class DrawableString extends AbstractDrawableObject {
         /*
          * Add in support for deprecated options.
          */
-        if (this.textStyle != null
+        if (this.textStyle != null && this.textStyle != TextStyle.NORMAL
                 && !this.textStyles.containsKey(this.textStyle)) {
             textStyles.put(this.textStyle, null);
             /* BOXED used to imply BLANKED. */
