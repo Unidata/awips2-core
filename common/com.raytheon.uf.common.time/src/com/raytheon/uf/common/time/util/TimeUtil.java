@@ -58,7 +58,7 @@ import com.raytheon.uf.common.time.domain.api.ITimePoint;
  *                                     Added newGmtCalendar from a date method.
  * Jan 28, 2014  2636      mpduff      Removed unused methods.
  * Feb 19, 2014  2631      mpduff      Added buildThreadLocalSimpleDateFormat(String, TimeZone).
- * May 14, 2014  3169      bclement    Added newGmtCalendar(int,int,int)
+ * May 14, 2014  3169      bclement    Added newGmtCalendar(int,int,int), newCalendar(Calendar) uses clone()
  * 
  * </pre>
  * 
@@ -580,16 +580,15 @@ public final class TimeUtil {
     }
 
     /**
-     * New Calendar from an existing calendar
+     * New Calendar from an existing calendar. Preserves time zone information.
      * 
      * @param calendar
-     * @return new calendar
+     * @return new calendar or null if argument is null
      */
     public static Calendar newCalendar(final Calendar calendar) {
         Calendar t = null;
         if (calendar != null) {
-            t = TimeUtil.newCalendar();
-            t.setTimeInMillis(calendar.getTimeInMillis());
+            t = (Calendar) calendar.clone();
         }
         return t;
     }
