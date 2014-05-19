@@ -30,6 +30,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ArrayBlockingQueue;
@@ -41,12 +42,16 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
+import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
+import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -69,10 +74,16 @@ import com.raytheon.uf.viz.core.rsc.capabilities.LabelableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.MagnificationCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.OutlineCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ShadeableCapability;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogatable;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogateMap;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogator;
+import com.raytheon.uf.viz.core.rsc.interrogation.StringInterrogationKey;
 import com.raytheon.viz.core.rsc.jts.JTSCompiler;
 import com.raytheon.viz.core.rsc.jts.JTSCompiler.PointStyle;
 import com.raytheon.viz.core.spatial.GeometryCache;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.TopologyException;
 import com.vividsolutions.jts.io.WKBReader;
@@ -93,6 +104,8 @@ import com.vividsolutions.jts.io.WKBReader;
  *                                     instead of constructor for speed
  * Feb 18, 2014 2819       randerso    Removed unnecessary clones of geometries
  * Apr 09, 2014 2997       randerso    Replaced buildEnvelope with buildBoundingGeometry
+ * May 15, 2014 2820       bsteffen    Implement Interrogatable
+ * 
  * 
  * </pre>
  * 
@@ -100,7 +113,17 @@ import com.vividsolutions.jts.io.WKBReader;
  * @version 1.0
  */
 public class DbMapResource extends
-        AbstractDbMapResource<DbMapResourceData, MapDescriptor> {
+        AbstractDbMapResource<DbMapResourceData, MapDescriptor> implements
+        Interrogatable {
+
+    /**
+     * A key to be used in
+     * {@link #interrogate(ReferencedCoordinate, DataTime, InterrogationKey...)
+     * for retrieving the current label or null if the geometries are unlabeled.
+     */
+    public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<String>(
+            "label", String.class);
+
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(DbMapResource.class);
 
@@ -883,4 +906,118 @@ public class DbMapResource extends
     protected boolean isPolygonal() {
         return getGeometryType().endsWith("POLYGON");
     }
+
+    @Override
+    public Set<InterrogationKey<?>> getInterrogationKeys() {
+        HashSet<InterrogationKey<?>> keys = new HashSet<InterrogationKey<?>>();
+        /* the geometry at current simplification level */
+        keys.add(Interrogator.GEOMETRY);
+        /* the label if labeling is turned on */
+        keys.add(LABEL_KEY);
+        /* Also allow them to pull out any possible label fields */
+        for (String label : getLabelFields()) {
+            keys.add(new StringInterrogationKey<String>(label, String.class));
+        }
+        /* Allow requesting different simplification levels. */
+        for (double level : getLevels()) {
+            keys.add(new StringInterrogationKey<Geometry>(getGeomField(level),
+                    Geometry.class));
+        }
+        return keys;
+    }
+
+    @Override
+    public InterrogateMap interrogate(ReferencedCoordinate coordinate,
+            DataTime time, InterrogationKey<?>... keys) {
+        /* Need to separate the geometry keys from the label keys */
+        List<InterrogationKey<?>> keyList = Arrays.asList(keys);
+        Map<InterrogationKey<Geometry>, String> geomKeys = new HashMap<InterrogationKey<Geometry>, String>();
+        Map<InterrogationKey<String>, String> labelKeys = new HashMap<InterrogationKey<String>, String>();
+        if (keyList.contains(Interrogator.GEOMETRY) && lastSimpLev != 0) {
+                geomKeys.put(Interrogator.GEOMETRY,
+                        getGeomField(lastSimpLev));
+        }
+        if (keyList.contains(LABEL_KEY)) {
+            String labelField = getCapability(LabelableCapability.class)
+                    .getLabelField();
+            if (labelField != null) {
+                labelKeys.put(LABEL_KEY, labelField);
+            }
+        }
+        for (String label : getLabelFields()) {
+            StringInterrogationKey<String> key = new StringInterrogationKey<String>(
+                    label, String.class);
+            if (keyList.contains(key)) {
+                labelKeys.put(key, label);
+            }
+        }
+        /* Allow requesting different simplification levels. */
+        for (double level : getLevels()) {
+            String geomField = getGeomField(level);
+            StringInterrogationKey<Geometry> key = new StringInterrogationKey<Geometry>(
+                    geomField, Geometry.class);
+            if (keyList.contains(key)) {
+                geomKeys.put(key, geomField);
+            }
+        }
+        InterrogateMap map = new InterrogateMap();
+        if (labelKeys.isEmpty() && geomKeys.isEmpty()) {
+            return map;
+        }
+        /* Prepare a db request */
+        Point boundingGeom = null;
+        try {
+            boundingGeom = new GeometryFactory().createPoint(coordinate
+                    .asLatLon());
+        } catch (TransformException e) {
+            statusHandler.error(
+                    "Unable to transform coordinate for interrogate", e);
+            return map;
+        } catch (FactoryException e) {
+            statusHandler.error(
+                    "Unable to transform coordinate for interrogate", e);
+            return map;
+        }
+        String geomField = null;
+        List<String> fields = new ArrayList<String>(labelKeys.values());
+        if (geomKeys.isEmpty()) {
+            geomField = getGeomField(lastSimpLev);
+        } else {
+            geomField = geomKeys.values().iterator().next();
+            fields.add(GID);
+        }
+        List<String> constraints = new ArrayList<String>();
+        if (resourceData.getConstraints() != null) {
+            constraints.addAll(Arrays.asList(resourceData.getConstraints()));
+        }
+        QueryResult mappedResult = null;
+        try {
+            mappedResult = DbMapQueryFactory.getMapQuery(
+                    resourceData.getTable(), geomField).queryWithinGeometry(
+                    boundingGeom, fields, constraints);
+        } catch (VizException e) {
+            statusHandler.error("Unable to query database for interrogate", e);
+            return map;
+        }
+        if (mappedResult.getResultCount() == 0) {
+            return map;
+        }
+        /* Process all labels */
+        for (Entry<InterrogationKey<String>, String> entry : labelKeys
+                .entrySet()) {
+            map.put(entry.getKey(),
+                    mappedResult.getRowColumnValue(0, entry.getValue())
+                            .toString());
+        }
+        /* Process all geoms */
+        for (Entry<InterrogationKey<Geometry>, String> entry : geomKeys
+                .entrySet()) {
+            Geometry geom = GeometryCache.getGeometry(resourceData.getTable(),
+                    mappedResult.getRowColumnValue(0, GID).toString(),
+                    entry.getValue());
+            map.put(entry.getKey(), geom);
+        }
+        return map;
+    }
+
 }
