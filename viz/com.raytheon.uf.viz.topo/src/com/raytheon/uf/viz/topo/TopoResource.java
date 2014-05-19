@@ -18,7 +18,7 @@
  * further licensing information.
  **/
 
-package com.raytheon.viz.core.topo;
+package com.raytheon.uf.viz.topo;
 
 import java.io.File;
 import java.text.DecimalFormat;

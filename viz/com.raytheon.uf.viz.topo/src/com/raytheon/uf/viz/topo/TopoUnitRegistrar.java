@@ -17,8 +17,41 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.viz.topo;
+
+import javax.measure.unit.NonSI;
+import javax.measure.unit.SI;
+import javax.measure.unit.UnitFormat;
+
+import com.raytheon.viz.core.units.IUnitRegistrar;
+
 /**
- * Provides a set of core capabilities such as Rendering and Communication to
- * the platform
+ * Registers units for topo
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Apr 23, 2013            mschenke     Initial creation
+ * 
+ * </pre>
+ * 
+ * @author mschenke
+ * @version 1.0
  */
-package com.raytheon.viz.core.topo;
+
+public class TopoUnitRegistrar implements IUnitRegistrar {
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.raytheon.viz.core.units.IUnitRegistrar#register()
+     */
+    @Override
+    public void register() {
+        UnitFormat.getUCUMInstance().label(SI.KILO(NonSI.FOOT), "kft");
+    }
+
+}
