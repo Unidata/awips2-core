@@ -5,20 +5,19 @@ Bundle-SymbolicName: com.raytheon.viz.core;singleton:=true
 Bundle-Version: 1.14.1.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
- com.raytheon.uf.common.localization;visibility:=reexport,
+ com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization;visibility:=reexport,
- com.raytheon.uf.common.geospatial;bundle-version="1.12.1174";visibility:=reexport,
- com.raytheon.uf.common.time;bundle-version="1.12.1174";visibility:=reexport,
- com.raytheon.uf.common.datastorage;bundle-version="1.12.1174";visibility:=reexport,
- com.raytheon.uf.common.dataplugin;bundle-version="1.12.1174";visibility:=reexport,
- com.raytheon.uf.common.util;bundle-version="1.12.1174";visibility:=reexport,
- com.raytheon.uf.common.units;bundle-version="1.0.0";visibility:=reexport,
+ com.raytheon.uf.common.geospatial;visibility:=reexport,
+ com.raytheon.uf.common.time;visibility:=reexport,
+ com.raytheon.uf.common.datastorage;visibility:=reexport,
+ com.raytheon.uf.common.dataplugin;visibility:=reexport,
+ com.raytheon.uf.common.util;visibility:=reexport,
+ com.raytheon.uf.common.units;visibility:=reexport,
  com.raytheon.uf.viz.core;visibility:=reexport,
- com.raytheon.uf.common.colormap;bundle-version="1.0.0",
+ com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.serialization.comm,
  org.eclipse.core.expressions,
- com.raytheon.uf.common.topo;bundle-version="1.12.1174",
- com.raytheon.uf.common.style;bundle-version="1.0.0"
+ com.raytheon.uf.common.style
 Eclipse-BuddyPolicy: ext, registered, global
 Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.geospatial, com.raytheon.uf.common.serialization, com.raytheon.uf.common.status
 Export-Package: 
