@@ -48,14 +48,6 @@
       <initializer class="com.raytheon.viz.core.preferences.PreferenceInitializer"/>
    </extension>
    <extension
-         point="com.raytheon.uf.viz.core.resource">
-      <resource
-            class="com.raytheon.viz.core.topo.TopoResource"
-            name="TopoResource"
-            renderingOrderId="MAP_IMAGE">
-      </resource>
-   </extension>
-   <extension
          point="com.raytheon.uf.viz.core.descriptor">
       <descriptor
       		name="MapDescriptor"
@@ -120,12 +112,5 @@
             properties="CAVEMode"
             type="java.lang.Object">
       </propertyTester>
-   </extension>
-   <extension
-   		point="com.raytheon.uf.viz.core.units">
-   		<units
-           class="com.raytheon.viz.core.topo.TopoUnitRegistrar"
-           name="Topo Units">
-   		</units>
    </extension>
 </plugin>
