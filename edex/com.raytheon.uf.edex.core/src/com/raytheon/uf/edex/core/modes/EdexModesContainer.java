@@ -38,6 +38,7 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Apr 22, 2010            njensen     Initial creation
  * May 29, 2013 1989       njensen     Removed high mem mode
  * Dec 05, 2013 2566       bgonzale    Migrated to edex.core.modes package.
+ * May 21,2014  3195       bclement    removed getMode()
  * 
  * </pre>
  * 
@@ -62,21 +63,6 @@ public class EdexModesContainer {
 
     public void setModes(ArrayList<EdexMode> modes) {
         this.modes = modes;
-    }
-
-    public EdexMode getMode(String name) {
-        EdexMode ret = null;
-
-        for (EdexMode m : modes) {
-            if (m.getName().equalsIgnoreCase(name)) {
-                ret = m;
-                if (!ret.isInited()) {
-                    ret.init();
-                }
-                break;
-            }
-        }
-        return ret;
     }
 
 }

@@ -19,38 +19,52 @@
  **/
 package com.raytheon.uf.edex.core.modes;
 
-import java.io.File;
-import java.io.FilenameFilter;
-
 /**
- * An edex mode filter finds all spring XML files. For the case when no EDEX run
- * configuration is specified.
+ * Exception related to EDEX modes file parsing
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 27, 2010            njensen     Initial creation
- * Dec 05, 2013 2566       bgonzale    Migrated to edex.core.modes package.
+ * May 20, 2014 3195       bclement     Initial creation
  * 
  * </pre>
  * 
- * @author njensen
+ * @author bclement
  * @version 1.0
  */
+public class ModesException extends Exception {
 
-public class DefaultEdexMode implements FilenameFilter {
+    private static final long serialVersionUID = -102737687183048302L;
 
-    /*
-     * (non-Javadoc)
+    /**
      * 
-     * @see java.io.FilenameFilter#accept(java.io.File, java.lang.String)
      */
-    @Override
-    public boolean accept(File dir, String name) {
-        return name.contains(EDEXModesUtil.RES_SPRING)
-                && name.endsWith(EDEXModesUtil.XML);
+    public ModesException() {
+    }
+
+    /**
+     * @param message
+     */
+    public ModesException(String message) {
+        super(message);
+    }
+
+    /**
+     * @param cause
+     */
+    public ModesException(Throwable cause) {
+        super(cause);
+    }
+
+    /**
+     * @param message
+     * @param cause
+     */
+    public ModesException(String message, Throwable cause) {
+        super(message, cause);
     }
 
 }

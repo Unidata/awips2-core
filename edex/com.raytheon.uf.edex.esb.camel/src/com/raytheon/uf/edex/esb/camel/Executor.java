@@ -60,6 +60,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Apr 22, 2013  #1932     djohnson     Use countdown latch for a shutdown hook.
  * Dec 04, 2013  2566      bgonzale     refactored mode methods to a utility in edex.core.
  * Mar 19, 2014  2726      rjpeter      Added graceful shutdown.
+ * May 21, 2014  3195      bclement     system now prints available modes and exits if runmode not specified
  * </pre>
  * 
  * @author chammack
@@ -150,7 +151,9 @@ public class Executor {
         if ((modeName != null) && (modeName.length() > 0)) {
             logger.info("EDEX run configuration: " + modeName);
         } else {
-            logger.info("No EDEX run configuration specified, defaulting to use all discovered spring XML files");
+            logger.info("EDEX run configuration must be specified. "
+                    + EDEXModesUtil.getModesList());
+            System.exit(0);
         }
         logger.info("EDEX site configuration: "
                 + System.getProperty("aw.site.identifier"));

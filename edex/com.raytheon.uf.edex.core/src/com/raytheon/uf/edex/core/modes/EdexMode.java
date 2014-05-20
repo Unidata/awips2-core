@@ -20,8 +20,10 @@
 package com.raytheon.uf.edex.core.modes;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -29,8 +31,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
-import javax.xml.bind.annotation.XmlID;
-import javax.xml.bind.annotation.XmlIDREF;
 import javax.xml.bind.annotation.XmlRootElement;
 
 /**
@@ -45,6 +45,8 @@ import javax.xml.bind.annotation.XmlRootElement;
  * Apr 22, 2010            njensen     Initial creation
  * Sep 19, 2012 1195       djohnson    Allow 0..n other modes to be included.
  * Dec 05, 2013 2566       bgonzale    Migrated to edex.core.modes package.
+ * May 21,2014  3195       bclement    removed @XmlIDREF since included modes may be in other files
+ *                                      moved DefaultEdexMode logic to accept method, added merge()
  * 
  * </pre>
  * 
@@ -54,10 +56,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement(name = "mode")
 @XmlAccessorType(XmlAccessType.NONE)
-public class EdexMode extends DefaultEdexMode {
+public class EdexMode implements FilenameFilter {
 
     @XmlAttribute(name = "name")
-    @XmlID
     private String name;
 
     @XmlElements( { @XmlElement(name = "include", type = String.class) })
@@ -70,9 +71,8 @@ public class EdexMode extends DefaultEdexMode {
 
     private final List<Pattern> compiledExcludes;
 
-    @XmlElements({ @XmlElement(name = "includeMode") })
-    @XmlIDREF
-    private final List<EdexMode> includedModes;
+    @XmlElements({ @XmlElement(name = "includeMode", type = String.class) })
+    private final List<String> includedModeNames;
 
     private boolean inited;
 
@@ -81,29 +81,25 @@ public class EdexMode extends DefaultEdexMode {
 
     public EdexMode() {
         this(new ArrayList<String>(), new ArrayList<String>(),
-                new ArrayList<EdexMode>());
+                new ArrayList<String>());
     }
 
     // @VisibleForTesting
     EdexMode(List<String> includeList, List<String> excludeList,
-            List<EdexMode> includedModes) {
+            List<String> includedModes) {
         this.includeList = includeList;
         compiledIncludes = new ArrayList<Pattern>(includeList.size());
         this.excludeList = excludeList;
         compiledExcludes = new ArrayList<Pattern>(excludeList.size());
-        this.includedModes = includedModes;
+        this.includedModeNames = includedModes;
     }
 
     /**
      * Compiles the patterns
+     * 
+     * @throws ModesException
      */
-    public void init() {
-
-        for (EdexMode includedMode : includedModes) {
-            if (!includedMode.isInited()) {
-                includedMode.init();
-            }
-        }
+    public void init(Map<String, EdexMode> allModes) throws ModesException {
 
         for (String s : includeList) {
             compiledIncludes.add(Pattern.compile(s));
@@ -113,7 +109,15 @@ public class EdexMode extends DefaultEdexMode {
             compiledExcludes.add(Pattern.compile(s));
         }
 
-        for (EdexMode includedMode : includedModes) {
+        for (String modeName : includedModeNames) {
+            EdexMode includedMode = allModes.get(modeName);
+            if (includedMode == null) {
+                throw new ModesException("Run mode '" + name
+                        + "' includes missing mode: " + modeName);
+            }
+            if (!includedMode.isInited()) {
+                includedMode.init(allModes);
+            }
             compiledIncludes.addAll(includedMode.compiledIncludes);
             compiledExcludes.addAll(includedMode.compiledExcludes);
         }
@@ -167,11 +171,8 @@ public class EdexMode extends DefaultEdexMode {
 
     @Override
     public boolean accept(File dir, String name) {
-        boolean result = super.accept(dir, name);
-        if (result) {
-            result = includeFile(name);
-        }
-        return result;
+        return name.contains(EDEXModesUtil.RES_SPRING)
+                && name.endsWith(EDEXModesUtil.XML) && includeFile(name);
     }
 
     public boolean isInited() {
@@ -202,4 +203,30 @@ public class EdexMode extends DefaultEdexMode {
         this.template = template;
     }
 
+    /**
+     * merge the configuration from the other mode into this one.
+     * 
+     * @param other
+     * @throws ModesException
+     *             if either mode has already been initialized
+     */
+    public void merge(EdexMode other) throws ModesException {
+        if (inited || other.inited) {
+            String initedModes = "";
+            if (inited) {
+                initedModes += this.name + " ";
+            }
+            if (other.inited) {
+                initedModes += other.name;
+            }
+            throw new ModesException("Attempted to merge initialized mode(s): "
+                    + initedModes);
+        }
+        this.compiledExcludes.clear();
+        this.compiledIncludes.clear();
+        this.excludeList.addAll(other.excludeList);
+        this.includeList.addAll(other.includeList);
+        this.includedModeNames.addAll(other.includedModeNames);
+        this.template |= other.template;
+    }
 }

@@ -25,7 +25,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.regex.Pattern;
@@ -34,7 +37,6 @@ import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
-import com.raytheon.uf.common.util.PropertiesUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
@@ -48,6 +50,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 5, 2013  2566       bgonzale     Initial creation.  Refactored from Executor.
+ * May 21,2014  3195       bclement     changes to merge multiple modes files
  * 
  * </pre>
  * 
@@ -66,10 +69,10 @@ public class EDEXModesUtil {
     public static final Pattern RES_SPRING_PATTERN = Pattern
             .compile("res/spring/");
 
-    private static final String MODES_FILE = "modes.xml";
-
     public static final String CONF_DIR = EDEXUtil.EDEX_HOME + File.separator
             + "conf";
+
+    public static final String MODES_DIR = CONF_DIR + File.separator + "modes";
 
     /**
      * Populates files with a list of files that match in the specified
@@ -81,10 +84,10 @@ public class EDEXModesUtil {
      * @param files
      * @return
      * @throws IOException
-     * @throws JAXBException
+     * @throws ModesException
      */
     public static List<String> extractSpringXmlFiles(List<String> files,
-            String modeName) throws IOException, JAXBException {
+            String modeName) throws IOException, ModesException {
         FilenameFilter filter = getModeFilter(modeName);
         String pluginDirStr = PropertiesFactory.getInstance()
                 .getEnvProperties().getEnvValue("PLUGINDIR");
@@ -119,49 +122,133 @@ public class EDEXModesUtil {
         return retVal;
     }
 
-    private static FilenameFilter getModeFilter(String modeName) throws IOException,
-            JAXBException {
-        File confDir = new File(CONF_DIR);
-        EdexModesContainer emc = getModesContainer(confDir);
-        EdexMode edexMode = emc.getMode(modeName);
+    /**
+     * Get filename filter for mode.
+     * 
+     * @param modeName
+     * @return
+     * @throws IOException
+     * @throws ModesException
+     *             if mode is not found or is not bootable
+     */
+    private static FilenameFilter getModeFilter(String modeName)
+            throws IOException, ModesException {
+        Map<String, EdexMode> mergedModes = getMergedModes();
+        EdexMode edexMode = mergedModes.get(modeName);
 
-        if (edexMode != null && edexMode.isTemplate()) {
-            throw new UnsupportedOperationException(modeName
-                    + " is a template mode, and is not bootable.");
+        if (edexMode == null) {
+            throw new ModesException(
+                    "No EDEX run configuration specified in modes files for "
+                            + modeName + ". " + getModesList(mergedModes));
+        } else if (edexMode.isTemplate()) {
+            throw new ModesException(modeName
+                    + " is a template mode, and is not bootable. "
+                    + getModesList(mergedModes));
         }
 
-        FilenameFilter mode = edexMode;
-
-        if (mode == null) {
-            if (modeName == null || modeName.length() == 0) {
-                mode = new DefaultEdexMode();
-            } else {
-                throw new UnsupportedOperationException(
-                        "No EDEX run configuration specified in modes.xml for "
-                                + modeName);
-            }
+        if (!edexMode.isInited()) {
+            edexMode.init(mergedModes);
         }
-        return mode;
+        return edexMode;
     }
 
-    private static EdexModesContainer getModesContainer(File confDir)
-            throws IOException, JAXBException {
-        File file = new File(confDir.getPath(), MODES_FILE);
+    /**
+     * @see #getModesList(Map)
+     * @see #getMergedModes()
+     * @return
+     * @throws ModesException
+     * @throws IOException
+     */
+    public static String getModesList() throws ModesException, IOException {
+        return getModesList(getMergedModes());
+    }
 
-        FileReader reader = null;
+    /**
+     * Get formatted string of bootable modes in map
+     * 
+     * @param modes
+     * @return
+     */
+    public static String getModesList(Map<String, EdexMode> modes) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("Available Modes: ");
+        for (Entry<String, EdexMode> e : modes.entrySet()) {
+            EdexMode mode = e.getValue();
+            if (!mode.isTemplate()) {
+                sb.append("'").append(mode.getName()).append("' ");
+            }
+        }
+        return sb.toString();
+    }
+
+    /**
+     * Get a map of modes that are aggregates of all the modes files in the
+     * modes directory
+     * 
+     * @return
+     * @throws ModesException
+     * @throws IOException
+     */
+    private static Map<String, EdexMode> getMergedModes()
+            throws ModesException, IOException {
+        File modesDir = new File(MODES_DIR);
+        File[] modesFiles = modesDir.listFiles(new FilenameFilter() {
+            @Override
+            public boolean accept(File dir, String name) {
+                return name.endsWith(XML);
+            }
+        });
+
         Unmarshaller msh = null;
         try {
             JAXBContext jaxbContext = JAXBContext
                     .newInstance(EdexModesContainer.class);
             msh = jaxbContext.createUnmarshaller();
-            reader = new FileReader(file);
-            EdexModesContainer emc = (EdexModesContainer) msh.unmarshal(reader);
-            return emc;
-        } finally {
-            if (reader != null) {
-                PropertiesUtil.close(reader);
+        } catch (JAXBException e) {
+            throw new ModesException("Problem initializing modes JAXB context",
+                    e);
+        }
+        Map<String, EdexMode> rval = new HashMap<String, EdexMode>();
+        for (File modeFile : modesFiles) {
+            EdexModesContainer container = readSingleModesFile(modeFile, msh);
+            for (EdexMode mode : container.getModes()) {
+                EdexMode aggregate = rval.get(mode.getName());
+                if (aggregate == null) {
+                    aggregate = new EdexMode();
+                    aggregate.setName(mode.getName());
+                    rval.put(mode.getName(), aggregate);
+                }
+                aggregate.merge(mode);
             }
         }
+        return rval;
+    }
+
+    /**
+     * Read and parse an individual modes file
+     * 
+     * @param modesFile
+     * @param msh
+     * @return
+     * @throws ModesException
+     * @throws IOException
+     */
+    private static EdexModesContainer readSingleModesFile(File modesFile,
+            Unmarshaller msh) throws ModesException, IOException {
+        FileReader reader = null;
+        EdexModesContainer rval = null;
+        try {
+            reader = new FileReader(modesFile);
+            rval = (EdexModesContainer) msh.unmarshal(reader);
+        } catch (Exception e) {
+            throw new ModesException("Unable to read modes file: "
+                    + modesFile.getAbsolutePath(), e);
+        } finally {
+            if (reader != null) {
+                reader.close();
+            }
+        }
+        return rval;
     }
 
 }
