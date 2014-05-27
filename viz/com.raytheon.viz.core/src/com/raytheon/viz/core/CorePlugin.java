@@ -20,8 +20,6 @@
 
 package com.raytheon.viz.core;
 
-import javax.media.jai.ParameterBlockJAI;
-
 import org.eclipse.ui.plugin.AbstractUIPlugin;
 import org.osgi.framework.BundleContext;
 
@@ -34,10 +32,11 @@ import com.raytheon.uf.viz.core.localization.HierarchicalPreferenceStore;
  * 
  *    SOFTWARE HISTORY
  *   
- *    Date          Ticket#     Engineer    Description
- *    ------------	----------	-----------	--------------------------
- *    7/1/06                    chammack    Initial Creation.
- *    Mar 3, 2014   2861        mschenke    Create preference store immediately
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Jul 01, 2006           chammack    Initial Creation.
+ * Mar 03, 2014  2861     mschenke    Create preference store immediately
+ * May 27, 2014  3196     bsteffen    Remove jai.
  * 
  * </pre>
  * 
@@ -80,11 +79,6 @@ public class CorePlugin extends AbstractUIPlugin {
         super.start(context);
 
         this.ctx = context;
-
-        // Hack to avoid jai classloader contention
-        ParameterBlockJAI pbj = new ParameterBlockJAI("scale");
-        pbj.getNumParameters();
-        // DataStoreFactory.getDataStore(new File("/tmp/foo"));
     }
 
     public BundleContext getContext() {

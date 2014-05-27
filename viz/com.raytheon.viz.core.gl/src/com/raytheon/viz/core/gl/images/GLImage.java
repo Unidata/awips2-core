@@ -26,7 +26,6 @@ import java.awt.image.RenderedImage;
 import java.awt.image.WritableRaster;
 import java.util.Hashtable;
 
-import javax.media.jai.PlanarImage;
 import javax.media.opengl.GL;
 
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
@@ -45,11 +44,12 @@ import com.sun.opengl.util.texture.TextureIO;
  * 
  * <pre>
  * 
- *       SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *      
- *       Date         Ticket#      Engineer    Description
- *       ------------ ----------   ----------  --------------------------
- *       7/1/06                    chammack    Initial Creation.
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- --------------------------
+ * Jul 01, 2006           chammack    Initial Creation.
+ * May 27, 2014  3196     bsteffen    Remove jai.
  * 
  * </pre>
  * 
@@ -190,9 +190,6 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         if (rendImg instanceof BufferedImage) {
             theStagedData = TextureIO.newTextureData((BufferedImage) rendImg,
                     false);
-        } else if (rendImg instanceof PlanarImage) {
-            theStagedData = TextureIO.newTextureData(
-                    ((PlanarImage) rendImg).getAsBufferedImage(), false);
         } else {
             // convert to buf img
             theStagedData = TextureIO.newTextureData(

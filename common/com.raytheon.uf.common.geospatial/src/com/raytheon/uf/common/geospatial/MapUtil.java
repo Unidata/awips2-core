@@ -21,14 +21,8 @@
 package com.raytheon.uf.common.geospatial;
 
 import java.awt.image.RenderedImage;
-import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Map;
-
-import javax.media.jai.Interpolation;
-import javax.media.jai.InterpolationTable;
-import javax.media.jai.PlanarImage;
-import javax.media.jai.RenderedOp;
 
 import org.apache.commons.collections.map.LRUMap;
 import org.apache.commons.lang.builder.HashCodeBuilder;
@@ -38,8 +32,6 @@ import org.geotools.coverage.grid.GridCoverage2D;
 import org.geotools.coverage.grid.GridCoverageFactory;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.coverage.grid.InvalidGridGeometryException;
-import org.geotools.coverage.grid.ViewType;
-import org.geotools.coverage.processing.Operations;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.geometry.jts.JTS;
@@ -50,7 +42,6 @@ import org.geotools.referencing.crs.DefaultProjectedCRS;
 import org.geotools.referencing.cs.DefaultCartesianCS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.DefiningConversion;
-import org.opengis.coverage.grid.GridGeometry;
 import org.opengis.geometry.DirectPosition;
 import org.opengis.geometry.Envelope;
 import org.opengis.metadata.spatial.PixelOrientation;
@@ -69,8 +60,6 @@ import org.opengis.referencing.operation.TransformException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.sun.medialib.mlib.Constants;
-import com.sun.medialib.mlib.mediaLibImageInterpTable;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.geom.GeometryFactory;
@@ -85,17 +74,19 @@ import com.vividsolutions.jts.geom.Polygon;
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    05/16/2012   14993       D. Friedman Add oversampling option to
- *                                         reprojectGeometry.
- *    06/19/2012   14988       D. Friedman Make oversampling more like AWIPS 1
- *    09/18/2012   #1091       randerso    corrected getBoundingEnvelope
- *    11/06/2012   15406       ryu         Added convertToNativeEnvelope()
- *    08/27/2013   #2287       randerso    Fixed rotation methods so it is not necessary 
- *                                         to subtract 180 from the returned value
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * May 16, 2012  14993    D. Friedman Add oversampling option to 
+ *                                    reprojectGeometry.
+ * Jun 19, 2012  14988    D. Friedman Make oversampling more like AWIPS 1
+ * Sep 18, 2012  1091     randerso    corrected getBoundingEnvelope
+ * Nov 06, 2012  15406    ryu         Added convertToNativeEnvelope()
+ * Aug 27, 2013  2287     randerso    Fixed rotation methods so it is not
+ *                                    necessary to subtract 180 from the
+ *                                    returned value
+ * May 27, 2014  3196     bsteffen    Remove jai.
  * 
  * </pre>
  * 
@@ -318,47 +309,6 @@ public class MapUtil {
         generalEnvelope.setRange(1, minY, maxY);
 
         return generalEnvelope;
-    }
-
-    /**
-     * Reproject a grid coverage into a different coordinate reference system
-     * 
-     * @param srcCoverage
-     *            the original grid coverage
-     * @param targetCRS
-     *            the target projection/coordinate system
-     * @return a grid coverage in the new projection
-     */
-    public static GridCoverage2D reprojectCoverage(GridCoverage2D srcCoverage,
-            CoordinateReferenceSystem targetCRS) {
-
-        return reprojectCoverage(srcCoverage, targetCRS, null,
-                Interpolation.getInstance(Interpolation.INTERP_NEAREST));
-    }
-
-    /**
-     * Reproject a grid coverage into a different coordinate reference system
-     * 
-     * @param srcCoverage
-     *            the original grid coverage
-     * @param targetCRS
-     *            the target projection/coordinate system
-     * @param targetGeometry
-     *            the target grid geometry
-     * @param interpolation
-     *            String indication desired interpolation type: "nearest",
-     *            "bilinear"
-     * @return a grid coverage in the new projection
-     */
-    public static GridCoverage2D reprojectCoverage(GridCoverage2D srcCoverage,
-            CoordinateReferenceSystem targetCRS, GridGeometry targetGeometry,
-            Interpolation interpolation) {
-
-        GridCoverage2D projected = (GridCoverage2D) Operations.DEFAULT
-                .resample(srcCoverage.view(ViewType.GEOPHYSICS), targetCRS,
-                        targetGeometry, interpolation);
-
-        return projected;
     }
 
     /**
@@ -1425,51 +1375,6 @@ public class MapUtil {
             throw new TransformException(
                     "Error performing envelope transformation", e);
         }
-    }
-
-    /**
-     * Work around until MlibWarpPolynomialTableOpImage is fixed in jai-core.
-     * jai-core defect number 144 REMOVE THIS CODE when bug is fixed
-     * 
-     * @param renderedImage
-     *            renderedImage
-     * @throws Exception
-     */
-    public static void jaiMlibWarpPolynomialTableOpImageWorkAround(
-            RenderedImage renderedImage) throws Exception {
-        if (renderedImage instanceof RenderedOp) {
-            Field theImageField = RenderedOp.class.getDeclaredField("theImage");
-            theImageField.setAccessible(true);
-            PlanarImage theImage = (PlanarImage) theImageField
-                    .get(renderedImage);
-
-            String name = theImage.getClass().getSimpleName();
-            if ("MlibWarpPolynomialTableOpImage".equals(name)) {
-                Field mlibInterpTableDField = theImage.getClass()
-                        .getDeclaredField("mlibInterpTableD");
-                mlibInterpTableDField.setAccessible(true);
-                mediaLibImageInterpTable mlibInterpTableD = (mediaLibImageInterpTable) mlibInterpTableDField
-                        .get(theImage);
-
-                Field interpField = theImage.getClass().getSuperclass()
-                        .getSuperclass().getDeclaredField("interp");
-                interpField.setAccessible(true);
-                InterpolationTable interp = (InterpolationTable) interpField
-                        .get(theImage);
-
-                InterpolationTable jtable = interp;
-                mlibInterpTableD = new mediaLibImageInterpTable(
-                        Constants.MLIB_FLOAT, jtable.getWidth(),
-                        jtable.getHeight(), jtable.getLeftPadding(),
-                        jtable.getTopPadding(), jtable.getSubsampleBitsH(),
-                        jtable.getSubsampleBitsV(), jtable.getPrecisionBits(),
-                        jtable.getHorizontalTableDataFloat(),
-                        jtable.getVerticalTableDataFloat());
-                mlibInterpTableDField.set(theImage, mlibInterpTableD);
-
-            }
-        }
-
     }
 
     public static GridGeometry2D createFineIntersectingGeometry(

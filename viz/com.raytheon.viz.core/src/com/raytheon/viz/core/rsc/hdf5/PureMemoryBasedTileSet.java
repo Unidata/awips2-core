@@ -19,42 +19,48 @@
  **/
 package com.raytheon.viz.core.rsc.hdf5;
 
+import java.awt.geom.AffineTransform;
+import java.awt.image.AffineTransformOp;
+import java.awt.image.BufferedImage;
+import java.awt.image.ColorModel;
 import java.awt.image.RenderedImage;
-import java.awt.image.renderable.ParameterBlock;
+import java.awt.image.WritableRaster;
 import java.util.LinkedList;
 import java.util.List;
-
-import javax.media.jai.JAI;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 
 import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
-import com.raytheon.uf.viz.core.data.prep.IODataPreparer;
+import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
 import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 
-/* 
- * <pre>
- *
- * SOFTWARE HISTORY
- *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 12, 2009            mschenke     Initial creation
- *
- * </pre>
- *
- * @author mschenke
- */
 /**
  * This class is used to tile images in memory, ie large geotiffs off the fiels
  * system
  * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * May 12, 2009           mschenke    Initial creation
+ * May 27, 2014  3196     bsteffen    Remove jai.
+ * 
+ * </pre>
+ * 
+ * @author mschenke
+ * 
  * @version 1.0
  */
 public class PureMemoryBasedTileSet extends AbstractTileSet {
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PureMemoryBasedTileSet.class);
 
     /**
      * The full resolution image
@@ -109,21 +115,24 @@ public class PureMemoryBasedTileSet extends AbstractTileSet {
     }
 
     @Override
-    protected IImage createTile(IGraphicsTarget target, int level, int i, int j)
-            throws VizException {
-        IImage img = null;
-        RenderedImage scaledImage = (RenderedImage) imageLevels.get(level);
-        if (scaledImage == null) {
-            try {
-                preloadDataObject(level);
-            } catch (StorageException e) {
+    protected IImage createTile(IGraphicsTarget target, final int level,
+            final int i, final int j) throws VizException {
+        IImage img = target.initializeRaster(new IRenderedImageCallback() {
+
+            @Override
+            public RenderedImage getImage() throws VizException {
+                RenderedImage scaledImage = imageLevels.get(level);
+                if (scaledImage == null) {
+                    try {
+                        preloadDataObject(level);
+                    } catch (StorageException e) {
+                        statusHandler.error(e.getLocalizedMessage(), e);
+                    }
+                    scaledImage = imageLevels.get(level);
+                }
+                return cropImage(i, j, scaledImage);
             }
-            scaledImage = (RenderedImage) imageLevels.get(level);
-        }
-        RenderedImage croppedImage = cropImage(i, j, scaledImage);
-        // the 0 is number of pixels overlapping between tiles
-        img = target.initializeRaster(new IODataPreparer(croppedImage, name
-                + "_" + i + "_" + j, 0), null);
+        });
 
         return img;
     }
@@ -158,14 +167,19 @@ public class PureMemoryBasedTileSet extends AbstractTileSet {
      * @return
      */
     private RenderedImage scaleImage(int level) {
-        ParameterBlock pb = new ParameterBlock();
-        pb.addSource(image);
+
         float scale = (float) (1 / Math.pow(2, (level)));
-        pb.add(scale);
-        pb.add(scale);
-        RenderedImage rval = JAI.create("scale", pb);
-        pb = null;
-        return rval;
+        AffineTransform scaleTransform = AffineTransform.getScaleInstance(
+                scale, scale);
+        AffineTransformOp bilinearScaleOp = new AffineTransformOp(
+                scaleTransform, AffineTransformOp.TYPE_BILINEAR);
+
+        int w = (int) (image.getWidth() * scale);
+        int h = (int) (image.getHeight() * scale);
+        ColorModel cm = image.getColorModel();
+        WritableRaster wr = cm.createCompatibleWritableRaster(w, h);
+        wr = bilinearScaleOp.filter(image.getData(), wr);
+        return new BufferedImage(cm, wr, cm.isAlphaPremultiplied(), null);
     }
 
     /**
@@ -180,28 +194,20 @@ public class PureMemoryBasedTileSet extends AbstractTileSet {
      * @return
      */
     private RenderedImage cropImage(int i, int j, RenderedImage image) {
-        ParameterBlock pb = new ParameterBlock();
-        pb.addSource(image);
-        pb.add((float) (i * TILE_SIZE));
-        pb.add((float) (j * TILE_SIZE));
-
-        if (TILE_SIZE * (i + 1) <= image.getWidth()) {
-            pb.add(new Float(TILE_SIZE));
-        } else {
-            pb.add(new Float(TILE_SIZE
-                    - ((TILE_SIZE * (i + 1)) - image.getWidth())));
+        int x = i * TILE_SIZE;
+        int y = j * TILE_SIZE;
+        int w = TILE_SIZE;
+        int h = TILE_SIZE;
+        if (x + w > image.getWidth()) {
+            w = image.getWidth() - x;
         }
-
-        if (TILE_SIZE * (j + 1) <= image.getHeight()) {
-            pb.add(new Float(TILE_SIZE));
-        } else {
-            pb.add(new Float(TILE_SIZE
-                    - ((TILE_SIZE * (j + 1)) - image.getHeight())));
+        if (y + h > image.getHeight()) {
+            h = image.getHeight() - y;
         }
-
-        RenderedImage rval = JAI.create("crop", pb);
-        pb = null;
-        return rval;
+        ColorModel cm = image.getColorModel();
+        WritableRaster wr = cm.createCompatibleWritableRaster(w, h);
+        image.copyData(wr.createWritableTranslatedChild(x, y));
+        return new BufferedImage(cm, wr, cm.isAlphaPremultiplied(), null);
     }
 
     public RenderedImage getImage() {
