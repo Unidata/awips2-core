@@ -21,7 +21,7 @@ package com.raytheon.uf.edex.auth;
 
 import com.raytheon.uf.edex.auth.authentication.IAuthenticationStorage;
 import com.raytheon.uf.edex.auth.authentication.IAuthenticator;
-import com.raytheon.uf.edex.auth.roles.IRoleStorage;
+import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
 
 /**
  * Authentication Manager class, contains classes for storing and retrieving
@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.auth.roles.IRoleStorage;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 21, 2010            mschenke     Initial creation
+ * May 28, 2014 3211       njensen      Changed use of IRoleStorage to IAuthorizer
  * 
  * </pre>
  * 
@@ -45,7 +46,7 @@ import com.raytheon.uf.edex.auth.roles.IRoleStorage;
 public class AuthManager {
 
     /** The storage for roles */
-    private IRoleStorage roleStorage;
+    private IAuthorizer authorizer;
 
     /** Class used to authenticate a user */
     private IAuthenticator authenticator;
@@ -53,12 +54,12 @@ public class AuthManager {
     /** Class used to lookup authentication data for users */
     private IAuthenticationStorage authenticationStorage;
 
-    public IRoleStorage getRoleStorage() {
-        return roleStorage;
+    public IAuthorizer getAuthorizer() {
+        return authorizer;
     }
 
-    public void setRoleStorage(IRoleStorage roleStorage) {
-        this.roleStorage = roleStorage;
+    public void setAuthorizer(IAuthorizer authorizer) {
+        this.authorizer = authorizer;
     }
 
     public IAuthenticator getAuthenticator() {

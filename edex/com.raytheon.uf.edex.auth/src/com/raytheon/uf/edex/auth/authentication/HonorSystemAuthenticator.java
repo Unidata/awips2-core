@@ -17,42 +17,32 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth.roles;
+package com.raytheon.uf.edex.auth.authentication;
 
-import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
+import com.raytheon.uf.common.auth.user.AuthenticationData;
+import com.raytheon.uf.common.auth.user.IUser;
+import com.raytheon.uf.edex.auth.resp.AuthenticationResponse;
 
 /**
- * Storage class for roles. Should have a concept of a default role which all
- * users get by default and the ability to lookup a role given an id. NOTE, ALL
- * ROLES IDS SHOULD BE TREATED AS CASE-INSENSITIVE
+ * Authenticator that always returns true (ie a no-op), trusting that the user
+ * is who they claim to be.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 18, 2010            mschenke     Initial creation
- * May 28, 2014 3211       njensen      Extracted isAuthorized() to IAuthorizer
+ * May 21, 2010            mschenke     Initial creation
+ * May 28, 2014 3211       njensen      Renamed and moved to uf.edex.auth
  * 
  * </pre>
  * 
- * @author mschenke
- * @version 1.0
  */
+public class HonorSystemAuthenticator implements IAuthenticator {
 
-public interface IRoleStorage extends IAuthorizer {
-
-    /**
-     * Get all the defined permissions for this application.
-     * 
-     * @param application
-     *            The application
-     * 
-     * @return String[] of permissions
-     * @throws AuthorizationException
-     */
-    public String[] getAllDefinedPermissions(String application)
-            throws AuthorizationException;
+    @Override
+    public AuthenticationResponse authenticate(IUser user) {
+        return new AuthenticationResponse(true, new AuthenticationData());
+    }
 
 }

@@ -19,10 +19,11 @@
  **/
 package com.raytheon.uf.common.auth.user;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
- * Interface for authentication data
+ * Interface for authentication data. Authentication data represents data to
+ * verify a user/entity is who they claim to be, such as username/password or a
+ * unique encryption key.
+ * 
  * 
  * <pre>
  * 
@@ -37,6 +38,6 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 
-public interface IAuthenticationData extends ISerializableObject {
+public interface IAuthenticationData {
 
 }

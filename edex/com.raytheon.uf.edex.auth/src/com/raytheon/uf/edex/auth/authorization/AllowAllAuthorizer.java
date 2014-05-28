@@ -17,42 +17,40 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth.roles;
+package com.raytheon.uf.edex.auth.authorization;
 
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
 
 /**
- * Storage class for roles. Should have a concept of a default role which all
- * users get by default and the ability to lookup a role given an id. NOTE, ALL
- * ROLES IDS SHOULD BE TREATED AS CASE-INSENSITIVE
+ * A no-op authorizer that grants authorization to everything for everyone
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 18, 2010            mschenke     Initial creation
- * May 28, 2014 3211       njensen      Extracted isAuthorized() to IAuthorizer
+ * May 28, 2014            njensen     Initial creation (extracted from IRoleStorage)
  * 
  * </pre>
  * 
- * @author mschenke
+ * @author njensen
  * @version 1.0
  */
 
-public interface IRoleStorage extends IAuthorizer {
+public class AllowAllAuthorizer implements IAuthorizer {
 
-    /**
-     * Get all the defined permissions for this application.
+    /*
+     * (non-Javadoc)
      * 
-     * @param application
-     *            The application
-     * 
-     * @return String[] of permissions
-     * @throws AuthorizationException
+     * @see
+     * com.raytheon.uf.edex.auth.authorization.IAuthorizer#isAuthorized(java
+     * .lang.String, java.lang.String, java.lang.String)
      */
-    public String[] getAllDefinedPermissions(String application)
-            throws AuthorizationException;
+    @Override
+    public boolean isAuthorized(String permission, String user,
+            String application) throws AuthorizationException {
+        return true;
+    }
 
 }

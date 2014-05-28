@@ -23,7 +23,9 @@ import com.raytheon.uf.common.auth.user.IAuthenticationData;
 import com.raytheon.uf.common.auth.user.IUser;
 
 /**
- * Class used to retrieve authentication data for users
+ * Class used to retrieve authentication data for users. For example, an
+ * implementation could contact a service to get the encryption key specific to
+ * the user.
  * 
  * <pre>
  * 
