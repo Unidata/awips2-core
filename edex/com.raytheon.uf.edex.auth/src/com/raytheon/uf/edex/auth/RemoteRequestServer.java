@@ -42,7 +42,8 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 3, 2009            mschenke     Initial creation
+ * Aug 03, 2009            mschenke    Initial creation
+ * May 28, 2014 3211       njensen     Refactored and improved error msgs
  * 
  * 
  * </pre>
@@ -59,8 +60,6 @@ public class RemoteRequestServer {
 
     private HandlerRegistry registry;
 
-    private Boolean ableToValidatePrivilegedRequests = null;
-
     public static RemoteRequestServer getInstance() {
         return instance;
     }
@@ -74,12 +73,8 @@ public class RemoteRequestServer {
         String id = request.getClass().getCanonicalName();
         IRequestHandler handler = registry.getRequestHandler(id);
 
-        validateObjects();
-
-        if (request instanceof AbstractPrivilegedRequest
-                && ableToValidatePrivilegedRequests) {
+        if (request instanceof AbstractPrivilegedRequest) {
             AuthManager manager = AuthManagerFactory.getInstance().getManager();
-
             // Not the default role, attempt to cast handler and request
             try {
                 AbstractPrivilegedRequest privReq = (AbstractPrivilegedRequest) request;
@@ -89,20 +84,12 @@ public class RemoteRequestServer {
 
                 // Do not process request if user passed in is null
                 if (user == null || user.uniqueId() == null) {
-                    return ResponseFactory
-                            .constructNotAuthorized(privReq,
-                                    "Unable to process privileged request for null user");
-                }
-
-                // check handler if user has authorization
-                AuthorizationResponse authResp = privHandler.authorized(user,
-                        privReq);
-                if (authResp != null && !authResp.isAuthorized() && authResp.getResponseMessage() != null) {
                     return ResponseFactory.constructNotAuthorized(privReq,
-                            authResp.getResponseMessage());
+                            "Unable to process privileged request " + request
+                                    + " for null user");
                 }
 
-                // user has role, check if authenticated
+                // check that user is who they claim to be (authentication)
                 AuthenticationResponse resp = manager.getAuthenticator()
                         .authenticate(user);
                 if (!resp.isAuthenticated()) {
@@ -110,6 +97,22 @@ public class RemoteRequestServer {
                             resp.getUpdatedData());
                 }
 
+                /*
+                 * check handler that user is allowed to execute this request
+                 * (authorization)
+                 */
+                AuthorizationResponse authResp = privHandler.authorized(user,
+                        privReq);
+                if (authResp != null && !authResp.isAuthorized()
+                        && authResp.getResponseMessage() != null) {
+                    return ResponseFactory.constructNotAuthorized(privReq,
+                            authResp.getResponseMessage());
+                }
+
+                /*
+                 * they've passed authentication and authorization, let the
+                 * handler execute the request
+                 */
                 try {
                     return ResponseFactory.constructSuccessfulExecution(
                             privHandler.handleRequest(privReq),
@@ -119,14 +122,16 @@ public class RemoteRequestServer {
                 }
             } catch (ClassCastException e) {
                 throw new AuthException(
-                        "Roles can only be defined for requests/handlers of AbstractPrivilegedRequest/Handler",
-                        e);
+                        "Roles can only be defined for requests/handlers of AbstractPrivilegedRequest/Handler, request was "
+                                + request.getClass().getName(), e);
 
             } catch (Throwable t) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "Error occured while performing privileged request", t);
+                        "Error occured while performing privileged request "
+                                + request, t);
                 throw new AuthException(
-                        "Error occured while performing privileged request", t);
+                        "Error occured while performing privileged request "
+                                + request, t);
             }
         }
 
@@ -137,21 +142,4 @@ public class RemoteRequestServer {
         this.registry = registry;
     }
 
-    private void validateObjects() {
-        // If first request, validate role and authentication objects
-        if (ableToValidatePrivilegedRequests == null) {
-            AuthManager manager = AuthManagerFactory.getInstance().getManager();
-            ableToValidatePrivilegedRequests = manager != null
-                    && manager.getAuthenticationStorage() != null
-                    && manager.getAuthenticator() != null
-                    && manager.getRoleStorage() != null;
-            if (!ableToValidatePrivilegedRequests) {
-                IllegalStateException throwable = new IllegalStateException(
-                        "Unable to perform priviledged request validation, required objects not set (IAuthenticator, IRoleStorage, IAuthenticationStorage).  ALL REQUESTS WILL BE EXECUTED!");
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                        throwable.getLocalizedMessage(), throwable);
-            }
-        }
-    }
 }

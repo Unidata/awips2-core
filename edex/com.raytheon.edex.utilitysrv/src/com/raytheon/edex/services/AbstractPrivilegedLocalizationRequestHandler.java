@@ -31,6 +31,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.edex.auth.AuthManager;
 import com.raytheon.uf.edex.auth.AuthManagerFactory;
+import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.auth.roles.IRoleStorage;
@@ -46,6 +47,7 @@ import com.raytheon.uf.edex.auth.roles.IRoleStorage;
  * ------------ ---------- ----------- --------------------------
  * Jul 6, 2011             mschenke    Initial creation
  * Jul 8, 2012  719        mpduff      Fix order of checks
+ * May 28, 2014 3211       njensen     Updated for IAuthorizer changes
  * </pre>
  * 
  * @author mschenke
@@ -80,12 +82,14 @@ public abstract class AbstractPrivilegedLocalizationRequestHandler<T extends Abs
         }
 
         AuthManager manager = AuthManagerFactory.getInstance().getManager();
-        IRoleStorage roleStorage = manager.getRoleStorage();
-        String[] permissions = roleStorage
-                .getAllDefinedPermissions(APPLICATION);
+        IAuthorizer auth = manager.getAuthorizer();
         Set<String> definedPermissions = new HashSet<String>();
-        for (String permission : permissions) {
-            definedPermissions.add(permission.toLowerCase());
+        if (auth instanceof IRoleStorage) {
+            String[] permissions = ((IRoleStorage) auth)
+                    .getAllDefinedPermissions(APPLICATION);
+            for (String permission : permissions) {
+                definedPermissions.add(permission.toLowerCase());
+            }
         }
 
         String absoluteRoleId = buildRoleId(level, type, contextName, fileName);
@@ -99,8 +103,8 @@ public abstract class AbstractPrivilegedLocalizationRequestHandler<T extends Abs
             // com.raytheon.localization.<level>.(<specificLevel>.)/type/path/name/
             int minLength = roleId.length() - fileName.length() - 1;
             do {
-                if (roleStorage.isAuthorized(roleId,
-                        user.uniqueId().toString(), APPLICATION)) {
+                if (auth.isAuthorized(roleId, user.uniqueId().toString(),
+                        APPLICATION)) {
                     return new AuthorizationResponse(true);
                 } else if (definedPermissions.contains(roleId.toLowerCase())) {
                     // User not authorized and this roleId is explicitly defined

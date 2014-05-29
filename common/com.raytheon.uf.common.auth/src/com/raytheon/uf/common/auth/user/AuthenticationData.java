@@ -17,42 +17,27 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth.roles;
+package com.raytheon.uf.common.auth.user;
 
-import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.edex.auth.authorization.IAuthorizer;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 
 /**
- * Storage class for roles. Should have a concept of a default role which all
- * users get by default and the ability to lookup a role given an id. NOTE, ALL
- * ROLES IDS SHOULD BE TREATED AS CASE-INSENSITIVE
+ * Implementation of IAuthenticationData.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 18, 2010            mschenke     Initial creation
- * May 28, 2014 3211       njensen      Extracted isAuthorized() to IAuthorizer
+ * May 26, 2010            rgeorge     Initial creation
+ * May 28, 2014 3211       njensen     Moved to uf.common.auth plugin
  * 
  * </pre>
  * 
- * @author mschenke
+ * @author rgeorge
  * @version 1.0
  */
-
-public interface IRoleStorage extends IAuthorizer {
-
-    /**
-     * Get all the defined permissions for this application.
-     * 
-     * @param application
-     *            The application
-     * 
-     * @return String[] of permissions
-     * @throws AuthorizationException
-     */
-    public String[] getAllDefinedPermissions(String application)
-            throws AuthorizationException;
+@DynamicSerialize
+public class AuthenticationData implements IAuthenticationData {
 
 }
