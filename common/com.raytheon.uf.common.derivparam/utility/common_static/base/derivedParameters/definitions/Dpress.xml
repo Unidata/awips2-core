@@ -35,7 +35,4 @@
         <Field abbreviation="Px" timeShift="0"/>
         <ConstantField value="0.0"/>
 	</Method>
-    <Method name="Alias">
-        <ConstantField value="0.0"/>
-	</Method>
 </DerivedParameter>
