@@ -80,6 +80,7 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  *                                     and to not pretty print xml grouping information.
  * Apr 18, 2014 2681       rjpeter     Updated scan to process in distinct chunks of time.
  * May 12, 2014 3154       rjpeter     Removed reclaimSpace call.
+ * Jun 02, 2014 2715       rferrel     Change offline to prevent accumulation of hibernate records.
  * </pre>
  * 
  * @author jsanchez
@@ -284,6 +285,12 @@ public class AggregateManager {
                             offline.writeStatsToDisk(event, timeMap);
                         }
 
+                        /*
+                         * Prevent transaction from a build up of records in the
+                         * hibernate session.
+                         */
+                        statsRecordDao.flushAndClearSession();
+
                         // increment to next interval
                         minTime.add(Calendar.MINUTE, 1);
                         maxTime.add(Calendar.MINUTE, 1);
@@ -456,6 +463,12 @@ public class AggregateManager {
                             startDate = endDate;
                             endDate = new Date(startDate.getTime()
                                     + TimeUtil.MILLIS_PER_HOUR);
+
+                            /*
+                             * Prevent transaction from a build up of records in
+                             * the hibernate session.
+                             */
+                            aggregateDao.flushAndClearSession();
                         }
                     }
                 } catch (Exception e) {

@@ -38,12 +38,6 @@ import javax.xml.bind.JAXBException;
 
 import com.google.common.collect.Multimap;
 import com.raytheon.edex.util.Util;
-import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.stats.AggregateRecord;
 import com.raytheon.uf.common.stats.StatisticsEvent;
@@ -74,6 +68,7 @@ import com.raytheon.uf.edex.stats.data.StatsDataAccumulator;
  * May 22, 2013 1917       rjpeter     Renamed from Archiver, added generation of raw statistics,
  *                                     added method to purge statistics, moved saving of statistics
  *                                     to configured instead of site level.
+ * Jum 02, 2014 2715       rferrel     Stats' directory location no longer uses localization.
  * </pre>
  * 
  * @author jsanchez
@@ -81,6 +76,7 @@ import com.raytheon.uf.edex.stats.data.StatsDataAccumulator;
  */
 public class OfflineStatsManager {
 
+    /** Class for tracking a given epoch hour. */
     private class StatisticsKey {
         private final long epochHours;
 
@@ -122,24 +118,37 @@ public class OfflineStatsManager {
         }
     }
 
+    /** Property key defined in stats.properties. */
+    private final static String STATIC_DIR_KEY = "stats.directory";
+
+    /** Default value when directory when property not defined. */
+    private final static String STATIC_DIR_DEFAULT = "/awips2/edex/data/stats";
+
+    /** The comma separator. */
     private static final String COMMA = ",";
 
+    /** Status handler logger. */
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(OfflineStatsManager.class);
 
-    private final IPathManager pm = PathManagerFactory.getPathManager();
-
-    private final LocalizationContext configuredContext = pm.getContext(
-            LocalizationType.COMMON_STATIC, LocalizationLevel.CONFIGURED);
-
+    /** Date formatter for field of data. */
     private final SimpleDateFormat fieldSdf;
 
+    /** Date formatter for creating date directories. */
     private final SimpleDateFormat directorySdf;
 
+    /** Date formatter to use to place timestamp in csv file names. */
     private final SimpleDateFormat fileSdf;
 
+    /** Formatter for generating the average data field. */
     private final DecimalFormat avgFormatter = new DecimalFormat("0.######");
 
+    /** Stats' root directory. */
+    private final File statsDir;
+
+    /**
+     * The Constructor.
+     */
     public OfflineStatsManager() {
         TimeZone gmt = TimeZone.getTimeZone("GMT");
         fieldSdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS");
@@ -148,49 +157,56 @@ public class OfflineStatsManager {
         directorySdf.setTimeZone(gmt);
         fileSdf = new SimpleDateFormat("yyyyMMddHH");
         fileSdf.setTimeZone(gmt);
+        String statsPath = System.getProperty(STATIC_DIR_KEY);
+        if ((statsPath == null)
+                && statusHandler.isPriorityEnabled(Priority.ERROR)) {
+            statusHandler
+                    .handle(Priority.ERROR,
+                            String.format(
+                                    "%s not defined in stats.properties. Using default value: %s",
+                                    STATIC_DIR_KEY, STATIC_DIR_DEFAULT));
+            statsPath = STATIC_DIR_DEFAULT;
+        }
+        statsDir = new File(statsPath);
     }
 
     /**
-     * Gets a directory name in the format stats/[rawStats|aggregates]/StatType
+     * Gets a directory file in the format stats/[rawStats|aggregates]/StatType
      * 
      * @param conf
      * @param isAggregate
-     * @return
+     * @return baseDir
      */
-    private String getBaseDirectory(StatisticsEventConfig conf,
-            boolean isAggregate) {
-        StringBuffer sb = new StringBuffer(40);
-        sb.append("stats").append(File.separatorChar);
-
+    private File getBaseDir(StatisticsEventConfig conf, boolean isAggregate) {
+        StringBuilder sb = new StringBuilder(80);
         if (isAggregate) {
             sb.append("aggregates");
         } else {
             sb.append("rawStats");
         }
-
         sb.append(File.separatorChar).append(conf.getTypeClass().getName());
-        return sb.toString();
+        return new File(statsDir, sb.toString());
     }
 
     /**
-     * Creates a filename in the format
+     * Create a file in the format
      * stats/[rawStats|aggregates]/StatType/yyyyMMdd/StatType_yyyyMMddHH.csv
      * 
      * @param conf
      * @param isAggregate
      * @param epochHours
-     * @return
+     * @return statFile
      */
-    private String getStatFilename(StatisticsEventConfig conf,
-            boolean isAggregate, long epochHours) {
-        String baseName = getBaseDirectory(conf, isAggregate);
-        StringBuilder sb = new StringBuilder(baseName.length() + 40);
+    private File getStatFile(StatisticsEventConfig conf, boolean isAggregate,
+            long epochHours) {
+        File baseFile = getBaseDir(conf, isAggregate);
+        StringBuilder sb = new StringBuilder(80);
         Date time = new Date(epochHours * TimeUtil.MILLIS_PER_HOUR);
-        sb.append(baseName).append(File.separatorChar)
-                .append(directorySdf.format(time)).append(File.separatorChar)
+        sb.append(File.separatorChar).append(directorySdf.format(time))
+                .append(File.separatorChar)
                 .append(conf.getTypeClass().getSimpleName()).append("_")
                 .append(fileSdf.format(time)).append(".csv");
-        return sb.toString();
+        return new File(baseFile, sb.toString());
     }
 
     /**
@@ -291,16 +307,13 @@ public class OfflineStatsManager {
      * 
      * @param key
      * @param conf
-     * @return
+     * @return bw
      * @throws IOException
      */
     private BufferedWriter getStatEventBufferedWriter(StatisticsKey key,
             StatisticsEventConfig conf) throws IOException {
         BufferedWriter bw = null;
-        LocalizationFile siteLocalization = pm
-                .getLocalizationFile(configuredContext,
-                        getStatFilename(conf, false, key.epochHours));
-        File outFile = siteLocalization.getFile();
+        File outFile = getStatFile(conf, false, key.epochHours);
         boolean addHeader = outFile.length() == 0;
 
         if (addHeader) {
@@ -333,15 +346,13 @@ public class OfflineStatsManager {
      * 
      * @param key
      * @param conf
-     * @return
+     * @return bw
      * @throws IOException
      */
     private BufferedWriter getAggregateBufferedWriter(StatisticsKey key,
             StatisticsEventConfig conf) throws IOException {
         BufferedWriter bw = null;
-        LocalizationFile siteLocalization = pm.getLocalizationFile(
-                configuredContext, getStatFilename(conf, true, key.epochHours));
-        File outFile = siteLocalization.getFile();
+        File outFile = getStatFile(conf, true, key.epochHours);
         boolean addHeader = outFile.length() == 0;
 
         if (addHeader) {
@@ -455,7 +466,7 @@ public class OfflineStatsManager {
      * StatisticsEventConfig.
      * 
      * @param conf
-     * @return
+     * @return date
      * @throws LocalizationException
      * @throws IOException
      */
@@ -463,9 +474,7 @@ public class OfflineStatsManager {
             throws LocalizationException, IOException {
         Date rval = null;
 
-        LocalizationFile siteLocalization = pm.getLocalizationFile(
-                configuredContext, getBaseDirectory(conf, true));
-        File eventDir = siteLocalization.getFile(true);
+        File eventDir = getBaseDir(conf, true);
 
         if (eventDir.exists() && eventDir.isDirectory()) {
             File latestDir = null;
@@ -541,21 +550,20 @@ public class OfflineStatsManager {
      * StatisticsEventConfig.
      * 
      * @param conf
-     * @return
      */
     public void purgeOffline(StatisticsEventConfig conf) {
         // purge aggregates
         long minTime = getMinTime(conf.getAggregateOfflineRetentionDays());
 
         if (minTime > 0) {
-            purgeDir(getBaseDirectory(conf, true), minTime);
+            purgeDir(getBaseDir(conf, true), minTime);
         }
 
         // purge raw
         minTime = getMinTime(conf.getRawOfflineRetentionDays());
 
         if (minTime > 0) {
-            purgeDir(getBaseDirectory(conf, false), minTime);
+            purgeDir(getBaseDir(conf, false), minTime);
         }
     }
 
@@ -565,10 +573,7 @@ public class OfflineStatsManager {
      * @param dir
      * @param minTime
      */
-    private void purgeDir(String dir, long minTime) {
-        LocalizationFile siteLocalization = pm.getLocalizationFile(
-                configuredContext, dir);
-        File eventDir = siteLocalization.getFile();
+    private void purgeDir(File eventDir, long minTime) {
 
         if (eventDir.exists() && eventDir.isDirectory()) {
             try {
