@@ -18,12 +18,8 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="/s" name="Thermal Wind Vort Adv" abbreviation="PIVA" xmlns:ns2="group">
-    <Method levels="MB" name="VorticityAdv">
-        <Field abbreviation="tWindU"/>
-        <Field abbreviation="tWindV"/>
-        <Field abbreviation="dx"/>
-        <Field abbreviation="dy"/>
-        <Field abbreviation="coriolis"/>
+<DerivedParameter unit="kn" name="U Component of Thermal Wind" abbreviation="tWindU" xmlns:ns2="group">
+    <Method name="U">
+        <Field abbreviation="tWind" unit="kn"/>
     </Method>
 </DerivedParameter>

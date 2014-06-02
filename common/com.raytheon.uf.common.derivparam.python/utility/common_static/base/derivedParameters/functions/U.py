@@ -19,22 +19,19 @@
 ##
 
 # ----------------------------------------------------------------
-# Calculate U component from wind speed and direction
+# Calculate U component from a vector or from a magnitude and direction
 # 
 # ----------------------------------------------------------------
 
 import numpy
-from numpy import power
-from numpy import sin
 
 const1 = 0.0174533
 
-def execute(wSp, WD):
-    return calculate(wSp, WD)
-    
-def calculate(wSp, wD):
-    wD = numpy.where(wD < 0, -9999.0, numpy.where(wD > 360, -9999.0,wD))
-    wSp = numpy.where(wSp < 0, -9999.0, numpy.where(wSp > 250, -9999.0,wSp))
-    theta = wD * const1
-    U = (-1 * wSp) * numpy.sin(theta)
+def execute(magOrVec, dir=None):
+    if dir is None:
+        return magOrVec[0]
+    dir = numpy.where(dir < 0, numpy.NaN, numpy.where(dir > 360, numpy.NaN,dir))
+    magOrVec = numpy.where(magOrVec < 0, numpy.NaN, numpy.where(magOrVec > 250, numpy.NaN, magOrVec))
+    theta = dir * const1
+    U = (-1 * magOrVec) * numpy.sin(theta)
     return U
