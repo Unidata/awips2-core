@@ -111,32 +111,31 @@ public class TopoQuery {
 
     /**
      * @return Initialized TopoQuery instance
+     * @throws TopoException
      */
-    public static synchronized TopoQuery getInstance() {
+    public static synchronized TopoQuery getInstance() throws TopoException {
         // default Topo is 4800X6000, level zero
         return getInstance(0);
     }
 
     /**
      * @return Initialized TopoQuery instance
+     * @throws TopoException
      */
-    public static synchronized TopoQuery getInstance(int topoLevel) {
+    public static synchronized TopoQuery getInstance(int topoLevel)
+            throws TopoException {
         return getInstance(TopoUtils.getDefaultTopoFile(), topoLevel);
     }
 
     public static synchronized TopoQuery getInstance(File hdf5File,
-            int topoLevel) {
+            int topoLevel) throws TopoException {
         if (topoQueryMap == null) {
             topoQueryMap = new Hashtable<Integer, TopoQuery>();
         }
         TopoQuery query = topoQueryMap.get(topoLevel);
         if (query == null) {
-            try {
-                query = new TopoQuery(hdf5File, topoLevel);
-                topoQueryMap.put(topoLevel, query);
-            } catch (TopoException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getMessage(), e);
-            }
+            query = new TopoQuery(hdf5File, topoLevel);
+            topoQueryMap.put(topoLevel, query);
         }
         return query;
     }
@@ -635,8 +634,9 @@ public class TopoQuery {
      * 
      * @param targetGeom
      * @return the topo data array in row major order
+     * @throws TopoException
      */
-    public float[] getHeight(GridGeometry2D targetGeom) {
+    public float[] getHeight(GridGeometry2D targetGeom) throws TopoException {
         Rectangle rectangles[] = computeWorldRect(targetGeom);
 
         int width = 0;
