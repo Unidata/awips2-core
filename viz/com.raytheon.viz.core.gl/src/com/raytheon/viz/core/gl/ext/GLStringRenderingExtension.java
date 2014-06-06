@@ -220,15 +220,17 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             for (int c = 0; c < string.getText().length; c++) {
                 Rectangle2D bounds = target.getStringsBounds(string,
                         string.getText()[c]);
+                /* save height of line before adding border for box */
+                double lineHeight = bounds.getHeight();
                 shiftRectangle(string, bounds, yPos);
 
                 setGlColor(gl, blankColor, alpha);
                 gl.glRectd(bounds.getMinX(), bounds.getMaxY(),
                         bounds.getMaxX(), bounds.getMinY());
                 if (string.verticallAlignment == VerticalAlignment.TOP) {
-                    yPos += bounds.getHeight();
+                    yPos += lineHeight;
                 } else {
-                    yPos -= bounds.getHeight();
+                    yPos -= lineHeight;
                 }
             }
         }
