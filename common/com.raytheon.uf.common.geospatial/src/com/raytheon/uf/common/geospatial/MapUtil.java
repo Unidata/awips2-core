@@ -42,6 +42,7 @@ import org.geotools.referencing.crs.DefaultProjectedCRS;
 import org.geotools.referencing.cs.DefaultCartesianCS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.DefiningConversion;
+import org.geotools.referencing.operation.projection.LambertConformal;
 import org.opengis.geometry.DirectPosition;
 import org.opengis.geometry.Envelope;
 import org.opengis.metadata.spatial.PixelOrientation;
@@ -87,6 +88,8 @@ import com.vividsolutions.jts.geom.Polygon;
  *                                    necessary to subtract 180 from the
  *                                    returned value
  * May 27, 2014  3196     bsteffen    Remove jai.
+ * Jun 05, 2014  3243     bsteffen    Add support for arbitrary latitude of
+ *                                    origin for lambert conformal
  * 
  * </pre>
  * 
@@ -130,7 +133,7 @@ public class MapUtil {
      * the constructAWIPS211 with a WKT file implementation
      */
     public static ProjectedCRS AWIPS_LAMBERT_NORTHAMERICA = constructLambertConformal(
-            AWIPS_EARTH_RADIUS, AWIPS_EARTH_RADIUS, 25, 25, -95);
+            AWIPS_EARTH_RADIUS, AWIPS_EARTH_RADIUS, 25, 25, -95, 25);
 
     public static ProjectedCRS AWIPS_POLARSTEREO_ALASKA = constructNorthPolarStereo(
             AWIPS_EARTH_RADIUS, AWIPS_EARTH_RADIUS, 60, -150);
@@ -574,6 +577,20 @@ public class MapUtil {
     }
 
     /**
+     * 
+     * @deprecated Use
+     *             {@link #constructLambertConformal(double, double, double, double, double, double)}
+     */
+    @Deprecated
+    public static ProjectedCRS constructLambertConformal(double majorAxis,
+            double minorAxis, double stdParallel1, double stdParallel2,
+            double lonOfOrigin) {
+        return constructLambertConformal(majorAxis, minorAxis, stdParallel1,
+                stdParallel2, lonOfOrigin, stdParallel1);
+    }
+
+
+    /**
      * Construct a lambert conformal crs
      * 
      * @param majorAxis
@@ -586,18 +603,20 @@ public class MapUtil {
      *            the standard parallel 2
      * @param lonOfOrigin
      *            the longitude of origin
+     * @param latOfOrigin
+     *            the longitude of origin
      * 
      * @return the constructed projection
+     * @see LambertConformal
      */
     public static ProjectedCRS constructLambertConformal(double majorAxis,
             double minorAxis, double stdParallel1, double stdParallel2,
-            double lonOfOrigin) {
+            double lonOfOrigin, double latOfOrigin) {
         try {
             ParameterValueGroup parameters = null;
             if (stdParallel1 == stdParallel2) {
                 parameters = dmtFactory
                         .getDefaultParameters("Lambert_Conformal_Conic_1SP");
-
                 parameters.parameter("semi_major").setValue(majorAxis);
                 parameters.parameter("semi_minor").setValue(minorAxis);
                 parameters.parameter("latitude_of_origin").setValue(
@@ -612,8 +631,8 @@ public class MapUtil {
 
                 parameters.parameter("semi_major").setValue(majorAxis);
                 parameters.parameter("semi_minor").setValue(minorAxis);
-                parameters.parameter("latitude_of_origin").setValue(
-                        stdParallel1);
+                parameters.parameter("latitude_of_origin")
+                        .setValue(latOfOrigin);
                 parameters.parameter("standard_parallel_1").setValue(
                         stdParallel1);
                 parameters.parameter("standard_parallel_2").setValue(
@@ -1364,7 +1383,7 @@ public class MapUtil {
                                 result.expandToInclude(edge.x, edge.y);
                             }
                         } catch (Exception ex) {
-                            ;// ignore, can't expand the envelope.
+                            /* ignore, can't expand the envelope. */
                         }
                     }
                 }
