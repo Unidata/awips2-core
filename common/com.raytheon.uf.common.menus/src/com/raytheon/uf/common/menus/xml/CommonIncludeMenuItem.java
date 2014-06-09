@@ -27,8 +27,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
  * Utilized in the index file, provides an include capability
  * 
@@ -38,6 +36,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
+ * Jun 09, 2014 3266       njensen     Remove ISerializableObject
  * 
  * </pre>
  * 
@@ -46,7 +45,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlType(name = "include")
-public class CommonIncludeMenuItem implements ISerializableObject {
+public class CommonIncludeMenuItem {
 
     /**
      * The file to include (relative to localization)
