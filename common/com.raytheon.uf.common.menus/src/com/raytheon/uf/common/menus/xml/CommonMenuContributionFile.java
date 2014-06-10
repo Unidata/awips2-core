@@ -24,8 +24,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
  * Describes the menu index.xml file which is the basis for all menu
  * contributions.
@@ -38,6 +36,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
+ * Jun 09, 2014 3266       njensen     Remove ISerializableObject
  * 
  * </pre>
  * 
@@ -46,7 +45,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  */
 @XmlRootElement(name = "menuContributionFile")
 @XmlAccessorType(XmlAccessType.NONE)
-public class CommonMenuContributionFile implements ISerializableObject {
+public class CommonMenuContributionFile {
 
     /**
      * The elements to include

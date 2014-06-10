@@ -23,8 +23,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
  * 
  * Describes an abstract menu contribution that can be identified by an id
@@ -35,6 +33,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 26, 2009            chammack    Initial creation
+ * Jun 09, 2014 3266       njensen     Remove ISerializableObject
  * 
  * </pre>
  * 
@@ -42,8 +41,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public abstract class CommonAbstractMenuContribution implements
-        ISerializableObject {
+public abstract class CommonAbstractMenuContribution {
 
     /**
      * An id for the contribution. Can be used for placement in menu URIs or for

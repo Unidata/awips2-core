@@ -88,6 +88,7 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  *                                    LoadBundleHandler.
  * Mar 25, 2014  2857     mpduff      In the case of missing menu text throw exception
  *                                      stating the id of the missing text.
+ * Jun 09, 2014  3266     njensen     Removed useless code
  * 
  * 
  * </pre>
@@ -175,13 +176,6 @@ public class BundleContributionItem extends ContributionItem {
 
         this.menuText = VariableSubstitutionUtil.processVariables(
                 menuContribution.xml.text, this.substitutions);
-        if (contribution.dataURIs != null) {
-            for (int i = 0; i < contribution.dataURIs.length; i++) {
-                contribution.dataURIs[i] = VariableSubstitutionUtil
-                        .processVariables(contribution.dataURIs[i],
-                                this.substitutions);
-            }
-        }
 
         // The bundle persists for the life of CAVE; no need to remove the
         // listener.
@@ -355,7 +349,7 @@ public class BundleContributionItem extends ContributionItem {
                         break;
                     case SWT.Selection:
                         if (event.widget != null) {
-                            loadBundle(event);
+                            loadBundle();
                         }
                         break;
                     case SWT.Show:
@@ -403,7 +397,7 @@ public class BundleContributionItem extends ContributionItem {
         }
     }
 
-    private void loadBundle(Event event) {
+    private void loadBundle() {
         try {
             boolean fullBundleLoad = false;
             if (this.menuContribution.xml.fullBundleLoad != null) {

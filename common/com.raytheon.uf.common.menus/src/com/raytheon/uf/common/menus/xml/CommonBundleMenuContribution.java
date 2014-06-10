@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.menus.xml;
 
+import java.util.Arrays;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -35,7 +37,6 @@ import javax.xml.bind.annotation.XmlType;
  * <LI>The ID - which allows itmes to be systematically removed in the index
  * file
  * <LI>The bundle file to load (should be relative to localization)
- * <LI>One or more dataURIs (if you want menu times to update)
  * </UL>
  * 
  * <pre>
@@ -44,6 +45,7 @@ import javax.xml.bind.annotation.XmlType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
+ * Jun 09, 2014 3266       njensen     Deprecated unused fields
  * 
  * </pre>
  * 
@@ -74,7 +76,13 @@ public class CommonBundleMenuContribution extends
     @XmlAttribute(name = "editorType", required = false)
     public String editorType;
 
-    /** A set of one or more dataURIs to utilize for the time in the menu */
+    /**
+     * A set of one or more dataURIs to utilize for the time in the menu
+     * 
+     * @deprecated This is no longer used by anything in the system. Any xml
+     *             files with this element should have this element removed.
+     */
+    @Deprecated
     @XmlElement(name = "dataURI")
     public String[] dataURIs;
 
@@ -82,7 +90,14 @@ public class CommonBundleMenuContribution extends
     @XmlElement(name = "substitute", required = false)
     public VariableSubstitution[] substitutions;
 
-    /** The interval to round the dataTimes to, in seconds (optional) */
+    /**
+     * The interval to round the dataTimes to, in seconds (optional)
+     * 
+     * @deprecated No code actually make uses of this for menu times or loading
+     *             the bundle. Any xml files with this attribute should remove
+     *             the attribute.
+     * */
+    @Deprecated
     @XmlAttribute(name = "productInterval", required = false)
     public Integer productInterval;
 
@@ -102,7 +117,12 @@ public class CommonBundleMenuContribution extends
 
     /**
      * The product offset in seconds (optional)
+     * 
+     * @deprecated No code actually make uses of this for menu times or loading
+     *             the bundle. Any xml files with this attribute should remove
+     *             the attribute.
      */
+    @Deprecated
     @XmlAttribute(name = "productOffset", required = false)
     public Integer productOffset;
 
@@ -111,4 +131,15 @@ public class CommonBundleMenuContribution extends
      */
     @XmlAttribute(name = "commandId", required = false)
     public String command;
+
+    @Override
+    public String toString() {
+        return "CommonBundleMenuContribution [timeQuery=" + timeQuery
+                + ", text=" + text + ", bundleFile=" + bundleFile
+                + ", editorType=" + editorType + ", substitutions="
+                + Arrays.toString(substitutions) + ", fullBundleLoad="
+                + fullBundleLoad + ", useReferenceTime=" + useReferenceTime
+                + ", command=" + command + "]";
+    }
+
 }

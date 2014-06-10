@@ -25,8 +25,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
-
 /**
  * 
  * Describes a set of variable substitutions
@@ -36,7 +34,8 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 12, 2009            chammack     Initial creation
+ * Mar 12, 2009            chammack    Initial creation
+ * Jun 09, 2014 3266       njensen     Remove ISerializableObject
  * 
  * </pre>
  * 
@@ -44,7 +43,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public class VariableSubstitution implements ISerializableObject {
+public class VariableSubstitution {
 
     @XmlAttribute(required = true)
     public String key;
@@ -75,4 +74,10 @@ public class VariableSubstitution implements ISerializableObject {
 
         return map;
     }
+
+    @Override
+    public String toString() {
+        return "VariableSubstitution [key=" + key + ", value=" + value + "]";
+    }
+
 }
