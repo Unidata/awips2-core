@@ -42,8 +42,8 @@ import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
 
 /**
- * Resource for rendering the best resource from a list. For each frame time
- * the resource will find the first(in the order of the list in resource data)
+ * Resource for rendering the best resource from a list. For each frame time the
+ * resource will find the first(in the order of the list in resource data)
  * resource with data available and render only that resource.
  * 
  * <pre>
@@ -53,6 +53,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * ------------- -------- ----------- --------------------------
  * Jan 05, 2010           mnash       Initial creation
  * Mar 12, 2014  2898     bsteffen    Clear times in resource data on dispose.
+ * Jun 10, 2014  3263     bsteffen    Null check keys before accessing map.
  * 
  * </pre>
  * 
@@ -85,6 +86,9 @@ public class BestResResource extends
     @Override
     public String getName() {
         DataTime displayedDate = descriptor.getTimeForResource(this);
+        if (displayedDate == null) {
+            return "";
+        }
         AbstractVizResource<?, ?> rsc = this.resourceData.getMap().get(
                 displayedDate);
         if (rsc == null) {
@@ -307,6 +311,9 @@ public class BestResResource extends
     }
 
     public AbstractVizResource<?, ?> getBestResResource(DataTime time) {
+        if (time == null) {
+            return null;
+        }
         return resourceData.getMap().get(time);
     }
 

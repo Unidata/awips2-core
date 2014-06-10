@@ -21,11 +21,11 @@ package com.raytheon.viz.core.rsc;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListMap;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -52,9 +52,10 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 5, 2010            mnash     Initial creation
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Jan 05, 2010           mnash       Initial creation
+ * Jun 10, 2014  3263     bsteffen    Make bestResTimes thread safe.
  * 
  * </pre>
  * 
@@ -76,7 +77,7 @@ public class BestResResourceData extends AbstractRequestableResourceData
     @XmlElement
     private AbstractSpatialEnabler enabler = null;
 
-    private HashMap<DataTime, AbstractVizResource<?, ?>> bestResTimes = null;
+    private Map<DataTime, AbstractVizResource<?, ?>> bestResTimes = null;
 
     private List<AbstractVizResource<?, ?>> rscs = new ArrayList<AbstractVizResource<?, ?>>();
 
@@ -84,7 +85,7 @@ public class BestResResourceData extends AbstractRequestableResourceData
 
     public BestResResourceData() {
         this.retrieveData = true;
-        bestResTimes = new HashMap<DataTime, AbstractVizResource<?, ?>>();
+        bestResTimes = new ConcurrentSkipListMap<DataTime, AbstractVizResource<?, ?>>();
     }
 
     /*
@@ -270,7 +271,7 @@ public class BestResResourceData extends AbstractRequestableResourceData
         populateDataTimes();
     }
 
-    protected HashMap<DataTime, AbstractVizResource<?, ?>> getMap() {
+    protected Map<DataTime, AbstractVizResource<?, ?>> getMap() {
         return bestResTimes;
     }
 
