@@ -24,9 +24,10 @@ package com.raytheon.uf.viz.core.localization;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 24, 2008            chammack     Initial creation
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Sep 24, 2008           chammack    Initial creation
+ * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * </pre>
  * 
  * @author chammack
@@ -46,6 +47,8 @@ public class LocalizationConstants {
     public static final String P_LOCALIZATION_SITE_NAME = "siteName";
 
     public static final String P_ALERT_SERVER = "alertServer";
+
+    public static final String P_LOCALIZATION_PROMPT_ON_STARTUP = "promptOnStartup";
 
     public static final String DEFAULT_LOCALIZATION_SERVER = "http://localhost:9581/services";
 

@@ -62,13 +62,15 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 05, 2009            mschenke    Initial creation
- * Aug 02, 2013 2202       bsteffen    Add edex specific connectivity checking.
- * Feb 04, 2014 2704       njensen     Shifted some private fields/methods to protected,
- *                                      Added status and details, better site validation
- * Feb 17, 2014 2704       njensen     Changed some alertviz fields to protected
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Aug 05, 2009           mschenke    Initial creation
+ * Aug 02, 2013  2202     bsteffen    Add edex specific connectivity checking.
+ * Feb 04, 2014  2704     njensen     Shifted some private fields/methods to protected,
+ *                                    Added status and details, better site validation
+ * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
+ * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
+ * 
  * 
  * </pre>
  * 
@@ -182,8 +184,12 @@ public class ConnectivityPreferenceDialog extends Dialog {
      * @return whether cancel was issued or not
      */
     public boolean open() {
+        boolean prompt = LocalizationManager
+                .getInstance()
+                .getLocalizationStore()
+                .getBoolean(LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
         // Only open if current settings are not valid.
-        if (!validate()) {
+        if (prompt || !validate()) {
             Shell parent = getParent();
             display = parent.getDisplay();
             shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE);
@@ -201,6 +207,9 @@ public class ConnectivityPreferenceDialog extends Dialog {
             updateStatus(false, status, details);
 
             shell.open();
+            if (prompt) {
+                validate();
+            }
             while (!shell.isDisposed()) {
                 if (!display.readAndDispatch()) {
                     display.sleep();
@@ -212,6 +221,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     private void initializeComponents() {
         Composite textBoxComp = new Composite(shell, SWT.NONE);
+        textBoxComp.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
+                false));
         textBoxComp.setLayout(new GridLayout(2, false));
         createTextBoxes(textBoxComp);
         createStatusText();
@@ -281,21 +292,21 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
         localizationLabel = new Label(textBoxComp, SWT.RIGHT);
         localizationLabel.setText("Localization Server:");
-        GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, true, true);
-        gd.widthHint = 150;
+        GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
+        gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
         localizationText = new Text(textBoxComp, SWT.BORDER);
-        gd = new GridData(SWT.LEFT, SWT.None, true, true);
-        gd.widthHint = 300;
+        gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
+        gd.minimumWidth = 300;
         localizationText.setLayoutData(gd);
         localizationText.setText(localization == null ? "" : localization);
         localizationText.setBackground(getTextColor(localizationGood));
 
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site:");
-        gd = new GridData(SWT.RIGHT, SWT.CENTER, true, true);
-        gd.widthHint = 150;
+        gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
+        gd.horizontalIndent = 20;
         label.setLayoutData(gd);
 
         siteText = new Text(textBoxComp, SWT.BORDER);
@@ -305,8 +316,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 e.text = e.text.toUpperCase();
             }
         });
-        gd = new GridData(SWT.LEFT, SWT.None, true, true);
-        gd.widthHint = 300;
+        gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
+        gd.minimumWidth = 300;
         siteText.setLayoutData(gd);
         siteText.setText(site == null ? "" : site);
         siteText.setBackground(getTextColor(siteGood));
@@ -314,13 +325,13 @@ public class ConnectivityPreferenceDialog extends Dialog {
         if (alertVizServer != null) {
             label = new Label(textBoxComp, SWT.RIGHT);
             label.setText("Alert Server:");
-            gd = new GridData(SWT.RIGHT, SWT.None, true, true);
-            gd.widthHint = 150;
+            gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
+            gd.horizontalIndent = 20;
             label.setLayoutData(gd);
 
             alertVizText = new Text(textBoxComp, SWT.NONE);
-            gd = new GridData(SWT.RIGHT, SWT.None, true, true);
-            gd.widthHint = 300;
+            gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
+            gd.minimumWidth = 300;
             alertVizText.setLayoutData(gd);
             alertVizText.setText(alertVizServer);
             alertVizText.setBackground(getTextColor(alertVizGood));

@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.eclipse.jface.preference.BooleanFieldEditor;
 import org.eclipse.jface.preference.ComboFieldEditor;
 import org.eclipse.jface.preference.FieldEditor;
 import org.eclipse.jface.preference.FieldEditorPreferencePage;
@@ -57,10 +58,11 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 18, 2007            chammack    Initial Creation.
- * Aug 02, 2013 2202       bsteffen    Add edex specific connectivity checking.
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Apr 18, 2007           chammack    Initial Creation.
+ * Aug 02, 2013  2202     bsteffen    Add edex specific connectivity checking.
+ * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * 
  * </pre>
  * 
@@ -97,8 +99,16 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
      */
     @Override
     protected void createFieldEditors() {
+        createStartupPromptEditor();
         createUserAndSiteEditor();
         createServerEditors();
+    }
+
+    private void createStartupPromptEditor() {
+        this.addField(new BooleanFieldEditor(
+                LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP,
+                "Prompt for settings on startup.",
+                getFieldEditorParent()));
     }
 
     /**
