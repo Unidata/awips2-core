@@ -6,6 +6,7 @@ Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
 Bundle-ActivationPolicy: lazy
+Eclipse-BuddyPolicy: global
 Require-Bundle: com.raytheon.viz.ui;bundle-version="1.14.0",
  com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
