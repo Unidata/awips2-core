@@ -20,8 +20,8 @@
 package com.raytheon.viz.ui.editor;
 
 import java.awt.image.BufferedImage;
-import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.jface.dialogs.MessageDialog;
@@ -60,9 +60,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------	----------- --------------------------
- * Oct 10, 2006             chammack    Initial Creation.
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Oct 10, 2006           chammack    Initial Creation.
+ * Jun 12, 2014  3264     bsteffen    Make listeners thread safe.
+ * 
  * 
  * </pre>
  * 
@@ -93,7 +95,7 @@ public abstract class AbstractEditor extends EditorPart implements
      * Constructor
      */
     public AbstractEditor() {
-        renderableDisplayListeners = new HashSet<IRenderableDisplayChangedListener>();
+        renderableDisplayListeners = new CopyOnWriteArraySet<IRenderableDisplayChangedListener>();
     }
 
     private IRenderableDisplay[] getRenderableDisplays() {
