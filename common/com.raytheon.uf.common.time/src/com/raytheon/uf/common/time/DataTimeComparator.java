@@ -34,6 +34,7 @@ import java.util.Comparator;
  * ------------- -------- ----------- --------------------------
  * Aug 08, 2013  2245     bsteffen    Initial creation
  * Oct 14, 2013  2468     bsteffen    Use Date for validTime comparisons.
+ * Jun 11, 2014  3265     bsteffen    Add support for null.
  * 
  * </pre>
  * 
@@ -46,7 +47,7 @@ public class DataTimeComparator implements Comparator<DataTime> {
     /** Defines possible time sort keys */
     public static enum SortKey {
         INITIAL_TIME, FORECAST_TIME, VALID_TIME
-    };
+    }
 
     /** The major sort key */
     protected final SortKey majorKey;
@@ -56,6 +57,14 @@ public class DataTimeComparator implements Comparator<DataTime> {
 
     /** Is data to be sorted using match mode */
     protected final boolean matchMode;
+
+    /**
+     * Create comparator based off validTime then forecastTime which does not
+     * use match mode.
+     */
+    public DataTimeComparator() {
+        this(SortKey.VALID_TIME, SortKey.FORECAST_TIME, false);
+    }
 
     /**
      * This routine determines which characteristics of a DataTime object,
@@ -78,6 +87,13 @@ public class DataTimeComparator implements Comparator<DataTime> {
 
     @Override
     public int compare(DataTime time1, DataTime time2) {
+        if (time1 == time2) {
+            return 0;
+        } else if (time1 == null) {
+            return -1;
+        } else if (time2 == null) {
+            return 1;
+        }
         int result = compare(majorKey, time1, time2);
         if (result != 0) {
             return result;

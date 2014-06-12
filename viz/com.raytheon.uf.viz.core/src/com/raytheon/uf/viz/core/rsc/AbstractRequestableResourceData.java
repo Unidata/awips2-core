@@ -37,7 +37,6 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.apache.commons.lang.Validate;
 
-import com.raytheon.uf.common.inventory.exception.DataCubeException;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
@@ -45,6 +44,7 @@ import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.requests.RequestableMetadataMarshaller;
 import com.raytheon.uf.common.dataquery.responses.DbQueryResponse;
+import com.raytheon.uf.common.inventory.exception.DataCubeException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -78,16 +78,17 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 10, 2009            chammack    Initial creation
- * Feb 26, 2009 2032       jsanchez    Added loadWithNoData condition.
- * Apr 06, 2011            njensen     Moved binning times to edex
- * Apr 13, 2011            njensen     Caching available times
- * Mar 29, 2013 1638       mschenke    Switched to create PDO from dataURI
- *                                     mapping instead of dataURI string
- * May 14, 2013 1869       bsteffen    Get dataURI map directly from PDO.
- * Sep  9, 2013 2277       mschenke    Got rid of ScriptCreator references
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Feb 10, 2009           chammack    Initial creation
+ * Feb 26, 2009  2032     jsanchez    Added loadWithNoData condition.
+ * Apr 06, 2011           njensen     Moved binning times to edex
+ * Apr 13, 2011           njensen     Caching available times
+ * Mar 29, 2013  1638     mschenke    Switched to create PDO from dataURI
+ *                                    mapping instead of dataURI string
+ * May 14, 2013  1869     bsteffen    Get dataURI map directly from PDO.
+ * Sep  9, 2013  2277     mschenke    Got rid of ScriptCreator references
+ * Jun 12, 2014  3265     bsteffen    Harden getLatestPluginDataObjects
  * 
  * </pre>
  * 
@@ -138,7 +139,7 @@ public abstract class AbstractRequestableResourceData extends
             }
             return objectToSend;
         }
-    };
+    }
 
     private static AlertMessageToPDOParser defaultParser = new AlertMessageToPDOParser();
 
@@ -443,11 +444,6 @@ public abstract class AbstractRequestableResourceData extends
         this.binOffset = binOffset;
     }
 
-    public PluginDataObject[] getData(IDescriptor descriptor) {
-        // TODO: Refactor time matching code from Loader to be relocated here
-        throw new UnsupportedOperationException("Not yet implemented");
-    }
-
     /**
      * Retrieve a set of PluginDataObjects for a desired set of times
      * 
@@ -466,26 +462,17 @@ public abstract class AbstractRequestableResourceData extends
             return new PluginDataObject[0];
         }
 
-        Set<DataTime> desiredSet = new HashSet<DataTime>(Arrays.asList(desired));
-
-        Set<DataTime> currentSet = new HashSet<DataTime>(Arrays.asList(current));
-
-        Set<DataTime> loadSet = new HashSet<DataTime>();
-        for (DataTime t : desiredSet) {
-            boolean found = false;
-            for (DataTime t2 : currentSet) {
-                if (t2.equals(t)) {
-                    found = true;
-                }
-            }
-
-            if (!found && t != null) {
-                loadSet.add(t);
-            }
+        Set<DataTime> loadSet = new HashSet<DataTime>(Arrays.asList(desired));
+        loadSet.removeAll(Arrays.asList(current));
+        if (loadSet.contains(null)) {
+            statusHandler.handle(Priority.WARN,
+                    "Recieved request for null time in "
+                            + this.getClass().getName(),
+                    new NullPointerException());
+            loadSet.remove(null);
         }
 
-        if (loadSet.size() == 0) {
-            // nothing to do
+        if (loadSet.isEmpty()) {
             return new PluginDataObject[0];
         }
 
@@ -692,6 +679,7 @@ public abstract class AbstractRequestableResourceData extends
         return result;
     }
 
+    @Override
     public void configure(LoadProperties loadProperties, IDescriptor descriptor)
             throws VizException {
         super.configure(loadProperties, descriptor);
