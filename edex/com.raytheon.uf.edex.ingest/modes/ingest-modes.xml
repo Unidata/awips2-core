@@ -25,5 +25,6 @@
 <edexModes>
 	<mode name="ingest">
 		<exclude>.*request.*</exclude>
+		<exclude>edex-security.xml</exclude>
 	</mode>
 </edexModes>
