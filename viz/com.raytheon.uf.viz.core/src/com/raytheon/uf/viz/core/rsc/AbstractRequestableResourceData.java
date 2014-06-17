@@ -461,14 +461,22 @@ public abstract class AbstractRequestableResourceData extends
                 || !isRequeryNecessaryOnTimeMatch()) {
             return new PluginDataObject[0];
         }
+        if (Arrays.asList(current).contains(null)) {
+            statusHandler.handle(
+                    Priority.VERBOSE,
+                    "Resource contains unexpected null time: "
+                            + this.getClass(),
+                    new NullPointerException());
+        }
 
         Set<DataTime> loadSet = new HashSet<DataTime>(Arrays.asList(desired));
         loadSet.removeAll(Arrays.asList(current));
         if (loadSet.contains(null)) {
-            statusHandler.handle(Priority.WARN,
-                    "Recieved request for null time in "
-                            + this.getClass().getName(),
-                    new NullPointerException());
+            /*
+             * The current time matcher implementations use null as a to
+             * indicate frames where no matching was possible. null should be
+             * expected but does not need to be requested.
+             */
             loadSet.remove(null);
         }
 
