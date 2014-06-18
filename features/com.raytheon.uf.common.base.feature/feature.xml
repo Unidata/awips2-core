@@ -443,4 +443,16 @@
          version="0.0.0"
          unpack="false"/>
 
+   <plugin
+         id="org.apache.xerces"
+         download-size="0"
+         install-size="0"
+         version="2.9.1"/>
+
+   <plugin
+         id="org.apache.xml.apis"
+         download-size="0"
+         install-size="0"
+         version="1.3.4"/>
+
 </feature>
