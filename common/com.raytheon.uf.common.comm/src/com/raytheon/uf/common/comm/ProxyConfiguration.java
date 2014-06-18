@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.comm;
 
+import com.raytheon.uf.common.util.StringUtil;
+
 /**
  * Structure to hold proxy settings
  * 
@@ -30,6 +32,8 @@ package com.raytheon.uf.common.comm;
  * ------------ ---------- ----------- --------------------------
  * Apr 3, 2013    1786     mpduff      Initial creation
  * 8/28/2013    1538       bphillip    Added nonProxyHosts field
+ * 6/18/2014    3255       bphillip    Added complete set of Java Proxy properties
+ * 6/18/2014    1712        bphillip    Updated Proxy configuration
  * 
  * </pre>
  * 
@@ -39,91 +43,209 @@ package com.raytheon.uf.common.comm;
 
 public class ProxyConfiguration {
 
-    private String host;
+    /** HTTP proxy host environment variable name */
+    private static final String HTTP_PROXY_HOST = "http.proxyHost";
 
-    private int port;
+    /** HTTP proxy port environment variable name */
+    private static final String HTTP_PROXY_PORT = "http.proxyPort";
 
-    private String nonProxyHosts;
+    /** HTTP hosts that bypass the proxy */
+    private static final String HTTP_NON_PROXY_HOSTS = "http.nonProxyHosts";
+
+    /** HTTPS proxy host environment variable name */
+    private static final String HTTPS_PROXY_HOST = "https.proxyHost";
+
+    /** HTTPS proxy port environment variable name */
+    private static final String HTTPS_PROXY_PORT = "https.proxyPort";
+
+    /** FTP proxy host environment variable name */
+    private static final String FTP_PROXY_HOST = "ftp.proxyHost";
+
+    /** FTP proxy port environment variable name */
+    private static final String FTP_PROXY_PORT = "ftp.proxyPort";
+
+    /** FTP hosts that bypass the proxy */
+    private static final String FTP_NON_PROXY_HOSTS = "ftp.nonProxyHosts";
+
+    /** SOCKS proxy host environment variable name */
+    private static final String SOCKS_PROXY_HOST = "socksProxyHost";
+
+    /** SOCKS proxy port environment variable name */
+    private static final String SOCKS_PROXY_PORT = "socksProxyPort";
+
+    /** SOCKS version environment variable name */
+    private static final String SOCKS_PROXY_VERSION = "socksProxyVersion";
+
+    /** SOCKS username environment variable name */
+    private static final String JAVA_NET_SOCKS_USERNAME = "java.net.socks.username";
+
+    /** SOCKS password environment variable name */
+    private static final String JAVA_NET_SOCKS_PASSWORD = "java.net.socks.password";
+
+    /** Default HTTP (and FTP) proxy port */
+    private static final String HTTP_PROXY_DEFAULT_PORT = "80";
+
+    /** Default HTTPS proxy port */
+    private static final String HTTPS_PROXY_DEFAULT_PORT = "443";
+
+    /** Default SOCKS proxy port */
+    private static final String SOCKS_PROXY_DEFAULT_PORT = "1080";
+
+    /** Flag set if http proxy information is defined */
+    public static final boolean HTTP_PROXY_DEFINED;
+
+    /** Flag set if https proxy information is defined */
+    public static final boolean HTTPS_PROXY_DEFINED;
+
+    /** Flag set if ftp proxy information is defined; */
+    public static final boolean FTP_PROXY_DEFINED;
+
+    /** Flag set if socks proxy information is defined */
+    public static final boolean SOCKS_PROXY_DEFINED;
+
+    static {
+        HTTP_PROXY_DEFINED = !StringUtil.isEmptyString(getHttpProxyHost())
+                && !StringUtil.isEmptyString(getHttpProxyPortString());
+        HTTPS_PROXY_DEFINED = !StringUtil.isEmptyString(getHttpsProxyHost())
+                && !StringUtil.isEmptyString(getHttpsProxyPortString());
+        FTP_PROXY_DEFINED = !StringUtil.isEmptyString(getFtpProxyHost())
+                && !StringUtil.isEmptyString(getFtpProxyPortString());
+        SOCKS_PROXY_DEFINED = !StringUtil.isEmptyString(getSocksProxyHost())
+                && !StringUtil.isEmptyString(getSocksProxyPortString());
+    }
 
     /**
-     * Default constructor.
+     * Initializes the proxy settings from the System properties
      */
     public ProxyConfiguration() {
 
     }
 
     /**
-     * Constructor.
-     * 
-     * @param host
-     *            The host string
-     * @param port
-     *            The port string
+     * @return the httpProxyHost
      */
-    public ProxyConfiguration(String host, String port) {
-        this.host = host;
-        this.port = Integer.parseInt(port);
+    public static String getHttpProxyHost() {
+        return System.getProperty(HTTP_PROXY_HOST);
     }
 
     /**
-     * Constructor.
-     * 
-     * @param host
-     *            The host string
-     * @param port
-     *            The port string
+     * @return the httpProxyPort
      */
-    public ProxyConfiguration(String host, String port, String nonProxyHosts) {
-        this.host = host;
-        this.port = Integer.parseInt(port);
-        this.nonProxyHosts = nonProxyHosts;
+    public static int getHttpProxyPort() {
+        return Integer.parseInt(getHttpProxyPortString());
     }
 
     /**
-     * @return the host
+     * @return the httpProxyPort as a string
      */
-    public String getHost() {
-        return host;
+    public static String getHttpProxyPortString() {
+        return System.getProperty(HTTP_PROXY_PORT, HTTP_PROXY_DEFAULT_PORT);
     }
 
     /**
-     * @param host
-     *            the host to set
+     * @return the httpNonProxyHosts
      */
-    public void setHost(String host) {
-        this.host = host;
+    public static String getHttpNonProxyHosts() {
+        return System.getProperty(HTTP_NON_PROXY_HOSTS);
     }
 
     /**
-     * @return the port
+     * @return the httpsProxyHost
      */
-    public int getPort() {
-        return port;
+    public static String getHttpsProxyHost() {
+        return System.getProperty(HTTPS_PROXY_HOST);
     }
 
     /**
-     * @param port
-     *            the port to set
+     * @return the httpsProxyPort
      */
-    public void setPort(int port) {
-        this.port = port;
+    public static int getHttpsProxyPort() {
+        return Integer.parseInt(getHttpsProxyPortString());
     }
 
     /**
-     * Get the port as a String.
-     * 
-     * @return the port as a String
+     * @return the httpsProxyPort as a string
      */
-    public String getPortString() {
-        return String.valueOf(port);
+    public static String getHttpsProxyPortString() {
+        return System.getProperty(HTTPS_PROXY_PORT, HTTPS_PROXY_DEFAULT_PORT);
     }
 
-    public String getNonProxyHosts() {
-        return nonProxyHosts;
+    /**
+     * @return the httpsNonProxyHosts
+     */
+    public static String getHttpsNonProxyHosts() {
+        return getHttpNonProxyHosts();
     }
 
-    public void setNonProxyHosts(String nonProxyHosts) {
-        this.nonProxyHosts = nonProxyHosts;
+    /**
+     * @return the ftpProxyHost
+     */
+    public static String getFtpProxyHost() {
+        return System.getProperty(FTP_PROXY_HOST);
+    }
+
+    /**
+     * @return the ftpProxyPort
+     */
+    public static int getFtpProxyPort() {
+        return Integer.parseInt(getFtpProxyPortString());
+    }
+
+    /**
+     * @return the ftpProxyPort as a String
+     */
+    public static String getFtpProxyPortString() {
+        // FTP default port is also 80
+        return System.getProperty(FTP_PROXY_PORT, HTTP_PROXY_DEFAULT_PORT);
+    }
+
+    /**
+     * @return the ftpNonProxyHosts
+     */
+    public static String getFtpNonProxyHosts() {
+        return System.getProperty(FTP_NON_PROXY_HOSTS);
+    }
+
+    /**
+     * @return the socksProxyHost
+     */
+    public static String getSocksProxyHost() {
+        return System.getProperty(SOCKS_PROXY_HOST);
+    }
+
+    /**
+     * @return the socksProxyPort
+     */
+    public static int getSocksProxyPort() {
+        return Integer.parseInt(getSocksProxyPortString());
+    }
+
+    /**
+     * @return the socksProxyPort as a String
+     */
+    public static String getSocksProxyPortString() {
+        return System.getProperty(SOCKS_PROXY_PORT, SOCKS_PROXY_DEFAULT_PORT);
+    }
+
+    /**
+     * @return the socksProxyVersion
+     */
+    public static int getSocksProxyVersion() {
+        return Integer.parseInt(System.getProperty(SOCKS_PROXY_VERSION));
+    }
+
+    /**
+     * @return the socksUserName
+     */
+    public static String getSocksUserName() {
+        return System.getProperty(JAVA_NET_SOCKS_USERNAME);
+    }
+
+    /**
+     * @return the socksPassword
+     */
+    public static String getSocksPassword() {
+        return System.getProperty(JAVA_NET_SOCKS_PASSWORD);
     }
 
 }
