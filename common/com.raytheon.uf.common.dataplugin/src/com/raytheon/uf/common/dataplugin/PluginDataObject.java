@@ -105,6 +105,7 @@ import com.raytheon.uf.common.time.DataTime;
  * May 16, 2013 1869        bsteffen    Rewrite dataURI property mappings.
  * Aug 30, 2013 2298        rjpeter     Make getPluginName abstract
  * Apr 15, 2014 1869        bsteffen    Remove unused transient record field.
+ * Jun 17, 2014 3165        bsteffen    Delete IDecoderGettable
  * 
  * </pre>
  * 
@@ -268,16 +269,6 @@ public abstract class PluginDataObject extends PersistableDataObject implements
         if (obj instanceof String) {
             this.dataURI = (String) obj;
         }
-    }
-
-    /**
-     * TODO: Rework non-PointDataContainer plots and remove
-     * 
-     * @return
-     */
-    @Deprecated
-    public IDecoderGettable getDecoderGettable() {
-        return null;
     }
 
     public void setDataURI(String dataURI) {
