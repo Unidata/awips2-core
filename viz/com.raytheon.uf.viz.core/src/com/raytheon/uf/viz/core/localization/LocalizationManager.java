@@ -98,6 +98,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  *                                     provided by EDEX.
  * Feb 04, 2014 2704       njensen     Allow setting server without saving
  * Feb 06, 2014 2761       mnash       Add region localization level
+ * Jun 19, 2014 3301       njensen     Acquire lock inside loop of retrieveFiles()
  * 
  * </pre>
  * 
@@ -472,8 +473,13 @@ public class LocalizationManager implements IPropertyChangeListener {
         }
     }
 
-    private void retrieveFiles(GetUtilityCommand[] commands, Date[] fileStamps)
-            throws LocalizationOpFailedException {
+    /**
+     * Retrieves the files from the localization service
+     * 
+     * @param commands
+     * @param fileStamps
+     */
+    private void retrieveFiles(GetUtilityCommand[] commands, Date[] fileStamps) {
         for (int i = 0; i < commands.length; ++i) {
             GetUtilityCommand command = commands[i];
             File file = buildFileLocation(command.getContext(),
@@ -482,6 +488,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                 continue;
             }
             try {
+                FileLocker.lock(this, file, Type.WRITE);
                 file.delete();
                 FileOutputStream fout = new FileOutputStream(file);
                 boolean finished = false;
@@ -527,6 +534,8 @@ public class LocalizationManager implements IPropertyChangeListener {
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error requesting file: " + String.valueOf(file), e);
+            } finally {
+                FileLocker.unlock(this, file);
             }
         }
     }
@@ -582,23 +591,16 @@ public class LocalizationManager implements IPropertyChangeListener {
      */
     protected void retrieve(LocalizationFile file)
             throws LocalizationOpFailedException {
-        try {
-            FileLocker.lock(this, file, Type.WRITE);
-            if (file.isDirectory()) {
-                retrieve(file.getContext(), file.getName());
-            } else {
-                if (needDownload(
-                        file.getContext(),
-                        buildFileLocation(file.getContext(), file.getName(),
-                                false), file.getTimeStamp(), file.getCheckSum())) {
-                    retrieveFiles(
-                            new GetUtilityCommand[] { new GetUtilityCommand(
-                                    file.getContext(), file.getName()) },
-                            new Date[] { file.getTimeStamp() });
-                }
+        if (file.isDirectory()) {
+            retrieve(file.getContext(), file.getName());
+        } else {
+            if (needDownload(
+                    buildFileLocation(file.getContext(), file.getName(), false),
+                    file.getTimeStamp(), file.getCheckSum())) {
+                retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
+                        file.getContext(), file.getName()) },
+                        new Date[] { file.getTimeStamp() });
             }
-        } finally {
-            FileLocker.unlock(this, file);
         }
     }
 
@@ -708,12 +710,20 @@ public class LocalizationManager implements IPropertyChangeListener {
         String fullFileName = listResponseEntry.getFileName();
 
         File file = buildFileLocation(context, fullFileName, false);
-        return needDownload(context, file, listResponseEntry.getDate(),
+        return needDownload(file, listResponseEntry.getDate(),
                 listResponseEntry.getChecksum());
     }
 
-    private boolean needDownload(LocalizationContext context, File file,
-            Date timeStamp, String checkSum) {
+    /**
+     * Checks if the file needs downloaded based on if it exists locally, the
+     * last modified timestamp, and the checksum
+     * 
+     * @param file
+     * @param timeStamp
+     * @param checkSum
+     * @return
+     */
+    private boolean needDownload(File file, Date timeStamp, String checkSum) {
         if (file == null) {
             return false;
         }

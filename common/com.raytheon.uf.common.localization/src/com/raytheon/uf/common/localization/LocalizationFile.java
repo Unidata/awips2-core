@@ -84,6 +84,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      files on the server not to be retrieved.
  * Jan 17, 2013 1412        djohnson    Add jaxbMarshal.
  * Apr 12, 2013 1903        rjpeter     Updated getFile to check parentFile for existence.
+ * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
  * </pre>
  * 
  * @author njensen
@@ -341,7 +342,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
         InputStream is = null;
         File f = getFile();
         try {
-            is = openInputStream();
+            is = new LockingFileInputStream(f);
 
             // Get the size of the file
             long length = f.length();
