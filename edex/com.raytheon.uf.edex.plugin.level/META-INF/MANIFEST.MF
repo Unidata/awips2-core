@@ -2,8 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Level Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.plugin.level
-Bundle-Version: 1.12.1174.qualifier
-Eclipse-RegisterBuddy:  com.raytheon.edex.common, com.raytheon.uf.common.dataplugin.level
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: Raytheon
 Require-Bundle: com.raytheon.edex.common,
  javax.measure,
@@ -15,5 +14,5 @@ Require-Bundle: com.raytheon.edex.common,
  org.slf4j;bundle-version="1.7.5"
 Export-Package: com.raytheon.uf.edex.plugin.level.adapter,
  com.raytheon.uf.edex.plugin.level.dao
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.comm
