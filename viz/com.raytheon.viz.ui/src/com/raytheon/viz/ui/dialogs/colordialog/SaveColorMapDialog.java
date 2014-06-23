@@ -56,6 +56,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * ------------ ---------- ----------- --------------------------
  * Jul 24, 2007            njensen     Initial creation
  * Oct 17, 2012 1229       rferrel     Dialog is non-blocking.
+ * Jun 23, 2014 #3158      lvenable    Added code so the dialog trim will appear.
  * 
  * </pre>
  * 
@@ -86,7 +87,7 @@ public class SaveColorMapDialog extends CaveSWTDialog {
      */
     public SaveColorMapDialog(Shell parent, ColorMap aColorMap,
             boolean aSiteContext, String aCurrentColormapName) {
-        super(parent, SWT.NONE, CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
         colorMapToSave = aColorMap;
         siteContext = aSiteContext;
         currentColormapName = new String(aCurrentColormapName == null ? ""
