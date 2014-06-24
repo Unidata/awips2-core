@@ -57,7 +57,8 @@ import com.raytheon.uf.viz.core.comm.ConnectivityManager.ConnectivityResult;
 import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
 
 /**
- * Dialog that pops up when unable to connect to localization server
+ * Dialog for configuring connection options at startup. Typically this pops up
+ * when unable to connect to the configured or default localization server.
  * 
  * <pre>
  * 
@@ -70,6 +71,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  *                                    Added status and details, better site validation
  * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
+ * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * 
  * 
  * </pre>
@@ -120,7 +122,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     private Label localizationLabel;
 
-    protected Text localizationText;
+    protected TextOrCombo localizationSrv;
 
     private String localization = "";
 
@@ -187,7 +189,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         boolean prompt = LocalizationManager
                 .getInstance()
                 .getLocalizationStore()
-                .getBoolean(LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
+                .getBoolean(
+                        LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
         // Only open if current settings are not valid.
         if (prompt || !validate()) {
             Shell parent = getParent();
@@ -288,20 +291,21 @@ public class ConnectivityPreferenceDialog extends Dialog {
     }
 
     protected void createTextBoxes(Composite textBoxComp) {
-        // Create localization text
-
         localizationLabel = new Label(textBoxComp, SWT.RIGHT);
         localizationLabel.setText("Localization Server:");
         GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
-        localizationText = new Text(textBoxComp, SWT.BORDER);
+        String[] pastOptions = ServerRemembrance.getServerOptions(
+                LocalizationManager.getInstance().getLocalizationStore(),
+                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+        localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
-        localizationText.setLayoutData(gd);
-        localizationText.setText(localization == null ? "" : localization);
-        localizationText.setBackground(getTextColor(localizationGood));
+        localizationSrv.widget.setLayoutData(gd);
+        localizationSrv.setText(localization == null ? "" : localization);
+        localizationSrv.widget.setBackground(getTextColor(localizationGood));
 
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site:");
@@ -406,19 +410,30 @@ public class ConnectivityPreferenceDialog extends Dialog {
         return valid;
     }
 
+    /**
+     * Applies the settings from the dialog to the current JVM and saves off the
+     * good settings. This should only ever be called after validate() if
+     * validate() returns true.
+     */
     protected void applySettings() {
         LocalizationManager.getInstance().setCurrentSite(site);
         LocalizationManager.getInstance().setCurrentServer(localization);
+        IPersistentPreferenceStore localPrefs = LocalizationManager
+                .getInstance().getLocalizationStore();
         if (alertVizServer != null) {
-            LocalizationManager
-                    .getInstance()
-                    .getLocalizationStore()
-                    .setValue(LocalizationConstants.P_ALERT_SERVER,
-                            alertVizServer);
+            localPrefs.setValue(LocalizationConstants.P_ALERT_SERVER,
+                    alertVizServer);
         }
+
+        String serverOptions = ServerRemembrance.formatServerOptions(
+                localization, localPrefs,
+                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+        localPrefs.setValue(
+                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS,
+                serverOptions);
+
         try {
-            ((IPersistentPreferenceStore) LocalizationManager.getInstance()
-                    .getLocalizationStore()).save();
+            localPrefs.save();
         } catch (IOException e) {
             statusHandler.handle(Priority.SIGNIFICANT,
                     "Unable to persist localization preference store", e);
@@ -428,13 +443,14 @@ public class ConnectivityPreferenceDialog extends Dialog {
     public boolean validate() {
         status = null;
         details = null;
-        if (localizationText != null && !localizationText.isDisposed()
-                && localizationText.isEnabled()) {
-            String localization = localizationText.getText().trim();
+        if (localizationSrv != null && !localizationSrv.widget.isDisposed()
+                && localizationSrv.widget.isEnabled()) {
+            String localization = localizationSrv.getText().trim();
             if (!localizationGood || !this.localization.equals(localization)) {
                 this.localization = localization;
                 validateLocalization();
-                localizationText.setBackground(getTextColor(localizationGood));
+                localizationSrv.widget
+                        .setBackground(getTextColor(localizationGood));
             }
         } else {
             validateLocalization();
@@ -490,7 +506,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     protected Color getTextColor(boolean isGood) {
         if (isGood) {
-            return display.getSystemColor(SWT.COLOR_WHITE);
+            // need to return null so it will fall back to the default
+            return null;
         } else {
             return display.getSystemColor(SWT.COLOR_RED);
         }
@@ -516,8 +533,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     public void setLocalization(String localization) {
         this.localization = localization;
-        if (localizationText != null && !localizationText.isDisposed()) {
-            localizationText.setText(localization);
+        if (localizationSrv != null && !localizationSrv.widget.isDisposed()) {
+            localizationSrv.setText(localization);
         }
     }
 
@@ -557,8 +574,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         if (localizationLabel != null && !localizationLabel.isDisposed()) {
             localizationLabel.setEnabled(enabled);
         }
-        if (localizationText != null && !localizationText.isDisposed()) {
-            localizationText.setEnabled(enabled);
+        if (localizationSrv != null && !localizationSrv.widget.isDisposed()) {
+            localizationSrv.widget.setEnabled(enabled);
         }
     }
 
