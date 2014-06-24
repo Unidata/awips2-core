@@ -74,6 +74,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Jul 23, 2013  2215     njensen     Updated for thrift 0.9.0
  * Nov 26, 2013  2537     bsteffen    Add support for void type lists which are
  *                                    sometimes created by python.
+ * Jun 24, 2014  3271     njensen     Better safety checks and error msgs
  * 
  * </pre>
  * 
@@ -476,7 +477,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     private void serializeArray(Object val, Class<?> valClass)
             throws TException, SerializationException {
         Iterator<?> iterator;
-        int i;
         if (valClass.isArray()) {
             Class<?> c = valClass.getComponentType();
             Byte b = lookupType(c);
@@ -529,11 +529,9 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             iterator = ((List<?>) val).iterator();
             TList list = new TList(TType.STRUCT, ((List<?>) val).size());
             protocol.writeListBegin(list);
-            i = 0;
             while (iterator.hasNext()) {
                 Object v = iterator.next();
                 this.serializationManager.serialize(this, v);
-                i++;
             }
             protocol.writeListEnd();
         }
@@ -596,7 +594,9 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             } else {
                 b = lookupType(obj.getClass());
             }
-            if (b == null) {
+            if (b == null
+                    || (b == TType.STRUCT && metadata == null && !obj
+                            .getClass().isEnum())) {
                 throw new SerializationException(
                         "Don't know how to serialize class: " + obj.getClass());
             }
