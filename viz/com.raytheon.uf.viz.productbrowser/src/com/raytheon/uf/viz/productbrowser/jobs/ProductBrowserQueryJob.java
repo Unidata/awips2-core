@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.productbrowser.jobs;
 
+import java.util.Collections;
 import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -28,6 +29,8 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.TreeItem;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
@@ -45,6 +48,8 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 13, 2014  3135     bsteffen    Initial creation
+ * Jun 24, 2014  3279     bclement    added error handling and item.clearAll() 
+ *                                      to run methods to fix eternal 'Loading...' problem
  * 
  * </pre>
  * 
@@ -52,6 +57,9 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * @version 1.0
  */
 public class ProductBrowserQueryJob extends Job implements Runnable {
+
+    private static final IUFStatusHandler log = UFStatus
+            .getHandler(ProductBrowserQueryJob.class);
 
     protected static final String JOB_DATA_KEY = "queryJob";
 
@@ -79,11 +87,27 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
      */
     @Override
     protected IStatus run(IProgressMonitor monitor) {
-        results = def.populateData(selection);
-        if (!item.isDisposed()) {
-            item.getDisplay().syncExec(this);
+        IStatus rval = Status.OK_STATUS;
+        try {
+            results = def.populateData(selection);
+            if (!item.isDisposed()) {
+                item.getDisplay().syncExec(this);
+            }
+        } catch (Throwable e) {
+            /* something has gone very wrong */
+            log.error(e.getLocalizedMessage(), e);
+            rval = Status.CANCEL_STATUS;
+            /* clean up tree */
+            if (!item.isDisposed()) {
+                item.getDisplay().syncExec(new Runnable() {
+                    @Override
+                    public void run() {
+                        item.clearAll(true);
+                    }
+                });
+            }
         }
-        return Status.OK_STATUS;
+        return rval;
     }
 
     /**
@@ -97,7 +121,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         }
         List<ProductBrowserLabel> results = this.results;
         if (results == null) {
-            return;
+            results = Collections.emptyList();
         }
         /*
          * If all children are disposed it can cause expand to disable so make
@@ -151,6 +175,8 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         }
         if (!results.isEmpty()) {
             item.setExpanded(expanded);
+        } else {
+            item.clearAll(true);
         }
         item.setData(JOB_DATA_KEY, null);
     }
