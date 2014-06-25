@@ -22,10 +22,12 @@ package com.raytheon.uf.edex.purgesrv;
 import java.lang.Thread.State;
 import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.Collections;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -82,7 +84,7 @@ import com.raytheon.uf.edex.purgesrv.PurgeJob.PURGE_JOB_TYPE;
  * Apr 18, 2012 #470       bphillip    Initial creation
  * Apr 11, 2013 #1959      dhladky     Added method that only processes running plugins
  * Aug 18, 2013 #2280      dhladky     Made OGC method of only purging active plugins the standard practice
- * 
+ * Jun 24, 2014 #3314      randerso    Purge least recently purged first.
  * 
  * </pre>
  * 
@@ -91,80 +93,96 @@ import com.raytheon.uf.edex.purgesrv.PurgeJob.PURGE_JOB_TYPE;
  */
 public class PurgeManager {
 
-	/** Purge Manager task name */
-	private static final String PURGE_TASK_NAME = "Purge Manager";
+    /** Purge Manager task name */
+    private static final String PURGE_TASK_NAME = "Purge Manager";
 
-	/** Purge Manager task details */
-	private static final String PURGE_TASK_DETAILS = "Purge Manager Job";
+    /** Purge Manager task details */
+    private static final String PURGE_TASK_DETAILS = "Purge Manager Job";
 
-	/** Purge Manager task override timeout. Currently 2 minutes */
-	private static final long PURGE_MANAGER_TIMEOUT = 120000;
+    /** Purge Manager task override timeout. Currently 2 minutes */
+    private static final long PURGE_MANAGER_TIMEOUT = 120000;
 
-	/**
-	 * The cluster limit property to be set via Spring with the value defined in
-	 * project.properties
-	 */
-	private int clusterLimit = 6;
-
-	/**
-	 * The server limit property to be set via Spring with the value defined in
-	 * project.properties
-	 */
-	private int serverLimit = 2;
-
-	/**
-	 * The time in minutes at which a purge job is considered 'dead' or 'hung'
-	 * set via Spring with the value defined in project.properties
-	 */
-	private int deadPurgeJobAge = 20;
-
-	/**
-	 * The frequency, in minutes, that a plugin may be purged set via Spring
-	 * with the value defined in project.properties
-	 */
-	private int purgeFrequency = 60;
-
-	/**
-	 * How many times a purger is allowed to fail before it is considered fatal.
-	 * Set via Spring with the value defined in project.properties
-	 */
-	private int fatalFailureCount = 3;
-
-	/**
-	 * The master switch defined in project.properties that enables and disables
-	 * data purging
-	 */
-	private boolean purgeEnabled = true;
-
-	/** Map of purge jobs */
-	private Map<String, PurgeJob> purgeJobs = new ConcurrentHashMap<String, PurgeJob>();
-
-	private PurgeDao dao = new PurgeDao();
-
-
-	/**
-	 * Creates a new PurgeManager
-	 */
-	protected PurgeManager() {
-	    
-	}
-    
     /**
-     * Executes the purge only on available plugins that are registered with
-     * camel.  This works better for our system instances that will be running it.
-     * They aren't required to purge data from plugins that aren't registerd to 
-     * their JVM which would be highly wasteful in this instance.
+     * The cluster limit property to be set via Spring with the value defined in
+     * project.properties
+     */
+    private int clusterLimit = 6;
+
+    /**
+     * The server limit property to be set via Spring with the value defined in
+     * project.properties
+     */
+    private int serverLimit = 2;
+
+    /**
+     * The time in minutes at which a purge job is considered 'dead' or 'hung'
+     * set via Spring with the value defined in project.properties
+     */
+    private int deadPurgeJobAge = 20;
+
+    /**
+     * The frequency, in minutes, that a plugin may be purged set via Spring
+     * with the value defined in project.properties
+     */
+    private int purgeFrequency = 60;
+
+    /**
+     * How many times a purger is allowed to fail before it is considered fatal.
+     * Set via Spring with the value defined in project.properties
+     */
+    private int fatalFailureCount = 3;
+
+    /**
+     * The master switch defined in project.properties that enables and disables
+     * data purging
+     */
+    private boolean purgeEnabled = true;
+
+    /** Map of purge jobs */
+    private Map<String, PurgeJob> purgeJobs = new ConcurrentHashMap<String, PurgeJob>();
+
+    private PurgeDao dao = new PurgeDao();
+
+    /**
+     * Creates a new PurgeManager
+     */
+    protected PurgeManager() {
+
+    }
+
+    /**
+     * Executes the purge routine
      */
     public void executePurge() {
-        // check only for active plugins
-        List<String> availablePlugins = new ArrayList<String>(PluginRegistry
-                .getInstance().getRegisteredObjects());
 
-        purgeRunner(availablePlugins);
+        // Gets the list of plugins in ascending order by the last time they
+        // were purged
+        List<String> dbPluginList = dao.getPluginsByPurgeTime();
+
+        // Get list of registered plugins
+        Set<String> registeredPlugins = PluginRegistry.getInstance()
+                .getRegisteredObjects();
+
+        // Remove unregistered plugins from the dbPluginList
+        dbPluginList.retainAll(registeredPlugins);
+
+        // Find any plugins that aren't in the db
+        List<String> newPlugins = new ArrayList<String>(registeredPlugins);
+        newPlugins.removeAll(dbPluginList);
+
+        if (newPlugins.size() > 0) {
+            // generate new list with them at the beginning
+            Collections.sort(newPlugins);
+            newPlugins.addAll(dbPluginList);
+            dbPluginList = newPlugins;
+        }
+
+        purgeRunner(dbPluginList);
     }
 
     /**
      * The guts of the actual purge process
+     * 
      * @param availablePlugins
      */
     protected void purgeRunner(List<String> pluginList) {
@@ -175,11 +193,11 @@ public class PurgeManager {
                     null);
             return;
         }
-        
+
         ClusterTask purgeMgrTask = getPurgeLock();
-        
+
         try {
-            
+
             // Prune the job map
             Iterator<PurgeJob> iter = purgeJobs.values().iterator();
             while (iter.hasNext()) {
@@ -187,7 +205,7 @@ public class PurgeManager {
                     iter.remove();
                 }
             }
-            
+
             Calendar purgeTimeOutLimit = Calendar.getInstance();
             purgeTimeOutLimit.setTimeZone(TimeZone.getTimeZone("GMT"));
             purgeTimeOutLimit.add(Calendar.MINUTE, -deadPurgeJobAge);
@@ -203,7 +221,7 @@ public class PurgeManager {
                                     purgeTimeOutLimit.getTime(),
                                     fatalFailureCount), serverLimit
                             - getNumberRunningJobsOnServer(purgeTimeOutLimit));
-            
+
             if (!pluginList.isEmpty()) {
                 for (String plugin : pluginList) {
                     try {
@@ -297,190 +315,190 @@ public class PurgeManager {
         }
     }
 
-	@SuppressWarnings("unused")
-	private String getPurgeStatus(boolean verbose) {
-		Calendar purgeTimeOutLimit = Calendar.getInstance();
-		purgeTimeOutLimit.setTimeZone(TimeZone.getTimeZone("GMT"));
-		purgeTimeOutLimit.add(Calendar.MINUTE, -deadPurgeJobAge);
+    @SuppressWarnings("unused")
+    private String getPurgeStatus(boolean verbose) {
+        Calendar purgeTimeOutLimit = Calendar.getInstance();
+        purgeTimeOutLimit.setTimeZone(TimeZone.getTimeZone("GMT"));
+        purgeTimeOutLimit.add(Calendar.MINUTE, -deadPurgeJobAge);
 
-		StringBuilder builder = new StringBuilder();
-		List<PurgeJobStatus> failedJobs = dao.getFailedJobs(fatalFailureCount);
+        StringBuilder builder = new StringBuilder();
+        List<PurgeJobStatus> failedJobs = dao.getFailedJobs(fatalFailureCount);
 
-		List<PurgeJobStatus> timedOutJobs = dao
-				.getTimedOutJobs(purgeTimeOutLimit.getTime());
-		int clusterJobs = dao.getRunningClusterJobs(
-				purgeTimeOutLimit.getTime(), fatalFailureCount);
-		Map<String, List<PurgeJobStatus>> serverMap = dao
-				.getRunningServerJobs();
-		builder.append("\nPURGE JOB STATUS:");
-		builder.append("\n\tTotal Jobs Running On Cluster: ").append(
-				clusterJobs);
-		List<PurgeJobStatus> jobs = null;
-		for (String server : serverMap.keySet()) {
-			jobs = serverMap.get(server);
-			builder.append("\n\tJobs Running On ").append(server).append(": ")
-					.append(jobs.size());
-			if (verbose && !jobs.isEmpty()) {
-				builder.append("   Plugins: ");
-				for (int i = 0; i < jobs.size(); i++) {
-					builder.append(jobs.get(i).getPlugin());
-					if (i != jobs.size() - 1) {
-						builder.append(",");
-					}
-				}
-			}
-		}
-		if (verbose) {
-			builder.append("\n\tFailed Jobs: ");
-			if (failedJobs.isEmpty()) {
-				builder.append("0");
-			} else {
-				PurgeJobStatus currentJob = null;
-				for (int i = 0; i < failedJobs.size(); i++) {
-					currentJob = failedJobs.get(i);
-					builder.append(currentJob.getPlugin());
-					if (i != failedJobs.size() - 1) {
-						builder.append(",");
-					}
-				}
-			}
+        List<PurgeJobStatus> timedOutJobs = dao
+                .getTimedOutJobs(purgeTimeOutLimit.getTime());
+        int clusterJobs = dao.getRunningClusterJobs(
+                purgeTimeOutLimit.getTime(), fatalFailureCount);
+        Map<String, List<PurgeJobStatus>> serverMap = dao
+                .getRunningServerJobs();
+        builder.append("\nPURGE JOB STATUS:");
+        builder.append("\n\tTotal Jobs Running On Cluster: ").append(
+                clusterJobs);
+        List<PurgeJobStatus> jobs = null;
+        for (String server : serverMap.keySet()) {
+            jobs = serverMap.get(server);
+            builder.append("\n\tJobs Running On ").append(server).append(": ")
+                    .append(jobs.size());
+            if (verbose && !jobs.isEmpty()) {
+                builder.append("   Plugins: ");
+                for (int i = 0; i < jobs.size(); i++) {
+                    builder.append(jobs.get(i).getPlugin());
+                    if (i != jobs.size() - 1) {
+                        builder.append(",");
+                    }
+                }
+            }
+        }
+        if (verbose) {
+            builder.append("\n\tFailed Jobs: ");
+            if (failedJobs.isEmpty()) {
+                builder.append("0");
+            } else {
+                PurgeJobStatus currentJob = null;
+                for (int i = 0; i < failedJobs.size(); i++) {
+                    currentJob = failedJobs.get(i);
+                    builder.append(currentJob.getPlugin());
+                    if (i != failedJobs.size() - 1) {
+                        builder.append(",");
+                    }
+                }
+            }
 
-			builder.append("\n\tTimed Out Jobs: ");
-			if (timedOutJobs.isEmpty()) {
-				builder.append("0");
-			} else {
-				PurgeJobStatus currentJob = null;
-				for (int i = 0; i < timedOutJobs.size(); i++) {
-					currentJob = timedOutJobs.get(i);
-					builder.append(currentJob.getPlugin());
-					if (i != timedOutJobs.size() - 1) {
-						builder.append(",");
-					}
-				}
-			}
-		}
-		return builder.toString();
-	}
+            builder.append("\n\tTimed Out Jobs: ");
+            if (timedOutJobs.isEmpty()) {
+                builder.append("0");
+            } else {
+                PurgeJobStatus currentJob = null;
+                for (int i = 0; i < timedOutJobs.size(); i++) {
+                    currentJob = timedOutJobs.get(i);
+                    builder.append(currentJob.getPlugin());
+                    if (i != timedOutJobs.size() - 1) {
+                        builder.append(",");
+                    }
+                }
+            }
+        }
+        return builder.toString();
+    }
 
-	public ClusterTask getPurgeLock() {
-		// Lock so only one cluster member may start purge processes
-		ClusterTask purgeMgrTask = ClusterLockUtils.lock(PURGE_TASK_NAME,
-				PURGE_TASK_DETAILS, PURGE_MANAGER_TIMEOUT, true);
+    public ClusterTask getPurgeLock() {
+        // Lock so only one cluster member may start purge processes
+        ClusterTask purgeMgrTask = ClusterLockUtils.lock(PURGE_TASK_NAME,
+                PURGE_TASK_DETAILS, PURGE_MANAGER_TIMEOUT, true);
 
-		LockState purgeMgrLockState = purgeMgrTask.getLockState();
-		switch (purgeMgrLockState) {
-		case FAILED:
-			PurgeLogger.logError(
-					"Purge Manager failed to acquire cluster task lock",
-					StatusConstants.CATEGORY_PURGE);
-			return null;
-		case OLD:
-			PurgeLogger.logWarn("Purge Manager acquired old cluster task lock",
-					StatusConstants.CATEGORY_PURGE);
-			break;
-		case ALREADY_RUNNING:
-			PurgeLogger
-					.logWarn(
-							"Purge Manager acquired currently running cluster task lock",
-							StatusConstants.CATEGORY_PURGE);
-			return null;
-		case SUCCESSFUL:
-			break;
-		}
-		return purgeMgrTask;
-	}
+        LockState purgeMgrLockState = purgeMgrTask.getLockState();
+        switch (purgeMgrLockState) {
+        case FAILED:
+            PurgeLogger.logError(
+                    "Purge Manager failed to acquire cluster task lock",
+                    StatusConstants.CATEGORY_PURGE);
+            return null;
+        case OLD:
+            PurgeLogger.logWarn("Purge Manager acquired old cluster task lock",
+                    StatusConstants.CATEGORY_PURGE);
+            break;
+        case ALREADY_RUNNING:
+            PurgeLogger
+                    .logWarn(
+                            "Purge Manager acquired currently running cluster task lock",
+                            StatusConstants.CATEGORY_PURGE);
+            return null;
+        case SUCCESSFUL:
+            break;
+        }
+        return purgeMgrTask;
+    }
 
-	private int getNumberRunningJobsOnServer(Calendar timeOutTime) {
-		int rval = 0;
-		for (PurgeJob job : purgeJobs.values()) {
-			// if job has not timed out or if the job is not blocked consider it
-			// running on this server
-			if (timeOutTime.getTimeInMillis() < job.getStartTime()
-					|| !job.getState().equals(State.BLOCKED)) {
-				rval++;
-			}
+    private int getNumberRunningJobsOnServer(Calendar timeOutTime) {
+        int rval = 0;
+        for (PurgeJob job : purgeJobs.values()) {
+            // if job has not timed out or if the job is not blocked consider it
+            // running on this server
+            if (timeOutTime.getTimeInMillis() < job.getStartTime()
+                    || !job.getState().equals(State.BLOCKED)) {
+                rval++;
+            }
 
-		}
-		return rval;
-	}
+        }
+        return rval;
+    }
 
-	/**
-	 * Starts a purge expired data job for the specified plugin. Using this
-	 * method allows for exceeding failure count via a manual purge as well as
-	 * kicking off a second purge for one already running on a server.
-	 * 
-	 * @param plugin
-	 *            The plugin to purge the expired data for
-	 * @return The PurgeJob that was started
-	 */
-	public PurgeJob purgeExpiredData(String plugin) {
-		dao.startJob(plugin);
-		PurgeJob job = new PurgeJob(plugin, PURGE_JOB_TYPE.PURGE_EXPIRED, this);
-		job.start();
-		return job;
-	}
+    /**
+     * Starts a purge expired data job for the specified plugin. Using this
+     * method allows for exceeding failure count via a manual purge as well as
+     * kicking off a second purge for one already running on a server.
+     * 
+     * @param plugin
+     *            The plugin to purge the expired data for
+     * @return The PurgeJob that was started
+     */
+    public PurgeJob purgeExpiredData(String plugin) {
+        dao.startJob(plugin);
+        PurgeJob job = new PurgeJob(plugin, PURGE_JOB_TYPE.PURGE_EXPIRED, this);
+        job.start();
+        return job;
+    }
 
-	/**
-	 * Starts a purge all data job for the specified plugin. Using this method
-	 * allows for exceeding failure count via a manual purge as well as kicking
-	 * off a second purge for one already running on a server.
-	 * 
-	 * @param plugin
-	 *            The plugin to purge all data for
-	 * @return The PurgeJob that was started
-	 */
-	public PurgeJob purgeAllData(String plugin) {
-		dao.startJob(plugin);
-		PurgeJob job = new PurgeJob(plugin, PURGE_JOB_TYPE.PURGE_ALL, this);
-		job.start();
-		return job;
-	}
+    /**
+     * Starts a purge all data job for the specified plugin. Using this method
+     * allows for exceeding failure count via a manual purge as well as kicking
+     * off a second purge for one already running on a server.
+     * 
+     * @param plugin
+     *            The plugin to purge all data for
+     * @return The PurgeJob that was started
+     */
+    public PurgeJob purgeAllData(String plugin) {
+        dao.startJob(plugin);
+        PurgeJob job = new PurgeJob(plugin, PURGE_JOB_TYPE.PURGE_ALL, this);
+        job.start();
+        return job;
+    }
 
-	public int getClusterLimit() {
-		return clusterLimit;
-	}
+    public int getClusterLimit() {
+        return clusterLimit;
+    }
 
-	public void setClusterLimit(int clusterLimit) {
-		this.clusterLimit = clusterLimit;
-	}
+    public void setClusterLimit(int clusterLimit) {
+        this.clusterLimit = clusterLimit;
+    }
 
-	public int getServerLimit() {
-		return serverLimit;
-	}
+    public int getServerLimit() {
+        return serverLimit;
+    }
 
-	public void setServerLimit(int serverLimit) {
-		this.serverLimit = serverLimit;
-	}
+    public void setServerLimit(int serverLimit) {
+        this.serverLimit = serverLimit;
+    }
 
-	public int getDeadPurgeJobAge() {
-		return deadPurgeJobAge;
-	}
+    public int getDeadPurgeJobAge() {
+        return deadPurgeJobAge;
+    }
 
-	public void setDeadPurgeJobAge(int deadPurgeJobAge) {
-		this.deadPurgeJobAge = deadPurgeJobAge;
-	}
+    public void setDeadPurgeJobAge(int deadPurgeJobAge) {
+        this.deadPurgeJobAge = deadPurgeJobAge;
+    }
 
-	public int getPurgeFrequency() {
-		return purgeFrequency;
-	}
+    public int getPurgeFrequency() {
+        return purgeFrequency;
+    }
 
-	public void setPurgeFrequency(int purgeFrequency) {
-		this.purgeFrequency = purgeFrequency;
-	}
+    public void setPurgeFrequency(int purgeFrequency) {
+        this.purgeFrequency = purgeFrequency;
+    }
 
-	public int getFatalFailureCount() {
-		return this.fatalFailureCount;
-	}
+    public int getFatalFailureCount() {
+        return this.fatalFailureCount;
+    }
 
-	public void setFatalFailureCount(int fatalFailureCount) {
-		this.fatalFailureCount = fatalFailureCount;
-	}
+    public void setFatalFailureCount(int fatalFailureCount) {
+        this.fatalFailureCount = fatalFailureCount;
+    }
 
-	public void setPurgeEnabled(boolean purgeEnabled) {
-		this.purgeEnabled = purgeEnabled;
-	}
+    public void setPurgeEnabled(boolean purgeEnabled) {
+        this.purgeEnabled = purgeEnabled;
+    }
 
-	public boolean getPurgeEnabled() {
-		return purgeEnabled;
-	}
+    public boolean getPurgeEnabled() {
+        return purgeEnabled;
+    }
 }
