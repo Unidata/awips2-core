@@ -6,12 +6,14 @@
         <wfo>SAM</wfo>
         <wfo>GUM</wfo>
         <wfo>HNL</wfo>
+        <wfo>HFO</wfo>
     </region>
     <!-- Eastern Region VUY -->
     <region regionId="ER">
         <wfo>VUY</wfo>
         <wfo>CAR</wfo>
         <wfo>GYX</wfo>
+        <wfo>BOX</wfo>
         <wfo>LWX</wfo>
         <wfo>PHI</wfo>
         <wfo>ALY</wfo>
@@ -41,6 +43,7 @@
         <wfo>MOB</wfo>
         <wfo>LZK</wfo>
         <wfo>JAX</wfo>
+        <wfo>KEY</wfo>
         <wfo>EYW</wfo>
         <wfo>MLB</wfo>
         <wfo>MFL</wfo>
@@ -57,6 +60,7 @@
         <wfo>SJU</wfo>
         <wfo>MRX</wfo>
         <wfo>MEG</wfo>
+        <wfo>OHX</wfo>
         <wfo>BNA</wfo>
         <wfo>AMA</wfo>
         <wfo>EWX</wfo>
@@ -64,6 +68,7 @@
         <wfo>CRP</wfo>
         <wfo>FWD</wfo>
         <wfo>ELP</wfo>
+        <wfo>EPZ</wfo>
         <wfo>HGX</wfo>
         <wfo>LUB</wfo>
         <wfo>MAF</wfo>
@@ -99,6 +104,7 @@
     </region>
     <!-- Central region BCQ -->
     <region regionId="CR">
+        <wfo>BOU</wfo>
         <wfo>BCQ</wfo>
         <wfo>DEN</wfo>
         <wfo>GJT</wfo>
