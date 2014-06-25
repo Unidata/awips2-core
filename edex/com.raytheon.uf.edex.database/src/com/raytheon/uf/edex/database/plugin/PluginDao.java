@@ -116,6 +116,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Oct 07, 2013 2392       rjpeter     Updated to pass null productKeys as actual null instead of string null.
  * Dec 13, 2013 2555       rjpeter     Refactored archiving logic into processArchiveRecords.
  * Apr 21, 2014 2946       bsteffen    Allow auxillary purge rules in multiple files.
+ * Jun 24, 2014 #3314      randerso    Fix misspelling in message
  * </pre>
  * 
  * @author bphillip
@@ -209,7 +210,7 @@ public abstract class PluginDao extends CoreDao {
         }
         List<PluginDataObject> duplicates = mergeAll(toPersist);
         toPersist.removeAll(duplicates);
-        
+
         if (!duplicates.isEmpty()) {
             logger.info("Discarded : " + duplicates.size() + " duplicates!");
             if (logger.isDebugEnabled()) {
@@ -855,7 +856,7 @@ public abstract class PluginDao extends CoreDao {
                             .getModTimeToWaitInMillis()) {
                         PurgeLogger
                                 .logInfo(
-                                        "For procuct key, "
+                                        "For product key, "
                                                 + productKeyString
                                                 + ", the most recent version is less than "
                                                 + rule.getModTimeToWaitDescription()
@@ -1701,7 +1702,8 @@ public abstract class PluginDao extends CoreDao {
         Pattern auxFileNameMatcher = Pattern.compile(IPathManager.SEPARATOR
                 + pluginName + "PurgeRules\\w+\\.xml$");
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/", new String[] { ".xml" }, true, true);
+        LocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/",
+                new String[] { ".xml" }, true, true);
         LocalizationFile purgeRulesFile = null;
         List<LocalizationFile> auxRuleFiles = new ArrayList<LocalizationFile>();
         /*
@@ -1768,34 +1770,33 @@ public abstract class PluginDao extends CoreDao {
                 PurgeLogger
                         .logWarn(
                                 file.toString()
-                                + " should not contain default rules, they will be ignored. Default can only be defined in "
+                                        + " should not contain default rules, they will be ignored. Default can only be defined in "
                                         + masterFileName, pluginName);
             }
             /*
              * TODO this could work if auxRules has less keys but would need to
-             * verify that auxRules isn't using more keys than are deined,
+             * verify that auxRules isn't using more keys than are defined,
              * specifically if defining 0 keys.
              */
             if (auxRules.getKeys().equals(purgeRules.getKeys())) {
                 purgeRules.getRules().addAll(auxRules.getRules());
             } else {
-                PurgeLogger.logError(
-                        "Ignoring purge rules in "
+                PurgeLogger
+                        .logError(
+                                "Ignoring purge rules in "
                                         + file.toString()
                                         + " because the keys are different from those in "
-                                + masterFileName, pluginName);
+                                        + masterFileName, pluginName);
             }
         }
         return purgeRules;
-        
-        
+
     }
 
     public static List<PurgeRule> loadDefaultPurgeRules() {
         LocalizationFile defaultRule = PathManagerFactory.getPathManager()
-                .getStaticLocalizationFile(
-                "purge/defaultPurgeRules.xml");
-        if (defaultRule == null || defaultRule.exists() == false) {
+                .getStaticLocalizationFile("purge/defaultPurgeRules.xml");
+        if ((defaultRule == null) || (defaultRule.exists() == false)) {
             PurgeLogger
                     .logError(
                             "Default purge rule not defined!! Data will not be purged for plugins which do not specify purge rules!",
