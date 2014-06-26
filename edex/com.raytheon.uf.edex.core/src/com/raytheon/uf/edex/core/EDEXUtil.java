@@ -21,8 +21,6 @@
 package com.raytheon.uf.edex.core;
 
 import java.io.File;
-import java.io.IOException;
-import java.net.URL;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.TimeZone;
@@ -34,15 +32,10 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
-import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
 import com.raytheon.uf.common.message.StatusMessage;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.core.exception.ShutdownException;
-import com.raytheon.uf.edex.core.props.EnvProperties;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
 /**
  * Contains utility methods for use by EDEX.
@@ -58,6 +51,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * 06/12/2012   0609        djohnson    Use EDEXUtil for EDEX_HOME.
  * 03/18/2013   1802        bphillip    Added getList utility function
  * 04/10/2014   2726        rjpeter     Added methods for waiting for edex to be running.
+ * 06/25/2014   3165        njensen     Remove dead code
  * </pre>
  * 
  * @author chammack
@@ -190,68 +184,6 @@ public class EDEXUtil implements ApplicationContextAware {
         if (shuttingDown) {
             throw new ShutdownException();
         }
-    }
-
-    /**
-     * Retrieve a URL to a new file with a UUID name
-     * 
-     * @return A URL to the new file
-     * @throws IOException
-     * @throws PluginException
-     */
-    public synchronized static URL newUUIDFile() throws IOException,
-            PluginException {
-
-        URL url = null;
-        String fileName = null;
-        File dbDirectory = null;
-        String canonicalPath = null;
-        String persistDir = null;
-
-        // create the index directory
-        EnvProperties envProperties = PropertiesFactory.getInstance()
-                .getEnvProperties();
-
-        if (envProperties == null) {
-            throw new PluginException("Unable to get an EnvProperties instance");
-        }
-        persistDir = envProperties.getEnvValue("PERSISTDIR");
-        persistDir = FileUtil.convertFilePath(persistDir);
-
-        if (persistDir == null) {
-            throw new PluginException(
-                    "Unable to retrieve value for the PERSISTDIR");
-        }
-
-        dbDirectory = new File(persistDir);
-        dbDirectory.mkdirs();
-        canonicalPath = dbDirectory.getCanonicalPath();
-
-        // get a unique file name
-        fileName = new String(canonicalPath + File.separator
-                + java.util.UUID.randomUUID().toString());
-
-        url = new File(fileName).toURI().toURL();
-
-        return url;
-    }
-
-    public static String objectToString(Object obj) {
-        String stringValue = null;
-        if (obj == null) {
-            stringValue = "null";
-        } else if (obj instanceof String) {
-            if (((String) obj).isEmpty()) {
-                stringValue = "null";
-            } else {
-                stringValue = (String) obj;
-            }
-        } else if (obj instanceof Calendar) {
-            stringValue = TimeUtil.formatCalendar((Calendar) obj);
-        } else {
-            stringValue = String.valueOf(obj);
-        }
-        return stringValue;
     }
 
     public static IMessageProducer getMessageProducer() {
