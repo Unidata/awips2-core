@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.localization;
 
+import org.eclipse.swt.events.ModifyListener;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.widgets.Combo;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
@@ -95,4 +97,21 @@ public class TextOrCombo {
             ((Combo) widget).setText(text);
         }
     }
+
+    public void addSelectionListener(SelectionListener listener) {
+        if (isText) {
+            ((Text) widget).addSelectionListener(listener);
+        } else if (isCombo) {
+            ((Combo) widget).addSelectionListener(listener);
+        }
+    }
+
+    public void addModifyListener(ModifyListener listener) {
+        if (isText) {
+            ((Text) widget).addModifyListener(listener);
+        } else if (isCombo) {
+            ((Combo) widget).addModifyListener(listener);
+        }
+    }
+
 }

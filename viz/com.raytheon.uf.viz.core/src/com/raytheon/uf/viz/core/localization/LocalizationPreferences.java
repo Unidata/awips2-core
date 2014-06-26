@@ -63,6 +63,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Apr 18, 2007           chammack    Initial Creation.
  * Aug 02, 2013  2202     bsteffen    Add edex specific connectivity checking.
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
+ * Jun 26, 2014  3236     njensen     LocalizationEditor can be text or combo
  * 
  * </pre>
  * 
@@ -73,7 +74,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
 public class LocalizationPreferences extends FieldEditorPreferencePage
         implements IWorkbenchPreferencePage {
 
-    private StringFieldEditor localizationEditor;
+    private TextOrComboEditor localizationEditor;
 
     private StringFieldEditor alertEditor;
 
@@ -100,27 +101,20 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
     @Override
     protected void createFieldEditors() {
         createStartupPromptEditor();
-        createUserAndSiteEditor();
+        createSiteEditor();
         createServerEditors();
     }
 
     private void createStartupPromptEditor() {
         this.addField(new BooleanFieldEditor(
                 LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP,
-                "Prompt for settings on startup.",
-                getFieldEditorParent()));
+                "Prompt for settings on startup.", getFieldEditorParent()));
     }
 
     /**
      * Create the user and site field editors
      */
-    private void createUserAndSiteEditor() {
-        StringFieldEditor userNameField = new StringFieldEditor(
-                LocalizationConstants.P_LOCALIZATION_USER_NAME, "&Username: ",
-                getFieldEditorParent());
-        userNameField.setEnabled(false, getFieldEditorParent());
-        this.addField(userNameField);
-
+    private void createSiteEditor() {
         String[] siteList;
         if (!LocalizationManager.getInstance().isOverrideSite()) {
             String[] config = PathManagerFactory.getPathManager()
@@ -170,9 +164,11 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
      */
     private void createServerEditors() {
         if (!LocalizationManager.getInstance().isOverrideServer()) {
-            localizationEditor = new StringFieldEditor(
+            localizationEditor = new TextOrComboEditor(getFieldEditorParent(),
+                    getPreferenceStore(),
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER,
-                    "&Localization Server: ", getFieldEditorParent());
+                    LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS,
+                    "&Localization Server: ");
         } else {
             Composite note = createNoteComposite(
                     getFont(),
@@ -184,13 +180,21 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                     false);
             layoutData.horizontalSpan = 2;
             note.setLayoutData(layoutData);
-            localizationEditor = new ReadOnlyStringFieldEditor(
+            localizationEditor = new TextOrComboEditor(getFieldEditorParent(),
+                    getPreferenceStore(),
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER,
-                    "&Localization Server: ", LocalizationManager.getInstance()
-                            .getLocalizationServer(), getFieldEditorParent());
+                    LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS,
+                    "&Localization Server: ");
+            localizationEditor.setEnabled(false, getFieldEditorParent());
         }
         localizationEditor
                 .setErrorMessage("Unable to connect to localization server");
+        localizationEditor.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                checkConnectivity();
+            }
+        });
         this.addField(localizationEditor);
 
         if (LocalizationManager.internalAlertServer == false) {
@@ -213,12 +217,10 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         b.setLayoutData(gd);
         b.setText("Check Connectivity");
         b.addSelectionListener(new SelectionAdapter() {
-
             @Override
             public void widgetSelected(SelectionEvent e) {
                 checkConnectivity();
             }
-
         });
     }
 
@@ -227,7 +229,8 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
      */
     private void checkConnectivity() {
         final ConnectivityResult result = new ConnectivityResult(false, "");
-        Text text = localizationEditor.getTextControl(getFieldEditorParent());
+        TextOrCombo text = localizationEditor
+                .getTextOrComboControl(getFieldEditorParent());
         ConnectivityManager.checkLocalizationServer(text.getText().trim(),
                 new IConnectivityCallback() {
                     @Override
@@ -236,16 +239,16 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                     }
                 });
         if (result.hasConnectivity) {
-            text.setBackground(Display.getDefault().getSystemColor(
-                    SWT.COLOR_WHITE));
+            text.widget.setBackground(null);
+            localizationEditor.clearErrorMessage();
         } else {
-            text.setBackground(Display.getDefault().getSystemColor(
+            text.widget.setBackground(Display.getDefault().getSystemColor(
                     SWT.COLOR_RED));
             localizationEditor.showErrorMessage();
         }
 
         if (alertEditor != null) {
-            text = alertEditor.getTextControl(getFieldEditorParent());
+            Text alert = alertEditor.getTextControl(getFieldEditorParent());
             ConnectivityManager.checkAlertService(text.getText().trim(),
                     new IConnectivityCallback() {
                         @Override
@@ -254,10 +257,10 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                         }
                     });
             if (result.hasConnectivity) {
-                text.setBackground(Display.getDefault().getSystemColor(
+                alert.setBackground(Display.getDefault().getSystemColor(
                         SWT.COLOR_WHITE));
             } else {
-                text.setBackground(Display.getDefault().getSystemColor(
+                alert.setBackground(Display.getDefault().getSystemColor(
                         SWT.COLOR_RED));
                 alertEditor.showErrorMessage();
             }

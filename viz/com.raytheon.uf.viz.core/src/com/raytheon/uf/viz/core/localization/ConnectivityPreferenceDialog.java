@@ -32,6 +32,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
@@ -306,6 +307,19 @@ public class ConnectivityPreferenceDialog extends Dialog {
         localizationSrv.widget.setLayoutData(gd);
         localizationSrv.setText(localization == null ? "" : localization);
         localizationSrv.widget.setBackground(getTextColor(localizationGood));
+        localizationSrv.addSelectionListener(new SelectionListener() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                // user clicked an option from combo
+                validate();
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                // user hit Enter
+                performOk();
+            }
+        });
 
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site:");
@@ -319,6 +333,13 @@ public class ConnectivityPreferenceDialog extends Dialog {
             public void verifyText(VerifyEvent e) {
                 e.text = e.text.toUpperCase();
             }
+        });
+        siteText.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                performOk();
+            }
+
         });
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
@@ -367,8 +388,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                canceled = false;
-                validateAndClose();
+                performOk();
             }
         });
 
@@ -691,5 +711,14 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 }
             }
         }
+    }
+
+    /**
+     * Method for when the ok button is pressed, either through a click or Enter
+     * on an appropriate field.
+     */
+    protected void performOk() {
+        canceled = false;
+        this.validateAndClose();
     }
 }
