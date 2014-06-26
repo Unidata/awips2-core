@@ -29,6 +29,7 @@
 #    ------------    ----------    -----------    --------------------------
 #    12/12/12                      njensen       Initial Creation.
 #    05/01/14        3095          bsteffen      Don't default fcstTime to 0 in init.
+#    06/24/14         3096         mnash         Fix pieces of implementation to better match native python version
 #    
 # 
 #
@@ -51,6 +52,36 @@ class DataTime(JUtil.JavaWrapperClass):
         if fcstTime is not None:
             self.__dt.setFcstTime(fcstTime)
         
+    def getRefTime(self):
+        return self.__dt.getRefTime()
+    
+    def setRefTime(self, refTime):
+        self.__dt.setRefTime(refTime)
+        
+    def getFcstTime(self):
+        return self.__dt.getFcstTime().getTime()
+    
+    def setFcstTime(self, fcstTime):
+        self.__dt.setFcstTime(fcstTime)
+    
+    def getValidPeriod(self):
+        return TimeRange.TimeRange(self.__dt.getValidPeriod())
+    
+    def setValidPeriod(self, tr):
+        self.__dt.setValidPeriod(tr.toJavaObj())
+        
+    def getUtilityFlags(self):
+        self.__dt.getUtilityFlags()
+    
+    def setUtilityFlags(self, utilityFlags):
+        self.__dt.setUtilityFlags(utilityFlags)
+    
+    def getLevelValue(self):
+        return self.levelValue
+
+    def setLevelValue(self, levelValue):
+        self.__dt.setLevelValue(levelValue)
+    
     def __eq__(self, other):
         return self.__dt.equals(other.toJavaObj())
     
@@ -74,25 +105,7 @@ class DataTime(JUtil.JavaWrapperClass):
 
     def __repr__(self):
         return str(self.__dt.toString())
-        
-    def setFcstTime(self, fcstTime):
-        self.__dt.setFcstTime(fcstTime)
     
-    def getFcstTime(self):
-        return self.__dt.getFcstTime()
-    
-    def getValidPeriod(self):
-        return TimeRange.TimeRange(self.__dt.getValidPeriod())
-    
-    def setValidPeriod(self, tr):
-        self.__dt.setValidPeriod(tr.toJavaObj())
-        
-    def getRefTime(self):
-        return AbsTime.AbsTime(self.__dt.getRefTime())
-    
-    def setRefTime(self, refTime):
-        self.__dt.setRefTime(refTime.toJavaObj())
-        
     def toJavaObj(self):
         return self.__dt
 
