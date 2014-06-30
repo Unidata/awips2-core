@@ -30,7 +30,6 @@ import java.util.List;
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 
-import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.viz.core.data.IDataPreparer;
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
@@ -63,6 +62,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jul 18, 2013  2189     mschenke    Added ability to specify font type
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
+ * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
  * 
  * </pre>
  * 
@@ -969,19 +969,6 @@ public interface IGraphicsTarget extends IImagingExtension {
 	@Deprecated
 	public abstract void drawFilledCircle(double x, double y, double z,
 			double radius, RGB color) throws VizException;
-
-	/**
-	 * DEPRECATED: Call ColorMapLoader.loadColorMap(name) instead
-	 * 
-	 * Construct a colormap that can be applied to a colormapped image.
-	 * 
-	 * @param name
-	 *            name of the colormap to load
-	 * @return the colormap object
-	 * @throws VizException
-	 */
-	@Deprecated
-	public abstract IColorMap buildColorMap(String name) throws VizException;
 
 	/**
 	 * DEPRECATED: Use drawLines(DrawableLine...)

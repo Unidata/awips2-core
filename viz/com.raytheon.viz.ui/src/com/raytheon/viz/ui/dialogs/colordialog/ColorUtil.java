@@ -21,7 +21,6 @@
 package com.raytheon.viz.ui.dialogs.colordialog;
 
 import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,6 +30,7 @@ import org.eclipse.swt.graphics.RGB;
 
 import com.raytheon.uf.common.colormap.Color;
 import com.raytheon.uf.common.colormap.ColorMap;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -38,10 +38,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
-import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.util.FileUtil;
-import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
  * Util methods for colormaps.
@@ -56,6 +54,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Aug 06, 2013  2210     njensen     Moved colormaps to common_static
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Apr 08, 2014  2950     bsteffen    Allow buildColorData to take an IColorMap
+ * Jun 30, 2014  3165     njensen     Major cleanup
  * 
  * 
  * </pre>
@@ -64,8 +63,10 @@ import com.raytheon.uf.viz.core.exception.VizException;
  */
 public class ColorUtil {
 
-    private static final String COLORMAPS_DIR = "colormaps";
-
+    /**
+     * value used when converting a color component from an 8 bit value (0-255)
+     * to a float percentage(0.0-1.0)
+     **/
     public static final float MAX_VALUE = 255.0f;
 
     /**
@@ -150,163 +151,81 @@ public class ColorUtil {
     }
 
     /**
-     * Saves a ColorMap as an xml file to a local path
+     * Checks if a colormap already exists at the specified localization level
      * 
-     * @param aColorMap
-     *            the ColorMap to save
-     * @param aFilePath
-     *            the full path name to save to
-     * @return the name of the colormap
-     * @throws VizException
-     */
-    public static String saveColorMapLocal(ColorMap aColorMap,
-            String aColorMapName, boolean aSiteContext) throws VizException {
-        String filename = aColorMapName;
-        String newColormapName = new String(aColorMapName);
-        if (!filename.endsWith(".cmap")) {
-            filename += ".cmap";
-        }
-
-        File path = null;
-        IPathManager pm = PathManagerFactory.getPathManager();
-        if (aSiteContext) {
-            path = pm.getFile(pm.getContext(LocalizationType.CAVE_STATIC,
-                    LocalizationLevel.SITE), COLORMAPS_DIR + File.separator
-                    + filename);
-
-            checkDir(path.getParentFile());
-
-        } else {
-            path = pm.getFile(pm.getContext(LocalizationType.CAVE_STATIC,
-                    LocalizationLevel.USER), COLORMAPS_DIR + File.separator
-                    + filename);
-            checkDir(path.getParentFile());
-        }
-
-        try {
-            ColorMap.JAXB.marshalToXmlFile(aColorMap, path.toString());
-        } catch (SerializationException e) {
-            throw new VizException("Unable to serialize ColorMap "
-                    + aColorMap.getName(), e);
-        }
-        return newColormapName;
-    }
-
-    /**
-     * check if color map exists for: site if bool is true, user if false
-     * 
-     * @param aColorMapName
-     * @param aSiteContext
+     * @param colormapName
+     * @param level
      * @return
      */
-    public static boolean checkColorMapLocal(String aColorMapName,
-            boolean aSiteContext) {
-        String filename = aColorMapName;
-        if (!filename.endsWith(".cmap")) {
-            filename += ".cmap";
-        }
-
+    public static boolean checkIfColormapExists(String colormapName,
+            LocalizationLevel level) {
+        String filename = getColormapFilename(colormapName);
         File path = null;
         IPathManager pm = PathManagerFactory.getPathManager();
-        if (aSiteContext) {
-            path = pm.getFile(pm.getContext(LocalizationType.CAVE_STATIC,
-                    LocalizationLevel.SITE), COLORMAPS_DIR + File.separator
-                    + filename);
-
-            return path.exists();
-        } else {
-            path = pm.getFile(pm.getContext(LocalizationType.CAVE_STATIC,
-                    LocalizationLevel.USER), COLORMAPS_DIR + File.separator
-                    + filename);
-            return path.exists();
-        }
-
+        path = pm.getFile(pm.getContext(LocalizationType.COMMON_STATIC, level),
+                filename);
+        return path.exists();
     }
 
     /**
-     * Checks if a path exists and if not, creates the necessary directories
+     * Saves a colormap to localization
      * 
-     * @param aDirPath
+     * @param colorMap
+     * @param filename
+     * @param level
+     * @throws LocalizationException
      */
-    private static void checkDir(File file) {
-        if (!file.exists()) {
-            file.mkdirs();
-        }
-    }
-
-    /**
-     * Saves a ColorMap to EDEX through the Localization Manager
-     * 
-     * @param aColorMap
-     *            the ColorMap to save
-     * @param aFilename
-     *            the name of the file
-     * @throws VizException
-     */
-    public static void saveColorMapServer(ColorMap aColorMap, String aFilename,
-            boolean aSiteContext) throws LocalizationOpFailedException {
-        String filename = aFilename;
-        if (!filename.endsWith(".cmap")) {
-            filename += ".cmap";
-        }
-
+    public static void saveColorMap(ColorMap colorMap, String colormapName,
+            LocalizationLevel level) throws LocalizationException {
         String xml;
         try {
-            // JAXB marshaling
-            xml = ColorMap.JAXB.marshalToXml(aColorMap);
-        } catch (JAXBException e1) {
-            throw new LocalizationOpFailedException(
-                    "Unable to Marshal colormap " + aColorMap.getName(), e1);
+            xml = ColorMap.JAXB.marshalToXml(colorMap);
+        } catch (JAXBException e) {
+            throw new LocalizationException("Unable to marshal colormap "
+                    + colorMap.getName(), e);
         }
 
+        String filename = getColormapFilename(colormapName);
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationContext context = null;
-        if (aSiteContext) {
-            context = pathMgr.getContext(LocalizationType.COMMON_STATIC,
-                    LocalizationLevel.SITE);
-        } else {
-            context = pathMgr.getContext(LocalizationType.COMMON_STATIC,
-                    LocalizationLevel.USER);
-        }
-        // use / for standard localization of File.separator
-        filename = "colormaps/" + filename;
-
+        LocalizationContext context = pathMgr.getContext(
+                LocalizationType.COMMON_STATIC, level);
         LocalizationFile localizationFile = pathMgr.getLocalizationFile(
                 context, filename);
-        try {
-            FileUtil.bytes2File(xml.getBytes(), localizationFile.getFile());
-        } catch (IOException e) {
-            throw new LocalizationOpFailedException("Unable to save file", e);
-        }
-
+        // getFile(false) will call mkdirs() on the parent dir
+        localizationFile.getFile(false);
+        localizationFile.write(xml.getBytes());
         localizationFile.save();
     }
 
     /**
-     * Deletes a color map from the local colormaps user context dir and
-     * synchronizes with server
+     * Deletes a color map at the specified level
      * 
-     * @param aColorMapName
+     * @param colormapName
      *            the name of the colormap to delete
      */
-    public static void deleteColorMap(String aColorMapName)
-            throws LocalizationOpFailedException {
-        String filename = aColorMapName;
-        if (!filename.endsWith(".cmap")) {
-            filename += ".cmap";
-        }
+    public static void deleteColorMap(String colormapName,
+            LocalizationLevel level) throws LocalizationOpFailedException {
+        String filename = getColormapFilename(colormapName);
         IPathManager pm = PathManagerFactory.getPathManager();
-        LocalizationFile lfile = pm.getLocalizationFile(pm.getContext(
-                LocalizationType.COMMON_STATIC, LocalizationLevel.USER),
-                COLORMAPS_DIR + File.separator + filename);
-        File file = lfile.getFile();
-
+        LocalizationFile lfile = pm.getLocalizationFile(
+                pm.getContext(LocalizationType.COMMON_STATIC, level), filename);
         if (lfile.exists()) {
             lfile.delete();
         }
+    }
 
-        if (file.exists()) {
-            file.delete();
+    /**
+     * Returns a localization filename (without the context) of the colormap
+     * 
+     * @param shortName
+     * @return
+     */
+    private static String getColormapFilename(String shortName) {
+        String filename = ColorMapLoader.DIR_NAME + IPathManager.SEPARATOR
+                + shortName;
+        if (!filename.endsWith(ColorMapLoader.EXTENSION)) {
+            filename += ColorMapLoader.EXTENSION;
         }
+        return filename;
     }
 }

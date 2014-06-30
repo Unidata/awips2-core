@@ -22,8 +22,6 @@ package com.raytheon.viz.ui.dialogs.colordialog;
 
 import java.io.File;
 
-import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.dialogs.ErrorDialog;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -32,12 +30,12 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.colormap.ColorMap;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -60,7 +58,6 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
 import com.raytheon.uf.viz.core.rsc.capabilities.BlendableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.viz.ui.EditorUtil;
-import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
@@ -81,6 +78,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  *                                    is added and duplicate entries in the colormap
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
+ * Jun 30, 2014  3165     njensen     Cleaned up save actions
  * 
  * </pre>
  * 
@@ -176,7 +174,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /**
      * Constructor.
-     *
+     * 
      * @param parent
      *            Parent shell.
      */
@@ -606,7 +604,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.core.IVizEditorChangedListener#editorChanged(com.
      * raytheon.uf.viz.core.IDisplayPaneContainer)
@@ -626,7 +624,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @seecom.raytheon.uf.viz.core.IRenderableDisplayChangedListener#
      * renderableDisplayChanged(com.raytheon.uf.viz.core.IDisplayPane,
      * com.raytheon.uf.viz.core.drawables.IRenderableDisplay,
@@ -647,7 +645,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener#notifyRemove
      * (com.raytheon.uf.viz.core.drawables.ResourcePair)
@@ -667,7 +665,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.core.rsc.ResourceList.AddListener#notifyAdd(com.raytheon
      * .uf.viz.core.drawables.ResourcePair)
@@ -684,7 +682,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
      * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
@@ -713,7 +711,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     *
+     * 
      * @param display
      */
     private void removeListeners(IRenderableDisplay display) {
@@ -723,7 +721,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     *
+     * 
      * @param rl
      */
     private void removeListeners(ResourceList rl) {
@@ -759,7 +757,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     *
+     * 
      * @param display
      */
     private void addListeners(IRenderableDisplay display) {
@@ -769,7 +767,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     *
+     * 
      * @param rl
      */
     private void addListeners(ResourceList rl) {
@@ -793,7 +791,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.editor.ISelectedPaneChangedListener#selectedPaneChanged
      * (java.lang.String, com.raytheon.uf.viz.core.IDisplayPane)
@@ -827,7 +825,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 "Confirm Delete Color Table", message);
         if (okToDelete) {
             try {
-                ColorUtil.deleteColorMap(shortName);
+                // only allow deletes of USER level
+                ColorUtil.deleteColorMap(shortName, LocalizationLevel.USER);
             } catch (LocalizationOpFailedException e) {
                 String err = "Error performing delete of colormap";
                 statusHandler.handle(Priority.PROBLEM, err, e);
@@ -846,9 +845,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     private void officeSaveAs() {
         if (mustCreate(officeSaveAsDialog)) {
-            officeSaveAsDialog = new SaveColorMapDialog(shell,
-                    getColorMap(), true,
-                    currentColormapName);
+            officeSaveAsDialog = new SaveColorMapDialog(shell, getColorMap(),
+                    LocalizationLevel.SITE, currentColormapName);
             officeSaveAsDialog.setCloseCallback(new ICloseCallback() {
 
                 @Override
@@ -867,9 +865,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     private void saveAs() {
         if (mustCreate(saveAsDialog)) {
-            saveAsDialog = new SaveColorMapDialog(shell,
-                    getColorMap(), false,
-                    currentColormapName);
+            saveAsDialog = new SaveColorMapDialog(shell, getColorMap(),
+                    LocalizationLevel.USER, currentColormapName);
             saveAsDialog.setCloseCallback(new ICloseCallback() {
 
                 @Override
@@ -889,24 +886,11 @@ public class ColorEditDialog extends CaveSWTDialog implements
     private void save() {
         ColorMap cm = getColorMap();
         try {
-            ColorUtil.saveColorMapLocal(cm, currentColormapName, false);
-        } catch (VizException e1) {
-            String err = "Error saving locally";
-            Status status = new Status(Status.ERROR, UiPlugin.PLUGIN_ID, 0,
-                    err, e1);
-            ErrorDialog.openError(Display.getCurrent().getActiveShell(),
-                    "ERROR", err, status);
-        }
-
-        // now save it to EDEX
-        try {
-            ColorUtil.saveColorMapServer(cm, currentColormapName, false);
-        } catch (LocalizationException e1) {
-            String err = "Error saving to server";
-            Status status = new Status(Status.ERROR, UiPlugin.PLUGIN_ID, 0,
-                    err, e1);
-            ErrorDialog.openError(Display.getCurrent().getActiveShell(),
-                    "ERROR", err, status);
+            ColorUtil.saveColorMap(cm, currentColormapName,
+                    LocalizationLevel.USER);
+        } catch (LocalizationException e) {
+            statusHandler.error("Error saving colormap " + currentColormapName,
+                    e);
         }
         completeSave();
     }
@@ -922,7 +906,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.dialogs.colordialog.IColorBarAction#updateColor(com
      * .raytheon.viz.ui.dialogs.colordialog.ColorData, boolean)
@@ -934,7 +918,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.dialogs.colordialog.IColorWheelAction#setColor(com
      * .raytheon.viz.ui.dialogs.colordialog.ColorData, java.lang.String)
@@ -946,7 +930,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see
      * com.raytheon.viz.ui.dialogs.colordialog.IColorWheelAction#fillColor(com
      * .raytheon.viz.ui.dialogs.colordialog.ColorData)
@@ -958,7 +942,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.viz.ui.dialogs.colordialog.IColorEditCompCallback#
      * colorMapUpdated(com.raytheon.uf.common.colormap.ColorMap)
      */
@@ -995,7 +979,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /*
      * (non-Javadoc)
-     *
+     * 
      * @see com.raytheon.viz.ui.dialogs.colordialog.IColorEditCompCallback#
      * getColorMapParameters()
      */

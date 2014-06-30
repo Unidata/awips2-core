@@ -23,11 +23,10 @@ package com.raytheon.viz.ui.dialogs.colordialog;
 import java.io.File;
 import java.util.Arrays;
 
-import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -38,13 +37,12 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.uf.common.colormap.ColorMap;
-import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
-import com.raytheon.uf.viz.core.exception.VizException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
-import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 
 /**
@@ -57,6 +55,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jul 24, 2007            njensen     Initial creation
  * Oct 17, 2012 1229       rferrel     Dialog is non-blocking.
  * Jun 23, 2014 #3158      lvenable    Added code so the dialog trim will appear.
+ * Jun 30, 2014  3165      njensen     Cleaned up save actions
  * 
  * </pre>
  * 
@@ -64,13 +63,16 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  */
 public class SaveColorMapDialog extends CaveSWTDialog {
 
+    private final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(SaveColorMapDialog.class);
+
     private Text filenameText;
 
     private List filesList;
 
     private final ColorMap colorMapToSave;
 
-    private boolean siteContext = false;
+    private LocalizationLevel level;
 
     private String currentColormapName;
 
@@ -86,10 +88,10 @@ public class SaveColorMapDialog extends CaveSWTDialog {
      *            context
      */
     public SaveColorMapDialog(Shell parent, ColorMap aColorMap,
-            boolean aSiteContext, String aCurrentColormapName) {
+            LocalizationLevel locLevel, String aCurrentColormapName) {
         super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
         colorMapToSave = aColorMap;
-        siteContext = aSiteContext;
+        level = locLevel;
         currentColormapName = new String(aCurrentColormapName == null ? ""
                 : aCurrentColormapName);
         int index = currentColormapName.lastIndexOf(File.separator);
@@ -97,9 +99,9 @@ public class SaveColorMapDialog extends CaveSWTDialog {
             currentColormapName = currentColormapName.substring(index + 1,
                     currentColormapName.length());
         }
-        if (siteContext) {
+        if (LocalizationLevel.SITE.equals(level)) {
             setText("Save color table for office");
-        } else {
+        } else if (LocalizationLevel.USER.equals(level)) {
             setText("Save color table for "
                     + LocalizationManager.getInstance().getCurrentUser());
         }
@@ -138,12 +140,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         GridData fgd = new GridData(GridData.FILL_HORIZONTAL);
         fgd.heightHint = 200;
         filesList.setLayoutData(fgd);
-        filesList.addSelectionListener(new SelectionListener() {
-
-            public void widgetDefaultSelected(SelectionEvent e) {
-                // TODO Auto-generated method stub
-            }
-
+        filesList.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 int index = filesList.getSelectionIndex();
                 filenameText.setText(filesList.getItem(index));
@@ -168,11 +166,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         Button okBtn = new Button(buttons, SWT.PUSH);
         okBtn.setLayoutData(new GridData(GridData.FILL_BOTH));
         okBtn.setText("OK");
-        okBtn.addSelectionListener(new SelectionListener() {
-            public void widgetDefaultSelected(SelectionEvent e) {
-                // TODO Auto-generated method stub
-            }
-
+        okBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 String filename = filenameText.getText();
                 boolean okToSave = true;
@@ -191,10 +186,10 @@ public class SaveColorMapDialog extends CaveSWTDialog {
                     okToSave = false;
                 }
 
-                boolean exists2 = ColorUtil.checkColorMapLocal(filename,
-                        siteContext);
+                boolean exists = ColorUtil.checkIfColormapExists(filename,
+                        level);
 
-                if (exists2) {
+                if (exists) {
                     String message = "A color table named " + filename
                             + " already exists. Do you wish to overwrite?";
                     okToSave = MessageDialog.openQuestion(shell,
@@ -203,24 +198,12 @@ public class SaveColorMapDialog extends CaveSWTDialog {
 
                 if (okToSave) {
                     try {
-                        setReturnValue(ColorUtil.saveColorMapLocal(
-                                colorMapToSave, filename, siteContext));
-                    } catch (VizException e1) {
-                        String err = "Error saving locally";
-                        VizApp.logAndAlert(Status.ERROR, e1, err, err,
-                                UiPlugin.getDefault(), UiPlugin.PLUGIN_ID);
-                    }
-
-                    // now save it to EDEX
-                    try {
-                        ColorUtil.saveColorMapServer(colorMapToSave, filename,
-                                siteContext);
+                        ColorUtil.saveColorMap(colorMapToSave, filename, level);
+                        setReturnValue(filename);
                     } catch (LocalizationException e1) {
-                        String err = "Error saving to office";
-                        VizApp.logAndAlert(Status.ERROR, e1, err, err,
-                                UiPlugin.getDefault(), UiPlugin.PLUGIN_ID);
+                        statusHandler.error(
+                                "Error saving colormap " + filename, e1);
                     }
-
                     shell.dispose();
                 }
             }
@@ -229,11 +212,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         Button cancelBtn = new Button(buttons, SWT.PUSH);
         cancelBtn.setLayoutData(new GridData(GridData.FILL_BOTH));
         cancelBtn.setText("Cancel");
-        cancelBtn.addSelectionListener(new SelectionListener() {
-            public void widgetDefaultSelected(SelectionEvent e) {
-                // TODO Auto-generated method stub
-            }
-
+        cancelBtn.addSelectionListener(new SelectionAdapter() {
+            @Override
             public void widgetSelected(SelectionEvent e) {
                 shell.dispose();
             }
@@ -247,14 +227,7 @@ public class SaveColorMapDialog extends CaveSWTDialog {
      */
     private String[] getColormapNames() {
 
-        String[] names = null;
-        if (siteContext) {
-            names = ColorMapLoader
-                    .listColorMaps(LocalizationContext.LocalizationLevel.SITE);
-        } else {
-            names = ColorMapLoader
-                    .listColorMaps(LocalizationContext.LocalizationLevel.USER);
-        }
+        String[] names = ColorMapLoader.listColorMaps();
 
         for (int i = 0; i < names.length; i++) {
             String current = names[i];
