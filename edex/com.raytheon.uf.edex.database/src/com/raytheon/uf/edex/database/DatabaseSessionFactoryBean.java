@@ -137,9 +137,8 @@ public class DatabaseSessionFactoryBean extends AnnotationSessionFactoryBean {
         this.setAnnotatedClasses(annotatedClasses.toArray(new Class[] {}));
     }
 
-    @SuppressWarnings("rawtypes")
     @Override
-    public void setAnnotatedClasses(Class[] annotatedClasses) {
+    public void setAnnotatedClasses(Class<?>... annotatedClasses) {
         super.setAnnotatedClasses(annotatedClasses);
         // overrode setter because we need access to the classes
         // for determining dependent classes for create/drop SQL
