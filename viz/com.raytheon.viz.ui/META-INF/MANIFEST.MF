@@ -2,11 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz UI
 Bundle-SymbolicName: com.raytheon.viz.ui; singleton:=true
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.14.1.qualifier
 Bundle-Activator: com.raytheon.viz.ui.UiPlugin
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.eclipse.ui;bundle-version="3.8.0";visibility:=reexport,
  com.raytheon.uf.viz.core;bundle-version="1.14.0",
  org.eclipse.core.runtime;bundle-version="3.8.0",

@@ -46,6 +46,7 @@ import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 18, 2013  2421     bsteffen    Initial creation
+ * Jun 30, 2014  3165     njensen     Use common plugin's ColorMapLoader
  * 
  * </pre>
  * 
@@ -228,8 +229,10 @@ public class ColorMapTree {
         synchronized (filesLock) {
             if (files == null) {
                 files = pathManager
-                        .listFiles(context, path,
-                                new String[] { ColorMapLoader.EXTENSION },
+                        .listFiles(
+                                context,
+                                path,
+                                new String[] { com.raytheon.uf.common.colormap.ColorMapLoader.EXTENSION },
                                 false, false);
             }
             return files;

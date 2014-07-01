@@ -38,6 +38,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 18, 2013  2421     bsteffen    Initial creation
+ * Jun 30, 2014  3165     njensen     Use common plugin's ColorMapLoader
  * 
  * </pre>
  * 
@@ -63,16 +64,16 @@ public class ColorMapTreeFactory {
      */
     public static ColorMapTree getBaseTree() {
         synchronized (baseTreeLock) {
-            if(baseTree == null){
+            if (baseTree == null) {
                 IPathManager pm = PathManagerFactory.getPathManager();
                 LocalizationContext baseContext = pm.getContext(
                         LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
                 baseTree = new ColorMapTree(pm, baseContext,
-                        ColorMapLoader.DIR_NAME);
+                        com.raytheon.uf.common.colormap.ColorMapLoader.DIR_NAME);
             }
             return baseTree;
         }
-        
+
     }
 
     /**
@@ -85,7 +86,8 @@ public class ColorMapTreeFactory {
             ColorMapTree tree = treesByLevel.get(level);
             if (tree == null) {
                 IPathManager pm = PathManagerFactory.getPathManager();
-                tree = new ColorMapTree(pm, level, ColorMapLoader.DIR_NAME);
+                tree = new ColorMapTree(pm, level,
+                        com.raytheon.uf.common.colormap.ColorMapLoader.DIR_NAME);
                 treesByLevel.put(level, tree);
             }
             return tree;

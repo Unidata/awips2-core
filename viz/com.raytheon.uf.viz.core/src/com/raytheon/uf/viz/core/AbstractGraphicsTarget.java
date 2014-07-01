@@ -30,7 +30,6 @@ import java.util.List;
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 
-import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
@@ -39,7 +38,6 @@ import com.raytheon.uf.viz.core.data.IDataPreparer;
 import com.raytheon.uf.viz.core.data.IImageDataPreparer;
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
 import com.raytheon.uf.viz.core.data.resp.NumericImageData;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IFont.FontType;
@@ -68,6 +66,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jul 18, 2013  2189     mschenke    Added ability to specify font type
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
+ * Jun 30, 2014  3165     njensen     Remove deprecated buildColorMap()
  * 
  * </pre>
  * 
@@ -489,18 +488,6 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         circle.radius = new Double(radius);
         circle.filled = true;
         drawCircle(circle);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IGraphicsTarget#buildColorMap(java.lang.String)
-     */
-    @Override
-    public IColorMap buildColorMap(String name) throws VizException {
-        return ColorMapLoader.loadColorMap(name);
-
     }
 
     @Override
