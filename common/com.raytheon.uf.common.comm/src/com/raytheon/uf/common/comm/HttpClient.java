@@ -108,6 +108,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *                                           Https authentication failures notify handler
  *    Feb 17, 2014  2756        bclement    added content type to response object
  *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
+ *    6/18/2014    1712        bphillip    Updated Proxy configuration
  * 
  * </pre>
  * 
@@ -261,12 +262,8 @@ public class HttpClient {
                 });
 
                 // Set the proxy info
-                ProxyConfiguration proxySettings = ProxyUtil.getProxySettings();
-                if (proxySettings != null) {
-                    String proxyHost = proxySettings.getHost();
-                    int proxyPort = proxySettings.getPort();
-
-                    HttpHost proxy = new HttpHost(proxyHost, proxyPort);
+                if (ProxyConfiguration.HTTPS_PROXY_DEFINED) {
+                    HttpHost proxy = new HttpHost(ProxyConfiguration.getHttpsProxyHost(),  ProxyConfiguration.getHttpsProxyPort());
                     sslClient.getParams().setParameter(
                             ConnRoutePNames.DEFAULT_PROXY, proxy);
                 }
