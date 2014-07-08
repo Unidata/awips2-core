@@ -37,6 +37,7 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * ------------- -------- ----------- --------------------------
  * Jul0 1, 2011           rjpeter     Initial creation
  * Dec 18, 2013  2579     bsteffen    Class javadoc
+ * Jul 08, 2014  3165     njensen     Added toString()
  * 
  * </pre>
  * 
@@ -46,6 +47,7 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  */
 @DynamicSerialize
 public class TimeQueryRequestSet implements IServerRequest {
+
     @DynamicSerializeElement
     private TimeQueryRequest[] requests;
 
@@ -56,4 +58,22 @@ public class TimeQueryRequestSet implements IServerRequest {
     public void setRequests(TimeQueryRequest[] requests) {
         this.requests = requests;
     }
+
+    @Override
+    public String toString() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("TimeQueryRequestSet [");
+        if (requests != null && requests.length > 0) {
+            /*
+             * these requests always have the same plugin name
+             */
+            sb.append("pluginName=");
+            sb.append(requests[0].getPluginName());
+            sb.append(", requests.length=");
+            sb.append(requests.length);
+        }
+        sb.append("]");
+        return sb.toString();
+    }
+
 }
