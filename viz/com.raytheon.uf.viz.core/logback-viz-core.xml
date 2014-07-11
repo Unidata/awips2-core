@@ -107,9 +107,6 @@
    <logger name="org.springframework">
       <level value="ERROR"/>
    </logger>
-   <logger name="uk.ltd.getahead">
-      <level value="WARN"/>
-   </logger>
    <root> 
       <level value="INFO"/> 
       <appender-ref ref="console"/> 
