@@ -50,6 +50,8 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * May 13, 2014  3135     bsteffen    Initial creation
  * Jun 24, 2014  3279     bclement    added error handling and item.clearAll() 
  *                                      to run methods to fix eternal 'Loading...' problem
+ * Jul 07, 2014  3135     bsteffen    Remove child nodes when there are no results.
+ * 
  * 
  * </pre>
  * 
@@ -102,7 +104,9 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
                 item.getDisplay().syncExec(new Runnable() {
                     @Override
                     public void run() {
-                        item.clearAll(true);
+                        for (TreeItem child : item.getItems()) {
+                            child.dispose();
+                        }
                     }
                 });
             }
@@ -176,7 +180,9 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         if (!results.isEmpty()) {
             item.setExpanded(expanded);
         } else {
-            item.clearAll(true);
+            for (TreeItem child : item.getItems()) {
+                child.dispose();
+            }
         }
         item.setData(JOB_DATA_KEY, null);
     }
