@@ -44,7 +44,6 @@ import org.apache.commons.lang.builder.HashCodeBuilder;
 import org.hibernate.annotations.Index;
 import org.hibernate.annotations.Type;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.time.DataTimeComparator.SortKey;
@@ -68,6 +67,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Aug 08, 2013  2245     bsteffen    Make all DataTime comparisons consistent.
  * Oct 14, 2013  2468     bsteffen    Add getValidTimeAsDate() for comparison
  *                                    performance.
+ * Jul 14, 2014  2587     bclement    made reftime non null in hibernate
  * 
  * </pre>
  * 
@@ -118,8 +118,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 @Embeddable
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class DataTime implements Comparable<DataTime>, Serializable,
-        ISerializableObject, Cloneable {
+public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     /**
      * 
      */
@@ -142,7 +141,7 @@ public class DataTime implements Comparable<DataTime>, Serializable,
     };
 
     /** The reference time */
-    @Column(name = "refTime")
+    @Column(name = "refTime", nullable = false)
     @DynamicSerializeElement
     @XmlAttribute
     protected Date refTime;
