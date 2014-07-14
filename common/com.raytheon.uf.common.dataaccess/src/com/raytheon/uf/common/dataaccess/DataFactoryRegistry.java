@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -39,6 +40,7 @@ import com.raytheon.uf.common.dataaccess.exception.DataFactoryNotFoundException;
  * Oct 10, 2012            njensen     Initial creation
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
+ * Jul 14, 2014 3184       njensen     Added getRegisteredDatatypes()
  * 
  * </pre>
  * 
@@ -102,21 +104,47 @@ public class DataFactoryRegistry {
      * @throws IllegalArgumentException
      */
     public IDataFactory getFactory(IDataRequest request) {
-        String datatype = request.getDatatype().toLowerCase();
+        String datatype = request.getDatatype();
         if (datatype != null) {
-            IDataFactory factory = datatypeMap
-                    .get(datatype);
-            if (factory != null) {
-                return factory;
-            } else {
-                throw new DataFactoryNotFoundException(
-                        "No data access support registered to datatype key: "
-                                + datatype);
-            }
+            return getFactory(datatype);
         } else {
             throw new IllegalArgumentException(
                     "Request must have a datatype set");
         }
-
     }
+
+    /**
+     * Returns the factory associated with a datatype name. Will never return
+     * null and will instead throw an exception if no registered factories
+     * match.
+     * 
+     * @param datatype
+     *            the name of the datatype to find a factory for
+     * @return the factory that is registered to this datatype
+     * @throws DataFactoryNotFoundException
+     */
+    public IDataFactory getFactory(String datatype) {
+        datatype = datatype.toLowerCase();
+        IDataFactory factory = datatypeMap.get(datatype);
+        if (factory != null) {
+            return factory;
+        } else {
+            throw new DataFactoryNotFoundException(
+                    "No data access support registered to datatype key: "
+                            + datatype);
+        }
+    }
+
+    /**
+     * Returns the datatype names that have been registered, sorted
+     * alphabetically
+     * 
+     * @return
+     */
+    public String[] getRegisteredDatatypes() {
+        String[] names = datatypeMap.keySet().toArray(new String[0]);
+        Arrays.sort(names);
+        return names;
+    }
+
 }

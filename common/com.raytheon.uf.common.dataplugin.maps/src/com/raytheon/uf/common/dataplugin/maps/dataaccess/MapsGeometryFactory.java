@@ -23,8 +23,10 @@ import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.impl.AbstractGeometryTimeAgnosticDatabaseFactory;
+import com.raytheon.uf.common.dataplugin.level.Level;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
@@ -40,9 +42,10 @@ import com.vividsolutions.jts.io.WKBReader;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 28, 2013            bkowal     Initial creation
+ * Jan 28, 2013            bkowal      Initial creation
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
+ * Jul 14, 2014 3184       njensen     Overrode getAvailableLevels()
  * 
  * </pre>
  * 
@@ -125,5 +128,11 @@ public class MapsGeometryFactory extends
     @Override
     protected String assembleGetAvailableLocationNames(IDataRequest request) {
         return MapsQueryAssembler.assembleGetAvailableLocationNames(request);
+    }
+
+    @Override
+    public Level[] getAvailableLevels(IDataRequest request) {
+        throw new IncompatibleRequestException(request.getDatatype()
+                + " data does not support the concept of levels");
     }
 }

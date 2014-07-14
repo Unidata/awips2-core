@@ -28,9 +28,11 @@ import java.util.Map;
 import com.raytheon.uf.common.dataaccess.IDataFactory;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
+import com.raytheon.uf.common.dataaccess.exception.MethodNotSupportedYetException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
+import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
 
@@ -51,6 +53,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Feb 19, 2012 1552       mpduff      Implement IDataFactory.
  * Jan 14, 2014 2667       mnash       Change getGridData and getGeometryData methods
  *                                     to throw exception by default
+ * Jul 14, 2014 3184       njensen     Added getAvailableParameters() and getAvailableLevels()
  * </pre>
  * 
  * @author njensen
@@ -59,24 +62,29 @@ import com.raytheon.uf.common.time.TimeRange;
 
 public abstract class AbstractDataFactory implements IDataFactory {
 
+    private static final String[] EMPTY = new String[0];
+
     /**
      * Returns the identifiers that must be set on a request for the request to
-     * be processed
+     * be processed. If a subclass does not override this, it will return an
+     * array of size zero.
      * 
      * @return the required identifiers
      */
+    @Override
     public String[] getRequiredIdentifiers() {
-        return null;
+        return EMPTY;
     }
 
     /**
-     * Return the complete set of all valid identifiers for a request, or null
-     * if there is no well defined set or if no validation should occur.
+     * Return the complete set of all valid identifiers for a request. If a
+     * subclass does not override this, it will return an array of size zero.
      * 
      * @return the valid identifiers.
      */
+    @Override
     public String[] getValidIdentifiers() {
-        return null;
+        return EMPTY;
     }
 
     /**
@@ -90,17 +98,17 @@ public abstract class AbstractDataFactory implements IDataFactory {
         Collection<String> missing = Collections.emptySet();
         Collection<String> invalid = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
-        if (identifiers != null) {
-            if (required != null) {
+        if (identifiers != null && !identifiers.isEmpty()) {
+            if (required != null && required.length > 0) {
                 missing = new HashSet<String>(Arrays.asList(required));
                 missing.removeAll(identifiers.keySet());
             }
             String[] valid = getValidIdentifiers();
-            if (valid != null) {
+            if (valid != null && valid.length > 0) {
                 invalid = new HashSet<String>(identifiers.keySet());
                 invalid.removeAll(Arrays.asList(valid));
             }
-        } else if (required != null) {
+        } else if (required != null && required.length > 0) {
             missing = Arrays.asList(required);
         }
 
@@ -121,6 +129,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
     /**
      * Default implementation throws an {@link UnsupportedOutputTypeException}
      */
+    @Override
     public IGridData[] getGridData(IDataRequest request, TimeRange timeRange) {
         throw new UnsupportedOutputTypeException(request.getDatatype(), "grid");
     }
@@ -144,5 +153,27 @@ public abstract class AbstractDataFactory implements IDataFactory {
         throw new UnsupportedOutputTypeException(request.getDatatype(),
                 "geometry");
     }
+    
+    /**
+     * Default implementation throws a {@link MethodNotSupportedYetException}
+     */
+    @Override
+    public String[] getAvailableParameters(IDataRequest request)
+    {
+        throw new MethodNotSupportedYetException(request.getDatatype()
+                        + " data requests do not yet support getting available parameters");
+    }
+
+
+    /**
+     * Default implementation throws a {@link MethodNotSupportedYetException}
+     */
+    @Override
+    public Level[] getAvailableLevels(IDataRequest request)
+    {
+        throw new MethodNotSupportedYetException(request.getDatatype()
+                + " data requests do not yet support getting available levels");
+    }
+
 
 }
