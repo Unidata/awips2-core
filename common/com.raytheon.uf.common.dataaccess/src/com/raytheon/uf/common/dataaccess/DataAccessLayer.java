@@ -20,11 +20,13 @@
 package com.raytheon.uf.common.dataaccess;
 
 import com.raytheon.uf.common.dataaccess.exception.DataFactoryNotFoundException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
 import com.raytheon.uf.common.dataaccess.impl.DefaultDataRequest;
+import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
@@ -51,6 +53,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Feb 14, 2013  1614     bsteffen    Refactor data access framework to use
  *                                    single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
+ * Jul 14, 2014  3184     njensen     Added new methods
  * 
  * </pre>
  * 
@@ -162,7 +165,7 @@ public class DataAccessLayer {
     }
 
     /**
-     * Gets the data that matches the request within the time range
+     * Gets the data that matches the request within the time range.
      * 
      * @param request
      *            the request to get data for
@@ -184,6 +187,9 @@ public class DataAccessLayer {
      * 
      * @param request
      * @return the available location names if the data was requested
+     * @throws IncompatibleRequestException
+     *             if the factory for this datatype does not support location
+     *             names
      */
     public static String[] getAvailableLocationNames(IDataRequest request) {
         IDataFactory factory = getFactory(request);
@@ -191,9 +197,9 @@ public class DataAccessLayer {
     }
 
     /**
-     * Shortcut to creating a new request
+     * Shortcut to creating a new request.
      * 
-     * @return
+     * @return an empty IDataRequest
      */
     public static IDataRequest newDataRequest() {
         return new DefaultDataRequest();
@@ -210,6 +216,69 @@ public class DataAccessLayer {
      */
     private static IDataFactory getFactory(IDataRequest request) {
         return DataFactoryRegistry.getInstance().getFactory(request);
+    }
+
+    /**
+     * Returns the names of the datatypes that currently supported at runtime by
+     * the Data Access Framework
+     * 
+     * @return
+     */
+    public static String[] getSupportedDatatypes() {
+        return DataFactoryRegistry.getInstance().getRegisteredDatatypes();
+    }
+
+    /**
+     * Gets the available parameter names that match the request
+     * 
+     * @param request
+     *            the request to find matching parameter names for
+     * @return the available parameter names that match the request
+     */
+    public String[] getAvailableParameters(IDataRequest request) {
+        return DataFactoryRegistry.getInstance().getFactory(request)
+                .getAvailableParameters(request);
+    }
+
+    /**
+     * Gets the available levels that match the request
+     * 
+     * @param request
+     *            the request to find matching levels for
+     * @return the available levels that match the request
+     * @throws IncompatibleRequestException
+     *             if the factory for this datatype does not support levels
+     */
+    public Level[] getAvailableLevels(IDataRequest request) {
+        return DataFactoryRegistry.getInstance().getFactory(request)
+                .getAvailableLevels(request);
+    }
+
+    /**
+     * Gets the identifiers that must be put on an IDataRequest for the
+     * specified datatype
+     * 
+     * @param datatype
+     *            the datatype to find required identifiers for requests
+     * @return the identifiers that are required for this datatype's requests
+     */
+    public String[] getRequiredIdentifiers(String datatype) {
+        return DataFactoryRegistry.getInstance().getFactory(datatype)
+                .getRequiredIdentifiers();
+    }
+
+    /**
+     * Gets the identifiers that will be recognized by requests for the
+     * particular datatype. These identifiers should include the required
+     * identifiers but can possibly contain others that are optional
+     * 
+     * @param datatype
+     *            the datatype to find all possible identifiers for
+     * @return the identifiers that are recognized by requests for this datatype
+     */
+    public String[] getValidIdentifiers(String datatype) {
+        return DataFactoryRegistry.getInstance().getFactory(datatype)
+                .getValidIdentifiers();
     }
 
 }

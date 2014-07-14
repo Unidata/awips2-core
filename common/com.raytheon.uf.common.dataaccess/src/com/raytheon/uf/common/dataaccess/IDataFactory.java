@@ -19,10 +19,12 @@
  **/
 package com.raytheon.uf.common.dataaccess;
 
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
+import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
@@ -55,6 +57,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Feb 14, 2013  1614     bsteffen    Refactor data access framework to use
  *                                     single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
+ * Jul 14, 2014  3184     njensen     Added new methods
  * 
  * </pre>
  * 
@@ -168,7 +171,50 @@ public interface IDataFactory {
      * @param request
      *            the request to find matching location names for
      * @return the available location names that match the request
+     * @throws IncompatibleRequestException
+     *             if this factory does not support the concept of location
+     *             names
      */
     public String[] getAvailableLocationNames(IDataRequest request);
+
+    /**
+     * Gets the available parameter names that match the request.
+     * 
+     * @param request
+     *            the request to find matching parameter names for
+     * @return the available parameter names that match the request
+     */
+    public String[] getAvailableParameters(IDataRequest request);
+
+    /**
+     * Gets the available levels that match the request. Implementations should
+     * throw IncompatibleRequestException if levels do not apply to their
+     * datatype.
+     * 
+     * @param request
+     *            the request to find matching levels for
+     * @return the available levels that match the request
+     * @throws IncompatibleRequestException
+     *             if this factory does not support the concept of levels
+     * 
+     */
+    public Level[] getAvailableLevels(IDataRequest request);
+
+    /**
+     * Gets the identifiers that must be put on an IDataRequest for this
+     * datatype
+     * 
+     * @return the identifiers that are required for this datatype's requests
+     */
+    public String[] getRequiredIdentifiers();
+
+    /**
+     * Gets the identifiers that will be recognized by requests for this
+     * datatype. These identifiers should include the required identifiers but
+     * can possibly contain others that are optional.
+     * 
+     * @return the identifiers that are recognized by requests for this datatype
+     */
+    public String[] getValidIdentifiers();
 
 }

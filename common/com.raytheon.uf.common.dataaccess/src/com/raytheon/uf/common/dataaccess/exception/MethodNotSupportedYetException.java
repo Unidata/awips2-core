@@ -20,8 +20,8 @@
 package com.raytheon.uf.common.dataaccess.exception;
 
 /**
- * An exception indicating that the datatype factory does not support the output
- * type, i.e. IGridData or IGeometryData.
+ * An exception to indicate that a factory does not support this method yet but
+ * will probably support it in the future.
  * 
  * <pre>
  * 
@@ -29,41 +29,55 @@ package com.raytheon.uf.common.dataaccess.exception;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 15, 2013 1614       bsteffen    Initial creation
- * Jul 14, 2014 3184       njensen     Added javadoc
+ * Jul 14, 2014 3184       njensen     Initial creation
  * 
  * </pre>
  * 
- * @author bsteffen
+ * @author njensen
  * @version 1.0
  */
 
-public class UnsupportedOutputTypeException extends DataAccessException {
+public class MethodNotSupportedYetException extends DataAccessException {
 
     private static final long serialVersionUID = 1L;
 
-    private final String dataType;
-
-    private final String outputType;
-
-    public UnsupportedOutputTypeException(String dataType, String outputType) {
-        super(dataType + " does not support " + outputType + " data");
-        this.dataType = dataType;
-        this.outputType = outputType;
+    /**
+     * Constructor
+     */
+    public MethodNotSupportedYetException() {
+        super();
     }
 
     /**
-     * @return the dataType
+     * Constructor
+     * 
+     * @param message
+     *            the error message
      */
-    public String getDataType() {
-        return dataType;
+    public MethodNotSupportedYetException(String message) {
+        super(message);
     }
 
     /**
-     * @return the outputType
+     * Constructor
+     * 
+     * @param message
+     *            the error message
+     * @param cause
+     *            the cause of the error
      */
-    public String getOutputType() {
-        return outputType;
+    public MethodNotSupportedYetException(String message, Throwable cause) {
+        super(message, cause);
     }
-    
+
+    /**
+     * Constructor
+     * 
+     * @param cause
+     *            the cause of the error
+     */
+    public MethodNotSupportedYetException(Throwable cause) {
+        super(cause);
+    }
+
 }
