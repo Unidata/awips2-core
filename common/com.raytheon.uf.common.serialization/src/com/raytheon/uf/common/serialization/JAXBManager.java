@@ -26,20 +26,14 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
-import java.io.StringWriter;
-import java.util.ArrayList;
-import java.util.Queue;
-import java.util.concurrent.ConcurrentLinkedQueue;
+import java.util.Collections;
+import java.util.Map;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
-import javax.xml.bind.Marshaller;
-import javax.xml.bind.Unmarshaller;
-import javax.xml.bind.ValidationEvent;
-import javax.xml.bind.ValidationEventHandler;
 
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy;
+import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
 
 /**
  * Provides an easy and convenient layer to marshal or unmarshal objects to and
@@ -59,6 +53,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Nov 14, 2013 2361       njensen      Added lazy init option, improved unmarshal error message
  * Apr 16, 2014 2928       rjpeter      Updated marshalToStream to not close the stream.
  * Apr 25, 2014 2060       njensen      Improved printout
+ * Jul 15, 2014 3373       bclement     moved marshaller management to JaxbMarshallerStrategy
+ *                                      added MarshalOptions, no longer pools by default
  * </pre>
  * 
  * @author chammack
@@ -67,58 +63,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 public class JAXBManager {
 
-    private static final int QUEUE_SIZE = 10;
-
-    /**
-     * 
-     * Saves all validation events so if an error is caught handlers have an
-     * option of getting more accurate information about what happened
-     * 
-     * <pre>
-     * 
-     * SOFTWARE HISTORY
-     * 
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Sep 2, 2011            ekladstrup     Initial creation
-     * 
-     * </pre>
-     * 
-     * @author ekladstrup
-     * @version 1.0
-     */
-    private static class MaintainEventsValidationHandler implements
-            ValidationEventHandler {
-
-        private final ArrayList<ValidationEvent> events = new ArrayList<ValidationEvent>(
-                0);
-
-        @Override
-        public boolean handleEvent(ValidationEvent event) {
-            events.add(event);
-            return true;
-        }
-
-        public ArrayList<ValidationEvent> getEvents() {
-            synchronized (events) {
-                return new ArrayList<ValidationEvent>(events);
-            }
-        }
-
-        public void clearEvents() {
-            synchronized (events) {
-                events.clear();
-            }
-        }
-    }
-
     private volatile JAXBContext jaxbContext;
 
     private Class<?>[] clazz;
 
-    protected final Queue<Unmarshaller> unmarshallers = new ConcurrentLinkedQueue<Unmarshaller>();
-
-    protected final Queue<Marshaller> marshallers = new ConcurrentLinkedQueue<Marshaller>();
+    private final JaxbMarshallerStrategy marshStrategy;
 
     /**
      * Constructor. Clazz should include any classes that this JAXBManager needs
@@ -141,24 +90,30 @@ public class JAXBManager {
      * contained as fields or inner classes of other classes already passed to
      * the constructor.
      * 
-     * If lazyInit is true, then the underlying JAXBContext (a potentially slow
-     * operation) will be constructed when first used, ie the first marshal or
-     * unmarshal operation.
-     * 
-     * @param lazyInit
-     *            whether or not to immediately initialize the underlying
-     *            JAXBContext
+     * @param pooling
+     *            whether or not to pool (un)marshallers
      * @param clazz
      *            classes that this instance must know about for
      *            marshalling/unmarshalling
      * @throws JAXBException
      */
-    public JAXBManager(boolean lazyInit, Class<?>... clazz)
+    public JAXBManager(boolean pooling, Class<?>... clazz)
             throws JAXBException {
+        this(pooling ? new PooledJaxbMarshallerStrategy()
+                : new JaxbMarshallerStrategy(), clazz);
+    }
+
+    /**
+     * @see #JAXBManager(boolean, Class...)
+     * @param marshStrategy
+     * @param clazz
+     * @throws JAXBException
+     */
+    public JAXBManager(JaxbMarshallerStrategy marshStrategy,
+            Class<?>... clazz) throws JAXBException {
         this.clazz = clazz;
-        if (!lazyInit) {
-            getJaxbContext();
-        }
+        getJaxbContext();
+        this.marshStrategy = marshStrategy;
     }
 
     /**
@@ -178,7 +133,8 @@ public class JAXBManager {
             synchronized (this) {
                 if (jaxbContext == null) {
                     long t0 = System.currentTimeMillis();
-                    jaxbContext = JAXBContext.newInstance(clazz);
+                    jaxbContext = JAXBContext.newInstance(clazz,
+                            getJaxbConfig());
                     if (clazz.length == 1) {
                         System.out.println("JAXB context for "
                                 + clazz[0].getSimpleName() + " inited in: "
@@ -192,44 +148,11 @@ public class JAXBManager {
     }
 
     /**
-     * Gets an unmarshaller, creating one if one is not currently available.
-     * 
-     * @return an unmarshaller
+     * @return mapping of JAXB property names to configuration objects
      * @throws JAXBException
      */
-    protected Unmarshaller getUnmarshaller() throws JAXBException {
-        Unmarshaller m = unmarshallers.poll();
-        if (m == null) {
-            m = getJaxbContext().createUnmarshaller();
-            // set event handler to be able to retrieve ValidationEvents
-            m.setEventHandler(new MaintainEventsValidationHandler());
-        } else {
-            // clear events in event handler ( just in case it was missed, don't
-            // intentionally rely on this path to clear the events for you, they
-            // don't need to live that long )
-            ValidationEventHandler h = m.getEventHandler();
-            if (h instanceof MaintainEventsValidationHandler) {
-                MaintainEventsValidationHandler sh = (MaintainEventsValidationHandler) h;
-                sh.clearEvents();
-            }
-        }
-
-        return m;
-    }
-
-    /**
-     * Gets a marshaller, creating one if one is not currently available.
-     * 
-     * @return
-     * @throws JAXBException
-     */
-    protected Marshaller getMarshaller() throws JAXBException {
-        Marshaller m = marshallers.poll();
-        if (m == null) {
-            m = getJaxbContext().createMarshaller();
-        }
-
-        return m;
+    protected Map<String, Object> getJaxbConfig() throws JAXBException {
+        return Collections.emptyMap();
     }
 
     /**
@@ -241,72 +164,12 @@ public class JAXBManager {
      * @throws JAXBException
      */
     public Object unmarshalFromXml(String xml) throws JAXBException {
-        Unmarshaller msh = null;
-        try {
-            msh = getUnmarshaller();
-            StringReader reader = new StringReader(xml);
-            Object obj = msh.unmarshal(reader);
-            return obj;
-        } finally {
-            handleEvents(msh, null);
-            if ((msh != null) && (unmarshallers.size() < QUEUE_SIZE)) {
-                unmarshallers.add(msh);
-            }
-        }
-
+        StringReader reader = new StringReader(xml);
+        JAXBContext cxt = getJaxbContext();
+        return marshStrategy.unmarshalFromReader(cxt, reader);
     }
 
-    /**
-     * Processes the events received by an unmarshaller when parsing XML.
-     * 
-     * @param msh
-     *            the unmarshaller
-     */
-    private void handleEvents(Unmarshaller msh, String name) {
-        try {
-            ValidationEventHandler h = msh.getEventHandler();
-            if (h instanceof MaintainEventsValidationHandler) {
-                boolean allInfo = true;
-                MaintainEventsValidationHandler mh = (MaintainEventsValidationHandler) h;
-                for (ValidationEvent event : mh.getEvents()) {
-                    if (event.getSeverity() == ValidationEvent.FATAL_ERROR) {
-                        // If we had a fatal error, report events at their
-                        // native severity, otherwise use all info as the
-                        // unmarshalling didn't fail
-                        allInfo = false;
-                        break;
-                    }
-                }
-                for (ValidationEvent event : mh.getEvents()) {
-                    Priority p = Priority.INFO;
-                    if (!allInfo) {
-                        switch (event.getSeverity()) {
-                        case ValidationEvent.FATAL_ERROR:
-                            p = Priority.SIGNIFICANT;
-                            break;
-                        case ValidationEvent.ERROR:
-                            p = Priority.PROBLEM;
-                            break;
-                        case ValidationEvent.WARNING:
-                            p = Priority.WARN;
-                            break;
-                        }
-                    }
-                    UFStatus.getHandler().handle(
-                            p,
-                            (name != null ? name : "") + ": "
-                                    + event.getMessage() + " on line "
-                                    + event.getLocator().getLineNumber()
-                                    + " column "
-                                    + event.getLocator().getColumnNumber(),
-                            event.getLinkedException());
-                }
-                mh.clearEvents();
-            }
-        } catch (JAXBException e) {
-            // Ignore, unable to get handler
-        }
-    }
+
 
     /**
      * Convert an instance of a class to an XML pretty print representation in a
@@ -318,7 +181,7 @@ public class JAXBManager {
      * @throws JAXBException
      */
     public String marshalToXml(Object obj) throws JAXBException {
-        return marshalToXml(obj, true);
+        return marshalToXml(obj, MarshalOptions.FORMATTED);
     }
 
     /**
@@ -326,25 +189,15 @@ public class JAXBManager {
      * 
      * @param obj
      *            Object being marshalled
-     * @param formattedOutput
-     *            True if the output should be xml pretty print.
+     * @param options
+     *            Formatting options
      * @return XML string representation of the object
      * @throws JAXBException
      */
-    public String marshalToXml(Object obj, boolean formattedOutput)
+    public String marshalToXml(Object obj, MarshalOptions options)
             throws JAXBException {
-        Marshaller msh = getMarshaller();
-        try {
-            StringWriter writer = new StringWriter();
-            msh.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, new Boolean(
-                    formattedOutput));
-            msh.marshal(obj, writer);
-            return writer.toString();
-        } finally {
-            if ((msh != null) && (marshallers.size() < QUEUE_SIZE)) {
-                marshallers.add(msh);
-            }
-        }
+        JAXBContext ctx = getJaxbContext();
+        return marshStrategy.marshalToXml(ctx, obj, options);
     }
 
     /**
@@ -359,7 +212,7 @@ public class JAXBManager {
      */
     public void marshalToXmlFile(Object obj, String filePath)
             throws SerializationException {
-        marshalToXmlFile(obj, filePath, true);
+        marshalToXmlFile(obj, filePath, MarshalOptions.FORMATTED);
     }
 
     /**
@@ -370,16 +223,16 @@ public class JAXBManager {
      *            Object to be marshaled
      * @param filePath
      *            Path to the output file
-     * @param formattedOutput
-     *            True for pretty print xml.
+     * @param options
+     *            Formatting options
      * @throws SerializationException
      */
     public void marshalToXmlFile(Object obj, String filePath,
-            boolean formattedOutput) throws SerializationException {
+            MarshalOptions options) throws SerializationException {
         OutputStream os = null;
         try {
             os = new FileOutputStream(new File(filePath));
-            marshalToStream(obj, os, formattedOutput);
+            marshalToStream(obj, os, options);
         } catch (SerializationException e) {
             throw e;
         } catch (Exception e) {
@@ -405,7 +258,7 @@ public class JAXBManager {
      */
     public void marshalToStream(Object obj, OutputStream out)
             throws SerializationException {
-        marshalToStream(obj, out, true);
+        marshalToStream(obj, out, MarshalOptions.FORMATTED);
     }
 
     /**
@@ -414,24 +267,17 @@ public class JAXBManager {
      * 
      * @param obj
      * @param out
-     * @param formattedOutput
+     * @param options
      * 
      * @throws SerializationException
      */
     public void marshalToStream(Object obj, OutputStream out,
-            boolean formattedOutput) throws SerializationException {
-        Marshaller msh = null;
+            MarshalOptions options) throws SerializationException {
         try {
-            msh = getMarshaller();
-            msh.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, new Boolean(
-                    formattedOutput));
-            msh.marshal(obj, out);
-        } catch (Exception e) {
+            JAXBContext cxt = getJaxbContext();
+            marshStrategy.marshalToStream(cxt, obj, out, options);
+        } catch (JAXBException e) {
             throw new SerializationException(e);
-        } finally {
-            if ((msh != null) && (marshallers.size() < QUEUE_SIZE)) {
-                marshallers.add(msh);
-            }
         }
     }
 
@@ -509,27 +355,11 @@ public class JAXBManager {
      */
     public Object unmarshalFromInputStream(InputStream is)
             throws SerializationException {
-        Unmarshaller msh = null;
         try {
-            msh = getUnmarshaller();
-            Object obj = msh.unmarshal(is);
-            return obj;
-        } catch (Exception e) {
-            throw new SerializationException(e.getLocalizedMessage(), e);
-        } finally {
-            if (msh != null) {
-                handleEvents(msh, null);
-            }
-            if ((msh != null) && (unmarshallers.size() < QUEUE_SIZE)) {
-                unmarshallers.add(msh);
-            }
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
+            JAXBContext ctx = getJaxbContext();
+            return marshStrategy.unmarshalFromInputStream(ctx, is);
+        } catch (JAXBException e) {
+            throw new SerializationException(e);
         }
     }
 
@@ -543,31 +373,14 @@ public class JAXBManager {
      */
     protected Object internalUnmarshalFromXmlFile(File file)
             throws SerializationException {
-        FileReader reader = null;
-        Unmarshaller msh = null;
         try {
-            msh = getUnmarshaller();
-            reader = new FileReader(file);
-            Object obj = msh.unmarshal(reader);
-            return obj;
+            JAXBContext ctx = getJaxbContext();
+            FileReader reader = new FileReader(file);
+            return marshStrategy.unmarshalFromReader(ctx, reader);
         } catch (Exception e) {
             throw new SerializationException("Error reading " + file.getName()
                     + "\n" + e.getLocalizedMessage(), e);
-        } finally {
-            if (msh != null) {
-                handleEvents(msh, file.getName());
-            }
-            if ((msh != null) && (unmarshallers.size() < QUEUE_SIZE)) {
-                unmarshallers.add(msh);
-            }
-            if (reader != null) {
-                try {
-                    reader.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
-        }
+        } 
     }
 
 }

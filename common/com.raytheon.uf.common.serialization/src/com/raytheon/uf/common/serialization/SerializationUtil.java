@@ -52,6 +52,7 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Oct 01, 2013 2163       njensen      Updated calls to JAXBManager
  * Mar 26, 2014 2884       randerso     Fixed broken javadoc link
  * Apr 16, 2014 2928       rjpeter      Added jaxbMarshalToStream.
+ * Jul 15, 2014 3373       bclement     jaxb manager api changes
  * </pre>
  * 
  * @author chammack
@@ -89,7 +90,7 @@ public final class SerializationUtil {
                                     IJaxbableClassesLocator.class,
                                     SerializableManager.getInstance())
                             .getJaxbables();
-                    jaxbManager = result = new JAXBManager(
+                    jaxbManager = result = new JAXBManager(true,
                             jaxbClasses.toArray(new Class[jaxbClasses.size()]));
 
                 }

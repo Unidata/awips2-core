@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceGroup;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Oct 18, 2013  2491     bsteffen    Initial creation
+ * Jul 14, 2014  3373     bclement    jaxb manager api changes
  * 
  * </pre>
  * 
@@ -118,7 +119,7 @@ public class ProcedureXmlManager {
         jaxbClasses[0] = JaxbDummyObject.class;
 
         try {
-            return new JAXBManager(jaxbClasses);
+            return new JAXBManager(true, jaxbClasses);
         } catch (JAXBException e) {
             statusHandler.handle(Priority.PROBLEM,
                     ProcedureXmlManager.class.getSimpleName()

@@ -40,6 +40,7 @@ import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.serialization.MarshalOptions;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.stats.AggregateRecord;
 import com.raytheon.uf.common.stats.StatisticsEvent;
@@ -81,6 +82,7 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  * Apr 18, 2014 2681       rjpeter     Updated scan to process in distinct chunks of time.
  * May 12, 2014 3154       rjpeter     Removed reclaimSpace call.
  * Jun 02, 2014 2715       rferrel     Change offline to prevent accumulation of hibernate records.
+ * Jul 14, 2014 3373       bclement    jaxb manager api changes
  * </pre>
  * 
  * @author jsanchez
@@ -136,7 +138,8 @@ public class AggregateManager {
         // perform aggregate functions on the grouped data
         for (StatsGroupingColumn group : groupedEvents.keySet()) {
             Collection<StatisticsEvent> groupData = groupedEvents.get(group);
-            String groupKey = jaxbManager.marshalToXml(group, false);
+            String groupKey = jaxbManager.marshalToXml(group,
+                    MarshalOptions.UNFORMATTED);
 
             Iterator<Method> aggrMethodIter = statsEvent.getAggregateMethods()
                     .iterator();
