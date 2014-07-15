@@ -33,7 +33,7 @@ import org.reflections.util.ConfigurationBuilder;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
+import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * Uses the reflections package to find classes on the classpath that match the
@@ -47,6 +47,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * ------------ ---------- ----------- --------------------------
  * Oct 11, 2013            njensen     Initial creation
  * Apr 25, 2014 2995       rjpeter     Updated to scan PLUGINDIR for all files.
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * </pre>
  * 
  * @author njensen
@@ -73,8 +74,7 @@ public class DatabaseClassAnnotationFinder {
     protected Set<Class<?>> findClasses() {
         long t0 = System.currentTimeMillis();
         ConfigurationBuilder cb = new ConfigurationBuilder();
-        File pluginDir = new File(PropertiesFactory.getInstance()
-                .getEnvProperties().getEnvValue("PLUGINDIR"));
+        File pluginDir = new File(EDEXUtil.getEdexPlugins());
 
         if (!pluginDir.exists()) {
             throw new AssertionError(

@@ -37,7 +37,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.FileUtil;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
+import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * Provides logging and deletion services for camel
@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Feb 12, 2013 1615       bgonzale    Changed ProcessEvent pluginName to dataType.
  * Jan 21, 2014 2627       njensen     Added logFailedData() and logFailureAsInfo()
  * Mar 04, 2014 2627       njensen     Harden static initialization
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * 
  * </pre>
  * 
@@ -89,9 +90,7 @@ public class ProcessUtil {
              */
             retain = Boolean.getBoolean("retain.failed.data");
             if (retain) {
-                dir = PropertiesFactory.getInstance().getEnvProperties()
-                        .getEnvValue("DEFAULTDATADIR")
-                        + File.separator + "failed";
+                dir = EDEXUtil.getEdexData() + File.separator + "failed";
                 File file = new File(dir);
                 if (!file.exists()) {
                     file.mkdirs();
@@ -141,7 +140,8 @@ public class ProcessUtil {
         return Arrays.asList(objects).iterator();
     }
 
-    public void delete(@Header(value = "ingestFileName") String path) {
+    public void delete(@Header(value = "ingestFileName")
+    String path) {
         File f = new File(path);
         if (f.exists()) {
             f.delete();
@@ -159,7 +159,8 @@ public class ProcessUtil {
      * 
      * @param headers
      */
-    public void log(@Headers Map<?, ?> headers) {
+    public void log(@Headers
+    Map<?, ?> headers) {
         logInternal(headers, true);
     }
 

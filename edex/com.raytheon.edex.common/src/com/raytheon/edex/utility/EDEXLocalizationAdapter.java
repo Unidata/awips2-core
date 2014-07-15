@@ -40,8 +40,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
 import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.edex.core.props.EnvProperties;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
+import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * TODO: Should we be sending out FileUpdateMessages for save/delete?
@@ -66,6 +65,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Nov 03, 2013 2511        mnash       Fix issue where if name occurs in path
  *                                      file won't be returned correctly
  * Feb 13, 2014             mnash       Add region level to localization
+ * Jul 10, 2014 2914        garmendariz Remove EnvProperties
  * </pre>
  * 
  * @author jelkins
@@ -128,8 +128,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     }
 
     protected String getSiteName() {
-        String site = PropertiesFactory.getInstance().getEnvProperties()
-                .getEnvValue("SITENAME");
+        String site = EDEXUtil.getEdexSite();
 
         if ((site == null) || site.isEmpty()) {
             site = "none";
@@ -221,9 +220,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      * @return the file reference to the utility directory
      */
     protected File getUtilityDir() {
-        EnvProperties env = PropertiesFactory.getInstance().getEnvProperties();
 
-        return new File(env.getEnvValue("UTILITYDIR"));
+        return new File(EDEXUtil.getEdexUtility());
     }
 
     /**

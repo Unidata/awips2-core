@@ -34,8 +34,8 @@ import com.raytheon.uf.common.localization.msgs.ProtectedFileResponse;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
 /**
  * Utility (localization) service
@@ -48,6 +48,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Jul 30, 2007            njensen     Added delete case
  * Aug 22, 2008 1422       chammack    Pulled out serialization
  * Nov 14, 2008            njensen     Camel Refactor
+ * Jul 10, 2014   2914     garmendariz Remove EnvProperties
  * </pre>
  * 
  * @author njensen
@@ -56,9 +57,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
 public class UtilitySrv implements IRequestHandler<UtilityRequestMessage> {
 
-    private static String UTILITY_DIR = PropertiesFactory.getInstance()
-            .getEnvProperties().getEnvValue("DEFAULTDATADIR")
-            + "/utility";
+    private static String UTILITY_DIR = EDEXUtil.getEdexUtility();
 
     @Override
     public UtilityResponseMessage handleRequest(UtilityRequestMessage msg)

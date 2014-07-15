@@ -49,8 +49,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 
 public class FileToString implements Processor {
 
-    private static String DIR = EDEXUtil.EDEX_HOME
-            + File.separator + "data" + File.separator + "processing";
+    private static String DIR = EDEXUtil.getEdexData() + File.separator
+            + "processing";
 
     @Override
     public void process(Exchange arg0) throws Exception {
