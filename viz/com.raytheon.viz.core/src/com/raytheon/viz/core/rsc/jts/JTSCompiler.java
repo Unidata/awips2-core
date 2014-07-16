@@ -54,6 +54,7 @@ import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory;
  *  Oct 24, 2006             chammack    Initial Creation.
  *  Feb 14, 2014 2804        mschenke    Rewrote to move clipping from GLWireframeShape2D to here
  *  Apr 21, 2014 2997        randerso    Improved error handling in handle(ReferencedGeometry, JTSGeometryData)
+ *  Jul 16, 2014 3366        bclement    don't reuse arrays for line segments in handlePoint()
  * 
  * </pre>
  * 
@@ -294,6 +295,11 @@ public class JTSCompiler {
                 theWireframeShape.addLineSegment(ll);
             }
 
+            /*
+             * don't reuse the same array since we can't know that the wireframe
+             * shape will use it immediately or save the reference in a list
+             */
+            ll = new double[2][3];
             ll[0][0] = coord.x;
             ll[0][1] = coord.y - POINT_SIZE;
             ll[0][2] = 0;
