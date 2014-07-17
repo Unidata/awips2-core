@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,20 +34,20 @@ import com.vividsolutions.jts.geom.Geometry;
 /**
  * A default geometry data object if factory developers do not wish to create
  * their own IGeometryData implementations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 09, 2012            njensen     Initial creation
  * Jun 03, 2013  #2023     dgilling    Implement getAttributes().
  * Jan 21, 2014  2667      bclement    attribute method comments
  * Mar 19, 2014  2882      dgilling    Handle null values with a special Type.
- * 
+ *
  * </pre>
- * 
+ *
  * @author njensen
  * @version 1.0
  */
@@ -115,7 +115,7 @@ public class DefaultGeometryData implements IGeometryData {
     public String getString(String param) {
         String result = null;
         GeomData data = dataMap.get(param);
-        if (data != null) {
+        if (data != null && data.value != null) {
             result = data.value.toString();
         }
         return result;
@@ -209,7 +209,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -221,7 +221,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -235,7 +235,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -249,7 +249,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -287,7 +287,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Add a key/value pair to the attributes map. Attributes are metadata
      * providing additional information on the dataset.
-     * 
+     *
      * @param key
      * @param value
      */
@@ -314,7 +314,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Replace the attribute map with attrs. Attributes are metadata providing
      * additional information on the dataset.
-     * 
+     *
      * @param attrs
      */
     public void setAttributes(Map<String, Object> attrs) {
