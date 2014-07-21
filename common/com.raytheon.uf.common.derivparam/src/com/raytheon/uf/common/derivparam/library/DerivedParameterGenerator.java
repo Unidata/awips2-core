@@ -46,7 +46,7 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -75,6 +75,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                     through spring
  * Mar 27, 2014  2945     bsteffen     Recursively find definitions in
  *                                     subdirectories.
+ * Jul 21, 2014  3373     bclement     JAXB manager API changes
  * 
  * </pre>
  * 
@@ -209,9 +210,10 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
                     .getLocalSearchHierarchy(LocalizationType.COMMON_STATIC);
             LocalizationFile[] xmlFiles = pm.listFiles(contexts, XML_DIR,
                     new String[] { ".xml" }, true, true);
-            JAXBManager jaxbMan;
+            SingleTypeJAXBManager<DerivParamDesc> jaxbMan;
             try {
-                jaxbMan = new JAXBManager(DerivParamDesc.class);
+                jaxbMan = new SingleTypeJAXBManager<DerivParamDesc>(true,
+                        DerivParamDesc.class);
             } catch (JAXBException e1) {
                 statusHandler
                         .handle(Priority.CRITICAL,
@@ -222,8 +224,8 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
 
             for (LocalizationFile file : xmlFiles) {
                 try {
-                    DerivParamDesc desc = jaxbMan.unmarshalFromXmlFile(
-                            DerivParamDesc.class, file.getFile());
+                    DerivParamDesc desc = jaxbMan.unmarshalFromXmlFile(file
+                            .getFile());
                     if (derParLibrary.containsKey(desc.getAbbreviation())) {
                         DerivParamDesc oldDesc = derParLibrary.get(desc
                                 .getAbbreviation());
