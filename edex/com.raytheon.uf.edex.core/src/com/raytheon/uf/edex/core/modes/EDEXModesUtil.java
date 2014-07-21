@@ -38,7 +38,6 @@ import javax.xml.bind.JAXBException;
 import javax.xml.bind.Unmarshaller;
 
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
 /**
  * EDEX utility class for accessing mode and mode configuration files.
@@ -51,6 +50,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * ------------ ---------- ----------- --------------------------
  * Dec 5, 2013  2566       bgonzale     Initial creation.  Refactored from Executor.
  * May 21,2014  3195       bclement     changes to merge multiple modes files
+ * Jul 10, 2014 2914       garmendariz  Remove EnvProperties
  * 
  * </pre>
  * 
@@ -69,8 +69,8 @@ public class EDEXModesUtil {
     public static final Pattern RES_SPRING_PATTERN = Pattern
             .compile("res/spring/");
 
-    public static final String CONF_DIR = EDEXUtil.EDEX_HOME + File.separator
-            + "conf";
+    public static final String CONF_DIR = EDEXUtil.getEdexHome()
+            + File.separator + "conf";
 
     public static final String MODES_DIR = CONF_DIR + File.separator + "modes";
 
@@ -89,8 +89,7 @@ public class EDEXModesUtil {
     public static List<String> extractSpringXmlFiles(List<String> files,
             String modeName) throws IOException, ModesException {
         FilenameFilter filter = getModeFilter(modeName);
-        String pluginDirStr = PropertiesFactory.getInstance()
-                .getEnvProperties().getEnvValue("PLUGINDIR");
+        String pluginDirStr = EDEXUtil.getEdexPlugins();
 
         List<String> retVal = new ArrayList<String>();
         File jarDirFile = new File(pluginDirStr);

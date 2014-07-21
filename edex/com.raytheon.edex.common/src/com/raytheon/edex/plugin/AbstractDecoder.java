@@ -20,13 +20,8 @@
 
 package com.raytheon.edex.plugin;
 
-import java.util.Calendar;
-import java.util.TimeZone;
-
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
-
-import com.raytheon.uf.edex.core.props.Properties;
 
 /**
  * Base class for plugin decoders.
@@ -56,6 +51,7 @@ import com.raytheon.uf.edex.core.props.Properties;
  * ------------ ---------- ----------- --------------------------
  * 06/14/06                garmendariz Initial check-in
  * 11/02/06     #39        brockwoo    Added wmo header field
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * 
  * &lt;/pre&gt;
  * &#064;author garmendariz
@@ -72,40 +68,5 @@ public abstract class AbstractDecoder {
 
     /** The wmo header to parse */
     protected String wmoHeader;
-
-    /** The plugin properties */
-    protected Properties properties;
-
-    /**
-     * Retrieves a Calendar instance from a formatted date as a string
-     * 
-     * @param aString
-     *            A formatted date as a string
-     * @return An instance of the Calendar class set to the parameter date
-     */
-    protected Calendar getCalendar(String aString) {
-        Calendar calendar = null;
-
-        calendar = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-        calendar.set(Calendar.DAY_OF_MONTH, Integer.parseInt(aString.substring(
-                0, 2)));
-        calendar.set(Calendar.HOUR_OF_DAY, Integer.parseInt(aString.substring(
-                2, 4)));
-        calendar
-                .set(Calendar.MINUTE, Integer.parseInt(aString.substring(4, 6)));
-        calendar.set(Calendar.SECOND, 0);
-        calendar.set(Calendar.MILLISECOND, 0);
-
-        return calendar;
-
-    }
-
-    public Properties getProperties() {
-        return properties;
-    }
-
-    public void setProperties(Properties properties) {
-        this.properties = properties;
-    }
 
 }

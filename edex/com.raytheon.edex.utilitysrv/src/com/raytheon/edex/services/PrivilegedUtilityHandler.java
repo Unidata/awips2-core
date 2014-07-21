@@ -12,8 +12,8 @@ import com.raytheon.uf.common.localization.msgs.DeleteUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
 
 /**
  * Handle privileged requests.
@@ -24,6 +24,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 3, 2010            rgeorge     Initial creation
+ * Jul 10, 2014 2914      garmendariz Remove EnvProperties
  * 
  * </pre>
  * 
@@ -34,9 +35,7 @@ public class PrivilegedUtilityHandler
         extends
         AbstractPrivilegedLocalizationRequestHandler<PrivilegedUtilityRequestMessage> {
 
-    private static String UTILITY_DIR = PropertiesFactory.getInstance()
-            .getEnvProperties().getEnvValue("DEFAULTDATADIR")
-            + "/utility";
+    private static String UTILITY_DIR = EDEXUtil.getEdexUtility();
 
     @Override
     public UtilityResponseMessage handleRequest(

@@ -21,6 +21,7 @@
 package com.raytheon.uf.edex.database.schema;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
@@ -43,7 +44,6 @@ import org.hibernate.AnnotationException;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
 import com.raytheon.uf.edex.database.DatabasePluginProperties;
 import com.raytheon.uf.edex.database.DatabasePluginRegistry;
 import com.raytheon.uf.edex.database.DatabaseSessionFactoryBean;
@@ -71,6 +71,7 @@ import com.raytheon.uf.edex.database.plugin.PluginVersionDao;
  *                                      Removed unused private method populateSchema.
  * Oct 14, 2013 2361       njensen     Moved to plugin uf.edex.database
  *                                      Replaced use of SerializableManager
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * </pre>
  * 
  * @author bphillip
@@ -128,8 +129,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
      */
     private SchemaManager() {
         dbPluginRegistry = DatabasePluginRegistry.getInstance();
-        pluginDir = PropertiesFactory.getInstance().getEnvProperties()
-                .getEnvValue("PLUGINDIR");
+        pluginDir = EDEXUtil.getEdexPlugins() + File.separator;
     }
 
     /**
@@ -191,6 +191,15 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                         }
                     }
                 }
+            }
+        }
+
+        if (jar != null) {
+            try {
+                jar.close();
+            } catch (IOException e) {
+                throw new PluginException("Unable to close jar for plugin FQN "
+                        + pluginFQN, e);
             }
         }
     }

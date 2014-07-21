@@ -19,7 +19,7 @@
  **/
 package com.raytheon.edex.site;
 
-import com.raytheon.uf.edex.core.props.PropertiesFactory;
+import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * Utility for site and station information
@@ -30,6 +30,7 @@ import com.raytheon.uf.edex.core.props.PropertiesFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 18, 2009            njensen     Initial creation
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * 
  * </pre>
  * 
@@ -44,7 +45,6 @@ public class SiteUtil {
      * @return The current site name
      */
     public static String getSite() {
-        return PropertiesFactory.getInstance().getEnvProperties()
-                .getEnvValue("SITENAME");
+        return EDEXUtil.getEdexSite();
     }
 }

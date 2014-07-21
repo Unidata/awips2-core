@@ -35,6 +35,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
 import com.raytheon.uf.common.message.StatusMessage;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.core.exception.ShutdownException;
 
 /**
@@ -52,6 +53,7 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * 03/18/2013   1802        bphillip    Added getList utility function
  * 04/10/2014   2726        rjpeter     Added methods for waiting for edex to be running.
  * 06/25/2014   3165        njensen     Remove dead code
+ * Jul 16, 2014 2914        garmendariz Remove EnvProperties
  * </pre>
  * 
  * @author chammack
@@ -59,10 +61,24 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  */
 public class EDEXUtil implements ApplicationContextAware {
 
-    public static final String EDEX_HOME = System.getProperty("edex.home");
+    private static final String EDEX_SITE = System
+            .getProperty("aw.site.identifier");
 
-    public static final String EDEX_BIN = EDEX_HOME + File.separatorChar
+    private static final String EDEX_HOME = System.getProperty("edex.home");
+
+    private static final String EDEX_BIN = EDEX_HOME + File.separatorChar
             + "bin";
+
+    private static final String EDEX_PLUGINS = EDEX_HOME + File.separator
+            + FileUtil.join("lib", "plugins");
+
+    private static final String EDEX_DATA = EDEX_HOME + File.separator + "data";
+
+    private static final String EDEX_UTILITY = EDEX_DATA + File.separator
+            + "utility";
+
+    private static final String EDEX_SHARE = EDEX_DATA + File.separator
+            + "share";
 
     static Log logger = LogFactory.getLog(EDEXUtil.class);
 
@@ -72,7 +88,6 @@ public class EDEXUtil implements ApplicationContextAware {
 
     private static IContextAdmin CONTEXT_ADMIN;
 
-    // TODO
     private static final String alertEndpoint = "alertVizNotify";
 
     private static final Object waiter = new Object();
@@ -86,6 +101,34 @@ public class EDEXUtil implements ApplicationContextAware {
                 shuttingDown = true;
             }
         });
+    }
+
+    public static String getEdexSite() {
+        return EDEX_SITE;
+    }
+
+    public static String getEdexHome() {
+        return EDEX_HOME;
+    }
+
+    public static String getEdexUtility() {
+        return EDEX_UTILITY;
+    }
+
+    public static String getEdexShare() {
+        return EDEX_SHARE;
+    }
+
+    public static String getEdexPlugins() {
+        return EDEX_PLUGINS;
+    }
+
+    public static String getEdexBin() {
+        return EDEX_BIN;
+    }
+
+    public static String getEdexData() {
+        return EDEX_DATA;
     }
 
     @Override
