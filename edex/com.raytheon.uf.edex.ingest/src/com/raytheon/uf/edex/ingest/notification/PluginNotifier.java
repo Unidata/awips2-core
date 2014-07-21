@@ -72,6 +72,7 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * Nov 19, 2013 2170       rjpeter     Add plugin contributed config files, filtering,
  *                                     and support for pdo vs datauri.
  * Mar 19, 2014 2726       rjpeter     Added graceful shutdown support.
+ * Jul 21, 2014 3373       bclement    JAXB manager API changes
  * </pre>
  * 
  * @author mnash
@@ -106,7 +107,7 @@ public class PluginNotifier implements IContextStateProcessor {
     }
 
     private synchronized void loadConfigurations() throws JAXBException {
-        JAXBManager mgr = new JAXBManager(PluginNotifierConfigList.class,
+        JAXBManager mgr = new JAXBManager(true, PluginNotifierConfigList.class,
                 PluginNotifierConfig.class);
 
         IPathManager pathMgr = PathManagerFactory.getPathManager();

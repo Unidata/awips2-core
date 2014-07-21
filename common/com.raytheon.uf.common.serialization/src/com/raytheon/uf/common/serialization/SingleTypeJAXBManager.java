@@ -39,7 +39,8 @@ import com.raytheon.uf.common.status.UFStatus;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 1, 2013  2361       njensen     Initial creation
+ * Oct 01, 2013  2361      njensen     Initial creation
+ * Jul 21, 2014  3373      bclement    added pooling boolean constructor
  * 
  * </pre>
  * 
@@ -53,7 +54,7 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(SingleTypeJAXBManager.class);
 
-    protected Class<T> type;
+    protected final Class<T> type;
 
     /**
      * Constructor. Only accepts a single class.
@@ -63,7 +64,19 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
      * @throws JAXBException
      */
     public SingleTypeJAXBManager(Class<T> clazz) throws JAXBException {
-        super(clazz);
+        this(false, clazz);
+
+    }
+
+    /**
+     * @see JAXBManager#JAXBManager(boolean, Class...)
+     * @param pooling
+     * @param clazz
+     * @throws JAXBException
+     */
+    public SingleTypeJAXBManager(boolean pooling, Class<T> clazz)
+            throws JAXBException {
+        super(pooling, clazz);
         this.type = clazz;
     }
 
@@ -103,6 +116,22 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
      */
     public static <A> SingleTypeJAXBManager<A> createWithoutException(
             Class<A> clazz) {
+        return createWithoutException(false, clazz);
+    }
+
+    /**
+     * Creates a SingleTypeJAXBManager for a specified type, but catches any
+     * JAXBExceptions thrown and logs them. If an exception does occur, returns
+     * null.
+     * 
+     * @param pooling
+     *            true if jaxb manager should pool resources
+     * @param clazz
+     *            the class of the object to read/write XML for
+     * @return the SingleTypeJAXBManager or null if an exception occurred
+     */
+    public static <A> SingleTypeJAXBManager<A> createWithoutException(
+            boolean pooling, Class<A> clazz) {
         SingleTypeJAXBManager<A> retVal = null;
         try {
             retVal = new SingleTypeJAXBManager<A>(clazz);

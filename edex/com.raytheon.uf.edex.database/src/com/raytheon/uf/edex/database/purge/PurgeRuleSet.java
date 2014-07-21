@@ -45,6 +45,7 @@ import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
  * ------------- -------- ----------- --------------------------
  * Feb 15, 2011  2469     bphillip    Initial creation
  * Apr 22, 2014  2946     bsteffen    Remove ISerializableObject, add jaxbManager
+ * Jul 21, 2014  3373     bclement    JAXB manager API changes
  * 
  * </pre>
  * 
@@ -56,7 +57,7 @@ import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 public class PurgeRuleSet {
 
     public static final SingleTypeJAXBManager<PurgeRuleSet> jaxbManager = SingleTypeJAXBManager
-            .createWithoutException(PurgeRuleSet.class);
+            .createWithoutException(true, PurgeRuleSet.class);
 
     @XmlElements({ @XmlElement(name = "key", type = String.class) })
     private List<String> keys;

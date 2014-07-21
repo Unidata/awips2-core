@@ -30,11 +30,13 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
+import javax.xml.bind.JAXBException;
+
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.serialization.SerializationUtil;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
@@ -49,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------ ---------- ----------- --------------------------
  * Sep 6, 2013  2327      rjpeter     Initial creation
  * May 09, 2014 3151      bclement    added checkForPluginsMissingPatterns()
+ * Jul 21, 2014  3373     bclement    uses its own jaxb manager during refresh
  * 
  * </pre>
  * 
@@ -91,17 +94,19 @@ public class DistributionPatterns {
     /**
      * Loads patterns from a distribution file for the specified plugin.
      * 
+     * @param jaxb
+     *            jaxb manager for request patterns
      * @param file
      *            The file containing the ingest patterns
      * @throws DistributionException
      *             If the modelFile cannot be deserialized
      */
-    private RequestPatterns loadPatterns(File file)
+    private RequestPatterns loadPatterns(
+            SingleTypeJAXBManager<RequestPatterns> jaxb, File file)
             throws DistributionException {
         RequestPatterns patternSet = null;
         try {
-            patternSet = SerializationUtil.jaxbUnmarshalFromXmlFile(
-                    RequestPatterns.class, file.getPath());
+            patternSet = jaxb.unmarshalFromXmlFile(file);
         } catch (Exception e) {
             throw new DistributionException("File " + file.getAbsolutePath()
                     + " could not be unmarshalled.", e);
@@ -136,6 +141,15 @@ public class DistributionPatterns {
      * file has been modified. This method is executed via a quartz timer
      */
     public void refresh() {
+        SingleTypeJAXBManager<RequestPatterns> jaxb;
+        try {
+            jaxb = new SingleTypeJAXBManager<RequestPatterns>(true,
+                    RequestPatterns.class);
+        } catch (JAXBException e) {
+            statusHandler.error("Unable to refresh distribution patterns, "
+                    + "cannot create JAXB manager", e);
+            return;
+        }
         for (File file : getDistributionFiles()) {
             String fileName = file.getName();
             Long modTime = modifiedTimes.get(fileName);
@@ -157,7 +171,7 @@ public class DistributionPatterns {
                                         + fileName
                                         + " has been modified.  Reloading distribution patterns");
                     }
-                    patterns.put(plugin, loadPatterns(file));
+                    patterns.put(plugin, loadPatterns(jaxb, file));
                     modifiedTimes.put(fileName, file.lastModified());
                 } catch (DistributionException e) {
                     statusHandler.error(
