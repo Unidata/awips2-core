@@ -63,6 +63,10 @@ import com.raytheon.uf.common.time.TimeRange;
 
 public class DataAccessLayer {
 
+    private DataAccessLayer() {
+        // static interface only
+    }
+
     /**
      * Gets the times of available data to the request
      * 
@@ -235,7 +239,7 @@ public class DataAccessLayer {
      *            the request to find matching parameter names for
      * @return the available parameter names that match the request
      */
-    public String[] getAvailableParameters(IDataRequest request) {
+    public static String[] getAvailableParameters(IDataRequest request) {
         return DataFactoryRegistry.getInstance().getFactory(request)
                 .getAvailableParameters(request);
     }
@@ -249,7 +253,7 @@ public class DataAccessLayer {
      * @throws IncompatibleRequestException
      *             if the factory for this datatype does not support levels
      */
-    public Level[] getAvailableLevels(IDataRequest request) {
+    public static Level[] getAvailableLevels(IDataRequest request) {
         return DataFactoryRegistry.getInstance().getFactory(request)
                 .getAvailableLevels(request);
     }
@@ -262,7 +266,7 @@ public class DataAccessLayer {
      *            the datatype to find required identifiers for requests
      * @return the identifiers that are required for this datatype's requests
      */
-    public String[] getRequiredIdentifiers(String datatype) {
+    public static String[] getRequiredIdentifiers(String datatype) {
         return DataFactoryRegistry.getInstance().getFactory(datatype)
                 .getRequiredIdentifiers();
     }
@@ -276,7 +280,7 @@ public class DataAccessLayer {
      *            the datatype to find all possible identifiers for
      * @return the identifiers that are recognized by requests for this datatype
      */
-    public String[] getValidIdentifiers(String datatype) {
+    public static String[] getValidIdentifiers(String datatype) {
         return DataFactoryRegistry.getInstance().getFactory(datatype)
                 .getValidIdentifiers();
     }
