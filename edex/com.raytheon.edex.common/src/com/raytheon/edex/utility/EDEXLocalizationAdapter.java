@@ -30,6 +30,8 @@ import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 
+import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -66,6 +68,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  *                                      file won't be returned correctly
  * Feb 13, 2014             mnash       Add region level to localization
  * Jul 10, 2014 2914        garmendariz Remove EnvProperties
+ * Jul 21, 2014 2768        bclement    added notification in save() and delete()
  * </pre>
  * 
  * @author jelkins
@@ -78,6 +81,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
             .getHandler(EDEXLocalizationAdapter.class);
 
     private final Map<LocalizationType, LocalizationContext[]> contexts;
+
+    private static final String FILE_UPDATE_ENDPOINT = "utilityNotify";
 
     /**
      * Constructs this class
@@ -259,7 +264,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
             entry.fileName = entry.fileName.substring(1);
         }
         entry.date = new Date(file.lastModified());
-
+        entry.existsOnServer = file.exists();
         entry.protectedLevel = ProtectedFiles.getProtectedLevel(null,
                 ctx.getLocalizationType(), entry.fileName);
 
@@ -315,10 +320,30 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean save(ModifiableLocalizationFile file)
             throws LocalizationOpFailedException {
-        if (file.getContext().getLocalizationLevel()
+        LocalizationContext context = file.getContext();
+        if (context.getLocalizationLevel()
                 .equals(LocalizationLevel.BASE)) {
             throw new UnsupportedOperationException(
                     "Saving to the BASE context is not supported.");
+        }
+        FileChangeType changeType;
+        if (file.getLocalizationFile().isAvailableOnServer()) {
+            changeType = FileChangeType.UPDATED;
+        } else {
+            changeType = FileChangeType.ADDED;
+        }
+        long timeStamp = System.currentTimeMillis();
+        File localFile = file.getLocalFile();
+        file.setIsAvailableOnServer(localFile.exists());
+        file.setIsDirectory(localFile.isDirectory());
+        // send notification
+        try {
+            EDEXUtil.getMessageProducer().sendAsync(
+                    FILE_UPDATE_ENDPOINT,
+                    new FileUpdatedMessage(context, file.getFileName(),
+                            changeType, timeStamp));
+        } catch (Exception e) {
+            handler.error("Error sending file updated message", e);
         }
         return true;
     }
@@ -334,10 +359,27 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     public boolean delete(ModifiableLocalizationFile file)
             throws LocalizationOpFailedException {
         File localFile = file.getLocalFile();
+        boolean deleted = false;
         if (localFile.exists()) {
-            return localFile.delete();
+            deleted = localFile.delete();
         }
-        return true;
+        if (deleted) {
+            long timeStamp = System.currentTimeMillis();
+            file.setIsAvailableOnServer(false);
+            file.setFileChecksum(null);
+            file.setIsDirectory(false);
+            LocalizationContext context = file.getContext();
+            // send notification
+            try {
+                EDEXUtil.getMessageProducer().sendAsync(
+                        FILE_UPDATE_ENDPOINT,
+                        new FileUpdatedMessage(context, file.getFileName(),
+                                FileChangeType.DELETED, timeStamp));
+            } catch (Exception e) {
+                handler.error("Error sending file updated message", e);
+            }
+        }
+        return deleted;
     }
 
     @Override
