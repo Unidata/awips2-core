@@ -72,12 +72,13 @@ public class EDEXUtil implements ApplicationContextAware {
     private static final String EDEX_PLUGINS = EDEX_HOME + File.separator
             + FileUtil.join("lib", "plugins") + File.separator;
 
-    private static final String EDEX_DATA = EDEX_HOME + File.separator + "data";
+    private static final String EDEX_DATA = EDEX_HOME + File.separator + "data"
+            + File.separator;
 
-    private static final String EDEX_UTILITY = EDEX_DATA + File.separator
+    private static final String EDEX_UTILITY = EDEX_DATA
             + "utility";
 
-    private static final String EDEX_SHARE = EDEX_DATA + File.separator
+    private static final String EDEX_SHARE = EDEX_DATA
             + "share";
 
     static Log logger = LogFactory.getLog(EDEXUtil.class);
