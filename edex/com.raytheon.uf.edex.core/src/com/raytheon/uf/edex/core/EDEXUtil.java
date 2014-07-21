@@ -70,7 +70,7 @@ public class EDEXUtil implements ApplicationContextAware {
             + "bin";
 
     private static final String EDEX_PLUGINS = EDEX_HOME + File.separator
-            + FileUtil.join("lib", "plugins");
+            + FileUtil.join("lib", "plugins") + File.separator;
 
     private static final String EDEX_DATA = EDEX_HOME + File.separator + "data";
 
