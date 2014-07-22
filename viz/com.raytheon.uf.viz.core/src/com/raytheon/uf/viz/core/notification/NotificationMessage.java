@@ -19,46 +19,36 @@
  **/
 package com.raytheon.uf.viz.core.notification;
 
-import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.List;
 
-import javax.jms.BytesMessage;
-import javax.jms.JMSException;
 import javax.jms.Message;
-import javax.jms.TextMessage;
 
-import com.raytheon.uf.common.serialization.DynamicSerializationManager;
-import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationType;
-import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.raytheon.uf.common.util.DataUnzipper;
 
 /**
- * Encapsulation object for notification messages
+ * @Deprecated use
+ *             {@link com.raytheon.uf.common.jms.notification.NotificationMessage}
  * 
- * <pre>
+ *             <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 2, 2008  1448       chammack     Initial creation
- * Oct 4, 2010  7193       cjeanbap     Added a new method, isNotExpired().
- * Feb 1, 2011  7193       cjeanbap     Added a new method, getPublishedTime().
- * Aug 6, 2013  2228       njensen      Use deserialize(byte[])
- * Aug 16, 2013 2169       bkowal       Unzip any gzipped information
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Sep 02, 2008  1448     chammack    Initial creation
+ * Oct 04, 2010  7193     cjeanbap    Added a new method, isNotExpired().
+ * Feb 01, 2011  7193     cjeanbap    Added a new method, getPublishedTime().
+ * Aug 06, 2013  2228     njensen     Use deserialize(byte[])
+ * Aug 16, 2013  2169     bkowal      Unzip any gzipped information
+ * Jul 21, 2014  3390     bsteffen    Move to common.jms.notification make this a deprecated wrapper
+ * 
  * </pre>
  * 
  * @author chammack
  * @version 1.0
  */
-
+@Deprecated
 public class NotificationMessage {
 
-    /** The "raw" jms message */
-    private Message jmsMessage;
-
-    /** An unmarshalled object cached for future use */
-    private Object unmarshalledObject;
+    private com.raytheon.uf.common.jms.notification.NotificationMessage delegate;
 
     /**
      * Construct a notification message from a JMS message
@@ -67,57 +57,21 @@ public class NotificationMessage {
      *            the jms message
      */
     public NotificationMessage(Message message) {
-        this.jmsMessage = message;
-        if (!(message instanceof TextMessage)
-                && !(message instanceof BytesMessage))
-            throw new IllegalArgumentException("Unsupported message type: "
-                    + message);
+        this.delegate = new com.raytheon.uf.common.jms.notification.NotificationMessage(
+                message);
     }
 
-    /**
-     * Return the unmarshalled object
-     * 
-     * NOTE: This returns the common message object. Do NOT modify this object.
-     * If you need to modify it, make a copy first.
-     * 
-     * @return the unmarshalled object
-     */
+    public NotificationMessage(
+            com.raytheon.uf.common.jms.notification.NotificationMessage delegate) {
+        this.delegate = delegate;
+    }
+
     public Object getMessagePayload() throws NotificationException {
-
-        if (this.unmarshalledObject == null) {
-            synchronized (jmsMessage) {
-                try {
-                    // Support messages serialized in binary or XML format
-                    if (this.jmsMessage instanceof BytesMessage) {
-                        BytesMessage bytesMessage = (BytesMessage) this.jmsMessage;
-                        bytesMessage.reset();
-                        long length = bytesMessage.getBodyLength();
-                        byte[] data = new byte[(int) length];
-
-                        int readLength = bytesMessage.readBytes(data);
-                        // QC the data length
-                        if (length != readLength)
-                            throw new NotificationException(
-                                    "Message payload terminated early.  Expected: "
-                                            + length + ".  Got: " + readLength);
-                        if (DataUnzipper.isGzipped(data)) {
-                            data = new DataUnzipper().gunzip(data);
-                        }
-                        this.unmarshalledObject = DynamicSerializationManager
-                                .getManager(SerializationType.Thrift)
-                                .deserialize(data);
-                    } else if (this.jmsMessage instanceof TextMessage) {
-                        TextMessage textMessage = (TextMessage) this.jmsMessage;
-                        this.unmarshalledObject = SerializationUtil
-                                .unmarshalFromXml(textMessage.getText());
-                    }
-                } catch (Exception e) {
-                    throw new NotificationException(
-                            "Error deserializing message payload", e);
-                }
-            }
+        try {
+            return delegate.getMessagePayload();
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
-        return this.unmarshalledObject;
     }
 
     /**
@@ -128,16 +82,9 @@ public class NotificationMessage {
      */
     public List<String> getProperties() throws NotificationException {
         try {
-            Enumeration<?> enumer = this.jmsMessage.getPropertyNames();
-
-            List<String> retVal = new ArrayList<String>();
-            while (enumer.hasMoreElements()) {
-                retVal.add((String) enumer.nextElement());
-            }
-
-            return retVal;
-        } catch (JMSException e) {
-            throw new NotificationException("Error reading property names", e);
+            return delegate.getProperties();
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
     }
 
@@ -151,9 +98,9 @@ public class NotificationMessage {
      */
     public Object getProperty(String propertyName) throws NotificationException {
         try {
-            return this.jmsMessage.getObjectProperty(propertyName);
-        } catch (JMSException e) {
-            throw new NotificationException("Error reading property", e);
+            return delegate.getProperty(propertyName);
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
     }
 
@@ -165,10 +112,9 @@ public class NotificationMessage {
      */
     public String getSource() throws NotificationException {
         try {
-            return this.jmsMessage.getJMSDestination().toString();
-        } catch (JMSException e) {
-            throw new NotificationException(
-                    "Error retrieving source information", e);
+            return delegate.getSource();
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
     }
 
@@ -181,12 +127,9 @@ public class NotificationMessage {
      */
     public boolean isNotExpired() throws NotificationException {
         try {
-            long currentTime = System.currentTimeMillis();
-            return (currentTime < this.jmsMessage.getJMSExpiration() ? true
-                    : false);
-        } catch (JMSException e) {
-            throw new NotificationException(
-                    "Error retrieving source information", e);
+            return delegate.isNotExpired();
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
     }
 
@@ -199,10 +142,9 @@ public class NotificationMessage {
      */
     public long getPublishedTime() throws NotificationException {
         try {
-            return this.jmsMessage.getJMSTimestamp();
-        } catch (JMSException e) {
-            throw new NotificationException(
-                    "Error retrieving source information", e);
+            return delegate.getPublishedTime();
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            throw new NotificationException(e);
         }
     }
 }

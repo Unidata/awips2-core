@@ -1,11 +1,14 @@
 Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
-Bundle-Name: JMS Pooling Plug-in
+Bundle-Name: Common JMS Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.jms
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: Raytheon
 Require-Bundle: javax.jms,
  com.raytheon.uf.common.status,
- org.apache.qpid
-Export-Package: com.raytheon.uf.common.jms
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+ org.apache.qpid,
+ com.raytheon.uf.common.serialization;bundle-version="1.14.0",
+ com.raytheon.uf.common.util;bundle-version="1.14.0"
+Export-Package: com.raytheon.uf.common.jms,
+ com.raytheon.uf.common.jms.notification
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7

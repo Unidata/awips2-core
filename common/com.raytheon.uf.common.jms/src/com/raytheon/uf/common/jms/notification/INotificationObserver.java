@@ -17,26 +17,24 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.viz.core.notification;
+package com.raytheon.uf.common.jms.notification;
 
 /**
  * 
- * @deprecated use
- *             {@link com.raytheon.uf.common.jms.notification.INotificationObserver}
+ * Provides generalized interface into receiving CAVE notification messages
  * 
- *             <pre>
+ * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 08, 2008  1127     randerso    Initial Creation.
  * Sep 03, 2008  1448     chammack    Refactored interface to not use jms directly
- * Jul 21, 2014  3390     bsteffen    Move to common.jms.notification and deprecated this one.
+ * Jul 21, 2014  3390     bsteffen    Move to common.jms.notification
  * </pre>
  * 
  * @author randerso
  * @version 1.0
  */
-@Deprecated
 public interface INotificationObserver {
 
     /**
