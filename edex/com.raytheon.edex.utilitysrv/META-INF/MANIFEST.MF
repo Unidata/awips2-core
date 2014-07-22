@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Utilitysrv Plug-in
 Bundle-SymbolicName: com.raytheon.edex.utilitysrv
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
 Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.common.localization,
@@ -12,7 +12,7 @@ Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.common.auth;bundle-version="1.12.1174",
  org.slf4j;bundle-version="1.7.5"
 Export-Package: com.raytheon.edex.services
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.auth.req,
  com.raytheon.uf.common.auth.user,
  com.raytheon.uf.edex.auth.req,

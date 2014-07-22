@@ -23,8 +23,6 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Map;
 
 import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
@@ -40,7 +38,6 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.stream.AbstractLocalizationStreamRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamGetRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
-import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.core.EDEXUtil;
 
@@ -54,6 +51,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 11, 2010            mschenke     Initial creation
+ * Jul 16, 2014 3378       bclement     removed cache
  * 
  * </pre>
  * 
@@ -65,18 +63,6 @@ public class LocalizationStreamHandler
         extends
         AbstractPrivilegedLocalizationRequestHandler<AbstractLocalizationStreamRequest> {
 
-    private static class StreamPair extends Pair<LocalizationContext, String> {
-        /**
-         * @param context
-         * @param fileName
-         */
-        public StreamPair(LocalizationContext context, String fileName) {
-            super(context, fileName);
-        }
-    }
-
-    private Map<StreamPair, File> fileMap = new HashMap<StreamPair, File>();
-
     /*
      * (non-Javadoc)
      * 
@@ -87,20 +73,13 @@ public class LocalizationStreamHandler
     @Override
     public Object handleRequest(AbstractLocalizationStreamRequest request)
             throws Exception {
-        StreamPair pair = new StreamPair(request.getContext(),
-                request.getFileName());
-        File file = fileMap.get(pair);
-
+        File file = PathManagerFactory.getPathManager().getFile(
+                request.getContext(), request.getFileName());
         if (file == null) {
-            file = PathManagerFactory.getPathManager().getFile(
-                    request.getContext(), request.getFileName());
-            if (file == null) {
-                throw new LocalizationException("File with name, "
-                        + request.getFileName() + ", and context, "
-                        + String.valueOf(request.getContext())
-                        + ", could not be found");
-            }
-            fileMap.put(pair, file);
+            throw new LocalizationException("File with name, "
+                    + request.getFileName() + ", and context, "
+                    + String.valueOf(request.getContext())
+                    + ", could not be found");
         }
 
         if (request instanceof LocalizationStreamGetRequest) {
@@ -260,4 +239,5 @@ public class LocalizationStreamHandler
         }
         return new AuthorizationResponse(true);
     }
+
 }
