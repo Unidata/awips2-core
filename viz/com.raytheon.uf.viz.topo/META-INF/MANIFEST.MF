@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.viz.topo;singleton:=true
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.topo;bundle-version="1.14.0",
  com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
@@ -14,3 +14,4 @@ Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.style,
  com.raytheon.uf.common.time,
  javax.measure
+Export-Package: com.raytheon.uf.viz.topo
