@@ -141,15 +141,8 @@ public class DistributionPatterns {
      * file has been modified. This method is executed via a quartz timer
      */
     public void refresh() {
-        SingleTypeJAXBManager<RequestPatterns> jaxb;
-        try {
-            jaxb = new SingleTypeJAXBManager<RequestPatterns>(true,
-                    RequestPatterns.class);
-        } catch (JAXBException e) {
-            statusHandler.error("Unable to refresh distribution patterns, "
-                    + "cannot create JAXB manager", e);
-            return;
-        }
+        SingleTypeJAXBManager<RequestPatterns> jaxb = null;
+
         for (File file : getDistributionFiles()) {
             String fileName = file.getName();
             Long modTime = modifiedTimes.get(fileName);
@@ -171,6 +164,9 @@ public class DistributionPatterns {
                                         + fileName
                                         + " has been modified.  Reloading distribution patterns");
                     }
+                    if (jaxb == null) {
+                        jaxb = createJaxbManager();
+                    }
                     patterns.put(plugin, loadPatterns(jaxb, file));
                     modifiedTimes.put(fileName, file.lastModified());
                 } catch (DistributionException e) {
@@ -181,6 +177,22 @@ public class DistributionPatterns {
             }
         }
         checkForPluginsMissingPatterns();
+    }
+
+    /**
+     * @return new jaxb manager for unmarshalling RequestPatterns
+     * @throws DistributionException
+     */
+    private SingleTypeJAXBManager<RequestPatterns> createJaxbManager()
+            throws DistributionException {
+        try {
+            return new SingleTypeJAXBManager<RequestPatterns>(true,
+                    RequestPatterns.class);
+        } catch (JAXBException e) {
+            throw new DistributionException(
+                    "Unable to refresh distribution patterns, "
+                    + "cannot create JAXB manager", e);
+        }
     }
 
     /**
