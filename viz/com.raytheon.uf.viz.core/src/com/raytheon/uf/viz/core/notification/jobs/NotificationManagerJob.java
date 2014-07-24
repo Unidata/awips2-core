@@ -19,6 +19,10 @@
  **/
 package com.raytheon.uf.viz.core.notification.jobs;
 
+import javax.jms.Connection;
+import javax.jms.ConnectionFactory;
+import javax.jms.JMSException;
+
 import org.eclipse.ui.services.IDisposable;
 
 import com.raytheon.uf.common.jms.notification.JmsNotificationManager;
@@ -78,8 +82,25 @@ public class NotificationManagerJob implements IDisposable {
      * @param name
      */
     protected NotificationManagerJob() {
-        manager = new JmsNotificationManager(JMSConnection.getInstance()
-                .getFactory());
+        /*
+         * Must create a delegate factory so it is possible to add listeners
+         * before the jms url is set. in JMSConnection.
+         */
+        ConnectionFactory delegateFactory = new ConnectionFactory() {
+            @Override
+            public Connection createConnection(String arg0, String arg1)
+                    throws JMSException {
+                return JMSConnection.getInstance()
+                        .getFactory().createConnection(arg0, arg1);
+                }
+            
+            @Override
+            public Connection createConnection() throws JMSException {
+                return JMSConnection.getInstance()
+                        .getFactory().createConnection();
+            }
+        };
+        manager = new JmsNotificationManager(delegateFactory);
         Activator.getDefault().registerDisposable(this);
     }
 
