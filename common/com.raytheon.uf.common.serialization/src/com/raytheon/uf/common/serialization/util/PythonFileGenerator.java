@@ -39,6 +39,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * definitions at runtime based on the decoding of the
  * SelfDescribingBinaryProtocol, but that could get messy.
  * 
+ * Usage: Run this tool as a java main() from within Eclipse. You should give it
+ * two command line arguments: -d outputDirectory, typically should be an
+ * absolute path to the pythonPackages/dynamicserialize/dstypes directory. -f
+ * filename, a filename to use as input, where the file has the fully-qualified
+ * classnames of the classes you want to generate python dynamicserialize
+ * classes for. Each line of this file should have one FQN of a class.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
@@ -46,6 +53,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2010            njensen     Initial creation
  * Jul 31, 2012  #965      dgilling    Fix path to file header.
+ * Jul 24, 2014   3185     njesnen     Improved javadoc
  * 
  * </pre>
  * 
@@ -321,7 +329,7 @@ public class PythonFileGenerator {
 
     public static String getHeaderInfo() throws IOException {
         File file = new File(
-                "../../cave/build/tools/headup/AWIPS/awipsHeader.txt");
+                "../../../AWIPS2_baseline/cave/build/tools/headup/AWIPS/awipsHeader.txt");
         if (!file.exists()) {
             System.out
                     .println("Unable to determine header information, skipping header");
