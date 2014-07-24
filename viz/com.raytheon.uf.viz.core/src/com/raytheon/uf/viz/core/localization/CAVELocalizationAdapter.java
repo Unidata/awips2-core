@@ -32,6 +32,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -39,6 +40,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.LocalizationInternalFile;
 import com.raytheon.uf.common.localization.LockingFileInputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
@@ -64,6 +66,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Aug 09, 2013 2033        mschenke    Made CAVE_STATIC BASE search all plugins
  *                                      if not found in etc base dir if no context
  *                                      name set
+ * Jul 24, 2014 3378        bclement    added createCache()
  * 
  * </pre>
  * 
@@ -680,5 +683,16 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return file.getFile().exists()
                 && file.getContext().getLocalizationLevel() == LocalizationLevel.BASE
                 && (type == LocalizationType.CAVE_CONFIG || type == LocalizationType.CAVE_STATIC);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.common.localization.ILocalizationAdapter#createCache()
+     */
+    @Override
+    public Map<LocalizationFileKey, LocalizationFile> createCache() {
+        return new ConcurrentHashMap<LocalizationFileKey, LocalizationFile>();
     }
 }

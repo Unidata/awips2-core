@@ -30,6 +30,8 @@ import java.util.Set;
 
 import org.apache.commons.lang.ArrayUtils;
 
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
+import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.Builder;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
@@ -38,6 +40,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -69,6 +72,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Feb 13, 2014             mnash       Add region level to localization
  * Jul 10, 2014 2914        garmendariz Remove EnvProperties
  * Jul 21, 2014 2768        bclement    added notification in save() and delete()
+ * Jul 24, 2014 3378        bclement    added createCache()
  * </pre>
  * 
  * @author jelkins
@@ -76,6 +80,9 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  */
 
 public class EDEXLocalizationAdapter implements ILocalizationAdapter {
+
+    private static final int CACHE_SIZE = Integer.getInteger(
+            "uf.localization.cache.size", 2048);
 
     private static final IUFStatusHandler handler = UFStatus
             .getHandler(EDEXLocalizationAdapter.class);
@@ -466,6 +473,18 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean exists(LocalizationFile file) {
         return file.getFile().exists();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.common.localization.ILocalizationAdapter#createCache()
+     */
+    @Override
+    public Map<LocalizationFileKey, LocalizationFile> createCache() {
+        Builder<LocalizationFileKey, LocalizationFile> builder = new ConcurrentLinkedHashMap.Builder<LocalizationFileKey, LocalizationFile>();
+        return builder.maximumWeightedCapacity(CACHE_SIZE).build();
     }
 
 }

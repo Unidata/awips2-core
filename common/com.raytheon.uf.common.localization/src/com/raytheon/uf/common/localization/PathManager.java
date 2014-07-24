@@ -22,11 +22,11 @@ package com.raytheon.uf.common.localization;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.Validate;
 
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationType;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -55,6 +56,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * 02/12/2008              chammack    Initial Creation.
  * Oct 23, 2012 1322       djohnson    Allow test code in the same package to clear fileCache.
+ * Jul 24, 2014 3378       bclement    cache implementation provided by localization adapter
  * 
  * </pre>
  * 
@@ -66,13 +68,13 @@ public class PathManager implements IPathManager {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PathManager.class, "Localization");
 
-    // @VisibleForTesting
-    static final Map<LocalizationFileKey, LocalizationFile> fileCache = new ConcurrentHashMap<LocalizationFileKey, LocalizationFile>();
+    final Map<LocalizationFileKey, LocalizationFile> fileCache;
 
     final ILocalizationAdapter adapter;
 
     PathManager(ILocalizationAdapter adapter) {
         this.adapter = adapter;
+        this.fileCache = adapter.createCache();
     }
 
     /*
@@ -460,14 +462,15 @@ public class PathManager implements IPathManager {
         return adapter.getAvailableLevels();
     }
 
-    /**
-     * Stores the localization file cache in this class to the file passed in.
-     * Can be used to take a snapshot of the current cached files
+    /*
+     * (non-Javadoc)
      * 
-     * @param cacheFile
+     * @see
+     * com.raytheon.uf.common.localization.IPathManager#storeCache(java.io.File)
      */
-    public static void storeCache(File cacheFile) {
-        // TODO: Store the cache
+    @Override
+    public void storeCache(File cacheFile) throws IOException,
+            SerializationException {
         Map<SerializableKey, ListResponseEntry> cacheObject = new HashMap<PathManager.SerializableKey, ListResponseEntry>(
                 fileCache.size() * 2);
         for (Map.Entry<LocalizationFileKey, LocalizationFile> entry : fileCache
@@ -483,49 +486,54 @@ public class PathManager implements IPathManager {
             lre.setProtectedLevel(file.getProtectedLevel());
             cacheObject.put(new SerializableKey(entry.getKey()), lre);
         }
+
+        FileOutputStream fout = new FileOutputStream(cacheFile);
         try {
-            FileOutputStream fout = new FileOutputStream(cacheFile);
             DynamicSerializationManager.getManager(SerializationType.Thrift)
                     .serialize(cacheObject, fout);
+        } finally {
             fout.close();
-        } catch (Exception e) {
-            e.printStackTrace();
         }
     }
 
-    /**
-     * Restores the LocalizationFile cache from this file. Can be used in
-     * conjunction with storeCache to restore a snapshot of the cache
+    /*
+     * (non-Javadoc)
      * 
-     * @param cacheFile
+     * @see
+     * com.raytheon.uf.common.localization.IPathManager#restoreCache(java.io
+     * .File)
      */
+    @Override
     @SuppressWarnings("unchecked")
-    public static void restoreCache(File cacheFile) {
+    public void restoreCache(File cacheFile) throws IOException,
+            SerializationException {
         PathManager pm = (PathManager) PathManagerFactory.getPathManager();
+        FileInputStream fin = new FileInputStream(cacheFile);
+        Map<SerializableKey, ListResponseEntry> cacheObject;
         try {
-            FileInputStream fin = new FileInputStream(cacheFile);
-            Map<SerializableKey, ListResponseEntry> cacheObject = (Map<SerializableKey, ListResponseEntry>) DynamicSerializationManager
+            cacheObject = (Map<SerializableKey, ListResponseEntry>) DynamicSerializationManager
                     .getManager(SerializationType.Thrift).deserialize(fin);
+        } finally {
             fin.close();
-            for (Map.Entry<SerializableKey, ListResponseEntry> entry : cacheObject
-                    .entrySet()) {
-                ListResponseEntry lre = entry.getValue();
-                SerializableKey key = entry.getKey();
-                LocalizationFile file = new LocalizationFile();
-                if (lre.getContext() != null && lre.getFileName() != null) {
-                    file = new LocalizationFile(pm.adapter, lre.getContext(),
-                            pm.adapter.getPath(lre.getContext(),
-                                    lre.getFileName()), lre.getDate(),
-                            lre.getFileName(), lre.getChecksum(),
-                            lre.isDirectory(), lre.isExistsOnServer(),
-                            lre.getProtectedLevel());
-                }
-                fileCache.put(
-                        new LocalizationFileKey(key.getFileName(), key
-                                .getContext()), file);
+        }
+
+        for (Map.Entry<SerializableKey, ListResponseEntry> entry : cacheObject
+                .entrySet()) {
+            ListResponseEntry lre = entry.getValue();
+            SerializableKey key = entry.getKey();
+            LocalizationFile file = new LocalizationFile();
+            if (lre.getContext() != null && lre.getFileName() != null) {
+                file = new LocalizationFile(
+                        pm.adapter,
+                        lre.getContext(),
+                        pm.adapter.getPath(lre.getContext(), lre.getFileName()),
+                        lre.getDate(), lre.getFileName(), lre.getChecksum(),
+                        lre.isDirectory(), lre.isExistsOnServer(), lre
+                                .getProtectedLevel());
             }
-        } catch (Exception e) {
-            e.printStackTrace();
+            fileCache
+                    .put(new LocalizationFileKey(key.getFileName(), key
+                            .getContext()), file);
         }
     }
 

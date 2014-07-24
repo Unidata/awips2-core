@@ -455,4 +455,10 @@
          install-size="0"
          version="1.3.4"/>
 
+   <plugin
+         id="com.googlecode.concurrentlinkedhashmap"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
 </feature>

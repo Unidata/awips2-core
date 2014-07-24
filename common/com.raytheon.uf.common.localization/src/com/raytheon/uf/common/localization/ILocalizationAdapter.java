@@ -22,6 +22,7 @@ package com.raytheon.uf.common.localization;
 
 import java.io.File;
 import java.util.Date;
+import java.util.Map;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -37,6 +38,8 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
  * Date			Ticket#		Engineer	Description
  * ------------	----------	-----------	--------------------------
  * May 15, 2008	#878	    chammack	Initial creation
+ * Jul 24, 2014 3378        bclement    removed unneeded abstract modifiers
+ *                                      added createCache()
  * 
  * </pre>
  * 
@@ -55,7 +58,7 @@ public interface ILocalizationAdapter {
      *            the filename
      * @return the fully qualified path
      */
-    public abstract File getPath(LocalizationContext context, String fileName);
+    public File getPath(LocalizationContext context, String fileName);
 
     /**
      * Return the metadata for a file or directory
@@ -67,7 +70,7 @@ public interface ILocalizationAdapter {
      * @return the metadata for the file or directoryOutput to a log
      * @throws LocalizationOpFailedException
      */
-    public abstract ListResponse[] getLocalizationMetadata(
+    public ListResponse[] getLocalizationMetadata(
             LocalizationContext[] context, String fileName)
             throws LocalizationOpFailedException;
 
@@ -77,7 +80,7 @@ public interface ILocalizationAdapter {
      * @param file
      * @throws LocalizationOpFailedException
      */
-    public abstract void retrieve(LocalizationFile file)
+    public void retrieve(LocalizationFile file)
             throws LocalizationOpFailedException;
 
     /**
@@ -87,7 +90,7 @@ public interface ILocalizationAdapter {
      *            the modifiable localization file
      * @throws LocalizationOpFailedException
      */
-    public abstract boolean save(ModifiableLocalizationFile file)
+    public boolean save(ModifiableLocalizationFile file)
             throws LocalizationOpFailedException;
 
     /**
@@ -110,7 +113,7 @@ public interface ILocalizationAdapter {
      * @return the responses
      * @throws LocalizationOpFailedException
      */
-    public abstract ListResponse[] listDirectory(LocalizationContext[] context,
+    public ListResponse[] listDirectory(LocalizationContext[] context,
             String path, boolean recursive, boolean filesOnly)
             throws LocalizationOpFailedException;
 
@@ -122,7 +125,7 @@ public interface ILocalizationAdapter {
      *            the type
      * @return the localization contexts
      */
-    public abstract LocalizationContext[] getLocalSearchHierarchy(
+    public LocalizationContext[] getLocalSearchHierarchy(
             LocalizationContext.LocalizationType type);
 
     /**
@@ -131,7 +134,7 @@ public interface ILocalizationAdapter {
      * 
      * @return the localization types
      */
-    public abstract LocalizationType[] getStaticContexts();
+    public LocalizationType[] getStaticContexts();
 
     /**
      * Returns a localization context for the given type and level for the
@@ -141,7 +144,7 @@ public interface ILocalizationAdapter {
      * @param level
      * @return the desired context
      */
-    public abstract LocalizationContext getContext(LocalizationType type,
+    public LocalizationContext getContext(LocalizationType type,
             LocalizationLevel level);
 
     /**
@@ -151,13 +154,13 @@ public interface ILocalizationAdapter {
      *            the modifiable localization file
      * @throws LocalizationOpFailedException
      */
-    public abstract boolean delete(ModifiableLocalizationFile file)
+    public boolean delete(ModifiableLocalizationFile file)
             throws LocalizationOpFailedException;
 
-    public abstract String[] getContextList(LocalizationLevel level)
+    public String[] getContextList(LocalizationLevel level)
             throws LocalizationOpFailedException;
 
-    public abstract LocalizationLevel[] getAvailableLevels();
+    public LocalizationLevel[] getAvailableLevels();
 
     /**
      * Determine if the LocalizationFile exists
@@ -165,7 +168,14 @@ public interface ILocalizationAdapter {
      * @param file
      * @return
      */
-    public abstract boolean exists(LocalizationFile file);
+    public boolean exists(LocalizationFile file);
+
+    /**
+     * Create cache using an implementation appropriate for this adapter.
+     * 
+     * @return
+     */
+    public Map<LocalizationFileKey, LocalizationFile> createCache();
 
     /**
      * The metadata of a localization file item

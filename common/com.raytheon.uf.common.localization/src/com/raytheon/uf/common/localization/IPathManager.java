@@ -21,10 +21,12 @@ package com.raytheon.uf.common.localization;
  **/
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
  * A generalized interface for constructing LocalizationFiles. NOTE: There will
@@ -41,6 +43,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 02/12/2008              chammack    Initial Creation.
+ * Jul 24, 2014 3378       bclement    added cache operations
  * 
  * </pre>
  * 
@@ -227,4 +230,23 @@ public interface IPathManager {
      * @return Available sorted levels
      */
     public abstract LocalizationLevel[] getAvailableLevels();
+
+    /**
+     * Stores the localization file cache in this class to the file passed in.
+     * Can be used to take a snapshot of the current cached files
+     * 
+     * @param cacheFile
+     */
+    public void storeCache(File cacheFile) throws IOException,
+            SerializationException;
+
+    /**
+     * Restores the LocalizationFile cache from this file. Can be used in
+     * conjunction with storeCache to restore a snapshot of the cache
+     * 
+     * @param cacheFile
+     */
+    public void restoreCache(File cacheFile) throws IOException,
+            SerializationException;
+
 }
