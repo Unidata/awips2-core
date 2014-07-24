@@ -45,6 +45,7 @@ import javax.xml.namespace.QName;
  *                                      classes used by data delivery's
  *                                      registry service.
  * Sep 14, 2012  #1169      djohnson    Add {@link ThrowableSerializer}.
+ * Jul 24, 2014  3410       bclement    added GMT static field
  * </pre>
  * 
  * @author chammack
@@ -52,6 +53,8 @@ import javax.xml.namespace.QName;
  */
 
 public class BuiltInTypeSupport {
+
+    private static final TimeZone GMT = TimeZone.getTimeZone("GMT");
 
     private BuiltInTypeSupport() {
 
@@ -128,7 +131,7 @@ public class BuiltInTypeSupport {
         public Calendar deserialize(IDeserializationContext arg0)
                 throws SerializationException {
             long t = arg0.readI64();
-            Calendar c = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
+            Calendar c = Calendar.getInstance(GMT);
             c.setTimeInMillis(t);
             return c;
         }
@@ -164,8 +167,7 @@ public class BuiltInTypeSupport {
                 throws SerializationException {
             try {
                 long t = arg0.readI64();
-                GregorianCalendar c = new GregorianCalendar(
-                        TimeZone.getTimeZone("GMT"));
+                GregorianCalendar c = new GregorianCalendar(GMT);
                 c.setTimeInMillis(t);
                 return DatatypeFactory.newInstance().newXMLGregorianCalendar(c);
             } catch (DatatypeConfigurationException e) {

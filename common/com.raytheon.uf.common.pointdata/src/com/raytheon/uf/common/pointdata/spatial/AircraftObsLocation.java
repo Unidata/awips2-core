@@ -54,6 +54,7 @@ import com.vividsolutions.jts.geom.Point;
  * Apr 08, 2009 952        jsanchez    Added @DynamicSerializeElement tags.
  * Jul 16, 2013 2181       bsteffen    Convert geometry types to use hibernate-
  *                                     spatial
+ * Jul 23, 2014 3410       bclement    changed lat and lon to floats
  * 
  * </pre>
  * 
@@ -89,12 +90,12 @@ public class AircraftObsLocation implements ISpatialObject {
     @Column
     @DataURI(position = 1)
     @DynamicSerializeElement
-    private double latitude;
+    private float latitude;
 
     @Column
     @DataURI(position = 2)
     @DynamicSerializeElement
-    private double longitude;
+    private float longitude;
 
     @Column
     @Type(type = "org.hibernatespatial.GeometryUserType")
@@ -102,11 +103,11 @@ public class AircraftObsLocation implements ISpatialObject {
     @DynamicSerializeElement
     private Point location;
 
-    public void setLatitude(double latitude) {
+    public void setLatitude(float latitude) {
         this.latitude = latitude;
     }
 
-    public void setLongitude(double longitude) {
+    public void setLongitude(float longitude) {
         this.longitude = longitude;
     }
 
@@ -234,11 +235,11 @@ public class AircraftObsLocation implements ISpatialObject {
         this.locationDefined = locationDefined;
     }
 
-    public double getLatitude() {
+    public float getLatitude() {
         return latitude;
     }
 
-    public double getLongitude() {
+    public float getLongitude() {
         return longitude;
     }
 

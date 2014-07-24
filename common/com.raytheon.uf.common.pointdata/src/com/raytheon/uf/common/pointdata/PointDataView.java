@@ -19,6 +19,9 @@
  **/
 package com.raytheon.uf.common.pointdata;
 
+import java.util.Calendar;
+import java.util.Date;
+
 import javax.measure.unit.Unit;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
@@ -32,6 +35,7 @@ import com.raytheon.uf.common.pointdata.elements.LongPointDataObject;
 import com.raytheon.uf.common.pointdata.elements.StringPointDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Convenience class that provides a view of the data for a single observation
@@ -43,6 +47,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------- -------- ----------- --------------------------
  * Apr 08, 2009           chammack    Initial creation
  * Dec 20, 2013  2537     bsteffen    add getFloat on a specified level.
+ * Jul 23, 2014  3410     bclement    added getCalendar() and getDate()
  * 
  * </pre>
  * 
@@ -73,6 +78,32 @@ public class PointDataView {
 		AbstractPointDataObject<?> p = getParamSafe(parameter);
 		return p.getNumber(getIndex(p));
 	}
+
+    /**
+     * @see #getDate(String)
+     * @param parameter
+     *            parameter whose value is milliseconds from the epoch
+     * @return new GMT calendar
+     * @throws RuntimeException
+     *             if parameter is not found in view or value isn't valid
+     */
+    public Calendar getCalendar(String parameter) {
+        return TimeUtil.newGmtCalendar(getDate(parameter));
+    }
+
+    /**
+     * @see Date#Date(long)
+     * @param parameter
+     *            parameter whose value is milliseconds from the epoch
+     * @return new GMT calendar
+     * @throws RuntimeException
+     *             if parameter is not found in view or value isn't valid
+     */
+    public Date getDate(String parameter) {
+        Number time = getNumber(parameter);
+        return new Date(time.longValue());
+    }
+
 
 	public Number[] getNumberAllLevels(String parameter) {
 

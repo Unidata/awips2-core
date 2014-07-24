@@ -61,6 +61,7 @@ import com.vividsolutions.jts.geom.Point;
  * Jul 16, 2013 2181       bsteffen    Convert geometry types to use hibernate-
  *                                     spatial
  * July 15, 2013 2180      dhladky     Changed to hibernate spatial type (Done in 13.51) not in dev
+ * Jul 23, 2014 3410       bclement    changed lat and lon to floats
  * 
  * </pre>
  * 
@@ -114,13 +115,13 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     @Column
     @XmlAttribute
     @DynamicSerializeElement
-    private Double latitude;
+    private Float latitude;
 
     @DataURI(position = 2)
     @Column
     @XmlAttribute
     @DynamicSerializeElement
-    private Double longitude;
+    private Float longitude;
 
     /**
      * Create an empty instance of this class.
@@ -136,11 +137,11 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     @Override
     public Object clone() throws CloneNotSupportedException {
         SurfaceObsLocation clone = (SurfaceObsLocation) super.clone();
-        clone.elevation = new Integer(elevation);
-        clone.latitude = new Double(latitude);
-        clone.longitude = new Double(longitude);
-        clone.locationDefined = new Boolean(locationDefined);
-        clone.stationId = new String(stationId);
+        clone.elevation = elevation;
+        clone.latitude = latitude;
+        clone.longitude = longitude;
+        clone.locationDefined = locationDefined;
+        clone.stationId = stationId;
         return clone;
     }
 
@@ -153,19 +154,19 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
         stationId = stationIdentifier;
     }
 
-    public Double getLatitude() {
+    public Float getLatitude() {
         return latitude;
     }
 
-    public void setLatitude(Double latitude) {
+    public void setLatitude(Float latitude) {
         this.latitude = latitude;
     }
 
-    public Double getLongitude() {
+    public Float getLongitude() {
         return longitude;
     }
 
-    public void setLongitude(Double longitude) {
+    public void setLongitude(Float longitude) {
         this.longitude = longitude;
     }
 
@@ -257,7 +258,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
         this.location = location;
     }
 
-    public void assignLocation(double latitude, double longitude) {
+    public void assignLocation(float latitude, float longitude) {
         this.latitude = latitude;
         this.longitude = longitude;
         this.location = new GeometryFactory().createPoint(new Coordinate(
@@ -265,17 +266,17 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     }
 
     public void setGeometry(Point point) {
-        assignLocation(point.getY(), point.getX());
+        assignLocation((float) point.getY(), (float) point.getX());
     }
 
-    public void assignLatitude(double latitude) {
+    public void assignLatitude(float latitude) {
         this.latitude = latitude;
         if (longitude != null && location == null) {
             assignLocation(this.latitude, this.longitude);
         }
     }
 
-    public void assignLongitude(double longitude) {
+    public void assignLongitude(float longitude) {
         this.longitude = longitude;
         if (latitude != null && location == null) {
             assignLocation(this.latitude, this.longitude);
