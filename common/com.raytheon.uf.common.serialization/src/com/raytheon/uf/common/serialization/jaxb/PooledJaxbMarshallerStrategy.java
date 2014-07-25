@@ -47,6 +47,7 @@ import com.raytheon.uf.common.util.stream.CountingReader;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2014 3373       bclement     Initial creation
+ * Jul 25, 2014 3378       bclement     removed uf prefix from system properties
  * 
  * </pre>
  * 
@@ -56,10 +57,10 @@ import com.raytheon.uf.common.util.stream.CountingReader;
 public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
 
     public static final int DEFAULT_POOL_SIZE = Integer.getInteger(
-            "uf.jaxb.pool.size", 10);
+            "jaxb.pool.size", 10);
 
     public static final int DEFAULT_OBJ_SIZE_LIMIT = Integer.getInteger(
-            "uf.jaxb.pool.object.limit", 1024 * 200); // 200KB
+            "jaxb.pool.object.limit", 1024 * 200); // 200KB
 
     private final int poolSize;
 

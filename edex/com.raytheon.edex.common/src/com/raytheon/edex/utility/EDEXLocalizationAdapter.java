@@ -73,6 +73,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 10, 2014 2914        garmendariz Remove EnvProperties
  * Jul 21, 2014 2768        bclement    added notification in save() and delete()
  * Jul 24, 2014 3378        bclement    added createCache()
+ * Jul 25, 2014 3378        bclement    removed uf prefix from system property
  * </pre>
  * 
  * @author jelkins
@@ -82,7 +83,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     private static final int CACHE_SIZE = Integer.getInteger(
-            "uf.localization.cache.size", 2048);
+            "edex.localization.cache.size", 2048);
 
     private static final IUFStatusHandler handler = UFStatus
             .getHandler(EDEXLocalizationAdapter.class);
