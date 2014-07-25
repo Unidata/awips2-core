@@ -21,6 +21,8 @@ package com.raytheon.uf.common.serialization.thrift;
 
 import java.lang.reflect.Array;
 import java.lang.reflect.Field;
+import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -75,6 +77,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Nov 26, 2013  2537     bsteffen    Add support for void type lists which are
  *                                    sometimes created by python.
  * Jun 24, 2014  3271     njensen     Better safety checks and error msgs
+ * Jul 25, 2014  3445     bclement    added castNumber()
  * 
  * </pre>
  * 
@@ -871,11 +874,66 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     obj = Enum.valueOf((Class<Enum>) fieldClass, (String) obj);
                 }
             }
-            bm.put(field.name, obj);
+            try {
+                bm.put(field.name, obj);
+            } catch (ClassCastException e) {
+                /* attempt to recover if both types are numbers */
+                Class<?> fieldClass = findFieldClass(o.getClass(), field.name);
+                if (obj instanceof Number) {
+                    /*
+                     * we can't easily determine if fieldClass is a number yet
+                     * due to primitive number classes, castNumber() will check
+                     */
+                    obj = castNumber((Number) obj, fieldClass);
+                    bm.put(field.name, obj);
+                } else {
+                    throw e;
+                }
+            }
         }
         protocol.readFieldEnd();
 
         return true;
+    }
+
+    /**
+     * Convert source Number to Number compatible with target number class
+     * 
+     * @param source
+     * @param targetClass
+     * @return
+     * @throws ClassCastException
+     *             if targetClass is not supported
+     */
+    private static Number castNumber(Number source, Class<?> targetClass)
+            throws ClassCastException {
+        Number rval;
+        if (targetClass.equals(Byte.class) || targetClass.equals(byte.class)) {
+            rval = source.byteValue();
+        } else if (targetClass.equals(Short.class)
+                || targetClass.equals(short.class)) {
+            rval = source.shortValue();
+        } else if (targetClass.equals(Integer.class)
+                || targetClass.equals(int.class)) {
+            rval = source.intValue();
+        } else if (targetClass.equals(Long.class)
+                || targetClass.equals(long.class)) {
+            rval = source.longValue();
+        } else if (targetClass.equals(Float.class)
+                || targetClass.equals(float.class)) {
+            rval = source.floatValue();
+        } else if (targetClass.equals(Double.class)
+                || targetClass.equals(double.class)) {
+            rval = source.doubleValue();
+        } else if (targetClass.equals(BigInteger.class)) {
+            rval = BigInteger.valueOf(source.longValue());
+        } else if (targetClass.equals(BigDecimal.class)) {
+            rval = BigDecimal.valueOf(source.doubleValue());
+        } else {
+            throw new ClassCastException("Unable to cast " + source.getClass()
+                    + " to " + targetClass);
+        }
+        return rval;
     }
 
     /**
