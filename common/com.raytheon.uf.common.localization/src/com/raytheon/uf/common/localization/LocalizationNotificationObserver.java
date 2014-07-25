@@ -49,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Apr 8, 2011            mschenke     Initial creation
  * Sep 17, 2012 #875       rferrel     Added check that file exists before 
  *                                      deleting it.
+ * Jul 25, 2014 3378       bclement    path manager added to global observers
  * 
  * </pre>
  * 
@@ -185,6 +186,7 @@ public class LocalizationNotificationObserver {
     private LocalizationNotificationObserver() {
         observedFiles = new ConcurrentHashMap<LocalizationTypeFileKey, Set<LocalizationFile>>();
         pm = (PathManager) PathManagerFactory.getPathManager();
+        globalObservers.add(pm);
     }
 
     public synchronized void fileUpdateMessageRecieved(FileUpdatedMessage fum) {
@@ -310,10 +312,11 @@ public class LocalizationNotificationObserver {
                     if (file.isDirectory() == false && file.fileRequested) {
                         switch (fum.getChangeType()) {
                         case UPDATED:
-                        case ADDED: {
+                        case ADDED:
                             file.getFile();
                             break;
-                        }
+                        default:
+                            // do nothing
                         }
                     }
                 }

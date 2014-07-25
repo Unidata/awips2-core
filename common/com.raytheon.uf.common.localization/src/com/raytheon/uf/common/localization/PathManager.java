@@ -30,6 +30,7 @@ import java.util.Map;
 
 import org.apache.commons.lang.Validate;
 
+import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter.ListResponse;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -57,14 +58,14 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 02/12/2008              chammack    Initial Creation.
  * Oct 23, 2012 1322       djohnson    Allow test code in the same package to clear fileCache.
  * Jul 24, 2014 3378       bclement    cache implementation provided by localization adapter
+ * Jul 25, 2014 3378       bclement    implements ILocalizationFileObserver
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1.0
  */
-
-public class PathManager implements IPathManager {
+public class PathManager implements IPathManager, ILocalizationFileObserver {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PathManager.class, "Localization");
 
@@ -589,5 +590,22 @@ public class PathManager implements IPathManager {
             this.context = context;
         }
 
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.common.localization.ILocalizationFileObserver#fileUpdated
+     * (com.raytheon.uf.common.localization.FileUpdatedMessage)
+     */
+    @Override
+    public void fileUpdated(FileUpdatedMessage message) {
+        if (message.getChangeType().equals(FileChangeType.DELETED)) {
+            LocalizationContext ctx = message.getContext();
+            String fileName = message.getFileName();
+            LocalizationFileKey key = new LocalizationFileKey(fileName, ctx);
+            fileCache.remove(key);
+        }
     }
 }
