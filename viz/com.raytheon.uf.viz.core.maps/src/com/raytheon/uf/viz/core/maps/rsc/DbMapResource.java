@@ -105,6 +105,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Feb 18, 2014 2819       randerso    Removed unnecessary clones of geometries
  * Apr 09, 2014 2997       randerso    Replaced buildEnvelope with buildBoundingGeometry
  * May 15, 2014 2820       bsteffen    Implement Interrogatable
+ * Jul 25, 2014 3447       bclement    reset map query job on dispose
  * 
  * 
  * </pre>
@@ -252,7 +253,7 @@ public class DbMapResource extends
         private ArrayBlockingQueue<Result> resultQueue = new ArrayBlockingQueue<Result>(
                 QUEUE_LIMIT);
 
-        private boolean canceled;
+        private volatile boolean canceled;
 
         public MapQueryJob() {
             super("Retrieving map...");
@@ -524,7 +525,7 @@ public class DbMapResource extends
                 } catch (Throwable e) {
                     result.cause = e;
                 } finally {
-                    if (result != null) {
+                    if (result != null && !canceled) {
                         if (resultQueue.size() == QUEUE_LIMIT) {
                             resultQueue.poll();
                         }
@@ -578,6 +579,9 @@ public class DbMapResource extends
 
     @Override
     protected void disposeInternal() {
+        queryJob.cancel();
+        queryJob.requestQueue.clear();
+        queryJob.resultQueue.clear();
         if (outlineShape != null) {
             outlineShape.dispose();
         }
