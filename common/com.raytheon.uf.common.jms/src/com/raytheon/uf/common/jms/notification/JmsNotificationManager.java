@@ -152,12 +152,12 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /** The observer map of topic to listeners */
     protected final Map<ListenerKey, NotificationListener> listeners;
 
-    private Connection connection;
+    protected Connection connection;
 
-    private volatile boolean connected = false;
+    protected volatile boolean connected = false;
 
-    private final ExecutorService executorService = Executors
-            .newSingleThreadExecutor();
+    protected final ExecutorService executorService = Executors
+            .newCachedThreadPool();
 
     private TimerTask task = null;
 
