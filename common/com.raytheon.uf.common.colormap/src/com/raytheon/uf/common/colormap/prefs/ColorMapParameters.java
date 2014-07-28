@@ -23,9 +23,9 @@ import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
@@ -60,6 +60,7 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingE
  *                                         dataUnit/imageUnit properly commutative.
  *    Nov  4, 2013 2492        mschenke    Cleaned up variable naming to make purpose
  *                                         clear (image->colormap)
+ *    Jul 28, 2014 3451        bclement    made listeners set concurrent
  * </pre>
  * 
  * @author chammack
@@ -124,7 +125,8 @@ public class ColorMapParameters {
 
     }
 
-    protected Set<IColorMapParametersListener> listeners = new HashSet<IColorMapParametersListener>();
+    protected Set<IColorMapParametersListener> listeners = Collections
+            .newSetFromMap(new ConcurrentHashMap<IColorMapParametersListener, Boolean>());
 
     /** Units colormapping should be displayed in */
     protected Unit<?> displayUnit;
