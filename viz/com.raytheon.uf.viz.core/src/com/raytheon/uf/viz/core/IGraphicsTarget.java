@@ -63,6 +63,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
  * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
+ * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() functions that take in spatialChopFlag
  * 
  * </pre>
  * 
@@ -655,29 +656,52 @@ public interface IGraphicsTarget extends IImagingExtension {
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			GeneralGridGeometry geom, float simplificationLevel);
 
-	/**
-	 * Create a wireframe shape object with options
-	 * 
-	 * @param mutable
-	 *            whether the shape changes after creation
-	 * @param descriptor
-	 *            the map descriptor
-	 * @param simplificationLevel
-	 *            the simplification level
-	 * @param spatialChopFlag
-	 *            whether to enable spatial chopping
-	 * @param extent
-	 *            the extent over which the features exist (enables spatial
-	 *            chopping)
-	 * @return
-	 */
+    /**
+     * Create a wireframe shape object with options
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param descriptor
+     *            the map descriptor
+     * @param simplificationLevel
+     *            the simplification level
+     * @param spatialChopFlag
+     *            whether to enable spatial chopping
+     * @param extent
+     *            the extent over which the features exist (enables spatial
+     *            chopping)
+     * @return
+     * @deprecated use
+     *             {@link #createWireframeShape(boolean, IDescriptor, float)
+     */
+    @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			IDescriptor descriptor, float simplificationLevel,
 			boolean spatialChopFlag, IExtent extent);
 
+    /**
+     * @see #createWireframeShape(boolean, GeneralGridGeometry, float)
+     * 
+     * @param mutableFlag
+     *            whether the shape changes after creation
+     * @param geom
+     *            the geometry the shape is made for
+     * @return
+     */
 	public abstract IWireframeShape createWireframeShape(boolean mutableFlag,
 			GeneralGridGeometry geom);
 
+    /**
+     * @deprecated use
+     *             {@link #createWireframeShape(boolean, GeneralGridGeometry, float)}
+     * @param mutable
+     * @param geom
+     * @param simplificationLevel
+     * @param spatialChopFlag
+     * @param extent
+     * @return
+     */
+    @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			GeneralGridGeometry geom, float simplificationLevel,
 			boolean spatialChopFlag, IExtent extent);

@@ -67,6 +67,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
  * Jun 30, 2014  3165     njensen     Remove deprecated buildColorMap()
+ * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
  * 
  * </pre>
  * 
@@ -276,6 +277,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     }
 
     @Override
+    @Deprecated
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel,
             boolean spatialChopFlag, IExtent extent) {

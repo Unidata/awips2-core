@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Capabilities
 Bundle-SymbolicName: com.raytheon.viz.core;singleton:=true
-Bundle-Version: 1.14.1.qualifier
+Bundle-Version: 1.14.2.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  com.raytheon.uf.common.localization,
@@ -35,4 +35,4 @@ Export-Package:
 Bundle-Vendor: Raytheon
 Bundle-Activator: com.raytheon.viz.core.CorePlugin
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7

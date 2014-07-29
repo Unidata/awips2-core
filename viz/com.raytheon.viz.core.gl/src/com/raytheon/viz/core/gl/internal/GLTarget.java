@@ -34,7 +34,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
-import java.util.Set;
 
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
@@ -147,6 +146,8 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * May 08, 2014  2920     bsteffen    Fix default color of BOXED text.
  * May 12, 2014  3074     bsteffen    Move string rendering to an extension.
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
+ * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
+ *                                      removed drawWireFrameShapeInternal()
  * 
  * </pre>
  * 
@@ -438,15 +439,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * com.raytheon.viz.core.PixelExtent)
      */
     @Override
+    @Deprecated
     public IWireframeShape createWireframeShape(boolean mutable,
             GeneralGridGeometry geom, float simplificationLevel,
             boolean spatialChopFlag, IExtent extent) {
-        if (spatialChopFlag) {
-            return new GLWireframeShape(null, geom, mutable,
-                    simplificationLevel, spatialChopFlag, extent);
-        } else {
-            return new GLWireframeShape2D(geom, mutable);
-        }
+        return new GLWireframeShape2D(geom, mutable);
     }
 
     /*
@@ -457,15 +454,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * com.raytheon.viz.core.PixelExtent)
      */
     @Override
+    @Deprecated
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel,
             boolean spatialChopFlag, IExtent extent) {
-        if (simplificationLevel > 0.0 || spatialChopFlag) {
-            return new GLWireframeShape(descriptor, null, mutable,
-                    simplificationLevel, spatialChopFlag, extent);
-        } else {
-            return new GLWireframeShape2D(descriptor.getGridGeometry(), mutable);
-        }
+        return new GLWireframeShape2D(descriptor.getGridGeometry(), mutable);
     }
 
     /*
@@ -920,156 +913,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             } finally {
                 popGLState();
             }
-        } else if (shape instanceof GLWireframeShape) {
-            drawWireframeShapeInternal((GLWireframeShape) shape, aColor,
-                    lineWidth, lineStyle, (IGLFont) font, alpha);
         }
-    }
-
-    private void drawWireframeShapeInternal(GLWireframeShape shape, RGB color,
-            float lineWidth, LineStyle lineStyle, IGLFont font, float alpha)
-            throws VizException {
-        this.pushGLState();
-        try {
-            IExtent viewExtent = targetView.getExtent();
-            boolean usedStencilBuffer = false;
-
-            Map<double[], String> labels = shape.getLabelMap();
-            if (labels != null) {
-                int[] colorBuffer = new int[1];
-                gl.glGetIntegerv(GL.GL_DRAW_BUFFER, colorBuffer, 0);
-                gl.glDrawBuffer(GL.GL_NONE);
-                gl.glEnable(GL.GL_STENCIL_TEST);
-                gl.glClear(GL.GL_STENCIL_BUFFER_BIT);
-
-                gl.glStencilFunc(GL.GL_ALWAYS, 0x1, 0x1);
-                gl.glStencilOp(GL.GL_REPLACE, GL.GL_REPLACE, GL.GL_REPLACE);
-                usedStencilBuffer = true;
-                double scale = viewExtent.getWidth() / this.canvasSize.width;
-                Set<Entry<double[], String>> entrySet = labels.entrySet();
-
-                double adjustedHalfWidth = 0;
-                double yPosition2 = 0;
-                double xPosition1 = 0;
-                double xPosition2 = 0;
-                Rectangle2D bounds = null;
-                for (Entry<double[], String> entry : entrySet) {
-                    double[] pos = entry.getKey();
-                    if (viewExtent.contains(pos)) {
-
-                        bounds = this.getStringBounds(font, entry.getValue());
-                        gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-                        gl.glEnable(GL.GL_BLEND);
-                        gl.glColor4d(0.0, 0.0, 0.0, alpha);
-                        gl.glBegin(GL.GL_QUADS);
-
-                        adjustedHalfWidth = (bounds.getWidth() * scale) / 2.0;
-                        xPosition1 = pos[0] - adjustedHalfWidth;
-                        xPosition2 = pos[0] + adjustedHalfWidth;
-                        yPosition2 = pos[1] - bounds.getHeight() * scale;
-                        gl.glVertex2d(xPosition1, pos[1]);
-                        gl.glVertex2d(xPosition2, pos[1]);
-                        gl.glVertex2d(xPosition2, yPosition2);
-                        gl.glVertex2d(xPosition1, yPosition2);
-                        gl.glEnd();
-                    }
-                }
-
-                gl.glDrawBuffer(colorBuffer[0]);
-
-            }
-
-            FloatBuffer vertices = shape.getVertexBuffer();
-            if (vertices == null || shape.getVertexCount() == 0) {
-                return;
-            }
-
-            int level = 1;
-            if (theCurrentZoom > 0.05) {
-                level = 0;
-            }
-
-            IntBuffer[] lengths = shape.getLineLengths(level);
-            IntBuffer[] indices = shape.getLODIndexBuffers(level);
-
-            int[] spatialZones = new int[] { 0 };
-            if (level != 0) {
-                spatialZones = shape.getSpatialIndices(viewExtent);
-            }
-
-            gl.glEnable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-            // gl.glEnable(GL.GL_LINE_SMOOTH);
-            // gl.glHint(GL.GL_LINE_SMOOTH_HINT, GL.GL_NICEST);
-            gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-
-            vertices.rewind();
-
-            gl.glVertexPointer(3, GL.GL_FLOAT, 0, vertices);
-
-            if (lineWidth > 0) {
-                gl.glLineWidth(lineWidth);
-            } else {
-                gl.glLineWidth(2.0f);
-            }
-
-            handleLineStyle(lineStyle);
-            gl.glColor4f(color.red / 255.0f, color.green / 255.0f,
-                    color.blue / 255.0f, alpha);
-
-            for (int n = 0; n < spatialZones.length; n++) {
-                int pos = 0;
-                indices[spatialZones[n]].rewind();
-                lengths[spatialZones[n]].rewind();
-
-                int numLines = shape.getNumLines(level, spatialZones[n]);
-                int[] num = new int[numLines];
-
-                lengths[spatialZones[n]].get(num, 0, numLines);
-
-                for (int i = 0; i < numLines; i++) {
-                    indices[spatialZones[n]].position(pos);
-                    if (usedStencilBuffer) {
-                        gl.glStencilFunc(GL.GL_NOTEQUAL, 0x1, 0x1);
-                        gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_KEEP);
-                    }
-                    gl.glDrawElements(GL.GL_LINE_STRIP, num[i],
-                            GL.GL_UNSIGNED_INT, indices[spatialZones[n]]);
-                    pos += (num[i]);
-                }
-            }
-
-            gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-
-            gl.glDisable(GL.GL_BLEND);
-            if (labels != null) {
-                gl.glStencilFunc(GL.GL_ALWAYS, 0x0, 0x1);
-                gl.glStencilOp(GL.GL_KEEP, GL.GL_KEEP, GL.GL_KEEP);
-                gl.glClear(GL.GL_STENCIL_BUFFER_BIT);
-                gl.glDisable(GL.GL_STENCIL_TEST);
-                Set<Entry<double[], String>> entrySet = labels.entrySet();
-                List<DrawableString> strings = new ArrayList<DrawableString>(
-                        entrySet.size());
-                for (Entry<double[], String> entry : entrySet) {
-                    double[] pos = entry.getKey();
-                    if (viewExtent.contains(pos)) {
-                        DrawableString string = new DrawableString(
-                                entry.getValue(), color);
-                        string.font = font;
-                        string.setCoordinates(pos[0], pos[1], 0.0);
-                        string.horizontalAlignment = HorizontalAlignment.CENTER;
-                        string.verticallAlignment = VerticalAlignment.BOTTOM;
-                        strings.add(string);
-                    }
-                }
-                this.drawStrings(strings);
-            }
-
-        } finally {
-            this.popGLState();
-        }
-
-        // gl.glDisable(GL.GL_LINE_SMOOTH);
     }
 
     /*
@@ -1900,6 +1744,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 pointsPerLocation = (int) (18 * magnification);
                 break;
             }
+            default:
+                statusHandler.error("Unsupported point style: " + pointStyle);
             }
 
             FloatBuffer buf = ByteBuffer
@@ -1967,6 +1813,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 case PIPE:
                     buf.put(new float[] { x, y - yTick, x, y + yTick });
                     break;
+                default: 
+                    statusHandler.error("Unsupported point style: "
+                            + pointStyle);
                 }
             }
 
