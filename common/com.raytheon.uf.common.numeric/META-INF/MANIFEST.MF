@@ -10,4 +10,5 @@ Export-Package: com.raytheon.uf.common.numeric,
  com.raytheon.uf.common.numeric.buffer,
  com.raytheon.uf.common.numeric.dest,
  com.raytheon.uf.common.numeric.filter,
- com.raytheon.uf.common.numeric.source
+ com.raytheon.uf.common.numeric.source,
+ com.raytheon.uf.common.numeric.sparse
