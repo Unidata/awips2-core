@@ -68,6 +68,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
  * Jun 30, 2014  3165     njensen     Remove deprecated buildColorMap()
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
+ * Jul 30, 2014  3465     mapeters    Updated deprecated drawString() and drawLine() calls.
  * 
  * </pre>
  * 
@@ -418,8 +419,13 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
             double z, TextStyle textStyle, RGB color,
             HorizontalAlignment horizontalAlignment, Double rotation)
             throws VizException {
-        drawString(font, text, x, y, z, textStyle, color, horizontalAlignment,
-                VerticalAlignment.BOTTOM, rotation);
+        DrawableString params = new DrawableString(text, color);
+        params.font = font;
+        params.setCoordinates(x, y, z);
+        params.textStyle = textStyle;
+        params.horizontalAlignment = horizontalAlignment;
+        params.rotation = rotation != null ? rotation : 0.0;
+        drawStrings(params);
     }
 
     @Override
@@ -508,7 +514,12 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     @Override
     public void drawLine(double x1, double y1, double z1, double x2, double y2,
             double z2, RGB color, float width) throws VizException {
-        drawLine(x1, y1, z1, x2, y2, z2, color, width, LineStyle.SOLID);
+        DrawableLine line = new DrawableLine();
+        line.setCoordinates(x1, y1, z1);
+        line.addPoint(x2, y2, z2);
+        line.basics.color = color;
+        line.width = width;
+        drawLine(line);
     }
 
     @Override
