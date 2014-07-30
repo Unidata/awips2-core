@@ -54,6 +54,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 12, 2014  3074     bsteffen    Initial creation
+ * Jul 30, 2014  3476     bsteffen    Flush text renderer before rotating strings.
  * 
  * </pre>
  * 
@@ -282,6 +283,9 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             // This loop renders the strings.
             for (DrawableString string : strings) {
                 IFont stringFont = string.font;
+                if (string.rotation != 0 && textRenderer != null) {
+                    textRenderer.flush();
+                }
                 float[] rotatedPoint = rotate(string);
 
                 if (stringFont != font) {
