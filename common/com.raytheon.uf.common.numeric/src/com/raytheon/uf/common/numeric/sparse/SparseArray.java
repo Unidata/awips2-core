@@ -19,7 +19,8 @@
  **/
 package com.raytheon.uf.common.numeric.sparse;
 
-import java.util.TreeMap;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.raytheon.uf.common.numeric.dest.DataDestination;
 import com.raytheon.uf.common.numeric.source.DataSource;
@@ -36,6 +37,7 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 29, 2014 3463       bclement     Initial creation
+ * Jul 30, 2014 3463       bclement     changed blockMap to be hashmap
  * 
  * </pre>
  * 
@@ -52,7 +54,7 @@ public abstract class SparseArray<T> implements DataSource, DataDestination {
 
     protected final int blockSize;
 
-    protected final TreeMap<Integer, T> blockMap = new TreeMap<Integer, T>();
+    protected final Map<Integer, T> blockMap = new HashMap<Integer, T>();
 
     private T cache = null;
 
