@@ -27,6 +27,7 @@ import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataFactory;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
 import com.raytheon.uf.common.dataaccess.exception.MethodNotSupportedYetException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
@@ -55,6 +56,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                     to throw exception by default
  * Jul 14, 2014 3184       njensen     Added getAvailableParameters() and getAvailableLevels()
  * Jul 30, 2014 3184       njensen     Refactored validateRequest()
+ * Jul 31, 2014 3184       njensen     Added validateParameters()
  * 
  * </pre>
  * 
@@ -96,6 +98,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
      *            the request to validate
      */
     public void validateRequest(IDataRequest request) {
+        validateParameters(request);
         Collection<String> missing = checkForMissingIdentifiers(request);
         Collection<String> invalid = checkForInvalidIdentifiers(request);
         if (!missing.isEmpty() || !invalid.isEmpty()) {
@@ -149,6 +152,27 @@ public abstract class AbstractDataFactory implements IDataFactory {
             }
         }
         return invalid;
+    }
+
+    /**
+     * Validates that the parameters are ok
+     * 
+     * @param request
+     * @return true if the parameters are ok, otherwise false
+     */
+    protected void validateParameters(IDataRequest request)
+            throws IncompatibleRequestException {
+        /*
+         * TODO Note that getAvailableParameters() implementations should not
+         * call this, so those implementations may not to be able to call
+         * validateRequest() as it's currently written.
+         */
+        if (request.getParameters() == null
+                || request.getParameters().length == 0) {
+            throw new IncompatibleRequestException("Requests of "
+                    + request.getDatatype()
+                    + " data must have at least one parameter specified");
+        }
     }
 
     /**
