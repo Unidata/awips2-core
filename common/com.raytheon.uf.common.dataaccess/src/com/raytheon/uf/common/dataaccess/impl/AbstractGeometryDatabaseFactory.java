@@ -21,6 +21,7 @@ package com.raytheon.uf.common.dataaccess.impl;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -54,6 +55,8 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                    single request.
  * Jan 14, 2014  2667     mnash       Remove getGridData methods
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
+ * Jul 30, 2014  3184     njensen     Added optional identifiers
+ *                                     Overrode checkForInvalidIdentifiers()
  * 
  * </pre>
  * 
@@ -72,9 +75,13 @@ public abstract class AbstractGeometryDatabaseFactory extends
      */
     private static final QUERY_MODE queryMode = QUERY_MODE.MODE_SQLQUERY;
 
+    protected static final String COL_NAME_OPTION = "**column name(s) of the table being queried";
+
     private String databaseName;
 
     private String[] requiredIdentifiers;
+
+    private String[] optionalIdentifiers;
 
     /**
      * Constructor
@@ -84,11 +91,15 @@ public abstract class AbstractGeometryDatabaseFactory extends
      * @param requiredIdentifiers
      *            the identifiers that need to be included in the request
      *            (ifdef)
+     * @param optionalIdentifiers
+     *            the optional identifiers that can constrain the request
+     * 
      */
     public AbstractGeometryDatabaseFactory(String databaseName,
-            String[] requiredIdentifiers) {
+            String[] requiredIdentifiers, String[] optionalIdentifiers) {
         this.databaseName = databaseName;
         this.requiredIdentifiers = requiredIdentifiers;
+        this.optionalIdentifiers = optionalIdentifiers;
     }
 
     /*
@@ -100,8 +111,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
      */
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
-            boolean refTimeOnly)
-            throws TimeAgnosticDataException {
+            boolean refTimeOnly) throws TimeAgnosticDataException {
         this.validateRequest(request);
         return this.executeTimeQuery(
                 this.assembleGetTimes(request, refTimeOnly), request);
@@ -246,6 +256,11 @@ public abstract class AbstractGeometryDatabaseFactory extends
     @Override
     public String[] getRequiredIdentifiers() {
         return this.requiredIdentifiers;
+    }
+
+    @Override
+    public String[] getOptionalIdentifiers() {
+        return this.optionalIdentifiers;
     }
 
     /*
@@ -425,5 +440,15 @@ public abstract class AbstractGeometryDatabaseFactory extends
         }
 
         return geometryData;
+    }
+
+    @Override
+    protected Collection<String> checkForInvalidIdentifiers(IDataRequest request) {
+        /*
+         * Specifically do not validate identifiers since the current subclass
+         * implementations allow column names of specific tables, i.e. optional
+         * identifiers are semi-undefined based on database tables
+         */
+        return Collections.emptyList();
     }
 }

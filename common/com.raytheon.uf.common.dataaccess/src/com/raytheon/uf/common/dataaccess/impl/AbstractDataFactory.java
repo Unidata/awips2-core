@@ -54,6 +54,8 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jan 14, 2014 2667       mnash       Change getGridData and getGeometryData methods
  *                                     to throw exception by default
  * Jul 14, 2014 3184       njensen     Added getAvailableParameters() and getAvailableLevels()
+ * Jul 30, 2014 3184       njensen     Refactored validateRequest()
+ * 
  * </pre>
  * 
  * @author njensen
@@ -62,7 +64,7 @@ import com.raytheon.uf.common.time.TimeRange;
 
 public abstract class AbstractDataFactory implements IDataFactory {
 
-    private static final String[] EMPTY = new String[0];
+    protected static final String[] EMPTY = new String[0];
 
     /**
      * Returns the identifiers that must be set on a request for the request to
@@ -77,13 +79,13 @@ public abstract class AbstractDataFactory implements IDataFactory {
     }
 
     /**
-     * Return the complete set of all valid identifiers for a request. If a
-     * subclass does not override this, it will return an array of size zero.
+     * Return the set of optional identifiers for a request. If a subclass does
+     * not override this, it will return an array of size zero.
      * 
      * @return the valid identifiers.
      */
     @Override
-    public String[] getValidIdentifiers() {
+    public String[] getOptionalIdentifiers() {
         return EMPTY;
     }
 
@@ -94,28 +96,59 @@ public abstract class AbstractDataFactory implements IDataFactory {
      *            the request to validate
      */
     public void validateRequest(IDataRequest request) {
+        Collection<String> missing = checkForMissingIdentifiers(request);
+        Collection<String> invalid = checkForInvalidIdentifiers(request);
+        if (!missing.isEmpty() || !invalid.isEmpty()) {
+            throw new InvalidIdentifiersException(request.getDatatype(),
+                    missing, invalid);
+        }
+    }
+
+    /**
+     * Checks for missing identifiers that are required to be on the request
+     * 
+     * @param request
+     * @return a collection of missing identifiers
+     */
+    protected Collection<String> checkForMissingIdentifiers(IDataRequest request) {
         String[] required = getRequiredIdentifiers();
         Collection<String> missing = Collections.emptySet();
-        Collection<String> invalid = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null && !identifiers.isEmpty()) {
             if (required != null && required.length > 0) {
                 missing = new HashSet<String>(Arrays.asList(required));
                 missing.removeAll(identifiers.keySet());
             }
-            String[] valid = getValidIdentifiers();
-            if (valid != null && valid.length > 0) {
-                invalid = new HashSet<String>(identifiers.keySet());
-                invalid.removeAll(Arrays.asList(valid));
-            }
         } else if (required != null && required.length > 0) {
             missing = Arrays.asList(required);
         }
+        return missing;
+    }
 
-        if (!missing.isEmpty() || !invalid.isEmpty()) {
-            throw new InvalidIdentifiersException(request.getDatatype(),
-                    missing, invalid);
+    /**
+     * Checks for invalid identifiers that are not compatible with the request
+     * 
+     * @param request
+     * @return a collection of invalid identifiers
+     */
+    protected Collection<String> checkForInvalidIdentifiers(IDataRequest request) {
+        Collection<String> invalid = Collections.emptySet();
+        Map<String, Object> identifiers = request.getIdentifiers();
+        if (identifiers != null && !identifiers.isEmpty()) {
+            String[] optional = getOptionalIdentifiers();
+            String[] required = getRequiredIdentifiers();
+            if ((optional != null && optional.length > 0)
+                    || (required != null && required.length > 0)) {
+                invalid = new HashSet<String>(identifiers.keySet());
+                if (optional != null) {
+                    invalid.removeAll(Arrays.asList(optional));
+                }
+                if (required != null) {
+                    invalid.removeAll(Arrays.asList(required));
+                }
+            }
         }
+        return invalid;
     }
 
     /**
@@ -153,27 +186,24 @@ public abstract class AbstractDataFactory implements IDataFactory {
         throw new UnsupportedOutputTypeException(request.getDatatype(),
                 "geometry");
     }
-    
+
     /**
      * Default implementation throws a {@link MethodNotSupportedYetException}
      */
     @Override
-    public String[] getAvailableParameters(IDataRequest request)
-    {
-        throw new MethodNotSupportedYetException(request.getDatatype()
+    public String[] getAvailableParameters(IDataRequest request) {
+        throw new MethodNotSupportedYetException(
+                request.getDatatype()
                         + " data requests do not yet support getting available parameters");
     }
 
-
     /**
      * Default implementation throws a {@link MethodNotSupportedYetException}
      */
     @Override
-    public Level[] getAvailableLevels(IDataRequest request)
-    {
+    public Level[] getAvailableLevels(IDataRequest request) {
         throw new MethodNotSupportedYetException(request.getDatatype()
                 + " data requests do not yet support getting available levels");
     }
-
 
 }

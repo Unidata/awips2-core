@@ -46,6 +46,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
  * Jul 14, 2014 3184       njensen     Overrode getAvailableLevels()
+ * Jul 30, 2014 3184       njensen     Added optional identifiers
  * 
  * </pre>
  * 
@@ -71,7 +72,8 @@ public class MapsGeometryFactory extends
      * Constructor
      */
     public MapsGeometryFactory() {
-        super(MAPS_DATABASE, REQUIRED_IDENTIFIERS);
+        super(MAPS_DATABASE, REQUIRED_IDENTIFIERS,
+                new String[] { COL_NAME_OPTION });
     }
 
     /*
@@ -135,4 +137,5 @@ public class MapsGeometryFactory extends
         throw new IncompatibleRequestException(request.getDatatype()
                 + " data does not support the concept of levels");
     }
+
 }

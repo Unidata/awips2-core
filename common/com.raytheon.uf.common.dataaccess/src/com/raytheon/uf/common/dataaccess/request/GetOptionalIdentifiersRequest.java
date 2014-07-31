@@ -22,8 +22,8 @@ package com.raytheon.uf.common.dataaccess.request;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 
 /**
- * Request to retrieve the valid identifiers for a datatype from the Data Access
- * Framework.
+ * Request to retrieve the optional identifiers for a datatype from the Data
+ * Access Framework.
  * 
  * <pre>
  * 
@@ -32,6 +32,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2014 3185       njensen     Initial creation
+ * Jul 30, 2014 3185       njensen     Renamed valid to optional
  * 
  * </pre>
  * 
@@ -40,6 +41,6 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  */
 
 @DynamicSerialize
-public class GetValidIdentifiersRequest extends AbstractIdentifierRequest {
+public class GetOptionalIdentifiersRequest extends AbstractIdentifierRequest {
 
 }
