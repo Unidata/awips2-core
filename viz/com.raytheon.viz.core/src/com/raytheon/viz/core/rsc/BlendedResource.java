@@ -43,13 +43,14 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 
 /**
- * TODO Add Description
+ * A Blended resource is a combination of two resources displayed together with
+ * an option to blend them by having inverse alpha values.
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Jul 31, 2014  3461     bsteffen    Recycle properly.
  * 
  * </pre>
  * 
@@ -97,6 +98,13 @@ public class BlendedResource extends
     protected void disposeInternal() {
         for (ResourcePair rp : this.resourceData.getResourceList()) {
             rp.getResource().dispose();
+        }
+    }
+
+    @Override
+    protected void recycleInternal() {
+        for (ResourcePair rp : this.resourceData.getResourceList()) {
+            rp.getResource().recycle();
         }
     }
 
