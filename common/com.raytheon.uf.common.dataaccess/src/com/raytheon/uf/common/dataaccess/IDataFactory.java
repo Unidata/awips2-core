@@ -58,6 +58,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                     single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 14, 2014  3184     njensen     Added new methods
+ * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
  * 
  * </pre>
  * 
@@ -81,8 +82,7 @@ public interface IDataFactory {
      * @throws TimeAgnosticDataException
      */
     public DataTime[] getAvailableTimes(IDataRequest request,
-            boolean refTimeOnly)
-            throws TimeAgnosticDataException;
+            boolean refTimeOnly) throws TimeAgnosticDataException;
 
     /**
      * Gets the available times that match the request within the BinOffset.
@@ -98,8 +98,7 @@ public interface IDataFactory {
      * @throws TimeAgnosticDataException
      */
     public DataTime[] getAvailableTimes(IDataRequest request,
-            BinOffset binOffset)
-            throws TimeAgnosticDataException;
+            BinOffset binOffset) throws TimeAgnosticDataException;
 
     /**
      * Gets the available data that matches the request at the specified times.
@@ -209,12 +208,12 @@ public interface IDataFactory {
     public String[] getRequiredIdentifiers();
 
     /**
-     * Gets the identifiers that will be recognized by requests for this
-     * datatype. These identifiers should include the required identifiers but
-     * can possibly contain others that are optional.
+     * Gets the optional identifiers that will be recognized by requests for
+     * this datatype.
      * 
-     * @return the identifiers that are recognized by requests for this datatype
+     * @return the optional identifiers that are recognized by requests for this
+     *         datatype
      */
-    public String[] getValidIdentifiers();
+    public String[] getOptionalIdentifiers();
 
 }

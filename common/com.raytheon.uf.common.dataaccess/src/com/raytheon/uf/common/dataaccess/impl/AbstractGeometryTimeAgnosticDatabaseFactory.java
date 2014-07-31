@@ -40,6 +40,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Feb 14, 2013  1614     bsteffen    Refactor data access framework to use
  *                                    single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
+ * Jul 30, 2014  3184     njensen     Added optional identifiers
  * 
  * </pre>
  * 
@@ -60,8 +61,8 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
      *            (ifdef)
      */
     public AbstractGeometryTimeAgnosticDatabaseFactory(String databaseName,
-            String[] requiredIdentifiers) {
-        super(databaseName, requiredIdentifiers);
+            String[] requiredIdentifiers, String[] optionalIdentifiers) {
+        super(databaseName, requiredIdentifiers, optionalIdentifiers);
     }
 
     /*
@@ -73,8 +74,7 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
      */
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
-            boolean refTimeOnly)
-            throws TimeAgnosticDataException {
+            boolean refTimeOnly) throws TimeAgnosticDataException {
         throw new TimeAgnosticDataException(this.buildExceptionMessage(request));
     }
 
@@ -107,7 +107,8 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
     /**
      * Retrieves data in a time agnostic way.
      * 
-     * @param request the original request that we are processing
+     * @param request
+     *            the original request that we are processing
      * @return an array of IGeometryData
      */
     protected IGeometryData[] getData(IDataRequest request) {
@@ -131,7 +132,8 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
     /**
      * Constructs the message that will be included in the TimeAgnosticException
      * 
-     * @param request the original request that we are processing
+     * @param request
+     *            the original request that we are processing
      * @return the constructed exception message
      */
     private String buildExceptionMessage(IDataRequest request) {
@@ -143,9 +145,11 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
     }
 
     /**
-     * Builds a time agnostic version of the query that will be used to retrieve data from the database.
+     * Builds a time agnostic version of the query that will be used to retrieve
+     * data from the database.
      * 
-     * @param request the original request that we are processing
+     * @param request
+     *            the original request that we are processing
      * @return the query
      */
     protected abstract String assembleGetData(IDataRequest request);
@@ -161,20 +165,17 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
     }
 
     @Override
-    protected String assembleGetTimes(IDataRequest request,
-            BinOffset binOffset) {
+    protected String assembleGetTimes(IDataRequest request, BinOffset binOffset) {
         return null;
     }
 
     @Override
-    protected String assembleGetData(IDataRequest request,
-            DataTime... times) {
+    protected String assembleGetData(IDataRequest request, DataTime... times) {
         return null;
     }
 
     @Override
-    protected String assembleGetData(IDataRequest request,
-            TimeRange timeRange) {
+    protected String assembleGetData(IDataRequest request, TimeRange timeRange) {
         return null;
     }
 }

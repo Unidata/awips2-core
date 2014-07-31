@@ -54,6 +54,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                    single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 14, 2014  3184     njensen     Added new methods
+ * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
  * 
  * </pre>
  * 
@@ -272,17 +273,16 @@ public class DataAccessLayer {
     }
 
     /**
-     * Gets the identifiers that will be recognized by requests for the
-     * particular datatype. These identifiers should include the required
-     * identifiers but can possibly contain others that are optional
+     * Gets the optional identifiers that will be recognized by requests for the
+     * particular datatype.
      * 
      * @param datatype
      *            the datatype to find all possible identifiers for
      * @return the identifiers that are recognized by requests for this datatype
      */
-    public static String[] getValidIdentifiers(String datatype) {
+    public static String[] getOptionalIdentifiers(String datatype) {
         return DataFactoryRegistry.getInstance().getFactory(datatype)
-                .getValidIdentifiers();
+                .getOptionalIdentifiers();
     }
 
 }
