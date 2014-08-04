@@ -56,6 +56,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Oct 17, 2012 1229       rferrel     Dialog is non-blocking.
  * Jun 23, 2014 #3158      lvenable    Added code so the dialog trim will appear.
  * Jun 30, 2014  3165      njensen     Cleaned up save actions
+ * Aug 01, 2014  3394      rferrel     Added widget default selection to list and text.
  * 
  * </pre>
  * 
@@ -135,6 +136,25 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         filenameText = new Text(composite, SWT.SINGLE | SWT.BORDER);
         filenameText.setLayoutData(gd);
 
+        filenameText.addSelectionListener(new SelectionAdapter() {
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                String name = filenameText.getText().trim();
+
+                /*
+                 * Prevent saving to current color map and disposing of the
+                 * shell. Force user to put something in filenameText.
+                 */
+                if (name.length() == 0) {
+                    String message = "Please enter a name for the colormap.";
+                    MessageDialog.openInformation(shell, "", message);
+                } else {
+                    saveAction();
+                }
+            }
+        });
+
         filesList = new List(composite, SWT.SINGLE | SWT.V_SCROLL | SWT.BORDER);
         filesList.setItems(getColormapNames());
         GridData fgd = new GridData(GridData.FILL_HORIZONTAL);
@@ -145,6 +165,12 @@ public class SaveColorMapDialog extends CaveSWTDialog {
             public void widgetSelected(SelectionEvent e) {
                 int index = filesList.getSelectionIndex();
                 filenameText.setText(filesList.getItem(index));
+            }
+
+            @Override
+            public void widgetDefaultSelected(SelectionEvent e) {
+                // filenameText is populated with the selection.
+                saveAction();
             }
 
         });
@@ -169,43 +195,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                String filename = filenameText.getText();
-                boolean okToSave = true;
-
-                if (filename.length() < 1) {
-                    filesList
-                            .setSelection(new String[] { currentColormapName });
-                    if (filesList.getSelectionCount() > 0) {
-                        filename = currentColormapName;
-                    }
-                }
-
-                if (filename.length() < 1) {
-                    String message = "Please enter a name for the colormap.";
-                    MessageDialog.openInformation(shell, "", message);
-                    okToSave = false;
-                }
-
-                boolean exists = ColorUtil.checkIfColormapExists(filename,
-                        level);
-
-                if (exists) {
-                    String message = "A color table named " + filename
-                            + " already exists. Do you wish to overwrite?";
-                    okToSave = MessageDialog.openQuestion(shell,
-                            "Confirm Color Table Overwrite", message);
-                }
-
-                if (okToSave) {
-                    try {
-                        ColorUtil.saveColorMap(colorMapToSave, filename, level);
-                        setReturnValue(filename);
-                    } catch (LocalizationException e1) {
-                        statusHandler.error(
-                                "Error saving colormap " + filename, e1);
-                    }
-                    shell.dispose();
-                }
+                // filenameText may be empty.
+                saveAction();
             }
         });
 
@@ -215,9 +206,50 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                shell.dispose();
+                shell.close();
             }
         });
+    }
+
+    /**
+     * Performs save based on the contents of the filenameText or current color
+     * map name.
+     */
+    private void saveAction() {
+        String filename = filenameText.getText().trim();
+        boolean okToSave = true;
+
+        if (filename.length() < 1) {
+            filesList.setSelection(new String[] { currentColormapName });
+            if (filesList.getSelectionCount() > 0) {
+                filename = currentColormapName;
+            }
+        }
+
+        if (filename.length() < 1) {
+            String message = "Please enter a name for the colormap.";
+            MessageDialog.openInformation(shell, "", message);
+            okToSave = false;
+        }
+
+        boolean exists = ColorUtil.checkIfColormapExists(filename, level);
+
+        if (exists) {
+            String message = "A color table named " + filename
+                    + " already exists. Do you wish to overwrite?";
+            okToSave = MessageDialog.openQuestion(shell,
+                    "Confirm Color Table Overwrite", message);
+        }
+
+        if (okToSave) {
+            try {
+                ColorUtil.saveColorMap(colorMapToSave, filename, level);
+                setReturnValue(filename);
+            } catch (LocalizationException e1) {
+                statusHandler.error("Error saving colormap " + filename, e1);
+            }
+            shell.close();
+        }
     }
 
     /**
