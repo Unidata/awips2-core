@@ -106,7 +106,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Apr 09, 2014 2997       randerso    Replaced buildEnvelope with buildBoundingGeometry
  * May 15, 2014 2820       bsteffen    Implement Interrogatable
  * Jul 25, 2014 3447       bclement    reset map query job on dispose
- * 
+ * Aug 01, 2014 3471       mapeters    Updated deprecated createShadedShape() calls.
  * 
  * </pre>
  * 
@@ -408,7 +408,7 @@ public class DbMapResource extends
                     IShadedShape newShadedShape = null;
                     if (req.shadingField != null) {
                         newShadedShape = req.target.createShadedShape(false,
-                                req.descriptor, true);
+                                req.descriptor.getGridGeometry(), true);
                     }
 
                     JTSCompiler jtsCompiler = new JTSCompiler(newShadedShape,
