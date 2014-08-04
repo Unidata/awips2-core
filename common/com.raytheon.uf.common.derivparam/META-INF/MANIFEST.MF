@@ -4,10 +4,10 @@ Bundle-Name: Derived Parameter Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.derivparam
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
-Eclipse-BuddyPolicy: registered, ext, global
+Eclipse-BuddyPolicy: registered
 Import-Package: com.raytheon.uf.common.comm,
  com.raytheon.uf.common.inventory.data,
  com.raytheon.uf.common.inventory.exception,
