@@ -5,7 +5,6 @@ Bundle-SymbolicName: com.raytheon.uf.common.datastorage
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
 Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
-Eclipse-BuddyPolicy: registered
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.datastorage.records

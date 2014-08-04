@@ -2,11 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Menus Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.ui.menus;singleton:=true
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Activator: com.raytheon.uf.viz.ui.menus.Activator
 Bundle-Vendor: RAYTHEON
-Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization, com.raytheon.viz.volumebrowser
-Eclipse-BuddyPolicy: registered
+Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  org.eclipse.core.expressions,
@@ -15,7 +14,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.viz.core,
  com.raytheon.uf.common.menus;bundle-version="1.0.0";visibility:=reexport,
  com.raytheon.viz.core;bundle-version="1.12.1174"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Import-Package: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.localization.exception,
