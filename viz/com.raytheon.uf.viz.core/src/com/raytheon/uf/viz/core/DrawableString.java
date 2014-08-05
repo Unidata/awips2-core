@@ -44,6 +44,9 @@ import com.raytheon.uf.viz.core.drawables.IFont;
  * Dec 14, 2010           mschenke    Initial creation
  * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
  * May 12, 2014  3074     bsteffen    Add support for multicolor text styles.
+ * Aug 05, 2014  3489     mapeters    Add constructors whose only parameter is 
+ *                                    text for use by {@link IGraphicsTarget
+ *                                    #getStringsBounds(DrawableString)}.
  * 
  * </pre>
  * 
@@ -93,6 +96,12 @@ public class DrawableString extends AbstractDrawableObject {
     @Deprecated
     public RGB boxColor;
 
+    /**
+     * Default color to use for creating a DrawableString for
+     * {@link IGraphicsTarget#getStringsBounds(DrawableString)}
+     */
+    private static final RGB GRAY = new RGB(127, 127, 127);
+
     public DrawableString(DrawableString that) {
         this.basics.alpha = that.basics.alpha;
         this.basics.color = that.basics.color;
@@ -139,6 +148,28 @@ public class DrawableString extends AbstractDrawableObject {
      */
     public DrawableString(String[] text, RGB[] colors) {
         setText(text, colors);
+    }
+
+    /**
+     * This constructor is only intended to be used to create a DrawableString
+     * for {@link IGraphicsTarget#getStringsBounds(DrawableString)}. It
+     * constructs parameters with text and default gray color.
+     * 
+     * @param text
+     */
+    public DrawableString(String text) {
+        setText(text, GRAY);
+    }
+
+    /**
+     * This constructor is only intended to be used to create a DrawableString
+     * for {@link IGraphicsTarget#getStringsBounds(DrawableString)}. It
+     * constructs parameters with lines of text and default gray color.
+     * 
+     * @param text
+     */
+    public DrawableString(String[] text) {
+        setText(text, GRAY);
     }
 
     /**

@@ -55,6 +55,7 @@ import com.raytheon.viz.ui.input.InputAdapter;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 17, 2010            mschenke     Initial creation
+ * Aug 04, 2014 3489       mapeters     Updated deprecated getStringBounds() calls.
  * 
  * </pre>
  * 
@@ -166,16 +167,16 @@ public abstract class AbstractLegendResource<T extends AbstractResourceData>
                 allText += ld.label;
             }
 
-            Rectangle2D allTextBounds = target
-                    .getStringBounds(le.font, allText);
+            DrawableString text = new DrawableString(allText);
+            text.font = le.font;
+            Rectangle2D allTextBounds = target.getStringsBounds(text);
 
             double xStart = paintProps.getCanvasBounds().width
                     - ((RIGHT_OFFSET_IN_PIXELS + allTextBounds.getWidth()));
 
             double maxHeight = 0.0;
             for (LegendData ld : le.legendParts) {
-                String text = ld.label;
-                DrawableString string = new DrawableString(text, ld.color);
+                DrawableString string = new DrawableString(ld.label, ld.color);
                 string.font = le.font;
                 string.setCoordinates(xStart, yStart);
 
@@ -241,8 +242,9 @@ public abstract class AbstractLegendResource<T extends AbstractResourceData>
                 allText += ld.label;
             }
 
-            Rectangle2D allTextBounds = target
-                    .getStringBounds(le.font, allText);
+            DrawableString string = new DrawableString(allText);
+            string.font = le.font;
+            Rectangle2D allTextBounds = target.getStringsBounds(string);
 
             double yEnd = yStart - (allTextBounds.getHeight() * ratio);
             if (y <= yStart && y > yEnd) {
@@ -257,9 +259,9 @@ public abstract class AbstractLegendResource<T extends AbstractResourceData>
                     return null;
                 }
                 for (LegendData ld : le.legendParts) {
-                    String text = ld.label;
-                    Rectangle2D textBounds = target.getStringBounds(le.font,
-                            text);
+                    DrawableString label = new DrawableString(ld.label);
+                    label.font = le.font;
+                    Rectangle2D textBounds = target.getStringsBounds(label);
                     xEnd = xStart + (textBounds.getWidth() * ratio);
                     if (x <= xEnd) {
                         return ld.resource;
@@ -308,8 +310,9 @@ public abstract class AbstractLegendResource<T extends AbstractResourceData>
                 allText += ld.label;
             }
 
-            Rectangle2D allTextBounds = target
-                    .getStringBounds(le.font, allText);
+            DrawableString string = new DrawableString(allText);
+            string.font = le.font;
+            Rectangle2D allTextBounds = target.getStringsBounds(string);
 
             double yEnd = yStart - (allTextBounds.getHeight() * ratio);
             if (y <= yStart && y > yEnd) {
