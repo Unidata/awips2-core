@@ -28,7 +28,7 @@ import com.raytheon.uf.common.numeric.source.DataSource;
 /**
  * Abstract parent for sparse array implementations. Sparse arrays are optimized
  * for data that exists in a large logical array, but only a small portion of
- * the array has useful data.
+ * the array has useful data. Sparse arrays are not thread safe for writing.
  * 
  * <pre>
  * 
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.numeric.source.DataSource;
  * ------------ ---------- ----------- --------------------------
  * Jul 29, 2014 3463       bclement     Initial creation
  * Jul 30, 2014 3463       bclement     changed blockMap to be hashmap
+ * Aug 06, 2014 3463       bclement     removed unsafe cache
  * 
  * </pre>
  * 
@@ -54,11 +55,7 @@ public abstract class SparseArray<T> implements DataSource, DataDestination {
 
     protected final int blockSize;
 
-    protected final Map<Integer, T> blockMap = new HashMap<Integer, T>();
-
-    private T cache = null;
-
-    private int cacheIndex = -1;
+    protected final Map<Integer, T> blockMap;
 
     /**
      * @param nx
@@ -75,6 +72,7 @@ public abstract class SparseArray<T> implements DataSource, DataDestination {
         this.nx = nx;
         this.ny = ny;
         this.blockSize = blockSize;
+        this.blockMap = new HashMap<Integer, T>((nx * ny) / (blockSize * 4));
     }
 
     /**
@@ -87,14 +85,7 @@ public abstract class SparseArray<T> implements DataSource, DataDestination {
      * @see #getBlockIndex(int)
      */
     protected T getBlockReadOnly(int index) {
-        T rval;
-        if (index == cacheIndex) {
-            rval = cache;
-        } else {
-            cacheIndex = index / blockSize;
-            rval = cache = blockMap.get(cacheIndex);
-        }
-        return rval;
+        return blockMap.get(index / blockSize);
     }
 
     /**
@@ -107,17 +98,11 @@ public abstract class SparseArray<T> implements DataSource, DataDestination {
      * @see #getBlockIndex(int)
      */
     protected T getBlockReadWrite(int index) {
-        T rval;
-        if (index == cacheIndex && cache != null) {
-            rval = cache;
-        } else {
-            cacheIndex = index / blockSize;
-            rval = blockMap.get(cacheIndex);
-            if (rval == null) {
-                rval = createBlock(blockSize);
-                blockMap.put(cacheIndex, rval);
-            }
-            cache = rval;
+        int cacheIndex = index / blockSize;
+        T rval = blockMap.get(cacheIndex);
+        if (rval == null) {
+            rval = createBlock(blockSize);
+            blockMap.put(cacheIndex, rval);
         }
         return rval;
     }

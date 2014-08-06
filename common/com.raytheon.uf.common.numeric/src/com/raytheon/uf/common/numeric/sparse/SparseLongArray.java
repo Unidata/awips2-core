@@ -31,6 +31,7 @@ import java.util.Arrays;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 29, 2014 3463       bclement     Initial creation
+ * Aug 06, 2014 3463       bclement     fixed add method so fill values aren't written
  * 
  * </pre>
  * 
@@ -93,9 +94,11 @@ public class SparseLongArray extends SparseArray<long[]> {
      */
     @Override
     public void setDataValue(double dataValue, int x, int y) {
-        int index = getIndex(x, y);
-        long[] block = getBlockReadWrite(index);
-        block[getBlockIndex(index)] = (long) dataValue;
+        if (dataValue != fillValue) {
+            int index = getIndex(x, y);
+            long[] block = getBlockReadWrite(index);
+            block[getBlockIndex(index)] = (long) dataValue;
+        }
     }
 
     /*

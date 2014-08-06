@@ -31,6 +31,7 @@ import java.util.Arrays;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 29, 2014 3463       bclement     Initial creation
+ * Aug 06, 2014 3463       bclement     fixed add method so fill values aren't written
  * 
  * </pre>
  * 
@@ -42,6 +43,8 @@ public class SparseDoubleArray extends SparseArray<double[]> {
     public static final double DEFAULT_FILL_VALUE = 0;
 
     private final double fillValue;
+
+    private final boolean fillValueIsNan;
 
     /**
      * @param nx
@@ -65,6 +68,7 @@ public class SparseDoubleArray extends SparseArray<double[]> {
     public SparseDoubleArray(int nx, int ny, double fillValue, int blockSize) {
         super(nx, ny, blockSize);
         this.fillValue = fillValue;
+        this.fillValueIsNan = Double.isNaN(fillValue);
     }
 
     /*
@@ -93,9 +97,25 @@ public class SparseDoubleArray extends SparseArray<double[]> {
      */
     @Override
     public void setDataValue(double dataValue, int x, int y) {
-        int index = getIndex(x, y);
-        double[] block = getBlockReadWrite(index);
-        block[getBlockIndex(index)] = (double) dataValue;
+        if (isFillValue(dataValue)) {
+            int index = getIndex(x, y);
+            double[] block = getBlockReadWrite(index);
+            block[getBlockIndex(index)] = (double) dataValue;
+        }
+    }
+
+    /**
+     * @param dataValue
+     * @return true if dataValue is the same as fillValue
+     */
+    private boolean isFillValue(double dataValue) {
+        boolean rval = false;
+        if (dataValue == fillValue) {
+            rval = true;
+        } else if (fillValueIsNan && Double.isNaN(dataValue)) {
+            rval = true;
+        }
+        return rval;
     }
 
     /*
