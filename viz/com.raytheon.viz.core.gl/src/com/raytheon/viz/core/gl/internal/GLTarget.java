@@ -69,7 +69,6 @@ import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IView;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
-import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IFont.FontType;
 import com.raytheon.uf.viz.core.drawables.IFont.Style;
@@ -148,6 +147,8 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
  *                                      removed drawWireFrameShapeInternal()
+ * Aug 07, 2014  3492     mapeters    Replaced deprecated createWireframeShape() methods, deprecated
+ *                                    calls now handled by {@link AbstractGraphicsTarget}
  * 
  * </pre>
  * 
@@ -435,30 +436,12 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * (non-Javadoc)
      * 
      * @see com.raytheon.viz.core.IGraphicsTarget#createWireframeShape(boolean,
-     * org.geotools.coverage.grid.GeneralGridGeometry, float, boolean,
-     * com.raytheon.viz.core.PixelExtent)
+     * org.geotools.coverage.grid.GeneralGridGeometry)
      */
     @Override
-    @Deprecated
     public IWireframeShape createWireframeShape(boolean mutable,
-            GeneralGridGeometry geom, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent) {
+            GeneralGridGeometry geom) {
         return new GLWireframeShape2D(geom, mutable);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.IGraphicsTarget#createWireframeShape(boolean,
-     * com.raytheon.viz.core.map.IMapDescriptor, float, boolean,
-     * com.raytheon.viz.core.PixelExtent)
-     */
-    @Override
-    @Deprecated
-    public IWireframeShape createWireframeShape(boolean mutable,
-            IDescriptor descriptor, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent) {
-        return new GLWireframeShape2D(descriptor.getGridGeometry(), mutable);
     }
 
     /*
@@ -1851,5 +1834,4 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             return super.getExtension(extensionClass);
         }
     }
-
 }

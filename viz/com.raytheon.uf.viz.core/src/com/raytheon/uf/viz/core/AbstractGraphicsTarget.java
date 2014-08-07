@@ -261,20 +261,20 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     @Override
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor) {
-        return createWireframeShape(mutable, descriptor, 0.0f);
+        return createWireframeShape(mutable, descriptor.getGridGeometry());
     }
 
     @Override
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel) {
-        return createWireframeShape(mutable, descriptor, simplificationLevel);
+        return createWireframeShape(mutable, descriptor.getGridGeometry());
 
     }
 
     @Override
     public IWireframeShape createWireframeShape(boolean mutable,
             GeneralGridGeometry geom, float simplificationLevel) {
-        return createWireframeShape(mutable, geom, simplificationLevel);
+        return createWireframeShape(mutable, geom);
     }
 
     @Override
@@ -282,14 +282,15 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel,
             boolean spatialChopFlag, IExtent extent) {
-        return createWireframeShape(mutable, descriptor.getGridGeometry(),
-                simplificationLevel);
+        return createWireframeShape(mutable, descriptor.getGridGeometry());
     }
 
     @Override
-    public IWireframeShape createWireframeShape(boolean mutableFlag,
-            GeneralGridGeometry geom) {
-        return createWireframeShape(mutableFlag, geom, 0.0f);
+    @Deprecated
+    public IWireframeShape createWireframeShape(boolean mutable,
+            GeneralGridGeometry geom, float simplificationLevel,
+            boolean spatialChopFlag, IExtent extent) {
+        return createWireframeShape(mutable, geom);
     }
 
     @Override
