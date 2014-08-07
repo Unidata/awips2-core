@@ -47,6 +47,7 @@ import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
  * ------------ ---------- ----------- --------------------------
  * Apr 8, 2009             chammack    Initial creation
  * Oct 9, 2013  2361       njensen     Use JAXBManager for XML
+ * Aug 07, 2014 3478       bclement    removed DOUBLE, CHAR and BOOLEAN from Type
  * 
  * </pre>
  * 
@@ -60,9 +61,10 @@ public class PointDataDescription {
 
     private static final int DEFAULT_LEVELSIZE = 64;
 
+    /* TODO consider adding support for all data types the datastore supports */
     @XmlType(name = "pointDataType")
     public static enum Type {
-        FLOAT, BOOLEAN, STRING, INT, CHAR, DOUBLE, LONG;
+        FLOAT, STRING, INT, LONG;
     };
 
     public static final int FILL_VALUE_INT = -9999;
