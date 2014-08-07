@@ -29,6 +29,7 @@ package com.raytheon.uf.common.util;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 21, 2013       1638 mschenke    Initial creation
+ * Aug 07, 2014 3502       bclement    removed warning
  * 
  * </pre>
  * 
@@ -80,7 +81,7 @@ public class Pair<F, S> {
             return false;
         if (getClass() != obj.getClass())
             return false;
-        Pair other = (Pair) obj;
+        Pair<?, ?> other = (Pair<?, ?>) obj;
         if (first == null) {
             if (other.first != null)
                 return false;

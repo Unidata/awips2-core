@@ -21,13 +21,13 @@ package com.raytheon.uf.common.util;
 
 import java.lang.annotation.Annotation;
 import java.lang.reflect.Field;
+import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.beanutils.PropertyUtils;
 
 /**
  * Reflection utilities.
@@ -42,7 +42,8 @@ import org.apache.commons.beanutils.PropertyUtils;
  * Jul 10, 2012 455        djohnson     Move in methods from RegistryUtil, 
  *                                      fix setter method to use parameter types.
  * Sep 28, 2012 1195       djohnson     Add {@link #forName(String)}.
- * Jan 23, 2014 2584       dhladky      Versions for JAXB objects.
+ * Jan 23, 2014 2584       dhladky      Versions for JAXB objects.\
+ * Aug 07, 2014 3502       bclement     added getFieldValue()
  * 
  * </pre>
  * 
@@ -51,7 +52,7 @@ import org.apache.commons.beanutils.PropertyUtils;
  */
 public final class ReflectionUtil {
 
-    private static ConcurrentMap<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
+    private static final ConcurrentMap<Class<?>, List<Field>> classFields = new ConcurrentHashMap<Class<?>, List<Field>>();
 
     private ReflectionUtil() {
         // Utility class
@@ -211,8 +212,7 @@ public final class ReflectionUtil {
             Annotation ann = field.getAnnotation(annotation);
             if (ann != null) {
                 try {
-                    return PropertyUtils.getProperty(obj, field.getName())
-                            .toString();
+                    return String.valueOf(getFieldValue(obj, field));
                 } catch (Exception e) {
                     throw new ReflectionException(
                             "Error getting annotated field value", e);
@@ -220,6 +220,27 @@ public final class ReflectionUtil {
             }
         }
         return null;
+    }
+
+    /**
+     * @param obj
+     * @param f
+     * @return value of field via reflection
+     * @throws IllegalArgumentException
+     * @throws IllegalAccessException
+     * @throws InvocationTargetException
+     */
+    public static Object getFieldValue(Object obj, Field f)
+            throws IllegalArgumentException, IllegalAccessException,
+            InvocationTargetException {
+        Object rval;
+        if (f.isAccessible()) {
+            rval = f.get(obj);
+        } else {
+            Method getter = getGetterMethod(obj.getClass(), f.getName());
+            return getter.invoke(obj);
+        }
+        return rval;
     }
  
     /**

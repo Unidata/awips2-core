@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.util;
+package com.raytheon.uf.common.convert;
 
 import java.lang.reflect.Field;
 
@@ -38,6 +38,7 @@ import org.apache.commons.beanutils.Converter;
  * Mar 13, 2013 1789       bsteffen    Move Calendar and Date parsing out of
  *                                     ConvertUtil and also fix date parsing.
  * Jun 11, 2013 2091       bclement    added getFields utility/javadoc
+ * Aug 07, 2014 3502       bclement    moved from common.util to common.convert
  * 
  * </pre>
  * 

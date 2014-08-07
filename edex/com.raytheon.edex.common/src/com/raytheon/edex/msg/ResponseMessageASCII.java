@@ -23,8 +23,8 @@ package com.raytheon.edex.msg;
 import java.util.Calendar;
 import java.util.Date;
 
+import com.raytheon.uf.common.convert.ConvertUtil;
 import com.raytheon.uf.common.message.response.AbstractResponseMessage;
-import com.raytheon.uf.common.util.ConvertUtil;
 import com.raytheon.uf.common.util.StringUtil;
 
 /**

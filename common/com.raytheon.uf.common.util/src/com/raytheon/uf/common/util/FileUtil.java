@@ -30,13 +30,13 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
-import org.apache.commons.io.IOUtils;
 
 /**
  * Contains common file utilities. Methods are generally static to use without a
@@ -64,6 +64,7 @@ import org.apache.commons.io.IOUtils;
  *                                     to improve memory utilization
  * Oct 18, 2013 2267       bgonzale    Add listPaths method.
  *                                     to improve memory utilization
+ * Aug 07, 2014 3502       bclement    added copy(), deprecated getFileModifiedWatcher()
  * 
  * </pre>
  * 
@@ -88,6 +89,8 @@ public class FileUtil {
      * Easy reference to system-dependent end of line
      */
     public static final String EOL = System.getProperty("line.separator");
+
+    private static final int COPY_BUFFER_SIZE = 4096;
 
     /**
      * Joins one or more path components into a single path string. Path
@@ -703,9 +706,7 @@ public class FileUtil {
         try {
             fis = new FileInputStream(source);
             fos = new FileOutputStream(destination);
-
-            IOUtils.copyLarge(fis, fos);
-
+            copy(fis, fos);
         } catch (IOException e) {
             // close the output stream ignoring any exceptions
             close(fos);
@@ -736,6 +737,27 @@ public class FileUtil {
                 throw exception;
             }
         }
+    }
+
+    /**
+     * Copies all bytes from input stream to output stream. Uses an internal
+     * buffer.
+     * 
+     * @param in
+     * @param out
+     * @return
+     * @throws IOException
+     */
+    public static long copy(InputStream in, OutputStream out)
+            throws IOException {
+        long rval = 0;
+        int len = 0;
+        byte[] buf = new byte[COPY_BUFFER_SIZE];
+        while ((len = in.read(buf)) != -1) {
+            rval += len;
+            out.write(buf, 0, len);
+        }
+        return rval;
     }
 
     /**
@@ -873,7 +895,9 @@ public class FileUtil {
      * @param file
      *            the file to watch for modifications
      * @return the watcher
+     * @deprecated use {@link WatchService}
      */
+    @Deprecated
     public static IFileModifiedWatcher getFileModifiedWatcher(File file) {
         return new FileLastModifiedTimeWatcher(file);
     }

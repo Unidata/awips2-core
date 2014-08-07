@@ -22,3 +22,4 @@ Require-Bundle: com.raytheon.uf.common.localization;bundle-version="1.12.1174",
  javax.measure;bundle-version="1.0.0",
  javax.persistence;bundle-version="1.0.0";visibility:=reexport,
  org.hibernate;bundle-version="1.0.0";visibility:=reexport
+Import-Package: com.raytheon.uf.common.convert

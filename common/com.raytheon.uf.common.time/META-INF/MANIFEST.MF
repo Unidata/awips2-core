@@ -9,7 +9,8 @@ Require-Bundle: net.sf.cglib,
  com.raytheon.uf.common.status;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization.comm;bundle-version="1.12.1174",
- com.raytheon.uf.common.util;bundle-version="1.12.1174"
+ com.raytheon.uf.common.util;bundle-version="1.12.1174",
+ com.raytheon.uf.common.convert;bundle-version="1.14.0"
 Import-Package: javax.persistence,
  org.apache.commons.beanutils,
  org.apache.commons.lang,

@@ -20,10 +20,7 @@
 package com.raytheon.uf.common.util;
 
 import java.io.File;
-
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
+import java.nio.file.WatchService;
 
 /**
  * Implementation of {@link IFileModifiedWatcher} that watches the last modified
@@ -37,15 +34,16 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2013 1778       djohnson     Initial creation
+ * Aug 07, 2014 3502       bclement     removed logger
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
+ * @deprecated use {@link WatchService}
  */
+@Deprecated
 class FileLastModifiedTimeWatcher implements IFileModifiedWatcher {
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(FileLastModifiedTimeWatcher.class);
 
     private final File file;
 
@@ -66,14 +64,6 @@ class FileLastModifiedTimeWatcher implements IFileModifiedWatcher {
     public boolean hasBeenModified() {
         final long currentConfigFileLastModified = file.lastModified();
         final boolean fileModified = (currentConfigFileLastModified != configFileLastModified);
-
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler
-                    .debug(String
-                            .format("last known last modified [%s], current last modified [%s], changed [%s]",
-                                    configFileLastModified,
-                                    currentConfigFileLastModified, fileModified));
-        }
 
         if (fileModified) {
             configFileLastModified = currentConfigFileLastModified;

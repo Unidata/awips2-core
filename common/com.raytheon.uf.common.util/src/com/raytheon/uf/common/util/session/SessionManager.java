@@ -22,10 +22,6 @@ package com.raytheon.uf.common.util.session;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
-
 /**
  * Provides the functionality to manage a 'session'. Each thread has its own
  * instance of the context. 1..N open requests can be made, and once the Nth
@@ -40,6 +36,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Sep 26, 2012 1195       djohnson     Initial creation
  * Feb 07, 2013 1543       djohnson     Use SessionContextFactory to create the session context.
+ * Aug 07, 2014 3502       bclement     removed logger
  * 
  * </pre>
  * 
@@ -48,9 +45,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  */
 
 public final class SessionManager {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SessionManager.class);
 
     /**
      * Inner-class used to hold the SessionContext tracking data.
@@ -109,12 +103,6 @@ public final class SessionManager {
 
         ctxTracker.openRequests++;
 
-        if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug(String.format(
-                    " context [%s] openRequests [%s]", key,
-                    ctxTracker.openRequests));
-        }
-
         return contextClass.cast(ctxTracker.sessionContext);
     }
 
@@ -137,9 +125,6 @@ public final class SessionManager {
         SessionContextTracker ctxTracker = map.get(key);
 
         if (ctxTracker == null) {
-            statusHandler
-                    .warn("Unable to close a session that is not opened!  "
-                            + "Please be sure to pair the closeSession() request with a prior openSession() request.");
             return;
         }
 
@@ -147,19 +132,9 @@ public final class SessionManager {
 
         // If the last open request finally checked in, close it down
         if (ctxTracker.openRequests < 1) {
-            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                statusHandler.debug(String.format(
-                        "context [%s] closing, openRequests [%s]",
-                        contextClass.getName(), ctxTracker.openRequests));
-            }
-
             SessionContext ctx = ctxTracker.sessionContext;
             ctx.close();
             map.remove(key);
-        } else if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-            statusHandler.debug(String.format(
-                    "context [%s] not closing, openRequests [%s]",
-                    contextClass.getName(), ctxTracker.openRequests));
         }
     }
 

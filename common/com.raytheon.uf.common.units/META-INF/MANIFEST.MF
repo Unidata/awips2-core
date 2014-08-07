@@ -9,5 +9,6 @@ Require-Bundle: javax.measure;visibility:=reexport,
  com.raytheon.uf.common.util,
  org.apache.commons.beanutils,
  com.raytheon.uf.common.localization,
- com.raytheon.uf.common.status
+ com.raytheon.uf.common.status,
+ com.raytheon.uf.common.convert;bundle-version="1.14.0"
 Export-Package: com.raytheon.uf.common.units

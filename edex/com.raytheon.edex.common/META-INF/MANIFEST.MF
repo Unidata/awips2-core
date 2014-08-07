@@ -40,4 +40,5 @@ Require-Bundle: org.apache.commons.lang,
  com.raytheon.uf.edex.core;visibility:=reexport,
  org.slf4j;bundle-version="1.7.5"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: com.googlecode.concurrentlinkedhashmap
+Import-Package: com.googlecode.concurrentlinkedhashmap,
+ com.raytheon.uf.common.convert

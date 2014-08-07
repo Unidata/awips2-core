@@ -22,11 +22,8 @@ package com.raytheon.uf.common.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import org.apache.commons.lang.StringUtils;
 
 /**
  * This class is for static methods that manipulate strings.
@@ -42,6 +39,7 @@ import org.apache.commons.lang.StringUtils;
  * Nov 09, 2012 1322       djohnson    Add NEWLINE, createMessage.
  * Mar 02, 2013 1970       bgonzale    Added fast string replacement method.
  * Apr 02, 2014 2915       dgilling    Added left and right trim methods.
+ * Aug 07, 2014 3502       bclement    reimplemented split()
  * 
  * </pre>
  * 
@@ -57,37 +55,45 @@ public final class StringUtil {
     }
 
     /**
-     * Splits a string using given separator characters; strings are trimmed and
+     * Splits a string using given separator character; strings are trimmed and
      * empty entries removed.
-     * 
-     * @see org.apache.commons.lang.StringUtils#split
      * 
      * @param str
      *            the string to split
      * @param separatorChar
-     *            Characters to use as separators
-     * @return An array of trimmed non-empty strings.
+     *            Character to use as separator
+     * @return An array of trimmed non-empty strings or empty array
      * 
      */
-    public static String[] split(final String str, final String separatorChar) {
-        String[] result = null;
+    public static String[] split(final String str, final char separatorChar) {
+        ArrayList<String> rval = new ArrayList<String>();
         if (str != null) {
-            result = StringUtils
-                    .stripAll(StringUtils.split(str, separatorChar));
-            List<String> list = new ArrayList<String>();
-
-            for (String s : result) {
-                if (s.isEmpty() == false) {
-                    list.add(s);
-                }
+            int prev = 0;
+            /* trim separators from beginning of string */
+            while (prev < str.length() && str.charAt(prev) == separatorChar) {
+                prev += 1;
             }
-
-            if (result.length != list.size()) {
-                result = new String[list.size()];
-                list.toArray(result);
+            int curr;
+            /* this loop doesn't get the last part */
+            while ((curr = str.indexOf(separatorChar, prev)) > 0) {
+                String tmp = str.substring(prev, curr).trim();
+                if (!tmp.isEmpty()) {
+                    rval.add(tmp);
+                }
+                prev = curr + 1;
+            }
+            /* trim separators from end of the string */
+            int endIndex = str.lastIndexOf(separatorChar, prev);
+            if (endIndex < prev) {
+                endIndex = str.length();
+            }
+            /* add the last part */
+            String tmp = str.substring(prev, endIndex).trim();
+            if (!tmp.isEmpty()) {
+                rval.add(tmp);
             }
         }
-        return result;
+        return rval.toArray(new String[rval.size()]);
     }
 
     /**

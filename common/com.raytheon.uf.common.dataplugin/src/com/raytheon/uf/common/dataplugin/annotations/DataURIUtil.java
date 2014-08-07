@@ -34,11 +34,11 @@ import java.util.regex.Pattern;
 
 import org.apache.commons.beanutils.PropertyUtils;
 
+import com.raytheon.uf.common.convert.ConvertUtil;
 import com.raytheon.uf.common.dataplugin.IPluginClassMapper;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.uf.common.util.ConvertUtil;
 
 /**
  * Utility class for working with dataURIs
