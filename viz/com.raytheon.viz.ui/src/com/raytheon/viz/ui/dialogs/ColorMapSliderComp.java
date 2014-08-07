@@ -24,9 +24,11 @@ import java.text.DecimalFormat;
 import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
 
+import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.KeyAdapter;
 import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.KeyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -41,7 +43,8 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingEntry;
 
 /**
- * Composite for slider bars for ColorMapParameters
+ * Composite for Max/Min slider bars and their corresponding Text widgets for
+ * ColorMapParameters.
  * 
  * <pre>
  * 
@@ -52,6 +55,7 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingE
  * Jan  3, 2012            mschenke    Initial creation
  * Nov  8, 2013 2492       mschenke    Rewritten to work with colormap
  *                                     units different from data units
+ * Aug 04, 2014 3394       rferrel     Added okAction and verify listener on Text widgets.
  * 
  * </pre>
  * 
@@ -143,7 +147,7 @@ public class ColorMapSliderComp extends Composite {
         maxSlider.setMinimum(SLIDER_MIN);
         maxSlider.setIncrement(SLIDER_INC);
         maxSlider.setSelection(maxSlider.getMaximum());
-        GridData layoutData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        GridData layoutData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         layoutData.minimumWidth = 250;
         maxSlider.setLayoutData(layoutData);
 
@@ -163,7 +167,7 @@ public class ColorMapSliderComp extends Composite {
         minSlider.setMinimum(SLIDER_MIN);
         minSlider.setIncrement(SLIDER_INC);
         minSlider.setSelection(minSlider.getMinimum());
-        layoutData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        layoutData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         layoutData.minimumWidth = 250;
         minSlider.setLayoutData(layoutData);
 
@@ -180,7 +184,6 @@ public class ColorMapSliderComp extends Composite {
             }
         });
 
-
         minSlider.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -189,28 +192,81 @@ public class ColorMapSliderComp extends Composite {
             }
         });
 
-        maxValueText.addKeyListener(new KeyAdapter() {
+        // Listener for min/max value text.
+        KeyListener keyListener = new KeyAdapter() {
             @Override
             public void keyPressed(KeyEvent e) {
                 if (e.character == SWT.CR) {
-                    updateMinMaxFromText(maxValueText);
+                    updateMinMax();
                 }
             }
-        });
+        };
 
-        minValueText.addKeyListener(new KeyAdapter() {
-            @Override
-            public void keyPressed(KeyEvent e) {
-                if (e.character == SWT.CR) {
-                    updateMinMaxFromText(minValueText);
-                }
-            }
-        });
+        maxValueText.addKeyListener(keyListener);
+        minValueText.addKeyListener(keyListener);
 
         setColorMapMin(currentCmapMin);
         setColorMapMax(currentCmapMax);
     }
 
+    /**
+     * Check min/max text values and when valid updates Color Map and sliders to
+     * new values.
+     * 
+     * @return true when update performed else false due to a bad value
+     */
+    public boolean updateMinMax() {
+        boolean invalidMax = Float.isNaN(textToColorMapValue(maxValueText));
+        boolean invalidMin = Float.isNaN(textToColorMapValue(minValueText));
+
+        if (invalidMax || invalidMin) {
+            StringBuilder sb = new StringBuilder();
+
+            if (invalidMax) {
+                sb.append("\"")
+                        .append(maxValueText.getText().trim())
+                        .append("\" invalid Maximum value.\nRevert will change value to: ")
+                        .append(currentCmapMax);
+            }
+
+            if (invalidMin) {
+                if (invalidMax) {
+                    sb.append("\n\n");
+                }
+                sb.append("\"")
+                        .append(minValueText.getText().trim())
+                        .append("\" invalid Minimum value.\nRevert will change value to: ")
+                        .append(currentCmapMin);
+            }
+
+            sb.append("\n\nCancel will allow editing of text.");
+            MessageDialog dialog = new MessageDialog(getShell(),
+                    "Invalid Value", null, sb.toString(), MessageDialog.ERROR,
+                    new String[] { "Revert", "Cancel" }, 1);
+
+            // User wants to edit.
+            if (dialog.open() != 0) {
+                if (invalidMax) {
+                    maxValueText.forceFocus();
+                } else {
+                    minValueText.forceFocus();
+                }
+                return false;
+            }
+        }
+
+        updateMinMaxFromText(maxValueText);
+        updateMinMaxFromText(minValueText);
+        return true;
+    }
+
+    /**
+     * Update slider and the color map. When text contains invalid value revert
+     * to the last valid value prior to performing the update.
+     * 
+     * @param text
+     *            min or max text field with new value.
+     */
     private void updateMinMaxFromText(Text text) {
         float newCmapValue = textToColorMapValue(text);
         if (Float.isNaN(newCmapValue)) {
@@ -231,8 +287,11 @@ public class ColorMapSliderComp extends Composite {
 
         updateAbsolutes(currentCmapMin, currentCmapMax);
 
-        setColorMapMin(currentCmapMin);
-        setColorMapMax(currentCmapMax);
+        if (text == minValueText) {
+            setColorMapMin(currentCmapMin);
+        } else {
+            setColorMapMax(currentCmapMax);
+        }
     }
 
     /**
@@ -280,10 +339,12 @@ public class ColorMapSliderComp extends Composite {
     }
 
     /**
-     * Converts a text string to a colormap value
+     * Converts a text string to a colormap float value. The text can either be
+     * a float value or the label of data mapping entry.
      * 
-     * @param text
-     * @return
+     * @param textControl
+     *            - contains text string to convert
+     * @return Float.NaN when text is an invalid value
      */
     private float textToColorMapValue(Text textControl) {
         String text = textControl.getText().trim();

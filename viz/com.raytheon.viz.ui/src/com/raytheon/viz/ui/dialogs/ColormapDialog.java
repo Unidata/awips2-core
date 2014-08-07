@@ -45,7 +45,9 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
  * Feb 5, 2007              chammack    Initial Creation.
  * Aug 20, 2008             dglazesk    Updated for the new ColorMap interface
  * Oct 31, 2010             ryu         use Text widgets for alternative entry
- * Oct 17, 2016 1229        rferrel     Changes to allow non-blocking dialog.
+ * Oct 17, 2012 1229        rferrel     Changes to allow non-blocking dialog.
+ * Aug 04, 2014 3396        rferrel     Added okPressed to capture possible changes
+ *                                       to min/max values.
  * 
  * </pre>
  * 
@@ -151,6 +153,18 @@ public class ColormapDialog extends CaveJFACEDialog {
 
         applyDialogFont(composite);
         return composite;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see org.eclipse.jface.dialogs.Dialog#okPressed()
+     */
+    @Override
+    protected void okPressed() {
+        if (cmapSlider.updateMinMax()) {
+            super.okPressed();
+        }
     }
 
     /*
