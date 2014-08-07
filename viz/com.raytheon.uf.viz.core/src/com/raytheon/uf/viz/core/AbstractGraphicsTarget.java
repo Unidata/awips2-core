@@ -69,6 +69,8 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jun 30, 2014  3165     njensen     Remove deprecated buildColorMap()
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
  * Jul 30, 2014  3465     mapeters    Updated deprecated drawString() and drawLine() calls.
+ * Aug 07, 2014  3492     mapeters    Updated deprecated createWireframeShape() calls and removed
+ *                                    setUseBuiltinColorbar() and drawFilledCircle() methods.
  * 
  * </pre>
  * 
@@ -265,16 +267,14 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     @Override
     public IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel) {
-        return createWireframeShape(mutable, descriptor, simplificationLevel,
-                false, null);
+        return createWireframeShape(mutable, descriptor, simplificationLevel);
 
     }
 
     @Override
     public IWireframeShape createWireframeShape(boolean mutable,
             GeneralGridGeometry geom, float simplificationLevel) {
-        return createWireframeShape(mutable, geom, simplificationLevel, false,
-                null);
+        return createWireframeShape(mutable, geom, simplificationLevel);
     }
 
     @Override
@@ -283,7 +283,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
             IDescriptor descriptor, float simplificationLevel,
             boolean spatialChopFlag, IExtent extent) {
         return createWireframeShape(mutable, descriptor.getGridGeometry(),
-                simplificationLevel, spatialChopFlag, extent);
+                simplificationLevel);
     }
 
     @Override
@@ -312,13 +312,6 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     @Override
     public void setBackgroundColor(RGB backgroundColor) {
         this.backgroundColor = backgroundColor;
-    }
-
-    @Override
-    @Deprecated
-    public void setUseBuiltinColorbar(boolean isColorbarDisplayed) {
-        // Most targets do not support a BuiltinColorbar and this functionality
-        // is deprecated, so the default behavior is to completely ignore this.
     }
 
     @Override
@@ -478,23 +471,6 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         circle.lineWidth = width;
         circle.basics.color = color;
         circle.radius = new Double(radius);
-        drawCircle(circle);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IGraphicsTarget#drawFilledCircle(double,
-     * double, double, double, org.eclipse.swt.graphics.RGB)
-     */
-    @Override
-    public void drawFilledCircle(double x, double y, double z, double radius,
-            RGB color) throws VizException {
-        DrawableCircle circle = new DrawableCircle();
-        circle.setCoordinates(x, y, z);
-        circle.basics.color = color;
-        circle.radius = new Double(radius);
-        circle.filled = true;
         drawCircle(circle);
     }
 

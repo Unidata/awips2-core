@@ -64,6 +64,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
  * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() functions that take in spatialChopFlag
+ * Aug 07, 2014  3492     mapeters    Removed setUseBuiltinColorbar() and drawFilledCircle() methods.
  * 
  * </pre>
  * 
@@ -813,21 +814,6 @@ public interface IGraphicsTarget extends IImagingExtension {
 	public abstract void setBackgroundColor(RGB backgroundColor);
 
 	/**
-	 * DEPRECATED: This method has no effect. IGraphicsTargets are not
-	 * responsible to drawing a colorbar. Use method drawColorRamp to draw a
-	 * color ramp
-	 * 
-	 * Sets whether to display a builtin colorbar when displaying colormapped
-	 * images (Defaults to true)
-	 * 
-	 * @param isColorbarDisplayed
-	 *            boolean flag indicating whether to display the built in
-	 *            colorbar
-	 */
-	@Deprecated
-	public abstract void setUseBuiltinColorbar(boolean isColorbarDisplayed);
-
-	/**
 	 * Draw the drawable colormap to the screen
 	 * 
 	 * @param colorMap
@@ -978,21 +964,6 @@ public interface IGraphicsTarget extends IImagingExtension {
 	@Deprecated
 	public abstract void drawCircle(double x1, double y1, double z1,
 			double radius, RGB color, float width) throws VizException;
-
-	/**
-	 * DEPRECATED: call drawCircle(DrawableCircle...)
-	 * 
-	 * Draws a filled circle.
-	 * 
-	 * @param x
-	 * @param y
-	 * @param z
-	 * @param radius
-	 * @param color
-	 */
-	@Deprecated
-	public abstract void drawFilledCircle(double x, double y, double z,
-			double radius, RGB color) throws VizException;
 
 	/**
 	 * DEPRECATED: Use drawLines(DrawableLine...)
