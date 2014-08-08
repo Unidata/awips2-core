@@ -35,6 +35,7 @@ import org.opengis.referencing.operation.TransformException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 30, 2008            chammack     Initial creation
+ * Aug 08, 2014 3503       bclement     removed warnings
  * 
  * </pre>
  * 
@@ -217,7 +218,6 @@ public abstract class ReferencedObject<T> {
      * 
      * @see java.lang.Object#equals(java.lang.Object)
      */
-    @SuppressWarnings("unchecked")
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -229,7 +229,7 @@ public abstract class ReferencedObject<T> {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        ReferencedObject other = (ReferencedObject) obj;
+        ReferencedObject<?> other = (ReferencedObject<?>) obj;
         if (gridGeometry == null) {
             if (other.gridGeometry != null) {
                 return false;

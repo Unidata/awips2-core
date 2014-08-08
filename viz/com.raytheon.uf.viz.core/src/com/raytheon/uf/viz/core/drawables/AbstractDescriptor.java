@@ -43,7 +43,7 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.TransformFactory;
-import com.raytheon.uf.common.serialization.adapters.GridGeometryAdapter;
+import com.raytheon.uf.common.geospatial.adapter.GridGeometryAdapter;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;

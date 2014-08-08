@@ -2,14 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Serialization Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.serialization
-Bundle-Version: 1.14.1.qualifier
+Bundle-Version: 1.14.2.qualifier
 Bundle-Vendor: Raytheon
 Eclipse-BuddyPolicy: registered, ext, global
 Require-Bundle: org.apache.thrift,
- com.raytheon.uf.common.status,
  net.sf.cglib;visibility:=reexport,
- org.geotools,
- javax.measure;resolution:=optional,
  com.raytheon.uf.common.util
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.serialization,

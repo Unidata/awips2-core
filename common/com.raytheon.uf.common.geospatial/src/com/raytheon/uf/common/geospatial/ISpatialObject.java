@@ -23,10 +23,25 @@ import java.io.Serializable;
 
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.vividsolutions.jts.geom.Geometry;
 
-public interface ISpatialObject extends Serializable, ISerializableObject{
+/**
+ * Interface for data objects that contain spatial metadata
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * ???          ???         ???        Initial creation
+ * Aug 08, 2014 3503        bclement   removed ISerializableObject
+ * 
+ * </pre>
+ * 
+ * @version 1.0
+ */
+public interface ISpatialObject extends Serializable {
 
    public Geometry getGeometry();
    

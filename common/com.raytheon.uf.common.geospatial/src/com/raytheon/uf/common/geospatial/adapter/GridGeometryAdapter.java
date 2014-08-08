@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
@@ -35,6 +35,7 @@ import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.serialization.adapters.GridGeometrySerialized;
 
 /**
  * Marshals GeneralGridGeometry to a class that is easily JAXB'd
@@ -45,13 +46,13 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 11, 2009            chammack     Initial creation
+ * Aug 08, 2014  3503      bclement     moved from common.serialization to common.geospatial
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1.0
  */
-
 public class GridGeometryAdapter extends
         XmlAdapter<GridGeometrySerialized, GeneralGridGeometry> implements
         ISerializationTypeAdapter<GeneralGridGeometry> {

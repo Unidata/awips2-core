@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import java.util.HashMap;
 import java.util.List;
@@ -64,6 +64,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Mar 27, 2014 2015       njensen     Added ParameterValueAdapter and
  *                                      serialize PROJCS differently to
  *                                      work around geotools WKT limitations
+ * Aug 08, 2014  3503      bclement    moved from common.serialization to common.geospatial
  * 
  * 
  * </pre>
@@ -71,7 +72,6 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * @author randerso
  * @version 1.0
  */
-
 public class GridGeometry2DAdapter implements
         ISerializationTypeAdapter<GridGeometry2D> {
 

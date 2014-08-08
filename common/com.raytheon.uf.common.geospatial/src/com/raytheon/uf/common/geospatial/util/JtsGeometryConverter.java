@@ -34,6 +34,7 @@ import com.vividsolutions.jts.io.WKTReader;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  *                         bphillip    Initial Creation
+ * Aug 08, 2014 3503       bclement    changed suppress warnings to cover actual warning
  * </pre>
  * 
  * @author bphillip
@@ -41,7 +42,7 @@ import com.vividsolutions.jts.io.WKTReader;
  */
 public class JtsGeometryConverter implements Converter {
 
-    @SuppressWarnings("unchecked")
+    @SuppressWarnings("rawtypes")
     @Override
     public Object convert(Class clazz, Object value) {
         if (value instanceof String) {

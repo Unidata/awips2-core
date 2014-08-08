@@ -20,11 +20,10 @@
 package com.raytheon.uf.common.serialization;
 
 import java.io.File;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
-
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * A JAXBManager that only supports a single class (including any classes that
@@ -41,6 +40,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------ ---------- ----------- --------------------------
  * Oct 01, 2013  2361      njensen     Initial creation
  * Jul 21, 2014  3373      bclement    added pooling boolean constructor
+ * Aug 08, 2014  3503      bclement    removed ufstatus
  * 
  * </pre>
  * 
@@ -50,9 +50,6 @@ import com.raytheon.uf.common.status.UFStatus;
  */
 
 public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
-
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SingleTypeJAXBManager.class);
 
     protected final Class<T> type;
 
@@ -139,8 +136,10 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
             // technically this should only ever happen if a developer messes
             // up, so we're going to print the stacktrace too as extra warning
             e.printStackTrace();
-            statusHandler.error("Error initializing SingleTypeJAXBManager for "
-                    + clazz.getName(), e);
+            Logger.getGlobal().log(
+                    Level.SEVERE,
+                    "Unable to initialize single type JAXB manager: "
+                            + e.getLocalizedMessage());
         }
 
         return retVal;

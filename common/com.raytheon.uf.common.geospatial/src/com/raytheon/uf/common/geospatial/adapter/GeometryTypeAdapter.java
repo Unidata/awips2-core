@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
@@ -36,13 +36,13 @@ import com.vividsolutions.jts.io.WKBWriter;
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * Aug 11, 2008             chammack    Initial creation
+ * Aug 08, 2014  3503       bclement    moved from common.serialization to common.geospatial
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1.0
  */
-
 public class GeometryTypeAdapter implements ISerializationTypeAdapter<Geometry> {
 
     /*

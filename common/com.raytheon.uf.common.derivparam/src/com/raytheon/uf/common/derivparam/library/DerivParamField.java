@@ -30,7 +30,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMapping;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMappingFactory;
-import com.raytheon.uf.common.serialization.adapters.UnitAdapter;
+import com.raytheon.uf.common.units.UnitAdapter;
 
 /**
  * Metadata about a derived parameter field.

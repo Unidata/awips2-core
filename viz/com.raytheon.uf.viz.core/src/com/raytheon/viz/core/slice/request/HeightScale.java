@@ -29,8 +29,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import com.raytheon.uf.common.serialization.adapters.UnitAdapter;
 import com.raytheon.uf.common.style.level.Level.LevelType;
+import com.raytheon.uf.common.units.UnitAdapter;
 
 /**
  * Height scale used by volume browser

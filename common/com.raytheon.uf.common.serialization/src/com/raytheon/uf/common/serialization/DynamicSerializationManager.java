@@ -46,22 +46,12 @@ import javax.xml.namespace.QName;
 
 import net.sf.cglib.beans.BeanMap;
 
-import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.geotools.coverage.grid.GridGeometry2D;
-import org.geotools.geometry.jts.ReferencedEnvelope;
-
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.CalendarSerializer;
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.DateSerializer;
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.TimestampSerializer;
 import com.raytheon.uf.common.serialization.adapters.BufferAdapter;
-import com.raytheon.uf.common.serialization.adapters.CoordAdapter;
 import com.raytheon.uf.common.serialization.adapters.EnumSetAdapter;
-import com.raytheon.uf.common.serialization.adapters.GeometryTypeAdapter;
-import com.raytheon.uf.common.serialization.adapters.GridGeometry2DAdapter;
-import com.raytheon.uf.common.serialization.adapters.GridGeometryAdapter;
-import com.raytheon.uf.common.serialization.adapters.JTSEnvelopeAdapter;
 import com.raytheon.uf.common.serialization.adapters.PointAdapter;
-import com.raytheon.uf.common.serialization.adapters.ReferencedEnvelopeAdapter;
 import com.raytheon.uf.common.serialization.adapters.StackTraceElementAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -70,9 +60,6 @@ import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContext;
 import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContextBuilder;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * Dynamic Serialization Manager provides a serialization capability that runs
@@ -92,6 +79,7 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                      in serialization stream.
  * Nov 02, 2012 1302        djohnson    Remove field level adapters, they break python serialization.
  * Aug 06, 2013 2228        njensen     Added deserialize(byte[])
+ * Aug 08, 2014 3503        bclement    moved registration of spatial serialization adapters to common.geospatial
  * 
  * </pre>
  * 
@@ -119,8 +107,6 @@ public class DynamicSerializationManager {
     private static final SerializationMetadata NO_METADATA = new SerializationMetadata();
 
     static {
-        // TODO: Can the registration of adapters that require dependencies be
-        // moved to a separate plugin somehow?
         registerAdapter(GregorianCalendar.class, new CalendarSerializer());
         registerAdapter(XMLGregorianCalendarImpl.class,
                 new BuiltInTypeSupport.XMLGregorianCalendarSerializer());
@@ -129,17 +115,10 @@ public class DynamicSerializationManager {
         registerAdapter(java.sql.Date.class,
                 new BuiltInTypeSupport.SqlDateSerializer());
         registerAdapter(java.awt.Point.class, new PointAdapter());
-        registerAdapter(Coordinate.class, new CoordAdapter());
         registerAdapter(BigDecimal.class,
                 new BuiltInTypeSupport.BigDecimalSerializer());
         registerAdapter(BigInteger.class,
                 new BuiltInTypeSupport.BigIntegerSerializer());
-        registerAdapter(Geometry.class, new GeometryTypeAdapter());
-        registerAdapter(Envelope.class, new JTSEnvelopeAdapter());
-        registerAdapter(GridGeometry2D.class, new GridGeometry2DAdapter());
-        registerAdapter(GeneralGridGeometry.class, new GridGeometryAdapter());
-        registerAdapter(ReferencedEnvelope.class,
-                new ReferencedEnvelopeAdapter());
         registerAdapter(EnumSet.class, new EnumSetAdapter());
         registerAdapter(StackTraceElement.class, new StackTraceElementAdapter());
         registerAdapter(Duration.class,
@@ -289,8 +268,17 @@ public class DynamicSerializationManager {
         return obj;
     }
 
-    public static <T> void registerAdapter(Class<? extends T> clazz,
-            ISerializationTypeAdapter<T> adapter) {
+    /**
+     * Register a new dynamic serialize adapter
+     * 
+     * @param clazz
+     * @param adapter
+     * @return the adapter argument (needed for spring configuration)
+     * @throws RuntimeException
+     *             if the class already has an adapter registered
+     */
+    public static <T> ISerializationTypeAdapter<T> registerAdapter(
+            Class<? extends T> clazz, ISerializationTypeAdapter<T> adapter) {
         SerializationMetadata md = new SerializationMetadata();
         md.serializationFactory = adapter;
         md.adapterStructName = clazz.getName();
@@ -300,6 +288,7 @@ public class DynamicSerializationManager {
                             + clazz + ", metadata already exists");
         }
         serializedAttributes.put(md.adapterStructName, md);
+        return adapter;
     }
 
     /**

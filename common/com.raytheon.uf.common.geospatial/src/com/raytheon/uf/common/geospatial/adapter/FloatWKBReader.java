@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import java.io.DataInput;
 import java.io.DataInputStream;
@@ -52,6 +52,7 @@ import com.vividsolutions.jts.io.WKBConstants;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 26, 2013 1954       bsteffen     Initial creation
+ * Aug 08, 2014  3503      bclement    moved from common.serialization to common.geospatial
  * 
  * </pre>
  * 

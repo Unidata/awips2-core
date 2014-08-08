@@ -25,6 +25,8 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.util.ArrayList;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -34,9 +36,6 @@ import javax.xml.bind.ValidationEvent;
 import javax.xml.bind.ValidationEventHandler;
 
 import com.raytheon.uf.common.serialization.MarshalOptions;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Manages JAXB marshalling and unmarshalling including resource creation
@@ -48,6 +47,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2014 3373       bclement     Initial creation
+ * Aug 08, 2014 3503       bclement     removed ufstatus
  * 
  * </pre>
  * 
@@ -56,8 +56,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  */
 public class JaxbMarshallerStrategy {
 
-    private static final IUFStatusHandler log = UFStatus
-            .getHandler(JaxbMarshallerStrategy.class);
+    private static final Logger log = Logger
+            .getLogger(JaxbMarshallerStrategy.class.getName());
 
     /**
      * 
@@ -131,7 +131,9 @@ public class JaxbMarshallerStrategy {
             try {
                 reader.close();
             } catch (IOException e) {
-                log.warn(e.getLocalizedMessage());
+                log.log(Level.WARNING,
+                        "Unable to close JAXB reader: "
+                                + e.getLocalizedMessage());
             }
         }
     }
@@ -171,7 +173,9 @@ public class JaxbMarshallerStrategy {
                 try {
                     is.close();
                 } catch (IOException e) {
-                    log.warn(e.getLocalizedMessage());
+                    log.log(Level.WARNING,
+                            "Unable to close JAXB stream: "
+                                    + e.getLocalizedMessage());
                 }
             }
         }
@@ -286,22 +290,19 @@ public class JaxbMarshallerStrategy {
                     }
                 }
                 for (ValidationEvent event : mh.getEvents()) {
-                    Priority p = Priority.INFO;
+                    Level l = Level.INFO;
                     if (!allInfo) {
                         switch (event.getSeverity()) {
                         case ValidationEvent.FATAL_ERROR:
-                            p = Priority.SIGNIFICANT;
-                            break;
                         case ValidationEvent.ERROR:
-                            p = Priority.PROBLEM;
+                            l = Level.SEVERE;
                             break;
                         case ValidationEvent.WARNING:
-                            p = Priority.WARN;
+                            l = Level.WARNING;
                             break;
                         }
                     }
-                    UFStatus.getHandler().handle(
-                            p,
+                    log.log(l,
                             (name != null ? name : "") + ": "
                                     + event.getMessage() + " on line "
                                     + event.getLocator().getLineNumber()

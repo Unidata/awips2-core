@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.units;
 
 import java.text.ParseException;
 
@@ -38,13 +38,13 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Date			Ticket#		Engineer	Description
  * ------------	----------	-----------	--------------------------
  * Aug 12, 2008				njensen	Initial creation
+ * Aug 08, 2014  3503      bclement    moved from common.serialization to common.units
  * 
  * </pre>
  * 
  * @author njensen
  * @version 1.0
  */
-
 public class UnitAdapter extends XmlAdapter<String, Unit<?>> implements
         ISerializationTypeAdapter<Unit<?>> {
 

@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
@@ -32,13 +32,13 @@ import com.vividsolutions.jts.io.WKTReader;
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * Aug 12, 2008             njensen Initial creation
+ * Aug 08, 2014  3503      bclement    moved from common.serialization to common.geospatial
  * 
  * </pre>
  * 
  * @author njensen
  * @version 1.0
  */
-
 public class GeometryAdapter extends XmlAdapter<String, Geometry>  {
 
     @Override

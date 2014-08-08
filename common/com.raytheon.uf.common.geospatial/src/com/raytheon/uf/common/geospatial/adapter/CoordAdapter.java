@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.serialization.adapters;
+package com.raytheon.uf.common.geospatial.adapter;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
@@ -35,6 +35,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date			Ticket#		Engineer	Description
  * ------------	----------	-----------	--------------------------
  * Aug 20, 2008				njensen	Initial creation
+ * Aug 08, 2014  3503      bclement    moved from common.serialization to common.geospatial
  * 
  * </pre>
  * 

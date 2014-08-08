@@ -32,21 +32,21 @@ import java.util.regex.Pattern;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ * SPI files contain location information used by goes, poes and model sounding
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 6, 2009            jkorman     Initial creation
+ * Oct 6, 2009             jkorman     Initial creation
+ * Aug 08, 2014 3503       bclement    removed warnings
  * 
  * </pre>
  * 
  * @author jkorman
  * @version 1.0
  */
-
 public class SPIContainer implements SPI_InfoProvider {
 
     private static final String REGEX = "^\\s*(\\d+)\\s*(\\S+)\\s*(-?\\d+\\.\\d+)\\s*(-?\\d+\\.\\d+)\\s*(-?\\d+)\\s*(-?\\d+\\.\\d+)\\s*(\\S*)$";
@@ -90,13 +90,11 @@ public class SPIContainer implements SPI_InfoProvider {
                 input = new BufferedReader(new FileReader(filePath));
                 String line = null;
                 Pattern p = Pattern.compile(REGEX);
-                int lineNum = 0;
                 maxLat = -90;
                 minLat = 90;
                 maxLon = -180;
                 minLon = 180;
                 while ((line = input.readLine()) != null) {
-                    lineNum++;
                     try {
                         Matcher match = p.matcher(line);
                         if (match.find()) {

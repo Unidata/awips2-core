@@ -24,4 +24,5 @@ Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  org.apache.commons.collections;bundle-version="3.2.0",
  javax.measure,
  org.hibernate;bundle-version="1.0.0"
-Import-Package: javax.measure.unit
+Import-Package: com.raytheon.uf.common.units,
+ javax.measure.unit
