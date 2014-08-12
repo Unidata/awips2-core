@@ -334,12 +334,6 @@
          fragment="true"/>
 
    <plugin
-         id="org.postgres"
-         download-size="0"
-         install-size="0"
-         version="9.2.4"/>
-
-   <plugin
          id="org.slf4j"
          download-size="0"
          install-size="0"
@@ -461,5 +455,11 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="org.postgres"
+         download-size="0"
+         install-size="0"
+         version="9.3.5"/>
 
 </feature>
