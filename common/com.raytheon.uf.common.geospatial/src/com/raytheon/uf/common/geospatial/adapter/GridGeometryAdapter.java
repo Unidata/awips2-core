@@ -47,6 +47,7 @@ import com.raytheon.uf.common.serialization.adapters.GridGeometrySerialized;
  * ------------ ---------- ----------- --------------------------
  * Feb 11, 2009            chammack     Initial creation
  * Aug 08, 2014  3503      bclement     moved from common.serialization to common.geospatial
+ * Aug 12, 2014  3449      bclement     fixed GeneralGridEnvelope constructor arg for isHighIncluded
  * 
  * </pre>
  * 
@@ -107,7 +108,7 @@ public class GridGeometryAdapter extends
             env.setRange(2, v.envelopeMinZ, v.envelopeMaxZ);
             GeneralGridEnvelope gge = new GeneralGridEnvelope(new int[] {
                     gridX / -2, gridY / -2, gridZ / -2 }, new int[] {
-                    gridX / 2, gridY / 2, gridZ / 2 }, false);
+                    gridX / 2, gridY / 2, gridZ / 2 }, true);
             ggg = new GeneralGridGeometry(gge, env);
         }
 
@@ -164,7 +165,7 @@ public class GridGeometryAdapter extends
             }
 
             return new GeneralGridGeometry(new GeneralGridEnvelope(lowRange,
-                    highRange, false), env);
+                    highRange, true), env);
         } catch (FactoryException e) {
             throw new SerializationException(
                     "Error deserializing GeneralGridGeometry, could not read CRS",
