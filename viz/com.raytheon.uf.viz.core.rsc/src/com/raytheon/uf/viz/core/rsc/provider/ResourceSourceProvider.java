@@ -153,7 +153,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
                 rscList.addPreRemoveListener(this);
 
                 for (ResourcePair rp : rscList) {
-                    rp.getResourceData().addChangeListener(this);
+                    if (rp.getResourceData() != null) {
+                        rp.getResourceData().addChangeListener(this);
+                    }
                 }
             }
         }
@@ -219,7 +221,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
                 rscList.removePreRemoveListener(this);
 
                 for (ResourcePair rp : rscList) {
-                    rp.getResourceData().removeChangeListener(this);
+                    if (rp.getResourceData() != null) {
+                        rp.getResourceData().removeChangeListener(this);
+                    }
                 }
             }
         }
@@ -234,7 +238,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
                 rscList.addPreRemoveListener(this);
 
                 for (ResourcePair rp : rscList) {
-                    rp.getResourceData().addChangeListener(this);
+                    if (rp.getResourceData() != null) {
+                        rp.getResourceData().addChangeListener(this);
+                    }
                 }
             } else if (type == DisplayChangeType.REMOVE) {
                 ResourceList rscList = pane.getDescriptor().getResourceList();
@@ -243,7 +249,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
                 rscList.removePreRemoveListener(this);
 
                 for (ResourcePair rp : rscList) {
-                    rp.getResourceData().removeChangeListener(this);
+                    if (rp.getResourceData() != null) {
+                        rp.getResourceData().removeChangeListener(this);
+                    }
                 }
             }
             // Notify of a change
@@ -253,7 +261,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
         @Override
         public void notifyAdd(ResourcePair rp) throws VizException {
             // Setup listener then fire update
-            rp.getResourceData().addChangeListener(this);
+            if (rp.getResourceData() != null) {
+                rp.getResourceData().addChangeListener(this);
+            }
 
             fireSourceChanged();
         }
@@ -261,7 +271,9 @@ public class ResourceSourceProvider extends AbstractSourceProvider {
         @Override
         public void notifyRemove(ResourcePair rp) throws VizException {
             // Remove listener from the rscData and fire update
-            rp.getResourceData().removeChangeListener(this);
+            if (rp.getResourceData() != null) {
+                rp.getResourceData().removeChangeListener(this);
+            }
 
             fireSourceChanged();
         }
