@@ -19,20 +19,21 @@
  **/
 package com.raytheon.viz.core.rsc.displays;
 
-import java.awt.Rectangle;
 import java.nio.Buffer;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 
+import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.geospatial.ReferencedObject.Type;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.PixelCoverage;
-import com.raytheon.uf.viz.core.data.prep.CMDataPreparerManager;
+import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
 import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.drawables.IRenderable;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
+import com.raytheon.uf.viz.core.drawables.ext.colormap.IColormappedImageExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -45,6 +46,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 27, 2008            randerso     Initial creation
+ * Aug 13, 2014 #3505      mapeters     Replaced deprecated CMDataPreparerManager
+ *                                      reference in initializeRaster() call.
  * </pre>
  * 
  * @author randerso
@@ -84,12 +87,17 @@ public class GriddedImageDisplay implements IRenderable {
     public void paint(IGraphicsTarget target, PaintProperties paintProps)
             throws VizException {
         if (this.image == null) {
-            int w = gridGeometry.getGridRange2D().width;
-            int h = gridGeometry.getGridRange2D().height;
+            final int w = gridGeometry.getGridRange2D().width;
+            final int h = gridGeometry.getGridRange2D().height;
 
-            this.image = target.initializeRaster(CMDataPreparerManager
-                    .getDataPreparer(data, new Rectangle(w, h), null),
-                    this.colorMapParameters);
+            this.image = target.getExtension(IColormappedImageExtension.class)
+                    .initializeRaster(new IColorMapDataRetrievalCallback() {
+                        @Override
+                        public ColorMapData getColorMapData()
+                                throws VizException {
+                            return new ColorMapData(data, new int[] { w, h });
+                        }
+                    }, this.colorMapParameters);
 
             try {
                 if (this.pixelCoverage == null) {
