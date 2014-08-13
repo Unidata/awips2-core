@@ -107,6 +107,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * May 15, 2014 2820       bsteffen    Implement Interrogatable
  * Jul 25, 2014 3447       bclement    reset map query job on dispose
  * Aug 01, 2014 3471       mapeters    Updated deprecated createShadedShape() calls.
+ * Aug 13, 2014 3492       mapeters    Updated deprecated createWireframeShape() calls.
  * 
  * </pre>
  * 
@@ -401,7 +402,7 @@ public class DbMapResource extends
                     }
 
                     IWireframeShape newOutlineShape = req.target
-                            .createWireframeShape(false, req.descriptor, 0.0f);
+                            .createWireframeShape(false, req.descriptor);
 
                     List<LabelNode> newLabels = new ArrayList<LabelNode>();
 

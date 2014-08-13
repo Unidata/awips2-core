@@ -65,6 +65,8 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() functions that take in spatialChopFlag
  * Aug 07, 2014  3492     mapeters    Removed setUseBuiltinColorbar() and drawFilledCircle() methods.
+ * Aug 13, 2014  3492     mapeters    Deprecated createWireframeShape() functions that take in 
+ *                                    a float simplificationLevel.
  * 
  * </pre>
  * 
@@ -629,31 +631,37 @@ public interface IGraphicsTarget extends IImagingExtension {
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			IDescriptor descriptor);
 
-	/**
-	 * Create a wireframe shape object
-	 * 
-	 * @param mutable
-	 *            whether the shape changes after creation
-	 * @param descriptor
-	 *            the map descriptor
-	 * @param simplificationLevel
-	 *            the simplification level
-	 * @return a wireframe shape object
-	 */
+	    /**
+     * Create a wireframe shape object
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param descriptor
+     *            the map descriptor
+     * @param simplificationLevel
+     *            the simplification level
+     * @return a wireframe shape object
+     * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)
+
+     */
+    @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			IDescriptor descriptor, float simplificationLevel);
 
-	/**
-	 * Create a wireframe shape object
-	 * 
-	 * @param mutable
-	 *            whether the shape changes after creation
-	 * @param descriptor
-	 *            the geometry for the shape
-	 * @param simplificationLevel
-	 *            the simplification level
-	 * @return a wireframe shape object
-	 */
+	        /**
+     * Create a wireframe shape object
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param descriptor
+     *            the geometry for the shape
+     * @param simplificationLevel
+     *            the simplification level
+     * @return a wireframe shape object
+     * @deprecated use
+     *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
+     */
+    @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
 			GeneralGridGeometry geom, float simplificationLevel);
 
@@ -672,8 +680,7 @@ public interface IGraphicsTarget extends IImagingExtension {
      *            the extent over which the features exist (enables spatial
      *            chopping)
      * @return
-     * @deprecated use
-     *             {@link #createWireframeShape(boolean, IDescriptor, float)
+     * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)}
      */
     @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
@@ -681,8 +688,6 @@ public interface IGraphicsTarget extends IImagingExtension {
 			boolean spatialChopFlag, IExtent extent);
 
     /**
-     * @see #createWireframeShape(boolean, GeneralGridGeometry, float)
-     * 
      * @param mutableFlag
      *            whether the shape changes after creation
      * @param geom
@@ -693,14 +698,14 @@ public interface IGraphicsTarget extends IImagingExtension {
 			GeneralGridGeometry geom);
 
     /**
-     * @deprecated use
-     *             {@link #createWireframeShape(boolean, GeneralGridGeometry, float)}
      * @param mutable
      * @param geom
      * @param simplificationLevel
      * @param spatialChopFlag
      * @param extent
      * @return
+     * @deprecated use
+     *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
      */
     @Deprecated
 	public abstract IWireframeShape createWireframeShape(boolean mutable,
