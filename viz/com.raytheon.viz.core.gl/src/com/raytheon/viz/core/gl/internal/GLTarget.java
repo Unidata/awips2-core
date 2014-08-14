@@ -916,7 +916,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         GLDisposalManager.performDispose(GLU.getCurrentGL());
 
-        GLStats.printStats(gl);
+        GLStats.printStats(gl, theCanvas.getShell());
 
         GLContextBridge.releaseMasterContext();
         releaseContext();

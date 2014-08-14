@@ -24,12 +24,15 @@ import java.util.Date;
 
 import javax.media.opengl.GL;
 
+import org.eclipse.jface.dialogs.MessageDialog;
+import org.eclipse.swt.widgets.Shell;
+
 import com.raytheon.viz.core.gl.internal.cache.ImageCache;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
 
 /**
  * 
- * Provides method for tracking graphics memory useage and logging if it becomes
+ * Provides method for tracking graphics memory usage and logging if it becomes
  * low.
  * 
  * <pre>
@@ -39,6 +42,7 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 19, 2012            bsteffen     Initial creation
+ * Aug 14, 2014 3512       bclement     added continuous low memory warning
  * 
  * </pre>
  * 
@@ -51,7 +55,10 @@ public class GLStats {
     private static final int CHECK_FREQ_SECONDS = 15;
 
     // How many seconds to wait between printings
-    private static final int PRINT_FREQ_SECONDS = 600;
+    private static final int PRINT_FREQ_SECONDS = 120;
+
+    /* How many milliseconds before we warn about continuous high mem */
+    private static final int CONTINUOUS_HIGH_MILLIS = 15 * 60 * 1000; // 15min
 
     // The minimum percentage of memory that must be used before printing.
     private static final int MEM_PRINT_THRESHOLD_PERCENT = 90;
@@ -84,38 +91,54 @@ public class GLStats {
 
     private static long lastCheckTime;
 
+    /* last time that there wasn't low memory */
+    private static long lastNominalTime = System.currentTimeMillis();
+
     private static int lastNvxEvictionCount = 0;
 
-    public static void printStats(GL gl) {
+    public static void printStats(GL gl, Shell sh) {
         // test both check freq and print freq, the check freq should be fairly
         // low so as soon as low memory conditions are reached we will
         // report it so if it is a precursor to a crash it will be in the logs,
         // the print time will be significantly higher to avoid
         // spamming the logs if the user is operating normally with high memory
-        // useage.
+        // usage.
         long curTime = System.currentTimeMillis();
         if (curTime - lastCheckTime < CHECK_FREQ_SECONDS * 1000) {
             // don't check if it hasn't been very long
             return;
         }
         lastCheckTime = curTime;
-        if (curTime - lastPrintTime < PRINT_FREQ_SECONDS * 1000) {
-            // don't check if we printed to recently
-            return;
-        }
+
         boolean lowMem = false;
         StringBuilder output = new StringBuilder(1024);
         output.append("-High Graphics Memory usage has been detected.\n");
-        output.append("-Here are some statisitics that might help with that.\n");
+        output.append("-Here are some statistics that might help with that.\n");
         lowMem |= getSystemStats(output);
-        lowMem |= getImageCacheStats(output);
+        boolean thisJvmAtFault = getImageCacheStats(output);
+        lowMem |= thisJvmAtFault;
         lowMem |= getNvidiaStats(gl, output);
         lowMem |= getAtiStats(gl, output);
 
         if (lowMem) {
             lastPrintTime = curTime;
-            System.out.println(output.toString());
-            System.out.println();
+            if (curTime - lastPrintTime > PRINT_FREQ_SECONDS * 1000) {
+                System.out.println(output.toString());
+                System.out.println();
+            }
+            if (thisJvmAtFault
+                    && curTime - lastNominalTime > CONTINUOUS_HIGH_MILLIS) {
+                /* only redisplay warning after it has been nominal again */
+                lastNominalTime = Long.MAX_VALUE;
+                MessageDialog
+                        .openWarning(
+                                sh,
+                                "High graphics memory usage",
+                                "Continuous high graphics memory usage detected. "
+                                        + "Consider closing some tabs to avoid system instability.");
+            }
+        } else {
+            lastNominalTime = curTime;
         }
     }
 
