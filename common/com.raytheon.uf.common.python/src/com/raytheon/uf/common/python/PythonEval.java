@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.python;
 
+import java.util.List;
+
 import jep.JepException;
 
 /**
@@ -46,6 +48,11 @@ public class PythonEval extends PythonScript {
     public PythonEval(String anIncludePath, ClassLoader aClassLoader)
             throws JepException {
         super(anIncludePath, aClassLoader);
+    }
+
+    public PythonEval(String anIncludePath, ClassLoader aClassLoader,
+            List<String> preEvals) throws JepException {
+        super(anIncludePath, aClassLoader, preEvals);
     }
 
     public void eval(String eval) throws JepException {
