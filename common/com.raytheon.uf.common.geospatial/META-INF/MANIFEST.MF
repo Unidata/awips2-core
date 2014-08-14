@@ -6,7 +6,7 @@ Bundle-Version: 1.14.2.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Eclipse-BuddyPolicy: registered
-Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization, org.geotools
+Eclipse-RegisterBuddy: org.geotools
 Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
  org.apache.commons.collections;bundle-version="3.2.0",
  org.apache.commons.lang;bundle-version="2.3.0",

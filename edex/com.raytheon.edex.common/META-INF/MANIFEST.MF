@@ -4,8 +4,6 @@ Bundle-Name: Common Plug-in
 Bundle-SymbolicName: com.raytheon.edex.common
 Bundle-Version: 1.14.1.qualifier
 Bundle-Vendor: RAYTHEON
-Eclipse-BuddyPolicy: registered
-Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
 Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.db.dao,
  com.raytheon.edex.db.mapping,

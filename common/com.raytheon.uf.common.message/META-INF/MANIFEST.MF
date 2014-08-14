@@ -4,8 +4,7 @@ Bundle-Name: Message Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.message
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Eclipse-RegisterBuddy: com.raytheon.uf.common.serialization
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.message,
  com.raytheon.uf.common.message.adapter,
  com.raytheon.uf.common.message.response
