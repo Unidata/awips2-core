@@ -71,6 +71,8 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jul 30, 2014  3465     mapeters    Updated deprecated drawString() and drawLine() calls.
  * Aug 07, 2014  3492     mapeters    Updated deprecated createWireframeShape() calls and removed
  *                                    setUseBuiltinColorbar() and drawFilledCircle() methods.
+ * Aug 14, 2014  3523     mapeters    Updated deprecated {@link DrawableString#textStyle} 
+ *                                    assignments.
  * 
  * </pre>
  * 
@@ -416,7 +418,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         DrawableString params = new DrawableString(text, color);
         params.font = font;
         params.setCoordinates(x, y, z);
-        params.textStyle = textStyle;
+        params.addTextStyle(textStyle);
         params.horizontalAlignment = horizontalAlignment;
         params.rotation = rotation != null ? rotation : 0.0;
         drawStrings(params);
