@@ -5,9 +5,8 @@ Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.level
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Eclipse-BuddyPolicy: registered
-Eclipse-RegisterBuddy:  com.raytheon.uf.common.serialization
 Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,

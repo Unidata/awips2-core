@@ -4,7 +4,7 @@ Bundle-Name: Serialization Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.serialization
 Bundle-Version: 1.14.2.qualifier
 Bundle-Vendor: Raytheon
-Eclipse-BuddyPolicy: registered, ext, global
+Eclipse-BuddyPolicy: global
 Require-Bundle: org.apache.thrift,
  net.sf.cglib;visibility:=reexport,
  com.raytheon.uf.common.util
