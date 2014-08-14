@@ -37,7 +37,8 @@ import com.raytheon.uf.viz.core.drawables.IImage;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 2, 2009            mschenke     Initial creation
+ * Jul 02, 2009            mschenke     Initial creation
+ * Aug 14, 2014 3522        bclement    deprecated
  *
  * </pre>
  *
@@ -47,7 +48,9 @@ import com.raytheon.uf.viz.core.drawables.IImage;
  * Job for creating tiles
  * 
  * @version 1.0
+ * @deprecated see deprecation notes on {@link AbstractTileSet}
  */
+@Deprecated
 public class CreateTileJob extends Job implements Runnable {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(CreateTileJob.class);

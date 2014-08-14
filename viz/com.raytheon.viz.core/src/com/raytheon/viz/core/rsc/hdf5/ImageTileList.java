@@ -41,13 +41,16 @@ import com.raytheon.uf.viz.core.rsc.hdf5.ImageTile;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 9, 2011            bsteffen     Initial creation
+ * Jun 09, 2011            bsteffen     Initial creation
+ * Aug 14, 2014 3522        bclement    deprecated
  * 
  * </pre>
  * 
  * @author bsteffen
  * @version 1.0
+ * @deprecated see deprecation notes on {@link AbstractTileSet}
  */
+@Deprecated
 public class ImageTileList implements Iterable<ImageTile[][]> {
 
     private List<ImageTile[][]> tileSet;

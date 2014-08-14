@@ -66,6 +66,7 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.raytheon.uf.viz.core.rsc.hdf5.ImageTile;
+import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
@@ -81,12 +82,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  *    ------------ ----------  ----------- --------------------------
  *    Feb 15, 2007             chammack    Initial Creation.
  *    Jun 24, 2013       2122  mschenke    Removed unused IMeshCallback listeners
+ *    Aug 14, 2014 3522        bclement    deprecated
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1
+ * @deprecated use {@link TileSetRenderable} instead
  */
+@Deprecated
 public abstract class AbstractTileSet implements IRenderable {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractTileSet.class);

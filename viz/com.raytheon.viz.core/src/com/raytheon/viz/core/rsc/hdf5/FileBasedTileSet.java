@@ -38,6 +38,7 @@ import com.raytheon.uf.viz.core.drawables.ext.colormap.IColormappedImageExtensio
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
+import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 
 /**
  * 
@@ -56,12 +57,14 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
  *    Feb 15, 2007             chammack    Initial Creation.
  * - AWIPS2 Baseline Repository --------
  * Jul 18, 2012           798  jkorman     Modified {@link #createTile} to remove hard-coded interpolation groups.
+ * Aug 14, 2014 3522           bclement    deprecated
  * </pre>
  * 
  * @author chammack
  * @version 1
+ * @deprecated use {@link TileSetRenderable}
  */
-
+@Deprecated
 public class FileBasedTileSet extends AbstractTileSet {
 
     protected String hdf5File;
