@@ -121,8 +121,8 @@ public class GLStats {
         lowMem |= getAtiStats(gl, output);
 
         if (lowMem) {
-            lastPrintTime = curTime;
             if (curTime - lastPrintTime > PRINT_FREQ_SECONDS * 1000) {
+                lastPrintTime = curTime;
                 System.out.println(output.toString());
                 System.out.println();
             }
