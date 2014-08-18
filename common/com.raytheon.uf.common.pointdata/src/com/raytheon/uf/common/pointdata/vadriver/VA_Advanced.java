@@ -30,6 +30,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * ------------ ---------- ----------- --------------------------
  *                         NWS         Original Code
  * Dec 10, 2007            brockwoo    Full port to Java
+ * Aug 11, 2014  #3459     randerso    Added a IVAMonitor interface to allow operations
+ *                                     to be canceled in a timely fashion
  * 
  * </pre>
  * 
@@ -41,6 +43,23 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1.0
  */
 public class VA_Advanced {
+
+    /**
+     * Optional Monitor to allow VA_advanced operations to be canceled
+     */
+    public static interface IVAMonitor {
+        /**
+         * @return true if operation is canceled
+         */
+        public boolean isCanceled();
+    }
+
+    private static IVAMonitor defaultMonitor = new IVAMonitor() {
+        @Override
+        public boolean isCanceled() {
+            return false;
+        }
+    };
 
     private static final int BREAKAXIS = 5;
 
@@ -81,7 +100,14 @@ public class VA_Advanced {
 
     private double pio2;
 
+    private IVAMonitor monitor;
+
     public VA_Advanced() {
+        this(defaultMonitor);
+    }
+
+    public VA_Advanced(IVAMonitor monitor) {
+        this.monitor = monitor;
         this.weighting = 0.0;
         this.just_goodness = false;
         this.aspect = 0;
@@ -249,7 +275,7 @@ public class VA_Advanced {
             xxa += xx[i];
             yya += yy[i];
             zza += zz[i];
-            if ((dist_pass || recomp) && dist[i] >= 0) {
+            if ((dist_pass || recomp) && (dist[i] >= 0)) {
                 assigned[i] = 2;
                 dist[i] = dist[i] / 12740.0;
                 if (dist[i] >= pio2) {
@@ -258,7 +284,8 @@ public class VA_Advanced {
                     dist[i] = 2.0 * Math.sin(dist[i]);
                 }
                 goodcomp[i] = (1.0 + dist[i]) * big;
-            } else if (goodness[i] >= min_literal && goodness[i] <= max_literal) {
+            } else if ((goodness[i] >= min_literal)
+                    && (goodness[i] <= max_literal)) {
                 assigned[i] = 1;
                 dist[i] = 2 * Math.sin(goodness[i] / 12740.0);
                 goodcomp[i] = (1 + dist[i]) * big;
@@ -290,12 +317,11 @@ public class VA_Advanced {
          */
         myaspect = 1.0;
         while (aspect > 1) {
-
             /* unit vector of mean point */
             xxa /= ns;
             yya /= ns;
             zza /= ns;
-            d = Math.sqrt(xxa * xxa + yya * yya + zza * zza);
+            d = Math.sqrt((xxa * xxa) + (yya * yya) + (zza * zza));
             xxa /= d;
             yya /= d;
             zza /= d;
@@ -303,7 +329,7 @@ public class VA_Advanced {
             /* east unit vector at mean point */
             xxe = -yya;
             yye = xxa;
-            d = Math.sqrt(xxe * xxe + yye * yye);
+            d = Math.sqrt((xxe * xxe) + (yye * yye));
             xxe /= d;
             yye /= d;
 
@@ -311,14 +337,14 @@ public class VA_Advanced {
             dx = 0;
             dd = 1.0;
             for (i = 0; i < ns; i++) {
-                d = xxe * xx[i] + yye * yy[i];
+                d = (xxe * xx[i]) + (yye * yy[i]);
                 if (d < 0) {
                     d = -d;
                 }
                 if (d > dx) {
                     dx = d;
                 }
-                d = xxa * xx[i] + yya * yy[i] + zza * zz[i];
+                d = (xxa * xx[i]) + (yya * yy[i]) + (zza * zz[i]);
                 if (d < dd) {
                     dd = d;
                 }
@@ -326,11 +352,11 @@ public class VA_Advanced {
 
             /* calculate working aspect based on the separation. */
             dx *= dx;
-            dd = 1.0 - dd * dd;
+            dd = 1.0 - (dd * dd);
             if (dd > dx) {
                 dx = dd;
             }
-            dd = 1.0 - 2 * dx;
+            dd = 1.0 - (2 * dx);
             if (dd <= 0.0) {
                 break;
             }
@@ -339,13 +365,13 @@ public class VA_Advanced {
             /* north unit vector at mean point (AxE) */
             xxn = -zza * yye;
             yyn = zza * xxe;
-            zzn = xxa * yye - yya * xxe;
+            zzn = (xxa * yye) - (yya * xxe);
 
             /* artificially sqeeze points in the east-west dimension */
             for (i = 0; i < ns; i++) {
-                dx = (xxe * xx[i] + yye * yy[i]) / myaspect;
-                dy = (xxn * xx[i] + yyn * yy[i] + zzn * zz[i]);
-                dz = (xxa * xx[i] + yya * yy[i] + zza * zz[i]);
+                dx = ((xxe * xx[i]) + (yye * yy[i])) / myaspect;
+                dy = ((xxn * xx[i]) + (yyn * yy[i]) + (zzn * zz[i]));
+                dz = ((xxa * xx[i]) + (yya * yy[i]) + (zza * zz[i]));
                 xx[i] = dx;
                 yy[i] = dy;
                 zz[i] = dz;
@@ -394,6 +420,9 @@ public class VA_Advanced {
          * but just for the number we need to assign.
          */
         for (k = 0; k < ns; k++) {
+            if (monitor.isCanceled()) {
+                return this.dist;
+            }
 
             if (k >= na) {
 
@@ -413,8 +442,8 @@ public class VA_Advanced {
                     if (just_goodness) {
                         d2 = goodness[gg];
                     } else {
-                        d2 = dist[gg] * weighting + (1 - weighting)
-                                * gooddist[gg];
+                        d2 = (dist[gg] * weighting)
+                                + ((1 - weighting) * gooddist[gg]);
                     }
                     if (d2 <= dd2) {
                         continue;
@@ -451,18 +480,18 @@ public class VA_Advanced {
                     dd = dist[g];
                 }
                 dx = xx[g] - xx[gg];
-                if (dx >= dd || -dx >= dd) {
+                if ((dx >= dd) || (-dx >= dd)) {
                     continue;
                 }
                 dy = yy[g] - yy[gg];
-                if (dy >= dd || -dy >= dd) {
+                if ((dy >= dd) || (-dy >= dd)) {
                     continue;
                 }
                 dz = zz[g] - zz[gg];
-                if (dz >= dd || -dz >= dd) {
+                if ((dz >= dd) || (-dz >= dd)) {
                     continue;
                 }
-                d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                d = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
                 if (d >= dd) {
                     continue;
                 }
@@ -516,7 +545,7 @@ public class VA_Advanced {
             return -1;
         }
 
-        if (na > BREAKALL * 2) {
+        if (na > (BREAKALL * 2)) {
 
             /*
              * We still have too many stations in this sub area for this
@@ -527,10 +556,10 @@ public class VA_Advanced {
             dlt = (maxlat - minlat) / (1.0 + BREAKAXIS);
             dln = (maxlon - minlon) / (1.0 + BREAKAXIS);
             mnlt = minlat;
-            mxlt = mnlt + 2.0 * dlt;
+            mxlt = mnlt + (2.0 * dlt);
             for (k = 0, j = 0; j < BREAKAXIS; j++) {
                 mnln = minlon;
-                mxln = mnln + 2.0 * dln;
+                mxln = mnln + (2.0 * dln);
                 for (i = 0; i < BREAKAXIS; i++, k++) {
                     subactive[k] = new int[na];
                     ns[k] = 0;
@@ -569,7 +598,7 @@ public class VA_Advanced {
                 if (j > BREAKAXIS) {
                     j = BREAKAXIS;
                 }
-                k = j * BREAKAXIS + i;
+                k = (j * BREAKAXIS) + i;
                 if (i <= 0) {
                     if (j > 0) {
                         subactive[k + subjm][ns[k + nsjm]++] = g;
@@ -670,7 +699,7 @@ public class VA_Advanced {
          * We are finding the distance to the nearest station that is at least
          * as desirable.
          */
-        for (k = 0; k < nt - 1; k++) {
+        for (k = 0; k < (nt - 1); k++) {
             for (kk = k + 1; kk < nt; kk++) {
                 g = topactive[k];
                 gg = topactive[kk];
@@ -687,25 +716,25 @@ public class VA_Advanced {
                     dd = gooddist[gg];
                 }
                 dx = xx[g] - xx[gg];
-                if (dx > dd || -dx > dd) {
+                if ((dx > dd) || (-dx > dd)) {
                     continue;
                 }
                 dy = yy[g] - yy[gg];
-                if (dy > dd || -dy > dd) {
+                if ((dy > dd) || (-dy > dd)) {
                     continue;
                 }
                 dz = zz[g] - zz[gg];
-                if (dz > dd || -dz > dd) {
+                if ((dz > dd) || (-dz > dd)) {
                     continue;
                 }
-                d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                d = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
                 if (d > dd) {
                     continue;
                 }
-                if (goodcomp[g] <= goodcomp[gg] && d < gooddist[g]) {
+                if ((goodcomp[g] <= goodcomp[gg]) && (d < gooddist[g])) {
                     gooddist[g] = d;
                 }
-                if (goodcomp[gg] <= goodcomp[g] && d < gooddist[gg]) {
+                if ((goodcomp[gg] <= goodcomp[g]) && (d < gooddist[gg])) {
                     gooddist[gg] = d;
                 }
             }/* end for kk */
@@ -790,7 +819,7 @@ public class VA_Advanced {
             yy[i] = Math.cos(lt) * Math.sin(ln);
             zz[i] = Math.sin(lt);
 
-            if (dist_pass && dist[i] >= 0) {
+            if (dist_pass && (dist[i] >= 0)) {
                 assigned[i] = 2;
                 dist[i] = dist[i] / 12740.0;
                 if (dist[i] >= pio2) {
@@ -828,6 +857,10 @@ public class VA_Advanced {
         }
 
         while (na > 0) {
+            if (monitor.isCanceled()) {
+                return this.dist;
+            }
+
             na--;
             if (np == 0) {
                 /* Determine next non-preassigned station for final resolution. */
@@ -866,18 +899,18 @@ public class VA_Advanced {
                     dd = dist[g];
                 }
                 dx = xx[g] - xx[gg];
-                if (dx >= dd || -dx >= dd) {
+                if ((dx >= dd) || (-dx >= dd)) {
                     continue;
                 }
                 dy = yy[g] - yy[gg];
-                if (dy >= dd || -dy >= dd) {
+                if ((dy >= dd) || (-dy >= dd)) {
                     continue;
                 }
                 dz = zz[g] - zz[gg];
-                if (dz >= dd || -dz >= dd) {
+                if ((dz >= dd) || (-dz >= dd)) {
                     continue;
                 }
-                d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+                d = Math.sqrt((dx * dx) + (dy * dy) + (dz * dz));
                 if (d >= dd) {
                     continue;
                 }
