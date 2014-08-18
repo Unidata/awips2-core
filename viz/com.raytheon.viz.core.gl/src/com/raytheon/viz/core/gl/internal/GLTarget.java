@@ -149,6 +149,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  *                                      removed drawWireFrameShapeInternal()
  * Aug 07, 2014  3492     mapeters    Replaced deprecated createWireframeShape() methods, deprecated
  *                                    calls now handled by {@link AbstractGraphicsTarget}
+ * Aug 18, 2014 3512      bclement    fixed NPE when GLStats called without canvas
  * 
  * </pre>
  * 
@@ -916,7 +917,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         GLDisposalManager.performDispose(GLU.getCurrentGL());
 
-        GLStats.printStats(gl, theCanvas.getShell());
+        if (theCanvas != null && theCanvas.isDisposed() == false) {
+            GLStats.printStats(gl, theCanvas.getShell());
+        } else {
+            GLStats.printStats(gl);
+        }
 
         GLContextBridge.releaseMasterContext();
         releaseContext();
