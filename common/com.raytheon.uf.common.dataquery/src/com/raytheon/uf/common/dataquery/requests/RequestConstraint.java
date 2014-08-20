@@ -64,6 +64,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jul 09, 2013  1869     bsteffen    Format Calendar when making Constraint
  *                                    Mapping.
  * Dec 18, 2013  2579     bsteffen    Remove ISerializableObject
+ * Aug 20, 2014  3549     njensen     Optimized split of IN
  * 
  * 
  * </pre>
@@ -85,6 +86,8 @@ public class RequestConstraint implements Cloneable {
     }
 
     private static final Pattern BETWEEN_PATTERN = Pattern.compile("--");
+
+    private static final Pattern IN_PATTERN = Pattern.compile(",\\s?");
 
     private static final float EQUALITY_TOLERANCE = 0.0001f;
 
@@ -326,7 +329,7 @@ public class RequestConstraint implements Cloneable {
         } else if (constraintType == ConstraintType.NOT_EQUALS) {
             return (!constraintCompare(value));
         } else if (constraintType == ConstraintType.IN) {
-            String[] list = constraintValue.split(",\\s?");
+            String[] list = IN_PATTERN.split(constraintValue);
             if (value instanceof Number) {
                 Double[] doubles = (Double[]) asMap.get(Double[].class);
                 if (doubles == null) {
