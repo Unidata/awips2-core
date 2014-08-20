@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.spring.dm;
 
+import java.util.Iterator;
 import java.util.List;
 
 import org.osgi.framework.Bundle;
@@ -38,6 +39,7 @@ import org.springframework.context.support.GenericApplicationContext;
  * ------------ ---------- ----------- --------------------------
  * Nov 01, 2012            mschenke    Initial creation
  * Nov 12, 2013 2361       njensen     call setDisplayName()
+ * Aug 20, 2014 2735       njensen     Improved displayName
  * 
  * </pre>
  * 
@@ -49,7 +51,7 @@ public class OSGIGroupApplicationContext extends GenericApplicationContext {
 
     public OSGIGroupApplicationContext(Bundle child,
             List<OSGIXmlApplicationContext> contextGroup) {
-        this.setDisplayName("parent of " + child.getSymbolicName());
+        this.setDisplayName(buildDisplayName(contextGroup));
         refresh(); // refresh first to avoid recreating bean definitions
         DefaultListableBeanFactory factory = getDefaultListableBeanFactory();
         // Register all bean definitions from other contexts into our factory
@@ -60,6 +62,27 @@ public class OSGIGroupApplicationContext extends GenericApplicationContext {
                         ctxFactory.getBeanDefinition(beanName));
             }
         }
+    }
+
+    /**
+     * Builds a display name of the contexts in this group
+     * 
+     * @param contextGroup
+     * @return
+     */
+    private String buildDisplayName(
+            List<OSGIXmlApplicationContext> contextGroup) {
+        StringBuilder sb = new StringBuilder();
+        sb.append("group[");
+        Iterator<OSGIXmlApplicationContext> itr = contextGroup.iterator();
+        while (itr.hasNext()) {
+            sb.append(itr.next().getDisplayName());
+            if (itr.hasNext()) {
+                sb.append(", ");
+            }
+        }
+        sb.append("]");
+        return sb.toString();
     }
 
 }
