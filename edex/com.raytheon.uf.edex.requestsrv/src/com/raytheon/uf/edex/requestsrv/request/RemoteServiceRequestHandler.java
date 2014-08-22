@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth;
+package com.raytheon.uf.edex.requestsrv.request;
 
 import java.lang.reflect.Method;
 import java.util.HashMap;
@@ -25,10 +25,11 @@ import java.util.Map;
 
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.RemoteServiceRequest;
+import com.raytheon.uf.edex.requestsrv.HandlerRegistry;
 
 /**
- * Handler of web service based requests, uses reflection to execute method on
- * handler object. This handler assumes the type registered in the
+ * Handler of generic service based requests, uses reflection to execute method
+ * on handler object. This handler assumes the type registered in the
  * HandlerFactory is in fact an instance of the interface passed in. Exceptions
  * will be thrown otherwise
  * 
@@ -38,7 +39,8 @@ import com.raytheon.uf.common.serialization.comm.RemoteServiceRequest;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 22, 2011            mschenke     Initial creation
+ * Sep 22, 2011            mschenke    Initial creation
+ * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
  * 
  * </pre>
  * 
@@ -60,6 +62,8 @@ public class RemoteServiceRequestHandler implements
         PRIMITIVES.put(Long.class, Long.TYPE);
         PRIMITIVES.put(Double.class, Double.TYPE);
     }
+
+    private HandlerRegistry registry = HandlerRegistry.getInstance();
 
     /*
      * (non-Javadoc)
@@ -145,4 +149,22 @@ public class RemoteServiceRequestHandler implements
                     + (System.currentTimeMillis() - t0) + "ms");
         }
     }
+
+    /**
+     * @return The registry used by the handler to lookup
+     *         {@link IRequestHandler}s
+     */
+    public HandlerRegistry getRegistry() {
+        return registry;
+    }
+
+    /**
+     * Sets the registry to use for looking up {@link IRequestHandler}s
+     * 
+     * @param registry
+     */
+    public void setRegistry(HandlerRegistry registry) {
+        this.registry = registry;
+    }
+
 }

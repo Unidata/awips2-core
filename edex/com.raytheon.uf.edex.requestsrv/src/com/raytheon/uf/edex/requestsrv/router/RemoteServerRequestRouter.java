@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth;
+package com.raytheon.uf.edex.requestsrv.router;
 
 import java.rmi.RemoteException;
 
@@ -27,7 +27,7 @@ import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.serialization.comm.IRequestRouter;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
-import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler;
+import com.raytheon.uf.edex.requestsrv.request.ServerPrivilegedRequestHandler;
 
 /**
  * {@link IRequestRouter} implementation that transfers requests to another
@@ -39,8 +39,9 @@ import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 14, 2012 1322       djohnson     Initial creation
- * Dec 03, 2012 1377       djohnson     Add thrift on to destination url.
+ * Nov 14, 2012 1322       djohnson    Initial creation
+ * Dec 03, 2012 1377       djohnson    Add thrift on to destination url.
+ * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
  * 
  * </pre>
  * 
@@ -70,7 +71,8 @@ public class RemoteServerRequestRouter implements IRequestRouter {
         // Wrap privileged requests so they are not checked for privileges
         // internally to the server
         if (request instanceof AbstractPrivilegedRequest) {
-            request = new ServerPrivilegedRequestHandler.ServerPrivilegedRequest(request);
+            request = new ServerPrivilegedRequestHandler.ServerPrivilegedRequest(
+                    request);
         }
 
         byte[] message = SerializationUtil.transformToThrift(request);
@@ -98,10 +100,9 @@ public class RemoteServerRequestRouter implements IRequestRouter {
      * @throws CommunicationException
      * @throws Exception
      */
-    byte[] sendSerializedRequest(byte[] message)
-            throws CommunicationException, Exception {
-        return HttpClient.getInstance()
-                .postBinary(httpAddress, message);
+    byte[] sendSerializedRequest(byte[] message) throws CommunicationException,
+            Exception {
+        return HttpClient.getInstance().postBinary(httpAddress, message);
     }
 
 }

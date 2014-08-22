@@ -55,10 +55,10 @@ public class PyToJavaTest {
         try {
             byte[] bytes = FileUtil.file2bytes(file);
             // DynamicSerializationManager.inspect(TestStoreRequest.class);
-            DynamicSerializationManager.inspect(RetrieveResponse.class);
-            DynamicSerializationManager.inspect(StringDataRecord.class);
-            DynamicSerializationManager.inspect(StorageProperties.class);
-            DynamicSerializationManager.inspect(FloatDataRecord.class);
+            DynamicSerializationManager.getSerializationMetadata(RetrieveResponse.class);
+            DynamicSerializationManager.getSerializationMetadata(StringDataRecord.class);
+            DynamicSerializationManager.getSerializationMetadata(StorageProperties.class);
+            DynamicSerializationManager.getSerializationMetadata(FloatDataRecord.class);
             long t0 = System.currentTimeMillis();
             // TestStoreRequest req = (TestStoreRequest) SerializationUtil
             // .transformFromThrift(bytes);

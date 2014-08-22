@@ -17,21 +17,29 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth;
+package com.raytheon.uf.edex.requestsrv;
 
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
 import com.raytheon.uf.common.util.registry.GenericRegistry;
 
 /**
- * Class used for registering request handlers
+ * Class used for registering {@link IRequestHandler}s for the
+ * {@link IServerRequest} objects they handle. Registry is used by service
+ * executors to look up the handler to execute the request
+ * 
+ * TODO: Once {@link RemoteRequestServer} is deleted and replaced by
+ * {@link RequestServiceExecutor}, no longer implement the
+ * {@link IHandlerRegistry} interface. Only implement so legacy code will still
+ * work with registry in this project
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 6, 2009            mschenke     Initial creation
+ * Aug  6, 2009            mschenke    Initial creation
+ * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
  * 
  * </pre>
  * 
@@ -41,7 +49,8 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
 
 public class HandlerRegistry extends GenericRegistry<String, Object> {
 
-    private static HandlerRegistry instance = new HandlerRegistry();
+    private static final HandlerRegistry instance = new HandlerRegistry(
+            new DefaultHandler());
 
     static class DefaultHandler implements IRequestHandler<IServerRequest> {
         @Override
@@ -51,22 +60,36 @@ public class HandlerRegistry extends GenericRegistry<String, Object> {
         }
     }
 
-    private DefaultHandler defaultHandler;
+    /** Default request handler to use when non registered for a request */
+    private final IRequestHandler<?> defaultHandler;
 
     public static HandlerRegistry getInstance() {
         return instance;
     }
 
-    private HandlerRegistry() {
-        super();
-        defaultHandler = new DefaultHandler();
+    public HandlerRegistry(IRequestHandler<?> defaultHandler) {
+        this.defaultHandler = defaultHandler;
     }
 
-    public IRequestHandler<?> getRequestHandler(String object) {
-        Object obj = super.getRegisteredObject(object);
+    /**
+     * @param object
+     * @return The {@link IRequestHandler} registered to handle requests with
+     *         class name passed in
+     */
+    public IRequestHandler<?> getRequestHandler(String objectType) {
+        Object obj = super.getRegisteredObject(objectType);
         if (obj instanceof IRequestHandler<?>) {
             return (IRequestHandler<?>) obj;
         }
+        return defaultHandler;
+    }
+
+    /**
+     * @return The default {@link IRequestHandler} that will be returned from
+     *         {@link #getRequestHandler(String)} when no handler found in the
+     *         registry
+     */
+    public IRequestHandler<?> getDefaultHandler() {
         return defaultHandler;
     }
 

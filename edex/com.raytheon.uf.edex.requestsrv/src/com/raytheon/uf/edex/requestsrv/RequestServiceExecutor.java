@@ -17,34 +17,36 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth;
+package com.raytheon.uf.edex.requestsrv;
 
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.AbstractPrivilegedRequest;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
+import com.raytheon.uf.common.serialization.comm.RequestWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.auth.AuthManager;
+import com.raytheon.uf.edex.auth.AuthManagerFactory;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthenticationResponse;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.auth.resp.ResponseFactory;
 
 /**
- * The server used for executing requests through handlers. Request canonical
- * name should be used to map requests to handlers (register in spring.xml
- * files)
+ * Class that handles the execution of {@link IServerRequest}s. Contains the
+ * actual logic to lookup and execute the {@link IRequestHandler} registered for
+ * the request passed in.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 03, 2009            mschenke    Initial creation
- * May 28, 2014 3211       njensen     Refactored and improved error msgs
- * 
+ * Aug 21, 2014 3541       mschenke    Initial creation
  * 
  * </pre>
  * 
@@ -52,24 +54,43 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  * @version 1.0
  */
 
-public class RemoteRequestServer {
+public class RequestServiceExecutor {
+
     private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(RemoteRequestServer.class);
+            .getHandler(RequestServiceExecutor.class);
 
-    private static final RemoteRequestServer instance = new RemoteRequestServer();
+    private static final RequestServiceExecutor instance = new RequestServiceExecutor();
 
-    private HandlerRegistry registry;
-
-    public static RemoteRequestServer getInstance() {
+    public static RequestServiceExecutor getInstance() {
         return instance;
     }
 
-    private RemoteRequestServer() {
+    private final HandlerRegistry registry;
 
+    public RequestServiceExecutor() {
+        this(HandlerRegistry.getInstance());
     }
 
+    public RequestServiceExecutor(HandlerRegistry registry) {
+        this.registry = registry;
+    }
+
+    /**
+     * Executes the request passed in, delegates conversion to/from
+     * {@link IServerRequest} to the {@link #serviceAdapter} set in the
+     * constructor
+     * 
+     * @param serviceRequest
+     * @return The result of the service execution
+     * @throws Exception
+     */
     @SuppressWarnings({ "rawtypes", "unchecked" })
-    public Object handleThriftRequest(IServerRequest request) throws Exception {
+    public Object execute(IServerRequest request) throws Exception {
+        if (request instanceof RequestWrapper) {
+            // Check for wrapped request and get actual request to execute
+            request = ((RequestWrapper) request).getRequest();
+        }
+
         String id = request.getClass().getCanonicalName();
         IRequestHandler handler = registry.getRequestHandler(id);
 
@@ -136,10 +157,6 @@ public class RemoteRequestServer {
         }
 
         return handler.handleRequest(request);
-    }
-
-    public void setRegistry(HandlerRegistry registry) {
-        this.registry = registry;
     }
 
 }

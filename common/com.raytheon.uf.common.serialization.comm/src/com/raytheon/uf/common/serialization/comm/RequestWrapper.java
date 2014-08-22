@@ -35,6 +35,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 24, 2012            njensen     Initial creation
+ * Aug 15, 2014 3541       mschenke    Made implement IServerRequest since sent
+ *                                     as one 
  * 
  * </pre>
  * 
@@ -43,7 +45,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  */
 
 @DynamicSerialize
-public class RequestWrapper {
+public class RequestWrapper implements IServerRequest {
 
     @DynamicSerializeElement
     private IServerRequest request;

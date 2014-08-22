@@ -1,0 +1,23 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: EDEX Request Service
+Bundle-SymbolicName: com.raytheon.uf.edex.requestsrv
+Bundle-Version: 1.14.0.qualifier
+Bundle-Vendor: RAYTHEON
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Require-Bundle: com.raytheon.uf.edex.auth;bundle-version="1.14.1",
+ com.raytheon.uf.common.auth;bundle-version="1.12.1174",
+ com.raytheon.uf.common.serialization;bundle-version="1.14.1",
+ com.raytheon.uf.common.serialization.comm;bundle-version="1.14.0",
+ com.raytheon.uf.common.util;bundle-version="1.14.1",
+ com.raytheon.uf.common.status;bundle-version="1.14.0",
+ com.raytheon.uf.common.comm;bundle-version="1.14.0"
+Import-Package: com.raytheon.edex.esb,
+ javax.servlet,
+ javax.servlet.http
+Export-Package: com.raytheon.uf.edex.requestsrv,
+ com.raytheon.uf.edex.requestsrv.http,
+ com.raytheon.uf.edex.requestsrv.request,
+ com.raytheon.uf.edex.requestsrv.router,
+ com.raytheon.uf.edex.requestsrv.serialization,
+ com.raytheon.uf.edex.requestsrv.serialization.thrift
