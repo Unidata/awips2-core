@@ -70,8 +70,18 @@ public abstract class AbstractMapQueryJob<REQUEST extends AbstractMapRequest<?>,
     }
 
     public void stop() {
-        // System.out.println("Stopping queryJob");
+        System.out.println("Stopping queryJob");
+        synchronized (this) {
+            pendingRequest = null;
+        }
+
         this.cancel();
+        try {
+            this.join();
+        } catch (InterruptedException e) {
+            // do nothing, just waiting for job to die
+        }
+
         synchronized (this) {
             if (latestResult != null) {
                 latestResult.dispose();
@@ -109,11 +119,13 @@ public abstract class AbstractMapQueryJob<REQUEST extends AbstractMapRequest<?>,
             req = pendingRequest;
             pendingRequest = null;
         }
-        while (req != null) {
+
+        IStatus status = Status.OK_STATUS;
+        if ((req != null) && !this.monitor.isCanceled()) {
             String mapName = req.getResource().getName();
             this.setName("Retrieving " + mapName + " map...");
-            // System.out.println("Processing " + mapName + " request: "
-            // + req.getNumber());
+            System.out.println("Processing " + mapName + " request: "
+                    + req.getNumber());
             RESULT result = getNewResult(req);
             try {
                 if (checkCanceled(result)) {
@@ -125,32 +137,30 @@ public abstract class AbstractMapQueryJob<REQUEST extends AbstractMapRequest<?>,
                 result.setCause(e);
             } finally {
                 if (result.isCanceled()) {
-                    // System.out.println("Canceling " + mapName + " request: "
-                    // + req.getNumber());
+                    System.out.println("Canceling " + mapName + " request: "
+                            + req.getNumber());
                     result.dispose();
                     result = null;
-                    return Status.CANCEL_STATUS;
+                    status = Status.CANCEL_STATUS;
                 } else {
                     if (result.isFailed()) {
-                        // System.out.println("Failed " + mapName + " request: "
-                        // + req.getNumber());
+                        System.out.println("Failed " + mapName + " request: "
+                                + req.getNumber());
                     } else {
-                        // System.out.println("Completed " + mapName
-                        // + " request: " + req.getNumber());
+                        System.out.println("Completed " + mapName
+                                + " request: " + req.getNumber());
                     }
-                    latestResult = result;
+
+                    synchronized (this) {
+                        latestResult = result;
+                    }
                     req.getResource().issueRefresh();
                 }
                 perfLog.logDuration("Loading map " + mapName,
                         System.currentTimeMillis() - req.getQueuedTime());
             }
-
-            synchronized (this) {
-                req = pendingRequest;
-                pendingRequest = null;
-            }
         }
-        return Status.OK_STATUS;
+        return status;
     }
 
     /**

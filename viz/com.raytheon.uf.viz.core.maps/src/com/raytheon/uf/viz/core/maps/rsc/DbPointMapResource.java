@@ -32,8 +32,6 @@ import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.pointdata.vadriver.VA_Advanced;
 import com.raytheon.uf.common.pointdata.vadriver.VA_Advanced.IVAMonitor;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -80,8 +78,6 @@ import com.vividsolutions.jts.io.WKBReader;
  */
 public class DbPointMapResource extends
         AbstractDbMapResource<DbPointMapResourceData, MapDescriptor> {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DbPointMapResource.class);
 
     private class LabelNode {
         private final String label;
@@ -339,6 +335,18 @@ public class DbPointMapResource extends
         queryJob = new MapQueryJob();
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResource#disposeInternal()
+     */
+    @Override
+    protected void disposeInternal() {
+        queryJob.stop();
+        super.disposeInternal();
+    }
+
     @Override
     protected void paintInternal(IGraphicsTarget aTarget,
             PaintProperties paintProps) throws VizException {
@@ -390,9 +398,7 @@ public class DbPointMapResource extends
             labels = result.labels;
         }
 
-        if (labels == null) {
-            issueRefresh();
-        } else {
+        if (labels != null) {
             if (font == null) {
                 font = aTarget.initializeFont(aTarget.getDefaultFont()
                         .getFontName(), (float) (10 * magnification), null);

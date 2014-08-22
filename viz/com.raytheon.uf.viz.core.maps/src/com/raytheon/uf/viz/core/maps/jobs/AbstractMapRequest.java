@@ -20,7 +20,7 @@
 package com.raytheon.uf.viz.core.maps.jobs;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
-import com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResource;
+import com.raytheon.uf.viz.core.maps.rsc.AbstractMapResource;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -40,7 +40,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * @version 1.0
  */
 
-public abstract class AbstractMapRequest<RESOURCE extends AbstractDbMapResource<?, ?>> {
+public abstract class AbstractMapRequest<RESOURCE extends AbstractMapResource<?, ?>> {
     private static int requestCounter = 0;
 
     private int number;

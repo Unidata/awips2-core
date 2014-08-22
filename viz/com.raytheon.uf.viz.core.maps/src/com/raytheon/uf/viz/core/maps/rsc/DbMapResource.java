@@ -43,8 +43,6 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableString;
@@ -126,9 +124,6 @@ public class DbMapResource extends
     public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<String>(
             "label", String.class);
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DbMapResource.class);
-
     private static final String GID = "gid";
 
     /**
@@ -178,8 +173,6 @@ public class DbMapResource extends
     public class Request extends AbstractMapRequest<DbMapResource> {
 
         Random rand = new Random(System.currentTimeMillis());
-
-        int number;
 
         IMapDescriptor descriptor;
 
@@ -516,12 +509,13 @@ public class DbMapResource extends
 
         if (outlineShape != null) {
             outlineShape.dispose();
+            outlineShape = null;
         }
 
         if (shadedShape != null) {
             shadedShape.dispose();
+            shadedShape = null;
         }
-        lastExtent = null;
         super.disposeInternal();
     }
 
@@ -560,7 +554,6 @@ public class DbMapResource extends
             }
             simpLev = level;
         }
-        // System.out.println("dpp: " + dpp + ", simpLev: " + simpLev);
         return simpLev;
     }
 
@@ -587,9 +580,6 @@ public class DbMapResource extends
                 / screenWidth;
 
         double simpLev = getSimpLev(dppX);
-        // System.out.println("c1:" + Arrays.toString(c1) + "\nc2:"
-        // + Arrays.toString(c2) + "\ndpp:" + dppX + "\nsimpLev:"
-        // + simpLev);
 
         String labelField = getCapability(LabelableCapability.class)
                 .getLabelField();
@@ -597,7 +587,7 @@ public class DbMapResource extends
 
         String shadingField = getCapability(ShadeableCapability.class)
                 .getShadingField();
-        // System.out.println("shadingField: " + shadingField);
+
         boolean isShaded = isPolygonal() && (shadingField != null);
 
         if ((simpLev < lastSimpLev)
@@ -629,6 +619,7 @@ public class DbMapResource extends
                         "Error processing map query request for: "
                                 + result.getName(), result.getCause());
             }
+
             if (outlineShape != null) {
                 outlineShape.dispose();
             }
@@ -636,6 +627,7 @@ public class DbMapResource extends
             if (shadedShape != null) {
                 shadedShape.dispose();
             }
+
             outlineShape = result.outlineShape;
             labels = result.labels;
             shadedShape = result.shadedShape;
