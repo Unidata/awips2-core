@@ -34,6 +34,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.context.support.ClassPathXmlApplicationContext;
 
+import com.raytheon.edex.utility.EDEXLocalizationAdapter;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.PropertiesUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
@@ -170,6 +172,11 @@ public class Executor {
         msg.append("\n").append(printList(discoveredPlugins)).append("\n");
         logger.info(msg.toString());
 
+        /*
+         * need to ensure the PathManagerFactory is properly initialized before
+         * any spring beans may attempt to use it
+         */
+        PathManagerFactory.setAdapter(new EDEXLocalizationAdapter());
         ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
                 xmlFiles.toArray(new String[xmlFiles.size()]));
 
