@@ -123,7 +123,7 @@ public class PythonScript extends PythonInterpreter {
      *            python
      * @throws JepException
      */
-    public PythonScript(String anIncludePath, ClassLoader aClassLoader)
+    protected PythonScript(String anIncludePath, ClassLoader aClassLoader)
             throws JepException {
         super(anIncludePath, aClassLoader);
     }
