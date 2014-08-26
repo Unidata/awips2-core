@@ -29,7 +29,7 @@ import java.util.regex.Pattern;
 import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.Appender;
-import ch.qos.logback.core.AppenderBase;
+import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
@@ -49,13 +49,14 @@ import ch.qos.logback.core.spi.AppenderAttachable;
  * Aug 25, 2010            rjpeter     Initial creation
  * Jun 24, 2013 2142       njensen     Changes for logback compatibility
  * Apr 29, 2014 3114       rjpeter     Make plugin contributable.
+ * Aug 22, 2014 3534       rjpeter     Extend UnsynchronizedAppenderBase.
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 
-public class ThreadBasedAppender extends AppenderBase<ILoggingEvent> implements
+public class ThreadBasedAppender extends UnsynchronizedAppenderBase<ILoggingEvent> implements
         AppenderAttachable<ILoggingEvent> {
     private static final Pattern NAME_REPLACE_PATTERN = Pattern
             .compile("%s\\{name\\}");
