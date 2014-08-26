@@ -8,7 +8,7 @@
 		errorHandlerRef="errorHandler">
 
 		<endpoint id="webServiceEndpoint"
-			uri="jetty:http://0.0.0.0:${edex.requestsrv.http.port}${edex.requestsrv.http.path}?${edex.requestsrv.http.properties}" />
+			uri="jetty:http://0.0.0.0:${HTTP_PORT}${HTTP_SERVER_PATH}?${edex.requestsrv.http.properties}" />
 
 		<route id="webServiceRoute" streamCache="false">
 			<from uri="webServiceEndpoint" />
