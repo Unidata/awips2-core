@@ -17,15 +17,18 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth;
+package com.raytheon.uf.edex.requestsrv.serialization;
 
-import com.raytheon.uf.common.auth.req.AbstractPrivilegedRequest;
-import com.raytheon.uf.common.serialization.comm.IRequestRouter;
+import java.io.InputStream;
+import java.io.OutputStream;
+
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
-import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler;
 
 /**
- * Routes the request directly to the RemoteRequestServer.
+ * Interface for a stream-based {@link IServerRequest} executor that
+ * deserializes from an {@link InputStream} into an {@link IServerRequest}
+ * object and serializes the response of the execution to an
+ * {@link OutputStream}
  * 
  * <pre>
  * 
@@ -33,24 +36,27 @@ import com.raytheon.uf.edex.auth.req.ServerPrivilegedRequestHandler;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 9, 2010             rjpeter     Initial creation
- * Nov 15, 2012 1322       djohnson    Allow servers the ability to bypass authorization.
+ * Aug 21, 2014 3541       mschenke    Initial creation
  * 
  * </pre>
  * 
- * @author rjpeter
+ * @author mschenke
  * @version 1.0
  */
-public class ServerRequestRouter implements IRequestRouter {
-    @Override
-    public Object route(IServerRequest request) throws Exception {
-        // Wrap privileged requests so they are not checked for privileges
-        // internally to the server
-        if (request instanceof AbstractPrivilegedRequest) {
-            request = new ServerPrivilegedRequestHandler.ServerPrivilegedRequest(request);
-        }
 
-        return RemoteRequestServer.getInstance().handleThriftRequest(request);
-    }
+public interface ISerializingStreamExecutor {
+
+    /**
+     * Deserializes the {@link IServerRequest} from the {@link InputStream}
+     * passed in, executes the request and serializes the response out to the
+     * {@link OutputStream} passed in
+     * 
+     * @param inputFormat
+     * @param in
+     * @param outputFormat
+     * @param out
+     */
+    public void execute(String inputFormat, InputStream in,
+            String outputFormat, OutputStream out);
 
 }

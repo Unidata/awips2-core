@@ -3,32 +3,32 @@
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
             
-    <bean id="binaryHttpBinding" class="com.raytheon.uf.edex.esb.camel.http.BinaryHttpBinding"/>
-
-	<camelContext id="server-camel"
+	<camelContext id="request-service-camel"
 		xmlns="http://camel.apache.org/schema/spring"
 		errorHandlerRef="errorHandler">
 
-		<endpoint id="thriftService_from"
-			uri="jetty:http://0.0.0.0:${HTTP_PORT}/services/thrift?disableStreamCache=true&amp;chunked=false&amp;httpBindingRef=#binaryHttpBinding" />
+		<endpoint id="webServiceEndpoint"
+			uri="jetty:http://0.0.0.0:${edex.requestsrv.http.port}${edex.requestsrv.http.path}?${edex.requestsrv.http.properties}" />
 
-		<route id="thriftService" streamCache="false">
-			<from uri="ref:thriftService_from" />
-			<removeHeaders pattern="CamelHttp*"/>
-			<bean ref="routeWrapper" method="executeThrift"/>
+		<route id="webServiceRoute" streamCache="false">
+			<from uri="webServiceEndpoint" />
+			<setBody>
+				<simple>
+					bodyAs(javax.servlet.http.HttpServletRequest)
+				</simple>
+			</setBody>
+			<bean ref="httpServiceExecutor" method="execute(${body}, ${in.header.CamelHttpServletResponse})"/>
 		</route>
-
 	</camelContext>
-
-  	<bean id="webservice" class="com.raytheon.uf.edex.auth.RemoteServiceRequestHandler"/>
 
 	<bean factory-bean="handlerRegistry" factory-method="register">
 	  	<constructor-arg value="com.raytheon.uf.common.serialization.comm.RemoteServiceRequest"/>
-	  	<constructor-arg ref="webservice"/>
+	  	<constructor-arg ref="serviceInterfaceHandler"/>
   	</bean>
     
     <bean factory-bean="serverLocationRegistry" factory-method="register">
         <constructor-arg ref="requestServerKey" />
         <constructor-arg value="${HTTP_SERVER}" />
     </bean>
+
 </beans>
