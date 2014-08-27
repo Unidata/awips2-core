@@ -25,10 +25,6 @@ import java.util.Observer;
 /**
  * Handles {@link IPathManager} object creation depending on the context.
  * 
- * <p>
- * CAVE based code will use a different implementation of the
- * {@link IPathManager} than EDEX based code. In case both implementations are
- * available the CAVE based implementation will take precedence.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -36,6 +32,7 @@ import java.util.Observer;
  * ------------ ----------  ----------- --------------------------
  * May 7, 2008              chammack    Initial creation
  * Jul 14, 2008 1250        jelkins     EDEX LocalizationAdapter additions.
+ * Aug 25, 2014 3356        njensen     Inject adapter through spring
  * 
  * </pre>
  * 
@@ -45,11 +42,7 @@ import java.util.Observer;
 
 public class PathManagerFactory {
 
-    private static final String CAVE_ADAPTER_CLASS = "com.raytheon.uf.viz.core.localization.CAVELocalizationAdapter";
-
-    private static final String EDEX_ADAPTER_CLASS = "com.raytheon.edex.utility.EDEXLocalizationAdapter";
-
-    static IPathManager pathManager;
+    private static IPathManager pathManager;
 
     private static ILocalizationAdapter adapter;
 
@@ -73,26 +66,14 @@ public class PathManagerFactory {
      */
     public static synchronized IPathManager getPathManager() {
         if (pathManager == null) {
-            if (adapter == null) {
-                // TODO adapters should be passed in, not found through forName
-                try {
-                    pathManager = new PathManager((ILocalizationAdapter) Class
-                            .forName(CAVE_ADAPTER_CLASS).newInstance());
-                } catch (Exception e) {
-                    try {
-                        pathManager = new PathManager(
-                                (ILocalizationAdapter) Class.forName(
-                                        EDEX_ADAPTER_CLASS).newInstance());
-                    } catch (Exception e1) {
-                        throw new RuntimeException(
-                                "Unable to load any path manager", e);
-                    }
-                }
-                // notify observers that the path manager adaptor has been
+            if (adapter != null) {
+                pathManager = new PathManager(adapter);
+                // notify observers that the path manager adapter has been
                 // initialized.
                 internalObservable.notifyObservers();
             } else {
-                pathManager = new PathManager(adapter);
+                throw new RuntimeException(
+                        "No localization adapter has been set on PathManagerFactory!");
             }
         }
 
@@ -113,15 +94,16 @@ public class PathManagerFactory {
     /**
      * Get a path manager using the specified adapter
      * 
-     * @param adapter
+     * @param locAdapter
      * @return the path manager with the specified adapter
      */
-    public static IPathManager getPathManager(ILocalizationAdapter adapter) {
-        return new PathManager(adapter);
+    public static IPathManager getPathManager(ILocalizationAdapter locAdapter) {
+        return new PathManager(locAdapter);
     }
 
-    public static void setAdapter(ILocalizationAdapter adapter) {
+    public static ILocalizationAdapter setAdapter(ILocalizationAdapter adapter) {
         PathManagerFactory.adapter = adapter;
         pathManager = null;
+        return adapter;
     }
 }
