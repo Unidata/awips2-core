@@ -33,13 +33,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ArrayBlockingQueue;
 
 import org.apache.commons.lang.StringUtils;
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.opengis.referencing.FactoryException;
@@ -48,8 +43,6 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableString;
@@ -66,6 +59,9 @@ import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult;
 import com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResourceData.ColumnDefinition;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorableCapability;
@@ -80,6 +76,7 @@ import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
 import com.raytheon.uf.viz.core.rsc.interrogation.Interrogator;
 import com.raytheon.uf.viz.core.rsc.interrogation.StringInterrogationKey;
 import com.raytheon.viz.core.rsc.jts.JTSCompiler;
+import com.raytheon.viz.core.rsc.jts.JTSCompiler.JTSGeometryData;
 import com.raytheon.viz.core.rsc.jts.JTSCompiler.PointStyle;
 import com.raytheon.viz.core.spatial.GeometryCache;
 import com.vividsolutions.jts.geom.Geometry;
@@ -107,6 +104,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * May 15, 2014 2820       bsteffen    Implement Interrogatable
  * Jul 25, 2014 3447       bclement    reset map query job on dispose
  * Aug 01, 2014 3471       mapeters    Updated deprecated createShadedShape() calls.
+ * Aug 11, 2014 3459       randerso    Cleaned up MapQueryJob implementation
  * Aug 13, 2014 3492       mapeters    Updated deprecated createWireframeShape() calls.
  * 
  * </pre>
@@ -125,9 +123,6 @@ public class DbMapResource extends
      */
     public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<String>(
             "label", String.class);
-
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DbMapResource.class);
 
     private static final String GID = "gid";
 
@@ -175,381 +170,311 @@ public class DbMapResource extends
         }
     }
 
-    private class MapQueryJob extends Job {
+    public class Request extends AbstractMapRequest<DbMapResource> {
 
-        private static final int QUEUE_LIMIT = 1;
+        Random rand = new Random(System.currentTimeMillis());
 
-        public class Request {
-            Random rand = new Random(System.currentTimeMillis());
+        IMapDescriptor descriptor;
 
-            IGraphicsTarget target;
+        String geomField;
 
-            IMapDescriptor descriptor;
+        String labelField;
 
-            DbMapResource rsc;
+        String shadingField;
 
-            String geomField;
+        Map<Object, RGB> colorMap;
 
-            String labelField;
-
-            String shadingField;
-
-            Geometry boundingGeom;
-
-            Map<Object, RGB> colorMap;
-
-            Request(IGraphicsTarget target, IMapDescriptor descriptor,
-                    DbMapResource rsc, Geometry boundingGeom, String geomField,
-                    String labelField, String shadingField,
-                    Map<Object, RGB> colorMap) {
-                this.target = target;
-                this.descriptor = descriptor;
-                this.rsc = rsc;
-                this.boundingGeom = boundingGeom;
-                this.geomField = geomField;
-                this.labelField = labelField;
-                this.shadingField = shadingField;
-                this.colorMap = colorMap;
-            }
-
-            RGB getColor(Object key) {
-                if (colorMap == null) {
-                    colorMap = new HashMap<Object, RGB>();
-                }
-                RGB color = colorMap.get(key);
-                if (color == null) {
-                    color = new RGB(rand.nextInt(206) + 50,
-                            rand.nextInt(206) + 50, rand.nextInt(206) + 50);
-                    colorMap.put(key, color);
-                }
-
-                return color;
-            }
-        }
-
-        public class Result {
-            public IWireframeShape outlineShape;
-
-            public List<LabelNode> labels;
-
-            public IShadedShape shadedShape;
-
-            public Map<Object, RGB> colorMap;
-
-            public boolean failed;
-
-            public Throwable cause;
-
-            public String table;
-
-            private Result(String table) {
-                this.table = table;
-                failed = true;
-            }
-        }
-
-        private ArrayBlockingQueue<Request> requestQueue = new ArrayBlockingQueue<Request>(
-                QUEUE_LIMIT);
-
-        private ArrayBlockingQueue<Result> resultQueue = new ArrayBlockingQueue<Result>(
-                QUEUE_LIMIT);
-
-        private volatile boolean canceled;
-
-        public MapQueryJob() {
-            super("Retrieving map...");
-        }
-
-        public void request(IGraphicsTarget target, IMapDescriptor descriptor,
+        Request(IGraphicsTarget target, IMapDescriptor descriptor,
                 DbMapResource rsc, Geometry boundingGeom, String geomField,
                 String labelField, String shadingField,
                 Map<Object, RGB> colorMap) {
-            if (requestQueue.size() == QUEUE_LIMIT) {
-                requestQueue.poll();
-            }
-            requestQueue.add(new Request(target, descriptor, rsc, boundingGeom,
-                    geomField, labelField, shadingField, colorMap));
-
-            this.cancel();
-            this.schedule();
+            super(target, rsc, boundingGeom);
+            this.descriptor = rsc.getDescriptor();
+            this.geomField = geomField;
+            this.labelField = labelField;
+            this.shadingField = shadingField;
+            this.colorMap = colorMap;
         }
 
-        public Result getLatestResult() {
-            return resultQueue.poll();
+        RGB getColor(Object key) {
+            if (colorMap == null) {
+                colorMap = new HashMap<Object, RGB>();
+            }
+            RGB color = colorMap.get(key);
+            if (color == null) {
+                color = new RGB(rand.nextInt(206) + 50, rand.nextInt(206) + 50,
+                        rand.nextInt(206) + 50);
+                colorMap.put(key, color);
+            }
+
+            return color;
+        }
+    }
+
+    public class Result extends AbstractMapResult {
+        public IWireframeShape outlineShape;
+
+        public List<LabelNode> labels;
+
+        public IShadedShape shadedShape;
+
+        public Map<Object, RGB> colorMap;
+
+        private Result(Request request) {
+            super(request);
+        }
+
+        @Override
+        public void dispose() {
+            if (outlineShape != null) {
+                outlineShape.dispose();
+                outlineShape = null;
+            }
+
+            if (shadedShape != null) {
+                shadedShape.dispose();
+                shadedShape = null;
+            }
+        }
+    }
+
+    private class MapQueryJob extends AbstractMapQueryJob<Request, Result> {
+        public MapQueryJob() {
+            super();
         }
 
         /*
          * (non-Javadoc)
          * 
-         * @seeorg.eclipse.core.runtime.jobs.Job#run(org.eclipse.core.runtime.
-         * IProgressMonitor)
+         * @see
+         * com.raytheon.uf.viz.core.maps.rsc.AbstractMapQueryJob#getNewResult
+         * (com.raytheon.uf.viz.core.maps.rsc.AbstractMapRequest)
          */
         @Override
-        protected IStatus run(IProgressMonitor monitor) {
-            Request req = requestQueue.poll();
-            while (req != null) {
-                Result result = new Result(resourceData.getTable());
-                try {
-                    String table = resourceData.getTable();
-                    if (canceled) {
-                        canceled = false;
-                        result = null;
-                        return Status.CANCEL_STATUS;
-                    }
-                    List<String> constraints = new ArrayList<String>();
-                    if (resourceData.getConstraints() != null) {
-                        constraints.addAll(Arrays.asList(resourceData
-                                .getConstraints()));
-                    }
-                    List<String> fields = new ArrayList<String>();
-                    fields.add(GID);
-                    if ((req.labelField != null)
-                            && !fields.contains(req.labelField)) {
-                        fields.add(req.labelField);
-                    }
-                    if ((req.shadingField != null)
-                            && !fields.contains(req.shadingField)) {
-                        fields.add(req.shadingField);
-                    }
+        protected Result getNewResult(Request req) {
+            return new Result(req);
+        }
 
-                    if (resourceData.getColumns() != null) {
-                        for (ColumnDefinition column : resourceData
-                                .getColumns()) {
-                            if (fields.contains(column.getName())) {
-                                fields.remove(column.getName());
-                            }
-                            fields.add(column.toString());
-                        }
-                    }
-                    double[] lev = getLevels();
-                    QueryResult mappedResult = DbMapQueryFactory.getMapQuery(
-                            resourceData.getTable(),
-                            getGeomField(lev[lev.length - 1]))
-                            .queryWithinGeometry(req.boundingGeom, fields,
-                                    constraints);
-                    Map<Integer, Geometry> gidMap = new HashMap<Integer, Geometry>(
-                            mappedResult.getResultCount() * 2);
-                    List<Integer> toRequest = new ArrayList<Integer>(
-                            mappedResult.getResultCount());
-                    for (int i = 0; i < mappedResult.getResultCount(); ++i) {
-                        if (canceled) {
-                            canceled = false;
-                            result = null;
-                            return Status.CANCEL_STATUS;
-                        }
-                        int gid = ((Number) mappedResult.getRowColumnValue(i,
-                                GID)).intValue();
-                        Geometry geom = GeometryCache.getGeometry(table, ""
-                                + gid, req.geomField);
-                        if (geom != null) {
-                            gidMap.put(gid, geom);
-                        } else {
-                            toRequest.add(gid);
-                        }
-                    }
+        @Override
+        protected void processRequest(Request req, final Result result)
+                throws Exception {
+            String table = resourceData.getTable();
+            List<String> constraints = new ArrayList<String>();
+            if (resourceData.getConstraints() != null) {
+                constraints
+                        .addAll(Arrays.asList(resourceData.getConstraints()));
+            }
+            List<String> fields = new ArrayList<String>();
+            fields.add(GID);
+            if ((req.labelField != null) && !fields.contains(req.labelField)) {
+                fields.add(req.labelField);
+            }
+            if ((req.shadingField != null)
+                    && !fields.contains(req.shadingField)) {
+                fields.add(req.shadingField);
+            }
 
-                    if (toRequest.size() > 0) {
-                        WKBReader wkbReader = new WKBReader();
-                        StringBuilder geomQuery = new StringBuilder();
-                        geomQuery.append("SELECT ").append(GID)
-                                .append(", AsBinary(").append(req.geomField)
-                                .append(") as ").append(req.geomField)
-                                .append(" FROM ").append(table)
-                                .append(" WHERE ").append(GID).append(" IN (");
-                        Integer first = toRequest.get(0);
-                        geomQuery.append('\'').append(first).append('\'');
-                        for (int i = 1; i < toRequest.size(); ++i) {
-                            Integer gid = toRequest.get(i);
-                            geomQuery.append(",'").append(gid).append('\'');
-                        }
-                        geomQuery.append(");");
+            if (resourceData.getColumns() != null) {
+                for (ColumnDefinition column : resourceData.getColumns()) {
+                    if (fields.contains(column.getName())) {
+                        fields.remove(column.getName());
+                    }
+                    fields.add(column.toString());
+                }
+            }
+            double[] lev = getLevels();
+            QueryResult mappedResult = DbMapQueryFactory.getMapQuery(
+                    resourceData.getTable(), getGeomField(lev[lev.length - 1]))
+                    .queryWithinGeometry(req.getBoundingGeom(), fields,
+                            constraints);
+            Map<Integer, Geometry> gidMap = new HashMap<Integer, Geometry>(
+                    mappedResult.getResultCount() * 2);
+            List<Integer> toRequest = new ArrayList<Integer>(
+                    mappedResult.getResultCount());
+            for (int i = 0; i < mappedResult.getResultCount(); ++i) {
+                if (checkCanceled(result)) {
+                    return;
+                }
 
-                        if (canceled) {
-                            canceled = false;
-                            result = null;
-                            return Status.CANCEL_STATUS;
-                        }
-                        QueryResult geomResults = DirectDbQuery
-                                .executeMappedQuery(geomQuery.toString(),
-                                        "maps", QueryLanguage.SQL);
-                        for (int i = 0; i < geomResults.getResultCount(); ++i) {
-                            if (canceled) {
-                                canceled = false;
-                                result = null;
-                                return Status.CANCEL_STATUS;
-                            }
-                            int gid = ((Number) geomResults.getRowColumnValue(
-                                    i, 0)).intValue();
-                            Geometry g = null;
-                            Object obj = geomResults.getRowColumnValue(i, 1);
-                            if (obj instanceof byte[]) {
-                                byte[] wkb = (byte[]) obj;
-                                g = wkbReader.read(wkb);
-                            } else {
-                                statusHandler.handle(
-                                        Priority.ERROR,
-                                        "Expected byte[] received "
-                                                + obj.getClass().getName()
-                                                + ": " + obj.toString()
-                                                + "\n  table=\""
-                                                + resourceData.getTable()
-                                                + "\"");
-                            }
-                            gidMap.put(gid, g);
-                            GeometryCache.putGeometry(table, "" + gid,
-                                    req.geomField, g);
-                        }
+                int gid = ((Number) mappedResult.getRowColumnValue(i, GID))
+                        .intValue();
+                Geometry geom = GeometryCache.getGeometry(table, "" + gid,
+                        req.geomField);
+                if (geom != null) {
+                    gidMap.put(gid, geom);
+                } else {
+                    toRequest.add(gid);
+                }
+            }
+
+            if (toRequest.size() > 0) {
+                WKBReader wkbReader = new WKBReader();
+                StringBuilder geomQuery = new StringBuilder();
+                geomQuery.append("SELECT ").append(GID).append(", AsBinary(")
+                        .append(req.geomField).append(") as ")
+                        .append(req.geomField).append(" FROM ").append(table)
+                        .append(" WHERE ").append(GID).append(" IN (");
+                Integer first = toRequest.get(0);
+                geomQuery.append('\'').append(first).append('\'');
+                for (int i = 1; i < toRequest.size(); ++i) {
+                    Integer gid = toRequest.get(i);
+                    geomQuery.append(",'").append(gid).append('\'');
+                }
+                geomQuery.append(");");
+
+                if (checkCanceled(result)) {
+                    return;
+                }
+                QueryResult geomResults = DirectDbQuery.executeMappedQuery(
+                        geomQuery.toString(), "maps", QueryLanguage.SQL);
+                for (int i = 0; i < geomResults.getResultCount(); ++i) {
+                    if (checkCanceled(result)) {
+                        return;
                     }
 
-                    IWireframeShape newOutlineShape = req.target
-                            .createWireframeShape(false, req.descriptor);
-
-                    List<LabelNode> newLabels = new ArrayList<LabelNode>();
-
-                    IShadedShape newShadedShape = null;
-                    if (req.shadingField != null) {
-                        newShadedShape = req.target.createShadedShape(false,
-                                req.descriptor.getGridGeometry(), true);
+                    int gid = ((Number) geomResults.getRowColumnValue(i, 0))
+                            .intValue();
+                    Geometry g = null;
+                    Object obj = geomResults.getRowColumnValue(i, 1);
+                    if (obj instanceof byte[]) {
+                        byte[] wkb = (byte[]) obj;
+                        g = wkbReader.read(wkb);
+                    } else {
+                        statusHandler.handle(
+                                Priority.ERROR,
+                                "Expected byte[] received "
+                                        + obj.getClass().getName() + ": "
+                                        + obj.toString() + "\n  table=\""
+                                        + resourceData.getTable() + "\"");
                     }
+                    gidMap.put(gid, g);
+                    GeometryCache
+                            .putGeometry(table, "" + gid, req.geomField, g);
+                }
+            }
 
-                    JTSCompiler jtsCompiler = new JTSCompiler(newShadedShape,
-                            newOutlineShape, req.descriptor, PointStyle.CROSS);
+            IWireframeShape newOutlineShape = req.getTarget()
+                    .createWireframeShape(false, req.descriptor);
 
-                    List<Geometry> resultingGeoms = new ArrayList<Geometry>(
-                            mappedResult.getResultCount());
+            List<LabelNode> newLabels = new ArrayList<LabelNode>();
 
-                    Set<String> unlabelablePoints = new HashSet<String>(0);
+            IShadedShape newShadedShape = null;
+            if (req.shadingField != null) {
+                newShadedShape = req.getTarget().createShadedShape(false,
+                        req.descriptor.getGridGeometry(), true);
+            }
 
-                    int numPoints = 0;
-                    for (int i = 0; i < mappedResult.getResultCount(); ++i) {
-                        if (canceled) {
-                            canceled = false;
-                            result = null;
-                            return Status.CANCEL_STATUS;
-                        }
-                        int gid = ((Number) mappedResult.getRowColumnValue(i,
-                                GID)).intValue();
-                        Geometry g = gidMap.get(gid);
-                        Object obj = null;
+            JTSCompiler jtsCompiler = new JTSCompiler(newShadedShape,
+                    newOutlineShape, req.descriptor);
+            JTSGeometryData geomData = jtsCompiler.createGeometryData();
+            geomData.setWorldWrapCorrect(true);
+            geomData.setPointStyle(PointStyle.CROSS);
 
-                        if (req.labelField != null) {
-                            obj = mappedResult.getRowColumnValue(i,
-                                    req.labelField.toLowerCase());
-                        }
+            List<Geometry> resultingGeoms = new ArrayList<Geometry>(
+                    mappedResult.getResultCount());
 
-                        if ((obj != null) && (g != null)) {
-                            String label;
-                            if (obj instanceof BigDecimal) {
-                                label = Double.toString(((Number) obj)
-                                        .doubleValue());
-                            } else {
-                                label = obj.toString();
-                            }
-                            int numGeometries = g.getNumGeometries();
-                            List<Geometry> gList = new ArrayList<Geometry>(
-                                    numGeometries);
-                            for (int polyNum = 0; polyNum < numGeometries; polyNum++) {
-                                Geometry poly = g.getGeometryN(polyNum);
-                                gList.add(poly);
-                            }
-                            // Sort polygons in g so biggest comes first.
-                            Collections.sort(gList, new Comparator<Geometry>() {
-                                @Override
-                                public int compare(Geometry g1, Geometry g2) {
-                                    return (int) Math.signum(g2.getEnvelope()
-                                            .getArea()
-                                            - g1.getEnvelope().getArea());
-                                }
-                            });
+            Set<String> unlabelablePoints = new HashSet<String>(0);
 
-                            for (Geometry poly : gList) {
-                                try {
-                                    Point point = poly.getInteriorPoint();
-                                    if (point.getCoordinate() != null) {
-                                        LabelNode node = new LabelNode(label,
-                                                point, req.target);
-                                        newLabels.add(node);
-                                    }
-                                } catch (TopologyException e) {
-                                    statusHandler.handle(Priority.VERBOSE,
-                                            "Invalid geometry cannot be labeled: "
-                                                    + label, e);
-                                    unlabelablePoints.add(label);
-                                }
-                            }
-                        }
+            int numPoints = 0;
+            for (int i = 0; i < mappedResult.getResultCount(); ++i) {
+                if (checkCanceled(result)) {
+                    return;
+                }
 
-                        if (g != null) {
-                            numPoints += g.getNumPoints();
-                            resultingGeoms.add(g);
-                            if (req.shadingField != null) {
-                                g.setUserData(mappedResult.getRowColumnValue(i,
-                                        req.shadingField.toLowerCase()));
-                            }
-                        }
+                int gid = ((Number) mappedResult.getRowColumnValue(i, GID))
+                        .intValue();
+                Geometry g = gidMap.get(gid);
+                Object obj = null;
+
+                if (req.labelField != null) {
+                    obj = mappedResult.getRowColumnValue(i,
+                            req.labelField.toLowerCase());
+                }
+
+                if ((obj != null) && (g != null)) {
+                    String label;
+                    if (obj instanceof BigDecimal) {
+                        label = Double.toString(((Number) obj).doubleValue());
+                    } else {
+                        label = obj.toString();
                     }
-
-                    if (!unlabelablePoints.isEmpty()) {
-                        statusHandler.handle(Priority.WARN,
-                                "Invalid geometries cannot be labeled: "
-                                        + unlabelablePoints.toString());
+                    int numGeometries = g.getNumGeometries();
+                    List<Geometry> gList = new ArrayList<Geometry>(
+                            numGeometries);
+                    for (int polyNum = 0; polyNum < numGeometries; polyNum++) {
+                        Geometry poly = g.getGeometryN(polyNum);
+                        gList.add(poly);
                     }
-
-                    newOutlineShape.allocate(numPoints);
-
-                    for (Geometry g : resultingGeoms) {
-                        RGB color = null;
-                        Object shadedField = g.getUserData();
-                        if (shadedField != null) {
-                            color = req.getColor(shadedField);
+                    // Sort polygons in g so biggest comes first.
+                    Collections.sort(gList, new Comparator<Geometry>() {
+                        @Override
+                        public int compare(Geometry g1, Geometry g2) {
+                            return (int) Math.signum(g2.getEnvelope().getArea()
+                                    - g1.getEnvelope().getArea());
                         }
+                    });
 
+                    for (Geometry poly : gList) {
                         try {
-                            jtsCompiler.handle(g, color, true);
-                        } catch (VizException e) {
-                            statusHandler.handle(Priority.PROBLEM,
-                                    "Error reprojecting map outline", e);
+                            Point point = poly.getInteriorPoint();
+                            if (point.getCoordinate() != null) {
+                                LabelNode node = new LabelNode(label, point,
+                                        req.getTarget());
+                                newLabels.add(node);
+                            }
+                        } catch (TopologyException e) {
+                            statusHandler.handle(Priority.VERBOSE,
+                                    "Invalid geometry cannot be labeled: "
+                                            + label, e);
+                            unlabelablePoints.add(label);
                         }
-                    }
-
-                    newOutlineShape.compile();
-
-                    if (req.shadingField != null) {
-                        newShadedShape.compile();
-                    }
-
-                    result.outlineShape = newOutlineShape;
-                    result.labels = newLabels;
-                    result.shadedShape = newShadedShape;
-                    result.colorMap = req.colorMap;
-                    result.failed = false;
-                } catch (Throwable e) {
-                    result.cause = e;
-                } finally {
-                    if (result != null && !canceled) {
-                        if (resultQueue.size() == QUEUE_LIMIT) {
-                            resultQueue.poll();
-                        }
-                        resultQueue.add(result);
-                        req.rsc.issueRefresh();
                     }
                 }
 
-                req = requestQueue.poll();
+                if (g != null) {
+                    numPoints += g.getNumPoints();
+                    resultingGeoms.add(g);
+                    if (req.shadingField != null) {
+                        g.setUserData(mappedResult.getRowColumnValue(i,
+                                req.shadingField.toLowerCase()));
+                    }
+                }
             }
 
-            return Status.OK_STATUS;
-        }
+            if (!unlabelablePoints.isEmpty()) {
+                statusHandler.handle(Priority.WARN,
+                        "Invalid geometries cannot be labeled: "
+                                + unlabelablePoints.toString());
+            }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see org.eclipse.core.runtime.jobs.Job#canceling()
-         */
-        @Override
-        protected void canceling() {
-            super.canceling();
-            this.canceled = true;
+            newOutlineShape.allocate(numPoints);
+
+            for (Geometry g : resultingGeoms) {
+                RGB color = null;
+                Object shadedField = g.getUserData();
+                if (shadedField != null) {
+                    color = req.getColor(shadedField);
+                }
+                geomData.setGeometryColor(color);
+
+                try {
+                    jtsCompiler.handle(g, geomData);
+                } catch (VizException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Error reprojecting map outline", e);
+                }
+            }
+
+            newOutlineShape.compile();
+
+            if (req.shadingField != null) {
+                newShadedShape.compile();
+            }
+
+            result.outlineShape = newOutlineShape;
+            result.labels = newLabels;
+            result.shadedShape = newShadedShape;
+            result.colorMap = req.colorMap;
         }
     }
 
@@ -580,17 +505,17 @@ public class DbMapResource extends
 
     @Override
     protected void disposeInternal() {
-        queryJob.cancel();
-        queryJob.requestQueue.clear();
-        queryJob.resultQueue.clear();
+        queryJob.stop();
+
         if (outlineShape != null) {
             outlineShape.dispose();
+            outlineShape = null;
         }
 
         if (shadedShape != null) {
             shadedShape.dispose();
+            shadedShape = null;
         }
-        lastExtent = null;
         super.disposeInternal();
     }
 
@@ -629,7 +554,6 @@ public class DbMapResource extends
             }
             simpLev = level;
         }
-        // System.out.println("dpp: " + dpp + ", simpLev: " + simpLev);
         return simpLev;
     }
 
@@ -656,9 +580,6 @@ public class DbMapResource extends
                 / screenWidth;
 
         double simpLev = getSimpLev(dppX);
-        // System.out.println("c1:" + Arrays.toString(c1) + "\nc2:"
-        // + Arrays.toString(c2) + "\ndpp:" + dppX + "\nsimpLev:"
-        // + simpLev);
 
         String labelField = getCapability(LabelableCapability.class)
                 .getLabelField();
@@ -666,7 +587,7 @@ public class DbMapResource extends
 
         String shadingField = getCapability(ShadeableCapability.class)
                 .getShadingField();
-        // System.out.println("shadingField: " + shadingField);
+
         boolean isShaded = isPolygonal() && (shadingField != null);
 
         if ((simpLev < lastSimpLev)
@@ -680,9 +601,9 @@ public class DbMapResource extends
                 Geometry boundingGeom = buildBoundingGeometry(expandedExtent,
                         worldToScreenRatio, kmPerPixel);
 
-                queryJob.request(aTarget, descriptor, this, boundingGeom,
-                        getGeomField(simpLev), labelField, shadingField,
-                        colorMap);
+                queryJob.queueRequest(new Request(aTarget, descriptor, this,
+                        boundingGeom, getGeomField(simpLev), labelField,
+                        shadingField, colorMap));
                 lastExtent = expandedExtent;
                 lastSimpLev = simpLev;
                 lastLabelField = labelField;
@@ -690,14 +611,15 @@ public class DbMapResource extends
             }
         }
 
-        MapQueryJob.Result result = queryJob.getLatestResult();
+        Result result = queryJob.getLatestResult();
         if (result != null) {
-            if (result.failed) {
+            if (result.isFailed()) {
                 lastExtent = null; // force to re-query when re-enabled
                 throw new VizException(
                         "Error processing map query request for: "
-                                + result.table, result.cause);
+                                + result.getName(), result.getCause());
             }
+
             if (outlineShape != null) {
                 outlineShape.dispose();
             }
@@ -705,6 +627,7 @@ public class DbMapResource extends
             if (shadedShape != null) {
                 shadedShape.dispose();
             }
+
             outlineShape = result.outlineShape;
             labels = result.labels;
             shadedShape = result.shadedShape;
@@ -938,9 +861,8 @@ public class DbMapResource extends
         List<InterrogationKey<?>> keyList = Arrays.asList(keys);
         Map<InterrogationKey<Geometry>, String> geomKeys = new HashMap<InterrogationKey<Geometry>, String>();
         Map<InterrogationKey<String>, String> labelKeys = new HashMap<InterrogationKey<String>, String>();
-        if (keyList.contains(Interrogator.GEOMETRY) && lastSimpLev != 0) {
-                geomKeys.put(Interrogator.GEOMETRY,
-                        getGeomField(lastSimpLev));
+        if (keyList.contains(Interrogator.GEOMETRY) && (lastSimpLev != 0)) {
+            geomKeys.put(Interrogator.GEOMETRY, getGeomField(lastSimpLev));
         }
         if (keyList.contains(LABEL_KEY)) {
             String labelField = getCapability(LabelableCapability.class)

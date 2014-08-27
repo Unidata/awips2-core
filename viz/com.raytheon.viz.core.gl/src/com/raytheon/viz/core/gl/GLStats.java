@@ -43,6 +43,7 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * ------------ ---------- ----------- --------------------------
  * Jul 19, 2012            bsteffen     Initial creation
  * Aug 14, 2014 3512       bclement     added continuous low memory warning
+ * Aug 18, 2014 3512       bclement     added no-shell version of printStats()
  * 
  * </pre>
  * 
@@ -96,6 +97,23 @@ public class GLStats {
 
     private static int lastNvxEvictionCount = 0;
 
+    /**
+     * Print statistics if GL memory use is high. Self regulates statistics
+     * collection and printing frequency.
+     * 
+     * @param gl
+     */
+    public static void printStats(GL gl) {
+        printStats(gl, null);
+    }
+
+    /**
+     * @see #printStats(GL)
+     * @param gl
+     * @param sh
+     *            display shell used for notifying the user of continuous high
+     *            memory usage.
+     */
     public static void printStats(GL gl, Shell sh) {
         // test both check freq and print freq, the check freq should be fairly
         // low so as soon as low memory conditions are reached we will
@@ -126,7 +144,7 @@ public class GLStats {
                 System.out.println(output.toString());
                 System.out.println();
             }
-            if (thisJvmAtFault
+            if (sh != null && thisJvmAtFault
                     && curTime - lastNominalTime > CONTINUOUS_HIGH_MILLIS) {
                 /* only redisplay warning after it has been nominal again */
                 lastNominalTime = Long.MAX_VALUE;

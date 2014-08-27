@@ -83,7 +83,8 @@ public class ThriftFileGenerator {
     }
 
     private static void buildThriftForClass(StringBuffer sb, Class<?> c) {
-        SerializationMetadata md = DynamicSerializationManager.inspect(c);
+        SerializationMetadata md = DynamicSerializationManager
+                .getSerializationMetadata(c);
 
         if (md.serializationFactory != null) {
             System.out
@@ -96,9 +97,9 @@ public class ThriftFileGenerator {
         sb.append(c.getName().replace(".", "_"));
         sb.append(" {" + "\n");
 
-        if (md.serializedAttributes != null) {
+        if (md.attributeNames != null) {
             int i = 1;
-            for (String attribute : md.serializedAttributes) {
+            for (String attribute : md.attributeNames) {
                 try {
                     Field field = null;
                     Class<?> classToSearch = c;

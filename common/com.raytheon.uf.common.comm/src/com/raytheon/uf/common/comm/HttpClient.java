@@ -56,6 +56,8 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
+import org.apache.http.client.protocol.RequestAddCookies;
+import org.apache.http.client.protocol.ResponseProcessCookies;
 import org.apache.http.conn.ClientConnectionManager;
 import org.apache.http.conn.ConnectionPoolTimeoutException;
 import org.apache.http.conn.params.ConnRoutePNames;
@@ -108,7 +110,8 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *                                           Https authentication failures notify handler
  *    Feb 17, 2014  2756        bclement    added content type to response object
  *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
- *    6/18/2014    1712        bphillip    Updated Proxy configuration
+ *    6/18/2014     1712        bphillip    Updated Proxy configuration
+ *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  * 
  * </pre>
  * 
@@ -314,6 +317,14 @@ public class HttpClient {
 
         static {
             client = new DefaultHttpClient(new ThreadSafeClientConnManager());
+
+            /*
+             * we don't support cookies at this time, so don't waste any time in
+             * the interceptors
+             */
+            client.removeRequestInterceptorByClass(RequestAddCookies.class);
+            client.removeResponseInterceptorByClass(ResponseProcessCookies.class);
+
             client.addRequestInterceptor(new HttpRequestInterceptor() {
                 @Override
                 public void process(final HttpRequest request,

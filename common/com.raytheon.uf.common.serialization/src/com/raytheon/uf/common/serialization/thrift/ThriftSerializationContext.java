@@ -647,7 +647,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     // Look at all the fields available
                     // Serialize all of the remaining fields
                     short id = 1;
-                    for (String keyStr : metadata.serializedAttributes) {
+                    for (String keyStr : metadata.attributeNames) {
 
                         Object val = beanMap.get(keyStr);
 

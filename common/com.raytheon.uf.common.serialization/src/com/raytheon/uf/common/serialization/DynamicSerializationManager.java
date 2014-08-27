@@ -80,6 +80,7 @@ import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
  * Nov 02, 2012 1302        djohnson    Remove field level adapters, they break python serialization.
  * Aug 06, 2013 2228        njensen     Added deserialize(byte[])
  * Aug 08, 2014 3503        bclement    moved registration of spatial serialization adapters to common.geospatial
+ * Aug 15, 2014 3541        mschenke    Made getSerializationMetadata(String) static and renamed inspect to match
  * 
  * </pre>
  * 
@@ -92,7 +93,7 @@ public class DynamicSerializationManager {
     private ISerializationContextBuilder builder;
 
     public static class SerializationMetadata {
-        public List<String> serializedAttributes;
+        public List<String> attributeNames;
 
         public ISerializationTypeAdapter<?> serializationFactory;
 
@@ -292,6 +293,36 @@ public class DynamicSerializationManager {
     }
 
     /**
+     * Get the serialization metadata. Build it if not found
+     * 
+     * @param name
+     * @return
+     */
+    public static SerializationMetadata getSerializationMetadata(String name) {
+        // we can't synchronize on this because it's possible the
+        // Class.forName() will trigger code that comes back into here and
+        // then deadlocks
+        SerializationMetadata sm = serializedAttributes.get(name);
+        if (sm == null) {
+            try {
+                sm = getSerializationMetadata(Class.forName(name, true,
+                        DynamicSerializationManager.class.getClassLoader()));
+                if (sm == null) {
+                    serializedAttributes.put(name, NO_METADATA);
+                }
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            }
+        }
+
+        if (sm == NO_METADATA) {
+            return null;
+        }
+        return sm;
+
+    }
+
+    /**
      * Inspect a class and return the metadata for the object
      * 
      * If the class has not been annotated, this will return null
@@ -302,7 +333,7 @@ public class DynamicSerializationManager {
      *            the class
      * @return the metadata
      */
-    public static SerializationMetadata inspect(Class<?> c) {
+    public static SerializationMetadata getSerializationMetadata(Class<?> c) {
 
         // Check for base types
 
@@ -312,7 +343,7 @@ public class DynamicSerializationManager {
         }
 
         attribs = new SerializationMetadata();
-        attribs.serializedAttributes = new ArrayList<String>();
+        attribs.attributeNames = new ArrayList<String>();
         attribs.attributesWithFactories = new HashMap<String, ISerializationTypeAdapter<?>>();
 
         DynamicSerializeTypeAdapter serializeAdapterTag = c
@@ -335,7 +366,7 @@ public class DynamicSerializationManager {
         if (attribs.serializationFactory == null) {
             Class<?> superClazz = c.getSuperclass();
             while (superClazz != null && attribs.serializationFactory == null) {
-                SerializationMetadata superMd = inspect(superClazz);
+                SerializationMetadata superMd = getSerializationMetadata(superClazz);
                 if (superMd != null && superMd.serializationFactory != null) {
                     attribs.serializationFactory = superMd.serializationFactory;
                     attribs.adapterStructName = superMd.adapterStructName;
@@ -391,7 +422,7 @@ public class DynamicSerializationManager {
                     if (annotation != null) {
                         String fieldName = field.getName();
 
-                        attribs.serializedAttributes.add(field.getName());
+                        attribs.attributeNames.add(field.getName());
                         if (serializeAdapterTag == null) {
                             serializeAdapterTag = field.getType()
                                     .getAnnotation(
@@ -442,13 +473,13 @@ public class DynamicSerializationManager {
         }
 
         // Sort to guarantee universal ordering
-        Collections.sort(attribs.serializedAttributes);
+        Collections.sort(attribs.attributeNames);
         serializedAttributes.put(c.getName(), attribs);
 
         // inspect inner classes
         Class<?>[] innerClzs = c.getClasses();
         for (Class<?> innerClz : innerClzs) {
-            inspect(innerClz);
+            getSerializationMetadata(innerClz);
         }
 
         return attribs;
@@ -471,33 +502,4 @@ public class DynamicSerializationManager {
         }
     }
 
-    /**
-     * Get the serialization metadata. Build it if not found
-     * 
-     * @param name
-     * @return
-     */
-    public SerializationMetadata getSerializationMetadata(String name) {
-        // we can't synchronize on this because it's possible the
-        // Class.forName() will trigger code that comes back into here and
-        // then deadlocks
-        SerializationMetadata sm = serializedAttributes.get(name);
-        if (sm == null) {
-            try {
-                sm = inspect(Class.forName(name, true, getClass()
-                        .getClassLoader()));
-                if (sm == null) {
-                    serializedAttributes.put(name, NO_METADATA);
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            }
-        }
-
-        if (sm == NO_METADATA) {
-            return null;
-        }
-        return sm;
-
-    }
 }

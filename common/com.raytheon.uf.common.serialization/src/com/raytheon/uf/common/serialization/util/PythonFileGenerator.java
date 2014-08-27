@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,9 +26,14 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.lang.reflect.Field;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
@@ -38,25 +43,29 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * generate the python side. Technically you could create the python object
  * definitions at runtime based on the decoding of the
  * SelfDescribingBinaryProtocol, but that could get messy.
- * 
+ *
  * Usage: Run this tool as a java main() from within Eclipse. You should give it
  * two command line arguments: -d outputDirectory, typically should be an
  * absolute path to the pythonPackages/dynamicserialize/dstypes directory. -f
  * filename, a filename to use as input, where the file has the fully-qualified
  * classnames of the classes you want to generate python dynamicserialize
  * classes for. Each line of this file should have one FQN of a class.
- * 
+ *
+ * Double, short, and byte fields will be wrapped using numpy float64, int16,
+ * and int8 (respectively) unless the --no-wrap argument is provided. This
+ * affects both primitive and boxed types.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2010            njensen     Initial creation
  * Jul 31, 2012  #965      dgilling    Fix path to file header.
  * Jul 24, 2014   3185     njesnen     Improved javadoc
- * 
+ * Aug 19, 2014   3393     nabowle     Added numpy wrappers, software header.
  * </pre>
- * 
+ *
  * @author njensen
  * @version 1.0
  */
@@ -71,7 +80,20 @@ public class PythonFileGenerator {
 
     private static final String INIT_FILE = "__init__.py";
 
-    public static void generateFile(File destDir, Class<?> clz, String header)
+    private static final Map<Class<?>, String> WRAPPERS;
+
+    static {
+        WRAPPERS = new HashMap<>();
+        WRAPPERS.put(double.class, "numpy.float64");
+        WRAPPERS.put(short.class, "numpy.int16");
+        WRAPPERS.put(byte.class, "numpy.int8");
+        WRAPPERS.put(Double.class, WRAPPERS.get(double.class));
+        WRAPPERS.put(Short.class, WRAPPERS.get(short.class));
+        WRAPPERS.put(Byte.class, WRAPPERS.get(byte.class));
+    }
+
+    public static void generateFile(File destDir, Class<?> clz, String header,
+            boolean wrap)
             throws IOException {
         String name = clz.getName();
         String shortname = name.substring(name.lastIndexOf('.') + 1);
@@ -104,17 +126,58 @@ public class PythonFileGenerator {
         fw.write(COMMENT);
         fw.write("File auto-generated against equivalent DynamicSerialize Java class");
         fw.write(NEW_LINE);
+        fw.write(COMMENT);
         fw.write(NEW_LINE);
+        fw.write(COMMENT);
+        fw.write("     SOFTWARE HISTORY");
+        fw.write(NEW_LINE);
+        fw.write(COMMENT);
+        fw.write(NEW_LINE);
+        fw.write(COMMENT);
+        fw.write("    Date            Ticket#       Engineer       Description");
+        fw.write(NEW_LINE);
+        fw.write(COMMENT);
+        fw.write("    ------------    ----------    -----------    --------------------------");
+        fw.write(NEW_LINE);
+        fw.write(COMMENT);
+        fw.write("    ");
+        fw.write(new SimpleDateFormat("MMM dd, yyyy").format(new Date()));
+        fw.write("                  ");
+        String username = System.getProperty("user.name");
+        String namespace = "              ";
+        if (username.length() > namespace.length()) {
+            // long-named users will have to fill it out themselves
+            username = "";
+        }
+        fw.write(username);
+        fw.write(namespace.substring(username.length()));
+        fw.write(" Generated");
+        fw.write(NEW_LINE);
+        fw.write(NEW_LINE);
+
+        Map<String, Class<?>> fields = getSerializedFields(clz);
+        // only import numpy if used.
+        if (wrap) {
+            for (Class<?> clazz : fields.values()) {
+                if (WRAPPERS.containsKey(clazz)) {
+                    fw.write("import numpy");
+                    fw.write(NEW_LINE);
+                    fw.write(NEW_LINE);
+                    break;
+                }
+            }
+        }
+
         fw.write("class " + shortname + "(object):");
         fw.write(NEW_LINE);
         fw.write(NEW_LINE);
 
-        List<String> fields = getSerializedFields(clz);
+
 
         fw.write(INDENT);
         fw.write("def __init__(self):");
         fw.write(NEW_LINE);
-        for (String s : fields) {
+        for (String s : fields.keySet()) {
             fw.write(INDENT);
             fw.write(INDENT);
             fw.write("self.");
@@ -124,8 +187,13 @@ public class PythonFileGenerator {
         }
 
         fw.write(NEW_LINE);
-        for (String s : fields) {
-            String title = s.substring(0, 1).toUpperCase() + s.substring(1);
+        String s;
+        Class<?> fieldClass;
+        String title;
+        for (Entry<String, Class<?>> entry : fields.entrySet()) {
+            s = entry.getKey();
+            fieldClass = entry.getValue();
+            title = s.substring(0, 1).toUpperCase() + s.substring(1);
             fw.write(INDENT);
             fw.write("def get");
             fw.write(title);
@@ -150,7 +218,14 @@ public class PythonFileGenerator {
             fw.write("self.");
             fw.write(s);
             fw.write(" = ");
-            fw.write(s);
+            if (wrap && WRAPPERS.containsKey(fieldClass)) {
+                fw.write(WRAPPERS.get(fieldClass));
+                fw.write("(");
+                fw.write(s);
+                fw.write(")");
+            } else {
+                fw.write(s);
+            }
             fw.write(NEW_LINE);
             fw.write(NEW_LINE);
         }
@@ -221,20 +296,20 @@ public class PythonFileGenerator {
         fw.close();
     }
 
-    public static List<String> getSerializedFields(Class<?> clz) {
-        List<String> list = new ArrayList<String>();
+    public static Map<String, Class<?>> getSerializedFields(Class<?> clz) {
+        Map<String, Class<?>> map = new HashMap<>();
         while (clz != null) {
             Field[] fields = clz.getDeclaredFields();
             for (Field f : fields) {
                 Object ann = f.getAnnotation(DynamicSerializeElement.class);
                 if (ann != null) {
-                    list.add(f.getName());
+                    map.put(f.getName(), f.getType());
                 }
             }
             clz = clz.getSuperclass();
         }
 
-        return list;
+        return map;
     }
 
     /**
@@ -243,12 +318,15 @@ public class PythonFileGenerator {
     public static void main(String[] args) throws Exception {
         String fileToRead = null;
         String destDir = null;
+        boolean wrap = true;
 
         for (int i = 0; i < args.length; ++i) {
             if (args[i].equals("-f") && i < args.length - 1) {
                 fileToRead = args[++i];
             } else if (args[i].equals("-d") && i < args.length - 1) {
                 destDir = args[++i];
+            } else if (args[i].equals("--no-wrap")) {
+                wrap = false;
             }
         }
 
@@ -314,7 +392,7 @@ public class PythonFileGenerator {
                 }
 
                 try {
-                    generateFile(destFile, c, header);
+                    generateFile(destFile, c, header, wrap);
                 } catch (IOException e) {
                     e.printStackTrace();
                     continue;

@@ -17,14 +17,14 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.auth.req;
+package com.raytheon.uf.edex.requestsrv.request;
 
 import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
-import com.raytheon.uf.edex.auth.HandlerRegistry;
+import com.raytheon.uf.edex.requestsrv.HandlerRegistry;
 
 /**
  * Allows a server and server->server request to bypass the normal privileged
@@ -36,7 +36,8 @@ import com.raytheon.uf.edex.auth.HandlerRegistry;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 15, 2012 1322       djohnson     Initial creation
+ * Nov 15, 2012 1322       djohnson    Initial creation
+ * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
  * 
  * </pre>
  * 
@@ -44,8 +45,7 @@ import com.raytheon.uf.edex.auth.HandlerRegistry;
  * @version 1.0
  */
 
-public class ServerPrivilegedRequestHandler
-        implements
+public class ServerPrivilegedRequestHandler implements
         IRequestHandler<ServerPrivilegedRequestHandler.ServerPrivilegedRequest> {
 
     /**
@@ -110,7 +110,8 @@ public class ServerPrivilegedRequestHandler
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     @Override
-    public Object handleRequest(ServerPrivilegedRequest request) throws Exception {
+    public Object handleRequest(ServerPrivilegedRequest request)
+            throws Exception {
         // Delegate to the handler for the wrapped request
         String id = request.wrappedRequest.getClass().getCanonicalName();
         IRequestHandler handler = registry.getRequestHandler(id);

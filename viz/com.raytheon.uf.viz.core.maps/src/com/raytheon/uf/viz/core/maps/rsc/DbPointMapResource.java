@@ -24,20 +24,14 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import java.util.concurrent.ArrayBlockingQueue;
 
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.pointdata.vadriver.VA_Advanced;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.pointdata.vadriver.VA_Advanced.IVAMonitor;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -48,6 +42,9 @@ import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest;
+import com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult;
 import com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResourceData.ColumnDefinition;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorableCapability;
@@ -72,6 +69,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Apr 09, 2014  2997     randerso    Replaced buildEnvelope with buildBoundingGeometry
  * May 14, 2014  3074     bsteffen    Remove WORD_WRAP TextStyle and handle
  *                                    wrapping locally.
+ * Aug 11, 2014  3459     randerso    Cleaned up MapQueryJob implementation
  * 
  * </pre>
  * 
@@ -80,8 +78,6 @@ import com.vividsolutions.jts.io.WKBReader;
  */
 public class DbPointMapResource extends
         AbstractDbMapResource<DbPointMapResourceData, MapDescriptor> {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DbPointMapResource.class);
 
     private class LabelNode {
         private final String label;
@@ -152,231 +148,176 @@ public class DbPointMapResource extends
         }
     }
 
-    private class MapQueryJob extends Job {
+    public class Request extends AbstractMapRequest<DbPointMapResource> {
+        DbPointMapResource rsc;
 
-        private static final int QUEUE_LIMIT = 1;
+        String labelField;
 
-        private class Request {
-            DbPointMapResource rsc;
+        String goodnessField;
 
-            String labelField;
-
-            String goodnessField;
-
-            Geometry boundingGeometry;
-
-            public Request(DbPointMapResource rsc, String labelField,
-                    String goodnessField, Geometry boundingGeometry) {
-                super();
-                this.rsc = rsc;
-                this.labelField = labelField;
-                this.goodnessField = goodnessField;
-                this.boundingGeometry = boundingGeometry;
-            }
-
+        public Request(IGraphicsTarget target, DbPointMapResource rsc,
+                String labelField, String goodnessField,
+                Geometry boundingGeometry) {
+            super(target, rsc, boundingGeometry);
+            this.labelField = labelField;
+            this.goodnessField = goodnessField;
         }
 
-        public class Result {
+    }
 
-            public List<LabelNode> labels;
+    public class Result extends AbstractMapResult {
 
-            public boolean failed;
+        public List<LabelNode> labels;
 
-            public Throwable cause;
+        private Result(Request request) {
+            super(request);
+        }
 
-            private Result() {
-                this.failed = true;
+        /*
+         * (non-Javadoc)
+         * 
+         * @see com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult#dispose()
+         */
+        @Override
+        public void dispose() {
+            if (labels != null) {
+                labels.clear();
+                labels = null;
             }
         }
 
-        private ArrayBlockingQueue<Request> requestQueue = new ArrayBlockingQueue<Request>(
-                QUEUE_LIMIT);
+    }
 
-        private ArrayBlockingQueue<Result> resultQueue = new ArrayBlockingQueue<Result>(
-                QUEUE_LIMIT);
-
-        private boolean canceled;
+    private class MapQueryJob extends AbstractMapQueryJob<Request, Result> {
 
         public MapQueryJob() {
-            super("Retrieving map...");
-        }
-
-        public void request(IGraphicsTarget target, DbPointMapResource rsc,
-                Geometry boundingGeom, String labelField, String goodnessField) {
-            if (requestQueue.size() == QUEUE_LIMIT) {
-                requestQueue.poll();
-            }
-            requestQueue.add(new Request(rsc, labelField, goodnessField,
-                    boundingGeom));
-
-            this.cancel();
-            this.schedule();
-        }
-
-        public Result getLatestResult() {
-            return resultQueue.poll();
+            super();
         }
 
         /*
          * (non-Javadoc)
          * 
-         * @seeorg.eclipse.core.runtime.jobs.Job#run(org.eclipse.core.runtime.
-         * IProgressMonitor)
+         * @see
+         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob#getNewResult
+         * (com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest)
          */
         @Override
-        protected IStatus run(IProgressMonitor monitor) {
-            Request req = requestQueue.poll();
-            while (req != null) {
-                Result result = new Result();
-                try {
-                    long t0 = System.currentTimeMillis();
-                    List<String> columns = new ArrayList<String>();
-                    if (req.labelField != null) {
-                        columns.add(req.labelField);
+        protected Result getNewResult(Request req) {
+            return new Result(req);
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see
+         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob#processRequest
+         * (com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest,
+         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult)
+         */
+        @Override
+        protected void processRequest(Request req, final Result result)
+                throws Exception {
+            List<String> columns = new ArrayList<String>();
+            if (req.labelField != null) {
+                columns.add(req.labelField);
+            }
+            if ((req.goodnessField != null)
+                    && (req.goodnessField != req.labelField)) {
+                columns.add(req.goodnessField);
+            }
+            if (resourceData.getColumns() != null) {
+                for (ColumnDefinition column : resourceData.getColumns()) {
+                    if (columns.contains(column.getName())) {
+                        columns.remove(column.getName());
                     }
-                    if ((req.goodnessField != null)
-                            && (req.goodnessField != req.labelField)) {
-                        columns.add(req.goodnessField);
-                    }
-                    if (resourceData.getColumns() != null) {
-                        for (ColumnDefinition column : resourceData
-                                .getColumns()) {
-                            if (columns.contains(column.getName())) {
-                                columns.remove(column.getName());
-                            }
-                            columns.add(column.toString());
-                        }
-                    }
-                    columns.add("AsBinary(" + resourceData.getGeomField()
-                            + ") as " + resourceData.getGeomField());
+                    columns.add(column.toString());
+                }
+            }
+            columns.add("AsBinary(" + resourceData.getGeomField() + ") as "
+                    + resourceData.getGeomField());
 
-                    List<String> constraints = null;
-                    if (resourceData.getConstraints() != null) {
-                        constraints = Arrays.asList(resourceData
-                                .getConstraints());
-                    }
+            List<String> constraints = null;
+            if (resourceData.getConstraints() != null) {
+                constraints = Arrays.asList(resourceData.getConstraints());
+            }
 
-                    QueryResult results = DbMapQueryFactory.getMapQuery(
-                            resourceData.getTable(),
-                            resourceData.getGeomField()).queryWithinGeometry(
-                            req.boundingGeometry, columns, constraints);
+            QueryResult results = DbMapQueryFactory.getMapQuery(
+                    resourceData.getTable(), resourceData.getGeomField())
+                    .queryWithinGeometry(req.getBoundingGeom(), columns,
+                            constraints);
 
-                    long t1 = System.currentTimeMillis();
-                    System.out.println("Maps DB query took: " + (t1 - t0)
-                            + "ms");
+            List<LabelNode> newLabels = new ArrayList<LabelNode>();
 
-                    List<LabelNode> newLabels = new ArrayList<LabelNode>();
-
-                    WKBReader wkbReader = new WKBReader();
-                    for (int c = 0; c < results.getResultCount(); c++) {
-                        if (canceled) {
-                            canceled = false;
-                            result = null;
-                            // System.out.println("MapQueryJob Canceled.");
-                            return Status.CANCEL_STATUS;
-                        }
-                        Geometry g = null;
-                        Object geomObj = results.getRowColumnValue(c,
-                                resourceData.getGeomField());
-                        if (geomObj instanceof byte[]) {
-                            byte[] wkb = (byte[]) geomObj;
-                            g = wkbReader.read(wkb);
-                        } else {
-                            statusHandler.handle(Priority.ERROR,
-                                    "Expected byte[] received "
-                                            + geomObj.getClass().getName()
-                                            + ": " + geomObj.toString());
-                        }
-
-                        if (g != null) {
-                            String label = "";
-                            if ((req.labelField != null)
-                                    && (results.getRowColumnValue(c,
-                                            req.labelField) != null)) {
-                                Object r = results.getRowColumnValue(c,
-                                        req.labelField);
-                                if (r instanceof BigDecimal) {
-                                    label = Double.toString(((Number) r)
-                                            .doubleValue());
-                                } else {
-                                    label = r.toString();
-                                }
-                            }
-                            LabelNode node = new LabelNode(label,
-                                    g.getCentroid());
-
-                            if (req.goodnessField != null) {
-                                node.setGoodness(((Number) results
-                                        .getRowColumnValue(c, req.goodnessField))
-                                        .intValue());
-                            }
-                            newLabels.add(node);
-                        }
-                    }
-                    long t2 = System.currentTimeMillis();
-                    System.out.println("Creating labels took: " + (t2 - t1)
-                            + "ms");
-
-                    VA_Advanced distanceCalc = new VA_Advanced();
-                    distanceCalc.setVaWeighting(0.0f);
-                    Coordinate[] coords = new Coordinate[newLabels.size()];
-                    Integer[] goodness = new Integer[newLabels.size()];
-                    Double[] dst = new Double[newLabels.size()];
-                    for (int j = 0; j < newLabels.size(); j++) {
-                        coords[j] = newLabels.get(j).getLocation().asLatLon();
-                        goodness[j] = newLabels.get(j).getGoodness();
-                        dst[j] = 0d;
-                    }
-                    Double[] distances;
-
-                    if (req.goodnessField != null) {
-                        distances = distanceCalc.getVaAdvanced(coords,
-                                goodness, dst);
-                    } else {
-                        distances = distanceCalc.getVaSimple(coords, dst);
-                    }
-
-                    for (int j = 0; j < newLabels.size(); j++) {
-                        newLabels.get(j).setDistance(distances[j]);
-                    }
-                    long t3 = System.currentTimeMillis();
-                    System.out
-                            .println("Computing progressive disclosure took: "
-                                    + (t3 - t1) + "ms");
-                    System.out.println("Total map retrieval took: " + (t3 - t0)
-                            + "ms");
-
-                    result.labels = newLabels;
-                    result.failed = false;
-
-                } catch (Throwable e) {
-                    result.cause = e;
-                } finally {
-                    if (result != null) {
-                        if (resultQueue.size() == QUEUE_LIMIT) {
-                            resultQueue.poll();
-                        }
-                        resultQueue.add(result);
-                        req.rsc.issueRefresh();
-                    }
+            WKBReader wkbReader = new WKBReader();
+            for (int c = 0; c < results.getResultCount(); c++) {
+                if (checkCanceled(result)) {
+                    return;
                 }
 
-                req = requestQueue.poll();
+                Geometry g = null;
+                Object geomObj = results.getRowColumnValue(c,
+                        resourceData.getGeomField());
+                if (geomObj instanceof byte[]) {
+                    byte[] wkb = (byte[]) geomObj;
+                    g = wkbReader.read(wkb);
+                } else {
+                    statusHandler.handle(Priority.ERROR,
+                            "Expected byte[] received "
+                                    + geomObj.getClass().getName() + ": "
+                                    + geomObj.toString());
+                }
+
+                if (g != null) {
+                    String label = "";
+                    if ((req.labelField != null)
+                            && (results.getRowColumnValue(c, req.labelField) != null)) {
+                        Object r = results.getRowColumnValue(c, req.labelField);
+                        if (r instanceof BigDecimal) {
+                            label = Double.toString(((Number) r).doubleValue());
+                        } else {
+                            label = r.toString();
+                        }
+                    }
+                    LabelNode node = new LabelNode(label, g.getCentroid());
+
+                    if (req.goodnessField != null) {
+                        node.setGoodness(((Number) results.getRowColumnValue(c,
+                                req.goodnessField)).intValue());
+                    }
+                    newLabels.add(node);
+                }
             }
 
-            return Status.OK_STATUS;
-        }
+            VA_Advanced distanceCalc = new VA_Advanced(new IVAMonitor() {
+                @Override
+                public boolean isCanceled() {
+                    return checkCanceled(result);
+                }
+            });
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see org.eclipse.core.runtime.jobs.Job#canceling()
-         */
-        @Override
-        protected void canceling() {
-            super.canceling();
+            distanceCalc.setVaWeighting(0.0f);
+            Coordinate[] coords = new Coordinate[newLabels.size()];
+            Integer[] goodness = new Integer[newLabels.size()];
+            Double[] dst = new Double[newLabels.size()];
+            for (int j = 0; j < newLabels.size(); j++) {
+                coords[j] = newLabels.get(j).getLocation().asLatLon();
+                goodness[j] = newLabels.get(j).getGoodness();
+                dst[j] = 0d;
+            }
+            Double[] distances;
 
-            this.canceled = true;
+            if (req.goodnessField != null) {
+                distances = distanceCalc.getVaAdvanced(coords, goodness, dst);
+            } else {
+                distances = distanceCalc.getVaSimple(coords, dst);
+            }
+
+            for (int j = 0; j < newLabels.size(); j++) {
+                newLabels.get(j).setDistance(distances[j]);
+            }
+
+            result.labels = newLabels;
+
         }
     }
 
@@ -392,6 +333,18 @@ public class DbPointMapResource extends
             LoadProperties loadProperties) {
         super(data, loadProperties);
         queryJob = new MapQueryJob();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResource#disposeInternal()
+     */
+    @Override
+    protected void disposeInternal() {
+        queryJob.stop();
+        super.disposeInternal();
     }
 
     @Override
@@ -426,26 +379,26 @@ public class DbPointMapResource extends
                 Geometry boundingGeom = buildBoundingGeometry(expandedExtent,
                         worldToScreenRatio, kmPerPixel);
 
-                queryJob.request(aTarget, this, boundingGeom, labelField,
-                        resourceData.getGoodnessField());
+                queryJob.queueRequest(new Request(aTarget, this, labelField,
+                        resourceData.getGoodnessField(), boundingGeom));
+
                 lastExtent = expandedExtent;
                 lastLabelField = labelField;
             }
         }
 
-        MapQueryJob.Result result = queryJob.getLatestResult();
+        Result result = queryJob.getLatestResult();
         if (result != null) {
-            if (result.failed) {
+            if (result.isFailed()) {
                 lastExtent = null; // force to re-query when re-enabled
-                throw new VizException("Error processing map query request",
-                        result.cause);
+                throw new VizException(
+                        "Error processing map query request for: "
+                                + result.getName(), result.getCause());
             }
             labels = result.labels;
         }
 
-        if (labels == null) {
-            issueRefresh();
-        } else {
+        if (labels != null) {
             if (font == null) {
                 font = aTarget.initializeFont(aTarget.getDefaultFont()
                         .getFontName(), (float) (10 * magnification), null);

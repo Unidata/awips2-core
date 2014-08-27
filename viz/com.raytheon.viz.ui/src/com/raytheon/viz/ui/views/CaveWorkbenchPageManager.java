@@ -58,6 +58,7 @@ import org.eclipse.ui.internal.WorkbenchPage;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 11, 2012            bsteffen     Initial creation
+ * Aug 26, 2014 3539       bclement     fixed NPE when floatView() is called for a fast view
  * 
  * </pre>
  * 
@@ -235,7 +236,13 @@ public class CaveWorkbenchPageManager {
         ViewSite site = ((ViewSite) part.getViewSite());
         WorkbenchPage page = (WorkbenchPage) site.getPage();
         PartPane pane = site.getPane();
-        Control control = pane.getStack().getControl();
+        PartStack stack = pane.getStack();
+        Control control;
+        if (stack != null) {
+            control = stack.getControl();
+        } else {
+            control = pane.getControl();
+        }
         Rectangle bounds = control.getBounds();
         Point corner = control.getParent().toDisplay(bounds.x, bounds.y);
         bounds.x = corner.x;

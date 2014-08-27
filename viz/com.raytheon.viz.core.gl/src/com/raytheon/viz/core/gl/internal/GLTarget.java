@@ -149,6 +149,8 @@ import com.sun.opengl.util.j2d.TextRenderer;
  *                                      removed drawWireFrameShapeInternal()
  * Aug 07, 2014  3492     mapeters    Replaced deprecated createWireframeShape() methods, deprecated
  *                                    calls now handled by {@link AbstractGraphicsTarget}
+ * Aug 18, 2014  3512     bclement    fixed NPE when GLStats called without canvas
+ * Aug 21, 2014  3459     randerso    Throw exception if attempt to draw non-GL wireframeshape
  * 
  * </pre>
  * 
@@ -224,7 +226,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
 
         private void handleRemove(GLTextureObject value) {
-            if (value != null && value.isValid()) {
+            if ((value != null) && value.isValid()) {
                 value.dispose();
             }
         }
@@ -279,7 +281,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
          * Make sure we are passed something we can draw on
          */
         if (!(canvas instanceof GLCanvas)) {
-            throw new VizException("Must provide gl-enabled canvas");
+            throw new VizException("Must provide GL-enabled canvas");
         }
 
         theCanvas = (GLCanvas) canvas;
@@ -376,7 +378,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void beginFrame(IView view, boolean clearBackground) {
 
-        if (theCanvas != null && theCanvas.isDisposed()) {
+        if ((theCanvas != null) && theCanvas.isDisposed()) {
             return;
         }
 
@@ -461,7 +463,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theContext.destroyContext();
 
-        if (theCanvas != null && theCanvas.isDisposed() == false) {
+        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
             theCanvas.removeListener(SWT.Resize, this.canvasResizeListener);
         }
         extensionManager.dispose();
@@ -582,7 +584,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 gl.glBlendColor(1.0f, 1.0f, 1.0f, blendAlpha);
                 gl.glColor4f(1.0f, 1.0f, 1.0f, blendAlpha);
             }
-            if (!capabilities.cardSupportsShaders && logFactor > 0.0) {
+            if (!capabilities.cardSupportsShaders && (logFactor > 0.0)) {
                 // Normally the colorbar is scaled in shader, but we can do the
                 // same thing with a mesh
 
@@ -598,7 +600,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 for (int c = 1; c < 10; c++) {
                     // linear value for index and x
                     float index = c / 10.0f;
-                    double x = x1 + index * (x2 - x1);
+                    double x = x1 + (index * (x2 - x1));
                     // Make index Log
                     double lg = Math.log(logFactor + index);
                     index = (float) ((lg - minLog) / (maxLog - minLog));
@@ -801,7 +803,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             if (shape instanceof GLShadedShape) {
                 glShapes.add((GLShadedShape) shape);
             } else {
-                throw new VizException("Must pass gl shape: "
+                throw new VizException("Must pass GL shape: "
                         + shape.getClass().getName());
             }
         }
@@ -896,6 +898,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             } finally {
                 popGLState();
             }
+        } else {
+            throw new VizException("Must pass GL shape: "
+                    + shape.getClass().getName());
         }
     }
 
@@ -909,14 +914,18 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         makeContextCurrent();
         gl.glFinish();
 
-        if (theCanvas != null && theCanvas.isDisposed() == false) {
+        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
             theCanvas.swapBuffers();
         }
         GLContextBridge.makeMasterContextCurrent();
 
         GLDisposalManager.performDispose(GLU.getCurrentGL());
 
-        GLStats.printStats(gl, theCanvas.getShell());
+        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
+            GLStats.printStats(gl, theCanvas.getShell());
+        } else {
+            GLStats.printStats(gl);
+        }
 
         GLContextBridge.releaseMasterContext();
         releaseContext();
@@ -963,8 +972,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      *            the style of the line
      */
     protected void handleLineStyle(LineStyle lineStyle) {
-        if (lineStyle != null && lineStyle != LineStyle.SOLID
-                && lineStyle != LineStyle.DEFAULT) {
+        if ((lineStyle != null) && (lineStyle != LineStyle.SOLID)
+                && (lineStyle != LineStyle.DEFAULT)) {
             gl.glEnable(GL.GL_LINE_STIPPLE);
             gl.glLineStipple(lineStyle.getFactor(), lineStyle.getPattern());
         } else {
@@ -1078,7 +1087,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public IFont initializeFont(String font) {
-        if (fontFactory != null && fontFactory.hasId(font)) {
+        if ((fontFactory != null) && fontFactory.hasId(font)) {
             return fontFactory.getFont(font);
         }
         return defaultFont.deriveWithSize(defaultFont.getFontSize());
@@ -1233,7 +1242,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void setNeedsRefresh(boolean needsRefresh) {
         synchronized (this) {
-            if (needsRefresh && refreshCount <= 1) {
+            if (needsRefresh && (refreshCount <= 1)) {
                 refreshCount += 2;
             }
         }
@@ -1248,8 +1257,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void setupClippingPlane(IExtent extent) {
-        if (this.clippingPane == extent
-                || (this.clippingPane != null && extent != null && this.clippingPane
+        if ((this.clippingPane == extent)
+                || ((this.clippingPane != null) && (extent != null) && this.clippingPane
                         .equals(extent))) {
             // Clipping pane already set to this
             return;
@@ -1381,7 +1390,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     public double[] unproject(double x, double y, double z) {
 
-        if (z < 0 || z > 1) {
+        if ((z < 0) || (z > 1)) {
             return null;
         }
 
@@ -1406,7 +1415,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public Rectangle getBounds() {
-        if (theCanvas != null && theCanvas.isDisposed()) {
+        if ((theCanvas != null) && theCanvas.isDisposed()) {
             return null;
         }
 
@@ -1474,7 +1483,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
 
         GLTextureObject i = loadedColorMaps.get(name);
-        if (i == null || cmap.isChanged()) {
+        if ((i == null) || cmap.isChanged()) {
             if (i != null) {
                 loadedColorMaps.remove(name);
             }
@@ -1630,11 +1639,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         case GL.GL_NO_ERROR:
             break;
         case GL.GL_INVALID_ENUM: {
-            message = "Invalid enum passed to gl!";
+            message = "Invalid enum passed to GL!";
             break;
         }
         case GL.GL_INVALID_VALUE: {
-            message = "Invalid value passed to gl!";
+            message = "Invalid value passed to GL!";
             break;
         }
         case GL.GL_INVALID_OPERATION: {
@@ -1684,7 +1693,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void drawPoints(Collection<double[]> locations, RGB color,
             PointStyle pointStyle, float magnification) throws VizException {
-        if (pointStyle == PointStyle.NONE || locations.size() == 0) {
+        if ((pointStyle == PointStyle.NONE) || (locations.size() == 0)) {
             return;
         }
 
@@ -1796,7 +1805,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 case PIPE:
                     buf.put(new float[] { x, y - yTick, x, y + yTick });
                     break;
-                default: 
+                default:
                     statusHandler.error("Unsupported point style: "
                             + pointStyle);
                 }
