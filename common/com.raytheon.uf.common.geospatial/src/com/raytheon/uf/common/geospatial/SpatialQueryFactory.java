@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.geospatial;
 
-
 /**
  * SpatialQueryFactory
  * 
@@ -29,7 +28,8 @@ package com.raytheon.uf.common.geospatial;
  *   
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
- *    Dec 7, 2007             chammack    Initial Creation.
+ *    Dec 07, 2007             chammack    Initial Creation.
+ *    Aug 27, 2014  3356       njensen     Inject class implementation through spring
  * 
  * </pre>
  * 
@@ -37,42 +37,43 @@ package com.raytheon.uf.common.geospatial;
  * @version 1
  */
 public class SpatialQueryFactory {
-	
-	public static String CAVE_FACTORY = "com.raytheon.viz.core.spatial.SpatialDbQuery";
-	public static String EDEX_FACTORY = "com.raytheon.edex.common.SpatialDbQuery";
-	public static String PROP = "eclipse.product";
-	public static String PROP_VAL = "com.raytheon.viz.product.awips.CAVE";
+
+    private static Class<ISpatialQuery> clazz;
+
+    private static String PROP = "eclipse.product";
+
+    private static String PROP_VAL = "com.raytheon.viz.product.awips.CAVE";
+
+    private SpatialQueryFactory() {
+
+    }
 
     public static ISpatialQuery create() throws SpatialException {
-    	
-    	ISpatialQuery factory = null;
-    	String prop = System.getProperty(PROP);
-    	
-    	try {
-			if (prop != null && prop.equals(PROP_VAL)) {
-				factory = (ISpatialQuery) Class.forName(CAVE_FACTORY).newInstance();
-			} else {
-				factory = (ISpatialQuery) Class.forName(EDEX_FACTORY).newInstance();
-			}
-		} catch (InstantiationException e) {
-			e.printStackTrace();
-			throw new SpatialException("SpatialQueryFactory: Property"+prop+" "+e.getMessage(), e);
-		} catch (IllegalAccessException e) {
-			e.printStackTrace();
-			throw new SpatialException("SpatialQueryFactory: Property"+prop+" "+e.getMessage(), e);
-		} catch (ClassNotFoundException e) {
-			e.printStackTrace();
-			throw new SpatialException("SpatialQueryFactory: Property"+prop+" "+e.getMessage(), e);
-		}
-    	
-    	return factory;
+        if (clazz == null) {
+            throw new IllegalStateException(
+                    "SpatialQueryFactory has a null ISpatialQuery implementation!");
+        }
+
+        ISpatialQuery query = null;
+        try {
+            query = clazz.newInstance();
+        } catch (Exception e) {
+            throw new SpatialException("Unable to create spatial query", e);
+        }
+        return query;
     }
-    
+
+    /**
+     * TODO: remove this method, it should have never existed
+     * 
+     * @return the word CAVE or EDEX
+     */
+    @Deprecated
     public static String getType() {
-        
+
         String prop = System.getProperty(PROP);
         String type = null;
-        
+
         try {
             if (prop != null && prop.equals(PROP_VAL)) {
                 type = "CAVE";
@@ -80,10 +81,21 @@ public class SpatialQueryFactory {
                 type = "EDEX";
             }
             return type;
-        }
-        catch(Exception e) {
-           e.printStackTrace();
+        } catch (Exception e) {
+            e.printStackTrace();
         }
         return null;
+    }
+
+    /**
+     * Setter to inject the underlying query implementation through spring
+     * 
+     * @param impl
+     * @return to make spring happy
+     */
+    public static Class<ISpatialQuery> setImplementation(
+            Class<ISpatialQuery> impl) {
+        clazz = impl;
+        return impl;
     }
 }
