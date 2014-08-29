@@ -148,8 +148,7 @@ public class DbPointMapResource extends
         }
     }
 
-    public class Request extends AbstractMapRequest<DbPointMapResource> {
-        DbPointMapResource rsc;
+    private class Request extends AbstractMapRequest<DbPointMapResource> {
 
         String labelField;
 
@@ -165,7 +164,7 @@ public class DbPointMapResource extends
 
     }
 
-    public class Result extends AbstractMapResult {
+    private class Result extends AbstractMapResult {
 
         public List<LabelNode> labels;
 
