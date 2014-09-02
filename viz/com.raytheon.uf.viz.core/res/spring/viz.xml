@@ -38,7 +38,7 @@
    
    <bean class="com.raytheon.uf.common.geospatial.SpatialQueryFactory"
         factory-method="setImplementation">
-        <constructor-arg value="com.raytheon.viz.core.spatial.SpatialDbQuery"/>    
+        <constructor-arg value="com.raytheon.uf.viz.core.spatial.SpatialDbQuery"/>    
    </bean>
    
    <!-- These util:constant beans should not be required, they overwrite the ones in *-common.xml files for CAVE since

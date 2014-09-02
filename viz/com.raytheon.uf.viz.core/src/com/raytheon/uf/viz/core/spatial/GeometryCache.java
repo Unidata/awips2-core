@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.spatial;
+package com.raytheon.uf.viz.core.spatial;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -35,8 +35,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.util.cache.ICacheObject;
 import com.raytheon.uf.common.util.cache.LRUCache;
-import com.raytheon.viz.core.spatial.GeometryCache.GeometryCachable;
-import com.raytheon.viz.core.spatial.GeometryCache.GeometryCacheKey;
+import com.raytheon.uf.viz.core.spatial.GeometryCache.GeometryCachable;
+import com.raytheon.uf.viz.core.spatial.GeometryCache.GeometryCacheKey;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -49,6 +49,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 29, 2011            mschenke     Initial creation
+ * Sep 02, 2014  3356      njensen      Moved to uf.viz.core
  * 
  * </pre>
  * 

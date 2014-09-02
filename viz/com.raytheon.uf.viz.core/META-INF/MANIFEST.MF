@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core;singleton:=true
-Bundle-Version: 1.14.5.qualifier
+Bundle-Version: 1.14.6.qualifier
 Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
@@ -80,6 +80,7 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.rsc.updater,
  com.raytheon.uf.viz.core.sampling,
  com.raytheon.uf.viz.core.sounds,
+ com.raytheon.uf.viz.core.spatial,
  com.raytheon.uf.viz.core.status,
  com.raytheon.uf.viz.core.tile,
  com.raytheon.uf.viz.core.time,

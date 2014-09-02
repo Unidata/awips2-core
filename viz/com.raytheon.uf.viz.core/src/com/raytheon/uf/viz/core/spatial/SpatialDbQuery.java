@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.spatial;
+package com.raytheon.uf.viz.core.spatial;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,6 +45,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 18, 2009            randerso     Initial creation
+ * Sep 02, 2014  3356      njensen      Moved to uf.viz.core
  * 
  * </pre>
  * 
