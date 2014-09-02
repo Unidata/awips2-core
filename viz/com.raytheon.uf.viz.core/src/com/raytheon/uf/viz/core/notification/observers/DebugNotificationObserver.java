@@ -19,8 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.notification.observers;
 
-import com.raytheon.uf.viz.core.notification.INotificationObserver;
-import com.raytheon.uf.viz.core.notification.NotificationMessage;
+import com.raytheon.uf.common.jms.notification.INotificationObserver;
+import com.raytheon.uf.common.jms.notification.NotificationMessage;
 
 /**
  * Simple class for printing debug information on incoming messages to standard
