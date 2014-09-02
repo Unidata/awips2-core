@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.core.maps.rsc;
 
 import java.awt.geom.Rectangle2D;
 import java.math.BigDecimal;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -34,7 +33,6 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
-import org.apache.commons.lang.StringUtils;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.opengis.referencing.FactoryException;
@@ -53,6 +51,7 @@ import com.raytheon.uf.viz.core.IGraphicsTarget.VerticalAlignment;
 import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.catalog.DirectDbQuery;
 import com.raytheon.uf.viz.core.catalog.DirectDbQuery.QueryLanguage;
+import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IShadedShape;
 import com.raytheon.uf.viz.core.drawables.IWireframeShape;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
@@ -139,7 +138,8 @@ public class DbMapResource extends
 
         private final double[] location;
 
-        public LabelNode(String label, Point c, IGraphicsTarget target) {
+        public LabelNode(String label, Point c, IGraphicsTarget target,
+                IFont font) {
             this.label = label;
             this.location = descriptor.worldToPixel(new double[] {
                     c.getCoordinate().x, c.getCoordinate().y });
@@ -170,7 +170,7 @@ public class DbMapResource extends
         }
     }
 
-    public class Request extends AbstractMapRequest<DbMapResource> {
+    private class Request extends AbstractMapRequest<DbMapResource> {
 
         Random rand = new Random(System.currentTimeMillis());
 
@@ -211,7 +211,7 @@ public class DbMapResource extends
         }
     }
 
-    public class Result extends AbstractMapResult {
+    private class Result extends AbstractMapResult {
         public IWireframeShape outlineShape;
 
         public List<LabelNode> labels;
@@ -234,6 +234,11 @@ public class DbMapResource extends
             if (shadedShape != null) {
                 shadedShape.dispose();
                 shadedShape = null;
+            }
+
+            if (labels != null) {
+                labels.clear();
+                labels = null;
             }
         }
     }
@@ -419,7 +424,7 @@ public class DbMapResource extends
                             Point point = poly.getInteriorPoint();
                             if (point.getCoordinate() != null) {
                                 LabelNode node = new LabelNode(label, point,
-                                        req.getTarget());
+                                        req.getTarget(), req.getResource().font);
                                 newLabels.add(node);
                             }
                         } catch (TopologyException e) {
@@ -486,8 +491,6 @@ public class DbMapResource extends
 
     protected Map<Object, RGB> colorMap;
 
-    private double[] levels;
-
     protected double lastSimpLev;
 
     protected String lastLabelField;
@@ -495,8 +498,6 @@ public class DbMapResource extends
     protected String lastShadingField;
 
     private MapQueryJob queryJob;
-
-    private String geometryType;
 
     public DbMapResource(DbMapResourceData data, LoadProperties loadProperties) {
         super(data, loadProperties);
@@ -533,30 +534,6 @@ public class DbMapResource extends
                 getLabelFields().toArray(new String[0]));
     }
 
-    protected String getGeomField(double simpLev) {
-        DecimalFormat df = new DecimalFormat("0.######");
-        String suffix = "_"
-                + StringUtils.replaceChars(df.format(simpLev), '.', '_');
-
-        return resourceData.getGeomField() + suffix;
-    }
-
-    /**
-     * @param dpp
-     * @return
-     */
-    protected double getSimpLev(double dpp) {
-        double[] levels = getLevels();
-        double simpLev = levels[0];
-        for (double level : getLevels()) {
-            if (dpp < level) {
-                break;
-            }
-            simpLev = level;
-        }
-        return simpLev;
-    }
-
     @Override
     protected void paintInternal(IGraphicsTarget aTarget,
             PaintProperties paintProps) throws VizException {
@@ -570,16 +547,7 @@ public class DbMapResource extends
                 .getZoomLevel());
         double kmPerPixel = (displayWidth / screenWidth) / 1000.0;
 
-        // compute an estimate of degrees per pixel
-        double yc = screenExtent.getCenter()[1];
-        double x1 = screenExtent.getCenter()[0];
-        double x2 = x1 + 1;
-        double[] c1 = descriptor.pixelToWorld(new double[] { x1, yc });
-        double[] c2 = descriptor.pixelToWorld(new double[] { x2, yc });
-        double dppX = (Math.abs(c2[0] - c1[0]) * screenExtent.getWidth())
-                / screenWidth;
-
-        double simpLev = getSimpLev(dppX);
+        double simpLev = getSimpLev(paintProps);
 
         String labelField = getCapability(LabelableCapability.class)
                 .getLabelField();
@@ -589,6 +557,15 @@ public class DbMapResource extends
                 .getShadingField();
 
         boolean isShaded = isPolygonal() && (shadingField != null);
+
+        double labelMagnification = getCapability(MagnificationCapability.class)
+                .getMagnification();
+
+        if (font == null) {
+            font = aTarget.initializeFont(aTarget.getDefaultFont()
+                    .getFontName(), (float) (10 * labelMagnification), null);
+            font.setSmoothing(false);
+        }
 
         if ((simpLev < lastSimpLev)
                 || (isLabeled && !labelField.equals(lastLabelField))
@@ -654,17 +631,7 @@ public class DbMapResource extends
             issueRefresh();
         }
 
-        double labelMagnification = getCapability(MagnificationCapability.class)
-                .getMagnification();
-
         if ((labels != null) && isLabeled && (labelMagnification != 0)) {
-            if (font == null) {
-                font = aTarget
-                        .initializeFont(aTarget.getDefaultFont().getFontName(),
-                                (float) (10 * labelMagnification), null);
-                font.setSmoothing(false);
-            }
-
             double offsetX = getCapability(LabelableCapability.class)
                     .getxOffset() * worldToScreenRatio;
             double offsetY = getCapability(LabelableCapability.class)
@@ -786,53 +753,6 @@ public class DbMapResource extends
             shadedShape.dispose();
             this.shadedShape = null;
         }
-    }
-
-    /**
-     * @return the levels
-     */
-    protected double[] getLevels() {
-        if (levels == null) {
-            try {
-                List<Double> results = DbMapQueryFactory.getMapQuery(
-                        resourceData.getTable(), resourceData.getGeomField())
-                        .getLevels();
-                levels = new double[results.size()];
-                int i = 0;
-                for (Double d : results) {
-                    levels[i++] = d;
-                }
-                Arrays.sort(levels);
-            } catch (VizException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error querying available levels", e);
-            }
-        }
-
-        return levels;
-    }
-
-    protected String getGeometryType() {
-        if (geometryType == null) {
-            try {
-                geometryType = DbMapQueryFactory.getMapQuery(
-                        resourceData.getTable(), resourceData.getGeomField())
-                        .getGeometryType();
-            } catch (Throwable e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
-        }
-
-        return geometryType;
-    }
-
-    protected boolean isLineal() {
-        return getGeometryType().endsWith("LINESTRING");
-    }
-
-    protected boolean isPolygonal() {
-        return getGeometryType().endsWith("POLYGON");
     }
 
     @Override
