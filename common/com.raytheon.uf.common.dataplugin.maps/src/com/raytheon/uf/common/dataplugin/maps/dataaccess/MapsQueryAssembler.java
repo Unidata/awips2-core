@@ -90,8 +90,6 @@ public class MapsQueryAssembler {
             IDENTIFIERS.IDENTIFIER_IN_LOCATION,
             IDENTIFIERS.IDENTIFIER_LOCATION_FIELD);
 
-    private static final String DEFAULT_LOCATION_FIELD = "name";
-
     /**
      * Constructor
      */
@@ -172,24 +170,26 @@ public class MapsQueryAssembler {
         Envelope envelope = request.getEnvelope();
         String table = extractTable(request);
         String geomField = extractGeomField(request);
-        String locationField = DEFAULT_LOCATION_FIELD;
-        if (request.getIdentifiers().containsKey(
-                IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)) {
-            locationField = request.getIdentifiers()
-                    .get(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD).toString();
-        }
 
         List<String> columns = new ArrayList<String>();
         if (locationQuery == false) {
             // the first column will always be the geometry.
             columns.add("AsBinary(" + geomField + ")");
         }
-        // the second column will always be the location name
-        columns.add(locationField);
+
+        String locationField = null;
+        if (request.getIdentifiers().containsKey(
+                IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)) {
+            locationField = request.getIdentifiers()
+                    .get(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD).toString();
+            // the second column will always be the location name
+            columns.add(locationField);
+        }
         if (locationQuery == false) {
-            // add any additional database columns the user has specified as
-            // parameters
-            // for additional information, refer to: http://tinyurl.com/arnayco
+            /*
+             * add any additional database columns the user has specified as
+             * parameters
+             */
             if (request.getParameters() != null) {
                 for (String parameter : request.getParameters()) {
                     columns.add(parameter);
@@ -207,8 +207,10 @@ public class MapsQueryAssembler {
                         .get(IDENTIFIERS.IDENTIFIER_IN_LOCATION).toString());
             }
 
-            constraints.add(buildInConstraint(request.getLocationNames(),
-                    locationField, inLocation));
+            if (locationField != null) {
+                constraints.add(buildInConstraint(request.getLocationNames(),
+                        locationField, inLocation));
+            }
         }
         // add remaining identifiers to constraints (ifdef)
         Iterator<String> identifiersIterator = request.getIdentifiers()
