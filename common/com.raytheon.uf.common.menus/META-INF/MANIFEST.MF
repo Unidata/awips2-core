@@ -4,7 +4,6 @@ Bundle-Name: Menus Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.menus
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Eclipse-RegisterBuddy: com.raytheon.uf.viz.ui.menus
 Require-Bundle: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm
