@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.status;
 
+import java.io.PrintStream;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Observable;
@@ -36,6 +37,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 10, 2011            bgonzale     Initial creation
+ * Sep 09, 2014 3549       njensen      log() uses Priority to pick PrintStream
  * 
  * </pre>
  * 
@@ -217,6 +219,7 @@ public abstract class AbstractHandlerFactory implements
         getSourceFilters();
     }
 
+    @Override
     public void log(Priority priority, StatusHandler statusHandler,
             String message, Throwable throwable) {
         String source = statusHandler.getSource();
@@ -243,9 +246,22 @@ public abstract class AbstractHandlerFactory implements
             sb.append(" - ");
         }
         sb.append(message);
-        System.err.println(sb.toString());
+
+        PrintStream ps = null;
+        switch (priority) {
+        case CRITICAL:
+        case SIGNIFICANT:
+        case PROBLEM:
+            ps = System.err;
+            break;
+        default:
+            ps = System.out;
+            break;
+        }
+
+        ps.println(sb.toString());
         if (throwable != null) {
-            throwable.printStackTrace(System.err);
+            throwable.printStackTrace(ps);
         }
     }
 
