@@ -26,7 +26,6 @@ import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 import javax.xml.bind.JAXBException;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
@@ -50,7 +49,8 @@ import com.raytheon.uf.common.util.mapping.MultipleMappingException;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 29, 2012            bsteffen     Initial creation
+ * Oct 29, 2012            bsteffen    Initial creation
+ * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -89,10 +89,8 @@ public class LevelMapper extends Mapper {
      * @param alias
      * @param namespace
      * @return
-     * @throws CommunicationException
      */
-    public Set<MasterLevel> lookupMasterLevels(String alias, String namespace)
-            throws CommunicationException {
+    public Set<MasterLevel> lookupMasterLevels(String alias, String namespace) {
         Set<String> baseNames = super.lookupBaseNames(alias, namespace);
         Set<MasterLevel> result = new HashSet<MasterLevel>(
                 (int) (baseNames.size() / 0.75) + 1, 0.75f);
@@ -111,35 +109,33 @@ public class LevelMapper extends Mapper {
      * @return
      */
     public MasterLevel lookupMasterLevel(String alias, String namespace)
-            throws MultipleMappingException, CommunicationException {
+            throws MultipleMappingException {
         String baseName = super.lookupBaseName(alias, namespace);
         return factory.getMasterLevel(baseName);
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
             double levelone, double leveltwo, Unit<?> unit)
-            throws MultipleLevelMappingException, CommunicationException {
+            throws MultipleLevelMappingException {
         return lookupLevel(masterLevelAlias, namespace, levelone, leveltwo,
                 UnitFormat.getUCUMInstance().format(unit));
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
-            double levelone, Unit<?> unit)
-            throws MultipleLevelMappingException, CommunicationException {
+            double levelone, Unit<?> unit) throws MultipleLevelMappingException {
         return lookupLevel(masterLevelAlias, namespace, levelone, UnitFormat
                 .getUCUMInstance().format(unit));
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
-            double levelone, String unit) throws MultipleLevelMappingException,
-            CommunicationException {
+            double levelone, String unit) throws MultipleLevelMappingException {
         return lookupLevel(masterLevelAlias, namespace, levelone,
                 Level.INVALID_VALUE, unit);
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
             double levelone, double leveltwo, String unit)
-            throws MultipleLevelMappingException, CommunicationException {
+            throws MultipleLevelMappingException {
         Set<Level> levels = lookupLevels(masterLevelAlias, namespace, levelone,
                 leveltwo, unit);
         if (levels.size() == 1) {
@@ -152,27 +148,25 @@ public class LevelMapper extends Mapper {
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
-            double levelone, double leveltwo, Unit<?> unit)
-            throws CommunicationException {
+            double levelone, double leveltwo, Unit<?> unit) {
         return lookupLevels(masterLevelAlias, namespace, levelone, leveltwo,
                 UnitFormat.getUCUMInstance().format(unit));
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
-            double levelone, Unit<?> unit) throws CommunicationException {
+            double levelone, Unit<?> unit) {
         return lookupLevels(masterLevelAlias, namespace, levelone, UnitFormat
                 .getUCUMInstance().format(unit));
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
-            double levelone, String unit) throws CommunicationException {
+            double levelone, String unit) {
         return lookupLevels(masterLevelAlias, namespace, levelone,
                 Level.INVALID_VALUE, unit);
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
-            double levelone, double leveltwo, String unit)
-            throws CommunicationException {
+            double levelone, double leveltwo, String unit) {
         Set<String> baseNames = super.lookupBaseNames(masterLevelAlias,
                 namespace);
         Set<Level> result = new HashSet<Level>(

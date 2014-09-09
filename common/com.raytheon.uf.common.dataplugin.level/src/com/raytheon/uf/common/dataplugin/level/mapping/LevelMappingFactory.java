@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.xml.bind.JAXB;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -52,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 11/21/2009    #3576     rjpeter     Added group capability
  * 04/17/2013    #1913     randerso    Moved to common
  * 05/16/2013    #2010     randerso    Added read/write locking to mutable maps
+ * Sep 09, 2014   3356     njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -119,13 +119,9 @@ public class LevelMappingFactory {
 
         }
 
-        try {
-            initializeLevelToLevelMappings();
-            initializeGroupToMasterLevels();
-        } catch (CommunicationException e) {
-            statusHandler.error("Error initializing LevelMappingFactory for: "
-                    + filePath, e);
-        }
+        initializeLevelToLevelMappings();
+        initializeGroupToMasterLevels();
+
         long finish = System.currentTimeMillis();
         System.out.println("LevelMappingFactory initialization took ["
                 + (finish - start) + "] ms");
@@ -135,8 +131,7 @@ public class LevelMappingFactory {
         return keyToLevelMappings.get(key);
     }
 
-    public LevelMapping getLevelMappingForLevel(Level level)
-            throws CommunicationException {
+    public LevelMapping getLevelMappingForLevel(Level level) {
         if (!levelToLevelMappingsInitialized) {
             initializeLevelToLevelMappings();
         }
@@ -154,7 +149,7 @@ public class LevelMappingFactory {
         return keyToLevelMappings.values();
     }
 
-    public Set<Level> getAllLevels() throws CommunicationException {
+    public Set<Level> getAllLevels() {
         if (!levelToLevelMappingsInitialized) {
             initializeLevelToLevelMappings();
         }
@@ -168,8 +163,7 @@ public class LevelMappingFactory {
         }
     }
 
-    public Map<MasterLevel, Set<Level>> getLevelMapForGroup(String group)
-            throws CommunicationException {
+    public Map<MasterLevel, Set<Level>> getLevelMapForGroup(String group) {
         if (!groupToMasterLevelsInitialized) {
             initializeGroupToMasterLevels();
         }
@@ -184,7 +178,7 @@ public class LevelMappingFactory {
         }
     }
 
-    private void initializeLevelToLevelMappings() throws CommunicationException {
+    private void initializeLevelToLevelMappings() {
         // acquire the write lock
         levelToLevelLock.writeLock().lock();
         try {
@@ -212,7 +206,7 @@ public class LevelMappingFactory {
         }
     }
 
-    private void initializeGroupToMasterLevels() throws CommunicationException {
+    private void initializeGroupToMasterLevels() {
         // acquire the write lock
         groupToMasterLevelsLock.writeLock().lock();
         try {

@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.CompareType;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
@@ -50,6 +49,8 @@ import com.raytheon.uf.common.dataplugin.level.MasterLevel;
  * Jan 30, 2014  2725     ekladstrup  Moved to common and removed
  *                                    usage of VizCommunicationException
  * Jan 23, 2014  2711     bsteffen    Get all levels from LevelFactory.
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
+ * 
  * </pre>
  * 
  * @author rjpeter
@@ -67,14 +68,12 @@ public class LevelUtilities {
         }
     }
 
-    public static boolean isPressureLevel(long levelId)
-            throws CommunicationException {
+    public static boolean isPressureLevel(long levelId) {
         return isPressureLevel(LevelFactory.getInstance().getLevel(levelId)
                 .getMasterLevel());
     }
 
-    public static boolean isPressureLevel(String masterLevelName)
-            throws CommunicationException {
+    public static boolean isPressureLevel(String masterLevelName) {
         return isPressureLevel(LevelFactory.getInstance().getMasterLevel(
                 masterLevelName));
     }
@@ -96,10 +95,9 @@ public class LevelUtilities {
      * 
      * @param masterLevelName
      * @return
-     * @throws CommunicationException
      */
     public synchronized static NavigableSet<Level> getOrderedSetOfStandardLevels(
-            String masterLevelName) throws CommunicationException {
+            String masterLevelName) {
         if (masterLevelToOrderedSet == null) {
             Comparator<Level> levelComparator = new Comparator<Level>() {
 
