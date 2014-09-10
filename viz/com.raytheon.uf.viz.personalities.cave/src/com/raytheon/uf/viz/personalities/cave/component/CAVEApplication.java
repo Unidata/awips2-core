@@ -26,36 +26,37 @@ import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
-import javax.xml.bind.JAXBException;
-
-import org.eclipse.core.internal.runtime.InternalPlatform;
 import org.eclipse.core.runtime.ILogListener;
-import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.internal.WorkbenchPlugin;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.pypies.PyPiesDataStoreFactory;
 import com.raytheon.uf.common.pypies.PypiesProperties;
-import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.SimulatedTime;
+import com.raytheon.uf.common.time.util.ITimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.application.component.IStandaloneComponent;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.RecordFactory;
 import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.viz.core.localization.CAVELocalizationAdapter;
 import com.raytheon.uf.viz.core.localization.CAVELocalizationNotificationObserver;
 import com.raytheon.uf.viz.core.localization.LocalizationInitializer;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
+import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
+import com.raytheon.uf.viz.core.status.VizStatusHandlerFactory;
 import com.raytheon.uf.viz.personalities.cave.workbench.VizWorkbenchAdvisor;
 import com.raytheon.viz.alerts.jobs.AutoUpdater;
 import com.raytheon.viz.alerts.jobs.MenuUpdater;
@@ -74,7 +75,8 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 20, 2013            mschenke     Initial creation
+ * Mar 20, 2013            mschenke    Initial creation
+ * Sep 10, 2014 3612       mschenke    Refactored, mirgrated logic from awips
  * 
  * </pre>
  * 
@@ -87,6 +89,11 @@ public class CAVEApplication implements IStandaloneComponent {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(CAVEApplication.class, "CAVE");
 
+    /** The name of the component launched */
+    private String componentName;
+
+    private Display applicationDisplay;
+
     /*
      * (non-Javadoc)
      * 
@@ -97,26 +104,28 @@ public class CAVEApplication implements IStandaloneComponent {
     @Override
     @SuppressWarnings("restriction")
     public Object startComponent(String componentName) throws Exception {
-        InternalPlatform.getDefault()
-                .getLog(WorkbenchPlugin.getDefault().getBundle())
-                .addLogListener(new ILogListener() {
+        this.componentName = componentName;
+        ITimer startupTimer = TimeUtil.getTimer();
+        startupTimer.start();
 
-                    @Override
-                    public void logging(IStatus status, String plugin) {
-                        if (status.getMessage() != null) {
-                            System.out.println(status.getMessage());
-                        }
-                        if (status.getException() != null) {
-                            status.getException().printStackTrace();
-                        }
-                    }
-
-                });
+        // Workaround for when PlatformUI has not been started
+        Platform.getLog(WorkbenchPlugin.getDefault().getBundle())
+                .addLogListener(getEclipseLogListener());
 
         UnitRegistrar.registerUnits();
         CAVEMode.performStartupDuties();
 
-        Display display = PlatformUI.createDisplay();
+        ITimer timer = TimeUtil.getTimer();
+        timer.start();
+
+        // Get the display
+        this.applicationDisplay = createDisplay();
+
+        // verify Spring successfully initialized, otherwise stop CAVE
+        if (!com.raytheon.uf.viz.spring.dm.Activator.getDefault()
+                .isSpringInitSuccessful()) {
+            return handleSpringFailure();
+        }
 
         try {
             initializeLocalization();
@@ -131,25 +140,38 @@ public class CAVEApplication implements IStandaloneComponent {
             return IApplication.EXIT_OK;
         }
 
-        Job serializationJob = initializeSerialization();
-        initializeDataStoreFactory();
-        initializeObservers();
-        initializeSimulatedTime();
-
-        // wait for serialization initialization to complete before
-        // opening JMS connection to avoid deadlock in class loaders
-        if (serializationJob != null) {
-            serializationJob.join();
-        }
-
-        // open JMS connection to allow alerts to be received
-        NotificationManagerJob.connect();
-
         int returnCode = IApplication.EXIT_OK;
-
+        WorkbenchAdvisor workbenchAdvisor = null;
+        // A component was passed as command line arg
+        // launch cave normally, should cave be registered as component?
         try {
-            returnCode = PlatformUI.createAndRunWorkbench(display,
-                    getWorkbenchAdvisor());
+            UFStatus.setHandlerFactory(new VizStatusHandlerFactory());
+
+            initializeDataStoreFactory();
+            initializeObservers();
+
+            initializeSimulatedTime();
+
+            // open JMS connection to allow alerts to be received
+            NotificationManagerJob.connect();
+
+            timer.stop();
+            System.out.println("Internal initialization time: "
+                    + timer.getElapsedTime() + " ms");
+
+            workbenchAdvisor = getWorkbenchAdvisor();
+            if (workbenchAdvisor instanceof VizWorkbenchAdvisor) {
+                ((VizWorkbenchAdvisor) workbenchAdvisor)
+                        .setStartupTimer(startupTimer);
+                // Only initialize the procedure XML if the workbench advisor is
+                // a VizWorkbenchAdvisor meaning the CAVE display will be up
+                ProcedureXmlManager.inititializeAsync();
+            }
+
+            if (workbenchAdvisor != null) {
+                returnCode = PlatformUI.createAndRunWorkbench(
+                        this.applicationDisplay, workbenchAdvisor);
+            }
         } catch (Throwable t) {
             t.printStackTrace();
             MessageDialog
@@ -157,32 +179,133 @@ public class CAVEApplication implements IStandaloneComponent {
                             null,
                             "Error!", "Error instantiating workbench: " + t.getMessage()); //$NON-NLS-1$" +
         } finally {
-            try {
-                if (CAVEMode.getMode() == CAVEMode.PRACTICE) {
-                    saveUserTime();
-                }
-            } catch (RuntimeException e) {
-                // catch any exceptions to ensure rest of finally block
-                // executes
-            }
-
-            try {
-                // disconnect from JMS
-                NotificationManagerJob.disconnect();
-            } catch (RuntimeException e) {
-                // catch any exceptions to ensure rest of finally block
-                // executes
-            }
+            cleanup();
         }
 
         if (returnCode == PlatformUI.RETURN_RESTART) {
             return IApplication.EXIT_RESTART;
         }
-        return returnCode;
+        return IApplication.EXIT_OK;
     }
 
+    /**
+     * Cleanup called before existing to clean up any resources that need it.
+     */
+    protected void cleanup() throws Exception {
+        try {
+            if (CAVEMode.getMode() == CAVEMode.PRACTICE) {
+                saveUserTime();
+            }
+        } catch (RuntimeException e) {
+            // catch any exceptions to ensure rest of finally block
+            // executes
+        }
+
+        try {
+            // disconnect from JMS
+            NotificationManagerJob.disconnect();
+        } catch (RuntimeException e) {
+            // catch any exceptions to ensure rest of finally block
+            // executes
+        }
+
+        if (this.applicationDisplay != null) {
+            this.applicationDisplay.dispose();
+        }
+    }
+
+    /**
+     * @return the {@link #componentName}
+     */
+    public String getComponentName() {
+        return componentName;
+    }
+
+    /**
+     * @return true of the application does not have a UI associated with it,
+     *         {@link CAVEApplication} implementation returns false by default
+     */
+    protected boolean isNonUIComponent() {
+        return false;
+    }
+
+    /**
+     * This is a workaround to receive status messages because without the
+     * PlatformUI initialized Eclipse throws out the status messages. Once
+     * PlatformUI has started, the status handler will take over.
+     */
+    protected ILogListener getEclipseLogListener() {
+        return new ILogListener() {
+            @Override
+            public void logging(IStatus status, String plugin) {
+                if (status.getMessage() != null) {
+                    System.out.println(status.getMessage());
+                }
+                if (status.getException() != null) {
+                    status.getException().printStackTrace();
+                }
+            }
+        };
+    }
+
+    /**
+     * @return the {@link #applicationDisplay}
+     */
+    protected Display getApplicationDisplay() {
+        return this.applicationDisplay;
+    }
+
+    /**
+     * Creates the {@link Display} for use within the application. Uses
+     * {@link PlatformUI#createDisplay()} in {@link CAVEApplication}
+     * implementation
+     * 
+     * @return The {@link Display}
+     */
+    protected Display createDisplay() {
+        if (isNonUIComponent()) {
+            return new Display();
+        }
+        return PlatformUI.createDisplay();
+    }
+
+    /**
+     * Method called when the spring plugin fails to initialize,
+     * {@link CAVEApplication} implementation will prompt user for what to do
+     * (restart or exit)
+     * 
+     * @return An {@link IApplication} exit value depending on action that
+     *         should be taken due to spring initialization failure
+     */
+    protected int handleSpringFailure() {
+        String msg = "CAVE's Spring container did not initialize correctly and CAVE must shut down.";
+        boolean restart = false;
+        if (isNonUIComponent() == false) {
+            msg += " Attempt to restart CAVE?";
+            restart = MessageDialog.openQuestion(
+                    new Shell(Display.getDefault()), "Startup Error", msg);
+        }
+        if (restart) {
+            return IApplication.EXIT_RESTART;
+        }
+        return IApplication.EXIT_OK;
+    }
+
+    /**
+     * Initializes localization API for use within CAVE. Calls
+     * {@link #initializeLocalization(boolean, boolean)} with true, false in
+     * {@link CAVEApplication} implementation
+     * 
+     * @throws Exception
+     */
     protected void initializeLocalization() throws Exception {
-        new LocalizationInitializer(true, false).run();
+        initializeLocalization(true, false);
+    }
+
+    protected void initializeLocalization(boolean promptUI,
+            boolean checkAlertServer) throws Exception {
+        PathManagerFactory.setAdapter(new CAVELocalizationAdapter());
+        new LocalizationInitializer(promptUI, checkAlertServer).run();
     }
 
     /**
@@ -193,25 +316,6 @@ public class CAVEApplication implements IStandaloneComponent {
         pypiesProps.setAddress(VizApp.getPypiesServer());
         DataStoreFactory.getInstance().setUnderlyingFactory(
                 new PyPiesDataStoreFactory(pypiesProps));
-    }
-
-    protected Job initializeSerialization() {
-        Job job = new Job("Loading Serialization") {
-
-            @Override
-            protected IStatus run(IProgressMonitor monitor) {
-                try {
-                    SerializationUtil.getJaxbContext();
-                } catch (JAXBException e) {
-                    statusHandler.handle(Priority.CRITICAL,
-                            "An error occured initializing Serialization", e);
-                }
-                return Status.OK_STATUS;
-            }
-
-        };
-        job.schedule();
-        return job;
     }
 
     /**
@@ -237,7 +341,7 @@ public class CAVEApplication implements IStandaloneComponent {
      * 
      * @throws IOException
      */
-    protected void saveUserTime() throws IOException {
+    private void saveUserTime() throws IOException {
         /*
          * Save the current workstation time
          */
@@ -258,7 +362,7 @@ public class CAVEApplication implements IStandaloneComponent {
     /**
      * Restore the prior state of SimulatedTime
      */
-    protected void initializeSimulatedTime() {
+    private void initializeSimulatedTime() {
         long timeValue = 0;
         boolean isFrozen = false;
 
@@ -307,7 +411,7 @@ public class CAVEApplication implements IStandaloneComponent {
     /**
      * Get the workbench advisor for the application
      * 
-     * @return
+     * @return the {@link WorkbenchAdvisor}
      */
     protected WorkbenchAdvisor getWorkbenchAdvisor() {
         return new VizWorkbenchAdvisor();
