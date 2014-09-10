@@ -32,7 +32,6 @@ import java.util.Set;
 import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataaccess.DataAccessLayer;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
@@ -69,6 +68,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Nov 26, 2013  2537     bsteffen    Minor code cleanup.
  * Jan,14, 2014  2667     mnash       Remove getGridData method
  * Feb 06, 2014  2672     bsteffen    Add envelope support
+ * Sep 09, 2014 3356      njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -212,13 +212,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         for (int i = 0; i < pdc.getCurrentSz(); i += 1) {
             PointDataView pdv = pdc.readRandom(i);
             DefaultGeometryData data = createNewGeometryData(pdv);
-            try {
-                data.setLevel(lf.getLevel(LevelFactory.UNKNOWN_LEVEL, 0.0));
-            } catch (CommunicationException e) {
-                throw new DataRetrievalException(
-                        "Unable to retrieve level data for request: " + request,
-                        e);
-            }
+            data.setLevel(lf.getLevel(LevelFactory.UNKNOWN_LEVEL, 0.0));
             Set<TwoDimensionalParameterGroup> parameters2D = new HashSet<TwoDimensionalParameterGroup>();
             for (String parameter : request.getParameters()) {
                 if (pdc.getParameters().contains(parameter)) {
@@ -353,14 +347,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
                     .doubleValue();
             String levelUnit = UnitFormat.getUCUMInstance().format(
                     pdv.getUnit(p2d.levelParameter));
-            try {
-                leveldata.setLevel(lf.getLevel(p2d.levelType, levelValue,
-                        levelUnit));
-            } catch (CommunicationException e) {
-                throw new DataRetrievalException(
-                        "Unable to retrieve level data for request: " + request,
-                        e);
-            }
+            leveldata.setLevel(lf
+                    .getLevel(p2d.levelType, levelValue, levelUnit));
+
             for (String parameter : p2d.parameters) {
                 if (requestParameters.contains(parameter)) {
                     Unit<?> unit = pdv.getUnit(parameter);

@@ -27,7 +27,6 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMapping;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMappingFactory;
 import com.raytheon.uf.common.units.UnitAdapter;
@@ -44,6 +43,7 @@ import com.raytheon.uf.common.units.UnitAdapter;
  * ------------- -------- ----------- --------------------------
  * Nov 21, 2009  3576     rjpeter     Initial version
  * Jan 14, 2014  2661     bsteffen    Remove ISerializableObject
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -84,14 +84,14 @@ public class DerivParamField implements IDerivParamField {
         this.param = param;
     }
 
-    public LevelMapping getLevelMapping() throws CommunicationException {
+    public LevelMapping getLevelMapping() {
         if (levelType == null && level != null) {
             setLevel(level);
         }
         return levelMapping;
     }
 
-    public LevelType getLevelType() throws CommunicationException {
+    public LevelType getLevelType() {
         if (levelType == null && level != null) {
             setLevel(level);
         }
@@ -127,9 +127,8 @@ public class DerivParamField implements IDerivParamField {
      * @param level
      * @return true upon success, false if the token is not recognized, in which
      *         case levelType and levelMapping will both be reset to null
-     * @throws VizCommunicationException
      */
-    public boolean setLevel(String level) throws CommunicationException {
+    public boolean setLevel(String level) {
         levelType = LevelType.parseLevel(level);
         if (levelType == LevelType.LevelMapping) {
             levelMapping = LevelMappingFactory.getInstance(

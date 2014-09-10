@@ -21,7 +21,6 @@ package com.raytheon.uf.common.inventory.tree;
 
 import javax.persistence.Transient;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -35,6 +34,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 11, 2009            rjpeter     Initial creation
+ * Sep 09, 2014 3356       njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -55,7 +55,7 @@ public class LevelNode extends AbstractNode<LevelNode> {
         this.level = that.level;
 
         for (LevelNode child : that.getChildNodes().values()) {
-            addChildNode((LevelNode) child.clone());
+            addChildNode(child.clone());
         }
     }
 
@@ -68,11 +68,7 @@ public class LevelNode extends AbstractNode<LevelNode> {
      */
     public Level getLevel() {
         if (value != null && level == null) {
-            try {
-                level = LevelFactory.getInstance().getLevel(value);
-            } catch (CommunicationException e) {
-                e.printStackTrace();
-            }
+            level = LevelFactory.getInstance().getLevel(value);
         }
         return level;
     }

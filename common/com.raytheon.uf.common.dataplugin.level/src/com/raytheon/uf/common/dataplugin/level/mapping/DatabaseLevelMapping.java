@@ -27,7 +27,6 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -46,6 +45,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * 11/16/2008   #3576      rjpeter     Initial version
  * 04/17/2013   #1913      randerso    Moved to common
+ * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -103,7 +103,7 @@ public class DatabaseLevelMapping {
         this.unit = unit;
     }
 
-    public List<Level> getLevels() throws CommunicationException {
+    public List<Level> getLevels() {
         String[] levelOneValues = new String[0];
         String[] levelTwoValues = new String[0];
 

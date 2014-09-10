@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.dataplugin.level.request;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelContainer;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
@@ -34,27 +33,25 @@ import com.raytheon.uf.common.dataplugin.level.MasterLevelContainer;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 03, 2009            rjpeter     Initial creation.
+ * Sep 09, 2014 3356       njensen     Removed CommunicationException
+ * 
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 public interface ILevelRetrievalAdapter {
-    public abstract Level getLevel(GetLevelRequest request)
-            throws CommunicationException;
 
-    public abstract Level getLevel(GetLevelByIdRequest request)
-            throws CommunicationException;
+    public Level getLevel(GetLevelRequest request);
 
-    public abstract MasterLevel getMasterLevel(GetMasterLevelRequest request)
-            throws CommunicationException;
+    public Level getLevel(GetLevelByIdRequest request);
 
-    public abstract LevelContainer getAllLevelsForMasterLevel(
-            GetAllLevelsForMasterLevelRequest request)
-            throws CommunicationException;
+    public MasterLevel getMasterLevel(GetMasterLevelRequest request);
 
-    public abstract LevelContainer getAllLevels() throws CommunicationException;
+    public LevelContainer getAllLevelsForMasterLevel(
+            GetAllLevelsForMasterLevelRequest request);
 
-    public abstract MasterLevelContainer getAllMasterLevels()
-            throws CommunicationException;
+    public LevelContainer getAllLevels();
+
+    public MasterLevelContainer getAllMasterLevels();
 }

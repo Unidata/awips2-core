@@ -22,8 +22,6 @@ package com.raytheon.uf.edex.plugin.level.dao;
 
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.hibernate.Criteria;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
@@ -47,6 +45,7 @@ import com.raytheon.uf.common.dataplugin.level.MasterLevelContainer;
  * Date          Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * Sep 10, 2009             rjpeter     Initial creation
+ * Sep 09, 2014 3356        njensen     Removed redundant logger
  * 
  * </pre>
  * 
@@ -55,7 +54,6 @@ import com.raytheon.uf.common.dataplugin.level.MasterLevelContainer;
  */
 
 public class LevelDao extends DefaultPluginDao {
-    private Log logger = LogFactory.getLog(getClass());
 
     public LevelDao() throws PluginException {
         this("level");
@@ -70,6 +68,7 @@ public class LevelDao extends DefaultPluginDao {
         // no op
     }
 
+    @Override
     public void purgeAllData() throws PluginException {
         // no op
     }

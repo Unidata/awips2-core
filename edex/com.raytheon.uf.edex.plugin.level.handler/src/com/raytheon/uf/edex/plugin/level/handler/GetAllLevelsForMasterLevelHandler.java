@@ -19,16 +19,13 @@
  **/
 package com.raytheon.uf.edex.plugin.level.handler;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
 import com.raytheon.uf.common.dataplugin.level.LevelContainer;
 import com.raytheon.uf.common.dataplugin.level.request.GetAllLevelsForMasterLevelRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.edex.plugin.level.dao.LevelDao;
 
 /**
- * TODO Add Description
+ * IRequestHandler that returns all levels corresponding to a master level
  * 
  * <pre>
  * 
@@ -36,6 +33,7 @@ import com.raytheon.uf.edex.plugin.level.dao.LevelDao;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 24, 2009 2924       rjpeter     Initial creation
+ * Sep 09, 2014 3356       njensen     Improved javadoc
  * 
  * </pre>
  * 
@@ -45,8 +43,6 @@ import com.raytheon.uf.edex.plugin.level.dao.LevelDao;
 
 public class GetAllLevelsForMasterLevelHandler implements
         IRequestHandler<GetAllLevelsForMasterLevelRequest> {
-
-    protected final transient Log logger = LogFactory.getLog(getClass());
 
     @Override
     public LevelContainer handleRequest(GetAllLevelsForMasterLevelRequest request)

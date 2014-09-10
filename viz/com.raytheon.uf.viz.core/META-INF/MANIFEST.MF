@@ -40,7 +40,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
  com.raytheon.uf.common.jms;bundle-version="1.14.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
-Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, com.raytheon.uf.common.dataplugin.level, ch.qos.logback
+Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, ch.qos.logback
 Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.alerts,
  com.raytheon.uf.viz.core.auth,
@@ -63,7 +63,6 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.interp,
  com.raytheon.uf.viz.core.jobs,
  com.raytheon.uf.viz.core.legend,
- com.raytheon.uf.viz.core.level,
  com.raytheon.uf.viz.core.localization,
  com.raytheon.uf.viz.core.map,
  com.raytheon.uf.viz.core.notification,

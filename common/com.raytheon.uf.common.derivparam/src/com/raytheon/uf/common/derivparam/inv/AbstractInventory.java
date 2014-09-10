@@ -33,7 +33,27 @@ import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.BlockingQueue;
 
-import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.dataplugin.level.Level;
+import com.raytheon.uf.common.dataplugin.level.LevelFactory;
+import com.raytheon.uf.common.dataplugin.level.util.LevelUtilities;
+import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.derivparam.library.DerivParamConstantField;
+import com.raytheon.uf.common.derivparam.library.DerivParamDesc;
+import com.raytheon.uf.common.derivparam.library.DerivParamField;
+import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
+import com.raytheon.uf.common.derivparam.library.DerivParamMethod.FrameworkMethod;
+import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator;
+import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator.DerivParamUpdateListener;
+import com.raytheon.uf.common.derivparam.library.IDerivParamField;
+import com.raytheon.uf.common.derivparam.library.LevelType;
+import com.raytheon.uf.common.derivparam.tree.AbstractDerivedDataNode;
+import com.raytheon.uf.common.derivparam.tree.AliasLevelNode;
+import com.raytheon.uf.common.derivparam.tree.CompositeAverageLevelNode;
+import com.raytheon.uf.common.derivparam.tree.DerivedLevelNode;
+import com.raytheon.uf.common.derivparam.tree.OrLevelNode;
+import com.raytheon.uf.common.derivparam.tree.StaticDataLevelNode;
+import com.raytheon.uf.common.derivparam.tree.TimeRangeLevelNode;
+import com.raytheon.uf.common.derivparam.tree.UnionLevelNode;
 import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
 import com.raytheon.uf.common.inventory.data.FloatRequestableData;
 import com.raytheon.uf.common.inventory.exception.DataCubeException;
@@ -43,27 +63,6 @@ import com.raytheon.uf.common.inventory.tree.DataTree;
 import com.raytheon.uf.common.inventory.tree.LevelNode;
 import com.raytheon.uf.common.inventory.tree.ParameterNode;
 import com.raytheon.uf.common.inventory.tree.SourceNode;
-import com.raytheon.uf.common.dataplugin.level.Level;
-import com.raytheon.uf.common.dataplugin.level.LevelFactory;
-import com.raytheon.uf.common.dataplugin.level.util.LevelUtilities;
-import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
-import com.raytheon.uf.common.derivparam.library.DerivParamConstantField;
-import com.raytheon.uf.common.derivparam.library.DerivParamDesc;
-import com.raytheon.uf.common.derivparam.library.DerivParamField;
-import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
-import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator;
-import com.raytheon.uf.common.derivparam.library.IDerivParamField;
-import com.raytheon.uf.common.derivparam.library.LevelType;
-import com.raytheon.uf.common.derivparam.library.DerivParamMethod.FrameworkMethod;
-import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator.DerivParamUpdateListener;
-import com.raytheon.uf.common.derivparam.tree.AbstractDerivedDataNode;
-import com.raytheon.uf.common.derivparam.tree.AliasLevelNode;
-import com.raytheon.uf.common.derivparam.tree.CompositeAverageLevelNode;
-import com.raytheon.uf.common.derivparam.tree.DerivedLevelNode;
-import com.raytheon.uf.common.derivparam.tree.OrLevelNode;
-import com.raytheon.uf.common.derivparam.tree.StaticDataLevelNode;
-import com.raytheon.uf.common.derivparam.tree.TimeRangeLevelNode;
-import com.raytheon.uf.common.derivparam.tree.UnionLevelNode;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -85,6 +84,7 @@ import com.raytheon.uf.common.time.DataTime;
  * Jan 23, 2014  2711     bsteffen    Get all levels from LevelFactory.
  * Jan 30, 2014  #2725    ekladstrup  handle different exceptions for moving
  *                                    derived parameters to common
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -176,7 +176,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
             return AbstractInventory.this;
         }
 
-    };
+    }
 
     protected DataTree dataTree;
 
@@ -195,8 +195,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * tree and populates it with available derived parameters based on what is
      * available from the base parameters.
      * 
-     * @throws VizException
-     * 
+     * @throws DataCubeException
      * 
      */
     public synchronized void initTree(Map<String, DerivParamDesc> derParLibrary)
@@ -217,13 +216,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
         allLevels = null;
         dataTree = newTree;
         for (SourceNode sourceNode : dataTree.getSourceNodes().values()) {
-            try {
-                doSupplement(sourceNode);
-            } catch (CommunicationException e) {
-                // TODO need to recover from this
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
+            doSupplement(sourceNode);
             for (ParameterNode parameterNode : sourceNode.getChildNodes()
                     .values()) {
                 String value = parameterNode.getValue();
@@ -282,7 +275,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @param sNode
      * @throws VizCommunicationException
      */
-    private void doSupplement(SourceNode sNode) throws CommunicationException {
+    private void doSupplement(SourceNode sNode) {
         Set<StackEntry> nodata = new HashSet<StackEntry>();
         Deque<StackEntry> stack = new ArrayDeque<StackEntry>();
         for (DerivParamDesc desc : derParLibrary.values()) {
@@ -479,18 +472,10 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * See get allSources, same function but for levels
      * 
      * @return
-     * @throws VizCommunicationException
      */
     protected Collection<Level> getAllLevels() {
         if (allLevels == null) {
-            try {
-                return LevelFactory.getInstance().getAllLevels();
-            } catch (CommunicationException e) {
-                // TODO recover from this.
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-                return Collections.emptyList();
-            }
+            return LevelFactory.getInstance().getAllLevels();
         } else {
             return allLevels;
         }
@@ -640,13 +625,8 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                         Level level = lit.next();
                         AbstractRequestableNode result = null;
                         if (derive) {
-                            try {
-                                result = resolveNode(node, param, level, stack,
-                                        nodata);
-                            } catch (CommunicationException e) {
-                                statusHandler.handle(Priority.PROBLEM,
-                                        e.getLocalizedMessage(), e);
-                            }
+                            result = resolveNode(node, param, level, stack,
+                                    nodata);
                         } else {
                             ParameterNode pNode = node.getChildNode(param);
                             result = (AbstractRequestableNode) (pNode == null ? null
@@ -696,15 +676,9 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                                         .get(source)) {
                                     AbstractRequestableNode alias = null;
                                     if (derive) {
-                                        try {
-                                            alias = resolveNode(
-                                                    dataTree.getSourceNode(aliasModel),
-                                                    param, level, stack, nodata);
-                                        } catch (CommunicationException e) {
-                                            statusHandler.handle(
-                                                    Priority.PROBLEM,
-                                                    e.getLocalizedMessage(), e);
-                                        }
+                                        alias = resolveNode(
+                                                dataTree.getSourceNode(aliasModel),
+                                                param, level, stack, nodata);
                                     } else {
                                         ParameterNode pNode = node
                                                 .getChildNode(param);
@@ -768,12 +742,10 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @param stack
      * @param nodata
      * @return
-     * @throws VizCommunicationException
      */
     protected synchronized AbstractRequestableNode resolveNode(
             SourceNode sourceNode, String param, Level level,
-            Deque<StackEntry> stack, Set<StackEntry> nodata)
-            throws CommunicationException {
+            Deque<StackEntry> stack, Set<StackEntry> nodata) {
         ParameterNode pNode = sourceNode.getChildNode(param);
         LevelNode lNode = pNode == null ? null : pNode.getChildNode(Long
                 .toString(level.getId()));
@@ -1010,7 +982,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      */
     private synchronized Object resolveField(SourceNode sourceNode,
             Level level, IDerivParamField ifield, Deque<StackEntry> stack,
-            Set<StackEntry> nodata) throws CommunicationException {
+            Set<StackEntry> nodata) {
         // process the next field
         if (ifield.getClass() == DerivParamConstantField.class) {
             return new FloatRequestableData(
@@ -1120,7 +1092,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
 
     protected abstract LevelNode getCubeNode(SourceNode sNode,
             DerivParamField field, Deque<StackEntry> stack,
-            Set<StackEntry> nodata) throws CommunicationException;
+            Set<StackEntry> nodata);
 
     protected abstract AbstractDerivedDataNode getImportNode(
             AbstractRequestableData nodeToImport, SourceNode destSourceNode,
