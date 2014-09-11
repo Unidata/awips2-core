@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -57,21 +57,22 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  * Data Access Factory for retrieving point data as a geometry.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Oct 31, 2013  2502     bsteffen    Initial creation
  * Nov 26, 2013  2537     bsteffen    Minor code cleanup.
  * Jan,14, 2014  2667     mnash       Remove getGridData method
  * Feb 06, 2014  2672     bsteffen    Add envelope support
- * Sep 09, 2014 3356      njensen     Remove CommunicationException
- * 
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
+ * Sep 10, 2014  3615     nabowle     Add support for null count and level parameters.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
@@ -179,9 +180,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     }
 
     /**
-     * 
+     *
      * Request point data from the server and convert to {@link IGeometryData}
-     * 
+     *
      * @param request
      *            the original request from the {@link DataAccessLayer}
      * @param dbQueryRequest
@@ -252,7 +253,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      * {@link PointDataServerRequest}. This is done because
      * {@link AbstractDataPluginFactory} makes really nice DbQueryRequests but
      * we can't use them for point data.
-     * 
+     *
      * @param request
      * @param dbQueryRequest
      * @return
@@ -267,7 +268,6 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
          * Figure out what parameters we actually need.
          */
         Set<String> parameters = new HashSet<String>();
-        Set<TwoDimensionalParameterGroup> parameters2D = new HashSet<TwoDimensionalParameterGroup>();
 
         for (String parameter : request.getParameters()) {
             /*
@@ -276,9 +276,12 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
              */
             TwoDimensionalParameterGroup p2d = this.parameters2D.get(parameter);
             if (p2d != null) {
-                parameters.add(p2d.countParameter);
-                parameters.add(p2d.levelParameter);
-                parameters2D.add(p2d);
+                if (p2d.countParameter != null) {
+                    parameters.add(p2d.countParameter);
+                }
+                if (p2d.levelParameter != null) {
+                    parameters.add(p2d.levelParameter);
+                }
             }
             parameters.add(parameter);
         }
@@ -300,7 +303,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Pull out location and time data from a {@link PointDataView} to build a
      * {@link DefaultGeometryData}.
-     * 
+     *
      * @param pdv
      *            view for a single record
      * @return {@link DefaultGeometryData} with locationName, time, and geometry
@@ -325,54 +328,116 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Make a {@link IGeometryData} object for each level in a 2 dimensional
      * data set.
-     * 
+     *
      * @param request
      *            the original request
      * @param p2d
      *            The 2d Parameter group
      * @param pdv
-     *            pdv contining data.
+     *            pdv containing data.
      * @return One IGeometryData for each valid level in the 2d group.
      */
     private List<IGeometryData> make2DData(IDataRequest request,
             TwoDimensionalParameterGroup p2d, PointDataView pdv) {
         List<String> requestParameters = Arrays.asList(request.getParameters());
         LevelFactory lf = LevelFactory.getInstance();
-        int count = pdv.getInt(p2d.countParameter);
+
+        int count;
+        if (p2d.countParameter == null) {
+            count = getMaxCount(requestParameters, p2d, pdv);
+        } else {
+            count = pdv.getInt(p2d.countParameter);
+            // Some count fields of bufrua (and maybe others) come back as -9999
+            // instead of 0 if there's no level data. In this case, clamp to
+            // zero so initialing result doesn't throw an exception
+            if (count < 0) {
+                count = 0;
+            }
+        }
+
         List<IGeometryData> result = new ArrayList<IGeometryData>(count);
+
+        String levelUnit;
+        Number[] levelValues;
+        if (p2d.levelParameter == null) {
+            levelUnit = null;
+            levelValues = new Number[0];
+        } else {
+            levelUnit = UnitFormat.getUCUMInstance().format(
+                    pdv.getUnit(p2d.levelParameter));
+            levelValues = pdv.getNumberAllLevels(p2d.levelParameter);
+        }
+
+        String[] stringValues;
+        Number[] numberValues;
         for (int j = 0; j < count; j += 1) {
             /* Clone the data, not level or parameters though */
             DefaultGeometryData leveldata = createNewGeometryData(pdv);
-            double levelValue = pdv.getNumberAllLevels(p2d.levelParameter)[j]
-                    .doubleValue();
-            String levelUnit = UnitFormat.getUCUMInstance().format(
-                    pdv.getUnit(p2d.levelParameter));
-            leveldata.setLevel(lf
-                    .getLevel(p2d.levelType, levelValue, levelUnit));
+
+            if (j < levelValues.length) {
+                leveldata.setLevel(lf.getLevel(p2d.levelType,
+                        levelValues[j].doubleValue(), levelUnit));
+            }
 
             for (String parameter : p2d.parameters) {
                 if (requestParameters.contains(parameter)) {
                     Unit<?> unit = pdv.getUnit(parameter);
                     PointDataDescription.Type type = pdv.getType(parameter);
                     if (type == PointDataDescription.Type.STRING) {
-                        leveldata.addData(parameter,
-                                pdv.getStringAllLevels(parameter)[j],
-                                Type.STRING, unit);
+                        stringValues = pdv.getStringAllLevels(parameter);
+                        if (j < stringValues.length) {
+                            leveldata.addData(parameter, stringValues[j],
+                                    Type.STRING, unit);
+                        }
                     } else {
-                        leveldata.addData(parameter,
-                                pdv.getNumberAllLevels(parameter)[j], unit);
+                        numberValues = pdv.getNumberAllLevels(parameter);
+                        if (j < numberValues.length) {
+                            leveldata.addData(parameter, numberValues[j], unit);
+                        }
                     }
                 }
             }
             result.add(leveldata);
         }
+
         return result;
+    }
+
+    /**
+     * Get the maximum number of values for all requested values of the 2d
+     * parameter group.
+     *
+     * @param requestParameters
+     *            The requested parameters.
+     * @param p2d
+     *            The 2d Parameter group.
+     * @param pdv
+     *            pdv containing data.
+     */
+    private int getMaxCount(List<String> requestParameters,
+            TwoDimensionalParameterGroup p2d, PointDataView pdv) {
+        int maxCount = 0;
+        int tempCount;
+        for (String parameter : p2d.parameters) {
+            if (requestParameters.contains(parameter)) {
+                PointDataDescription.Type type = pdv.getType(parameter);
+                if (type == PointDataDescription.Type.STRING) {
+                    tempCount = pdv.getStringAllLevels(parameter).length;
+                } else {
+                    tempCount = pdv.getNumberAllLevels(parameter).length;
+                }
+                if (tempCount > maxCount) {
+                    maxCount = tempCount;
+                }
+            }
+        }
+        return maxCount;
     }
 
     /**
      * Point data types with 2 dimensions need to register so the 2d parameters
      * can be grouped appropriately
-     * 
+     *
      * @param countParameter
      *            parameter name of an integer parameter identifying the number
      *            of valid levels.
