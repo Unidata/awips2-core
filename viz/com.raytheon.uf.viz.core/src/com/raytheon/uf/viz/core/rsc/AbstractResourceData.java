@@ -30,6 +30,7 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType;
+import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
 
 /**
  * A base implementation of resource data and metadata. This class is used by
@@ -44,7 +45,7 @@ import com.raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType;
  * ------------- -------- ----------- --------------------------
  * Feb 02, 2009           chammack    Initial creation
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
- * 
+ * Sep 11, 2014  3549     mschenke    Added better default behavior for update
  * 
  * </pre>
  * 
@@ -89,11 +90,7 @@ public abstract class AbstractResourceData {
     }
 
     /**
-     * Constructs a resource from this resource data.
-     * 
-     * This class is typically implemented and provides any transformations
-     * necessary to go between the raw data form and the input of the renderable
-     * AbstractVizResource.
+     * Constructs a resource from this resource data on the descriptor passed in
      * 
      * 
      * @param loadProperties
@@ -111,18 +108,25 @@ public abstract class AbstractResourceData {
     /**
      * Update a resource with new data
      * 
-     * This class is typically implemented and provides any transformations
-     * necessary to go between the raw data form and the input of the renderable
-     * AbstractVizResource. Default calls
-     * {@link #fireChangeListeners(com.raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType, Object)}
-     * with {@link ChangeType#DATA_UPDATE} and the updateData with no
-     * transformations
+     * This method can be overridden to provide any transformations necessary to
+     * go between the raw data form and the input of the renderable
+     * AbstractVizResource expects. Default behavior does no transformation and
+     * calls {@link #fireChangeListeners(ChangeType, Object)}. If the raw object
+     * passed in is an {@link AbstractCapability}, the {@link ChangeType} used
+     * is {@link ChangeType#CAPABILITY}, otherwise
+     * {@link ChangeType#DATA_UPDATE}
      * 
      * 
      * @param updateData
      *            the data to update with
      */
-    public abstract void update(Object updateData);
+    public void update(Object updateData) {
+        ChangeType type = ChangeType.DATA_UPDATE;
+        if (updateData instanceof AbstractCapability) {
+            type = ChangeType.CAPABILITY;
+        }
+        fireChangeListeners(type, updateData);
+    }
 
     public void addChangeListener(IResourceDataChanged listener) {
         this.dataChangedListeners.add(listener);

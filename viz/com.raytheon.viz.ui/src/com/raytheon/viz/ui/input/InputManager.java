@@ -41,6 +41,7 @@ import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
  * Date       	Ticket#		Engineer	Description
  * ------------	----------	-----------	--------------------------
  * 7/1/06                   chammack    Initial Creation.
+ * Sep 11, 2014 3549        mschenke    Added mouse move notification after up
  * 
  * </pre>
  * 
@@ -186,7 +187,8 @@ public class InputManager implements Listener {
     private void handleMouseDoubleClick(Event event) {
         isMouseDown = false;
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleDoubleClick(event.x, event.y, event.button))
+            if (handlers.get(i).handler.handleDoubleClick(event.x, event.y,
+                    event.button))
                 return;
         }
     }
@@ -200,6 +202,12 @@ public class InputManager implements Listener {
                 return;
         }
 
+        /*
+         * On up, fire move so any positions can be refreshed for people who
+         * were not getting notified for the mouse down/move/up and need to know
+         * the current position
+         */
+        handleMouseMove(event);
     }
 
     private void handleMouseDown(Event event) {
@@ -269,8 +277,8 @@ public class InputManager implements Listener {
             }
         } else {
             for (int i = 0; i < handlers.size(); i++) {
-                if (handlers.get(i).handler.handleMouseMove(e.x, e.y))
-                    return;
+                // Let all handlers know about moves
+                handlers.get(i).handler.handleMouseMove(e.x, e.y);
             }
         }
     }
