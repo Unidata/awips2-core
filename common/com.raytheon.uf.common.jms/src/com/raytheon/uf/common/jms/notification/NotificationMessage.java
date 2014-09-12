@@ -30,7 +30,6 @@ import javax.jms.TextMessage;
 
 import com.raytheon.uf.common.serialization.DynamicSerializationManager;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationType;
-import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.DataUnzipper;
 
 /**
@@ -46,6 +45,7 @@ import com.raytheon.uf.common.util.DataUnzipper;
  * Aug 06, 2013  2228     njensen     Use deserialize(byte[])
  * Aug 16, 2013  2169     bkowal      Unzip any gzipped information
  * Jul 21, 2014  3390     bsteffen    Move to common.jms.notification
+ * Sep 12, 2014  3582     mapeters    Throw exception if jmsMessage isn't instance of BytesMessage.
  * 
  * </pre>
  * 
@@ -106,10 +106,10 @@ public class NotificationMessage {
                         this.unmarshalledObject = DynamicSerializationManager
                                 .getManager(SerializationType.Thrift)
                                 .deserialize(data);
-                    } else if (this.jmsMessage instanceof TextMessage) {
-                        TextMessage textMessage = (TextMessage) this.jmsMessage;
-                        this.unmarshalledObject = SerializationUtil
-                                .unmarshalFromXml(textMessage.getText());
+                    } else {
+                        throw new NotificationException(
+                                "Unexpected jmsMessage type: "
+                                        + this.jmsMessage.toString());
                     }
                 } catch (Exception e) {
                     throw new NotificationException(
