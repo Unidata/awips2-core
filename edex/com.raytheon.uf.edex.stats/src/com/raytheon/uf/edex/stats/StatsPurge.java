@@ -28,7 +28,7 @@ import java.util.TimeZone;
 import com.raytheon.uf.common.dataquery.db.QueryParam.QueryOperand;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.serialization.SerializationUtil;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.stats.AggregateRecord;
 import com.raytheon.uf.common.stats.StatsRecord;
 import com.raytheon.uf.common.stats.xml.StatisticsEventConfig;
@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2012            jsanchez    Initial creation.
  * May 22, 2013 1917       rjpeter     Added purging off offline statistics.
+ * Sep 04, 2014 3582       mapeters    Replaced SerializationUtil usage with SingleTypeJAXBManager.
  * </pre>
  * 
  * @author jsanchez
@@ -163,12 +164,13 @@ public class StatsPurge {
                     "purge/" + xml);
             if (file != null) {
                 try {
-                    purgeRules = SerializationUtil.jaxbUnmarshalFromXmlFile(
-                            PurgeRuleSet.class, file);
+                    SingleTypeJAXBManager<PurgeRuleSet> jaxb = new SingleTypeJAXBManager<PurgeRuleSet>(
+                            PurgeRuleSet.class);
+                    purgeRules = jaxb.unmarshalFromXmlFile(file);
 
                 } catch (SerializationException e) {
                     statusHandler.error("Error deserializing purge rule " + xml
-                            + "!");
+                            + "!", e);
                 }
 
             } else {
