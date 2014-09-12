@@ -39,21 +39,23 @@ import com.raytheon.uf.common.message.response.AbstractResponseMessage;
  * contains only the locations of weather products, instead of transmitting
  * base64-encoded data.
  * 
+ * <pre>
+ * 
  * SOFTWARE HISTORY
  * 
- * Date Ticket# Engineer Description ------------ ---------- -----------
- * -------------------------- 06/14/06 pheaberl Initial creation.
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jun 14, 2006            pheaberl     Initial creation
+ * Sep 12, 2014 3583       bclement     removed serial version id
  * 
  * </pre>
  * 
  * @author pheaberl
- * @version 1
+ * @version 1.0
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
 public class ResponseMessageURI extends AbstractResponseMessage {
-
-    private static final long serialVersionUID = 1L;
 
     @XmlElement
     private URI[] productURI;

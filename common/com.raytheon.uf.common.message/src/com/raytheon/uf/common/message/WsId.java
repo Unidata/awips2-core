@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.net.InetAddress;
 
 import com.raytheon.uf.common.message.adapter.WsIdAdapter;
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
 import com.raytheon.uf.common.util.SystemUtil;
@@ -42,6 +41,7 @@ import com.raytheon.uf.common.util.SystemUtil;
  *                                     get delayed behind DNS requests.
  * Sep 20, 2012     #1190  dgilling    Create method getHostName().
  * Mar 20, 2014      2726  rjpeter     Moved hostNameCache to SystemUtil.
+ * Sep 12, 2014 3583       bclement    removed ISerializableObject
  * </pre>
  * 
  * @author randerso
@@ -50,7 +50,7 @@ import com.raytheon.uf.common.util.SystemUtil;
 
 @DynamicSerialize
 @DynamicSerializeTypeAdapter(factory = WsIdAdapter.class)
-public class WsId implements Serializable, ISerializableObject {
+public class WsId implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

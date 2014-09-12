@@ -25,28 +25,31 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Represents the message wrapper for EDEX responses
  * 
+ * <pre>
+ * 
  * SOFTWARE HISTORY
  * 
- * Date Ticket# Engineer Description ------------ ---------- -----------
- * -------------------------- 08-06-2006 chammack Initial creation. 27Apr2007
- * 208 MW Fegan Added body text.
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 06, 2006            chammack     Initial creation
+ * Apr 27, 2007 208        MW Fegan     Added body text.
+ * Sep 12, 2014 3583       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
+ * @version 1.0
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class Message implements ISerializableObject {
+public class Message {
 
     private String correlationID;
 
