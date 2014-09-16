@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.plugin.level.handler;
 
-import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.dataplugin.level.request.GetMasterLevelRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
@@ -35,6 +34,7 @@ import com.raytheon.uf.edex.plugin.level.dao.LevelDao;
  * ------------ ---------- ----------- --------------------------
  * Aug 24, 2009 2924       rjpeter     Initial creation
  * Sep 09, 2014 3356       njensen     Reimplemented handleRequest
+ * Sep 16, 2014 3356       njensen     Removed dependency on LevelFactory
  * 
  * </pre>
  * 
@@ -48,11 +48,6 @@ public class GetMasterLevelHandler implements
     @Override
     public MasterLevel handleRequest(GetMasterLevelRequest request)
             throws Exception {
-        if (request.isCreate()) {
-            LevelFactory.getInstance().checkMasterLevel(
-                    request.getMasterLevel());
-        }
-
         LevelDao dao = new LevelDao();
         return dao.lookupMasterLevel(request.getMasterLevel(),
                 request.isCreate());
