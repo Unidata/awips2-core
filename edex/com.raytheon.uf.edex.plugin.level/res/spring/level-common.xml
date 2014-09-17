@@ -14,5 +14,10 @@
 		<constructor-arg value="level"/>
 		<constructor-arg ref="levelProperties"/>
 	</bean>
+ 
+    <bean id="levelFactoryInitialized"
+        class="com.raytheon.uf.common.dataplugin.level.LevelFactory"
+        factory-method="getInstance"
+        depends-on="registerRequestServiceRouter, queryDataRegistered, masterLevelHandlerRegistered" />
 	
 </beans>

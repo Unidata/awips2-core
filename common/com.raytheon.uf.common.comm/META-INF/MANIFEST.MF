@@ -14,4 +14,3 @@ Require-Bundle: org.apache.http,
  com.raytheon.uf.common.time;bundle-version="1.12.1174"
 Export-Package: com.raytheon.uf.common.comm,
  com.raytheon.uf.common.comm.stream
-Eclipse-BuddyPolicy: registered

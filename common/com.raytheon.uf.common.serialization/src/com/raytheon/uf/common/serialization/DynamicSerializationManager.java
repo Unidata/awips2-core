@@ -80,7 +80,8 @@ import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
  * Nov 02, 2012 1302        djohnson    Remove field level adapters, they break python serialization.
  * Aug 06, 2013 2228        njensen     Added deserialize(byte[])
  * Aug 08, 2014 3503        bclement    moved registration of spatial serialization adapters to common.geospatial
- * Aug 15, 2014 3541        mschenke    Made getSerializationMetadata(String) static and renamed inspect to match
+ * Aug 15, 2014 3541        mschenke    Made getSerializationMetadata(String) static and renamed inspect to match\
+ * Aug 27, 2014 3503        bclement    improved error message in registerAdapter()
  * 
  * </pre>
  * 
@@ -280,14 +281,23 @@ public class DynamicSerializationManager {
      */
     public static <T> ISerializationTypeAdapter<T> registerAdapter(
             Class<? extends T> clazz, ISerializationTypeAdapter<T> adapter) {
-        SerializationMetadata md = new SerializationMetadata();
-        md.serializationFactory = adapter;
-        md.adapterStructName = clazz.getName();
-        if (serializedAttributes.containsKey(md.adapterStructName)) {
+        String className = clazz.getName();
+        SerializationMetadata md = serializedAttributes.get(className);
+        if (md != null) {
+            String reason = "Metadata already exists";
+            if (md.serializationFactory != null) {
+                reason = "Adapter conflict, attempted to register adapter '"
+                        + adapter.getClass()
+                        + "' when type already has a registered adapter '"
+                        + md.serializationFactory.getClass() + "'";
+            }
             throw new RuntimeException(
                     "Could not create serialization metadata for class: "
-                            + clazz + ", metadata already exists");
+                            + clazz + ". " + reason);
         }
+        md = new SerializationMetadata();
+        md.serializationFactory = adapter;
+        md.adapterStructName = className;
         serializedAttributes.put(md.adapterStructName, md);
         return adapter;
     }

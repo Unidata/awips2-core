@@ -40,6 +40,7 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
  * ------------ ---------- ----------- --------------------------
  * Aug  6, 2009            mschenke    Initial creation
  * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
+ * Sep 16, 2014 3356       njensen     DefaultHandler throws IllegalState, not ClassNotFound
  * 
  * </pre>
  * 
@@ -55,7 +56,7 @@ public class HandlerRegistry extends GenericRegistry<String, Object> {
     static class DefaultHandler implements IRequestHandler<IServerRequest> {
         @Override
         public Object handleRequest(IServerRequest request) throws Exception {
-            throw new ClassNotFoundException("No handler registered for type: "
+            throw new IllegalStateException("No handler registered for type: "
                     + request.getClass().getCanonicalName());
         }
     }

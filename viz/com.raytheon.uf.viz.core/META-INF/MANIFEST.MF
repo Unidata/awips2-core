@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core;singleton:=true
-Bundle-Version: 1.14.5.qualifier
+Bundle-Version: 1.14.6.qualifier
 Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
@@ -40,8 +40,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
  com.raytheon.uf.common.jms;bundle-version="1.14.0";visibility:=reexport
 Bundle-ActivationPolicy: lazy
-Eclipse-BuddyPolicy: registered
-Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.serialization.comm, com.raytheon.uf.common.status, com.raytheon.uf.common.dataplugin.level, com.raytheon.uf.common.comm, ch.qos.logback, com.raytheon.uf.common.localization
+Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, ch.qos.logback
 Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.alerts,
  com.raytheon.uf.viz.core.auth,
@@ -64,7 +63,6 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.interp,
  com.raytheon.uf.viz.core.jobs,
  com.raytheon.uf.viz.core.legend,
- com.raytheon.uf.viz.core.level,
  com.raytheon.uf.viz.core.localization,
  com.raytheon.uf.viz.core.map,
  com.raytheon.uf.viz.core.notification,
@@ -80,6 +78,7 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.rsc.updater,
  com.raytheon.uf.viz.core.sampling,
  com.raytheon.uf.viz.core.sounds,
+ com.raytheon.uf.viz.core.spatial,
  com.raytheon.uf.viz.core.status,
  com.raytheon.uf.viz.core.tile,
  com.raytheon.uf.viz.core.time,

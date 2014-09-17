@@ -19,16 +19,13 @@
  **/
 package com.raytheon.uf.edex.plugin.level.handler;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-
-import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.dataplugin.level.request.GetMasterLevelRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
+import com.raytheon.uf.edex.plugin.level.dao.LevelDao;
 
 /**
- * TODO Add Description
+ * IRequestHandler that returns a master level
  * 
  * <pre>
  * 
@@ -36,6 +33,8 @@ import com.raytheon.uf.common.serialization.comm.IRequestHandler;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 24, 2009 2924       rjpeter     Initial creation
+ * Sep 09, 2014 3356       njensen     Reimplemented handleRequest
+ * Sep 16, 2014 3356       njensen     Removed dependency on LevelFactory
  * 
  * </pre>
  * 
@@ -46,18 +45,11 @@ import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 public class GetMasterLevelHandler implements
         IRequestHandler<GetMasterLevelRequest> {
 
-    protected final transient Log logger = LogFactory.getLog(getClass());
-
     @Override
     public MasterLevel handleRequest(GetMasterLevelRequest request)
             throws Exception {
-        if (request.isCreate()) {
-            LevelFactory.getInstance().checkMasterLevel(
-                    request.getMasterLevel());
-        }
-
-        // use LevelFactory on server to allow for using LevelFactory cache
-        return LevelFactory.getInstance().getMasterLevel(
-                request.getMasterLevel().getName());
+        LevelDao dao = new LevelDao();
+        return dao.lookupMasterLevel(request.getMasterLevel(),
+                request.isCreate());
     }
 }

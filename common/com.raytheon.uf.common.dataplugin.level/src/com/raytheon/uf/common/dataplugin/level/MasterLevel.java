@@ -34,15 +34,11 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import org.apache.commons.lang.builder.ToStringBuilder;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * MasterLevel - once a field is set it cannot be changed.
@@ -53,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 03, 2009            rjpeter     Initial creation.
+ * Sep 09, 2014  3356      njensen     Remove CommunicationException
  * </pre>
  * 
  * @author rjpeter
@@ -65,8 +62,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 @XmlRootElement
 public class MasterLevel extends PersistableDataObject implements
         ISerializableObject {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(MasterLevel.class);
 
     private static final long serialVersionUID = 1L;
 
@@ -158,12 +153,7 @@ public class MasterLevel extends PersistableDataObject implements
 
     public Progression getProgression() {
         if (processType) {
-            try {
-                processTypeField();
-            } catch (CommunicationException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            }
+            processTypeField();
         }
 
         return progression;
@@ -228,7 +218,7 @@ public class MasterLevel extends PersistableDataObject implements
         return rval;
     }
 
-    private void processTypeField() throws CommunicationException {
+    private void processTypeField() {
         if (type != null && type.trim().length() > 0) {
             try {
                 setProgression(Progression.valueOf(type));

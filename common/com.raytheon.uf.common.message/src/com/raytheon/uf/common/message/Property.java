@@ -24,26 +24,29 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Represents the message properties in EDEX responses
  * 
+ * <pre>
+ * 
  * SOFTWARE HISTORY
  * 
- * Date Ticket# Engineer Description ------------ ---------- -----------
- * -------------------------- 08-06-2006 chammack Initial creation.
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 06, 2006            chammack     Initial creation
+ * Sep 12, 2014 3583       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
+ * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class Property implements ISerializableObject {
+public class Property {
 
     public Property() {
 

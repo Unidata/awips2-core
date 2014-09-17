@@ -39,6 +39,7 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * Mar 04, 2013    1786    mpduff      Initial creation.
  * Jun 07, 2013    1981    mpduff      Save user's username in UserController.
  * Feb 10, 2014    2704    njensen     Added credentialsFailed()
+ * Sep 03, 2014    3570    bclement    added host and port to getCredentials()
  * 
  * </pre>
  * 
@@ -52,7 +53,7 @@ public class CaveHttpsCredentialsHandler implements IHttpsCredentialsHandler {
      * {@inheritDoc}
      */
     @Override
-    public String[] getCredentials(String message) {
+    public String[] getCredentials(String host, int port, String message) {
         // If message contains an "=" split and take the value of the pair
         if (message.contains("=")) {
             message = message.split("=")[1];
@@ -71,4 +72,5 @@ public class CaveHttpsCredentialsHandler implements IHttpsCredentialsHandler {
                 "Login failed",
                 "Invalid username and/or password.  Please try again.");
     }
+
 }

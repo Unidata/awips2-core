@@ -4,7 +4,6 @@ Bundle-Name: Communication Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.serialization.comm
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Eclipse-BuddyPolicy: registered
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.serialization.comm.response

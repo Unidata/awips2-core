@@ -24,7 +24,6 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
@@ -38,7 +37,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *  Date         Ticket#     Engineer    Description
  *  ------------ ----------  ----------- --------------------------
  *  Nov 13, 2006            chammack    Initial Creation.
- *  
+ *  Sep 12, 2014 3583       bclement     removed ISerializableObject
+ * 
  * </pre>
  * 
  * @author chammack
@@ -46,7 +46,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class CatalogAttribute implements ISerializableObject {
+public class CatalogAttribute {
 
     @XmlAttribute
     @DynamicSerializeElement

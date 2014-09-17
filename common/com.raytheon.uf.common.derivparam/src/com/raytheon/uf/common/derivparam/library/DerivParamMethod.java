@@ -33,9 +33,8 @@ import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
-import com.raytheon.uf.common.comm.CommunicationException;
-import com.raytheon.uf.common.inventory.exception.DataCubeException;
 import com.raytheon.uf.common.dataplugin.level.Level;
+import com.raytheon.uf.common.inventory.exception.DataCubeException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -52,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------- -------- ----------- --------------------------
  * Nov 21, 2009  3576     rjpeter     Initial version
  * Jan 14, 2014  2661     bsteffen    Remove ISerializableObject
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -61,6 +61,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 public class DerivParamMethod {
+
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(DerivParamMethod.class);
 
@@ -150,7 +151,7 @@ public class DerivParamMethod {
         fields.add(field);
     }
 
-    public Set<Level> getValidLevels() throws CommunicationException {
+    public Set<Level> getValidLevels() {
         if (validLevels == null && levels != null && levels.length() > 0) {
             ValidLevelGenerator lvlGen = new ValidLevelGenerator();
             validLevels = lvlGen.generateLevels(levels);
@@ -240,12 +241,8 @@ public class DerivParamMethod {
 
         if (pFieldTokens.length > index) {
             String levelToken = pFieldTokens[index++];
-            try {
-                if (!field.setLevel(levelToken)) {
-                    index--;
-                }
-            } catch (CommunicationException e) {
-                throw new DataCubeException(e);
+            if (!field.setLevel(levelToken)) {
+                index--;
             }
 
             if (pFieldTokens.length > index) {

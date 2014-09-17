@@ -53,6 +53,7 @@ import com.raytheon.uf.common.util.ServiceLoaderUtil;
  * Mar 26, 2014 2884       randerso     Fixed broken javadoc link
  * Apr 16, 2014 2928       rjpeter      Added jaxbMarshalToStream.
  * Jul 15, 2014 3373       bclement     jaxb manager api changes
+ * Sep 04, 2014 3582       mapeters     Deprecated all JAXB/XML methods.
  * </pre>
  * 
  * @author chammack
@@ -75,7 +76,10 @@ public final class SerializationUtil {
      * @return the {@link JAXBManager}
      * @see http://en.wikipedia.org/wiki/Double-checked_locking
      * @throws JAXBException
+     * @deprecated Use a specific {@link JAXBManager} or
+     *             {@link SingleTypeJAXBManager} instead.
      */
+    @Deprecated
     public static JAXBManager getJaxbManager() throws JAXBException {
         JAXBManager result = jaxbManager;
         if (result == null) {
@@ -104,7 +108,8 @@ public final class SerializationUtil {
      * 
      * @return the global JAXBContext
      * @throws JAXBException
-     * @Deprecated Use a specific JAXBManager instead.
+     * @deprecated Use a specific {@link JAXBManager} or
+     *             {@link SingleTypeJAXBManager} instead.
      */
     @Deprecated
     public static JAXBContext getJaxbContext() throws JAXBException {
@@ -119,14 +124,13 @@ public final class SerializationUtil {
      *            The XML representation
      * @return A new instance from the XML representation
      * @throws JAXBException
-     * @deprecated Use {@link #unmarshalFromXml(Class, String)} which performs
-     *             the cast for you, and wraps any {@link ClassCastException}s
-     *             in a serialization exception
+     * @deprecated Use {@link JAXBManager#unmarshalFromXml(String)} or
+     *             {@link SingleTypeJAXBManager#unmarshalFromXml(String)}
+     *             instead.
      */
     @Deprecated
     public static Object unmarshalFromXml(String xml) throws JAXBException {
         return unmarshalFromXml(Object.class, xml);
-
     }
 
     /**
@@ -139,7 +143,11 @@ public final class SerializationUtil {
      *            The XML representation
      * @return A new instance from the XML representation
      * @throws JAXBException
+     * @deprecated Use {@link JAXBManager#unmarshalFromXml(String)} or
+     *             {@link SingleTypeJAXBManager#unmarshalFromXml(String)}
+     *             instead.
      */
+    @Deprecated
     public static <T> T unmarshalFromXml(Class<T> clazz, String xml)
             throws JAXBException {
         return clazz.cast(getJaxbManager().unmarshalFromXml(xml));
@@ -153,7 +161,10 @@ public final class SerializationUtil {
      *            Object being marshalled
      * @return XML string representation of the object
      * @throws JAXBException
+     * @deprecated Use {@link JAXBManager#marshalToXml(Object)} or
+     *             {@link SingleTypeJAXBManager#marshalToXml(Object)} instead.
      */
+    @Deprecated
     public static String marshalToXml(Object obj) throws JAXBException {
         return getJaxbManager().marshalToXml(obj);
     }
@@ -167,7 +178,11 @@ public final class SerializationUtil {
      * @param filePath
      *            Path to the output file
      * @throws SerializationException
+     * @deprecated Use {@link JAXBManager#marshalToXmlFile(Object, String)} or
+     *             {@link SingleTypeJAXBManager#marshalToXmlFile(Object, String)}
+     *             instead.
      */
+    @Deprecated
     public static void jaxbMarshalToXmlFile(Object obj, String filePath)
             throws SerializationException {
         try {
@@ -187,7 +202,12 @@ public final class SerializationUtil {
      * @param filePath
      *            Path to the output file
      * @throws SerializationException
+     * @deprecated Use {@link JAXBManager#marshalToStream(Object, OutputStream)}
+     *             or
+     *             {@link SingleTypeJAXBManager#marshalToStream(Object, OutputStream)}
+     *             instead.
      */
+    @Deprecated
     public static void jaxbMarshalToStream(Object obj, OutputStream os)
             throws SerializationException {
         try {
@@ -205,9 +225,9 @@ public final class SerializationUtil {
      *            The path to the XML file
      * @return A new instance from the XML representation
      * @throws SerializationException
-     * @deprecated Use {@link #jaxbUnmarshalFromXmlFile(Class, String)} which
-     *             performs the cast for you, and wraps any
-     *             {@link ClassCastException}s in a serialization exception
+     * @deprecated Use {@link JAXBManager#unmarshalFromXmlFile(Class, String)}
+     *             or {@link SingleTypeJAXBManager#unmarshalFromXmlFile(String)}
+     *             instead.
      */
     @Deprecated
     public static Object jaxbUnmarshalFromXmlFile(String filePath)
@@ -224,8 +244,11 @@ public final class SerializationUtil {
      *            The path to the XML file
      * @return A new instance from the XML representation
      * @throws SerializationException
-     * 
+     * @deprecated Use {@link JAXBManager#unmarshalFromXmlFile(Class, String)}
+     *             or {@link SingleTypeJAXBManager#unmarshalFromXmlFile(String)}
+     *             instead.
      */
+    @Deprecated
     public static <T> T jaxbUnmarshalFromXmlFile(Class<T> clazz, String filePath)
             throws SerializationException {
         try {
@@ -242,9 +265,9 @@ public final class SerializationUtil {
      *            The XML file
      * @return A new instance from the XML representation
      * @throws SerializationException
-     * @deprecated Use {@link #jaxbUnmarshalFromXmlFile(Class, File)} which
-     *             performs the cast for you, and wraps any
-     *             {@link ClassCastException}s in a serialization exception
+     * @deprecated Use {@link JAXBManager#unmarshalFromXmlFile(Class, File)} or
+     *             {@link SingleTypeJAXBManager#unmarshalFromXmlFile(File)}
+     *             instead.
      */
     @Deprecated
     public static Object jaxbUnmarshalFromXmlFile(File file)
@@ -263,7 +286,11 @@ public final class SerializationUtil {
      * @throws SerializationException
      *             if JAXB encounters an exception, or a
      *             {@link ClassCastException} occurs
+     * @deprecated Use {@link JAXBManager#unmarshalFromXmlFile(Class, File)} or
+     *             {@link SingleTypeJAXBManager#unmarshalFromXmlFile(File)}
+     *             instead.
      */
+    @Deprecated
     public static <T> T jaxbUnmarshalFromXmlFile(Class<T> clazz, File file)
             throws SerializationException {
         try {
@@ -281,9 +308,10 @@ public final class SerializationUtil {
      *            The input stream. The stream will be closed by this operation.
      * @return A new instance from the XML representation
      * @throws SerializationException
-     * @deprecated Use {@link #jaxbUnmarshalFromInputStream(Class, InputStream)}
-     *             which performs the cast for you, and wraps any
-     *             {@link ClassCastException}s in a serialization exception
+     * @deprecated Use {@link JAXBManager#unmarshalFromInputStream(InputStream)}
+     *             or
+     *             {@link SingleTypeJAXBManager#unmarshalFromInputStream(InputStream)}
+     *             instead.
      */
     @Deprecated
     public static Object jaxbUnmarshalFromInputStream(InputStream is)
@@ -301,8 +329,12 @@ public final class SerializationUtil {
      *            The input stream. The stream will be closed by this operation.
      * @return A new instance from the XML representation
      * @throws SerializationException
-     * 
+     * @deprecated Use {@link JAXBManager#unmarshalFromInputStream(InputStream)}
+     *             or
+     *             {@link SingleTypeJAXBManager#unmarshalFromInputStream(InputStream)}
+     *             instead.
      */
+    @Deprecated
     public static <T> T jaxbUnmarshalFromInputStream(Class<T> clazz,
             InputStream is) throws SerializationException {
         try {

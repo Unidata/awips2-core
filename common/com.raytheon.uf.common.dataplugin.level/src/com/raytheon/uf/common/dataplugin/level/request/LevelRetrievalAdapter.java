@@ -17,45 +17,50 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.viz.core.level;
+package com.raytheon.uf.common.dataplugin.level.request;
 
 import java.util.HashMap;
 import java.util.Map;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelContainer;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.dataplugin.level.MasterLevelContainer;
-import com.raytheon.uf.common.dataplugin.level.request.GetAllLevelsForMasterLevelRequest;
-import com.raytheon.uf.common.dataplugin.level.request.GetLevelByIdRequest;
-import com.raytheon.uf.common.dataplugin.level.request.GetLevelRequest;
-import com.raytheon.uf.common.dataplugin.level.request.GetMasterLevelRequest;
-import com.raytheon.uf.common.dataplugin.level.request.ILevelRetrievalAdapter;
 import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.responses.DbQueryResponse;
+import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.core.exception.VizCommunicationException;
-import com.raytheon.uf.viz.core.exception.VizException;
-import com.raytheon.uf.viz.core.requests.ThriftClient;
 
+/**
+ * Retrieves levels known to the system
+ * 
+ * <pre>
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * --/--/----              ???         Initial creation.
+ * Sep 09, 2014 3356       njensen     Moved to common and updated accordingly
+ * 
+ * </pre>
+ * 
+ * @version 1.0
+ */
 public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
+
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LevelRetrievalAdapter.class);
 
     @Override
-    public Level getLevel(GetLevelRequest request)
-            throws CommunicationException {
+    public Level getLevel(GetLevelRequest request) {
         Level rval = null;
 
         try {
-            rval = (Level) ThriftClient.sendRequest(request);
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+            rval = (Level) RequestRouter.route(request);
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error occurred retrieving level information from server.",
                     e);
@@ -65,15 +70,12 @@ public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
     }
 
     @Override
-    public Level getLevel(GetLevelByIdRequest request)
-            throws CommunicationException {
+    public Level getLevel(GetLevelByIdRequest request) {
         Level rval = null;
 
         try {
-            rval = (Level) ThriftClient.sendRequest(request);
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+            rval = (Level) RequestRouter.route(request);
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error occurred retrieving level information from server.",
                     e);
@@ -83,14 +85,11 @@ public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
     }
 
     @Override
-    public MasterLevel getMasterLevel(GetMasterLevelRequest request)
-            throws CommunicationException {
+    public MasterLevel getMasterLevel(GetMasterLevelRequest request) {
         MasterLevel rval = null;
         try {
-            rval = (MasterLevel) ThriftClient.sendRequest(request);
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+            rval = (MasterLevel) RequestRouter.route(request);
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error occurred retrieving level information from server.",
                     e);
@@ -100,14 +99,11 @@ public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
 
     @Override
     public LevelContainer getAllLevelsForMasterLevel(
-            GetAllLevelsForMasterLevelRequest request)
-            throws CommunicationException {
+            GetAllLevelsForMasterLevelRequest request) {
         LevelContainer rval = null;
         try {
-            rval = (LevelContainer) ThriftClient.sendRequest(request);
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+            rval = (LevelContainer) RequestRouter.route(request);
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error occurred retrieving level information from server.",
                     e);
@@ -116,21 +112,18 @@ public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
     }
 
     @Override
-    public LevelContainer getAllLevels() throws CommunicationException {
+    public LevelContainer getAllLevels() {
         LevelContainer rval = null;
         DbQueryRequest query = new DbQueryRequest();
         query.setConstraints(new HashMap<String, RequestConstraint>());
         query.setEntityClass(Level.class.getName());
         try {
-            DbQueryResponse resp = (DbQueryResponse) ThriftClient
-                    .sendRequest(query);
+            DbQueryResponse resp = (DbQueryResponse) RequestRouter.route(query);
             rval = new LevelContainer(resp.getResults().size());
             for (Map<String, Object> result : resp.getResults()) {
                 rval.add((Level) result.get(null));
             }
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+        } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error occurred retrieving level information from server.",
                     e);
@@ -139,22 +132,18 @@ public class LevelRetrievalAdapter implements ILevelRetrievalAdapter {
     }
 
     @Override
-    public MasterLevelContainer getAllMasterLevels()
-            throws CommunicationException {
+    public MasterLevelContainer getAllMasterLevels() {
         MasterLevelContainer rval = null;
         DbQueryRequest query = new DbQueryRequest();
         query.setConstraints(new HashMap<String, RequestConstraint>());
         query.setEntityClass(MasterLevel.class.getName());
         try {
-            DbQueryResponse resp = (DbQueryResponse) ThriftClient
-                    .sendRequest(query);
+            DbQueryResponse resp = (DbQueryResponse) RequestRouter.route(query);
             rval = new MasterLevelContainer(resp.getResults().size());
             for (Map<String, Object> result : resp.getResults()) {
                 rval.add((MasterLevel) result.get(null));
             }
-        } catch (VizCommunicationException e) {
-            throw new CommunicationException(e);
-        } catch (VizException e) {
+        } catch (Exception e) {
             statusHandler
                     .handle(Priority.PROBLEM,
                             "Error occurred retrieving master level information from server.",

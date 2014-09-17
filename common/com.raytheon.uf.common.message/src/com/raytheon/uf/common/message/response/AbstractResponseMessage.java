@@ -26,18 +26,29 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
+ * Abstract base for messages returned from EDEX service endpoints
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * ???                     chammack     Initial creation
+ * Sep 12, 2014 3583       bclement     removed ISerializableObject
+ * 
+ * </pre>
  * 
  * @author chammack
- * 
+ * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public abstract class AbstractResponseMessage implements ISerializableObject {
+public abstract class AbstractResponseMessage {
 
     @XmlElement
     @DynamicSerializeElement

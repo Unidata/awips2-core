@@ -28,7 +28,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.CompareType;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
@@ -52,15 +51,17 @@ import com.raytheon.uf.common.util.mapping.MultipleMappingException;
  * ------------- -------- ----------- --------------------------
  * Nov 21, 2009  3576     rjpeter     Initial version
  * Jan 14, 2014  2661     bsteffen    Remove unnecessary exceptions
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
  * 
  * &#064;author rjpeter
  * @version 1.0
  */
 public class ValidLevelGenerator {
+
     private enum Type {
         LevelMapping, MasterLevel, Group, Unknown
-    };
+    }
 
     private LevelMappingFactory lmf;
 
@@ -82,7 +83,7 @@ public class ValidLevelGenerator {
     }
 
     public Set<Level> generateLevels(String validLevelsString)
-            throws IllegalArgumentException, CommunicationException {
+            throws IllegalArgumentException {
         masterLevels = new HashMap<MasterLevel, Set<Level>>();
         validLevels = new HashSet<Level>();
         masterLevelsHandled = new HashSet<MasterLevel>();
@@ -143,7 +144,7 @@ public class ValidLevelGenerator {
         return validLevels;
     }
 
-    private void processLevelToken(String token) throws CommunicationException {
+    private void processLevelToken(String token) {
         boolean negate = token.charAt(0) == '!';
         int rangeIndex = token.indexOf('>');
 
@@ -334,7 +335,7 @@ public class ValidLevelGenerator {
         }
     }
 
-    private Type determineType(String token) throws CommunicationException {
+    private Type determineType(String token) {
         Type rval = null;
         LevelMapping mapping = lmf.getLevelMappingForKey(token);
 

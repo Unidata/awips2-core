@@ -30,6 +30,7 @@ package com.raytheon.uf.common.comm;
  * ------------ ---------- ----------- --------------------------
  * Mar 04, 2013    1786     mpduff      Initial creation
  * Feb 10, 2014    2704     njensen     Added credentialsFailed()
+ * Sep 3, 2014     3570     bclement    added host and port to getCredentials()
  * 
  * 
  * </pre>
@@ -43,13 +44,15 @@ public interface IHttpsCredentialsHandler {
     /**
      * Get the https credentials.
      * 
+     * @param host
+     * @param port
      * @param authValue
      *            The authorization message, typically returned from the server
      *            requesting authentication.
      * 
      * @return String Array, username and password
      */
-    String[] getCredentials(String authValue);
+    String[] getCredentials(String host, int port, String authValue);
 
     void credentialsFailed();
 }

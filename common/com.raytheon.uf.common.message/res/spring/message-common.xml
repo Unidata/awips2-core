@@ -1,0 +1,21 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+
+    <bean class="com.raytheon.uf.common.message.JAXBMessageRegistry" factory-method="register">
+        <constructor-arg>
+            <list>
+                <value>com.raytheon.uf.common.message.Body</value>
+                <value>com.raytheon.uf.common.message.CatalogItem</value>
+                <value>com.raytheon.uf.common.message.CatalogAttribute</value>
+                <value>com.raytheon.uf.common.message.Header</value>
+                <value>com.raytheon.uf.common.message.Message</value>
+                <value>com.raytheon.uf.common.message.Property</value>
+                <value>com.raytheon.uf.common.message.StatusMessage</value>
+                <value>com.raytheon.uf.common.message.response.ResponseMessageCatalog</value>
+                <value>com.raytheon.uf.common.message.response.ResponseMessageError</value>
+                <value>com.raytheon.uf.common.message.response.ResponseMessageGeneric</value>
+            </list>
+        </constructor-arg>
+    </bean>
+
+</beans>

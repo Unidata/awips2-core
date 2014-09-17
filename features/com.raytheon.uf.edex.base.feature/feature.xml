@@ -156,7 +156,7 @@
          id="org.apache.camel"
          download-size="0"
          install-size="0"
-         version="2.12.3"/>
+         version="2.13.2"/>
 
    <plugin
          id="org.apache.commons.management"
@@ -174,7 +174,7 @@
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="7.6.14.v20131031"/>
+         version="8.1.15.v20140411"/>
 
    <plugin
          id="com.raytheon.uf.common.json"

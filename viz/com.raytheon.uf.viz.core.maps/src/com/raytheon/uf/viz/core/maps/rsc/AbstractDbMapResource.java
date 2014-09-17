@@ -19,8 +19,12 @@
  **/
 package com.raytheon.uf.viz.core.maps.rsc;
 
+import java.text.DecimalFormat;
+import java.util.Arrays;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+import org.eclipse.swt.graphics.Rectangle;
 import org.geotools.geometry.jts.CoordinateSequenceTransformer;
 import org.geotools.geometry.jts.DefaultCoordinateSequenceTransformer;
 import org.geotools.geometry.jts.ReferencedEnvelope;
@@ -33,6 +37,7 @@ import com.raytheon.uf.common.geospatial.util.EnvelopeIntersection;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.PixelExtent;
+import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResourceData.ColumnDefinition;
@@ -66,6 +71,10 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
 
     private List<String> labelFields;
 
+    private double[] levels;
+
+    private String geometryType;
+
     /**
      * @param resourceData
      * @param loadProperties
@@ -96,6 +105,96 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
             }
         }
         return this.labelFields;
+    }
+
+    /**
+     * @return the levels
+     */
+    protected double[] getLevels() {
+        if (levels == null) {
+            try {
+                List<Double> results = DbMapQueryFactory.getMapQuery(
+                        resourceData.getTable(), resourceData.getGeomField())
+                        .getLevels();
+                levels = new double[results.size()];
+                int i = 0;
+                for (Double d : results) {
+                    levels[i++] = d;
+                }
+                Arrays.sort(levels);
+            } catch (VizException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error querying available levels", e);
+            }
+        }
+
+        return levels;
+    }
+
+    /**
+     * Determine simplification level
+     * 
+     * @param paintProps
+     * @return
+     */
+    protected double getSimpLev(PaintProperties paintProps) {
+        PixelExtent screenExtent = (PixelExtent) paintProps.getView()
+                .getExtent();
+
+        // compute an estimate of degrees per pixel
+        double yc = screenExtent.getCenter()[1];
+        double x1 = screenExtent.getMinX();
+        double x2 = screenExtent.getMaxX();
+        double[] c1 = descriptor.pixelToWorld(new double[] { x1, yc });
+        double[] c2 = descriptor.pixelToWorld(new double[] { x2, yc });
+        Rectangle canvasBounds = paintProps.getCanvasBounds();
+        int screenWidth = canvasBounds.width;
+        double dppX = Math.abs(c2[0] - c1[0]) / screenWidth;
+
+        double[] levels = getLevels();
+        double simpLev = levels[0];
+        for (double level : getLevels()) {
+            if (dppX < level) {
+                break;
+            }
+            simpLev = level;
+        }
+        return simpLev;
+    }
+
+    protected String getGeomField(double simpLev) {
+        DecimalFormat df = new DecimalFormat("0.######");
+        String suffix = "_"
+                + StringUtils.replaceChars(df.format(simpLev), '.', '_');
+
+        return resourceData.getGeomField() + suffix;
+    }
+
+    protected String getGeometryType() {
+        if (geometryType == null) {
+            try {
+                geometryType = DbMapQueryFactory.getMapQuery(
+                        resourceData.getTable(), resourceData.getGeomField())
+                        .getGeometryType();
+            } catch (Throwable e) {
+                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
+                        e);
+            }
+        }
+
+        return geometryType;
+    }
+
+    protected boolean isPuntal() {
+        return getGeometryType().endsWith("POINT");
+    }
+
+    protected boolean isLineal() {
+        return getGeometryType().endsWith("LINESTRING");
+    }
+
+    protected boolean isPolygonal() {
+        return getGeometryType().endsWith("POLYGON");
     }
 
     @Override

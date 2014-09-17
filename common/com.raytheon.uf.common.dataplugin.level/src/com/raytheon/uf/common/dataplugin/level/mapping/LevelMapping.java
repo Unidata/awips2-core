@@ -29,7 +29,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.level.Level;
 
 /**
@@ -48,8 +47,8 @@ import com.raytheon.uf.common.dataplugin.level.Level;
  * Nov 21, 2009  3576     rjpeter     Added group
  * Apr 17, 2013  1913     randerso    Moved to common
  * Jan 23, 2014  2711     bsteffen    Remove ISerializableObject
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
- * &#064;author smanoj
  * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -121,7 +120,7 @@ public class LevelMapping {
         this.databaseLevels = databaseLevels;
     }
 
-    public List<Level> getLevels() throws CommunicationException {
+    public List<Level> getLevels() {
         if (levelList == null) {
             List<Level> levelList = new ArrayList<Level>();
             for (DatabaseLevelMapping mapping : databaseLevels) {

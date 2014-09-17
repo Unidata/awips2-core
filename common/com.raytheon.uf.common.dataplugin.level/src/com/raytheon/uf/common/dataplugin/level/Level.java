@@ -40,7 +40,6 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlType;
 
-import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -60,6 +59,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sep 03, 2009           rjpeter     Initial creation.
  * Dec 20, 2012           njensen     Added Level(String)
  * Feb 12, 2014  2672     bsteffen    Allow String constructor to parse floats.
+ * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * 
  * </pre>
  * 
@@ -251,7 +251,7 @@ public class Level extends PersistableDataObject {
         dirtyFlag = false;
     }
 
-    public Level getUpperLevel() throws CommunicationException {
+    public Level getUpperLevel() {
         Level rval = null;
 
         if (isRangeLevel()) {
@@ -313,7 +313,7 @@ public class Level extends PersistableDataObject {
         return bestLevel;
     }
 
-    public Level getLowerLevel() throws CommunicationException {
+    public Level getLowerLevel() {
         Level rval = null;
 
         if (isRangeLevel()) {

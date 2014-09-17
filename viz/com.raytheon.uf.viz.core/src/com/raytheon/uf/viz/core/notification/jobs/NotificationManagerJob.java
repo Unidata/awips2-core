@@ -310,5 +310,25 @@ public class NotificationManagerJob implements IDisposable {
             delegate.notificationArrived(deprecatedMessages);
         }
 
+        @Override
+        public int hashCode() {
+            return delegate.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object obj) {
+            if (this == obj)
+                return true;
+            if (obj == null)
+                return false;
+            if (getClass() != obj.getClass())
+                return false;
+            DeprecatedObserverAdapter other = (DeprecatedObserverAdapter) obj;
+            if (!delegate.equals(other.delegate))
+                return false;
+            return true;
+        }
+        
+        
     }
 }

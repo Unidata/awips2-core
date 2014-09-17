@@ -32,7 +32,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -51,6 +50,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Apr 10, 2013 1893       bsteffen    Switch machine to be LOCAL instead of
  *                                     using RuntimeMXBean
  * Jun 24, 2013 2135       randerso    Fixed NullPointerException in buildMessageAndDetails
+ * Sep 12, 2014 3583       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
@@ -60,7 +60,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement
 @DynamicSerialize
-public class StatusMessage implements ISerializableObject, IMessage {
+public class StatusMessage implements IMessage {
 
     private static final int MAX_DETAILS_LENGTH = 32000;
 
