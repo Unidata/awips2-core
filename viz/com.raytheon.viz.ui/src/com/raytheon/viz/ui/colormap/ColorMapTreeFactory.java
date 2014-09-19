@@ -23,21 +23,23 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
 
+import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
 
 /**
  * Factory which can provide cached versions of {@link ColorMapTree} objects.
@@ -49,7 +51,6 @@ import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 18, 2013  2421     bsteffen    Initial creation
- * Jun 30, 2014  3165     njensen     Use common plugin's ColorMapLoader
  * Aug 28, 2014  3516     rferrel     Getting treesByLevel no longer
  *                                     on the UI thread.
  *                                    Converted to singleton.
@@ -113,6 +114,16 @@ public class ColorMapTreeFactory {
             .synchronizedList(new ArrayList<IRefreshColorMapTreeListener>());
 
     /**
+     * Job to perform tree's optimizeIsEmpty.
+     */
+    private final OptimizeTreeJob optmizeTreeJob = new OptimizeTreeJob();
+
+    /**
+     * Flag to kick off initTreeByLevel the first time the trees are needed.
+     */
+    private boolean startInitTreeByLevel = true;
+
+    /**
      * Singleton constructor.
      */
     private ColorMapTreeFactory() {
@@ -121,21 +132,6 @@ public class ColorMapTreeFactory {
         // Remove BASE
         treesLevelLocalization = Arrays.copyOfRange(allLevels, 1,
                 allLevels.length);
-
-        // Start creating trees off the UI-thread
-        Job job = new Job("Find ColorMapTree base") {
-
-            @Override
-            protected IStatus run(IProgressMonitor monitor) {
-                ColorMapTree base = getBaseTree();
-                base.optimizeIsEmpty();
-                return Status.OK_STATUS;
-            }
-
-        };
-        job.setSystem(true);
-        job.schedule();
-        initTreeByLevel();
     }
 
     /**
@@ -161,7 +157,8 @@ public class ColorMapTreeFactory {
                 // }
 
                 baseTree = new ColorMapTree(pm, baseContext,
-                        com.raytheon.uf.common.colormap.ColorMapLoader.DIR_NAME);
+                        ColorMapLoader.DIR_NAME);
+                optimizeTree(baseTree);
             }
             return baseTree;
         }
@@ -178,6 +175,10 @@ public class ColorMapTreeFactory {
      */
     public void updateLevelMapsCallack(ILevelMapsCallback listener) {
         synchronized (treesByLevel) {
+            if (startInitTreeByLevel) {
+                startInitTreeByLevel = false;
+                initTreeByLevel();
+            }
 
             /*
              * Immediately perform the action for all levels. When treeByLevel
@@ -219,8 +220,7 @@ public class ColorMapTreeFactory {
             ColorMapTree tree = treesByLevel.get(level);
             if (tree == null) {
                 IPathManager pm = PathManagerFactory.getPathManager();
-                tree = new ColorMapTree(pm, level,
-                        com.raytheon.uf.common.colormap.ColorMapLoader.DIR_NAME);
+                tree = new ColorMapTree(pm, level, ColorMapLoader.DIR_NAME);
                 treesByLevel.put(level, tree);
             }
             return tree;
@@ -252,7 +252,7 @@ public class ColorMapTreeFactory {
                     for (final LocalizationLevel level : levels) {
                         ColorMapTree tree = new ColorMapTree(pm, level,
                                 ColorMapLoader.DIR_NAME);
-                        tree.optimizeIsEmpty();
+                        optimizeTree(tree);
 
                         synchronized (treesByLevel) {
                             /*
@@ -325,5 +325,66 @@ public class ColorMapTreeFactory {
      */
     public void addRefreshItemsListener(IRefreshColorMapTreeListener listener) {
         refreshListeners.add(listener);
+    }
+
+    /**
+     * Queue tree for optimizeIsEmpty.
+     * 
+     * @param tree
+     */
+    public void optimizeTree(ColorMapTree tree) {
+        optmizeTreeJob.add(tree);
+    }
+
+    /**
+     * Job to perform empty optimization of color map trees.
+     */
+    private static class OptimizeTreeJob extends Job {
+
+        private final LinkedList<ColorMapTree> queue = new LinkedList<ColorMapTree>();
+
+        private final AtomicBoolean shutdown = new AtomicBoolean(false);
+
+        public OptimizeTreeJob() {
+            super("ColorMapTree isEmptyOptimize");
+            setSystem(true);
+        }
+
+        @Override
+        protected IStatus run(IProgressMonitor monitor) {
+            if (monitor.isCanceled()) {
+                return Status.OK_STATUS;
+            }
+
+            ColorMapTree tree = null;
+
+            while (shutdown.get() == false) {
+                synchronized (queue) {
+                    if (queue.isEmpty()) {
+                        return Status.OK_STATUS;
+                    }
+                    tree = queue.pop();
+                }
+                System.out.println(Thread.currentThread().getName()
+                        + "A job is optimizing " + tree.getName());
+                tree.optimizeIsEmpty();
+            }
+            return Status.OK_STATUS;
+        }
+
+        @Override
+        protected void canceling() {
+            queue.clear();
+            shutdown.set(true);
+        }
+
+        public void add(ColorMapTree tree) {
+            synchronized (queue) {
+                queue.add(tree);
+                if (getState() == NONE) {
+                    schedule();
+                }
+            }
+        }
     }
 }
