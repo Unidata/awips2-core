@@ -58,22 +58,36 @@ public class SuppressingAppender extends
         UnsynchronizedAppenderBase<ILoggingEvent> implements
         AppenderAttachable<ILoggingEvent> {
 
-    private static final class MessageCacheEntry {
+    private static class MessageCacheEntry {
 
-        private int count;
+        private int totalCount;
+
+        private int countSinceLastLog;
+
+        private boolean isLoggedBefore;
 
         private long timeStamp;
 
         private final ILoggingEvent logEvent;
 
         public MessageCacheEntry(final ILoggingEvent logEvent) {
-            this.count = 0;
+            this.totalCount = 0;
+            this.countSinceLastLog = 0;
+            this.isLoggedBefore = false;
             this.logEvent = logEvent;
             this.timeStamp = logEvent.getTimeStamp();
         }
 
-        public int getCount() {
-            return count;
+        public MessageCacheEntry(final ILoggingEvent logEvent, int totalCount) {
+            this.totalCount = totalCount;
+            this.countSinceLastLog = 0;
+            this.isLoggedBefore = true;
+            this.logEvent = logEvent;
+            this.timeStamp = logEvent.getTimeStamp();
+        }
+
+        public int getTotalCount() {
+            return totalCount;
         }
 
         public long getTimeStamp() {
@@ -85,11 +99,20 @@ public class SuppressingAppender extends
         }
 
         public int incrementCount() {
-            return ++count;
+            ++countSinceLastLog;
+            return ++totalCount;
         }
 
         public void setTimestamp(long newTimestamp) {
             timeStamp = newTimestamp;
+        }
+
+        public int getCountSinceLastLog() {
+            return countSinceLastLog;
+        }
+
+        public boolean isLoggedBefore() {
+            return isLoggedBefore;
         }
     }
 
@@ -140,10 +163,19 @@ public class SuppressingAppender extends
                         long eventLength = eventTime
                                 - cacheEntry.getLogEvent().getTimeStamp();
                         if (eventLength >= loggingInterval) {
-                            cacheEntry = resetCacheEntry(event, cacheKey);
+                            /*
+                             * We need to carry forward the total count for this
+                             * event so it doesn't log unsuppressed again, but
+                             * we use the newer version of the event so that our
+                             * message interval is updated.
+                             */
+                            logCacheItem(cacheEntry);
+                            cacheEntry = new MessageCacheEntry(event,
+                                    cacheEntry.getTotalCount());
                         }
                     } else {
-                        cacheEntry = resetCacheEntry(event, cacheKey);
+                        remove(cacheKey);
+                        cacheEntry = new MessageCacheEntry(event);
                     }
                 } else {
                     cacheEntry = new MessageCacheEntry(event);
@@ -154,12 +186,6 @@ public class SuppressingAppender extends
             }
 
             return count;
-        }
-
-        private MessageCacheEntry resetCacheEntry(ILoggingEvent event,
-                String cacheKey) {
-            remove(cacheKey);
-            return new MessageCacheEntry(event);
         }
 
         @Override
@@ -175,8 +201,10 @@ public class SuppressingAppender extends
         }
 
         private void logCacheItem(MessageCacheEntry cacheEntry) {
-            int msgCount = cacheEntry.getCount();
-            if (msgCount > duplicateThreshold) {
+            int msgCount = cacheEntry.getCountSinceLastLog();
+
+            if (((!cacheEntry.isLoggedBefore()) && (msgCount > duplicateThreshold))
+                    || (cacheEntry.isLoggedBefore())) {
                 ILoggingEvent srcEvent = cacheEntry.getLogEvent();
                 long duration = cacheEntry.getTimeStamp()
                         - srcEvent.getTimeStamp();
@@ -209,9 +237,20 @@ public class SuppressingAppender extends
         }
     }
 
-    private static final class SuppressedLogEvent implements ILoggingEvent {
+    private static class EnableSuppressionLogEvent extends
+            ModifiedMessageLogEvent {
 
-        private final ILoggingEvent event;
+        public EnableSuppressionLogEvent(final ILoggingEvent event) {
+            super(event);
+        }
+
+        @Override
+        protected String buildMessagePreamble() {
+            return "Enabling suppression for message: ";
+        }
+    }
+
+    private static class SuppressedLogEvent extends ModifiedMessageLogEvent {
 
         private final int count;
 
@@ -219,15 +258,29 @@ public class SuppressingAppender extends
 
         public SuppressedLogEvent(final ILoggingEvent event, final int count,
                 final long duration) {
-            this.event = event;
+            super(event);
             this.count = count;
             this.duration = duration;
         }
 
-        private String buildMessagePreamble() {
-            return "Received " + count + " duplicate messages in " + duration
-                    + "ms for message: ";
+        @Override
+        protected String buildMessagePreamble() {
+            return String
+                    .format("Received %d duplicate messages in last %d ms for message: ",
+                            count, duration);
         }
+    }
+
+    private static abstract class ModifiedMessageLogEvent implements
+            ILoggingEvent {
+
+        protected final ILoggingEvent event;
+
+        protected ModifiedMessageLogEvent(final ILoggingEvent event) {
+            this.event = event;
+        }
+
+        protected abstract String buildMessagePreamble();
 
         @Override
         public String getThreadName() {
@@ -401,8 +454,11 @@ public class SuppressingAppender extends
 
     @Override
     protected void append(ILoggingEvent eventObject) {
-        if (cache.putAndGetMessageCount(eventObject) <= duplicateThreshold) {
+        int count = cache.putAndGetMessageCount(eventObject);
+        if (count < duplicateThreshold) {
             log(eventObject);
+        } else if (count == duplicateThreshold) {
+            log(new EnableSuppressionLogEvent(eventObject));
         }
     }
 
