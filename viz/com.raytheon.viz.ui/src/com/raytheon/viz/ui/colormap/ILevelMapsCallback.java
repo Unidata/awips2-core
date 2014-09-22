@@ -23,7 +23,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 
 /**
  * Use by {@link ColorMapTreeFactory} to perform an action for each non-Base
- * localization level. May be invoke from a non-UI thread.
+ * localization level. May be invoked from a non-UI thread.
  * 
  * <pre>
  * 

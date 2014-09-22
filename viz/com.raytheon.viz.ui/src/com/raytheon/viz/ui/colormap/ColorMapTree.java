@@ -49,6 +49,7 @@ import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
  * Sep 18, 2013  2421     bsteffen    Initial creation
  * Sep 11, 2014  3516     rferrel     file updates now inform the factory.
  *                                      getName() no longer returns a null.
+ *                                      FileChangeListener now only gets colormaps changes.
  * 
  * </pre>
  * 
@@ -97,8 +98,11 @@ public class ColorMapTree {
         this.pathManager = pathManager;
         this.level = level;
         this.context = null;
-        LocalizationNotificationObserver.getInstance()
-                .addGlobalFileChangeObserver(new FileChangeListener(this));
+
+        LocalizationFile dir = pathManager.getLocalizationFile(
+                pathManager.getContext(LocalizationType.COMMON_STATIC, level),
+                path);
+        dir.addFileUpdatedObserver(new FileChangeListener(this));
     }
 
     /**
@@ -229,7 +233,7 @@ public class ColorMapTree {
                                 path));
                     }
                 }
-            } else if (context.equals(context)) {
+            } else if (context.equals(this.context)) {
                 synchronized (filesLock) {
                     files = null;
                 }
@@ -243,23 +247,6 @@ public class ColorMapTree {
     private LocalizationFile[] requestFiles() {
         synchronized (filesLock) {
             if (files == null) {
-                System.out.println(Thread.currentThread().getName()
-                        + "Need some files for " + getName());
-                if (this.context == null
-                        || !this.context.toString()
-                                .equals("common_static.base")) {
-                    try {
-                        Thread.sleep(500);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                } else {
-                    try {
-                        Thread.sleep(100);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-                }
                 files = pathManager
                         .listFiles(context, path,
                                 new String[] { ColorMapLoader.EXTENSION },
