@@ -16,8 +16,7 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.viz.core;visibility:=reexport,
  com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.serialization.comm,
- org.eclipse.core.expressions,
- com.raytheon.uf.common.style
+ org.eclipse.core.expressions
 Eclipse-RegisterBuddy: com.raytheon.uf.common.geospatial
 Export-Package: 
  com.raytheon.viz.core,
