@@ -134,8 +134,7 @@
          id="com.raytheon.uf.common.message"
          download-size="0"
          install-size="0"
-         version="0.0.0"
-         unpack="false"/>
+         version="0.0.0"/>
 
    <plugin
          id="com.raytheon.uf.common.python"
@@ -427,8 +426,7 @@
          id="com.raytheon.uf.common.derivparam.python"
          download-size="0"
          install-size="0"
-         version="0.0.0"
-         unpack="false"/>
+         version="0.0.0"/>
 
    <plugin
          id="com.raytheon.uf.common.wxmath"

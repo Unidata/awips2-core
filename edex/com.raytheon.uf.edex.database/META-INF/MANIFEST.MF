@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Database
 Bundle-SymbolicName: com.raytheon.uf.edex.database
-Bundle-Version: 1.0.0.qualifier
+Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
  com.raytheon.uf.common.serialization;bundle-version="1.12.1173",
  com.raytheon.uf.common.serialization.comm;bundle-version="1.12.1173",
@@ -14,7 +14,6 @@ Require-Bundle: com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
  com.raytheon.uf.edex.core,
  com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.dataplugin,
- org.apache.commons.lang;bundle-version="2.3.0",
  com.raytheon.uf.common.time;bundle-version="1.12.1174",
  com.raytheon.uf.common.geospatial;bundle-version="1.12.1174",
  org.geotools;bundle-version="2.6.4",
@@ -36,7 +35,6 @@ Export-Package: com.raytheon.uf.edex.database,
  com.raytheon.uf.edex.database.status,
  com.raytheon.uf.edex.database.tasks
 Import-Package: com.raytheon.uf.common.convert,
- com.raytheon.uf.common.message,
  com.raytheon.uf.common.message.response,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.util,
