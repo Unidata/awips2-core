@@ -43,6 +43,7 @@ import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizati
 import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.LocalizationInternalFile;
 import com.raytheon.uf.common.localization.LockingFileInputStream;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
@@ -50,6 +51,8 @@ import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.localization.msgs.ProtectedFileCommand;
 import com.raytheon.uf.common.localization.msgs.ProtectedFileResponse;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.FileUtil;
 
 /**
@@ -67,6 +70,8 @@ import com.raytheon.uf.common.util.FileUtil;
  *                                      if not found in etc base dir if no context
  *                                      name set
  * Jul 24, 2014 3378        bclement    added createCache()
+ * Sep 29, 2014 2975        njensen     Fix bug in exists() with local-only files
+ * 
  * 
  * </pre>
  * 
@@ -88,6 +93,9 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
     protected static final LocalizationContext CAVE_CONFIG_BASE = new LocalizationContext(
             LocalizationType.CAVE_CONFIG, LocalizationLevel.BASE);
 
+    protected static final IUFStatusHandler logger = UFStatus
+            .getHandler(CAVELocalizationAdapter.class);
+
     protected static boolean isCaveStaticBase(LocalizationContext ctx) {
         return ctx.getLocalizationType() == CAVE_STATIC_BASE
                 .getLocalizationType()
@@ -106,9 +114,9 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
      * Returns a directory name for the localization type
      * 
      * @param type
-     * @return
+     * @return the dir name corresponding to the localization type
      */
-    public String getDirNameForType(LocalizationType type) {
+    protected String getDirNameForType(LocalizationType type) {
         if (type == LocalizationType.COMMON_STATIC) {
             return "common";
         } else if (type == LocalizationType.CAVE_STATIC) {
@@ -677,12 +685,19 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             return true;
         }
 
-        // File exists if it is on the server OR it is BASE and CAVE_STATIC or
-        // CAVE_CONFIG and File.exists()
+        /*
+         * File exists if it is on the server OR if it is BASE and CAVE_STATIC
+         * or CAVE_CONFIG and therefore already existing on the local filesystem
+         */
         LocalizationType type = file.getContext().getLocalizationType();
-        return file.getFile().exists()
-                && file.getContext().getLocalizationLevel() == LocalizationLevel.BASE
-                && (type == LocalizationType.CAVE_CONFIG || type == LocalizationType.CAVE_STATIC);
+        try {
+            return file.getFile(false).exists()
+                    && file.getContext().getLocalizationLevel() == LocalizationLevel.BASE
+                    && (type == LocalizationType.CAVE_CONFIG || type == LocalizationType.CAVE_STATIC);
+        } catch (LocalizationException e) {
+            logger.error("Error checking existence of file: " + file, e);
+            return false;
+        }
     }
 
     /*
