@@ -85,7 +85,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 17, 2013 1412        djohnson    Add jaxbMarshal.
  * Apr 12, 2013 1903        rjpeter     Updated getFile to check parentFile for existence.
  * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
- * Sep 29, 2014 2975        njensen     Only makeDirs if the file is available on the server and retrieved
+ * Sep 29, 2014 2975        njensen     Correct usage of mkDirs in getFile(boolean)
  * 
  * </pre>
  * 
@@ -264,7 +264,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * Return a local file pointer that can be used to interact with the data in
      * the file. This method is NOT recommended for use in reading/writing to
      * the file. The methods openInputStream and openOutputStream should be used
-     * to safely read/write to the file
+     * to safely read/write to the file.
      * 
      * <BR>
      * Prior to calling this method, the file is not guaranteed to exist on the
@@ -279,24 +279,24 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
     public File getFile(boolean retrieveFile) throws LocalizationException {
         if (retrieveFile) {
             fileRequested = true;
-        }
-        if (isAvailableOnServer && retrieveFile) {
             if (isDirectory) {
                 file.mkdirs();
             } else if (!file.getParentFile().exists()) {
                 try {
                     file.getParentFile().mkdirs();
                 } catch (Throwable t) {
-                    // try to create the file's directory automatically, but if
-                    // it fails, don't report it as it is just something to do
-                    // to help the user of the file for easier creation of the
-                    // file
+                    /*
+                     * try to create the file's directory automatically, but if
+                     * it fails, don't report it as it is just something to do
+                     * to help the user of the file for easier creation of the
+                     * file
+                     */
                 }
             }
-
-            adapter.retrieve(this);
+            if (isAvailableOnServer) {
+                adapter.retrieve(this);
+            }
         }
-
         return file;
     }
 
