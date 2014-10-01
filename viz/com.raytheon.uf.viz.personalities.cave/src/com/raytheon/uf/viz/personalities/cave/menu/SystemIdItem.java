@@ -19,17 +19,15 @@
  **/
 package com.raytheon.uf.viz.personalities.cave.menu;
 
-import java.lang.management.ManagementFactory;
-
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.ActionContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.ui.actions.CompoundContributionItem;
 
-import sun.management.Agent;
+import com.raytheon.uf.viz.core.VizApp;
 
 /**
- * Command that displays the system id
+ * Command that displays the system id (hostname and pid)
  * 
  * <pre>
  * 
@@ -38,6 +36,7 @@ import sun.management.Agent;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            mschenke     Initial creation
+ * Oct 01, 2014  3678      njensen      Removed usage of JMX, clarified pid
  * 
  * </pre>
  * 
@@ -47,71 +46,10 @@ import sun.management.Agent;
 
 public class SystemIdItem extends CompoundContributionItem {
 
-    /**
-     * Boolean to mark if we can use the file names as a connection checking
-     * method for determining orphaned locks
-     */
-    private static boolean canCheckConnection = false;
+    private static final String HOST = VizApp.getWsId().getHostName();
 
-    static {
-        try {
-            String val = System
-                    .getProperty("com.sun.management.jmxremote.port");
-            // If the port is set, then the Agent is already started and we
-            // would shutdown if we couldn't connect
-            if (val == null) {
-                // Get starting jmx remote port, default to 20000
-                boolean connectionFailed = true;
-                int startPort = 20000;
-                int i = 0;
-                System.setProperty("com.sun.management.jmxremote.port", ""
-                        + startPort);
-                do {
-                    // Stop at 50 since at that point, may be underlying issue
-                    // (firewall) blocking it and less likely there are 50
-                    // instances
-                    try {
-                        ++i;
-                        Agent.startAgent();
-                        // jmx manager successfully started
-                        connectionFailed = false;
-                        canCheckConnection = true;
-                    } catch (Exception e) {
-                        System.setProperty("com.sun.management.jmxremote.port",
-                                "" + (startPort + i));
-                        Agent.getManagementProperties()
-                                .setProperty(
-                                        "com.sun.management.jmxremote.port",
-                                        System.getProperty("com.sun.management.jmxremote.port"));
-
-                    }
-                } while (connectionFailed && i < 50);
-            } else {
-                canCheckConnection = true;
-            }
-        } catch (Throwable t) {
-            t.printStackTrace();
-        }
-    }
-
-    private static final String jmxPort = System
-            .getProperty("com.sun.management.jmxremote.port");
-
-    private static final String NAME = ManagementFactory.getRuntimeMXBean()
-            .getName();
-
-    private static final String HOST = NAME.split("[@]")[1];
-
-    private static final String PID = NAME.split("[@]")[0];
-
-    // name is in form processid@host, ID = host:port if we can check
-    // connections or we will just use processid@host
-    private static final String ID = HOST + ":"
-            + (canCheckConnection ? jmxPort : PID);
-
-    static {
-        System.out.println(ID);
-    }
+    private static final String PID = Integer.toString(VizApp.getWsId()
+            .getPid());
 
     /*
      * (non-Javadoc)
@@ -122,7 +60,7 @@ public class SystemIdItem extends CompoundContributionItem {
     @Override
     protected IContributionItem[] getContributionItems() {
         return new IContributionItem[] { new ActionContributionItem(new Action(
-                HOST + ":" + PID) {
+                HOST + "   pid:" + PID) {
             @Override
             public boolean isEnabled() {
                 return false;
