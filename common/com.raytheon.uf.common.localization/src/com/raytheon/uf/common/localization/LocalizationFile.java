@@ -85,6 +85,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 17, 2013 1412        djohnson    Add jaxbMarshal.
  * Apr 12, 2013 1903        rjpeter     Updated getFile to check parentFile for existence.
  * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
+ * Sep 29, 2014 2975        njensen     Only makeDirs if the file is available on the server and retrieved
+ * 
  * </pre>
  * 
  * @author njensen
@@ -281,19 +283,18 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
         if (isAvailableOnServer && retrieveFile) {
             if (isDirectory) {
                 file.mkdirs();
+            } else if (!file.getParentFile().exists()) {
+                try {
+                    file.getParentFile().mkdirs();
+                } catch (Throwable t) {
+                    // try to create the file's directory automatically, but if
+                    // it fails, don't report it as it is just something to do
+                    // to help the user of the file for easier creation of the
+                    // file
+                }
             }
-            adapter.retrieve(this);
-        }
 
-        if ((isDirectory == false) && !file.getParentFile().exists()) {
-            try {
-                file.getParentFile().mkdirs();
-            } catch (Throwable t) {
-                // try to create the file's directory automatically, but if
-                // it fails, don't report it as it is just something to do
-                // to help the user of the file for easier creation of the
-                // file
-            }
+            adapter.retrieve(this);
         }
 
         return file;
