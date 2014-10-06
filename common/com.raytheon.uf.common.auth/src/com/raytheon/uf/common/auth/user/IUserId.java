@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.auth.user;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 
 /**
  * Interface for uniquely identifying a user
@@ -30,6 +29,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 24, 2010            mschenke     Initial creation
+ * Oct 06, 2014 3398       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
@@ -37,7 +37,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 
-public interface IUserId extends ISerializableObject {
+public interface IUserId {
 
     /**
      * A string representation of the user id used for comparisons

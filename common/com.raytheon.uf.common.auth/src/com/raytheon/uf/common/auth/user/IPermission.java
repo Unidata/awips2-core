@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.auth.user;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 
 /**
  * A permission.
@@ -32,6 +31,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * ------------ ---------- ----------- --------------------------
  * Nov 05, 2012  1302      djohnson     Initial creation
  * Jul 26, 2031  2232      mpduff       Refactored Data Delivery permissions.
+ * Oct 06, 2014 3398       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
@@ -39,7 +39,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 
-public interface IPermission extends ISerializableObject {
+public interface IPermission {
 
     /**
      * Get the description.
