@@ -27,7 +27,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 import javax.persistence.Transient;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils.LockState;
 import com.raytheon.uf.edex.database.cluster.handler.IClusterLockHandler;
 
@@ -41,6 +40,7 @@ import com.raytheon.uf.edex.database.cluster.handler.IClusterLockHandler;
  * ------------ ---------- ----------- --------------------------
  * Feb 19, 2010            njensen     Initial creation
  * Apr 02, 2014 2862       rferrel     Make lockHanler getter/setters public.
+ * Oct 06, 2014 3702       bsteffen    Do not force schema to awips.
  * 
  * </pre>
  * 
@@ -49,8 +49,8 @@ import com.raytheon.uf.edex.database.cluster.handler.IClusterLockHandler;
  */
 
 @Entity
-@Table(name = "cluster_task", schema = "awips")
-public class ClusterTask implements ISerializableObject, Serializable {
+@Table(name = "cluster_task")
+public class ClusterTask implements Serializable {
 
     private static final long serialVersionUID = 1L;
 

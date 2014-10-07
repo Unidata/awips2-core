@@ -36,9 +36,10 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 7/24/07      353         bphillip    Initial Check in
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * 7/24/07      353        bphillip    Initial Check in
+ * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
  * 
  * </pre>
  * 
@@ -54,6 +55,13 @@ public class PluginVersionDao extends CoreDao {
      */
     public PluginVersionDao() {
         super(DaoConfig.forClass(PluginVersion.class));
+    }
+
+    /**
+     * Creates a new PluginVersionDao.
+     */
+    public PluginVersionDao(String database) {
+        super(DaoConfig.forClass(database, PluginVersion.class));
     }
 
     /**

@@ -26,7 +26,6 @@ import javax.persistence.Id;
 import javax.persistence.Table;
 
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
-import com.raytheon.uf.common.serialization.ISerializableObject;
 
 /**
  * A container class for plugin version records
@@ -37,6 +36,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * ------------ ---------- ----------- --------------------------
  * 02/20/2007              garmendariz Initial check-in
  * 02/21/2007              bphillip    Added constructor
+ * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
  * 
  * </pre>
  * 
@@ -45,8 +45,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  */
 @Entity
 @Table(name = "plugin_info")
-public class PluginVersion extends PersistableDataObject implements
-        ISerializableObject {
+public class PluginVersion extends PersistableDataObject {
 
     private static final long serialVersionUID = 1L;
 
@@ -56,9 +55,6 @@ public class PluginVersion extends PersistableDataObject implements
 
     @Column
     private boolean initialized;
-
-    @Column
-    private String database;
 
     /** The name of the table associated with this plugin */
     @Column
@@ -86,11 +82,10 @@ public class PluginVersion extends PersistableDataObject implements
      *            The version of the plugin
      */
     public PluginVersion(String name, boolean initialized,
-            String tableName, String database) {
+ String tableName) {
         this.name = name;
         this.initialized = initialized;
         this.tableName = tableName;
-        this.database = database;
     }
 
     public String getName() {
@@ -115,14 +110,6 @@ public class PluginVersion extends PersistableDataObject implements
 
     public void setInitialized(boolean initialized) {
         this.initialized = initialized;
-    }
-
-    public String getDatabase() {
-        return database;
-    }
-
-    public void setDatabase(String database) {
-        this.database = database;
     }
 
 }
