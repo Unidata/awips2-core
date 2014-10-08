@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.auth.user;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
 
 /**
  * Interface for a user object, every user should have an identifier that
@@ -31,6 +30,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 18, 2010            mschenke     Initial creation
+ * Oct 06, 2014 3398       bclement     removed ISerializableObject
  * 
  * </pre>
  * 
@@ -38,7 +38,7 @@ import com.raytheon.uf.common.serialization.ISerializableObject;
  * @version 1.0
  */
 
-public interface IUser extends ISerializableObject {
+public interface IUser {
 
     /**
      * Get the unique id object used to identify the user

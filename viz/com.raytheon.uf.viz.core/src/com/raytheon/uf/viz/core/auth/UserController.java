@@ -19,9 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.auth;
 
-import java.util.Collections;
-import java.util.List;
-
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
 import org.eclipse.core.runtime.IExtension;
@@ -29,18 +26,13 @@ import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 
-import com.raytheon.uf.common.auth.resp.UserNotAuthenticated;
-import com.raytheon.uf.common.auth.resp.UserNotAuthorized;
 import com.raytheon.uf.common.auth.user.IAuthenticationData;
-import com.raytheon.uf.common.auth.user.IPermission;
-import com.raytheon.uf.common.auth.user.IRole;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.ServiceLoaderUtil;
 import com.raytheon.uf.viz.core.VizConstants;
-import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.requests.INotAuthHandler;
 
 /**
@@ -56,6 +48,7 @@ import com.raytheon.uf.viz.core.requests.INotAuthHandler;
  * Jan 04, 2013 1451       djohnson     Move static block code to an implementation of an interface.
  * Mar 21, 2013 1794       djohnson     ServiceLoaderUtil now requires the requesting class.
  * Jun 07, 2013 1981       mpduff       Add ability to update with the user id as a string.
+ * Oct 06, 2014 3398       bclement     moved fallback user manager code to BasicUserManager
  * 
  * </pre>
  * 
@@ -122,58 +115,7 @@ public class UserController {
             }
 
             if (manager == null) {
-                manager = new IUserManager() {
-                    @Override
-                    public IUser getUserObject() {
-                        return null;
-                    }
-
-                    @Override
-                    public void updateUserObject(IUser user,
-                            IAuthenticationData authData) {
-
-                    }
-
-                    @Override
-                    public INotAuthHandler getNotAuthHandler() {
-                        return new INotAuthHandler() {
-                            @Override
-                            public Object notAuthenticated(
-                                    UserNotAuthenticated response)
-                                    throws VizException {
-                                throw new VizException(
-                                        "Could not perform request, user is not authenticated with server.");
-                            }
-
-                            @Override
-                            public Object notAuthorized(
-                                    UserNotAuthorized response)
-                                    throws VizException {
-                                throw new VizException(response.getMessage());
-                            }
-                        };
-                    }
-
-                    /**
-                     * {@inheritDoc}
-                     */
-                    @Override
-                    public List<IPermission> getPermissions(String application) {
-                        return Collections.emptyList();
-                    }
-
-                    @Override
-                    public List<IRole> getRoles(String application) {
-                        return Collections.emptyList();
-                    }
-
-                    @Override
-                    public void updateUserObject(String userId,
-                            IAuthenticationData authData) {
-
-                    }
-
-                };
+                manager = new BasicUserManager();
             }
             return manager;
         }
