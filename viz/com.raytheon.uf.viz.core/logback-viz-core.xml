@@ -1,13 +1,26 @@
 <configuration debug="false" scan="true">
-   <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
+   
+   <!-- this appender will send System.err and System.out to the console log -->
+   <appender name="CaveConsoleAppender" class="com.raytheon.uf.common.status.logback.EnvConfigSysStreamFileAppender">      
       <encoder> 
          <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
       </encoder>
+      <!-- set envLogVar after encoder to avoid warning -->
+      <envLogVar>LOGFILE_CONSOLE</envLogVar>
+   </appender>
+   
+   <!-- these two appenders will allow System.out and System.err to print to the console when
+       -noredirect flag is used at cave startup-->
+   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
+      <target>System.out</target> 
+      <encoder> 
+         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
+      </encoder>
+      <!-- TODO does anyone know why there is an InvertedThresholdFilter here? -->
       <filter class="com.raytheon.uf.common.status.logback.InvertedThresholdFilter">
          <level>INFO</level>         
       </filter>
    </appender>
-
    <appender name="errConsole" class="ch.qos.logback.core.ConsoleAppender">
       <target>System.err</target>
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
@@ -18,12 +31,13 @@
       </encoder>
    </appender>
    
+   <!-- this appender will log the messages sent to UFStatus -->
    <appender name="CaveLogAppender" class="com.raytheon.uf.common.status.logback.EnvConfigurableRollingFileAppender">
       <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
-      <file>cave-alertviz.log</file>
+      <file>cave-logs.log</file>
       <envLogVar>LOGFILE_CAVE</envLogVar>
       <rollingPolicy class="com.raytheon.uf.common.status.logback.EnvConfigurableFixedWindowRollingPolicy">
-         <fileNamePattern>cave-alertviz.log%i</fileNamePattern>
+         <fileNamePattern>cave-logs.log%i</fileNamePattern>
          <envLogVar>LOGFILE_CAVE</envLogVar>
          <minIndex>1</minIndex>
          <maxIndex>5</maxIndex>
@@ -109,7 +123,8 @@
    </logger>
    <root> 
       <level value="INFO"/> 
-      <appender-ref ref="console"/> 
+      <appender-ref ref="console"/>
       <appender-ref ref="errConsole"/>
+      <appender-ref ref="CaveConsoleAppender"/>
     </root> 
 </configuration> 
