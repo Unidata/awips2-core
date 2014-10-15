@@ -889,7 +889,13 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     public void drawWireframeShape(IWireframeShape shape, RGB aColor,
             float lineWidth, IGraphicsTarget.LineStyle lineStyle, IFont font,
             float alpha) throws VizException {
-        if (shape instanceof GLWireframeShape2D) {
+        if (shape == null) {
+            // TODO: uncomment if Nsharp is ever fixed to not
+            // continuously repaint with null wireframes
+
+            // statusHandler.handle(Priority.DEBUG,
+            // "Null wireframe shape received", new Throwable());
+        } else if (shape instanceof GLWireframeShape2D) {
             pushGLState();
             try {
                 ((GLWireframeShape2D) shape).paint(this,
