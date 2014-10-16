@@ -24,7 +24,9 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
+
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
 public class EnumUserType<E extends Enum<E>> implements UserType {
@@ -43,25 +45,29 @@ public class EnumUserType<E extends Enum<E>> implements UserType {
 	public Class<?> returnedClass() {
 		return clazz;
 	}
+	
+    @Override
+    public Object nullSafeGet(ResultSet rs, String[] names,
+            SessionImplementor session, Object owner)
+            throws HibernateException, SQLException {
+        String name = rs.getString(names[0]);
+        E result = null;
+        if (!rs.wasNull()) {
+            result = Enum.valueOf(clazz, name);
+        }
+        return result;
+    }
 
-	public Object nullSafeGet(ResultSet resultSet, String[] names, Object owner)
-			throws HibernateException, SQLException {
-		String name = resultSet.getString(names[0]);
-		E result = null;
-		if (!resultSet.wasNull()) {
-			result = Enum.valueOf(clazz, name);
-		}
-		return result;
-	}
-
-	public void nullSafeSet(PreparedStatement preparedStatement, Object value,
-			int index) throws HibernateException, SQLException {
-		if (null == value) {
-			preparedStatement.setNull(index, Types.VARCHAR);
-		} else {
-			preparedStatement.setString(index, ((Enum<?>) value).name());
-		}
-	}
+    @Override
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+            SessionImplementor session) throws HibernateException, SQLException {
+        if (null == value) {
+            st.setNull(index, Types.VARCHAR);
+        } else {
+            st.setString(index, ((Enum<?>) value).name());
+        }
+        
+    }
 
 	public Object deepCopy(Object value) throws HibernateException {
 		return value;
@@ -96,4 +102,6 @@ public class EnumUserType<E extends Enum<E>> implements UserType {
 			return false;
 		return x.equals(y);
 	}
+
+
 }

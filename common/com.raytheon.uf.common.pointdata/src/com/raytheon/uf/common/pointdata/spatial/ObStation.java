@@ -53,6 +53,7 @@ import com.vividsolutions.jts.geom.Point;
  * Jul 24, 2007 353         bphillip    Initial Check in
  * Jul 16, 2013 2181        bsteffen    Convert geometry types to use hibernate-
  *                                      spatial
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4                                  
  * 
  * </pre>
  * 
@@ -200,14 +201,14 @@ public class ObStation extends PersistableDataObject implements ISpatialObject {
 
 	/** The upper air geometry information */
     @Column(name = "upperairgeom")
-    @Type(type = "org.hibernatespatial.GeometryUserType")
+    @Type(type = "org.hibernate.spatial.GeometryType")
 	@XmlJavaTypeAdapter(value = GeometryAdapter.class)
 	@DynamicSerializeElement
 	private Point upperAirGeometry;
 
 	/** The station location */
     @Column(name = "the_geom")
-    @Type(type = "org.hibernatespatial.GeometryUserType")
+    @Type(type = "org.hibernate.spatial.GeometryType")
 	@XmlJavaTypeAdapter(value = GeometryAdapter.class)
 	@DynamicSerializeElement
 	private Point location;

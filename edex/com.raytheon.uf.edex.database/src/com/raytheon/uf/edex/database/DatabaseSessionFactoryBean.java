@@ -26,10 +26,9 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
-import org.hibernate.cfg.AnnotationConfiguration;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
-import org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBean;
+import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 
 /**
  * Extension of the AnnotationSessionFactoryBean provided by Spring.
@@ -48,12 +47,13 @@ import org.springframework.orm.hibernate3.annotation.AnnotationSessionFactoryBea
  * 10/8/2008    1532        bphillip    Initial checkin
  * Jun 18, 2013 2117        djohnson    Remove use of config.buildSettings().
  * Oct 14, 2013 2361        njensen     Changes to support new technique for finding classes
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * 
  * </pre>
  * 
  */
-public class DatabaseSessionFactoryBean extends AnnotationSessionFactoryBean {
+public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
 
     protected Class<?>[] accessibleClasses = null;
 
@@ -81,9 +81,8 @@ public class DatabaseSessionFactoryBean extends AnnotationSessionFactoryBean {
      */
     public String[] getCreateSql(Set<Class<?>> classes)
             throws org.hibernate.AnnotationException {
-        Configuration config = getConfiguration();
-        AnnotationConfiguration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateSchemaCreationScript(Dialect.getDialect(config
+        Configuration tmp = loadNewConfigForClasses(classes);
+        return tmp.generateSchemaCreationScript(Dialect.getDialect(getConfiguration()
                 .getProperties()));
     }
 
@@ -100,15 +99,14 @@ public class DatabaseSessionFactoryBean extends AnnotationSessionFactoryBean {
      */
     public String[] getDropSql(Collection<Class<?>> classes)
             throws org.hibernate.AnnotationException {
-        Configuration config = getConfiguration();
-        AnnotationConfiguration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateDropSchemaScript(Dialect.getDialect(config
+        Configuration tmp = loadNewConfigForClasses(classes);
+        return tmp.generateDropSchemaScript(Dialect.getDialect(getConfiguration()
                 .getProperties()));
     }
 
-    private AnnotationConfiguration loadNewConfigForClasses(
+    private Configuration loadNewConfigForClasses(
             Collection<Class<?>> classes) {
-        AnnotationConfiguration aConfig = new AnnotationConfiguration();
+        Configuration aConfig = new Configuration();
 
         for (Class<?> c : classes) {
             aConfig.addAnnotatedClass(c);

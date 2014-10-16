@@ -21,7 +21,7 @@
 package com.raytheon.uf.edex.database.dao;
 
 import org.hibernate.SessionFactory;
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
+import org.springframework.orm.hibernate4.HibernateTransactionManager;
 
 import com.raytheon.uf.edex.core.EDEXUtil;
 
@@ -38,6 +38,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * ------------ ----------  ----------- --------------------------
  * 12/11/07     600         bphillip    Initial Check in   
  * Oct 10, 2012 1261        djohnson    Add ability for test overriding of bean lookups.
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 

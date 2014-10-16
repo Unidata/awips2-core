@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.Serializable;
-import java.lang.management.ManagementFactory;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -32,29 +31,22 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Hashtable;
 import java.util.List;
-
-import javax.management.MBeanServer;
-import javax.management.ObjectName;
-
-import net.sf.ehcache.CacheManager;
-import net.sf.ehcache.management.ManagementService;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
+import org.hibernate.SessionFactory;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.DetachedCriteria;
+import org.hibernate.criterion.Example;
 import org.hibernate.criterion.Property;
-import org.hibernate.jmx.StatisticsService;
 import org.hibernate.metadata.ClassMetadata;
-import org.springframework.orm.hibernate3.HibernateTemplate;
-import org.springframework.orm.hibernate3.HibernateTransactionManager;
-import org.springframework.orm.hibernate3.support.HibernateDaoSupport;
+import org.springframework.orm.hibernate4.HibernateTransactionManager;
+import org.springframework.orm.hibernate4.SessionFactoryUtils;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -101,20 +93,20 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Dec 13, 2013 2555        rjpeter     Added processByCriteria and fixed Generics warnings.
  * Jan 23, 2014 2555        rjpeter     Updated processByCriteria to be a row at a time using ScrollableResults.
  * Apr 23, 2014 2726        rjpeter     Updated processByCriteria to throw exceptions back up to caller.
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author bphillip
  * @version 1
  */
-public class CoreDao extends HibernateDaoSupport {
-    protected static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(CoreDao.class);
-
-    /**
-     * The Hibernate transaction manager. Methods do not directly use this
-     * class. Instead, use the Transaction template
-     */
-    protected final HibernateTransactionManager txManager;
+public class CoreDao {
+    
+    protected final IUFStatusHandler logger = UFStatus
+            .getHandler(getClass());
+    
+    protected SessionFactory sessionFactory;
+    
+    protected HibernateTransactionManager txManager;
 
     /** The convenience wrapper for the Hibernate transaction manager */
     protected final TransactionTemplate txTemplate;
@@ -136,33 +128,7 @@ public class CoreDao extends HibernateDaoSupport {
         this.txManager = config.getTxManager();
         txTemplate = new TransactionTemplate(txManager);
         setSessionFactory(config.getSessionFactory());
-
         this.daoClass = config.getDaoClass();
-        getHibernateTemplate().setCacheQueries(true);
-    }
-
-    /**
-     * Registers the Hibernate statistics and EHCache statistics with the JMX
-     * service
-     */
-    public void registerJMX() {
-        Hashtable<String, String> tb = new Hashtable<String, String>();
-        tb.put("type", "statistics");
-        tb.put("sessionFactory", "HibernateSessionFactory");
-        try {
-            ObjectName on = new ObjectName("hibernate", tb);
-            MBeanServer mbs = ManagementFactory.getPlatformMBeanServer();
-            if (!mbs.isRegistered(on)) {
-                StatisticsService stats = new StatisticsService();
-                stats.setSessionFactory(getSessionFactory());
-                mbs.registerMBean(stats, on);
-                ManagementService.registerMBeans(CacheManager.getInstance(),
-                        mbs, true, true, true, true);
-            }
-        } catch (Exception e) {
-            logger.warn("Unable to register Hibernate and EHCache with JMX");
-        }
-
     }
 
     /**
@@ -176,7 +142,7 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().saveOrUpdate(obj);
+                getCurrentSession().saveOrUpdate(obj);
             }
         });
     }
@@ -192,7 +158,7 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().saveOrUpdate(obj);
+                getCurrentSession().saveOrUpdate(obj);
             }
         });
     }
@@ -207,7 +173,7 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().save(obj);
+                getCurrentSession().save(obj);
             }
         });
     }
@@ -223,7 +189,7 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().update(obj);
+                getCurrentSession().update(obj);
             }
         });
     }
@@ -238,23 +204,10 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                HibernateTemplate ht = getHibernateTemplate();
-                ht.saveOrUpdateAll(objs);
-            }
-        });
-    }
-
-    public List<Object> loadAll() {
-        return loadAll(daoClass);
-    }
-
-    public List<Object> loadAll(final Class<?> entity) {
-        return txTemplate.execute(new TransactionCallback<List<Object>>() {
-            @Override
-            @SuppressWarnings("unchecked")
-            public List<Object> doInTransaction(TransactionStatus status) {
-                HibernateTemplate ht = getHibernateTemplate();
-                return (List<Object>) ht.loadAll(entity);
+                Session session = getCurrentSession();
+                for(Object obj: objs){
+                    session.saveOrUpdate(obj);
+                }
             }
         });
     }
@@ -269,7 +222,7 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().delete(obj);
+                getCurrentSession().delete(obj);
             }
         });
     }
@@ -290,7 +243,7 @@ public class CoreDao extends HibernateDaoSupport {
                     @SuppressWarnings("unchecked")
                     public PersistableDataObject<T> doInTransaction(
                             TransactionStatus status) {
-                        return (PersistableDataObject<T>) getHibernateTemplate()
+                        return (PersistableDataObject<T>) getCurrentSession()
                                 .get(daoClass, id);
                     }
                 });
@@ -315,8 +268,7 @@ public class CoreDao extends HibernateDaoSupport {
                                 id.getClass())
                                 .add(Property.forName("dataURI").eq(
                                         id.getDataURI()));
-                        List<?> list = getHibernateTemplate().findByCriteria(
-                                criteria);
+                        List<?> list = criteria.getExecutableCriteria(getCurrentSession()).list();
                         if (list.size() > 0) {
                             return (PluginDataObject) list.get(0);
                         } else {
@@ -347,8 +299,9 @@ public class CoreDao extends HibernateDaoSupport {
                     @SuppressWarnings("unchecked")
                     public List<PersistableDataObject<T>> doInTransaction(
                             TransactionStatus status) {
-                        return getHibernateTemplate().findByExample(obj, 0,
-                                maxResults);
+                        return getCurrentSession().createCriteria(obj.getClass())
+                                .add( Example.create(obj) )
+                                .list();
                     }
                 });
         return retVal;
@@ -470,6 +423,7 @@ public class CoreDao extends HibernateDaoSupport {
             // Get a session and create a new criteria instance
             rowsProcessed = txTemplate
                     .execute(new TransactionCallback<Integer>() {
+                        @SuppressWarnings("unchecked")
                         @Override
                         public Integer doInTransaction(TransactionStatus status) {
                             String queryString = query.createHQLQuery();
@@ -532,7 +486,10 @@ public class CoreDao extends HibernateDaoSupport {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().deleteAll(objs);
+                Session session = getCurrentSession();
+                for(Object obj: objs){
+                    session.delete(obj);
+                }
             }
         });
     }
@@ -894,7 +851,7 @@ public class CoreDao extends HibernateDaoSupport {
             if (transactional) {
                 trans = session.beginTransaction();
             }
-            conn = session.connection();
+            conn = SessionFactoryUtils.getDataSource(getSessionFactory()).getConnection();
             stmt = conn.createStatement();
 
         } catch (SQLException e) {
@@ -1006,7 +963,7 @@ public class CoreDao extends HibernateDaoSupport {
         try {
             session = getSession(true);
             trans = session.beginTransaction();
-            conn = session.connection();
+            conn = SessionFactoryUtils.getDataSource(getSessionFactory()).getConnection();
             stmt = conn.createStatement();
         } catch (SQLException e) {
             throw new DataAccessLayerException(
@@ -1122,6 +1079,14 @@ public class CoreDao extends HibernateDaoSupport {
         this.daoClass = daoClass;
     }
 
+    public SessionFactory getSessionFactory() {
+        return sessionFactory;
+    }
+
+    public void setSessionFactory(SessionFactory sessionFactory) {
+        this.sessionFactory = sessionFactory;
+    }
+
     /**
      * Sets the dao class given a fully qualified class name
      * 
@@ -1143,4 +1108,22 @@ public class CoreDao extends HibernateDaoSupport {
             return getSessionFactory().getClassMetadata(daoClass);
         }
     }
+    
+    public Session getCurrentSession(){
+        return getSessionFactory().getCurrentSession();
+    }
+    
+    public Session getSession(){
+        return getSession(true);
+    }
+    
+    public Session getSession(boolean allowCreate){
+        if(allowCreate){
+            return getSessionFactory().openSession();    
+        }else{
+            return getCurrentSession();
+        }
+        
+    }
+
 }

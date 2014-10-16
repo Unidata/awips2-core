@@ -27,6 +27,7 @@ import java.sql.Types;
 import java.util.Date;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
 import com.raytheon.uf.common.time.TimeRange;
@@ -69,29 +70,29 @@ public class TimeRangeType implements UserType {
     public boolean isMutable() {
         return false;
     }
-
+    
     @Override
-    public Object nullSafeGet(ResultSet resultSet, String[] names, Object owner)
+    public Object nullSafeGet(ResultSet rs, String[] names,
+            SessionImplementor session, Object owner)
             throws HibernateException, SQLException {
-        String[] result = resultSet.getString(names[0]).split("-");
+        String[] result = rs.getString(names[0]).split("-");
 
         return new TimeRange(new Date(Long.parseLong(result[0])), new Date(Long
                 .parseLong(result[1])));
-
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement statement, Object value, int index)
-            throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+            SessionImplementor session) throws HibernateException, SQLException {
         if (value == null) {
-            statement.setString(index, null);
+            st.setString(index, null);
         } else {
             TimeRange range = (TimeRange) value;
-            statement.setString(index, String.valueOf(range.getStart()
+            st.setString(index, String.valueOf(range.getStart()
                     .getTime())
                     + "-" + String.valueOf(range.getEnd().getTime()));
         }
-
+        
     }
 
     @Override
@@ -109,5 +110,4 @@ public class TimeRangeType implements UserType {
     public int[] sqlTypes() {
         return TimeRangeType.SQL_TYPES;
     }
-
 }

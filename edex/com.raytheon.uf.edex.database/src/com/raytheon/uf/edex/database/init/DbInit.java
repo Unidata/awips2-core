@@ -29,7 +29,7 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.hibernate.cfg.AnnotationConfiguration;
+import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.jdbc.Work;
 import org.springframework.transaction.annotation.Propagation;
@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  * May 29, 2013 1650        djohnson    Allow initDb() to be overridden, though should rarely be done.
  * Jun 24, 2013 2106        djohnson    initDb() always starts a fresh, shiny, new transaction.
  * 10/11/2013   1682        bphillip    Changed method visibility to allow access by subclasses
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author djohnson
@@ -126,7 +127,7 @@ public abstract class DbInit {
          * Create a new configuration object which holds all the classes that
          * this Hibernate SessionFactory is aware of
          */
-        AnnotationConfiguration aConfig = getAnnotationConfiguration();
+        Configuration aConfig = getConfiguration();
 
         /*
          * Check to see if the database is valid.
@@ -179,7 +180,7 @@ public abstract class DbInit {
      *             If the drop sql strings cannot be executed
      * @throws EbxmlRegistryException
      */
-    protected void createTables(final AnnotationConfiguration aConfig)
+    protected void createTables(final Configuration aConfig)
             throws SQLException {
         final String[] createSqls = aConfig
                 .generateSchemaCreationScript(getDialect());
@@ -211,7 +212,7 @@ public abstract class DbInit {
      *             If the drop sql strings cannot be executed
      * @throws EbxmlRegistryException
      */
-    private boolean isDbValid(AnnotationConfiguration aConfig)
+    private boolean isDbValid(Configuration aConfig)
             throws SQLException {
         statusHandler.info("Verifying the database for application ["
                 + application + "] against entity classes...");
@@ -289,7 +290,7 @@ public abstract class DbInit {
      *             If the drop sql strings cannot be executed
      * @throws EbxmlRegistryException
      */
-    protected void dropTables(final AnnotationConfiguration aConfig)
+    protected void dropTables(final Configuration aConfig)
             throws SQLException {
 
         final Work work = new Work() {
@@ -334,7 +335,9 @@ public abstract class DbInit {
         // Modify the drop string to add the 'if exists'
         // and 'cascade' clauses to avoid any errors if
         // the tables do not exist already
-        sql = dropTextMatcher.replaceFirst(replacementText);
+        if(!sql.contains(replacementText)){
+            sql = dropTextMatcher.replaceFirst(replacementText);
+        }
         if (!sql.endsWith(CASCADE)) {
             sql += CASCADE;
         }
@@ -374,9 +377,9 @@ public abstract class DbInit {
     protected abstract String getTableCheckQuery();
 
     /**
-     * Get the {@link AnnotationConfiguration} to use.
+     * Get the {@link Configuration} to use.
      * 
      * @return
      */
-    protected abstract AnnotationConfiguration getAnnotationConfiguration();
+    protected abstract Configuration getConfiguration();
 }

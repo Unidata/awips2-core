@@ -28,6 +28,7 @@ import java.sql.Types;
 import java.util.EnumSet;
 
 import org.hibernate.HibernateException;
+import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
 /**
@@ -38,6 +39,7 @@ import org.hibernate.usertype.UserType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  *                         bphillip    Initial Creation
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author bphillip
@@ -95,13 +97,14 @@ public class EnumSetType<E extends Enum<E>> implements UserType {
     public boolean isMutable() {
         return false;
     }
-
+    
     @Override
-    public Object nullSafeGet(ResultSet resultSet, String[] names, Object owner)
+    public Object nullSafeGet(ResultSet rs, String[] names,
+            SessionImplementor session, Object owner)
             throws HibernateException, SQLException {
-        String name = resultSet.getString(names[0]);
+        String name = rs.getString(names[0]);
         EnumSet<E> result = EnumSet.noneOf(clazz);
-        if (!resultSet.wasNull() && !name.equals("[]")) {
+        if (!rs.wasNull() && !name.equals("[]")) {
             String[] tokens = name.split(",");
             if (tokens.length > 0) {
                 tokens[0] = tokens[0].replace("[", "");
@@ -116,13 +119,14 @@ public class EnumSetType<E extends Enum<E>> implements UserType {
     }
 
     @Override
-    public void nullSafeSet(PreparedStatement preparedStatement, Object value,
-            int index) throws HibernateException, SQLException {
+    public void nullSafeSet(PreparedStatement st, Object value, int index,
+            SessionImplementor session) throws HibernateException, SQLException {
         if (null == value) {
-            preparedStatement.setNull(index, Types.VARCHAR);
+            st.setNull(index, Types.VARCHAR);
         } else {
-            preparedStatement.setString(index, value.toString());
+            st.setString(index, value.toString());
         }
+        
     }
 
     @Override
@@ -132,7 +136,6 @@ public class EnumSetType<E extends Enum<E>> implements UserType {
         return original;
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public Class returnedClass() {
         return clazz;
@@ -142,5 +145,4 @@ public class EnumSetType<E extends Enum<E>> implements UserType {
     public int[] sqlTypes() {
         return SQL_TYPES;
     }
-
 }

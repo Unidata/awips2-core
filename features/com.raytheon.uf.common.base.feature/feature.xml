@@ -210,12 +210,6 @@
          version="1.0.0"/>
 
    <plugin
-         id="javax.persistence"
-         download-size="0"
-         install-size="0"
-         version="1.0.0"/>
-
-   <plugin
          id="javax.vecmath"
          download-size="0"
          install-size="0"
@@ -291,13 +285,13 @@
          id="org.javassist"
          download-size="0"
          install-size="0"
-         version="3.9.0.GA"/>
+         version="3.18.1.GA"/>
 
    <plugin
          id="org.hibernate"
          download-size="0"
          install-size="0"
-         version="3.5.6"/>
+         version="4.2.15"/>
 
    <plugin
          id="org.jep"
@@ -459,5 +453,11 @@
          download-size="0"
          install-size="0"
          version="9.3.5"/>
+
+   <plugin
+         id="javax.persistence"
+         download-size="0"
+         install-size="0"
+         version="2.0.0"/>
 
 </feature>

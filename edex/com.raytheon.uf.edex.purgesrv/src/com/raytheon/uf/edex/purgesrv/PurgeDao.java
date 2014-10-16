@@ -48,6 +48,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * ------------ ---------- ----------- --------------------------
  * May 1, 2012  #470       bphillip    Initial creation
  * Jun 24, 2014 #3314      randerso    Fix type safety warnings
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -276,7 +277,7 @@ public class PurgeDao extends CoreDao {
         txTemplate.execute(new TransactionCallbackWithoutResult() {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().update(jobStatus);
+                getCurrentSession().update(jobStatus);
             }
         });
     }
