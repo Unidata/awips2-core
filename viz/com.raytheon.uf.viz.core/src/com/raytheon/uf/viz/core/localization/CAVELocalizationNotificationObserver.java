@@ -19,6 +19,10 @@
  **/
 package com.raytheon.uf.viz.core.localization;
 
+import java.util.Arrays;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.eclipse.core.runtime.Status;
 import org.eclipse.ui.statushandlers.StatusManager;
 
@@ -26,6 +30,8 @@ import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.common.jms.notification.NotificationException;
 import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
 import com.raytheon.uf.viz.core.Activator;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
@@ -39,6 +45,7 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
  * ------------	----------	-----------	--------------------------
  * May 20, 2008				randerso	Initial creation
  * Sep 3, 2008  1448        chammack    Support refactored interface
+ * Oct 07, 2014 2768        bclement    Added white list to filter unwanted localization types
  * 
  * </pre>
  * 
@@ -48,6 +55,11 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 
 public class CAVELocalizationNotificationObserver implements
         INotificationObserver {
+
+    private static final Set<LocalizationType> TYPE_WHITELIST = new HashSet<>(
+            Arrays.asList(LocalizationType.COMMON_STATIC,
+                    LocalizationType.CAVE_CONFIG, LocalizationType.CAVE_STATIC));
+
     private static CAVELocalizationNotificationObserver instance = null;
 
     private LocalizationNotificationObserver observer;
@@ -86,7 +98,11 @@ public class CAVELocalizationNotificationObserver implements
             try {
                 FileUpdatedMessage fum = (FileUpdatedMessage) message
                         .getMessagePayload();
-                observer.fileUpdateMessageRecieved(fum);
+                LocalizationContext context = fum.getContext();
+                LocalizationType type = context.getLocalizationType();
+                if (TYPE_WHITELIST.contains(type)) {
+                    observer.fileUpdateMessageRecieved(fum);
+                }
             } catch (NotificationException e) {
                 StatusManager.getManager().handle(
                         new Status(Status.ERROR, Activator.PLUGIN_ID,

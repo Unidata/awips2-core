@@ -32,6 +32,7 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 26, 2013 2142       njensen     Initial creation
+ * Oct 10, 2014 3675       njensen     Include pid in filename
  * 
  * </pre>
  * 
@@ -62,6 +63,7 @@ public class EnvConfigurableFixedWindowRollingPolicy extends
                 this.addWarn("Appender needs environment variable, "
                         + envLogVar + ", to be set.");
             } else {
+                file = LogbackUtil.replacePid(file);
                 setFileNamePattern(file + "%i");
             }
         }

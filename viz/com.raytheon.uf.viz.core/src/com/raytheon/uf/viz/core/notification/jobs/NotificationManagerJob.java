@@ -324,7 +324,10 @@ public class NotificationManagerJob implements IDisposable {
             if (getClass() != obj.getClass())
                 return false;
             DeprecatedObserverAdapter other = (DeprecatedObserverAdapter) obj;
-            if (!delegate.equals(other.delegate))
+            if (delegate == null) {
+                if (other.delegate != null)
+                    return false;
+            } else if (!delegate.equals(other.delegate))
                 return false;
             return true;
         }

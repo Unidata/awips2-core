@@ -35,6 +35,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
  * Sep 10, 2012            bgonzale    Initial creation
  * Mar 21, 2013 1638       mschenke    Moved from alertviz to core
  * Jun 27, 2013 2142       njensen     Use SLF4J instead of log4j
+ * Oct 10, 2014 3675       njensen     Include pid in filename
  * 
  * </pre>
  * 
@@ -75,9 +76,9 @@ public class EnvConfigurableRollingFileAppender extends
                         + "] needs environment variable, " + envLogVar
                         + ", to be set.");
             } else {
+                file = LogbackUtil.replacePid(file);
                 setFile(file);
             }
         }
     }
-
 }

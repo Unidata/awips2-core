@@ -17,33 +17,41 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.auth.user;
+package com.raytheon.uf.common.status.logback;
 
+import com.raytheon.uf.common.util.SystemUtil;
 
 /**
- * Interface for uniquely identifying a user
+ * Static utility methods for other classes in this package.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 24, 2010            mschenke     Initial creation
- * Oct 06, 2014 3398       bclement     removed ISerializableObject
+ * Oct 10, 2014 3675       njensen     Initial creation
  * 
  * </pre>
  * 
- * @author mschenke
+ * @author njensen
  * @version 1.0
  */
 
-public interface IUserId {
+public class LogbackUtil {
+
+    private LogbackUtil() {
+        // do not allow instantiation
+    }
 
     /**
-     * A string representation of the user id used for comparisons
+     * Replaces %PID% in a filename with the actual PID of this process
      * 
-     * @return
+     * @param filename
+     *            the filename that potentially contains %PID%
+     * @return the new filename with %PID% replaced if it was present
      */
-    public String toString();
-
+    protected static String replacePid(String filename) {
+        return filename.replace("%PID%", Integer.toString(SystemUtil.getPid()));
+    }
 }

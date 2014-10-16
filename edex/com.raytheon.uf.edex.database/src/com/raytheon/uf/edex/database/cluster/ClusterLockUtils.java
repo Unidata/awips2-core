@@ -21,26 +21,13 @@ package com.raytheon.uf.edex.database.cluster;
 
 import java.util.List;
 
-import org.hibernate.Criteria;
-import org.hibernate.HibernateException;
-import org.hibernate.LockOptions;
-import org.hibernate.Session;
-import org.hibernate.StatelessSession;
-import org.hibernate.Transaction;
-import org.hibernate.criterion.Criterion;
-import org.hibernate.criterion.Restrictions;
-
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.database.cluster.handler.CurrentTimeClusterLockHandler;
 import com.raytheon.uf.edex.database.cluster.handler.IClusterLockHandler;
-import com.raytheon.uf.edex.database.cluster.handler.ValidTimeClusterLockHandler;
-import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 
 /**
- * Cluster locking tools.
+ * Cluster locking tools for the default database
+ * {@link DaoConfig#DEFAULT_DB_NAME}. To access locks within the context of a
+ * specific database use {@link ClusterLocker} instead.
  * 
  * <pre>
  * 
@@ -51,6 +38,8 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Aug 26, 2013 #2272      bkowal      Add a function to see if a cluster suffix has
  *                                     been specified via the environment.
  * Dec 13, 2013 2555       rjpeter     Added updateExtraInfoAndLockTime and javadoc.
+ * Oct 06, 2014 3702       bsteffen    Extract logic to ClusterLocker to allow separate locks per database.
+ * 
  * </pre>
  * 
  * @author rjpeter
@@ -72,8 +61,8 @@ public class ClusterLockUtils {
         SUCCESSFUL, ALREADY_RUNNING, FAILED, OLD;
     }
 
-    protected static final transient IUFStatusHandler handler = UFStatus
-            .getHandler(ClusterLockUtils.class);
+    private static final ClusterLocker DEFAULT_LOCKER = new ClusterLocker(
+            DaoConfig.DEFAULT_DB_NAME);
 
     /**
      * 
@@ -85,8 +74,8 @@ public class ClusterLockUtils {
      */
     public static ClusterTask lock(String taskName, String details,
             long timeOutOverride, boolean waitForRunningToFinish) {
-        return lock(taskName, details, new CurrentTimeClusterLockHandler(
-                timeOutOverride, null), waitForRunningToFinish);
+        return DEFAULT_LOCKER.lock(taskName, details, timeOutOverride,
+                waitForRunningToFinish);
     }
 
     /**
@@ -111,8 +100,8 @@ public class ClusterLockUtils {
     public static ClusterTask lock(String taskName, String details,
             String extraInfo, long timeOutOverride,
             boolean waitForRunningToFinish) {
-        return lock(taskName, details, new CurrentTimeClusterLockHandler(
-                timeOutOverride, extraInfo), waitForRunningToFinish);
+        return DEFAULT_LOCKER.lock(taskName, details, extraInfo,
+                timeOutOverride, waitForRunningToFinish);
     }
 
     /**
@@ -133,8 +122,8 @@ public class ClusterLockUtils {
      */
     public static ClusterTask lock(String taskName, String details,
             long validTime, long timeOutOverride, boolean waitForRunningToFinish) {
-        return lock(taskName, details, new ValidTimeClusterLockHandler(
-                validTime, timeOutOverride), waitForRunningToFinish);
+        return DEFAULT_LOCKER.lock(taskName, details, validTime,
+                timeOutOverride, waitForRunningToFinish);
     }
 
     /**
@@ -152,77 +141,8 @@ public class ClusterLockUtils {
      */
     public static ClusterTask lock(String taskName, String details,
             IClusterLockHandler lockHandler, boolean waitForRunningToFinish) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        ClusterTask ct = null;
-        LockState ls = LockState.SUCCESSFUL;
-        ClusterTaskPK pk = new ClusterTaskPK();
-        pk.setName(taskName);
-        pk.setDetails(details);
-        boolean tryAgain = true;
-
-        while (tryAgain) {
-            tryAgain = false;
-            try {
-                s = cd.getHibernateTemplate().getSessionFactory().openSession();
-                tx = s.beginTransaction();
-
-                ct = getLock(s, pk, true);
-
-                ls = lockHandler.handleLock(ct);
-                if (LockState.SUCCESSFUL.equals(ls)) {
-                    if (lockHandler.updateLock(ct)) {
-                        s.update(ct);
-                    }
-                }
-                tx.commit();
-            } catch (Throwable t) {
-                handler.handle(Priority.ERROR,
-                        "Error processing lock for cluster task [" + taskName
-                                + "/" + details + "]", t);
-
-                ls = LockState.FAILED;
-                if (ct == null) {
-                    ct = new ClusterTask();
-                    ct.setId(pk);
-                    ct.setRunning(false);
-                }
-
-                if (tx != null) {
-                    try {
-                        tx.rollback();
-                    } catch (HibernateException e) {
-                        handler.handle(
-                                Priority.ERROR,
-                                "Error rolling back cluster task lock transaction",
-                                e);
-                    }
-                }
-            } finally {
-                if (s != null) {
-                    try {
-                        s.close();
-                    } catch (HibernateException e) {
-                        handler.handle(Priority.ERROR,
-                                "Error closing cluster task lock session", e);
-                    }
-                }
-            }
-
-            if (waitForRunningToFinish && LockState.ALREADY_RUNNING.equals(ls)) {
-                try {
-                    Thread.sleep(100);
-                } catch (InterruptedException e) {
-                    // ignore
-                }
-                tryAgain = true;
-            }
-        }
-
-        ct.setLockState(ls);
-        ct.setLockHandler(lockHandler);
-        return ct;
+        return DEFAULT_LOCKER.lock(taskName, details, lockHandler,
+                waitForRunningToFinish);
     }
 
     /**
@@ -237,49 +157,7 @@ public class ClusterLockUtils {
      */
     public static boolean updateLockTime(String taskName, String details,
             long updateTime) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        ClusterTask ct = null;
-        boolean rval = true;
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-            ClusterTaskPK pk = new ClusterTaskPK();
-            pk.setName(taskName);
-            pk.setDetails(details);
-
-            ct = getLock(s, pk, true);
-            ct.setLastExecution(updateTime);
-            s.update(ct);
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing update lock time for cluster task ["
-                            + taskName + "/" + details + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error rolling back cluster task lock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task lock session", e);
-                }
-            }
-        }
-        return rval;
+        return DEFAULT_LOCKER.updateLockTime(taskName, details, updateTime);
     }
 
     /**
@@ -298,49 +176,7 @@ public class ClusterLockUtils {
      */
     public static boolean updateExtraInfo(String taskName, String details,
             String extraInfo) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        ClusterTask ct = null;
-        boolean rval = true;
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-            ClusterTaskPK pk = new ClusterTaskPK();
-            pk.setName(taskName);
-            pk.setDetails(details);
-
-            ct = getLock(s, pk, true);
-            ct.setExtraInfo(extraInfo);
-            s.update(ct);
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing update lock time for cluster task ["
-                            + taskName + "/" + details + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error rolling back cluster task lock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task lock session", e);
-                }
-            }
-        }
-        return rval;
+        return DEFAULT_LOCKER.updateExtraInfo(taskName, details, extraInfo);
     }
 
     /**
@@ -360,50 +196,10 @@ public class ClusterLockUtils {
      */
     public static boolean updateExtraInfoAndLockTime(String taskName,
             String details, String extraInfo, long lockTime) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        ClusterTask ct = null;
-        boolean rval = true;
+        return DEFAULT_LOCKER.updateExtraInfoAndLockTime(taskName, details,
+                extraInfo,
+                lockTime);
 
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-            ClusterTaskPK pk = new ClusterTaskPK();
-            pk.setName(taskName);
-            pk.setDetails(details);
-
-            ct = getLock(s, pk, true);
-            ct.setExtraInfo(extraInfo);
-            ct.setLastExecution(lockTime);
-            s.update(ct);
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing update lock time for cluster task ["
-                            + taskName + "/" + details + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error rolling back cluster task lock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task lock session", e);
-                }
-            }
-        }
-        return rval;
     }
 
     /**
@@ -414,58 +210,7 @@ public class ClusterLockUtils {
      * @return
      */
     public static ClusterTask lookupLock(String taskName, String details) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        ClusterTask ct = null;
-        LockState ls = LockState.SUCCESSFUL;
-        ClusterTaskPK pk = new ClusterTaskPK();
-        pk.setName(taskName);
-        pk.setDetails(details);
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-
-            ct = getLock(s, pk, true);
-            if (ct.isRunning()) {
-                ls = LockState.ALREADY_RUNNING;
-            }
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing lock lookup for cluster task ["
-                            + taskName + "/" + details + "]", t);
-            ls = LockState.FAILED;
-            if (ct == null) {
-                ct = new ClusterTask();
-                ct.setId(pk);
-                ct.setRunning(false);
-            }
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error rolling back cluster task lock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task lock session", e);
-                }
-            }
-        }
-
-        ct.setLockState(ls);
-
-        return ct;
+        return DEFAULT_LOCKER.lookupLock(taskName, details);
     }
 
     /**
@@ -478,52 +223,7 @@ public class ClusterLockUtils {
      * @return
      */
     public static boolean unlock(ClusterTask ct, boolean clearTime) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        boolean rval = true;
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-
-            ClusterTask dbCt = getLock(s, ct.getId(), true);
-            if (ct.getLockHandler() != null) {
-                ct.getLockHandler().unlock(dbCt, clearTime);
-            } else {
-                dbCt.setRunning(false);
-            }
-            s.update(dbCt);
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing unlock for cluster task ["
-                            + ct.getId().getName() + "/"
-                            + ct.getId().getDetails() + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(
-                            Priority.ERROR,
-                            "Error rolling back cluster task unlock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task unlock session", e);
-                }
-            }
-        }
-
-        return rval;
+        return DEFAULT_LOCKER.unlock(ct, clearTime);
     }
 
     /**
@@ -535,50 +235,7 @@ public class ClusterLockUtils {
      * @return
      */
     public static boolean unlock(String taskName, String details) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        boolean rval = true;
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-
-            ClusterTaskPK pk = new ClusterTaskPK();
-            pk.setName(taskName);
-            pk.setDetails(details);
-            ClusterTask ct = getLock(s, pk, true);
-            ct.setRunning(false);
-            s.update(ct);
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing unlock for cluster task [" + taskName
-                            + "/" + details + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(
-                            Priority.ERROR,
-                            "Error rolling back cluster task unlock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task unlock session", e);
-                }
-            }
-        }
-
-        return rval;
+        return DEFAULT_LOCKER.unlock(taskName, details);
     }
 
     /**
@@ -589,113 +246,7 @@ public class ClusterLockUtils {
      * @return
      */
     public static boolean deleteLock(String taskName, String details) {
-        CoreDao cd = new CoreDao(DaoConfig.DEFAULT);
-        Session s = null;
-        Transaction tx = null;
-        boolean rval = true;
-        ClusterTaskPK pk = new ClusterTaskPK();
-        pk.setName(taskName);
-        pk.setDetails(details);
-
-        try {
-            s = cd.getHibernateTemplate().getSessionFactory().openSession();
-            tx = s.beginTransaction();
-
-            ClusterTask ct = getLock(s, pk, false);
-            if (ct != null) {
-                s.delete(ct);
-            }
-            tx.commit();
-        } catch (Throwable t) {
-            handler.handle(Priority.ERROR,
-                    "Error processing delete lock for cluster task ["
-                            + taskName + "/" + details + "]", t);
-            rval = false;
-
-            if (tx != null) {
-                try {
-                    tx.rollback();
-                } catch (HibernateException e) {
-                    handler.handle(
-                            Priority.ERROR,
-                            "Error rolling back cluster task delete lock transaction",
-                            e);
-                }
-            }
-        } finally {
-            if (s != null) {
-                try {
-                    s.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task delete lock  session",
-                            e);
-                }
-            }
-        }
-
-        return rval;
-    }
-
-    /**
-     * Looks up and returns the specified cluster lock. If the lock does not
-     * exist and create flag is set, the lock will be created. This is done
-     * using a Master lock to ensure isolation among all transactions.
-     * 
-     * @param s
-     * @param pk
-     * @param create
-     * @return
-     * @throws HibernateException
-     */
-    private static ClusterTask getLock(Session s, ClusterTaskPK pk,
-            boolean create) throws HibernateException {
-        ClusterTask ct = (ClusterTask) s.get(ClusterTask.class, pk,
-                LockOptions.UPGRADE);
-        if ((ct == null) && create) {
-            getMasterLock(s);
-
-            // now have master lock, verify new row hasn't already been
-            // created
-            ct = (ClusterTask) s
-                    .get(ClusterTask.class, pk, LockOptions.UPGRADE);
-
-            if (ct == null) {
-                ct = new ClusterTask();
-                ct.setId(pk);
-                ct.setRunning(false);
-                s.save(ct);
-            }
-        }
-
-        return ct;
-    }
-
-    /**
-     * Returns the master lock.
-     * 
-     * @param s
-     * @return
-     * @throws HibernateException
-     */
-    private static ClusterTask getMasterLock(Session s)
-            throws HibernateException {
-        ClusterTaskPK masterNewRowLockId = new ClusterTaskPK();
-        masterNewRowLockId.setName("MasterLock");
-        masterNewRowLockId.setDetails("NewRowLock");
-        ClusterTask masterLock = (ClusterTask) s.get(ClusterTask.class,
-                masterNewRowLockId, LockOptions.UPGRADE);
-
-        if (masterLock == null) {
-            handler.handle(Priority.WARN,
-                    "MasterLock for new row missing from cluster task.  Attempting to create.");
-            masterLock = new ClusterTask();
-            masterLock.setId(masterNewRowLockId);
-            masterLock.setRunning(false);
-            s.save(masterLock);
-        }
-
-        return masterLock;
+        return DEFAULT_LOCKER.deleteLock(taskName, details);
     }
 
     /**
@@ -704,33 +255,8 @@ public class ClusterLockUtils {
      * @param name
      * @return
      */
-    @SuppressWarnings("unchecked")
     public static List<ClusterTask> getLocks(String name) {
-        StatelessSession sess = null;
-        List<ClusterTask> tasks = null;
+        return DEFAULT_LOCKER.getLocks(name);
 
-        try {
-            CoreDao dao = new CoreDao(DaoConfig.DEFAULT);
-            sess = dao.getSessionFactory().openStatelessSession();
-
-            Criteria crit = sess.createCriteria(ClusterTask.class);
-            Criterion nameCrit = Restrictions.eq("id.name", name);
-            crit.add(nameCrit);
-            tasks = crit.list();
-        } catch (Throwable e) {
-            handler.handle(Priority.ERROR,
-                    "Error retrieving cluster locks for name: " + name, e);
-        } finally {
-            if (sess != null) {
-                try {
-                    sess.close();
-                } catch (HibernateException e) {
-                    handler.handle(Priority.ERROR,
-                            "Error closing cluster task getLocks session", e);
-                }
-            }
-        }
-
-        return tasks;
     }
 }

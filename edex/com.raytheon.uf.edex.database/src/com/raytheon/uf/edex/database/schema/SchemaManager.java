@@ -48,8 +48,8 @@ import com.raytheon.uf.edex.database.DatabasePluginProperties;
 import com.raytheon.uf.edex.database.DatabasePluginRegistry;
 import com.raytheon.uf.edex.database.DatabaseSessionFactoryBean;
 import com.raytheon.uf.edex.database.IDatabasePluginRegistryChanged;
-import com.raytheon.uf.edex.database.cluster.ClusterLockUtils;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils.LockState;
+import com.raytheon.uf.edex.database.cluster.ClusterLocker;
 import com.raytheon.uf.edex.database.cluster.ClusterTask;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
@@ -72,6 +72,8 @@ import com.raytheon.uf.edex.database.plugin.PluginVersionDao;
  * Oct 14, 2013 2361       njensen     Moved to plugin uf.edex.database
  *                                      Replaced use of SerializableManager
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
+ * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -146,7 +148,20 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
         String pluginFQN = props.getPluginFQN();
 
         try {
-            jar = new JarFile(pluginDir + pluginFQN + ".jar");
+            File jarFile = new File(pluginDir, pluginFQN + ".jar");
+            if (!jarFile.exists()) {
+                /* check for any jar files of the format pluginFQN_version.jar */
+                Pattern p = Pattern.compile("^" + Pattern.quote(pluginFQN)
+                        + "_.*\\.jar$");
+                File pluginDir = new File(this.pluginDir);
+                for (File f : pluginDir.listFiles()) {
+                    if (p.matcher(f.getName()).find()) {
+                        jarFile = f;
+                        break;
+                    }
+                }
+            }
+            jar = new JarFile(jarFile);
         } catch (IOException e) {
             throw new PluginException("Unable to find jar for plugin FQN "
                     + pluginFQN, e);
@@ -204,12 +219,12 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
         }
     }
 
-    @SuppressWarnings("unchecked")
     @Override
     public void pluginAdded(String pluginName) throws PluginException {
         boolean haveLock = false;
         DatabasePluginProperties props = DatabasePluginRegistry.getInstance()
                 .getRegisteredObject(pluginName);
+        ClusterLocker cl = null;
         ClusterTask ct = null;
 
         try {
@@ -226,7 +241,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     runPluginScripts(props);
                 }
             } else {
-                ct = ClusterLockUtils.lock("pluginVersion",
+                cl = new ClusterLocker(props.getDatabase());
+                ct = cl.lock("pluginVersion",
                         props.getPluginFQN(), pluginLockTimeOutMillis, true);
                 int failedCount = 0;
 
@@ -247,13 +263,13 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     }
                     }
 
-                    ct = ClusterLockUtils
+                    ct = cl
                             .lock("pluginVersion", props.getPluginFQN(),
                                     pluginLockTimeOutMillis, true);
                 }
 
                 haveLock = true;
-                PluginVersionDao pvd = new PluginVersionDao();
+                PluginVersionDao pvd = new PluginVersionDao(props.getDatabase());
                 Boolean initialized = pvd.isPluginInitialized(props
                         .getPluginName());
 
@@ -262,9 +278,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                             + " plugin...");
                     exportSchema(props, sessFactory, false);
                     runPluginScripts(props);
-                    String database = props.getDatabase();
                     PluginVersion pv = new PluginVersion(props.getPluginName(),
-                            true, props.getTableName(), database);
+                            true, props.getTableName());
                     pvd.saveOrUpdate(pv);
                     logger.info(pluginName + " plugin initialization complete!");
                 } else if (initialized == false) {
@@ -286,7 +301,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             throw new PluginException(e);
         } finally {
             if (haveLock) {
-                ClusterLockUtils.unlock(ct, false);
+                cl.unlock(ct, false);
             }
         }
     }
