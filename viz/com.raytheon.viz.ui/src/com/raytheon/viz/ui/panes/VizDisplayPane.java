@@ -430,6 +430,7 @@ public class VizDisplayPane implements IDisplayPane {
 
         Rectangle bounds = getBounds();
         if (bounds == null || bounds.width == 0 || bounds.height == 0) {
+            target.setNeedsRefresh(false);
             return;
         }
 
