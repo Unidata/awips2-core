@@ -199,7 +199,7 @@ public class InputManager implements Listener {
         for (int i = handlers.size() - 1; i >= 0; i--) {
             if (handlers.get(i).handler.handleMouseUp(event.x, event.y,
                     lastMouseButton))
-                return;
+                break;
         }
 
         /*

@@ -68,7 +68,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jan 31, 2012  14306    kshresth     Cursor readout as you sample the dispays
  * Mar 03, 2014  2804     mschenke     Set back up clipping pane
  * May 12, 2014  3074     bsteffen     Remove use of deprecated methods.
- * 
+ * Oct 21, 2014  3549     mschenke     Fixed positioning if x/y aspect ratio 
+ *                                     are different
  * 
  * </pre>
  * 
@@ -271,9 +272,13 @@ public class SamplingResource extends
                 double[] pixel = descriptor.worldToPixel(world);
                 Coordinate c = new Coordinate(pixel[0], pixel[1]);
                 int canvasWidth = paintProps.getCanvasBounds().width;
+                int canvasHeight = paintProps.getCanvasBounds().height;
                 double extentWidth = paintProps.getView().getExtent()
                         .getWidth();
+                double extentHeight = paintProps.getView().getExtent()
+                        .getHeight();
                 double ratioX = canvasWidth / extentWidth;
+                double ratioY = canvasHeight / extentHeight;
 
                 if (result.labels.length > 0) {
                     List<String[]> strsToUse = new ArrayList<String[]>();
@@ -331,8 +336,8 @@ public class SamplingResource extends
                             target,
                             newStrs,
                             c.y
-                                    + ((AbstractRenderableDisplay.CURSOR_HEIGHT) / ratioX),
-                            paintProps.getView().getExtent(), ratioX);
+                                    + (AbstractRenderableDisplay.CURSOR_HEIGHT / ratioY),
+                            paintProps.getView().getExtent(), ratioY);
 
                     DrawableString dString = new DrawableString(newStrs,
                             colorsToUse.toArray(new RGB[colorsToUse.size()]));
@@ -367,7 +372,7 @@ public class SamplingResource extends
     private void adjustStrings(IGraphicsTarget target,
             PaintProperties paintProps, List<String[]> strsToUse,
             boolean[] modified, HorizontalAlignment[] alignments, Coordinate c,
-            double ratio, HorizontalAlignment targetAlignment) {
+            double ratioX, HorizontalAlignment targetAlignment) {
         List<String[]> strsToUseInternal = new ArrayList<String[]>();
         for (int i = 0; i < strsToUse.size(); ++i) {
             String str = strsToUse.get(i)[0];
@@ -421,8 +426,8 @@ public class SamplingResource extends
                     test = strs.toArray(new String[strs.size()]);
 
                     HorizontalAlignment alignment = adjustLabelWrapX(target,
-                            test, c.x, paintProps.getView().getExtent(), ratio,
-                            alignments[i]);
+                            test, c.x, paintProps.getView().getExtent(),
+                            ratioX, alignments[i]);
                     if (alignment == alignments[i]
                             && (targetAlignment == null || alignment == targetAlignment)) {
                         // the alignment was not changed and we are the target
@@ -434,7 +439,7 @@ public class SamplingResource extends
                             // back
                             HorizontalAlignment tmpAlignment = alignment;
                             alignment = adjustLabelWrapX(target, test, c.x,
-                                    paintProps.getView().getExtent(), ratio,
+                                    paintProps.getView().getExtent(), ratioX,
                                     alignment);
                             if (alignment != tmpAlignment) {
                                 // we moved back, we need to divide and
@@ -450,7 +455,7 @@ public class SamplingResource extends
                         } else {
                             // we need to be the targetAlignment
                             alignment = adjustLabelWrapX(target, test, c.x,
-                                    paintProps.getView().getExtent(), ratio,
+                                    paintProps.getView().getExtent(), ratioX,
                                     targetAlignment);
                             if (alignment == targetAlignment) {
                                 // we are fine at other alignment also, use it:
@@ -489,7 +494,7 @@ public class SamplingResource extends
      * @return
      */
     private HorizontalAlignment adjustLabelWrapX(IGraphicsTarget target,
-            String[] labels, double x, IExtent extent, double ratio,
+            String[] labels, double x, IExtent extent, double ratioX,
             HorizontalAlignment horizontalAlignment) {
         double referencePoint = x;
 
@@ -500,7 +505,7 @@ public class SamplingResource extends
         double maxWidth = target.getStringsBounds(testString).getWidth();
 
         // Get the width in gl space
-        double widthInGl = maxWidth / ratio;
+        double widthInGl = maxWidth / ratioX;
 
         if (horizontalAlignment == HorizontalAlignment.LEFT) {
             // Check to see if text extends screen extent
@@ -529,7 +534,7 @@ public class SamplingResource extends
      * @return
      */
     private double adjustLabelWrapY(IGraphicsTarget target, String[] labels,
-            double y, IExtent extent, double ratio) {
+            double y, IExtent extent, double ratioY) {
         double referencePoint = y;
 
         DrawableString testString = new DrawableString(labels, (RGB) null);
@@ -538,13 +543,12 @@ public class SamplingResource extends
         double totalHeight = target.getStringsBounds(testString).getHeight();
 
         // convert to gl space
-        double maxHeightInGl = (totalHeight) / ratio;
+        double maxHeightInGl = (totalHeight) / ratioY;
 
         // check to see if height extends map height
         if (referencePoint + maxHeightInGl > extent.getMaxY()) {
             verticalAlignment = VerticalAlignment.BOTTOM;
-            referencePoint -= (AbstractRenderableDisplay.CURSOR_HEIGHT + 2)
-                    / ratio;
+            referencePoint -= (AbstractRenderableDisplay.CURSOR_HEIGHT / ratioY);
         }
 
         // return adjusted point
