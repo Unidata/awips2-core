@@ -105,6 +105,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Aug 01, 2014 3471       mapeters    Updated deprecated createShadedShape() calls.
  * Aug 11, 2014 3459       randerso    Cleaned up MapQueryJob implementation
  * Aug 13, 2014 3492       mapeters    Updated deprecated createWireframeShape() calls.
+ * Oct 23, 2014 3685       randerso    Fix nullPointer if shadingField contains a null
  * 
  * </pre>
  * 
@@ -457,9 +458,7 @@ public class DbMapResource extends
             for (Geometry g : resultingGeoms) {
                 RGB color = null;
                 Object shadedField = g.getUserData();
-                if (shadedField != null) {
-                    color = req.getColor(shadedField);
-                }
+                color = req.getColor(shadedField);
                 geomData.setGeometryColor(color);
 
                 try {
