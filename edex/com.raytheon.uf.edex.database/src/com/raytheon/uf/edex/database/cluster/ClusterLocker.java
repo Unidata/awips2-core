@@ -50,6 +50,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 06, 2014 3702       bsteffen    Extact logic from ClusterLockUtils to allow seperate locks per database.
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -155,7 +156,7 @@ public class ClusterLocker {
         while (tryAgain) {
             tryAgain = false;
             try {
-                s = dao.getHibernateTemplate().getSessionFactory()
+                s = dao.getSessionFactory()
                         .openSession();
                 tx = s.beginTransaction();
 
@@ -234,7 +235,7 @@ public class ClusterLocker {
         boolean rval = true;
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
             ClusterTaskPK pk = new ClusterTaskPK();
             pk.setName(taskName);
@@ -294,7 +295,7 @@ public class ClusterLocker {
         boolean rval = true;
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
             ClusterTaskPK pk = new ClusterTaskPK();
             pk.setName(taskName);
@@ -355,7 +356,7 @@ public class ClusterLocker {
         boolean rval = true;
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
             ClusterTaskPK pk = new ClusterTaskPK();
             pk.setName(taskName);
@@ -411,7 +412,7 @@ public class ClusterLocker {
         pk.setDetails(details);
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
 
             ct = getLock(s, pk, true);
@@ -470,7 +471,7 @@ public class ClusterLocker {
         boolean rval = true;
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
 
             ClusterTask dbCt = getLock(s, ct.getId(), true);
@@ -526,7 +527,7 @@ public class ClusterLocker {
         boolean rval = true;
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
 
             ClusterTaskPK pk = new ClusterTaskPK();
@@ -582,7 +583,7 @@ public class ClusterLocker {
         pk.setDetails(details);
 
         try {
-            s = dao.getHibernateTemplate().getSessionFactory().openSession();
+            s = dao.getSessionFactory().openSession();
             tx = s.beginTransaction();
 
             ClusterTask ct = getLock(s, pk, false);

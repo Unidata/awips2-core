@@ -55,6 +55,7 @@ import com.vividsolutions.jts.geom.Point;
  * Jul 16, 2013 2181       bsteffen    Convert geometry types to use hibernate-
  *                                     spatial
  * Jul 23, 2014 3410       bclement    changed lat and lon to floats
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -98,7 +99,7 @@ public class AircraftObsLocation implements ISpatialObject {
     private float longitude;
 
     @Column
-    @Type(type = "org.hibernatespatial.GeometryUserType")
+    @Type(type = "org.hibernate.spatial.GeometryType")
     @XmlJavaTypeAdapter(value = GeometryAdapter.class)
     @DynamicSerializeElement
     private Point location;

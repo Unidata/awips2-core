@@ -164,3 +164,6 @@ BASE:cave_static/gfe/userPython/gfeConfig/gfeConfig.py
 # FFMP Files
 SITE:common_static/purge/ffmpPurgeRules.xml
 SITE:common_static/ffmp/FFMPTemplateConfig.xml
+
+# TextWS Files
+SITE:common_static/mixedCase/mixedCaseProductIds.txt

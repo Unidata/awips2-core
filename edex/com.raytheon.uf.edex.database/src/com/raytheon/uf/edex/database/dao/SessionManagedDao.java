@@ -23,17 +23,16 @@ package com.raytheon.uf.edex.database.dao;
 import java.io.Serializable;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.Iterator;
 import java.util.List;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.Session;
 import org.hibernate.SessionFactory;
 import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.dialect.Dialect;
-import org.hibernate.impl.SessionFactoryImpl;
+import org.hibernate.engine.spi.SessionFactoryImplementor;
 import org.hibernate.jdbc.Work;
-import org.springframework.orm.hibernate3.HibernateTemplate;
 import org.springframework.stereotype.Repository;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
@@ -65,6 +64,7 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * 12/9/2013    2613       bphillip    Added flushAndClearSession method
  * Jan 17, 2014 2459       mpduff      Added null check to prevent NPE.
  * 2/13/2014    2769       bphillip    Added read-only flag to query methods and loadById method
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -82,14 +82,14 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(SessionManagedDao.class);
 
-    protected HibernateTemplate template;
+    protected SessionFactory sessionFactory;
 
     /**
      * {@inheritDoc}
      */
     @Override
     public void setSessionFactory(SessionFactory sessionFactory) {
-        template = new HibernateTemplate(sessionFactory);
+        this.sessionFactory = sessionFactory;
     }
 
     /**
@@ -97,7 +97,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Override
     public void create(final ENTITY obj) {
-        template.save(obj);
+        getCurrentSession().save(obj);
     }
 
     /**
@@ -105,7 +105,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Override
     public void update(final ENTITY obj) {
-        template.update(obj);
+        getCurrentSession().update(obj);
     }
 
     /**
@@ -113,7 +113,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Override
     public void createOrUpdate(final ENTITY obj) {
-        template.saveOrUpdate(obj);
+        getCurrentSession().saveOrUpdate(obj);
     }
 
     /**
@@ -121,7 +121,10 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Override
     public void persistAll(final Collection<ENTITY> objs) {
-        template.saveOrUpdateAll(objs);
+        Session session = getCurrentSession();
+        for (ENTITY obj : objs) {
+            session.saveOrUpdate(obj);
+        }
     }
 
     /**
@@ -130,8 +133,8 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     @Override
     public void delete(final ENTITY obj) {
         if (obj != null) {
-            Object toDelete = template.merge(obj);
-            template.delete(toDelete);
+            Object toDelete = getCurrentSession().merge(obj);
+            getCurrentSession().delete(toDelete);
         }
     }
 
@@ -152,14 +155,14 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public ENTITY getById(IDENTIFIER id) {
         final Class<ENTITY> entityClass = getEntityClass();
-        return entityClass.cast(template.get(entityClass, id));
+        return entityClass.cast(getCurrentSession().get(entityClass, id));
     }
 
     @Override
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public ENTITY loadById(IDENTIFIER id) {
         final Class<ENTITY> entityClass = getEntityClass();
-        return entityClass.cast(template.load(entityClass, id));
+        return entityClass.cast(getCurrentSession().load(entityClass, id));
     }
 
     /**
@@ -171,9 +174,11 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
         return query("from " + getEntityClass().getSimpleName());
     }
 
+    @SuppressWarnings("unchecked")
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public List<ENTITY> loadAll() {
-        return this.template.loadAll(getEntityClass());
+        return getCurrentSession().createQuery(
+                "FROM " + getEntityClass().getName()).list();
     }
 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
@@ -292,33 +297,12 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
             throw new IllegalArgumentException(
                     "Wrong number of arguments submitted to executeHQLQuery.");
         }
-        HibernateTemplate templateToUse = (maxResults == 0) ? template
-                : new HibernateTemplate(this.getSessionFactory());
-        templateToUse.setMaxResults(maxResults);
-        templateToUse.setQueryCacheRegion(QUERY_CACHE_REGION);
-        if (params.length == 0) {
-            return templateToUse.find(queryString);
-        }
-        String[] paramNames = new String[params.length / 2];
-        Object[] paramValues = new Object[params.length / 2];
-        int index = 0;
+        Query query = getCurrentSession().createQuery(queryString);
+        query.setMaxResults(maxResults);
         for (int i = 0; i < params.length; i += 2) {
-            paramNames[index] = (String) params[i];
-            paramValues[index] = params[i + 1];
-            index++;
+            query.setParameter((String) params[i], params[i+1]);
         }
-        return templateToUse.findByNamedParam(queryString, paramNames,
-                paramValues);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
-    public <T extends Object> Iterator<T> getQueryIterator(
-            final String queryString, Object... params) {
-        if (params.length == 0) {
-            return template.iterate(queryString);
-        }
-        return template.iterate(queryString, params);
+        return query.list();
     }
 
     /**
@@ -412,15 +396,16 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
         if (criteria == null) {
             return Collections.emptyList();
         }
-        return template.findByCriteria(criteria);
+        return criteria.getExecutableCriteria(getCurrentSession()).list();
     }
 
     public void evict(ENTITY entity) {
         this.getSessionFactory().getCurrentSession().evict(entity);
     }
 
+    @SuppressWarnings("unchecked")
     public ENTITY load(Serializable id) {
-        return this.template.load(getEntityClass(), id);
+        return (ENTITY)getCurrentSession().load(getEntityClass(), id);
 
     }
 
@@ -440,7 +425,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * @return The criteria instance
      */
     protected Criteria createCriteria() {
-        return template.getSessionFactory().getCurrentSession()
+        return getCurrentSession()
                 .createCriteria(getEntityClass());
     }
 
@@ -450,7 +435,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * @return the dialect.
      */
     public Dialect getDialect() {
-        return ((SessionFactoryImpl) template.getSessionFactory()).getDialect();
+        return ((SessionFactoryImplementor) sessionFactory).getDialect();
     }
 
     /**
@@ -462,7 +447,11 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     }
 
     protected SessionFactory getSessionFactory() {
-        return template.getSessionFactory();
+        return sessionFactory;
+    }
+
+    protected Session getCurrentSession() {
+        return sessionFactory.getCurrentSession();
     }
 
     /**

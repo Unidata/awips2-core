@@ -62,6 +62,7 @@ import com.vividsolutions.jts.geom.Point;
  *                                     spatial
  * July 15, 2013 2180      dhladky     Changed to hibernate spatial type (Done in 13.51) not in dev
  * Jul 23, 2014 3410       bclement    changed lat and lon to floats
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -106,7 +107,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     private Boolean locationDefined = Boolean.FALSE;
 
     @Column(name = "location", columnDefinition = "geometry")
-    @Type(type = "org.hibernatespatial.GeometryUserType")
+    @Type(type = "org.hibernate.spatial.GeometryType")
     @XmlJavaTypeAdapter(value = GeometryAdapter.class)
     @DynamicSerializeElement
     private Point location;

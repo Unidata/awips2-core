@@ -47,8 +47,6 @@ import org.hibernate.Transaction;
 import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.exception.ConstraintViolationException;
-import org.springframework.transaction.TransactionStatus;
-import org.springframework.transaction.support.TransactionCallbackWithoutResult;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -117,6 +115,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Dec 13, 2013 2555       rjpeter     Refactored archiving logic into processArchiveRecords.
  * Apr 21, 2014 2946       bsteffen    Allow auxillary purge rules in multiple files.
  * Jun 24, 2014 #3314      randerso    Fix misspelling in message
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * </pre>
  * 
  * @author bphillip
@@ -213,7 +212,7 @@ public abstract class PluginDao extends CoreDao {
 
         if (!duplicates.isEmpty()) {
             logger.info("Discarded : " + duplicates.size() + " duplicates!");
-            if (logger.isDebugEnabled()) {
+            if (logger.isPriorityEnabled(Priority.DEBUG)) {
                 for (PluginDataObject pdo : duplicates) {
                     logger.debug("Discarding duplicate: "
                             + ((pdo)).getDataURI());
@@ -248,7 +247,7 @@ public abstract class PluginDao extends CoreDao {
 
         Session session = null;
         try {
-            session = getHibernateTemplate().getSessionFactory().openSession();
+            session = getSession();
             // process them all in fixed sized batches.
             for (int i = 0; i < objects.size(); i += COMMIT_INTERVAL) {
                 List<PluginDataObject> subList = objects.subList(i,
@@ -301,7 +300,7 @@ public abstract class PluginDao extends CoreDao {
                                     session.save(object);
                                 }
                             } catch (PluginException e) {
-                                statusHandler.handle(Priority.PROBLEM,
+                                logger.handle(Priority.PROBLEM,
                                         "Query failed: Unable to insert or update "
                                                 + object.getIdentifier(), e);
                             }
@@ -342,7 +341,7 @@ public abstract class PluginDao extends CoreDao {
                             subDuplicates.add(object);
                             tx.rollback();
                         } catch (PluginException e) {
-                            statusHandler.handle(Priority.PROBLEM,
+                            logger.handle(Priority.PROBLEM,
                                     "Query failed: Unable to insert or update "
                                             + object.getIdentifier(), e);
                         }
@@ -1689,12 +1688,7 @@ public abstract class PluginDao extends CoreDao {
      *            The object to delete
      */
     public void delete(final List<PluginDataObject> objs) {
-        txTemplate.execute(new TransactionCallbackWithoutResult() {
-            @Override
-            public void doInTransactionWithoutResult(TransactionStatus status) {
-                getHibernateTemplate().deleteAll(objs);
-            }
-        });
+        super.deleteAll(objs);
     }
 
     public static PurgeRuleSet getPurgeRulesForPlugin(String pluginName) {

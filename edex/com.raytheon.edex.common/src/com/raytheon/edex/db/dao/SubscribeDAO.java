@@ -21,6 +21,10 @@ package com.raytheon.edex.db.dao;
 
 import java.util.List;
 
+import org.hibernate.Criteria;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallback;
+
 import com.raytheon.edex.subscription.Subscription;
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
@@ -46,6 +50,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Date       	Ticket#		Engineer	Description
  * ------------	----------	-----------	--------------------------
  * 27Apr2007    208         MW Fegan    Initial creation.
+ * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * 
  * </pre>
  * 
@@ -71,9 +76,10 @@ public class SubscribeDAO extends CoreDao {
      * @throws DataAccessLayerException
      *             if the update operation fails
      */
+    @SuppressWarnings({ "unchecked", "rawtypes" })
     public void updateSubscription(PersistableDataObject val)
             throws DataAccessLayerException {
-        getHibernateTemplate().update(val);
+        super.update(val);
     }
 
     /**
@@ -84,11 +90,23 @@ public class SubscribeDAO extends CoreDao {
      * @throws DataAccessLayerException
      *             if the query fails.
      */
-    @SuppressWarnings("unchecked")
     public List<Subscription> getSubscriptions()
             throws DataAccessLayerException {
-        // executeHQLQuery("select datauri from awips.subscription");
-        return (List<Subscription>) getHibernateTemplate().loadAll(daoClass);
+        return (List<Subscription>)loadAll();
+    }
+    
+    @SuppressWarnings("unchecked")
+    private List<Subscription> loadAll() {
+        return txTemplate
+                .execute(new TransactionCallback<List<Subscription>>() {
+                    @Override
+                    public List<Subscription> doInTransaction(
+                            TransactionStatus status) {
+                        Criteria criteria = getSession().createCriteria(
+                                Subscription.class);
+                        return criteria.list();
+                    }
+                });
     }
 
     /**
@@ -106,55 +124,5 @@ public class SubscribeDAO extends CoreDao {
             throws DataAccessLayerException {
 
         return this.queryBySingleCriteria("identifier", dataURI);
-        /*
-         * Object retVal = null; List result; try { result =
-         * findSubscription(dataURI); } catch (Exception e) { throw new
-         * DataAccessLayerException
-         * ("Unable to get subscription information for " +
-         * Util.printString(dataURI),e); } if (result.size() > 0) { retVal =
-         * result.get(0); } else { throw new DataAccessLayerException("No
-         * subscriptions exist for " + Util.printString(dataURI)); } return
-         * retVal;
-         */
     }
-
-    /**
-     * Returns the Subscription objects the matches the specified data URI.
-     * 
-     * @param dataURI
-     *            The data URI of the Subscription
-     * 
-     * @return A list of Subscription objects
-     * 
-     * @throws DataAccessLayerException
-     *             if the DB query failed
-     */
-    // private List<?> findSubscription(String dataURI)
-    // throws DataAccessLayerException {
-    // List<?> list = null;
-    // StringBuffer buffer = new StringBuffer();
-    // try {
-    // // get the subscription class and key field
-    // Configuration properties = PropertiesFactory.getInstance()
-    // .getConfiguration(ISubscriptionManager.CONFIGURATION_NAME);
-    // String className = properties
-    // .getString(ISubscriptionManager.HIB_CLASS);
-    // String keyField = properties
-    // .getString(ISubscriptionManager.KEY_FIELD);
-    // // setup the query
-    // buffer.append(" from ");
-    // buffer.append(className);
-    // buffer.append(" where ");
-    // buffer.append(keyField).append("=?");
-    // HibernateTemplate template = getHibernateTemplate();
-    // // retrieve the data
-    // list = template.find(buffer.toString(), new Object[] { dataURI });
-    // } catch (Exception e) {
-    // throw new DataAccessLayerException(
-    // "Unable to find metadata for the given "
-    // + Util.printString(dataURI), e);
-    // }
-    //
-    // return list;
-    // }
 }

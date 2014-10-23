@@ -200,7 +200,7 @@ public class ObStationDao extends CoreDao {
 
 			return (List<ObStation>)executeCriteriaQuery(stationEq);
 		} else {
-			statusHandler.warn("Cannot execute spatial query with less than 3 points");
+			logger.warn("Cannot execute spatial query with less than 3 points");
 			return new ArrayList<ObStation>();
 		}
 
