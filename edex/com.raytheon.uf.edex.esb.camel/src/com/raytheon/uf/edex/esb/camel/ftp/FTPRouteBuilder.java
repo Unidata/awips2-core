@@ -37,6 +37,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * July 29, 2014 3404       dhladky     FTP library initial release.
+ * Oct 14, 2014  3404       dhladky     Upgrades for better parsing.
 * 
  * </pre>
  * 
@@ -72,12 +73,12 @@ public class FTPRouteBuilder extends RouteBuilder {
     /** URI location for FTP **/
     private String uri;
     
-    /** local destination **/
-    private String destinationURI;
-    
-    /**  keeps hostanem prepend for removal around **/
+    /**  keeps hostname prepend for removal around **/
     private String hostnamePrepend = null;
        
+    /** local destination **/
+    private String destinationURI;
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(FTPRouteBuilder.class);
     
@@ -290,7 +291,5 @@ public class FTPRouteBuilder extends RouteBuilder {
     public String getUri() {
         return uri;
     }
-    
-    
-    
+
 }
