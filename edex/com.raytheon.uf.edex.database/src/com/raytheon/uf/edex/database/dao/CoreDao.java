@@ -94,6 +94,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Jan 23, 2014 2555        rjpeter     Updated processByCriteria to be a row at a time using ScrollableResults.
  * Apr 23, 2014 2726        rjpeter     Updated processByCriteria to throw exceptions back up to caller.
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * </pre>
  * 
  * @author bphillip
@@ -341,7 +342,7 @@ public class CoreDao {
                         @Override
                         public Integer doInTransaction(TransactionStatus status) {
                             String queryString = query.createHQLDelete();
-                            Query hibQuery = getSession(false).createQuery(
+                            Query hibQuery = getCurrentSession().createQuery(
                                     queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
@@ -378,7 +379,7 @@ public class CoreDao {
                         @Override
                         public List<?> doInTransaction(TransactionStatus status) {
                             String queryString = query.createHQLQuery();
-                            Query hibQuery = getSession(false).createQuery(
+                            Query hibQuery = getCurrentSession().createQuery(
                                     queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
@@ -427,7 +428,7 @@ public class CoreDao {
                         @Override
                         public Integer doInTransaction(TransactionStatus status) {
                             String queryString = query.createHQLQuery();
-                            Query hibQuery = getSession(false).createQuery(
+                            Query hibQuery = getCurrentSession().createQuery(
                                     queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
@@ -458,7 +459,7 @@ public class CoreDao {
                                     }
                                     count++;
                                     if ((count % batchSize) == 0) {
-                                        getSession().clear();
+                                        getCurrentSession().clear();
                                     }
                                 }
                                 processor.finish();
@@ -688,7 +689,7 @@ public class CoreDao {
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
                     public QueryResult doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getSession(false)
+                        Query hibQuery = getCurrentSession()
                                 .createQuery(hqlQuery);
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
@@ -742,7 +743,7 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getSession(false).createQuery(hqlStmt);
+                        Query hibQuery = getCurrentSession().createQuery(hqlStmt);
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         return hibQuery.executeUpdate();
@@ -767,7 +768,7 @@ public class CoreDao {
                 .execute(new TransactionCallback<List<?>>() {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
-                        return getSession(false).createSQLQuery(sql).list();
+                        return getCurrentSession().createSQLQuery(sql).list();
                     }
                 });
         logger.debug("executeSQLQuery took: "
@@ -783,7 +784,7 @@ public class CoreDao {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
 
-                        Criteria crit = getSession(false).createCriteria(
+                        Criteria crit = getCurrentSession().createCriteria(
                                 daoClass);
                         for (Criterion cr : criterion) {
                             crit.add(cr);
@@ -817,7 +818,7 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        return getSession(false).createSQLQuery(sql)
+                        return getCurrentSession().createSQLQuery(sql)
                                 .executeUpdate();
                     }
                 });
@@ -1109,21 +1110,40 @@ public class CoreDao {
         }
     }
     
-    public Session getCurrentSession(){
+    /**
+     * Gets the session associated with the current thread. This method does not
+     * create a new session if one does not exist
+     * 
+     * @return The current thread-bound session
+     */
+    public Session getCurrentSession() {
         return getSessionFactory().getCurrentSession();
     }
-    
-    public Session getSession(){
+
+    /**
+     * Creates a new Hibernate session. Sessions returned by this method must be
+     * explicitly closed
+     * 
+     * @return
+     */
+    public Session getSession() {
         return getSession(true);
     }
-    
-    public Session getSession(boolean allowCreate){
-        if(allowCreate){
-            return getSessionFactory().openSession();    
-        }else{
+
+    /**
+     * Gets a Hibernate session. If allowCreate is true, a new session is
+     * opened, and therefore must be explicitly closed. If allowCreate is false,
+     * this method will attempt to retrieve the current thread-bound session
+     * 
+     * @param allowCreate
+     * @return
+     */
+    public Session getSession(boolean allowCreate) {
+        if (allowCreate) {
+            return getSessionFactory().openSession();
+        } else {
             return getCurrentSession();
         }
-        
     }
 
 }

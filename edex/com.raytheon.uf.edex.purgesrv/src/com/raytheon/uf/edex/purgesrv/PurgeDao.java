@@ -49,6 +49,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * May 1, 2012  #470       bphillip    Initial creation
  * Jun 24, 2014 #3314      randerso    Fix type safety warnings
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * 
  * </pre>
  * 
@@ -82,7 +83,7 @@ public class PurgeDao extends CoreDao {
         return txTemplate.execute(new TransactionCallback<Integer>() {
             @Override
             public Integer doInTransaction(TransactionStatus status) {
-                Query hibQuery = getSession(false).createQuery(query);
+                Query hibQuery = getCurrentSession().createQuery(query);
                 hibQuery.setTimestamp("startTime", validStartTime);
                 hibQuery.setInteger("failedCount", failedCount);
                 List<?> queryResult = hibQuery.list();
@@ -110,7 +111,7 @@ public class PurgeDao extends CoreDao {
                     @Override
                     public List<PurgeJobStatus> doInTransaction(
                             TransactionStatus status) {
-                        Query hibQuery = getSession(false).createQuery(query);
+                        Query hibQuery = getCurrentSession().createQuery(query);
                         hibQuery.setInteger("failedCount", failedCount);
                         return hibQuery.list();
                     }
@@ -127,7 +128,7 @@ public class PurgeDao extends CoreDao {
                     @Override
                     public List<PurgeJobStatus> doInTransaction(
                             TransactionStatus status) {
-                        Query hibQuery = getSession(false).createQuery(query);
+                        Query hibQuery = getCurrentSession().createQuery(query);
                         hibQuery.setTimestamp("startTime", validStartTime);
                         return hibQuery.list();
                     }
@@ -145,13 +146,13 @@ public class PurgeDao extends CoreDao {
                     public Map<String, List<PurgeJobStatus>> doInTransaction(
                             TransactionStatus status) {
                         Map<String, List<PurgeJobStatus>> serverMap = new HashMap<String, List<PurgeJobStatus>>();
-                        Query serverQuery = getSession(false).createQuery(
+                        Query serverQuery = getCurrentSession().createQuery(
                                 "select distinct obj.id.server from "
                                         + daoClass.getName()
                                         + " obj order by obj.id.server asc");
                         List<String> result = serverQuery.list();
                         for (String server : result) {
-                            Query query2 = getSession(false).createQuery(
+                            Query query2 = getCurrentSession().createQuery(
                                     query.replace(":SERVER", server));
                             serverMap.put(server, query2.list());
                         }
@@ -175,7 +176,7 @@ public class PurgeDao extends CoreDao {
         return txTemplate.execute(new TransactionCallback<Long>() {
             @Override
             public Long doInTransaction(TransactionStatus status) {
-                Query hibQuery = getSession(false).createQuery(query);
+                Query hibQuery = getCurrentSession().createQuery(query);
                 Timestamp queryResult = (Timestamp) hibQuery.uniqueResult();
                 if (queryResult == null) {
                     return -1L;
@@ -199,7 +200,7 @@ public class PurgeDao extends CoreDao {
         return txTemplate.execute(new TransactionCallback<PurgeJobStatus>() {
             @Override
             public PurgeJobStatus doInTransaction(TransactionStatus status) {
-                Query hibQuery = getSession(false).createQuery(query);
+                Query hibQuery = getCurrentSession().createQuery(query);
                 PurgeJobStatus queryResult = (PurgeJobStatus) hibQuery
                         .uniqueResult();
                 return queryResult;
@@ -220,7 +221,7 @@ public class PurgeDao extends CoreDao {
         txTemplate.execute(new TransactionCallback<PurgeJobStatus>() {
             @Override
             public PurgeJobStatus doInTransaction(TransactionStatus status) {
-                Session sess = getSession(false);
+                Session sess = getCurrentSession();
                 Query hibQuery = sess.createQuery(query);
                 PurgeJobStatus queryResult = (PurgeJobStatus) hibQuery
                         .uniqueResult();
@@ -260,7 +261,7 @@ public class PurgeDao extends CoreDao {
         return txTemplate.execute(new TransactionCallback<List<String>>() {
             @Override
             public List<String> doInTransaction(TransactionStatus status) {
-                Query hibQuery = getSession(false).createQuery(query);
+                Query hibQuery = getCurrentSession().createQuery(query);
                 List<String> result = hibQuery.list();
                 return result;
             }
