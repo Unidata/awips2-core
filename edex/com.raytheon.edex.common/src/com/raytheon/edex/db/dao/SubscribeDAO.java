@@ -51,6 +51,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * ------------	----------	-----------	--------------------------
  * 27Apr2007    208         MW Fegan    Initial creation.
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * 
  * </pre>
  * 
@@ -102,7 +103,7 @@ public class SubscribeDAO extends CoreDao {
                     @Override
                     public List<Subscription> doInTransaction(
                             TransactionStatus status) {
-                        Criteria criteria = getSession().createCriteria(
+                        Criteria criteria = getCurrentSession().createCriteria(
                                 Subscription.class);
                         return criteria.list();
                     }
