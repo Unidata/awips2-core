@@ -26,6 +26,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -48,6 +49,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Aug 21, 2012            jsanchez    Initial creation
  * Mar 18, 2013 1802       bphillip    Implemented transaction boundaries. Changed to extend parameterized PersistableDataObject
  * May 22, 2013 1917       rjpeter     Added BatchSize annotation.
+ * 10/28/2014   3454       bphillip    Added sequence for id generation
  * </pre>
  * 
  * @author jsanchez
@@ -62,8 +64,9 @@ public class StatsRecord extends PersistableDataObject<Integer> {
 
     private static final long serialVersionUID = -2018725770414395081L;
 
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Id
+    @GeneratedValue(strategy=GenerationType.AUTO, generator="stats_seq")
+    @SequenceGenerator(name="stats_seq", sequenceName="stats_seq")
     @DynamicSerializeElement
     private Integer id;
 

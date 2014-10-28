@@ -26,6 +26,7 @@ import javax.persistence.Entity;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -46,6 +47,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Aug 21, 2012            jsanchez     Initial creation
  * Nov 12, 2012            dhladky      Updates some things for stats
  * Jan 15, 2013 1487       djohnson     Increase length of grouping to 1024.
+ * 10/28/2014   3454       bphillip     Added sequence for id generation
  * 
  * </pre>
  * 
@@ -60,8 +62,9 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class AggregateRecord extends PersistableDataObject<Integer> {
     private static final long serialVersionUID = -4553588456131256014L;
 
-    @GeneratedValue(strategy = GenerationType.AUTO)
     @Id
+    @GeneratedValue(strategy=GenerationType.AUTO, generator="aggregate_seq")
+    @SequenceGenerator(name="aggregate_seq", sequenceName="aggregate_seq")
     @DynamicSerializeElement
     private Integer id;
 
