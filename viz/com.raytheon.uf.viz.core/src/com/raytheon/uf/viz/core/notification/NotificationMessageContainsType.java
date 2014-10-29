@@ -34,6 +34,7 @@ import com.raytheon.uf.common.util.IConditionMatcher;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 02, 2013 1841      djohnson     Initial creation
+ * Oct 28, 2014 3769      ccody        Evaluate non-deprecated com.raytheon.uf.common.jms.notification.NotificationMessage
  * 
  * </pre>
  * 
@@ -41,8 +42,9 @@ import com.raytheon.uf.common.util.IConditionMatcher;
  * @version 1.0
  */
 
-public class NotificationMessageContainsType implements
-        IConditionMatcher<NotificationMessage[]> {
+public class NotificationMessageContainsType
+        implements
+        IConditionMatcher<com.raytheon.uf.viz.core.notification.NotificationMessage[]> {
 
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(NotificationMessageContainsType.class);
@@ -64,22 +66,40 @@ public class NotificationMessageContainsType implements
      * {@inheritDoc}
      */
     @Override
-    public boolean matchesCondition(NotificationMessage[] item) {
-        boolean matches = false;
+    public boolean matchesCondition(
+            com.raytheon.uf.viz.core.notification.NotificationMessage[] item) {
         try {
-            for (NotificationMessage msg : item) {
+            for (com.raytheon.uf.viz.core.notification.NotificationMessage msg : item) {
                 Object obj = msg.getMessagePayload();
                 for (Class<?> classType : classTypes) {
                     if (classType.isAssignableFrom(obj.getClass())) {
-                        matches = true;
-                        break;
+                        return (true);
                     }
                 }
             }
         } catch (NotificationException e) {
             statusHandler.error("Error when checking notification", e);
         }
-        return matches;
+        return (false);
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public boolean matchesCondition(
+            com.raytheon.uf.common.jms.notification.NotificationMessage[] item) {
+        try {
+            for (com.raytheon.uf.common.jms.notification.NotificationMessage msg : item) {
+                Object obj = msg.getMessagePayload();
+                for (Class<?> classType : classTypes) {
+                    if (classType.isAssignableFrom(obj.getClass())) {
+                        return (true);
+                    }
+                }
+            }
+        } catch (com.raytheon.uf.common.jms.notification.NotificationException e) {
+            statusHandler.error("Error when checking notification", e);
+        }
+        return (false);
+    }
 }

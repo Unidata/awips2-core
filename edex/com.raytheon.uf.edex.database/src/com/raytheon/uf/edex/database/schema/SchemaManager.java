@@ -73,6 +73,7 @@ import com.raytheon.uf.edex.database.plugin.PluginVersionDao;
  *                                      Replaced use of SerializableManager
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
+ * 10/23/2014   3454       bphillip    Fix table creation error introduced from Hibernate 4 upgrade
  * 
  * </pre>
  * 
@@ -509,7 +510,9 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             if (sql.startsWith("drop sequence ")) {
                 valid = false;
             } else if (sql.startsWith("drop table ")) {
-                sql = sql.replace("drop table ", "drop table if exists ");
+                if(!sql.startsWith("drop table if exists")){
+                    sql = sql.replace("drop table ", "drop table if exists ");
+                }
                 sql = sql.replace(";", " cascade;");
             } else if (sql.startsWith("alter table")) {
                 // dropping the table drops the index

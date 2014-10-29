@@ -27,8 +27,11 @@ import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.SynchronousQueue;
+import java.util.concurrent.ThreadFactory;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.BytesMessage;
@@ -65,6 +68,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                    to complete initialization before connecting to JMS.
  * Oct 15, 2013  2389      rjpeter    Updated synchronization to remove session leaks.
  * Jul 21, 2014  3390      bsteffen   Extracted logic from the NotificationManagerJob
+ * Oct 23, 2014  3390      bsteffen   Fix concurrency of disconnect and name threads.
  * 
  * </pre>
  * 
@@ -156,17 +160,22 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     protected volatile boolean connected = false;
 
-    protected final ExecutorService executorService = Executors
-            .newCachedThreadPool();
+    protected final ThreadPoolExecutor executorService;
 
     private TimerTask task = null;
 
-    /**
-     * @param name
-     */
+
     public JmsNotificationManager(ConnectionFactory connectionFactory) {
+        this(connectionFactory, "JmsNotificationPool");
+    }
+
+    public JmsNotificationManager(ConnectionFactory connectionFactory,
+            String notificationThreadNamePrefix) {
         this.connectionFactory = connectionFactory;
         this.listeners = new HashMap<ListenerKey, NotificationListener>();
+        executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0,
+                TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
+                new NamedThreadFactory(notificationThreadNamePrefix));
     }
 
     /**
@@ -187,8 +196,9 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                 // Create a Connection
                 connection = connectionFactory.createConnection();
                 connection.setExceptionListener(this);
-
                 connection.start();
+                /* Enable thread caching. */
+                executorService.setKeepAliveTime(60, TimeUnit.SECONDS);
                 connected = true;
             } catch (JMSException e) {
                 if (notifyError) {
@@ -238,8 +248,10 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     public synchronized void disconnect(boolean notifyError) {
         if (connection != null) {
             connected = false;
-            for (NotificationListener listener : listeners.values()) {
-                listener.disconnect();
+            synchronized (listeners) {
+                for (NotificationListener listener : listeners.values()) {
+                    listener.disconnect();
+                }
             }
             try {
                 connection.stop();
@@ -260,6 +272,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                                     e);
                 }
             }
+            /* Since threads should not be needed for now, let them finish. */
+            executorService.setKeepAliveTime(0, TimeUnit.SECONDS);
             connection = null;
         }
     }
@@ -674,7 +688,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     }
 
-
+    @Override
     public void close() {
         synchronized (listeners) {
             for (NotificationListener listener : listeners.values()) {
@@ -683,5 +697,34 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             listeners.clear();
         }
         disconnect(true);
+    }
+
+    private static class NamedThreadFactory implements ThreadFactory {
+        private static final AtomicInteger poolNumber = new AtomicInteger(1);
+
+        private final ThreadGroup group;
+
+        private final AtomicInteger threadNumber = new AtomicInteger(1);
+
+        private final String namePrefix;
+
+        public NamedThreadFactory(String namePrefix) {
+            SecurityManager s = System.getSecurityManager();
+            group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
+                    .getThreadGroup();
+            this.namePrefix = namePrefix + "-" + poolNumber.getAndIncrement()
+                    + "-thread-";
+        }
+
+        @Override
+        public Thread newThread(Runnable r) {
+            Thread t = new Thread(group, r, namePrefix
+                    + threadNumber.getAndIncrement(), 0);
+            if (t.isDaemon())
+                t.setDaemon(false);
+            if (t.getPriority() != Thread.NORM_PRIORITY)
+                t.setPriority(Thread.NORM_PRIORITY);
+            return t;
+        }
     }
 }

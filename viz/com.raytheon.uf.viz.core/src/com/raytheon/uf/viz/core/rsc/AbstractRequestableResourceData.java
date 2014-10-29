@@ -89,6 +89,8 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * May 14, 2013  1869     bsteffen    Get dataURI map directly from PDO.
  * Sep  9, 2013  2277     mschenke    Got rid of ScriptCreator references
  * Jun 12, 2014  3265     bsteffen    Harden getLatestPluginDataObjects
+ * Oct 24, 2014  3644     mapeters    Removed dataURI from constraint map
+ *                                    in parseAlertMessage().
  * 
  * </pre>
  * 
@@ -126,6 +128,11 @@ public abstract class AbstractRequestableResourceData extends
                         .loadRecordFromMap(attribs);
                 objectToSend = record;
             } else {
+                /*
+                 * TODO avoid requesting data that will not be used, for example
+                 * when time matching won't allow the frame to be displayed.
+                 */
+                attribs.remove(PluginDataObject.DATAURI_ID);
                 DbQueryRequest request = new DbQueryRequest(
                         RequestConstraint.toConstraintMapping(attribs));
                 request.setLimit(1);
