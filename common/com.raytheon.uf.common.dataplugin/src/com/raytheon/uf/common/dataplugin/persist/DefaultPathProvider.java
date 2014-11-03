@@ -35,7 +35,9 @@ import org.apache.commons.beanutils.PropertyUtils;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -58,6 +60,9 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 04/30/13     1861       bkowal      Added constant for hdf5 file suffix.
  * 10/04/13     2081       mschenke    Removed unused annotation logic
  * 11/08/13     2361       njensen     Use JAXBManager for XML
+ * 11/03/14     3761       bsteffen    Fix rare synchronization bug with
+ *                                     reading localization files.
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -173,9 +178,10 @@ public class DefaultPathProvider implements IHDFFilePathProvider {
         if (!keyMap.containsKey(pluginName)) {
             try {
                 unmarshalPathFile(pluginName);
-            } catch (SerializationException e) {
+            } catch (SerializationException | LocalizationException e) {
                 statusHandler.handle(Priority.ERROR,
-                        "Failed to deserialze path key file", e);
+                        "Failed to deserialze path key file for " + pluginName,
+                        e);
                 return new ArrayList<String>(0);
             }
         }
@@ -190,9 +196,10 @@ public class DefaultPathProvider implements IHDFFilePathProvider {
      * @throws SerializationException
      *             If errors occur while unmarshalling the file due to syntax
      *             errors or this file does not specify path keys
+     * @throws LocalizationException
      */
     private void unmarshalPathFile(String pluginName)
-            throws SerializationException {
+            throws SerializationException, LocalizationException {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext commonStaticBase = pathMgr.getContext(
                 LocalizationContext.LocalizationType.COMMON_STATIC,
@@ -201,17 +208,24 @@ public class DefaultPathProvider implements IHDFFilePathProvider {
                 LocalizationContext.LocalizationType.COMMON_STATIC,
                 LocalizationContext.LocalizationLevel.SITE);
 
-        File basePathFile = pathMgr.getFile(commonStaticBase, "path"
+        LocalizationFile basePathFile = pathMgr.getLocalizationFile(
+                commonStaticBase, "path"
                 + File.separator + pluginName + "PathKeys.xml");
-        File sitePathFile = pathMgr.getFile(commonStaticSite, "path"
+        LocalizationFile sitePathFile = pathMgr.getLocalizationFile(
+                commonStaticSite, "path"
                 + File.separator + pluginName + "PathKeys.xml");
+        LocalizationFile pathFileToUse = null;
+        if (sitePathFile.exists()) {
+            pathFileToUse = sitePathFile;
+        } else if (basePathFile.exists()) {
+            pathFileToUse = basePathFile;
+        }
 
         PersistencePathKeySet pathKeySet = null;
 
-        if (sitePathFile.exists()) {
-            pathKeySet = jaxb.unmarshalFromXmlFile(sitePathFile);
-        } else if (basePathFile.exists()) {
-            pathKeySet = jaxb.unmarshalFromXmlFile(basePathFile);
+        if (pathFileToUse != null) {
+            pathKeySet = (PersistencePathKeySet) jaxb
+                    .unmarshalFromInputStream(pathFileToUse.openInputStream());
         }
 
         List<String> keyNames = null;
