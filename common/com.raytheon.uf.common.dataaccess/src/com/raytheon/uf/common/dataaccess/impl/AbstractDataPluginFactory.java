@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -54,13 +54,15 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jan 17, 2013           bsteffen    Initial creation
  * Feb 14, 2013  1614     bsteffen    Refactor data access framework to use
  *                                    single request.
- * Nov 26, 2013  2537     bsteffen    Fix NPEs for dataTimes and timeRange 
+ * Nov 26, 2013  2537     bsteffen    Fix NPEs for dataTimes and timeRange
  *                                    equests.
  * Jan 14, 2014  2667     mnash       Change getGridData and getGeometryData
  *                                    methods to throw exception by default
  * Jan 21, 2014  2667     bclement    changed timeRange buildDbQueryRequest
  *                                    method to query against valid times
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
+ * Oct 21, 2014  3755     nabowle     Don't require parameters for getAvailable
+ *                                    times/locationNames.
  * 
  * 
  * </pre>
@@ -109,7 +111,6 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     @SuppressWarnings("unchecked")
     public DataTime[] getAvailableTimes(IDataRequest request,
             BinOffset binOffset) throws TimeAgnosticDataException {
-        validateRequest(request);
         TimeQueryRequest timeQueryRequest = this.buildTimeQueryRequest(request);
         if ((binOffset == null) == false) {
             timeQueryRequest.setBinOffset(binOffset);
@@ -178,7 +179,6 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     public String[] getAvailableLocationNames(IDataRequest request,
             String locationColumn) {
-        validateRequest(request);
         DbQueryRequest dbQueryRequest = buildDbQueryRequest(request);
         dbQueryRequest.setDistinct(Boolean.TRUE);
         dbQueryRequest.addRequestField(locationColumn);
@@ -194,7 +194,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Builds a TimeQueryRequest that will be used to retrieve Data Times.
-     * 
+     *
      * @param request
      *            the original grid request
      * @return a TimeQueryRequest to execute
@@ -210,7 +210,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Executes the provided DbQueryRequest and returns a DbQueryResponse
-     * 
+     *
      * @param dbQueryRequest
      *            the DbQueryRequest to execute
      * @param requestString
@@ -235,7 +235,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs a db query request using the provided data times
-     * 
+     *
      * @param request
      *            the original grid request
      * @param dataTimes
@@ -265,7 +265,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs a db request using the provided time range
-     * 
+     *
      * @param request
      *            the original grid request
      * @param timeRange
@@ -290,7 +290,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs the base of a db query request using the supplied grid request
-     * 
+     *
      * @param request
      *            the original grid request
      * @return the base DbQueryRequest

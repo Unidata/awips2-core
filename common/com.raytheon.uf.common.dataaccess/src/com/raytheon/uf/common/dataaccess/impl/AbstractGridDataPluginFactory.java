@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -58,6 +58,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * Jan 14, 2014  2667     mnash       Remove getGeometryData methods
  * Feb 04, 2014  2672     bsteffen    Enable subgridding when envelopes are
  *                                    requested
+ * Oct 29, 2014  3755     nabowle     Ignore results that do not have a grid
+ *                                    geometry.
  * 
  * </pre>
  * 
@@ -70,7 +72,7 @@ public abstract class AbstractGridDataPluginFactory extends
 
     /**
      * Executes the provided DbQueryRequest and returns an array of IGridData
-     * 
+     *
      * @param request
      *            the original grid request
      * @param dbQueryRequest
@@ -97,6 +99,9 @@ public abstract class AbstractGridDataPluginFactory extends
              * Extract the grid geometry.
              */
             GridGeometry2D gridGeometry = getGridGeometry(pdo);
+            if (gridGeometry == null) {
+                continue;
+            }
 
             DataSource dataSource = null;
 
@@ -129,7 +134,7 @@ public abstract class AbstractGridDataPluginFactory extends
      * Generate a SubGridGeometryCalculator appropriate for determining what
      * area of data to request for this dataType. A return type of null can be
      * used to indicate the entire gridGeometry should be used.
-     * 
+     *
      * @param envelope
      *            The requested envelope in WGS84
      * @param gridGeometry
@@ -150,7 +155,7 @@ public abstract class AbstractGridDataPluginFactory extends
 
     /**
      * Request the raw data for a pdo.
-     * 
+     *
      * @param pdo
      *            the pdo with metadata popualted
      * @param subGrid
@@ -185,7 +190,7 @@ public abstract class AbstractGridDataPluginFactory extends
 
     /**
      * Builds an IGridData with the information that is supplied
-     * 
+     *
      * @param request
      *            the original grid request
      * @param pdo
