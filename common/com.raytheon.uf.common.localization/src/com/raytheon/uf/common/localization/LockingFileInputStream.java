@@ -90,11 +90,7 @@ public class LockingFileInputStream extends FileInputStream {
 
     private static Object lockFile(File file) throws FileNotFoundException {
         Object locker = new Object();
-        boolean locked = FileLocker.lock(locker, file, Type.READ);
-        if (!locked) {
-            throw new IllegalStateException("Unable to obtain lock on file: "
-                    + file);
-        }
+        FileLocker.lock(locker, file, Type.READ);
         if (!file.exists()) {
             FileLocker.unlock(locker, file);
             throw new FileNotFoundException("File does not exist: " + file);
