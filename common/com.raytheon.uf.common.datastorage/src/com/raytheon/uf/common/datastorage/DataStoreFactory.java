@@ -43,9 +43,11 @@ import com.raytheon.uf.common.datastorage.records.StringDataRecord;
  * Feb 12, 2007             chammack    Initial Creation.
  * 20070914            379  jkorman     Added createStorageRecord factory methods.
  *                                      Refactored from HDFDataStore.
- * - AWIPS2 Baseline Repository --------
- * Jul 18, 2012        798 jkorman      Extracted methods {@link #createDataSetName}, {@link #createGroupName}, and
- * {@link #isInterpolated} from various classes.
+ * Jul 18, 2012        798  jkorman     Extracted methods {@link #createDataSetName}, {@link #createGroupName}, and
+ *                                       {@link #isInterpolated} from various classes.
+ * Nov 18, 2014    3549     njensen     Support StringDataRecord in both createStorageRecord() methods
+ * 
+ * 
  * </pre>
  * 
  * @author chammack
@@ -95,7 +97,7 @@ public class DataStoreFactory {
     /**
      * Set the underlying factory to be used by the DataStoreFactory
      * 
-     * @param underlyingFactory
+     * @param factory
      *            the underlying factory to use
      */
     public void setUnderlyingFactory(IDataStoreFactory factory) {
@@ -180,6 +182,8 @@ public class DataStoreFactory {
             record = new LongDataRecord(name, group, (long[]) data);
         } else if ((float[].class) == data.getClass()) {
             record = new FloatDataRecord(name, group, (float[]) data);
+        } else if ((String[].class) == data.getClass()) {
+            record = new StringDataRecord(name, group, (String[]) data);
         }
 
         return record;
@@ -335,7 +339,7 @@ public class DataStoreFactory {
      *            interpolated suffix for the group name. If null and
      *            interpolation is requested, a default value
      *            {@link #DEF_DATASET_NAME} will be used.
-     * @param interpolatedLevel
+     * @param interpolated
      *            Create an interpolated group name.
      * @return The generated group name.
      */
