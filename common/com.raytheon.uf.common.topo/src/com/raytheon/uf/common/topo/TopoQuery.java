@@ -93,6 +93,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 19, 2014 3069       randerso    Changed to store math transforms and CRS instead of
  *                                     GridGeometry2D since GeoTools now changes the supplied
  *                                     math transform when creating GridGeometry2D
+ * Oct 27, 2014 3795       randerso    Changed to allow topoLimit to be overridden by system property
  * 
  * </pre>
  * 
@@ -104,8 +105,6 @@ public class TopoQuery {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(TopoQuery.class);
-
-    private static final int TOPO_LIMIT = 4096 * 4096;
 
     private static Map<Integer, TopoQuery> topoQueryMap;
 
@@ -160,6 +159,8 @@ public class TopoQuery {
     private MathTransform worldToCRSDL;
 
     private MathTransform llToWorldPM;
+
+    private int TOPO_LIMIT = Integer.getInteger("topo.size.limit", 4096 * 4096);
 
     private int topoLevel;
 
@@ -650,6 +651,9 @@ public class TopoQuery {
             // try the next interpolation level if it exists
             int level = topoLevel + 1;
             if (level < numLevels) {
+                statusHandler.info("Requested grid size (" + (width * height)
+                        + ") exceeds topo.size.limit (" + TOPO_LIMIT
+                        + "). Switching to interpolation level " + level);
                 return getInstance(hdf5File, level).getHeight(targetGeom);
             } else {
                 throw new IllegalArgumentException(
