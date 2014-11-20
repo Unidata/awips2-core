@@ -41,7 +41,7 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  *                                    groups and datasets
  * Sep 19, 2013  2309     bsteffen    Deprecate retrieve(String, boolean)
  * Nov 14, 2013  2393     bclement    removed interpolation
- * 
+ * Nov 20, 2014  3853     njensen     Deprecated OVERWRITE StoreOp
  * 
  * </pre>
  * 
@@ -55,8 +55,9 @@ public interface IDataStore {
     }
 
     public static enum StoreOp {
-        STORE_ONLY, REPLACE, APPEND, OVERWRITE
-    };
+        STORE_ONLY, REPLACE, APPEND, @Deprecated
+        OVERWRITE
+    }
 
     /**
      * Add a datarecord with optional properties.
@@ -223,13 +224,10 @@ public interface IDataStore {
             throws StorageException, FileNotFoundException;
 
     /**
-     * Deletes the provided list of dates from the provided dataStorePath. The
-     * directory from which to delete the hdf5 files is created by appending the
-     * dataStorePath to the base HDF5 directory path. All files named according
-     * to the provided list of dates is deleted
+     * Deletes the provided list of dates. The directory from which to delete
+     * the hdf5 files is created by appending to the base HDF5 directory path.
+     * All files named according to the provided list of dates is deleted.
      * 
-     * @param dataStorePath
-     *            The path extension to append to the base HDF5 directory path
      * @param datesToDelete
      *            The dates to delete
      * @throws StorageException
@@ -246,7 +244,6 @@ public interface IDataStore {
      * 
      * @param rec
      *            an empty record containing the attributes of the dataset
-     * @return status of the creation
      */
     public void createDataset(IDataRecord rec) throws StorageException,
             FileNotFoundException;

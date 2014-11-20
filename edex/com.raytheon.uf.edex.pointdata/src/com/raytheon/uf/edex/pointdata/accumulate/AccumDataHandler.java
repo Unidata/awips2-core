@@ -37,6 +37,7 @@ import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
 import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.pointdata.ParameterDescription;
 import com.raytheon.uf.common.pointdata.PointDataContainer;
+import com.raytheon.uf.common.pointdata.PointDataDescription;
 import com.raytheon.uf.common.pointdata.PointDataDescription.Type;
 import com.raytheon.uf.common.pointdata.PointDataView;
 import com.raytheon.uf.common.pointdata.accumulate.AccumDataRequestMessage;
@@ -50,7 +51,8 @@ import com.raytheon.uf.edex.pointdata.PointDataPluginDao;
 import com.raytheon.uf.edex.pointdata.PointDataQuery;
 
 /**
- * TODO Add Description
+ * Handler that calculates the accumulation of a parameter at multiple stations
+ * over time
  * 
  * <pre>
  * 
@@ -58,7 +60,9 @@ import com.raytheon.uf.edex.pointdata.PointDataQuery;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 30, 2010            jsanchez     Initial creation
+ * Mar 30, 2010            jsanchez    Initial creation
+ * Nov 20, 2014 3853       njensen     Enforce dimensions of calculated data
+ *                                      match the pointdata description
  * 
  * </pre>
  * 
@@ -136,7 +140,7 @@ public class AccumDataHandler implements
             long curMaxTime = maxValidTime;
             long curMinTime = minValidTime;
             for (int i = 0; i < totalMinutes / incMinutes; i++) {
-                query(stationMap, request, minValidTime - BUFFER, maxValidTime
+                query(stationMap, request, curMinTime - BUFFER, curMaxTime
                         + BUFFER);
                 curMaxTime -= incMinutes * MINUTE;
                 curMinTime -= incMinutes * MINUTE;
@@ -162,7 +166,7 @@ public class AccumDataHandler implements
         requestParams.append(request.getTimeParameter());
         requestParams.append(",");
         requestParams.append(request.getStationParameter());
-        
+
         query.setParameters(requestParams.toString());
 
         query.addParameter(DATATIME,
@@ -226,7 +230,7 @@ public class AccumDataHandler implements
     }
 
     private IDataRecord getData(AccumDataRequestMessage request,
-            Map<String, List<PointDataView>> stationMap) {
+            Map<String, List<PointDataView>> stationMap) throws PluginException {
         // Get data out of the request
         String[] stations = request.getStations();
         long[] times = request.getTimes();
@@ -248,18 +252,34 @@ public class AccumDataHandler implements
         }
 
         Type type = Type.FLOAT;
-        int dimension = 1;
-        for (List<PointDataView> pdvList : stationMap.values()) {
-            if (pdvList != null && !pdvList.isEmpty()) {
-                type = pdvList.get(0).getType(parameter);
-                ParameterDescription description = pdvList.get(0)
-                        .getContainer().getDescription(parameter);
-                dimension = description.getDimensionAsInt();
-                if (dimension <= 0) {
-                    dimension = 1;
-                }
+        int dimension = -1; // -1 indicates not found
+        PointDataPluginDao<?> dao = getDao(request);
+
+        // check for description
+        PointDataDescription desc = dao.getPointDataDescription(null);
+        for (ParameterDescription pd : desc.parameters) {
+            if (pd.getParameterName().equals(parameter)) {
+                type = pd.getType();
+                dimension = pd.getDimensionAsInt();
                 break;
             }
+        }
+
+        // didn't find it in description, check db description
+        if (dimension < 0) {
+            PointDataDbDescription dbDesc = dao.getPointDataDbDescription();
+            for (DbParameterDescription pd : dbDesc.parameters) {
+                if (pd.getParameterName().equals(parameter)) {
+                    type = pd.getType();
+                    dimension = 1;
+                    break;
+                }
+            }
+        }
+
+        // assume one dimension
+        if (dimension <= 0) {
+            dimension = 1;
         }
 
         Object[] data = new Object[size * rows * dimension];

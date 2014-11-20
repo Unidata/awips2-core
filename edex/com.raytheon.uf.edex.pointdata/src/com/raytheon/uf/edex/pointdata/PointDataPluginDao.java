@@ -61,7 +61,8 @@ import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
 import com.raytheon.uf.edex.database.plugin.PluginDao;
 
 /**
- * Provides an extension to PluginDao that provides access for PointData types
+ * Provides an extension to PluginDao that provides access for PointData data
+ * types
  * 
  * <pre>
  * 
@@ -76,7 +77,8 @@ import com.raytheon.uf.edex.database.plugin.PluginDao;
  *                                    reads into its own method so modelsounding
  *                                    dao can override it.
  * Jan 03, 2014  2309     bsteffen    Allow fcstTime in hdf5 path.
- * Jan 09, 2014 1998       clement    fixed NPE in persistToHDF5 when store failed
+ * Jan 09, 2014  1998     bclement    fixed NPE in persistToHDF5 when store failed
+ * Nov 20, 2014  3853     njensen     Improved javadoc of getPointDataDescription()
  * 
  * </pre>
  * 
@@ -121,7 +123,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
             return values;
         }
 
-    };
+    }
 
     private final LinkedBlockingQueue<BeanMap> beanMapCache;
 
@@ -266,6 +268,19 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
         return dbDataDescription;
     }
 
+    /**
+     * Gets the point data description for the dataplugin that is associated
+     * with this DAO.
+     * 
+     * TODO: Contemplate reworking this method or separating into two distinct
+     * methods. Note that the map argument is ignored by almost all
+     * implementations of this method. For the special cases the caller should
+     * perhaps come up with a different solution.
+     * 
+     * @param obj
+     *            a map that is ignored by most implementations
+     * @return the point data description for the dataplugin
+     */
     public PointDataDescription getPointDataDescription(Map<String, Object> obj) {
         if (hdf5DataDescription == null) {
             try {
@@ -493,7 +508,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
                 if (obj.containsKey("dataTime.fcstTime")) {
                     int fcstTime = (Integer) obj.remove("dataTime.fcstTime");
                     dt = new DataTime(d, fcstTime);
-                }else{
+                } else {
                     dt = new DataTime(d);
                 }
                 obj.put("dataTime", dt);
