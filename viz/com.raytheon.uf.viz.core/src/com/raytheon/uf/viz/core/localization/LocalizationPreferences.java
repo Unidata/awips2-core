@@ -64,6 +64,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Aug 02, 2013  2202     bsteffen    Add edex specific connectivity checking.
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 26, 2014  3236     njensen     LocalizationEditor can be text or combo
+ * Dec 01, 2014  3236     njensen     Fix checking alert service
  * 
  * </pre>
  * 
@@ -249,7 +250,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
 
         if (alertEditor != null) {
             Text alert = alertEditor.getTextControl(getFieldEditorParent());
-            ConnectivityManager.checkAlertService(text.getText().trim(),
+            ConnectivityManager.checkAlertService(alert.getText().trim(),
                     new IConnectivityCallback() {
                         @Override
                         public void connectionChecked(ConnectivityResult results) {
