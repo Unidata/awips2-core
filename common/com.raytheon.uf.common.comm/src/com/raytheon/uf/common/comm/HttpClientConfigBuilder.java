@@ -31,6 +31,7 @@ package com.raytheon.uf.common.comm;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 3, 2014  3570      bclement     Initial creation
+ * Nov 15, 2014 3757      dhladky      General HTTPS handler
  * 
  * </pre>
  * 
@@ -47,7 +48,7 @@ public class HttpClientConfigBuilder {
 
     private int maxConnections = 10;
 
-    private IHttpsCredentialsHandler httpsHandler;
+    private IHttpsHandler httpsHandler;
 
     private boolean tcpNoDelay = true;
 
@@ -130,7 +131,7 @@ public class HttpClientConfigBuilder {
      *            the handler to set
      */
     public HttpClientConfigBuilder withHttpsHandler(
-            IHttpsCredentialsHandler handler) {
+            IHttpsHandler handler) {
         this.httpsHandler = handler;
         return this;
     }
@@ -217,7 +218,7 @@ public class HttpClientConfigBuilder {
     /**
      * @return the httpsHandler
      */
-    public IHttpsCredentialsHandler getHttpsHandler() {
+    public IHttpsHandler getHttpsHandler() {
         return httpsHandler;
     }
 
@@ -225,7 +226,7 @@ public class HttpClientConfigBuilder {
      * @param httpsHandler
      *            the httpsHandler to set
      */
-    public void setHttpsHandler(IHttpsCredentialsHandler httpsHandler) {
+    public void setHttpsHandler(IHttpsHandler httpsHandler) {
         this.httpsHandler = httpsHandler;
     }
 

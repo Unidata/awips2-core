@@ -31,6 +31,7 @@ package com.raytheon.uf.common.comm;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 3, 2014  3570       bclement     Initial creation
+ * Nov 15, 2014 3757       dhladky      General HTTPS handler
  * 
  * </pre>
  * 
@@ -47,7 +48,7 @@ public class HttpClientConfig {
 
     private final int maxConnections;
 
-    private final IHttpsCredentialsHandler httpsHandler;
+    private final IHttpsHandler httpsHandler;
 
     private final boolean tcpNoDelay;
 
@@ -66,7 +67,7 @@ public class HttpClientConfig {
      */
     protected HttpClientConfig(boolean handlingGzipResponses,
             int socketTimeout, int connectionTimeout, int maxConnections,
-            IHttpsCredentialsHandler handler, boolean tcpNoDelay,
+            IHttpsHandler handler, boolean tcpNoDelay,
             boolean expectContinueEnabled) {
         /*
          * This is protected to limit required changes if the arguments change
@@ -112,7 +113,7 @@ public class HttpClientConfig {
     /**
      * @return the httpsHandler
      */
-    public IHttpsCredentialsHandler getHttpsHandler() {
+    public IHttpsHandler getHttpsHandler() {
         return httpsHandler;
     }
 

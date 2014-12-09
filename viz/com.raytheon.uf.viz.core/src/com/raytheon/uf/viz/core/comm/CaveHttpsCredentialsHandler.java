@@ -19,11 +19,13 @@
  **/
 package com.raytheon.uf.viz.core.comm;
 
+import java.security.KeyStore;
+
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.uf.common.comm.IHttpsCredentialsHandler;
+import com.raytheon.uf.common.comm.IHttpsHandler;
 import com.raytheon.uf.viz.core.auth.UserController;
 
 /**
@@ -40,6 +42,7 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * Jun 07, 2013    1981    mpduff      Save user's username in UserController.
  * Feb 10, 2014    2704    njensen     Added credentialsFailed()
  * Sep 03, 2014    3570    bclement    added host and port to getCredentials()
+ * Nov 15, 2014    3757    dhladky     Added flag for certificate validation checks
  * 
  * </pre>
  * 
@@ -47,8 +50,10 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * @version 1.0
  */
 
-public class CaveHttpsCredentialsHandler implements IHttpsCredentialsHandler {
+public class CaveHttpsCredentialsHandler implements IHttpsHandler {
 
+    public static final String CERT_HANDLE_FLAG = "https.certificate.check";
+    
     /**
      * {@inheritDoc}
      */
@@ -71,6 +76,20 @@ public class CaveHttpsCredentialsHandler implements IHttpsCredentialsHandler {
         MessageDialog.openError(new Shell(Display.getDefault()),
                 "Login failed",
                 "Invalid username and/or password.  Please try again.");
+    }
+
+    @Override
+    public boolean isValidateCertificates() {
+        return Boolean.getBoolean(CERT_HANDLE_FLAG);
+    }
+
+    @Override
+    public KeyStore getTruststore() {
+        /*
+         * Intentionally not implemented. By returning null, Java will fall back
+         * to the default which contains all the major certificate vendors.
+         */
+        return null;
     }
 
 }

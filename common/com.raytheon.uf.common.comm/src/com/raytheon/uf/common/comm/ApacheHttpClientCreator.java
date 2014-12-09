@@ -21,6 +21,7 @@ package com.raytheon.uf.common.comm;
 
 import java.io.IOException;
 import java.security.KeyManagementException;
+import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
@@ -65,6 +66,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 4, 2014  3570      bclement     Initial creation
+ * Nov 15, 2014 3757      dhladky      Added general certificate checks.
  * 
  * </pre>
  * 
@@ -108,17 +110,37 @@ public class ApacheHttpClientCreator {
             KeyManagementException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
-        sslCtxBuilder.loadTrustMaterial(null, new TrustStrategy() {
-            @Override
-            public boolean isTrusted(X509Certificate[] chain, String authType)
-                    throws CertificateException {
-                /*
-                 * TODO this will need to be implemented if certificate
-                 * authentication is ever required
-                 */
-                return true;
-            }
-        });
+
+        /**
+         * TODO Need to validate whether this method of validation works
+         * correctly. It predicates that if this returns false, Java will
+         * automatically, (According to documentation) then validate using the
+         * loaded truststore(KeyStore) this should allow for "self" signed certs
+         * used by Data Delivery and such.
+         */
+        if (config.getHttpsHandler().isValidateCertificates()) {
+            
+            final KeyStore truststore = config.getHttpsHandler().getTruststore();
+            // Load a local TrustStrategy for first check
+            TrustStrategy trustStrategy = new LocalTrustStrategy(truststore);
+            sslCtxBuilder.loadTrustMaterial(truststore, trustStrategy);
+            
+        } else {
+            /*
+             * No comparison is done, just returns a blind "true" with no loaded
+             * truststore. Original implementation.
+             */
+            sslCtxBuilder.loadTrustMaterial(null, new TrustStrategy() {
+                @Override
+                public boolean isTrusted(X509Certificate[] chain,
+                        String authType) throws CertificateException {
+                    // Do no validation what so ever
+                    statusHandler.handle(Priority.DEBUG,
+                            "Proceeding with No Validation of Certificates!");
+                    return true;
+                }
+            });
+        }
 
         SSLContext sslCtx = sslCtxBuilder.build();
         SSLConnectionSocketFactory ssf = new SSLConnectionSocketFactory(sslCtx,
