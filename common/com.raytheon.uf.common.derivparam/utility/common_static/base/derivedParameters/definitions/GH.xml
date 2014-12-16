@@ -114,7 +114,7 @@
         <ConstantField value="1.0E37"/>
     </Method>
     <Method levels="CloudCeiling" name="Alias">
-        <Field level="Surface" abbreviation="CC"/>
+        <Field abbreviation="CC"/>
     </Method>
     <Method levels="EchoTop" name="Alias">
         <Field level="Surface" abbreviation="MRET"/>
