@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -37,17 +37,20 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
 
 /**
  * HistoryList
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
+ *
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
  *    Sep 12, 2007             chammack    Initial Creation.
- * 
+ *    Jan 06, 2015 3879        nabowle     Use the map layers' names if only map
+ *                                         layers are displayed. If nothing is
+ *                                         displayed, disallow the entry.
+ *
  * </pre>
- * 
+ *
  * @author chammack
  * @version 1
  */
@@ -90,9 +93,12 @@ public class HistoryList {
         }
     }
 
-    public void addBundle(Bundle b) throws VizException {
+    public boolean addBundle(Bundle b) throws VizException {
 
         HistoryEntry he = buildEntry(b);
+        if (he.name == null || "".equals(he.name)) {
+            return false;
+        }
 
         this.backingList.add(0, he);
         List<HistoryEntry> toRemove = new ArrayList<HistoryEntry>(
@@ -119,7 +125,7 @@ public class HistoryList {
         for (IHistoryListener hl : historyListeners) {
             hl.historyListUpdated();
         }
-
+        return true;
     }
 
     public void refreshLatestBundle() throws VizException {
@@ -130,11 +136,15 @@ public class HistoryList {
     }
 
     public void refreshLatestBundle(Bundle b) throws VizException {
+        HistoryEntry first = null;
         if (backingList.size() > 0) {
-            backingList.remove(0);
+            first = backingList.remove(0);
         }
 
-        addBundle(b);
+        if (!addBundle(b) && first != null) {
+            // If the display is empty, put the last bundle back
+            this.backingList.add(0, first);
+        }
     }
 
     private HistoryEntry buildEntry(Bundle b) throws VizException {
@@ -149,48 +159,86 @@ public class HistoryList {
                 first = false;
             }
             sb.append(recursiveBuildName(display.getDescriptor()
-                    .getResourceList(), names));
+                    .getResourceList(), names, null));
         }
         he.name = sb.toString();
+        if (b.getName() == null || "".equals(b.getName())) {
+            b.setName(he.name);
+        }
         he.bundle = b;
         return he;
     }
 
-    private String recursiveBuildName(ResourceList list, Set<String> names) {
-        StringBuffer sb = new StringBuffer();
-        boolean first = true;
+    private String recursiveBuildName(ResourceList list, Set<String> names, StringBuilder ml) {
+        StringBuilder sb = new StringBuilder();
+        StringBuilder mapLayers = ml == null ? new StringBuilder() : ml;
+        String name;
         for (ResourcePair rp : list) {
-            if (rp.getProperties().isMapLayer()
-                    || rp.getProperties().isSystemResource()
+            if (rp.getProperties().isMapLayer()) {
+                buildMapLayersName(names, mapLayers, rp);
+                continue;
+            } else if (rp.getProperties().isSystemResource()
                     || rp.getResource() == null) {
                 continue;
             }
 
-            String name = "";
-            boolean wasFirst = first;
-            if (!first) {
-                name += ", ";
-            } else {
-                first = false;
-            }
-
             if (rp.getResource() instanceof IResourceGroup) {
-                sb.append(recursiveBuildName(
+
+                String sub = recursiveBuildName(
                         ((IResourceGroup) rp.getResource()).getResourceList(),
-                        names));
-            } else {
-                name += rp.getResource().getName();
-                if (names.contains(name) == false) {
-                    names.add(name);
-                    sb.append(name);
-                } else {
-                    if (wasFirst) {
-                        first = true;
+                        names, mapLayers);
+                if (!"".equals(sub)) {
+                    if (sb.length() > 0) {
+                        sb.append(", ");
                     }
+                    sb.append(sub);
+                }
+            } else {
+                name = rp.getResource().getName().trim();
+                if (names.add(name)) {
+                    if (sb.length() > 0) {
+                        sb.append(", ");
+                    }
+                    sb.append(name);
                 }
             }
         }
+        if (sb.length() == 0) {
+            // The only resources are map layers and/or system resources.
+            // May be "" if the user has deselected all map layers.
+            sb = mapLayers;
+        }
         return sb.toString();
+    }
+
+
+    private void buildMapLayersName(Set<String> names, StringBuilder mapLayers,
+            ResourcePair rp) {
+        // If "clear" is clicked, resources will be null so we try to use the
+        // resourceData if possible when resource is null.
+        if (rp.getResource() instanceof IResourceGroup) {
+            recursiveBuildName(
+                    ((IResourceGroup) rp.getResource()).getResourceList(),
+                    names, mapLayers);
+        } else if (rp.getResourceData() instanceof IResourceGroup) {
+            recursiveBuildName(
+                    ((IResourceGroup) rp.getResourceData()).getResourceList(),
+                    names, mapLayers);
+        } else {
+            String name = null;
+            if (rp.getResource() != null) {
+                name = rp.getResource().getName();
+            } else if (rp.getResourceData() != null) {
+                name = rp.getResourceData().toString();
+            }
+
+            if (name != null && names.add(name)) {
+                if (mapLayers.length() > 0) {
+                    mapLayers.append(", ");
+                }
+                mapLayers.append(name.trim());
+            }
+        }
     }
 
     public Bundle getBundle(int idx, boolean moveToTop) throws VizException {
