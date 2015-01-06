@@ -38,6 +38,7 @@ import com.raytheon.uf.common.util.stream.LimitingOutputStream;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 06, 2015 3789       bclement    added getContentType()
  * 
  * </pre>
  * 
@@ -63,7 +64,8 @@ public class ByteLimitingStreamExecutor implements ISerializingStreamExecutor {
 
     @Override
     public void execute(String inputFormat, InputStream in,
-            String outputFormat, OutputStream out) {
+            String outputFormat, OutputStream out)
+            throws UnsupportedFormatException {
         // wrap and pass on
         if (isLimitInput()) {
             in = new LimitingInputStream(in, getByteLimit());
@@ -102,6 +104,19 @@ public class ByteLimitingStreamExecutor implements ISerializingStreamExecutor {
 
     public void setLimitOutput(boolean limitOutput) {
         this.limitOutput = limitOutput;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.edex.requestsrv.serialization.ISerializingStreamExecutor
+     * #getContentType(java.lang.String)
+     */
+    @Override
+    public String getContentType(String format)
+            throws UnsupportedFormatException {
+        return this.executor.getContentType(format);
     }
 
 }

@@ -48,6 +48,7 @@ import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 06, 2015 3789       bclement    added getContentType(), execute throws UnsupportedFormatException
  * 
  * </pre>
  * 
@@ -87,7 +88,8 @@ public class SerializingStreamExecutor extends
      */
     @Override
     public void execute(String inputFormat, InputStream in,
-            String outputFormat, OutputStream out) {
+            String outputFormat, OutputStream out)
+            throws UnsupportedFormatException {
         long startTime = System.currentTimeMillis();
         boolean success = false;
         IServerRequest request = null;
@@ -115,14 +117,15 @@ public class SerializingStreamExecutor extends
             statusHandler.error("Error executing request", t);
         }
 
+        // Get serializer for output format
+        StreamSerializer outputSerializer = getRegisteredObject(outputFormat);
+        if (outputSerializer == null) {
+            String msg = "No serializer registered for format: " + outputFormat;
+            statusHandler.error("Failed to format response object: " + response
+                    + ". " + msg);
+            throw new UnsupportedFormatException(msg);
+        }
         try {
-            // Get serializer for output format
-            StreamSerializer outputSerializer = getRegisteredObject(outputFormat);
-            if (outputSerializer == null) {
-                throw new IllegalArgumentException(
-                        "No serializer registered for format: " + outputFormat);
-            }
-
             // Wrap output stream in counting so we can log size
             CountingOutputStream cout;
             if (out instanceof CountingOutputStream) {
@@ -153,8 +156,43 @@ public class SerializingStreamExecutor extends
     public Object registerMultiple(StreamSerializer serializer, String... keys)
             throws RegistryException {
         for (String key : keys) {
-            super.register(key, serializer);
+            register(key, serializer);
         }
         return new Object();
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.common.util.registry.GenericRegistry#register(java.lang
+     * .Object, java.lang.Object)
+     */
+    @Override
+    public Object register(String t, StreamSerializer s)
+            throws RegistryException {
+        String contentType = s.getContentType();
+        if (!t.equals(contentType)) {
+            super.register(s.getContentType(), s);
+        }
+        return super.register(t, s);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.edex.requestsrv.serialization.ISerializingStreamExecutor
+     * #getContentType(java.lang.String)
+     */
+    @Override
+    public String getContentType(String format)
+            throws UnsupportedFormatException {
+        StreamSerializer seralizer = getRegisteredObject(format);
+        if (seralizer == null) {
+            throw new UnsupportedFormatException(
+                    "No serializer registered for format: " + format);
+        }
+        return seralizer.getContentType();
     }
 }
