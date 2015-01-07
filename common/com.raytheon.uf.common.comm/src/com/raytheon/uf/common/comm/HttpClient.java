@@ -20,13 +20,11 @@
 
 package com.raytheon.uf.common.comm;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -38,6 +36,7 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.AuthState;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.CredentialsProvider;
 import org.apache.http.client.methods.HttpPost;
@@ -92,6 +91,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
  *    Nov 15, 2014  3757         dhladky     General HTTPS handler
+ *    Jan 07, 2014  3952        bclement    reset auth state on authentication failure
  * 
  * </pre>
  * 
@@ -352,7 +352,14 @@ public class HttpClient {
                 if (credentials == null) {
                     return resp;
                 }
-                
+                /*
+                 * the context auth state gets set to FAILED on a 401 which
+                 * causes any future requests to abort prematurely. FIXME this
+                 * means that the context is not threadsafe during
+                 * authentication Omaha #3956
+                 */
+                AuthState targetAuthState = context.getTargetAuthState();
+                targetAuthState.reset();
                 this.setCredentials(host, port, null, credentials[0],
                         credentials[1]);
                 try {
