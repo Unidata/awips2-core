@@ -11,9 +11,8 @@
                              location="classpath:edex-requestsrv.properties"/>
         
         <restConfiguration component="jetty" host="0.0.0.0" port="{{env:HTTP_PORT}}" >
-            <componentProperty key="disableStreamCache" value="{{edex.requestsrv.http.disableStreamCache}}" />
-            <componentProperty key="chunked" value="{{edex.requestsrv.http.chunked}}" />
-            <componentProperty key="matchOnUriPrefix" value="{{edex.requestsrv.http.matchOnUriPrefix}}" />
+            <endpointProperty key="disableStreamCache" value="{{edex.requestsrv.http.disableStreamCache}}" />
+            <endpointProperty key="chunked" value="{{edex.requestsrv.http.chunked}}" />
         </restConfiguration>
 
         <rest path="{{env:HTTP_SERVER_PATH}}">

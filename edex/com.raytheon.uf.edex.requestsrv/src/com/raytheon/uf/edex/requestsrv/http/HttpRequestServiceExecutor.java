@@ -42,6 +42,7 @@ import com.raytheon.uf.edex.requestsrv.serialization.UnsupportedFormatException;
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
  * Jan 05, 2015 3789       bclement    modified for camel rest implementation
+ * Jan 15, 2015 3789       bclement    don't close the request stream
  * 
  * </pre>
  * 
@@ -109,7 +110,6 @@ public class HttpRequestServiceExecutor {
                         .getBytes());
             }
         } finally {
-            requestStream.close();
             if (out != null) {
                 /* flushed needed or HttpGenerator warns of 'extra content' */
                 out.flush();
