@@ -42,6 +42,7 @@ import org.apache.http.util.CharArrayBuffer;
  * Nov 8, 2013  2539       bclement     Initial creation
  * Feb 14, 2014 2756       bclement     moved to common http from ogc common
  * Jan 08, 2015 3789       bclement     refactored to use HeaderValueParser
+ * Jan 16, 2015 3978       bclement     fixed parsing bug
  * 
  * </pre>
  * 
@@ -60,6 +61,7 @@ public class AcceptHeaderParser implements Iterable<AcceptHeaderValue> {
      */
     public AcceptHeaderParser(String input) {
         CharArrayBuffer buffer = new CharArrayBuffer(input.length());
+        buffer.append(input);
         HeaderValueParser parser = new BasicHeaderValueParser();
         HeaderElement[] elements = parser.parseElements(buffer,
                 new ParserCursor(0, buffer.length()));

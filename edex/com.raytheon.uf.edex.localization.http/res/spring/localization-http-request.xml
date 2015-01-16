@@ -1,0 +1,28 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
+    <bean id="localizationHttpSrv" class="com.raytheon.uf.edex.localization.http.LocalizationHttpService">
+        <constructor-arg value="${edex.localization.http.path}" />
+    </bean>
+
+    <bean factory-bean="localizationHttpSrv" factory-method="register">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.localization.http.writer.ZipArchiveResponseWriter" />
+        </constructor-arg>
+    </bean>
+
+    <camelContext id="localization-http-camel" xmlns="http://camel.apache.org/schema/spring"
+        errorHandlerRef="errorHandler">
+
+        <endpoint id="localizationHttpEndpoint"
+            uri="jetty:http://0.0.0.0:${HTTP_PORT}${edex.localization.http.path}?${edex.localization.http.properties}&amp;httpMethodRestrict=GET" />
+
+        <route id="localizationHttpRoute" streamCache="false">
+            <from uri="localizationHttpEndpoint" />
+            <bean ref="localizationHttpSrv" method="handleGet(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})" />
+        </route>
+
+    </camelContext>
+
+</beans>

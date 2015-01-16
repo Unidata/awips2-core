@@ -38,6 +38,7 @@ import javax.servlet.http.HttpServletResponse;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 06, 2015 3789       bclement     Initial creation
+ * Jan 16, 2015 3978       bclement     added allowClose
  * 
  * </pre>
  * 
@@ -48,9 +49,18 @@ public class ProtectiveHttpOutputStream extends OutputStream {
 
     private final HttpServletResponse response;
 
-    private final String acceptEncoding;
+    private String acceptEncoding;
 
     private OutputStream out = null;
+
+    private boolean allowClose = true;
+
+    /**
+     * @param response
+     */
+    public ProtectiveHttpOutputStream(HttpServletResponse response) {
+        this(response, null);
+    }
 
     /**
      * @param response
@@ -60,9 +70,25 @@ public class ProtectiveHttpOutputStream extends OutputStream {
      */
     public ProtectiveHttpOutputStream(HttpServletResponse response,
             String acceptEncoding) {
+        this(response, acceptEncoding, true);
+    }
+
+    /**
+     * @param response
+     * @param acceptEncoding
+     *            HTTP header that specifies which encodings the client can
+     *            accept. Example usage would be for GZIP compression.
+     * @param allowClose
+     *            if false, any attempt to close stream will be ignored until
+     *            {@link #setAllowClose(boolean)} is called
+     */
+    public ProtectiveHttpOutputStream(HttpServletResponse response,
+            String acceptEncoding, boolean allowClose) {
         this.response = response;
         this.acceptEncoding = acceptEncoding;
+        this.allowClose = allowClose;
     }
+
 
     /**
      * Ensures that the output stream from the response is only retrieved once
@@ -125,7 +151,9 @@ public class ProtectiveHttpOutputStream extends OutputStream {
      */
     @Override
     public void close() throws IOException {
-        getOutputStream().close();
+        if (allowClose) {
+            getOutputStream().close();
+        }
     }
 
     /**
@@ -143,10 +171,33 @@ public class ProtectiveHttpOutputStream extends OutputStream {
     }
 
     /**
+     * @param acceptEncoding
+     *            the acceptEncoding to set
+     */
+    public void setAcceptEncoding(String acceptEncoding) {
+        this.acceptEncoding = acceptEncoding;
+    }
+
+    /**
      * @return the acceptEncoding
      */
     public String getAcceptEncoding() {
         return acceptEncoding;
+    }
+
+    /**
+     * @return the allowClose
+     */
+    public boolean isAllowClose() {
+        return allowClose;
+    }
+
+    /**
+     * @param allowClose
+     *            the allowClose to set
+     */
+    public void setAllowClose(boolean allowClose) {
+        this.allowClose = allowClose;
     }
 
 }
