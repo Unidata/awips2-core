@@ -20,8 +20,9 @@
 package com.raytheon.uf.viz.core.rsc.capabilities;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.Iterator;
+import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -51,8 +52,10 @@ import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 2, 2009             chammack    Initial creation
- * Jun 7, 2013  2074       mnash       Fix for null capabilities trying to be added
+ * Feb 02, 2009            chammack    Initial creation
+ * Jun 07, 2013  2074      mnash       Fix for null capabilities trying to be added
+ * Jan 16, 2015  4004      njensen     backingMap is now ConcurrentHashMap
+ * 
  * 
  * </pre>
  * 
@@ -65,13 +68,13 @@ public class Capabilities implements Iterable<AbstractCapability> {
 
     private static final long serialVersionUID = 1L;
 
-    protected HashMap<Class<? extends AbstractCapability>, AbstractCapability> backingMap;
+    protected Map<Class<? extends AbstractCapability>, AbstractCapability> backingMap;
 
     /**
      * Constructor
      */
     public Capabilities() {
-        this.backingMap = new HashMap<Class<? extends AbstractCapability>, AbstractCapability>();
+        this.backingMap = new ConcurrentHashMap<Class<? extends AbstractCapability>, AbstractCapability>();
     }
 
     /**
@@ -209,6 +212,7 @@ public class Capabilities implements Iterable<AbstractCapability> {
         return backingMap.containsKey(clz);
     }
 
+    @Override
     public Capabilities clone() {
         Capabilities cap = new Capabilities();
         Iterator<AbstractCapability> iter = iterator();
