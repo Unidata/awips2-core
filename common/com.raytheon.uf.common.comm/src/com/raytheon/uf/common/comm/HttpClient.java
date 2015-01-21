@@ -35,6 +35,7 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthProtocolState;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.AuthState;
 import org.apache.http.auth.UsernamePasswordCredentials;
@@ -137,7 +138,7 @@ public class HttpClient {
     private boolean previousConnectionFailed;
 
     private static volatile HttpClient instance;
-    
+
     /**
      * Number of times to retry in the event of a connection exception. Default
      * is 1.
@@ -356,10 +357,12 @@ public class HttpClient {
                  * the context auth state gets set to FAILED on a 401 which
                  * causes any future requests to abort prematurely. FIXME this
                  * means that the context is not threadsafe during
-                 * authentication Omaha #3956
+                 * authentication Omaha #3956. At present it's safe since we
+                 * know our first connection is single-threaded, but it could be
+                 * dangerous in the future.
                  */
                 AuthState targetAuthState = context.getTargetAuthState();
-                targetAuthState.reset();
+                targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
                 this.setCredentials(host, port, null, credentials[0],
                         credentials[1]);
                 try {
