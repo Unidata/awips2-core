@@ -40,6 +40,7 @@ import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -944,7 +945,8 @@ public class HttpClient {
         if (credentialsProvider == null) {
             credentialsProvider = new BasicCredentialsProvider();
         }
-        credentialsProvider.setCredentials(new AuthScope(host, port),
+        credentialsProvider.setCredentials(new AuthScope(host, port,
+                AuthScope.ANY_REALM, AuthSchemes.BASIC),
                 new UsernamePasswordCredentials(username, password));
 
         // ensure authentication is cached
