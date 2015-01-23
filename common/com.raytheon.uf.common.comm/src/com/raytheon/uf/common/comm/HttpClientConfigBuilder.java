@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.comm;
 
-
 /**
  * Builder pattern implementation for creating immutable HTTP configuration
  * objects
@@ -30,8 +29,9 @@ package com.raytheon.uf.common.comm;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 3, 2014  3570      bclement     Initial creation
- * Nov 15, 2014 3757      dhladky      General HTTPS handler
+ * Sep 03, 2014  3570      bclement     Initial creation
+ * Nov 15, 2014  3757      dhladky      General HTTPS handler
+ * Jan 26, 2015  3952      njensen      gzip handled by default
  * 
  * </pre>
  * 
@@ -39,8 +39,6 @@ package com.raytheon.uf.common.comm;
  * @version 1.0
  */
 public class HttpClientConfigBuilder {
-
-    private boolean handlingGzipResponses = false;
 
     private int socketTimeout = 330000;
 
@@ -63,12 +61,10 @@ public class HttpClientConfigBuilder {
     /**
      * Creates a builder using settings in an existing config
      * 
-     * @param props
-     * @return
+     * @param config
      */
     public HttpClientConfigBuilder(HttpClientConfig config) {
         this.setConnectionTimeout(config.getConnectionTimeout());
-        this.setHandlingGzipResponses(config.isHandlingGzipResponses());
         this.setHttpsHandler(config.getHttpsHandler());
         this.setMaxConnections(config.getMaxConnections());
         this.setSocketTimeout(config.getSocketTimeout());
@@ -84,19 +80,8 @@ public class HttpClientConfigBuilder {
      * @return immutable configuration object
      */
     public HttpClientConfig build() {
-        return new HttpClientConfig(handlingGzipResponses, socketTimeout,
-                connectionTimeout, maxConnections, httpsHandler, tcpNoDelay,
-                expectContinueEnabled);
-    }
-
-    /**
-     * @param handlingGzipResponses
-     *            the handlingGzipResponses to set
-     */
-    public HttpClientConfigBuilder withHandlingGzipResponses(
-            boolean handlingGzipResponses) {
-        this.handlingGzipResponses = handlingGzipResponses;
-        return this;
+        return new HttpClientConfig(socketTimeout, connectionTimeout,
+                maxConnections, httpsHandler, tcpNoDelay, expectContinueEnabled);
     }
 
     /**
@@ -130,8 +115,7 @@ public class HttpClientConfigBuilder {
      * @param handler
      *            the handler to set
      */
-    public HttpClientConfigBuilder withHttpsHandler(
-            IHttpsHandler handler) {
+    public HttpClientConfigBuilder withHttpsHandler(IHttpsHandler handler) {
         this.httpsHandler = handler;
         return this;
     }
@@ -153,21 +137,6 @@ public class HttpClientConfigBuilder {
             boolean expectContinueEnabled) {
         this.expectContinueEnabled = expectContinueEnabled;
         return this;
-    }
-
-    /**
-     * @return the handlingGzipResponses
-     */
-    public boolean isHandlingGzipResponses() {
-        return handlingGzipResponses;
-    }
-
-    /**
-     * @param handlingGzipResponses
-     *            the handlingGzipResponses to set
-     */
-    public void setHandlingGzipResponses(boolean handlingGzipResponses) {
-        this.handlingGzipResponses = handlingGzipResponses;
     }
 
     /**

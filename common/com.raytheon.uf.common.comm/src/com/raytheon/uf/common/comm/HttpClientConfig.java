@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.comm;
 
-
 /**
  * Configuration holder used to construct HTTP client instances. Uses builder
  * pattern with {@link HttpClientConfigBuilder}
@@ -32,6 +31,7 @@ package com.raytheon.uf.common.comm;
  * ------------ ---------- ----------- --------------------------
  * Sep 3, 2014  3570       bclement     Initial creation
  * Nov 15, 2014 3757       dhladky      General HTTPS handler
+ * Jan 26, 2015 3952       njensen      gzip handled by default
  * 
  * </pre>
  * 
@@ -39,8 +39,6 @@ package com.raytheon.uf.common.comm;
  * @version 1.0
  */
 public class HttpClientConfig {
-
-    private final boolean handlingGzipResponses;
 
     private final int socketTimeout;
 
@@ -57,36 +55,25 @@ public class HttpClientConfig {
     /**
      * Protected constructor used by builder.
      * 
-     * @param gzipRequests
-     * @param handlingGzipResponses
      * @param socketTimeout
      * @param connectionTimeout
      * @param maxConnections
      * @param handler
      * @param httpsConfiguration
      */
-    protected HttpClientConfig(boolean handlingGzipResponses,
-            int socketTimeout, int connectionTimeout, int maxConnections,
-            IHttpsHandler handler, boolean tcpNoDelay,
+    protected HttpClientConfig(int socketTimeout, int connectionTimeout,
+            int maxConnections, IHttpsHandler handler, boolean tcpNoDelay,
             boolean expectContinueEnabled) {
         /*
          * This is protected to limit required changes if the arguments change
          * in the future. Callers should use the builder to construct configs.
          */
-        this.handlingGzipResponses = handlingGzipResponses;
         this.socketTimeout = socketTimeout;
         this.connectionTimeout = connectionTimeout;
         this.maxConnections = maxConnections;
         this.httpsHandler = handler;
         this.tcpNoDelay = tcpNoDelay;
         this.expectContinueEnabled = expectContinueEnabled;
-    }
-
-    /**
-     * @return the handlingGzipResponses
-     */
-    public boolean isHandlingGzipResponses() {
-        return handlingGzipResponses;
     }
 
     /**

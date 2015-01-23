@@ -30,8 +30,6 @@ import java.security.cert.X509Certificate;
 import javax.net.ssl.SSLContext;
 
 import org.apache.http.Header;
-import org.apache.http.HeaderElement;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -65,8 +63,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 4, 2014  3570      bclement     Initial creation
- * Nov 15, 2014 3757      dhladky      Added general certificate checks.
+ * Sep 04, 2014  3570      bclement     Initial creation
+ * Nov 15, 2014  3757      dhladky      Added general certificate checks.
+ * Jan 22, 2015  3952      njensen      Removed gzip handling as apache http client has it built-in
  * 
  * </pre>
  * 
@@ -105,9 +104,9 @@ public class ApacheHttpClientCreator {
      * @throws KeyStoreException
      * @throws KeyManagementException
      */
-    public static CloseableHttpClient createSslClient(HttpClientConfig config, NetworkStatistics stats)
-            throws NoSuchAlgorithmException, KeyStoreException,
-            KeyManagementException {
+    public static CloseableHttpClient createSslClient(HttpClientConfig config,
+            NetworkStatistics stats) throws NoSuchAlgorithmException,
+            KeyStoreException, KeyManagementException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
 
@@ -119,16 +118,17 @@ public class ApacheHttpClientCreator {
          * used by Data Delivery and such.
          */
         if (config.getHttpsHandler().isValidateCertificates()) {
-            
-            final KeyStore truststore = config.getHttpsHandler().getTruststore();
+
+            final KeyStore truststore = config.getHttpsHandler()
+                    .getTruststore();
             // Load a local TrustStrategy for first check
             TrustStrategy trustStrategy = new LocalTrustStrategy(truststore);
             sslCtxBuilder.loadTrustMaterial(truststore, trustStrategy);
-            
+
             // Validate Certificates
             statusHandler.handle(Priority.DEBUG,
                     "Proceeding with validation of certificates.");
-            
+
         } else {
             /*
              * No comparison is done, just returns a blind "true" with no loaded
@@ -142,7 +142,7 @@ public class ApacheHttpClientCreator {
                     return true;
                 }
             });
-            
+
             // Do no validation what so ever
             statusHandler.handle(Priority.DEBUG,
                     "Proceeding with no validation of certificates.");
@@ -187,26 +187,9 @@ public class ApacheHttpClientCreator {
         connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
         clientBuilder.setConnectionManager(connectionManager);
 
-        configureGzip(clientBuilder, config);
+        // build() call automatically adds gzip interceptors
 
         return clientBuilder.build();
-    }
-
-    /**
-     * Adds GZIP (compression) interceptors to client builder
-     * 
-     * @param clientBuilder
-     * @param config
-     */
-    private static void configureGzip(HttpClientBuilder clientBuilder,
-            HttpClientConfig config) {
-        if (config.isHandlingGzipResponses()) {
-            // Add gzip compression handlers
-            // advertise we accept gzip
-            clientBuilder.addInterceptorLast(new GzipRequestInterceptor());
-            // handle gzip contents
-            clientBuilder.addInterceptorLast(new GzipResponseInterceptor());
-        }
     }
 
     /**
@@ -278,7 +261,6 @@ public class ApacheHttpClientCreator {
      */
     public static CloseableHttpClient createClient(HttpClientConfig config,
             NetworkStatistics stats) {
-
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
         /*
          * we don't support cookies at this time, so don't waste any time in the
@@ -303,48 +285,9 @@ public class ApacheHttpClientCreator {
         connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
         clientBuilder.setConnectionManager(connectionManager);
 
-        configureGzip(clientBuilder, config);
+        // build() call automatically adds gzip interceptors
 
         return clientBuilder.build();
-    }
-
-    /**
-     * Adds Accept-Encoding: gzip to every outgoing request
-     */
-    private static class GzipRequestInterceptor implements
-            HttpRequestInterceptor {
-
-        @Override
-        public void process(HttpRequest request, HttpContext context)
-                throws HttpException, IOException {
-            if (!request.containsHeader("Accept-Encoding")) {
-                request.addHeader("Accept-Encoding", "gzip");
-            }
-        }
-    }
-
-    /**
-     * Decompresses any responses that arrive with Content-Encoding: gzip
-     */
-    private static class GzipResponseInterceptor implements
-            HttpResponseInterceptor {
-
-        @Override
-        public void process(HttpResponse response, HttpContext context)
-                throws HttpException, IOException {
-            HttpEntity entity = response.getEntity();
-            Header ceheader = entity.getContentEncoding();
-            if (ceheader != null) {
-                HeaderElement[] codecs = ceheader.getElements();
-                for (HeaderElement codec : codecs) {
-                    if (codec.getName().equalsIgnoreCase("gzip")) {
-                        response.setEntity(new SafeGzipDecompressingEntity(
-                                response.getEntity()));
-                        return;
-                    }
-                }
-            }
-        }
     }
 
 }
