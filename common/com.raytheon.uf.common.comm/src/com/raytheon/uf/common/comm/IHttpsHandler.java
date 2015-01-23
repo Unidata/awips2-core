@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.comm;
 
+import java.security.KeyStore;
+
 /**
  * Interface for collecting https Credentials.
  * 
@@ -31,6 +33,7 @@ package com.raytheon.uf.common.comm;
  * Mar 04, 2013    1786     mpduff      Initial creation
  * Feb 10, 2014    2704     njensen     Added credentialsFailed()
  * Sep 3, 2014     3570     bclement    added host and port to getCredentials()
+ * Nov 15, 2014    3757     dhladky     Consolidated the Credentials handler to be a general HTTPS handler.
  * 
  * 
  * </pre>
@@ -39,7 +42,7 @@ package com.raytheon.uf.common.comm;
  * @version 1.0
  */
 
-public interface IHttpsCredentialsHandler {
+public interface IHttpsHandler {
 
     /**
      * Get the https credentials.
@@ -53,6 +56,21 @@ public interface IHttpsCredentialsHandler {
      * @return String Array, username and password
      */
     String[] getCredentials(String host, int port, String authValue);
-
+        
+    /**
+     * Credential Validation has failed
+     */
     void credentialsFailed();
+    
+    /**
+     *
+     * Get the trustore used to validate certificates
+     * @param truststore
+     */
+    KeyStore getTruststore();
+    
+    /**
+     * Whether or not you care to validate certificates
+     */
+    boolean isValidateCertificates();
 }

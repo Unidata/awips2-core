@@ -20,11 +20,13 @@
 
 package com.raytheon.uf.common.comm;
 
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -89,6 +91,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Aug 15, 2014  3524        njensen      Pass auth credentials on every https request
  *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
+ *    Nov 15, 2014  3757         dhladky     General HTTPS handler
  * 
  * </pre>
  * 
@@ -327,7 +330,7 @@ public class HttpClient {
             CommunicationException {
         HttpResponse resp = null;
         if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
-            IHttpsCredentialsHandler handler = config.getHttpsHandler();
+            IHttpsHandler handler = config.getHttpsHandler();
             org.apache.http.client.HttpClient client = getHttpsInstance();
             resp = client.execute(put, context);
 

@@ -74,6 +74,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 21, 2014 2768        bclement    added notification in save() and delete()
  * Jul 24, 2014 3378        bclement    added createCache()
  * Jul 25, 2014 3378        bclement    removed uf prefix from system property
+ * Nov 13, 2014 4953        randerso    Changed delete() to also remove .md5 file
  * </pre>
  * 
  * @author jelkins
@@ -371,6 +372,14 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         if (localFile.exists()) {
             deleted = localFile.delete();
         }
+
+        File md5File = new File(localFile.getAbsolutePath() + ".md5");
+        if (md5File.exists()) {
+            if (!md5File.delete()) {
+                handler.error("Unable to delete: " + md5File.getAbsolutePath());
+            }
+        }
+
         if (deleted) {
             long timeStamp = System.currentTimeMillis();
             file.setIsAvailableOnServer(false);
@@ -397,8 +406,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         String contextName = null;
         if (level == LocalizationLevel.BASE) {
             // nothing to add
-        } else if (level == LocalizationLevel.SITE
-                || level == LocalizationLevel.CONFIGURED) {
+        } else if ((level == LocalizationLevel.SITE)
+                || (level == LocalizationLevel.CONFIGURED)) {
             // fill in site name
             contextName = getSiteName();
         } else if (level == LocalizationLevel.REGION) {
