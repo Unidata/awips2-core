@@ -125,6 +125,10 @@ public class ApacheHttpClientCreator {
             TrustStrategy trustStrategy = new LocalTrustStrategy(truststore);
             sslCtxBuilder.loadTrustMaterial(truststore, trustStrategy);
             
+            // Validate Certificates
+            statusHandler.handle(Priority.DEBUG,
+                    "Proceeding with validation of certificates.");
+            
         } else {
             /*
              * No comparison is done, just returns a blind "true" with no loaded
@@ -134,12 +138,14 @@ public class ApacheHttpClientCreator {
                 @Override
                 public boolean isTrusted(X509Certificate[] chain,
                         String authType) throws CertificateException {
-                    // Do no validation what so ever
-                    statusHandler.handle(Priority.DEBUG,
-                            "Proceeding with No Validation of Certificates!");
+
                     return true;
                 }
             });
+            
+            // Do no validation what so ever
+            statusHandler.handle(Priority.DEBUG,
+                    "Proceeding with no validation of certificates.");
         }
 
         SSLContext sslCtx = sslCtxBuilder.build();

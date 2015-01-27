@@ -20,13 +20,11 @@
 
 package com.raytheon.uf.common.comm;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,10 +34,13 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -48,6 +49,8 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -88,10 +91,12 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Feb 17, 2014  2756        bclement    added content type to response object
  *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
  *    6/18/2014     1712        bphillip    Updated Proxy configuration
- *    Aug 15, 2014  3524        njensen      Pass auth credentials on every https request
+ *    Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
  *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
- *    Nov 15, 2014  3757         dhladky     General HTTPS handler
+ *    Nov 15, 2014  3757        dhladky     General HTTPS handler
+ *    Jan 07, 2014  3952        bclement    reset auth state on authentication failure
+ *    Jan 21, 2014  3952        njensen     New context instance for each request
  * 
  * </pre>
  * 
@@ -137,7 +142,7 @@ public class HttpClient {
     private boolean previousConnectionFailed;
 
     private static volatile HttpClient instance;
-    
+
     /**
      * Number of times to retry in the event of a connection exception. Default
      * is 1.
@@ -158,9 +163,21 @@ public class HttpClient {
 
     private volatile CloseableHttpClient client;
 
-    private final HttpClientContext context = HttpClientContext.create();
-
     private final HttpClientConfig config;
+
+    /**
+     * The authCache is for https requests only and ensures that the client
+     * application does not send over an extra http request before every https
+     * request.
+     */
+    private AuthCache authCache;
+
+    /**
+     * The credentials provider is for https requests only and ensures that a
+     * user does not have to enter username/password authentication more than
+     * once per application startup.
+     */
+    private CredentialsProvider credentialsProvider;
 
     /**
      * Public constructor.
@@ -332,6 +349,7 @@ public class HttpClient {
         if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
             IHttpsHandler handler = config.getHttpsHandler();
             org.apache.http.client.HttpClient client = getHttpsInstance();
+            HttpClientContext context = getContext();
             resp = client.execute(put, context);
 
             // Check for not authorized, 401
@@ -352,9 +370,9 @@ public class HttpClient {
                 if (credentials == null) {
                     return resp;
                 }
-                
-                this.setCredentials(host, port, null, credentials[0],
+                this.setupCredentials(host, port, credentials[0],
                         credentials[1]);
+                context = getContext();
                 try {
                     resp = client.execute(put, context);
                 } catch (Exception e) {
@@ -465,11 +483,13 @@ public class HttpClient {
 
             if (resp.getStatusLine().getStatusCode() != SUCCESS_CODE
                     && handlerCallback instanceof DynamicSerializeStreamHandler) {
-                // the status code can be returned and/or processed
-                // depending on which post method and handlerCallback is used,
-                // so we only want to error off here if we're using a
-                // DynamicSerializeStreamHandler because deserializing will fail
-                // badly
+                /*
+                 * the status code can be returned and/or processed depending on
+                 * which post method and handlerCallback is used, so we only
+                 * want to error off here if we're using a
+                 * DynamicSerializeStreamHandler because deserializing will fail
+                 * badly
+                 */
                 int statusCode = resp.getStatusLine().getStatusCode();
                 DefaultInternalStreamHandler errorHandler = new DefaultInternalStreamHandler();
                 String exceptionMsg = null;
@@ -909,33 +929,61 @@ public class HttpClient {
     }
 
     /**
-     * Set the credentials for SSL.
+     * Setup the credentials for SSL.
      * 
      * @param host
      *            The host
      * @param port
      *            The port
-     * @param realm
-     *            The realm
      * @param username
      *            The username
      * @param password
      *            The password
      */
-    public void setCredentials(String host, int port, String realm,
+    public synchronized void setupCredentials(String host, int port,
             String username, String password) {
-        CredentialsProvider cp = context.getCredentialsProvider();
-        if (cp == null) {
-            synchronized (context) {
-                cp = context.getCredentialsProvider();
-                if (cp == null) {
-                    cp = new BasicCredentialsProvider();
-                    context.setCredentialsProvider(cp);
-                }
-            }
+        if (credentialsProvider == null) {
+            credentialsProvider = new BasicCredentialsProvider();
         }
-        cp.setCredentials(new AuthScope(host, port),
+        credentialsProvider.setCredentials(new AuthScope(host, port,
+                AuthScope.ANY_REALM, AuthSchemes.BASIC),
                 new UsernamePasswordCredentials(username, password));
+
+        // ensure authentication is cached
+        if (authCache == null) {
+            authCache = new BasicAuthCache();
+        }
+
+        // since we're using Basic authentication, force it to https
+        HttpHost hostObj = new HttpHost(host, port, HTTPS);
+        if (authCache.get(hostObj) == null) {
+            authCache.put(hostObj, new BasicScheme());
+        }
+    }
+
+    /**
+     * Gets an HttpContext to use for a request.
+     * 
+     * @return
+     */
+    private HttpClientContext getContext() {
+        HttpClientContext context = HttpClientContext.create();
+        /*
+         * TODO Ideally if we set up the HttpClientBuilder correctly then
+         * contexts would be automatically created with the credentials provider
+         * and authentication cache setup correctly.
+         * 
+         * Also we could potentially reuse contexts instead of creating new ones
+         * every time, but a context is not thread safe so that would have to be
+         * taken into account.
+         */
+        if (credentialsProvider != null) {
+            context.setCredentialsProvider(credentialsProvider);
+        }
+        if (authCache != null) {
+            context.setAuthCache(authCache);
+        }
+        return context;
     }
 
     /**

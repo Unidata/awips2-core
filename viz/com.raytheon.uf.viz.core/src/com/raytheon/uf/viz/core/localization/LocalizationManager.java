@@ -29,6 +29,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -47,8 +48,10 @@ import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
+import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
@@ -70,6 +73,7 @@ import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.VizServers;
@@ -79,7 +83,8 @@ import com.raytheon.uf.viz.core.requests.PrivilegedRequestFactory;
 import com.raytheon.uf.viz.core.requests.ThriftClient;
 
 /**
- * Manages Localization processes
+ * Manages the localization settings of the viz process and handles the
+ * communication with the localization service for downloading/uploading files.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -99,6 +104,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Feb 04, 2014 2704       njensen     Allow setting server without saving
  * Feb 06, 2014 2761       mnash       Add region localization level
  * Jun 19, 2014 3301       njensen     Acquire lock inside loop of retrieveFiles()
+ * Jan 12, 2014 3993       njensen     Added checkPreinstalled()
  * 
  * </pre>
  * 
@@ -106,12 +112,19 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * @version 1.0
  */
 public class LocalizationManager implements IPropertyChangeListener {
+
     private static transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationManager.class, "CAVE");
 
     public static final String USER_CONTEXT = LocalizationConstants.P_LOCALIZATION_USER_NAME;
 
     public static final String SITE_CONTEXT = LocalizationConstants.P_LOCALIZATION_SITE_NAME;
+
+    private static final String PREINSTALLED_DIR = "utility"
+            + IPathManager.SEPARATOR
+            + LocalizationType.COMMON_STATIC.toString().toLowerCase()
+            + IPathManager.SEPARATOR
+            + LocalizationLevel.BASE.toString().toLowerCase();
 
     /** The singleton instance */
     private static LocalizationManager instance;
@@ -592,11 +605,19 @@ public class LocalizationManager implements IPropertyChangeListener {
     protected void retrieve(LocalizationFile file)
             throws LocalizationOpFailedException {
         if (file.isDirectory()) {
-            retrieve(file.getContext(), file.getName());
+            retrieveDir(file.getContext(), file.getName());
         } else {
-            if (needDownload(
-                    buildFileLocation(file.getContext(), file.getName(), false),
-                    file.getTimeStamp(), file.getCheckSum())) {
+            File localFile = buildFileLocation(file.getContext(),
+                    file.getName(), false);
+            checkPreinstalled(file.getContext(), file.getName(), localFile);
+            /*
+             * We don't have a READ lock for needDownload() so the checksum can
+             * potentially be messed up if another process or thread modifies at
+             * this exact moment. However, this scenario is negligible since
+             * it's very rare and needDownload() returns true if anything goes
+             * wrong.
+             */
+            if (needDownload(localFile, file.getTimeStamp(), file.getCheckSum())) {
                 retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
                         file.getContext(), file.getName()) },
                         new Date[] { file.getTimeStamp() });
@@ -612,7 +633,7 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param fileName
      * @throws LocalizationOpFailedException
      */
-    private void retrieve(LocalizationContext context, String fileName)
+    private void retrieveDir(LocalizationContext context, String fileName)
             throws LocalizationOpFailedException {
         List<ListResponseEntry[]> entriesList = getListResponseEntry(
                 new LocalizationContext[] { context }, fileName, true, false);
@@ -634,9 +655,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                                 context, entry.getFileName());
                         commands.add(getCommand);
                         dates.add(entry.getDate());
-
                     }
-
                 } else {
                     if (file != null) {
                         file.mkdirs();
@@ -699,6 +718,57 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     /**
+     * If the userDir does not contain the specified localFile, this method
+     * checks the viz install to see if the file is present in an installed
+     * bundle. If so, it copies the file from the installed bundle to the
+     * userDir. This speeds up performance with a fresh install by getting the
+     * files locally where available instead of downloading them from the
+     * server.
+     * 
+     * The checksum will still be checked by the needDownload() method, so this
+     * should be called before needDownload(). If by chance the local viz
+     * install is very out of date, this will be copying files into the userDir
+     * that will then be immediately replaced when needDownload() recognizes the
+     * checksum is incorrect.
+     */
+    private void checkPreinstalled(LocalizationContext context,
+            String filename, File localFile) {
+        if (LocalizationLevel.BASE.equals(context.getLocalizationLevel())
+                && LocalizationType.COMMON_STATIC.equals(context
+                        .getLocalizationType()) && !localFile.exists()) {
+            Collection<String> bundles = BundleScanner
+                    .getListOfBundles(PREINSTALLED_DIR);
+            for (String b : bundles) {
+                File foundFile = BundleScanner.searchInBundle(b,
+                        PREINSTALLED_DIR, filename);
+                if (foundFile != null && foundFile.exists()) {
+                    try {
+                        if (FileLocker.lock(this, localFile, Type.WRITE)) {
+                            /*
+                             * Locking the file will cause mkdirs() to be called
+                             * on the parent dir. We skip checking the checksum
+                             * because needDownload() is called after
+                             * checkPreinstalled() and will verify the checksum.
+                             */
+                            FileUtil.copyFile(foundFile, localFile);
+                        }
+                    } catch (IOException e) {
+                        /*
+                         * log as debug, if this fails it will just pull the
+                         * file from the server
+                         */
+                        statusHandler.handle(Priority.DEBUG, "Error copying "
+                                + filename + " to " + localFile.getPath(), e);
+                    } finally {
+                        FileLocker.unlock(this, localFile);
+                    }
+                    break; // file found, break out of for loop
+                }
+            }
+        }
+    }
+
+    /**
      * Need to download files?
      * 
      * @param context
@@ -710,13 +780,22 @@ public class LocalizationManager implements IPropertyChangeListener {
         String fullFileName = listResponseEntry.getFileName();
 
         File file = buildFileLocation(context, fullFileName, false);
+        checkPreinstalled(context, fullFileName, file);
+        /*
+         * We don't have a READ lock for needDownload() so the checksum can
+         * potentially be messed up if another process or thread modifies at
+         * this exact moment. However, this scenario is negligible since it's
+         * very rare and needDownload() returns true if anything goes wrong.
+         */
         return needDownload(file, listResponseEntry.getDate(),
                 listResponseEntry.getChecksum());
     }
 
     /**
      * Checks if the file needs downloaded based on if it exists locally, the
-     * last modified timestamp, and the checksum
+     * last modified timestamp, and the checksum. This method does no locking
+     * and if reading the file for the checksum goes wrong in any way, it will
+     * return true.
      * 
      * @param file
      * @param timeStamp
@@ -731,16 +810,7 @@ public class LocalizationManager implements IPropertyChangeListener {
         if (!file.exists()) {
             return true;
         } else {
-
-            // if (file.length() ==
-            // HierarchicalPreferenceStore.EMPTY_CONFIGURATION
-            // .getBytes().length) {
-            // return true;
-            // }
-
             // Check modification dates
-            // if local filesystem version is newer, do not download
-            // except for plugin or configuration data
             Date d = new Date(file.lastModified());
             if (!d.equals(timeStamp) || file.lastModified() == 0) {
                 // Check the checksum (integrity check)
@@ -754,7 +824,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                         // Should we be doing this?
                         file.setLastModified(timeStamp.getTime());
                     }
-                } catch (Exception e) {
+                } catch (Throwable t) {
+                    // something went wrong, just re-download the file
                     return true;
                 }
             }
