@@ -44,6 +44,7 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * Jul 19, 2012            bsteffen     Initial creation
  * Aug 14, 2014 3512       bclement     added continuous low memory warning
  * Aug 18, 2014 3512       bclement     added no-shell version of printStats()
+ * Jan 26, 2015 3970       bsteffen     Do not print non zero nvidia eviction on the first call.
  * 
  * </pre>
  * 
@@ -126,7 +127,6 @@ public class GLStats {
             // don't check if it hasn't been very long
             return;
         }
-        lastCheckTime = curTime;
 
         boolean lowMem = false;
         StringBuilder output = new StringBuilder(1024);
@@ -137,7 +137,7 @@ public class GLStats {
         lowMem |= thisJvmAtFault;
         lowMem |= getNvidiaStats(gl, output);
         lowMem |= getAtiStats(gl, output);
-
+        lastCheckTime = curTime;
         if (lowMem) {
             if (curTime - lastPrintTime > PRINT_FREQ_SECONDS * 1000) {
                 lastPrintTime = curTime;
@@ -252,7 +252,8 @@ public class GLStats {
 
             int evictions = nvxEvictionCount - lastNvxEvictionCount;
             lastNvxEvictionCount = nvxEvictionCount;
-            return nvxPercent > MEM_PRINT_THRESHOLD_PERCENT || evictions > 0;
+            return nvxPercent > MEM_PRINT_THRESHOLD_PERCENT
+                    || (evictions > 0 && lastCheckTime != 0);
         }
         return false;
     }
