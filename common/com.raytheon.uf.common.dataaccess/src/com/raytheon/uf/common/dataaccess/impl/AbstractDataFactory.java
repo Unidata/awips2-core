@@ -57,6 +57,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jul 14, 2014 3184       njensen     Added getAvailableParameters() and getAvailableLevels()
  * Jul 30, 2014 3184       njensen     Refactored validateRequest()
  * Jul 31, 2014 3184       njensen     Added validateParameters()
+ * Jan 28, 2014 4009       mapeters    Added validateRequest() with boolean parameter
  * 
  * </pre>
  * 
@@ -92,13 +93,28 @@ public abstract class AbstractDataFactory implements IDataFactory {
     }
 
     /**
-     * Validates that a request is compatible with the factory
+     * Validates that a request is compatible with the factory, including
+     * validating existence of parameters
      * 
      * @param request
      *            the request to validate
      */
     public void validateRequest(IDataRequest request) {
-        validateParameters(request);
+        validateRequest(request, true);
+    }
+
+    /**
+     * Validate that a request is compatible with the factory
+     * 
+     * @param request
+     *            the request to validate
+     * @param validateParameters
+     *            true if request must have parameters, false otherwise
+     */
+    public void validateRequest(IDataRequest request, boolean validateParameters) {
+        if (validateParameters) {
+            validateParameters(request);
+        }
         Collection<String> missing = checkForMissingIdentifiers(request);
         Collection<String> invalid = checkForInvalidIdentifiers(request);
         if (!missing.isEmpty() || !invalid.isEmpty()) {
@@ -158,14 +174,12 @@ public abstract class AbstractDataFactory implements IDataFactory {
      * Validates that the parameters are ok
      * 
      * @param request
-     * @return true if the parameters are ok, otherwise false
      */
     protected void validateParameters(IDataRequest request)
             throws IncompatibleRequestException {
         /*
-         * TODO Note that getAvailableParameters() implementations should not
-         * call this, so those implementations may not to be able to call
-         * validateRequest() as it's currently written.
+         * Note that getAvailableParameters() implementations should not call
+         * this (they should pass false to validateRequest()).
          */
         if (request.getParameters() == null
                 || request.getParameters().length == 0) {
