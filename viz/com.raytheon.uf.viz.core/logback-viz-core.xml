@@ -70,6 +70,25 @@
       </encoder>
    </appender>    
    
+   <appender name="ProductEditorLogAppender" class="com.raytheon.uf.common.status.logback.EnvConfigurableRollingFileAppender">
+      <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
+      <file>cave-producteditor.log</file>
+      <envLogVar>LOGFILE_PRODUCT_EDITOR</envLogVar>
+      <rollingPolicy class="com.raytheon.uf.common.status.logback.EnvConfigurableFixedWindowRollingPolicy">
+         <fileNamePattern>cave-producteditor.log%i</fileNamePattern>
+         <envLogVar>LOGFILE_PRODUCT_EDITOR</envLogVar>
+         <minIndex>1</minIndex>
+         <maxIndex>5</maxIndex>
+      </rollingPolicy>
+      <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
+         <maxFileSize>2GB</maxFileSize>
+      </triggeringPolicy>
+      <append>true</append>
+      <encoder> 
+         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
+      </encoder>
+   </appender>    
+   
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>
       <appender-ref ref="CaveLogAppender"/>
@@ -80,6 +99,11 @@
       <appender-ref ref="PerformanceLogAppender"/>
    </appender> 
 
+   <appender name="AsyncProductEditorLogAppender" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>500</queueSize>
+      <appender-ref ref="ProductEditorLogAppender"/>
+   </appender> 
+
    <logger name="CaveLogger" additivity="false">
       <level value="ALL"/>
       <appender-ref ref="AsyncCaveLogAppender"/>
@@ -88,6 +112,11 @@
    <logger name="PerformanceLogger" additivity="false">
    	  <level value="ALL"/>
    	  <appender-ref ref="AsyncPerfLogAppender"/>
+   </logger>
+
+   <logger name="ProductEditorLogger" additivity="false">
+      <level value="ALL"/>
+      <appender-ref ref="AsyncProductEditorLogAppender"/>
    </logger>
 
    <logger name="com.raytheon">
