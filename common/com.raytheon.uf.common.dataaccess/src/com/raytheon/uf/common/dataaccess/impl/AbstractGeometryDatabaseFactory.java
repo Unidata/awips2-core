@@ -28,6 +28,7 @@ import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil;
@@ -58,6 +59,7 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                     Overrode checkForInvalidIdentifiers()
  * Jan 28, 2015  4009     mapeters    Overrode getAvailableParameters(), 
  *                                    added assembleGetAvailableParameters().
+ * Feb 03, 2015  4009     mapeters    Overrode getAvailableLevels().
  * 
  * </pre>
  * 
@@ -266,6 +268,12 @@ public abstract class AbstractGeometryDatabaseFactory extends
         return parameters.toArray(new String[0]);
     }
 
+    @Override
+    public Level[] getAvailableLevels(IDataRequest request) {
+        throw new IncompatibleRequestException(request.getDatatype()
+                + " data does not support the concept of levels");
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -354,8 +362,8 @@ public abstract class AbstractGeometryDatabaseFactory extends
             IDataRequest request);
 
     /**
-     * Builds a query used to retrieve available parameters (columns) of the
-     * requested table from the database
+     * Builds a postgres-specific SQL query used to retrieve available
+     * parameters (columns) of the requested table from the database
      * 
      * @param request
      *            the request that we are processing

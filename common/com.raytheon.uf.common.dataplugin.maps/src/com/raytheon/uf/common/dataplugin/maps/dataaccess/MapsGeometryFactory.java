@@ -23,10 +23,8 @@ import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
-import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.impl.AbstractGeometryTimeAgnosticDatabaseFactory;
-import com.raytheon.uf.common.dataplugin.level.Level;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
@@ -47,6 +45,7 @@ import com.vividsolutions.jts.io.WKBReader;
  *                                     single request.
  * Jul 14, 2014 3184       njensen     Overrode getAvailableLevels()
  * Jul 30, 2014 3184       njensen     Added optional identifiers
+ * Feb 03, 2015 4009       mapeters    Moved getAvailableLevels() override to super
  * 
  * </pre>
  * 
@@ -131,11 +130,4 @@ public class MapsGeometryFactory extends
     protected String assembleGetAvailableLocationNames(IDataRequest request) {
         return MapsQueryAssembler.assembleGetAvailableLocationNames(request);
     }
-
-    @Override
-    public Level[] getAvailableLevels(IDataRequest request) {
-        throw new IncompatibleRequestException(request.getDatatype()
-                + " data does not support the concept of levels");
-    }
-
 }
