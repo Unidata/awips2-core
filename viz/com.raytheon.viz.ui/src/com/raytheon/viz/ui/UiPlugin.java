@@ -27,7 +27,6 @@ import org.osgi.framework.BundleContext;
 
 import com.raytheon.uf.viz.core.localization.HierarchicalPreferenceStore;
 import com.raytheon.viz.ui.jobs.MemoryMonitorJob;
-import com.raytheon.viz.ui.panes.DrawCoordinatorJob;
 
 /**
  * UI Plugin
@@ -42,6 +41,7 @@ import com.raytheon.viz.ui.panes.DrawCoordinatorJob;
  *                                    activation to allow activation before
  *                                    localization is set.
  * Mar  3, 2014  2861       mschenke  Create preference store immediately
+ * Feb 09, 2015  4092       bsteffen  DrawCoordinatorJob will shutdown itself.
  * 
  * </pre>
  * 
@@ -70,6 +70,7 @@ public class UiPlugin extends AbstractUIPlugin {
     /**
      * This method is called upon plug-in activation
      */
+    @Override
     public void start(BundleContext context) throws Exception {
         super.start(context);
         memoryWatchJob.setPriority(Job.LONG);
@@ -80,10 +81,10 @@ public class UiPlugin extends AbstractUIPlugin {
     /**
      * This method is called when the plug-in is stopped
      */
+    @Override
     public void stop(BundleContext context) throws Exception {
         super.stop(context);
         plugin = null;
-        DrawCoordinatorJob.getInstance().shutdown();
         memoryWatchJob.cancel();
     }
 
