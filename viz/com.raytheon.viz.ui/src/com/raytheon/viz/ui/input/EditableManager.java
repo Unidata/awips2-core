@@ -1,22 +1,22 @@
-/*****************************************************************************************
- * COPYRIGHT (c), 2007, RAYTHEON COMPANY
- * ALL RIGHTS RESERVED, An Unpublished Work 
- *
- * RAYTHEON PROPRIETARY
- * If the end user is not the U.S. Government or any agency thereof, use
- * or disclosure of data contained in this source code file is subject to
- * the proprietary restrictions set forth in the Master Rights File.
- *
- * U.S. GOVERNMENT PURPOSE RIGHTS NOTICE
- * If the end user is the U.S. Government or any agency thereof, this source
- * code is provided to the U.S. Government with Government Purpose Rights.
- * Use or disclosure of data contained in this source code file is subject to
- * the "Government Purpose Rights" restriction in the Master Rights File.
- *
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
- * Use or disclosure of data contained in this source code file is subject to
- * the export restrictions set forth in the Master Rights File.
- ******************************************************************************************/
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.viz.ui.input;
 
 import java.util.HashMap;
@@ -29,7 +29,8 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.capabilities.EditableCapability;
 
 /**
- * Class for managing editableness of resources on a display container
+ * Class for managing editableness of resources on a display container. This
+ * class ensures that only one resource is editable at a time.
  * 
  * <pre>
  * 
@@ -37,7 +38,8 @@ import com.raytheon.uf.viz.core.rsc.capabilities.EditableCapability;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 
+ * ??/??/????              mschenke    Initial creation
+ * Feb 02, 2015  3974      njensen     Improved javadoc
  * 
  * </pre>
  * 
@@ -49,7 +51,7 @@ public class EditableManager {
 
     private static Map<IDisplayPaneContainer, EditableManager> managerMap = new HashMap<IDisplayPaneContainer, EditableManager>();
 
-    private IDisplayPaneContainer container;
+    private final IDisplayPaneContainer container;
 
     private EditableManager(IDisplayPaneContainer container) {
         this.container = container;

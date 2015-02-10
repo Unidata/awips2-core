@@ -21,15 +21,25 @@
 package com.raytheon.uf.viz.core.drawables;
 
 /**
- * Represents a renderable shape
+ * Represents a renderable shape.
+ * 
+ * TODO: Contemplate refocusing, renaming, removing, or moving isMutable(). The
+ * concept of mutable vs immutable is not consistently implemented in the
+ * various implementations. For example, GLWireframeShape2D uses it for some
+ * optimizations, but you can alter an immutable shape. GLShadedShape doesn't
+ * seem to use mutable in most scenarios, making the flag fairly irrelevant.
+ * Therefore it is ambiguous to developers on whether or not mutable should be
+ * true or false. If this todo is worked, update IGraphicsTarget API
+ * appropriately.
  * 
  * <pre>
  * 
- *     SOFTWARE HISTORY
- *    
- *     Date          Ticket#     Engineer    Description
- *     ------------	----------	-----------	--------------------------
- *     7/1/06                    chammack    Initial Creation.
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * 07/1/06                 chammack    Initial Creation.
+ * Feb 10, 2015   3947     njensen     Improved javadoc
  * 
  * </pre>
  * 
@@ -37,6 +47,7 @@ package com.raytheon.uf.viz.core.drawables;
  * 
  */
 public interface IShape {
+
     /**
      * Prepares the data for fast access NOTE: this will flush the existing
      * data, and addLineSegment should not be called.
@@ -50,14 +61,14 @@ public interface IShape {
      * Returns true if the shape is mutable (e.g. will not change after initial
      * creation)
      * 
-     * @return
+     * @return if the shape is mutable
      */
     public abstract boolean isMutable();
 
     /**
      * Returns true if the shape is currently in a drawable state
      * 
-     * @return
+     * @return if the shape is in a drawable state
      */
     public abstract boolean isDrawable();
 
