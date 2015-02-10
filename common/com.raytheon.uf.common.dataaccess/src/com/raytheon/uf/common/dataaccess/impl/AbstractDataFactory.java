@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,6 +36,7 @@ import com.raytheon.uf.common.dataaccess.grid.IGridData;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
+import com.raytheon.uf.common.util.SizeUtil;
 
 /**
  * 
@@ -58,6 +59,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jul 30, 2014 3184       njensen     Refactored validateRequest()
  * Jul 31, 2014 3184       njensen     Added validateParameters()
  * Jan 28, 2014 4009       mapeters    Added validateRequest() with boolean parameter
+ * Feb 10, 2014 2866       nabowle     add MAX_RESPONSE_SIZE for limiting response sizes.
  * 
  * </pre>
  * 
@@ -66,14 +68,21 @@ import com.raytheon.uf.common.time.TimeRange;
  */
 
 public abstract class AbstractDataFactory implements IDataFactory {
+    /** Property used to specify the maximum response size in MB. */
+    public static final String RESPONSE_PROP = "edex.requestsrv.byteLimitInMB";
+
+    /** The maximum response size, in bytes. */
+    public static final long MAX_RESPONSE_SIZE = Long.parseLong(System
+            .getProperty(RESPONSE_PROP)) * SizeUtil.BYTES_PER_MB;
 
     protected static final String[] EMPTY = new String[0];
+
 
     /**
      * Returns the identifiers that must be set on a request for the request to
      * be processed. If a subclass does not override this, it will return an
      * array of size zero.
-     * 
+     *
      * @return the required identifiers
      */
     @Override
@@ -84,7 +93,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
     /**
      * Return the set of optional identifiers for a request. If a subclass does
      * not override this, it will return an array of size zero.
-     * 
+     *
      * @return the valid identifiers.
      */
     @Override
@@ -95,7 +104,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
     /**
      * Validates that a request is compatible with the factory, including
      * validating existence of parameters
-     * 
+     *
      * @param request
      *            the request to validate
      */
@@ -105,7 +114,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Validate that a request is compatible with the factory
-     * 
+     *
      * @param request
      *            the request to validate
      * @param validateParameters
@@ -125,7 +134,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Checks for missing identifiers that are required to be on the request
-     * 
+     *
      * @param request
      * @return a collection of missing identifiers
      */
@@ -146,7 +155,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Checks for invalid identifiers that are not compatible with the request
-     * 
+     *
      * @param request
      * @return a collection of invalid identifiers
      */
@@ -172,7 +181,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Validates that the parameters are ok
-     * 
+     *
      * @param request
      */
     protected void validateParameters(IDataRequest request)
