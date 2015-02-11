@@ -86,6 +86,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Apr 12, 2013 1903        rjpeter     Updated getFile to check parentFile for existence.
  * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
  * Sep 29, 2014 2975        njensen     Correct usage of mkDirs in getFile(boolean)
+ * Feb 11, 2015 4108        randerso    Implemented hashCode()
  * 
  * </pre>
  * 
@@ -676,6 +677,26 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
         return getName().compareTo(o.getName());
     }
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#hashCode()
+     */
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = (prime * result)
+                + ((context == null) ? 0 : context.hashCode());
+        result = (prime * result) + ((path == null) ? 0 : path.hashCode());
+        return result;
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see java.lang.Object#equals(java.lang.Object)
+     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
