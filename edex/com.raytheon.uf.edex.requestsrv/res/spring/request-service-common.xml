@@ -23,7 +23,8 @@
     <bean id="limitingStreamExecutor" class="com.raytheon.uf.edex.requestsrv.serialization.ByteLimitingStreamExecutor">
     	<constructor-arg ref="serializingStreamExecutor"/>
     	<constructor-arg value="${edex.requestsrv.byteLimitInMB}"/>
-    	<property name="limitOutput" value="false"/>
+    	<property name="limitOutput" value="${edex.requestsrv.limitOutput}"/>
+        <property name="limitInput" value="${edex.requestsrv.limitInput}"/>
     </bean>
             
 	<bean id="httpServiceExecutor" class="com.raytheon.uf.edex.requestsrv.http.HttpRequestServiceExecutor">
