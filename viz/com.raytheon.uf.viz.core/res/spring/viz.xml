@@ -14,7 +14,6 @@
        <property name="socketTimeout" value="330000"/>
 	   <property name="connectionTimeout" value="10000"/>
 	   <property name="maxConnections" value="10"/>
-	   <property name="handlingGzipResponses" value="false"/>	   
 	   <property name="httpsHandler" ref="caveCredentialHandler" />
     </bean>
     

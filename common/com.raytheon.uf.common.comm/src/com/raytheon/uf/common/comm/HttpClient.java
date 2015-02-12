@@ -36,7 +36,9 @@ import org.apache.http.Header;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthProtocolState;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.AuthState;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
@@ -95,8 +97,8 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
  *    Nov 15, 2014  3757        dhladky     General HTTPS handler
- *    Jan 07, 2014  3952        bclement    reset auth state on authentication failure
- *    Jan 21, 2014  3952        njensen     New context instance for each request
+ *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
+ *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
  * 
  * </pre>
  * 
@@ -166,18 +168,18 @@ public class HttpClient {
     private final HttpClientConfig config;
 
     /**
-     * The authCache is for https requests only and ensures that the client
-     * application does not send over an extra http request before every https
-     * request.
-     */
-    private AuthCache authCache;
-
-    /**
      * The credentials provider is for https requests only and ensures that a
      * user does not have to enter username/password authentication more than
      * once per application startup.
      */
     private CredentialsProvider credentialsProvider;
+
+    private ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+        @Override
+        protected HttpClientContext initialValue() {
+            return HttpClientContext.create();
+        }
+    };
 
     /**
      * Public constructor.
@@ -234,15 +236,6 @@ public class HttpClient {
             }
         }
         return client;
-    }
-
-    /**
-     * Get if the instance is gzipping responses
-     * 
-     * @return true if gzipping responses
-     */
-    public boolean isGzipResponseHandling() {
-        return this.config.isHandlingGzipResponses();
     }
 
     /**
@@ -309,11 +302,8 @@ public class HttpClient {
      * @throws Exception
      */
     public String post(String address, String message) throws Exception {
-
         String returnValue = new String(postByteResult(address, message));
-
         return returnValue;
-
     }
 
     /**
@@ -349,7 +339,10 @@ public class HttpClient {
         if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
             IHttpsHandler handler = config.getHttpsHandler();
             org.apache.http.client.HttpClient client = getHttpsInstance();
-            HttpClientContext context = getContext();
+            URI uri = put.getURI();
+            String host = uri.getHost();
+            int port = uri.getPort();
+            HttpClientContext context = getHttpsContext(host, port);
             resp = client.execute(put, context);
 
             // Check for not authorized, 401
@@ -359,9 +352,6 @@ public class HttpClient {
                     authValue = resp.getFirstHeader(WWW_AUTHENTICATE)
                             .getValue();
                 }
-                URI uri = put.getURI();
-                String host = uri.getHost();
-                int port = uri.getPort();
 
                 String[] credentials = null;
                 if (handler != null) {
@@ -372,7 +362,15 @@ public class HttpClient {
                 }
                 this.setupCredentials(host, port, credentials[0],
                         credentials[1]);
-                context = getContext();
+                context = getHttpsContext(host, port);
+                /*
+                 * The context auth state gets set to FAILED on a 401 which
+                 * causes any future requests to abort prematurely. Therefore we
+                 * set it to unchallenged so it will try again with new
+                 * credentials.
+                 */
+                AuthState targetAuthState = context.getTargetAuthState();
+                targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
                 try {
                     resp = client.execute(put, context);
                 } catch (Exception e) {
@@ -833,7 +831,7 @@ public class HttpClient {
     /**
      * Gets the network statistics for http traffic.
      * 
-     * @return
+     * @return network stats
      */
     public NetworkStatistics getStats() {
         return this.stats;
@@ -860,7 +858,7 @@ public class HttpClient {
          * input stream for later use.
          * 
          * @param is
-         * @throws VizException
+         * @throws CommunicationException
          */
         public abstract void handleStream(InputStream is)
                 throws CommunicationException;
@@ -948,41 +946,34 @@ public class HttpClient {
         credentialsProvider.setCredentials(new AuthScope(host, port,
                 AuthScope.ANY_REALM, AuthSchemes.BASIC),
                 new UsernamePasswordCredentials(username, password));
+    }
 
-        // ensure authentication is cached
-        if (authCache == null) {
-            authCache = new BasicAuthCache();
+    /**
+     * Gets a thread local HttpContext to use for an https request.
+     * 
+     * @return a safe context containing https credential and auth info
+     */
+    private HttpClientContext getHttpsContext(String host, int port) {
+        HttpClientContext context = httpsContext.get();
+        if (context.getCredentialsProvider() != credentialsProvider) {
+            context.setCredentialsProvider(credentialsProvider);
         }
 
-        // since we're using Basic authentication, force it to https
+        /*
+         * HttpContext, BasicAuthCache, BasicScheme, and the Base64 instance
+         * inside BasicScheme are not thread safe! Therefore we need one for
+         * each thread. (BasicCredentialsProvider is thread safe).
+         */
+        AuthCache authCache = context.getAuthCache();
+        if (authCache == null) {
+            authCache = new BasicAuthCache();
+            context.setAuthCache(authCache);
+        }
         HttpHost hostObj = new HttpHost(host, port, HTTPS);
         if (authCache.get(hostObj) == null) {
             authCache.put(hostObj, new BasicScheme());
         }
-    }
 
-    /**
-     * Gets an HttpContext to use for a request.
-     * 
-     * @return
-     */
-    private HttpClientContext getContext() {
-        HttpClientContext context = HttpClientContext.create();
-        /*
-         * TODO Ideally if we set up the HttpClientBuilder correctly then
-         * contexts would be automatically created with the credentials provider
-         * and authentication cache setup correctly.
-         * 
-         * Also we could potentially reuse contexts instead of creating new ones
-         * every time, but a context is not thread safe so that would have to be
-         * taken into account.
-         */
-        if (credentialsProvider != null) {
-            context.setCredentialsProvider(credentialsProvider);
-        }
-        if (authCache != null) {
-            context.setAuthCache(authCache);
-        }
         return context;
     }
 
