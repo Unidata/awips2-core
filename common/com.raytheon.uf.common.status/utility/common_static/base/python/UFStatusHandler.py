@@ -23,17 +23,24 @@ from com.raytheon.uf.common.status import UFStatus_Priority as Priority
 import logging
 
 #
-# Python logging mechanism for logging through Java to UFStatus
-#  
+# Python logging mechanism for logging through Java to UFStatus.
+# When using this class the python logger level should not be set.
+# This will allow the filtering to be handled by the UFStatus. 
 #    
 #     SOFTWARE HISTORY
 #    
 #    Date            Ticket#       Engineer       Description
 #    ------------    ----------    -----------    --------------------------
 #    07/19/09                      njensen       Initial Creation.
+#    02/13/2015      4038          rferrel        Force root logging to NOTSET
 #    
 # 
 #
+
+# Force root logging to lowest level NOTSET (0) in order to allow the emit 
+# to determine what should be passed to the IUFStatusHandler.
+logging.getLogger().setLevel(logging.NOTSET)
+
     
 class UFStatusHandler(logging.Handler):
 
@@ -61,6 +68,6 @@ class UFStatusHandler(logging.Handler):
         else:
             priority = Priority.VERBOSE
         
-        msg = self.format(record)
-                    
-        self._handler.handle(priority, msg)
+        if self._handler.isPriorityEnabled(priority) :
+            msg = self.format(record)
+            self._handler.handle(priority, msg)
