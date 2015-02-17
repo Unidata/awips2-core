@@ -99,6 +99,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Nov 15, 2014  3757        dhladky     General HTTPS handler
  *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
  *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
+ *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
  * 
  * </pre>
  * 
@@ -113,6 +114,10 @@ public class HttpClient {
         public final byte[] data;
 
         public final String contentType;
+
+        /*
+         * TODO contemplate including headers in response object
+         */
 
         private HttpClientResponse(int code, byte[] data, String contentType) {
             this.code = code;
@@ -174,7 +179,7 @@ public class HttpClient {
      */
     private CredentialsProvider credentialsProvider;
 
-    private ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+    private final ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
         @Override
         protected HttpClientContext initialValue() {
             return HttpClientContext.create();
@@ -479,16 +484,13 @@ public class HttpClient {
                 }
             }
 
-            if (resp.getStatusLine().getStatusCode() != SUCCESS_CODE
-                    && handlerCallback instanceof DynamicSerializeStreamHandler) {
+            int statusCode = resp.getStatusLine().getStatusCode();
+            if (statusCode != SUCCESS_CODE) {
                 /*
-                 * the status code can be returned and/or processed depending on
-                 * which post method and handlerCallback is used, so we only
-                 * want to error off here if we're using a
-                 * DynamicSerializeStreamHandler because deserializing will fail
-                 * badly
+                 * In general if we don't get a code 200, then we typically
+                 * receive a String message or String HTML, so we will just turn
+                 * that into an exception.
                  */
-                int statusCode = resp.getStatusLine().getStatusCode();
                 DefaultInternalStreamHandler errorHandler = new DefaultInternalStreamHandler();
                 String exceptionMsg = null;
                 try {
@@ -512,8 +514,8 @@ public class HttpClient {
             if (handlerCallback instanceof DefaultInternalStreamHandler) {
                 byteResult = ((DefaultInternalStreamHandler) handlerCallback).byteResult;
             }
-            return new HttpClientResponse(resp.getStatusLine().getStatusCode(),
-                    byteResult, getContentType(resp));
+            return new HttpClientResponse(statusCode, byteResult,
+                    getContentType(resp));
         } finally {
             if (ongoing != null) {
                 ongoing.decrementAndGet();
@@ -719,13 +721,28 @@ public class HttpClient {
      * 
      * @param request
      *            the request to execute
-     * @return the result and status code
+     * @return the byte[] result and status code
      * @throws CommunicationException
      */
     public HttpClientResponse executeRequest(HttpUriRequest request)
             throws CommunicationException {
-        DefaultInternalStreamHandler streamHandler = new DefaultInternalStreamHandler();
-        return process(request, streamHandler);
+        return executeRequest(request, new DefaultInternalStreamHandler());
+    }
+
+    /**
+     * Executes an HttpUriRequest and returns a response with a status code
+     * AFTER the IStreamHandler has processed the response body. Therefore, it
+     * is unlikely that the response will contain the actual response body, with
+     * the response body being consumed by the IStreamHandler.
+     * 
+     * @param request
+     *            the request to execute
+     * @return a response with a status code
+     * @throws CommunicationException
+     */
+    public HttpClientResponse executeRequest(HttpUriRequest request,
+            IStreamHandler handlerCallback) throws CommunicationException {
+        return process(request, handlerCallback);
     }
 
     /**

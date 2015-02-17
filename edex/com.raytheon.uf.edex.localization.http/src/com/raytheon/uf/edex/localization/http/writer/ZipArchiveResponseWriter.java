@@ -79,6 +79,7 @@ public class ZipArchiveResponseWriter implements ILocalizationResponseWriter {
                 Path fullPath = Paths.get(entryFile.getName());
                 Path entryPath = base.relativize(fullPath);
                 ZipEntry zEntry = new ZipEntry(entryPath.toString());
+                zEntry.setTime(entryFile.getTimeStamp().getTime());
                 zout.putNextEntry(zEntry);
                 try {
                     LocalizationHttpDataTransfer.copy(entryFile, zout);
