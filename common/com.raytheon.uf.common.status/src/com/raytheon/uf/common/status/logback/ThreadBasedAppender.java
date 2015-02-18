@@ -50,13 +50,15 @@ import ch.qos.logback.core.spi.AppenderAttachable;
  * Jun 24, 2013 2142       njensen     Changes for logback compatibility
  * Apr 29, 2014 3114       rjpeter     Make plugin contributable.
  * Aug 22, 2014 3534       rjpeter     Extend UnsynchronizedAppenderBase.
+ * Feb 18, 2015 4015       rferrel     Use LogfileUtil constants.
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 
-public class ThreadBasedAppender extends UnsynchronizedAppenderBase<ILoggingEvent> implements
+public class ThreadBasedAppender extends
+        UnsynchronizedAppenderBase<ILoggingEvent> implements
         AppenderAttachable<ILoggingEvent> {
     private static final Pattern NAME_REPLACE_PATTERN = Pattern
             .compile("%s\\{name\\}");
@@ -79,14 +81,14 @@ public class ThreadBasedAppender extends UnsynchronizedAppenderBase<ILoggingEven
     /**
      * Default pattern layout.
      */
-    private String patternLayout = "%-5p %d [%t] %c{0}: %m%n";
+    private String patternLayout;
 
     /**
      * Default max history.
      */
-    private int maxHistory = 30;
+    private int maxHistory = LogbackUtil.STD_HISTORY;
 
-    private String fileNameBase = "${edex.home}/logs/edex-${edex.run.mode}-%s{name}-%d{yyyyMMdd}.log";
+    private String fileNameBase;
 
     private String defaultAppenderName;
 
@@ -146,6 +148,14 @@ public class ThreadBasedAppender extends UnsynchronizedAppenderBase<ILoggingEven
             synchronized (this) {
                 Appender<ILoggingEvent> rval = appenderMap.get(name);
                 if ((rval == null) && create) {
+                    if (fileNameBase == null) {
+                        fileNameBase = LogbackUtil.determineUFFilenamePattern(
+                                context, "%s{name}");
+                    }
+                    if (patternLayout == null) {
+                        patternLayout = LogbackUtil
+                                .getUFMessagePattern(context);
+                    }
                     PatternLayoutEncoder encoder = new PatternLayoutEncoder();
                     encoder.setContext(instance.getContext());
                     encoder.setPattern(patternLayout);
