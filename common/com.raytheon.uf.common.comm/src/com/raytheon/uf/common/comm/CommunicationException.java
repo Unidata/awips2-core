@@ -20,7 +20,11 @@
 package com.raytheon.uf.common.comm;
 
 /**
- * TODO Add Description
+ * An exception related to an error communicating with another process,
+ * typically a server.
+ * 
+ * This exception is primarily used for exceptions related to synchronous http
+ * requests.
  * 
  * <pre>
  * 
@@ -28,6 +32,7 @@ package com.raytheon.uf.common.comm;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 27, 2010            njensen     Initial creation
+ * Feb 17, 2015  3978      njensen     Improved javadoc
  * 
  * </pre>
  * 
