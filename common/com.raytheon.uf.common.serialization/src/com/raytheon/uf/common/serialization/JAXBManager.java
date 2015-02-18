@@ -55,6 +55,7 @@ import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
  * Apr 25, 2014 2060       njensen      Improved printout
  * Jul 15, 2014 3373       bclement     moved marshaller management to JaxbMarshallerStrategy
  *                                      added MarshalOptions, no longer pools by default
+ * Feb 18, 2015 4125       rjpeter      Added type safe unmarshalFromXml
  * </pre>
  * 
  * @author chammack
@@ -97,8 +98,7 @@ public class JAXBManager {
      *            marshalling/unmarshalling
      * @throws JAXBException
      */
-    public JAXBManager(boolean pooling, Class<?>... clazz)
-            throws JAXBException {
+    public JAXBManager(boolean pooling, Class<?>... clazz) throws JAXBException {
         this(pooling ? new PooledJaxbMarshallerStrategy()
                 : new JaxbMarshallerStrategy(), clazz);
     }
@@ -109,8 +109,8 @@ public class JAXBManager {
      * @param clazz
      * @throws JAXBException
      */
-    public JAXBManager(JaxbMarshallerStrategy marshStrategy,
-            Class<?>... clazz) throws JAXBException {
+    public JAXBManager(JaxbMarshallerStrategy marshStrategy, Class<?>... clazz)
+            throws JAXBException {
         this.clazz = clazz;
         getJaxbContext();
         this.marshStrategy = marshStrategy;
@@ -169,7 +169,24 @@ public class JAXBManager {
         return marshStrategy.unmarshalFromReader(cxt, reader);
     }
 
-
+    /**
+     * Instantiates an object from the XML representation in a string.
+     * 
+     * @param clazz
+     *            The class of the return object
+     * @param xml
+     *            The XML representation
+     * @return A new instance from the XML representation
+     * @throws JAXBException
+     */
+    public <T> T unmarshalFromXml(Class<T> clazz, String xml)
+            throws JAXBException {
+        try {
+            return clazz.cast(unmarshalFromXml(xml));
+        } catch (ClassCastException cce) {
+            throw new JAXBException(cce);
+        }
+    }
 
     /**
      * Convert an instance of a class to an XML pretty print representation in a
@@ -338,6 +355,7 @@ public class JAXBManager {
      */
     public <T> T unmarshalFromXmlFile(Class<T> clazz, File file)
             throws SerializationException {
+
         try {
             return clazz.cast(internalUnmarshalFromXmlFile(file));
         } catch (ClassCastException cce) {
@@ -380,7 +398,7 @@ public class JAXBManager {
         } catch (Exception e) {
             throw new SerializationException("Error reading " + file.getName()
                     + "\n" + e.getLocalizedMessage(), e);
-        } 
+        }
     }
 
 }
