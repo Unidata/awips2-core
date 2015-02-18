@@ -25,12 +25,15 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 /**
  * Localization streaming get request
  * 
- * <pre>
+ * @deprecated Use REST localization service instead
+ * 
+ *             <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 11, 2010            mschenke     Initial creation
+ * Feb 18, 2015  3987      njensen      Deprecated
  * 
  * </pre>
  * 
@@ -38,6 +41,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * @version 1.0
  */
 @DynamicSerialize
+@Deprecated
 public class LocalizationStreamGetRequest extends
         AbstractLocalizationStreamRequest {
 
