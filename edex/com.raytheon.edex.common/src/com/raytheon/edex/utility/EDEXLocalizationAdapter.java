@@ -82,6 +82,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 25, 2014 3378        bclement    removed uf prefix from system property
  * Nov 13, 2014 4953        randerso    Changed delete() to also remove .md5 file
  * Feb 16, 2015 3978        njensen     listDirectory() no longer includes .md5 files
+ * Feb 18, 2015 3978        njensen     no max size on cache map is safer
  * 
  * </pre>
  * 
@@ -501,8 +502,17 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      */
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
+        /*
+         * Intentionally no max size on this cache, so eventually if you had
+         * 100% EDEX uptime and more and more localization files kept getting
+         * added to the system and then requested by clients, this could use up
+         * a significant amount of memory. However, the disconnect between
+         * LocalNotificationObserver's cache and PathManager's cache will cause
+         * issues if anything is ever evicted from the cache. Unless that is
+         * sorted out and simplified, no values should be evicted from this map.
+         */
         Builder<LocalizationFileKey, LocalizationFile> builder = new ConcurrentLinkedHashMap.Builder<LocalizationFileKey, LocalizationFile>();
-        return builder.maximumWeightedCapacity(CACHE_SIZE).build();
+        return builder.initialCapacity(CACHE_SIZE).build();
     }
 
 }
