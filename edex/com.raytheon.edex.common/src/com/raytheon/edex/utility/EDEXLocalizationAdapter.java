@@ -27,11 +27,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.Builder;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
@@ -511,8 +510,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
          * issues if anything is ever evicted from the cache. Unless that is
          * sorted out and simplified, no values should be evicted from this map.
          */
-        Builder<LocalizationFileKey, LocalizationFile> builder = new ConcurrentLinkedHashMap.Builder<LocalizationFileKey, LocalizationFile>();
-        return builder.initialCapacity(CACHE_SIZE).build();
+        return new ConcurrentHashMap<>(CACHE_SIZE);
     }
 
 }
