@@ -164,9 +164,7 @@ public class JAXBManager {
      * @throws JAXBException
      */
     public Object unmarshalFromXml(String xml) throws JAXBException {
-        StringReader reader = new StringReader(xml);
-        JAXBContext cxt = getJaxbContext();
-        return marshStrategy.unmarshalFromReader(cxt, reader);
+        return internalUnmarshalFromXml(xml);
     }
 
     /**
@@ -182,7 +180,7 @@ public class JAXBManager {
     public <T> T unmarshalFromXml(Class<T> clazz, String xml)
             throws JAXBException {
         try {
-            return clazz.cast(unmarshalFromXml(xml));
+            return clazz.cast(internalUnmarshalFromXml(xml));
         } catch (ClassCastException cce) {
             throw new JAXBException(cce);
         }
@@ -385,7 +383,7 @@ public class JAXBManager {
      * Unmarshals an object from an xml file.
      * 
      * @param file
-     *            the file to unmarshal and object from.
+     *            the file to unmarshal an object from.
      * @return the object from the file
      * @throws SerializationException
      */
@@ -401,4 +399,17 @@ public class JAXBManager {
         }
     }
 
+    /**
+     * Unmarshals an object from an xml string.
+     * 
+     * @param xml
+     *            the xml string to unmarshal an object from.
+     * @return the object from the string
+     * @throws JAXBException
+     */
+    protected Object internalUnmarshalFromXml(String xml) throws JAXBException {
+        StringReader reader = new StringReader(xml);
+        JAXBContext cxt = getJaxbContext();
+        return marshStrategy.unmarshalFromReader(cxt, reader);
+    }
 }
