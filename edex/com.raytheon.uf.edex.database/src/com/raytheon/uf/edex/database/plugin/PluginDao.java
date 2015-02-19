@@ -21,6 +21,7 @@
 package com.raytheon.uf.edex.database.plugin;
 
 import java.io.File;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -87,35 +88,36 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 06, 2009 1990       bphillip    Initial creation
- * Jun 29, 2012 828        dgilling    Force getPurgeRulesForPlugin()  to search
- *                                     only COMMON_STATIC.
- * Oct 10, 2012 1261       djohnson    Add some generics wildcarding.
- * Jan 14, 2013 1469       bkowal      No longer retrieves the hdf5 data
- *                                     directory  from the environment.
- * Feb 12, 2013 1608       randerso    Changed to call deleteDatasets
- * Feb 26, 2013 1638       mschenke    Moved OGC specific functions to OGC
- *                                     project
- * Mar 27, 2013 1821       bsteffen    Remove extra store in persistToHDF5 for
- *                                     replace only operations.
- * Apr 04, 2013            djohnson    Remove formerly removed methods that
- *                                     won't compile.
- * Apr 15, 2013 1868       bsteffen    Rewrite mergeAll in PluginDao.
- * May 07, 2013 1869       bsteffen    Remove dataURI column from
- *                                     PluginDataObject.
- * May 16, 2013 1869       bsteffen    Rewrite dataURI property mappings.
- * Jun 11, 2013 2090       djohnson    Separate the hdf5 purge by ref time for
- *                                     reuse.
- * Jun 11, 2013 2092       bclement    Added purge results
- * Aug 30, 2013 2298       rjpeter     Make getPluginName abstract
- * Sept23, 2013 2399       dhladky     Changed logging of duplicate records.
- * Oct 07, 2013 2392       rjpeter     Updated to pass null productKeys as actual null instead of string null.
- * Dec 13, 2013 2555       rjpeter     Refactored archiving logic into processArchiveRecords.
- * Apr 21, 2014 2946       bsteffen    Allow auxillary purge rules in multiple files.
- * Jun 24, 2014 #3314      randerso    Fix misspelling in message
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Feb 06, 2009  1990     bphillip    Initial creation
+ * Jun 29, 2012  828      dgilling    Force getPurgeRulesForPlugin() to search
+ *                                    only COMMON_STATIC.
+ * Oct 10, 2012  1261     djohnson    Add some generics wildcarding.
+ * Jan 14, 2013  1469     bkowal      No longer retrieves the hdf5 data
+ *                                    directory  from the environment.
+ * Feb 12, 2013  1608     randerso    Changed to call deleteDatasets
+ * Feb 26, 2013  1638     mschenke    Moved OGC specific functions to OGC
+ *                                    project
+ * Mar 27, 2013  1821     bsteffen    Remove extra store in persistToHDF5 for
+ *                                    replace only operations.
+ * Apr 04, 2013           djohnson    Remove formerly removed methods that
+ *                                    won't compile.
+ * Apr 15, 2013  1868     bsteffen    Rewrite mergeAll in PluginDao.
+ * May 07, 2013  1869     bsteffen    Remove dataURI column from
+ *                                    PluginDataObject.
+ * May 16, 2013  1869     bsteffen    Rewrite dataURI property mappings.
+ * Jun 11, 2013  2090     djohnson    Separate the hdf5 purge by ref time for
+ *                                    reuse.
+ * Jun 11, 2013  2092     bclement    Added purge results
+ * Aug 30, 2013  2298     rjpeter     Make getPluginName abstract
+ * Sept23, 2013  2399     dhladky     Changed logging of duplicate records.
+ * Oct 07, 2013  2392     rjpeter     Updated to pass null productKeys as actual null instead of string null.
+ * Dec 13, 2013  2555     rjpeter     Refactored archiving logic into processArchiveRecords.
+ * Apr 21, 2014  2946     bsteffen    Allow auxillary purge rules in multiple files.
+ * Jun 24, 2014  3314     randerso    Fix misspelling in message
+ * Oct 16, 2014  3454     bphillip    Upgrading to Hibernate 4
+ * Feb 19, 2015  4123     bsteffen    Log foreign key constriant violations.
  * </pre>
  * 
  * @author bphillip
@@ -203,38 +205,10 @@ public abstract class PluginDao extends CoreDao {
     }
 
     public PluginDataObject[] persistToDatabase(PluginDataObject... records) {
-        List<PluginDataObject> toPersist = new ArrayList<PluginDataObject>();
-        for (PluginDataObject record : records) {
-            toPersist.add(record);
-        }
-        List<PluginDataObject> duplicates = mergeAll(toPersist);
-        toPersist.removeAll(duplicates);
-
-        if (!duplicates.isEmpty()) {
-            logger.info("Discarded : " + duplicates.size() + " duplicates!");
-            if (logger.isPriorityEnabled(Priority.DEBUG)) {
-                for (PluginDataObject pdo : duplicates) {
-                    logger.debug("Discarding duplicate: "
-                            + ((pdo)).getDataURI());
-                }
-            }
-        }
-        return toPersist.toArray(new PluginDataObject[toPersist.size()]);
-    }
-
-    /**
-     * Commits(merges) a list of pdos into the database. Duplicates will not be
-     * committed unless the object allows override.
-     * 
-     * @param objects
-     *            the objects to commit
-     * @return any duplicate objects which already existed in the db.
-     */
-    public List<PluginDataObject> mergeAll(final List<PluginDataObject> objects) {
-        if ((objects == null) || objects.isEmpty()) {
-            return objects;
-        }
+        List<PluginDataObject> objects = Arrays.asList(records);
         List<PluginDataObject> duplicates = new ArrayList<PluginDataObject>();
+        List<PluginDataObject> persisted = new ArrayList<PluginDataObject>(
+                records.length);
         Class<? extends PluginDataObject> pdoClass = objects.get(0).getClass();
         DuplicateCheckStat dupStat = pluginDupCheckRate.get(pdoClass);
         if (dupStat == null) {
@@ -267,6 +241,7 @@ public abstract class PluginDao extends CoreDao {
                             session.save(object);
                         }
                         tx.commit();
+                        persisted.addAll(subList);
                     } catch (ConstraintViolationException e) {
                         tx.rollback();
                         session.clear();
@@ -279,6 +254,8 @@ public abstract class PluginDao extends CoreDao {
                     constraintViolation = false;
                     try {
                         tx = session.beginTransaction();
+                        List<PluginDataObject> subPersisted = new ArrayList<PluginDataObject>(
+                                subList.size());
                         for (PluginDataObject object : subList) {
                             if (object == null) {
                                 continue;
@@ -293,6 +270,7 @@ public abstract class PluginDao extends CoreDao {
                                     object.setId(id);
                                     if (object.isOverwriteAllowed()) {
                                         session.update(object);
+                                        subPersisted.add(object);
                                     } else {
                                         subDuplicates.add(object);
                                     }
@@ -306,6 +284,7 @@ public abstract class PluginDao extends CoreDao {
                             }
                         }
                         tx.commit();
+                        persisted.addAll(subPersisted);
                     } catch (ConstraintViolationException e) {
                         constraintViolation = true;
                         tx.rollback();
@@ -337,10 +316,30 @@ public abstract class PluginDao extends CoreDao {
                                 session.save(object);
                             }
                             tx.commit();
+                            persisted.add(object);
                         } catch (ConstraintViolationException e) {
-                            subDuplicates.add(object);
                             tx.rollback();
+
+                            String errorMessage = e.getMessage();
+                            SQLException nextException = e.getSQLException()
+                                    .getNextException();
+                            if (nextException != null) {
+                                errorMessage = nextException.getMessage();
+                            }
+                            /*
+                             * Unique constraint violations do not need to be
+                             * logged as an exception, they are fairly normal
+                             * and are logged as just a count.
+                             */
+                            if (errorMessage.contains(" unique ")) {
+                                subDuplicates.add(object);
+                            } else {
+                                logger.handle(Priority.PROBLEM,
+                                        "Query failed: Unable to insert or update "
+                                                + object.getIdentifier(), e);
+                            }
                         } catch (PluginException e) {
+                            tx.rollback();
                             logger.handle(Priority.PROBLEM,
                                     "Query failed: Unable to insert or update "
                                             + object.getIdentifier(), e);
@@ -361,7 +360,17 @@ public abstract class PluginDao extends CoreDao {
                 session.close();
             }
         }
-        return duplicates;
+
+        if (!duplicates.isEmpty()) {
+            logger.info("Discarded : " + duplicates.size() + " duplicates!");
+            if (logger.isPriorityEnabled(Priority.DEBUG)) {
+                for (PluginDataObject pdo : duplicates) {
+                    logger.debug("Discarding duplicate: "
+                            + ((pdo)).getDataURI());
+                }
+            }
+        }
+        return persisted.toArray(new PluginDataObject[0]);
     }
 
     private void populateDatauriCriteria(Criteria criteria, PluginDataObject pdo)
