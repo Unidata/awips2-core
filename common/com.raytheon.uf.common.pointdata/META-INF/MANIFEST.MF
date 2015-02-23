@@ -14,6 +14,7 @@ Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.dataaccess,
+ com.raytheon.uf.common.message,
  javax.measure
 Export-Package: com.raytheon.uf.common.pointdata,
  com.raytheon.uf.common.pointdata.accumulate,
