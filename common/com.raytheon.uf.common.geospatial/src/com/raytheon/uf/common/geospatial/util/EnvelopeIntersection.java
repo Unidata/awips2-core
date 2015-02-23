@@ -59,6 +59,7 @@ import com.vividsolutions.jts.geom.Polygon;
  *                                    inside out by checking interior point
  * Nov 18, 2013  2528     bsteffen    Fall back to brute force when corner
  *                                    points are not found.
+ * Feb 23, 2015  4022     bsteffen    Return empty polygon when empty envelopes are used.
  * 
  * </pre>
  * 
@@ -88,6 +89,10 @@ public class EnvelopeIntersection {
             int maxVertDivisions) throws TransformException, FactoryException {
         ReferencedEnvelope sourceREnvelope = reference(sourceEnvelope);
         ReferencedEnvelope targetREnvelope = reference(targetEnvelope);
+        if (isEmpty(sourceREnvelope) || isEmpty(targetREnvelope)) {
+            /* return an empty polygon */
+            return gf.createPolygon(null, null);
+        }
         MathTransform sourceCRSToTargetCRS = CRS.findMathTransform(
                 sourceREnvelope.getCoordinateReferenceSystem(),
                 targetREnvelope.getCoordinateReferenceSystem());
@@ -95,7 +100,7 @@ public class EnvelopeIntersection {
             /*
              * Referenced envelope will only perform an intersection if the CRSs
              * are identical. However it is possible to get an identity math
-             * transform with slight variences in the object types of the CRSs.
+             * transform with slight variances in the object types of the CRSs.
              * This is known to happen on Equidistant Cylindrical projections.
              * To get around this force the source envelope into the target CRS.
              */
@@ -675,6 +680,20 @@ public class EnvelopeIntersection {
             return (ReferencedEnvelope) envelope;
         }
         return new ReferencedEnvelope(envelope);
+    }
+
+    /**
+     * Check if an envelope is empty. The java doc for
+     * {@link ReferencedEnvelope#isEmpty()} claims it will return true when all
+     * lengths are empty however for the case where the min and max ordinates
+     * are equal it does not return true even though the length is 0. We
+     * specifically want to treat envelopes with identical min/max ordinates as
+     * empty.
+     * 
+     */
+    private static boolean isEmpty(ReferencedEnvelope envelope) {
+        return envelope.isEmpty()
+                || (envelope.getSpan(0) == 0 && envelope.getSpan(1) == 0);
     }
 
     private static Geometry toPolygonal(Geometry geometry) {
