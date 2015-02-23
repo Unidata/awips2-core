@@ -19,28 +19,35 @@
  **/
 package com.raytheon.uf.common.dataaccess.exception;
 
+import com.raytheon.uf.common.util.SizeUtil;
+
 /**
  * An exception for when a request would generate a response size that exceeds a
  * set limit.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 28, 2015 2866       nabowle     Initial creation
- *
+ * Feb 23, 2015 2866       nabowle     Improve messages.
+ * 
  * </pre>
- *
+ * 
  * @author nabowle
  * @version 1.0
  */
 public class ResponseTooLargeException extends DataAccessException {
 
-    private static final String DEFAULT_MESSAGE = "The response is too large to"
-            + " be returned. Try narrowing the request by removing parameters "
-            + "or adding identifiers, location names, or times.";
+    private static final String SUGGESTION = "Please narrow the request scope "
+            + "by removing parameters, adding identifiers, adding location "
+            + "names, or limiting times.";
+
+    private static final String DEFAULT_MESSAGE = "The response is too large "
+            + "to be returned. " + SUGGESTION;
+
 
     private static final long serialVersionUID = 1L;
 
@@ -73,6 +80,41 @@ public class ResponseTooLargeException extends DataAccessException {
      */
     public ResponseTooLargeException(Throwable cause) {
         super(DEFAULT_MESSAGE, cause);
+    }
+
+    /**
+     * Uses an exception message with the estimated size and maximum size.
+     *
+     * @param estimatedSize
+     *            The estimated size in bytes.
+     * @param maxSize
+     *            The maximum size in bytes.
+     */
+    public ResponseTooLargeException(long estimatedSize, long maxSize) {
+        super(buildSizeMessage(estimatedSize, maxSize));
+    }
+
+    /**
+     * Constructs a message similar to {@link #DEFAULT_MESSAGE}, but includes
+     * the estimated size and maximum size.
+     *
+     * @param estimatedSize
+     *            The estimated size in bytes.
+     * @param maxSize
+     *            The maximum size in bytes.
+     * @return An exception message that includes the estimated size, maximum
+     *         size, and suggested fixes.
+     */
+    protected static String buildSizeMessage(long estimatedSize,
+            long maxSize) {
+        StringBuilder message = new StringBuilder();
+        message.append("The estimated response size of ")
+                .append(SizeUtil.prettyByteSize(estimatedSize))
+                .append(" exceeds the configured limit of ")
+                .append(SizeUtil.prettyByteSize(maxSize))
+                .append(" and cannot be returned. ")
+                .append(SUGGESTION);
+        return message.toString();
     }
 
 }

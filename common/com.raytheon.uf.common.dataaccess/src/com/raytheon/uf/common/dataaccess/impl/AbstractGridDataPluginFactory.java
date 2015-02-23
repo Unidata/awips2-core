@@ -47,11 +47,11 @@ import com.vividsolutions.jts.geom.Envelope;
 /**
  * An abstract factory for getting grid data from plugins that use
  * PluginDataObject.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Jan 17, 2013           bsteffen    Initial creation
@@ -64,9 +64,10 @@ import com.vividsolutions.jts.geom.Envelope;
  *                                    geometry.
  * Jan 28, 2015  2866     nabowle     Estimate response sizes and throw an
  *                                    exception if too large.
- *
+ * Feb 23, 2015  2866     nabowle     Add response sizes to exception.
+ * 
  * </pre>
- *
+ * 
  * @author bsteffen
  * @version 1.0
  */
@@ -194,8 +195,12 @@ public abstract class AbstractGridDataPluginFactory extends
 
         estimatedSize *= SIZE_OF_POINT;
 
+        // TODO: This estimation does not include extra bytes that are included
+        // at serialization. It's possible the response may fail if a
+        // LimitingOutputStream is used.
         if (estimatedSize > MAX_RESPONSE_SIZE) {
-            throw new ResponseTooLargeException();
+            throw new ResponseTooLargeException(estimatedSize,
+                    MAX_RESPONSE_SIZE);
         }
     }
 
