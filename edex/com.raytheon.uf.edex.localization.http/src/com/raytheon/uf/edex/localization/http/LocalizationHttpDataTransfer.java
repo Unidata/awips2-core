@@ -24,7 +24,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFileInputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 
 /**
@@ -37,6 +36,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 16, 2015 3978       bclement     Initial creation
+ * Feb 24, 2015 3978       njensen      Changed to use abstract InputStream
  * 
  * </pre>
  * 
@@ -62,7 +62,7 @@ public class LocalizationHttpDataTransfer {
      */
     public static void copy(LocalizationFile lfile, OutputStream out)
             throws LocalizationException, IOException {
-        try (LocalizationFileInputStream in = lfile.openInputStream()) {
+        try (InputStream in = lfile.openInputStream()) {
             copy(in, out);
         }
     }
