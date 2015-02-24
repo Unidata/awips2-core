@@ -1,4 +1,7 @@
 <configuration debug="false" scan="true">
+   <!-- Only define when not wanting to use the UF Standard.
+   <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
+   -->
    
    <!-- this appender will send System.err and System.out to the console log -->
    <appender name="CaveConsoleAppender" class="com.raytheon.uf.common.status.logback.EnvConfigSysStreamFileAppender">      
@@ -111,17 +114,11 @@
       <level value="INFO"/>
    </logger>
 
-   <logger name="com.tc">
-      <level value="WARN"/>
-   </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
    </logger>
    <logger name="org.apache">
       <level value="INFO"/>
-   </logger>
-   <logger name="org.apache.activemq.spring">
-      <level value="WARN"/>
    </logger>
    <logger name="org.apache.commons.beanutils">
       <level value="WARN"/>
