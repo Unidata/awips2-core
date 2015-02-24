@@ -205,6 +205,9 @@ public abstract class PluginDao extends CoreDao {
     }
 
     public PluginDataObject[] persistToDatabase(PluginDataObject... records) {
+        if (records == null || records.length == 0) {
+            return records;
+        }
         List<PluginDataObject> objects = Arrays.asList(records);
         List<PluginDataObject> duplicates = new ArrayList<PluginDataObject>();
         List<PluginDataObject> persisted = new ArrayList<PluginDataObject>(
