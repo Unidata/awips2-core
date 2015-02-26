@@ -46,8 +46,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 12, 2009            randerso     Initial creation
- * 
+ * Nov 12, 2009            randerso    Initial creation
+ * Feb 25, 2014 4159       rjpeter     Correctly handle dates before the epoch.
  * </pre>
  * 
  * @author randerso
@@ -111,7 +111,7 @@ public class BinOffset implements ISerializableObject {
      */
     public DataTime getNormalizedTime(DataTime time) {
         // nothing to offset
-        if (posOffset == 0 && negOffset == 0 && virtualOffset == 0) {
+        if ((posOffset == 0) && (negOffset == 0) && (virtualOffset == 0)) {
             return time;
         }
 
@@ -127,6 +127,14 @@ public class BinOffset implements ISerializableObject {
         if (range != 0) {
             long posInMillis = posOffset * 1000l;
             adjustedTime = ((timeInMillis / range) * range);
+            if ((timeInMillis < 0) && (timeInMillis != adjustedTime)) {
+                /*
+                 * negative time, move back a range since the truncate would
+                 * have moved the time forward
+                 */
+                adjustedTime -= range;
+            }
+
             if ((timeInMillis) >= (adjustedTime + posInMillis)) {
                 adjustedTime += range;
             }
@@ -193,9 +201,9 @@ public class BinOffset implements ISerializableObject {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + negOffset;
-        result = prime * result + posOffset;
-        result = prime * result + virtualOffset;
+        result = (prime * result) + negOffset;
+        result = (prime * result) + posOffset;
+        result = (prime * result) + virtualOffset;
         return result;
     }
 

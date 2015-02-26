@@ -31,6 +31,8 @@ import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint.ConstraintType;
 import com.raytheon.uf.common.dataquery.requests.TimeQueryRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.database.dao.CoreDao;
@@ -50,7 +52,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * ------------ ---------- ----------- --------------------------
  * Apr 05, 2011            njensen     Initial creation
  * Mar 24, 2014    2941    mpduff      Sort data before returning it.
- * 
+ * Feb 25, 2015 4159       rjpeter     Put in check for infinite recursion.
  * </pre>
  * 
  * @author njensen
@@ -58,18 +60,22 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  */
 
 public class TimeQueryHandler implements IRequestHandler<TimeQueryRequest> {
-
     private static final String DATA_TIME = "dataTime";
 
     private static final String REF_TIME = DATA_TIME + ".refTime";
+
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(TimeQueryHandler.class);
 
     @Override
     public List<DataTime> handleRequest(TimeQueryRequest request)
             throws Exception {
         // plugin name is sometimes sent over due to viz API
         Map<String, RequestConstraint> map = request.getQueryTerms();
-        if (map.containsKey("pluginName")) {
-            map.remove("pluginName");
+        String pluginName = null;
+        RequestConstraint rc = map.remove("pluginName");
+        if (rc != null) {
+            pluginName = rc.getConstraintValue();
         }
 
         // Simulated Date is the date set in the CAVE calling this
@@ -102,15 +108,29 @@ public class TimeQueryHandler implements IRequestHandler<TimeQueryRequest> {
                 map.put(REF_TIME, timeRC);
             }
             times = new ArrayList<DataTime>(50);
-            while (latestTime != null && latestTime.size() != 0) {
+            Date prevDate = null;
+            while ((latestTime != null) && (latestTime.isEmpty() == false)) {
                 DataTime normalTime = binOffset.getNormalizedTime(latestTime
                         .get(0));
                 times.add(normalTime);
                 Date date = binOffset.getTimeRange(normalTime).getStart();
+                if ((prevDate != null) && prevDate.equals(date)) {
+                    /*
+                     * prevent infinite recursion since date was the same as
+                     * previous query
+                     */
+                    statusHandler
+                            .error("Preventing infinite time query recursion on plugin ["
+                                    + pluginName
+                                    + "].  Check data for times less than ["
+                                    + date + "]");
+                    break;
+                }
                 map.get(REF_TIME).setConstraintValue(
                         new DataTime(date).toString());
                 query = buildQuery(classname, map, true);
                 latestTime = runQuery(dao, query);
+                prevDate = date;
             }
         } else {
             DatabaseQuery query = buildQuery(classname, map,
