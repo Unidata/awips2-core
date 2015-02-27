@@ -48,6 +48,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  *    Jan 06, 2015 3879        nabowle     Use the map layers' names if only map
  *                                         layers are displayed. If nothing is
  *                                         displayed, disallow the entry.
+ *    Feb 27, 2015 3879        nabowle     Handle null resource names
  *
  * </pre>
  *
@@ -194,8 +195,14 @@ public class HistoryList {
                     sb.append(sub);
                 }
             } else {
-                name = rp.getResource().getName().trim();
-                if (names.add(name)) {
+                name = rp.getResource().getName();
+                if (name == null) {
+                    name = "";
+                } else {
+                    name = name.trim();
+                }
+
+                if (!name.isEmpty() && names.add(name)) {
                     if (sb.length() > 0) {
                         sb.append(", ");
                     }
