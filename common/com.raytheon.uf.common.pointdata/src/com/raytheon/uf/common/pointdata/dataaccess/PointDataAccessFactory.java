@@ -72,6 +72,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * Sep 10, 2014  3615     nabowle     Add support for null count and level parameters.
  * Feb 19, 2015  4147     mapeters    Override getAvailableParameters().
+ * Feb 27, 2015  4179     mapeters    Use super's getAvailableValues().
  * 
  * </pre>
  * 
@@ -121,7 +122,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
-        return getAvailableLocationNames(request, locationDatabaseKey);
+        return getAvailableValues(request, locationDatabaseKey, String.class);
     }
 
     @Override

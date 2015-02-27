@@ -63,6 +63,8 @@ import com.raytheon.uf.common.time.TimeRange;
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Oct 21, 2014  3755     nabowle     Don't require parameters for getAvailable
  *                                    times/locationNames.
+ * Feb 27, 2015  4179     mapeters    Add getAvailableValues(), change methods
+ *                                    to use it.
  * 
  * 
  * </pre>
@@ -87,21 +89,16 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
-            boolean refTimeOnly)
-            throws TimeAgnosticDataException {
+            boolean refTimeOnly) throws TimeAgnosticDataException {
         if (refTimeOnly) {
-            DbQueryRequest dbQueryRequest = buildDbQueryRequest(request);
-            dbQueryRequest.setDistinct(Boolean.TRUE);
-            dbQueryRequest.addRequestField(FIELD_REFTIME);
-            DbQueryResponse dbQueryResponse = this.executeDbQueryRequest(
-                    dbQueryRequest, request.toString());
-            List<DataTime> times = new ArrayList<DataTime>(dbQueryResponse
-                    .getResults().size());
-            for (Map<String, Object> result : dbQueryResponse.getResults()) {
-                Date refTime = (Date) result.get(FIELD_REFTIME);
-                times.add(new DataTime(refTime));
+            Date[] refTimes = getAvailableValues(request, FIELD_REFTIME,
+                    Date.class);
+            DataTime[] dataTimes = new DataTime[refTimes.length];
+            int i = 0;
+            for (Date refTime : refTimes) {
+                dataTimes[i++] = (new DataTime(refTime));
             }
-            return times.toArray(new DataTime[0]);
+            return dataTimes;
         } else {
             return this.getAvailableTimes(request, null);
         }
@@ -177,24 +174,29 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         return getGridData(request, dbQueryResponse);
     }
 
-    public String[] getAvailableLocationNames(IDataRequest request,
-            String locationColumn) {
+    /**
+     * Get the available values of the desired field.
+     * 
+     * @param request
+     * @param requestField
+     *            the field whose values are being retrieved
+     * @param fieldType
+     *            the type of values to return
+     * @return the available values
+     */
+    protected <T> T[] getAvailableValues(IDataRequest request,
+            String requestField, Class<T> fieldType) {
         DbQueryRequest dbQueryRequest = buildDbQueryRequest(request);
-        dbQueryRequest.setDistinct(Boolean.TRUE);
-        dbQueryRequest.addRequestField(locationColumn);
-
-        DbQueryResponse dbQueryResponse = this.executeDbQueryRequest(
-                dbQueryRequest, request.toString());
-        List<String> locationNames = new ArrayList<String>();
-        for (Map<String, Object> result : dbQueryResponse.getResults()) {
-            locationNames.add(result.get(locationColumn).toString());
-        }
-        return locationNames.toArray(new String[0]);
+        dbQueryRequest.addRequestField(requestField);
+        dbQueryRequest.setDistinct(true);
+        DbQueryResponse dbQueryResponse = executeDbQueryRequest(dbQueryRequest,
+                request.toString());
+        return dbQueryResponse.getFieldObjects(requestField, fieldType);
     }
 
     /**
      * Builds a TimeQueryRequest that will be used to retrieve Data Times.
-     *
+     * 
      * @param request
      *            the original grid request
      * @return a TimeQueryRequest to execute
@@ -210,7 +212,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Executes the provided DbQueryRequest and returns a DbQueryResponse
-     *
+     * 
      * @param dbQueryRequest
      *            the DbQueryRequest to execute
      * @param requestString
@@ -235,7 +237,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs a db query request using the provided data times
-     *
+     * 
      * @param request
      *            the original grid request
      * @param dataTimes
@@ -265,7 +267,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs a db request using the provided time range
-     *
+     * 
      * @param request
      *            the original grid request
      * @param timeRange
@@ -290,7 +292,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
     /**
      * Constructs the base of a db query request using the supplied grid request
-     *
+     * 
      * @param request
      *            the original grid request
      * @return the base DbQueryRequest
@@ -305,7 +307,6 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
 
         return dbQueryRequest;
     }
-
 
     protected IGridData[] getGridData(IDataRequest request,
             DbQueryResponse dbQueryResponse) {
