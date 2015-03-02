@@ -21,7 +21,10 @@ package com.raytheon.viz.ui.actions;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
+import org.eclipse.ui.IWorkbenchPart;
+import org.eclipse.ui.internal.PartPane;
 import org.eclipse.ui.internal.presentations.ISelfUpdatingAction;
+import org.eclipse.ui.internal.presentations.PresentablePart;
 import org.eclipse.ui.presentations.IPresentablePart;
 
 /**
@@ -33,7 +36,8 @@ import org.eclipse.ui.presentations.IPresentablePart;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 21, 2012            mnash     Initial creation
+ * Mar 21, 2012            mnash       Initial creation
+ * Mar 02, 2015  4204      njensen     Added perspectiveId and getWorkbenchPart()
  * 
  * </pre>
  * 
@@ -45,7 +49,9 @@ import org.eclipse.ui.presentations.IPresentablePart;
 public class ContributedEditorMenuAction extends Action implements
         ISelfUpdatingAction {
 
-    private IPresentablePart part;
+    protected IPresentablePart part;
+
+    protected String perspectiveId;
 
     /**
      * 
@@ -100,6 +106,25 @@ public class ContributedEditorMenuAction extends Action implements
      */
     public IPresentablePart getPart() {
         return part;
+    }
+
+    public String getPerspectiveId() {
+        return perspectiveId;
+    }
+
+    public void setPerspectiveId(String perspectiveId) {
+        this.perspectiveId = perspectiveId;
+    }
+
+    protected IWorkbenchPart getWorkbenchPart() {
+        IWorkbenchPart wbPart = null;
+        if (part instanceof PresentablePart) {
+            PartPane pane = ((PresentablePart) part).getPane();
+            if (pane != null) {
+                wbPart = pane.getPartReference().getPart(false);
+            }
+        }
+        return wbPart;
     }
 
 }

@@ -45,6 +45,7 @@ import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.Procedure;
+import com.raytheon.viz.ui.IRenameablePart;
 import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.UiUtil.ContainerPart;
@@ -63,6 +64,7 @@ import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
  *    Sep 11, 2007             chammack    Initial Creation.
+ *    Mar 02, 2015  4204       njensen     Set bundle name to part name
  * 
  * </pre>
  * 
@@ -164,6 +166,14 @@ public class SaveProcedure extends AbstractHandler {
                 if (displayArr.length > 0) {
                     b.setLoopProperties(displayArr[0].getContainer()
                             .getLoopProperties());
+
+                    if (displayArr[0].getContainer() instanceof IRenameablePart) {
+                        String partName = ((IRenameablePart) displayArr[0]
+                                .getContainer()).getPartName();
+                        if (partName != null) {
+                            b.setName(partName);
+                        }
+                    }
                 }
                 String key = part.id;
                 b.setLayoutId(c.layoutId);
