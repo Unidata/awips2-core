@@ -40,6 +40,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 16, 2015  3978      njensen     Initial creation
+ * Mar 03, 2015  3978      njensen     Added debug when no bytes processed
  * 
  * </pre>
  * 
@@ -68,8 +69,12 @@ public class DownloadFileStreamHandler implements IStreamHandler {
     @Override
     public void handleStream(InputStream is) throws CommunicationException {
         try {
-            Files.copy(is, localFile.toPath(),
+            long bytesReceived = Files.copy(is, localFile.toPath(),
                     StandardCopyOption.REPLACE_EXISTING);
+            if (bytesReceived == 0) {
+                logger.debug("WARNING: File retrieved from server appears empty: "
+                        + localFile);
+            }
         } catch (IOException e) {
             logger.error("Error writing file " + localFile, e);
         }
