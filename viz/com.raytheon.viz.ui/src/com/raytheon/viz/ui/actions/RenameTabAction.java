@@ -20,6 +20,7 @@
 package com.raytheon.viz.ui.actions;
 
 import org.eclipse.jface.action.IAction;
+import org.eclipse.jface.dialogs.IInputValidator;
 import org.eclipse.jface.dialogs.InputDialog;
 import org.eclipse.jface.window.Window;
 import org.eclipse.ui.IWorkbenchPart;
@@ -40,6 +41,7 @@ import com.raytheon.viz.ui.IRenameablePart;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 25, 2015  4204      njensen     Initial creation
+ * Mar 04, 2015  4204      njensen     Added validation
  * 
  * </pre>
  * 
@@ -48,6 +50,8 @@ import com.raytheon.viz.ui.IRenameablePart;
  */
 
 public class RenameTabAction extends ContributedEditorMenuAction {
+
+    protected IInputValidator validator = new TabNameValidator();
 
     public RenameTabAction() {
         super("Rename Tab", IAction.AS_PUSH_BUTTON);
@@ -72,14 +76,27 @@ public class RenameTabAction extends ContributedEditorMenuAction {
         if (wbPart instanceof IRenameablePart) {
             IRenameablePart partToRename = (IRenameablePart) wbPart;
             String currentName = partToRename.getPartName();
-            // TODO add validation of user input
             InputDialog userInput = new InputDialog(PlatformUI.getWorkbench()
                     .getActiveWorkbenchWindow().getShell(), "Rename Tab", null,
-                    currentName, null);
+                    currentName, validator);
             if (userInput.open() == Window.OK) {
                 String newName = userInput.getValue();
                 partToRename.setPartName(newName);
             }
+        }
+    }
+
+    private static class TabNameValidator implements IInputValidator {
+
+        @Override
+        public String isValid(String newText) {
+            String result = null;
+            if (newText == null || newText.length() < 1) {
+                result = "Must enter a tab name.";
+            } else if (newText.length() > 64) {
+                result = "Must enter a shorter tab name.";
+            }
+            return result;
         }
     }
 
