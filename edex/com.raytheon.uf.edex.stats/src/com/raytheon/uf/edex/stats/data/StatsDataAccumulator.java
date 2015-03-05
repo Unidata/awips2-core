@@ -32,7 +32,7 @@ import javax.xml.bind.JAXBException;
 import com.google.common.annotations.VisibleForTesting;
 import com.google.common.collect.Lists;
 import com.google.common.collect.Sets;
-import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.stats.AggregateRecord;
 import com.raytheon.uf.common.stats.StatsGrouping;
 import com.raytheon.uf.common.stats.StatsGroupingColumn;
@@ -60,6 +60,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Jan 15, 2013 1487       djohnson    Use xml for the grouping information on an {@link AggregateRecord}.
  * Jan 17, 2013 1357       mpduff      Remove unit conversions, add time step, other cleanup.
  * May 22, 2013 1917       rjpeter     Made unmarshalGroupingColumnFromRecord public.
+ * Feb 18, 2015 4125       rjpeter     Fix performance issues by making JAXB_MANAGER a local instance and adding pooling.
  * </pre>
  * 
  * @author mpduff
@@ -77,13 +78,16 @@ public class StatsDataAccumulator {
     private static final String COLON = ":";
 
     /** JaxB manager instance. */
-    private static final JAXBManager JAXB_MANAGER;
-    static {
+    private final SingleTypeJAXBManager<StatsGroupingColumn> jaxbManager;
+
+    public StatsDataAccumulator() {
         try {
-            JAXB_MANAGER = new JAXBManager(StatsGroupingColumn.class);
+            jaxbManager = new SingleTypeJAXBManager<>(true,
+                    StatsGroupingColumn.class);
         } catch (JAXBException e) {
             throw new ExceptionInInitializerError(e);
         }
+
     }
 
     /** List of records */
@@ -268,12 +272,11 @@ public class StatsDataAccumulator {
      * @return the unmarshalled column, or an empty column if unable to
      *         unmarshal
      */
-    public static StatsGroupingColumn unmarshalGroupingColumnFromRecord(
+    public StatsGroupingColumn unmarshalGroupingColumnFromRecord(
             AggregateRecord record) {
         String groupingXmlAsString = record.getGrouping();
         try {
-            return (StatsGroupingColumn) JAXB_MANAGER
-                    .unmarshalFromXml(groupingXmlAsString);
+            return jaxbManager.unmarshalFromXml(groupingXmlAsString);
         } catch (JAXBException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Unable to unmarshal stats grouping column, returning empty record, xml:\n"
