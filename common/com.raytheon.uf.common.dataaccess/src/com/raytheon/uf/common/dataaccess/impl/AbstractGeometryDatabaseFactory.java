@@ -60,6 +60,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jan 28, 2015  4009     mapeters    Overrode getAvailableParameters(), 
  *                                    added assembleGetAvailableParameters().
  * Feb 03, 2015  4009     mapeters    Overrode getAvailableLevels().
+ * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
  * 
  * </pre>
  * 
@@ -194,7 +195,6 @@ public abstract class AbstractGeometryDatabaseFactory extends
             }
         }
 
-        Collections.sort(dataTimes);
         return dataTimes.toArray(new DataTime[0]);
     }
 
