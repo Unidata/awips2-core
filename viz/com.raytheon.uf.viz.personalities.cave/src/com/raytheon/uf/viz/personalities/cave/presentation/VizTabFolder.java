@@ -19,10 +19,12 @@
  **/
 package com.raytheon.uf.viz.personalities.cave.presentation;
 
+import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.ui.internal.presentations.defaultpresentation.DefaultTabFolder;
+import org.eclipse.ui.internal.presentations.util.AbstractTabItem;
 
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
@@ -37,6 +39,7 @@ import com.raytheon.viz.ui.EditorUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 18, 2008            chammack     Initial creation
+ * Mar 03, 2015 4204       njensen      Overrode add(int, int)
  * 
  * </pre>
  * 
@@ -79,6 +82,16 @@ public class VizTabFolder extends DefaultTabFolder {
                 pane.getRenderableDisplay().setSwapping(false);
             }
         }
+    }
+
+    @Override
+    public AbstractTabItem add(int index, int flags) {
+        VizTabItem result = new VizTabItem((CTabFolder) getControl(), index,
+                flags);
+
+        result.getWidget().setData(result);
+
+        return result;
     }
 
 }
