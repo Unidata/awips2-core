@@ -43,6 +43,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Feb 04, 2014  2672     bsteffen    Initial creation
+ * Mar 03, 2015  4022     bsteffen    Handle empty geometry from EnvelopeIntersection
  * 
  * </pre>
  * 
@@ -103,15 +104,19 @@ public class SubGridGeometryCalculator {
         } catch (FactoryException e) {
             throw new TransformException("Error initializing transforms.", e);
         }
-        /* Convert from jts envelope to geotools envelope. */
-        com.vividsolutions.jts.geom.Envelope env = geom.getEnvelopeInternal();
-        Envelope2D subEnv = new Envelope2D(gridCRS, env.getMinX(),
-                env.getMinY(), env.getWidth(), env.getHeight());
-        GridEnvelope2D subRange = gg2D.worldToGrid(subEnv);
-        /* Add a 1 pixel border so interpolation near the edges is nice */
-        subRange.grow(1, 1);
-        /* Make sure not to grow bigger than original grid. */
-        subRange = new GridEnvelope2D(subRange.intersection(gridRange));
+        GridEnvelope2D subRange = new GridEnvelope2D();
+        if (!geom.isEmpty()) {
+            /* Convert from jts envelope to geotools envelope. */
+            com.vividsolutions.jts.geom.Envelope env = geom
+                    .getEnvelopeInternal();
+            Envelope2D subEnv = new Envelope2D(gridCRS, env.getMinX(),
+                    env.getMinY(), env.getWidth(), env.getHeight());
+            subRange = gg2D.worldToGrid(subEnv);
+            /* Add a 1 pixel border so interpolation near the edges is nice */
+            subRange.grow(1, 1);
+            /* Make sure not to grow bigger than original grid. */
+            subRange = new GridEnvelope2D(subRange.intersection(gridRange));
+        }
         if (subRange.equals(gridRange)) {
             return gridGeometry;
         }

@@ -300,6 +300,7 @@ public class PurgeLogs {
         }
 
         if (this.compressedDays < 0) {
+            this.compressedDays = 0;
             PurgeLogger.logError(
                     "compressedDays cannot be negative, setting to 0", plugin);
         }
@@ -326,9 +327,12 @@ public class PurgeLogs {
             this.uncompressedDays = DEFAULT_UNCOMPRESSED_DAYS;
         }
 
-        if (this.compressedDays < 0) {
-            PurgeLogger.logError(
-                    "compressedDays cannot be negative, setting to 0", plugin);
+        if (this.uncompressedDays < 0) {
+            this.uncompressedDays = 0;
+            PurgeLogger
+                    .logError(
+                            "uncompressedDays cannot be negative, setting to 0",
+                            plugin);
         }
     }
 }
