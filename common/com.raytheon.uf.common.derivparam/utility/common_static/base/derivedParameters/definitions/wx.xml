@@ -29,7 +29,7 @@
 		<Field abbreviation="snowTyp" />
 		<ConstantField value="8" />
 	</Method>
-	<Method name="Mapping" models="HPCGuide AK-HPCGuide" levels="Surface">
+	<Method name="Mapping" models="HPCGuide" levels="Surface">
 		<Field level="Surface" abbreviation="wxType" />
 		<ConstantField value="1" />
 		<ConstantField value="168" />
@@ -68,4 +68,19 @@
 		<ConstantField value="164" />
 
 	</Method>
+	<Method name="Mapping" models="HPCGuide-AK" levels="Surface">
+		<Field level="Surface" abbreviation="wxType" />
+		<ConstantField value="1" />
+		<ConstantField value="168" />
+
+		<ConstantField value="2" />
+		<ConstantField value="41" />
+
+		<ConstantField value="3" />
+		<ConstantField value="47" />
+
+		<ConstantField value="4" />
+		<ConstantField value="164" />
+
+	</Method>	
 </DerivedParameter>
