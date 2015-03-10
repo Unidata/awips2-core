@@ -47,6 +47,8 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Feb 27, 2015 4196       njensen     Null authentication data on responses
+ *                                      for backwards compatibility
  * 
  * </pre>
  * 
@@ -77,10 +79,10 @@ public class RequestServiceExecutor {
 
     /**
      * Executes the request passed in, delegates conversion to/from
-     * {@link IServerRequest} to the {@link #serviceAdapter} set in the
+     * {@link IServerRequest} to the {@link HandlerRegistry} set in the
      * constructor
      * 
-     * @param serviceRequest
+     * @param request
      * @return The result of the service execution
      * @throws Exception
      */
@@ -114,8 +116,12 @@ public class RequestServiceExecutor {
                 AuthenticationResponse resp = manager.getAuthenticator()
                         .authenticate(user);
                 if (!resp.isAuthenticated()) {
+                    /*
+                     * TODO someday pass in updated IAuthenticationData if we
+                     * have an actual implementation that uses it for security
+                     */
                     return ResponseFactory.constructNotAuthenticated(privReq,
-                            resp.getUpdatedData());
+                            null);
                 }
 
                 /*
@@ -135,9 +141,12 @@ public class RequestServiceExecutor {
                  * handler execute the request
                  */
                 try {
+                    /*
+                     * TODO someday pass in updated IAuthenticationData if we
+                     * have an actual implementation that uses it for security
+                     */
                     return ResponseFactory.constructSuccessfulExecution(
-                            privHandler.handleRequest(privReq),
-                            resp.getUpdatedData());
+                            privHandler.handleRequest(privReq), null);
                 } catch (Throwable t) {
                     throw new AuthException(resp.getUpdatedData(), t);
                 }

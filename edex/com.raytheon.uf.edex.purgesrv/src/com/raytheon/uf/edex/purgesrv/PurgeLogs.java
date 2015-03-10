@@ -175,7 +175,7 @@ public class PurgeLogs {
                 switch (op) {
                 case COMPRESS:
                     // add all files in the list into YYYYMMDD.zip
-                    String name = logDirectory + "/" + sdf.format(key) + ".zip";
+                    String name = sdf.format(key) + ".zip";
                     count += compressFiles(name, files);
                     break;
                 case DELETE:
@@ -220,14 +220,19 @@ public class PurgeLogs {
     private int compressFiles(String zipName, List<String> files) {
         int count = 0;
 
+        File zipFile = new File(logDirectory, zipName);
+        if (files.contains(zipName)) {
+            // zip file already exists, don't do anything
+            return 0;
+        }
+
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(
-                zipName))) {
+                zipFile))) {
             for (String file : files) {
-                String fullPath = logDirectory + "/" + file;
-                File tmpFile = new File(fullPath);
+                File tmpFile = new File(logDirectory, file);
                 if (tmpFile.exists()) {
                     count++;
-                    try (InputStream in = new FileInputStream(fullPath)) {
+                    try (InputStream in = new FileInputStream(tmpFile)) {
                         zos.putNextEntry(new ZipEntry(file));
 
                         int len;
