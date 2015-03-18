@@ -20,6 +20,7 @@
 package com.raytheon.viz.core.rsc.jts;
 
 import org.eclipse.swt.graphics.RGB;
+import org.geotools.referencing.operation.projection.ProjectionException;
 import org.opengis.referencing.FactoryException;
 
 import com.raytheon.uf.common.geospatial.ReferencedGeometry;
@@ -55,6 +56,7 @@ import com.vividsolutions.jts.geom.prep.PreparedGeometryFactory;
  *  Feb 14, 2014 2804        mschenke    Rewrote to move clipping from GLWireframeShape2D to here
  *  Apr 21, 2014 2997        randerso    Improved error handling in handle(ReferencedGeometry, JTSGeometryData)
  *  Jul 16, 2014 3366        bclement    don't reuse arrays for line segments in handlePoint()
+ *  Jan 29, 2015 4062        randerso    Don't throw errors for ProjectionExceptions
  * 
  * </pre>
  * 
@@ -482,6 +484,8 @@ public class JTSCompiler {
                         corrector.correct(geom.asLatLon()));
             } catch (FactoryException e) {
                 throw new VizException("Error creating transform to Lat/Lon", e);
+            } catch (ProjectionException e) {
+                // ignore this exception so it doesn't cause pop ups
             } catch (Exception e) {
                 throw new VizException(
                         "Error transforming geometry into Lat/Lon", e);
@@ -493,6 +497,8 @@ public class JTSCompiler {
         } catch (FactoryException e) {
             throw new VizException(
                     "Error creating transform to descriptor pixel space", e);
+        } catch (ProjectionException e) {
+            // ignore this exception so it doesn't cause pop ups
         } catch (Exception e) {
             throw new VizException(
                     "Error transforming geometry into descriptor pixel space",
