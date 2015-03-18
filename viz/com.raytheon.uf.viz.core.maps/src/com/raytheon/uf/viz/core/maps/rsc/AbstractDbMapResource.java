@@ -59,6 +59,7 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * Aug 10, 2011            randerso    Initial creation
  * Apr 17, 2014  #2997     randerso    Moved buildBoundingGeometry up from DbMapResource
  * Aug 21, 2014  #3459     randerso    Restructured Map resource class hierarchy
+ * Jan 29, 2015  #4062     randerso    Added a buffer to bounding Geometry
  * 
  * </pre>
  * 
@@ -252,6 +253,10 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
             statusHandler
                     .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
         }
+
+        // Add just a little buffer to get past EnvelopeIntersection limiting
+        // us to 179.99999 instead of going clear to 180
+        g = g.buffer(0.0001);
 
         // long t1 = System.currentTimeMillis();
         // System.out.println("buildBoundingGeometry took: " + (t1 - t0));
