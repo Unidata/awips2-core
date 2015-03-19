@@ -93,20 +93,20 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Dec 13, 2013 2555        rjpeter     Added processByCriteria and fixed Generics warnings.
  * Jan 23, 2014 2555        rjpeter     Updated processByCriteria to be a row at a time using ScrollableResults.
  * Apr 23, 2014 2726        rjpeter     Updated processByCriteria to throw exceptions back up to caller.
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * 10/28/2014   3454        bphillip    Fix usage of getSession()
+ * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
  * </pre>
  * 
  * @author bphillip
  * @version 1
  */
 public class CoreDao {
-    
-    protected final IUFStatusHandler logger = UFStatus
-            .getHandler(getClass());
-    
+
+    protected final IUFStatusHandler logger = UFStatus.getHandler(getClass());
+
     protected SessionFactory sessionFactory;
-    
+
     protected HibernateTransactionManager txManager;
 
     /** The convenience wrapper for the Hibernate transaction manager */
@@ -206,7 +206,7 @@ public class CoreDao {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
                 Session session = getCurrentSession();
-                for(Object obj: objs){
+                for (Object obj : objs) {
                     session.saveOrUpdate(obj);
                 }
             }
@@ -269,7 +269,8 @@ public class CoreDao {
                                 id.getClass())
                                 .add(Property.forName("dataURI").eq(
                                         id.getDataURI()));
-                        List<?> list = criteria.getExecutableCriteria(getCurrentSession()).list();
+                        List<?> list = criteria.getExecutableCriteria(
+                                getCurrentSession()).list();
                         if (list.size() > 0) {
                             return (PluginDataObject) list.get(0);
                         } else {
@@ -300,9 +301,9 @@ public class CoreDao {
                     @SuppressWarnings("unchecked")
                     public List<PersistableDataObject<T>> doInTransaction(
                             TransactionStatus status) {
-                        return getCurrentSession().createCriteria(obj.getClass())
-                                .add( Example.create(obj) )
-                                .list();
+                        return getCurrentSession()
+                                .createCriteria(obj.getClass())
+                                .add(Example.create(obj)).list();
                     }
                 });
         return retVal;
@@ -488,7 +489,7 @@ public class CoreDao {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
                 Session session = getCurrentSession();
-                for(Object obj: objs){
+                for (Object obj : objs) {
                     session.delete(obj);
                 }
             }
@@ -689,8 +690,8 @@ public class CoreDao {
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
                     public QueryResult doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getCurrentSession()
-                                .createQuery(hqlQuery);
+                        Query hibQuery = getCurrentSession().createQuery(
+                                hqlQuery);
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         hibQuery.setCacheable(true);
@@ -743,7 +744,8 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getCurrentSession().createQuery(hqlStmt);
+                        Query hibQuery = getCurrentSession().createQuery(
+                                hqlStmt);
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         return hibQuery.executeUpdate();
@@ -852,7 +854,8 @@ public class CoreDao {
             if (transactional) {
                 trans = session.beginTransaction();
             }
-            conn = SessionFactoryUtils.getDataSource(getSessionFactory()).getConnection();
+            conn = SessionFactoryUtils.getDataSource(getSessionFactory())
+                    .getConnection();
             stmt = conn.createStatement();
 
         } catch (SQLException e) {
@@ -964,7 +967,8 @@ public class CoreDao {
         try {
             session = getSession(true);
             trans = session.beginTransaction();
-            conn = SessionFactoryUtils.getDataSource(getSessionFactory()).getConnection();
+            conn = SessionFactoryUtils.getDataSource(getSessionFactory())
+                    .getConnection();
             stmt = conn.createStatement();
         } catch (SQLException e) {
             throw new DataAccessLayerException(
@@ -1109,7 +1113,33 @@ public class CoreDao {
             return getSessionFactory().getClassMetadata(daoClass);
         }
     }
-    
+
+    /**
+     * Updates/saves a set of records and deletes a set of records in the
+     * database in a single transaction.
+     * 
+     * @param updates
+     *            Records to update or add.
+     * @param deletes
+     *            Records to delete.
+     */
+    public void bulkSaveOrUpdateAndDelete(
+            final Collection<? extends Object> updates,
+            final Collection<? extends Object> deletes) {
+        txTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            public void doInTransactionWithoutResult(TransactionStatus status) {
+                Session session = getCurrentSession();
+                for (Object obj : updates) {
+                    session.saveOrUpdate(obj);
+                }
+                for (Object obj : deletes) {
+                    session.delete(obj);
+                }
+            }
+        });
+    }
+
     /**
      * Gets the session associated with the current thread. This method does not
      * create a new session if one does not exist
