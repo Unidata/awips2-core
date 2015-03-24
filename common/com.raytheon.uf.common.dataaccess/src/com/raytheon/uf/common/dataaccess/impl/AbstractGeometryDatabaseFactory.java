@@ -21,8 +21,10 @@ package com.raytheon.uf.common.dataaccess.impl;
 
 import java.sql.Timestamp;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 import java.util.Map;
 
@@ -31,6 +33,7 @@ import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
+import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil.QUERY_MODE;
 import com.raytheon.uf.common.dataplugin.level.Level;
@@ -61,6 +64,8 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                    added assembleGetAvailableParameters().
  * Feb 03, 2015  4009     mapeters    Overrode getAvailableLevels().
  * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
+ * Mar 18, 2015  4227     mapeters    Add buildDataTimeFromQueryResults(), add checks for 
+ *                                    adding geom data, correctly get BinOffsetted times.
  * 
  * </pre>
  * 
@@ -132,9 +137,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
             BinOffset binOffset) throws TimeAgnosticDataException {
-        this.validateRequest(request);
-        return this.executeTimeQuery(this.assembleGetTimes(request, binOffset),
-                request);
+        return FactoryUtil.getAvailableTimes(this, request, binOffset);
     }
 
     /*
@@ -181,21 +184,24 @@ public abstract class AbstractGeometryDatabaseFactory extends
         List<Object[]> results = this.executeQuery(query, request);
         List<DataTime> dataTimes = new ArrayList<DataTime>();
         for (Object[] objects : results) {
-            /*
-             * verify that the object is one of the data types we are expecting.
-             */
-            if (objects[0] instanceof Timestamp) {
-                dataTimes.add(new DataTime((Timestamp) objects[0]));
-            } else if (objects[0] instanceof DataTime) {
-                dataTimes.add((DataTime) objects[0]);
-            } else {
-                throw new DataRetrievalException(
-                        "Unrecognized temporal object: "
-                                + objects[0].getClass().getName());
-            }
+            dataTimes.add(buildDataTimeFromQueryResults(objects));
         }
 
         return dataTimes.toArray(new DataTime[0]);
+    }
+
+    protected DataTime buildDataTimeFromQueryResults(Object[] results) {
+        /*
+         * verify that the object is one of the data types we are expecting.
+         */
+        if (results[0] instanceof Timestamp) {
+            return new DataTime((Timestamp) results[0]);
+        } else if (results[0] instanceof DataTime) {
+            return (DataTime) results[0];
+        } else {
+            throw new DataRetrievalException("Unrecognized temporal object: "
+                    + results[0].getClass().getName());
+        }
     }
 
     /**
@@ -310,19 +316,6 @@ public abstract class AbstractGeometryDatabaseFactory extends
             boolean refTimeOnly);
 
     /**
-     * Builds a query that will be used to retrieve time from the database based
-     * on the provided request and the provided BinOffset. Necessary?
-     * 
-     * @param request
-     *            the original request that we are processing
-     * @param binOffset
-     *            the BinOffset to apply to the retrieved DataTimes
-     * @return the query
-     */
-    protected abstract String assembleGetTimes(IDataRequest request,
-            BinOffset binOffset);
-
-    /**
      * Builds a query used to retrieve data from the database based on the
      * provided request and a list of DataTimes.
      * 
@@ -373,7 +366,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
         String[] table = ((String) (request.getIdentifiers().get("table")))
                 .split("\\.");
         return "select column_name from information_schema.columns where table_schema = '"
-                + table[0] + "' and table_name = '" + table[1] + "'";
+                + table[0] + "' and table_name = '" + table[1] + "';";
     }
 
     /**
@@ -395,7 +388,10 @@ public abstract class AbstractGeometryDatabaseFactory extends
 
         // loop over each db row
         for (Object[] row : serverResult) {
-            resultList.add(this.makeGeometry(row, paramNames, attrs));
+            IGeometryData geom = this.makeGeometry(row, paramNames, attrs);
+            if (geom != null) {
+                resultList.add(geom);
+            }
         }
 
         return resultList.toArray(new DefaultGeometryData[0]);
@@ -477,7 +473,16 @@ public abstract class AbstractGeometryDatabaseFactory extends
         if ((data == null) == false && data.length > dataIndex) {
             for (int i = dataIndex; i < data.length; i++) {
                 String name = paramNames[i - dataIndex];
-                geometryData.addData(name, data[i]);
+                Object dataItem = data[i];
+                if (dataItem instanceof Calendar) {
+                    dataItem = ((Calendar) dataItem).getTimeInMillis();
+                    geometryData.addData(name, dataItem, Type.LONG);
+                } else if (dataItem instanceof Date) {
+                    dataItem = ((Date) dataItem).getTime();
+                    geometryData.addData(name, dataItem, Type.LONG);
+                } else {
+                    geometryData.addData(name, dataItem);
+                }
             }
         }
 
