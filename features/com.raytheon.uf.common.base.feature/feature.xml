@@ -381,7 +381,7 @@
          id="ch.qos.logback"
          download-size="0"
          install-size="0"
-         version="1.0.13"/>
+         version="1.1.2"/>
 
    <plugin
          id="com.raytheon.uf.common.topo"
