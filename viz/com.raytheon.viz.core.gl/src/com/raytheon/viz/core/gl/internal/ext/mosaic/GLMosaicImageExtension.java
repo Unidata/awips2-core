@@ -27,12 +27,10 @@ import com.raytheon.uf.viz.core.DrawableImage;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.PixelCoverage;
 import com.raytheon.uf.viz.core.drawables.IImage;
-import com.raytheon.uf.viz.core.drawables.IImage.Status;
 import com.raytheon.uf.viz.core.drawables.ImagingSupport;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.ext.IMosaicImageExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.raytheon.viz.core.gl.dataformat.GLFloatDataFormat;
 import com.raytheon.viz.core.gl.ext.GLOffscreenRenderingExtension;
 import com.raytheon.viz.core.gl.ext.imaging.GLColormappedImageExtension;
 import com.raytheon.viz.core.gl.ext.imaging.GLDataMappingFactory.GLDataMapping;
@@ -41,7 +39,6 @@ import com.raytheon.viz.core.gl.glsl.GLSLStructFactory;
 import com.raytheon.viz.core.gl.glsl.GLShaderProgram;
 import com.raytheon.viz.core.gl.images.AbstractGLColormappedImage;
 import com.raytheon.viz.core.gl.images.AbstractGLImage;
-import com.raytheon.viz.core.gl.images.GLColormappedImage;
 import com.raytheon.viz.core.gl.images.GLOffscreenColormappedImage;
 
 /**
@@ -106,7 +103,7 @@ public abstract class GLMosaicImageExtension extends
                 // Make sure images are staged before we mosaic them
                 ImagingSupport.prepareImages(target, imagesToMosaic);
 
-                writeToImage = getWriteToImage(mosaicImage);
+                writeToImage = mosaicImage.getWrappedImage();
                 if (writeToImage != null) {
                     GLOffscreenRenderingExtension extension = target
                             .getExtension(GLOffscreenRenderingExtension.class);
@@ -154,50 +151,6 @@ public abstract class GLMosaicImageExtension extends
         }
         // Fall through here, no actual rendering will occur
         return null;
-    }
-
-    private GLOffscreenColormappedImage getWriteToImage(
-            GLMosaicImage mosaicImage) throws VizException {
-        GLOffscreenColormappedImage writeTo = mosaicImage.getWrappedImage();
-        if (writeTo.getDataFormat() instanceof GLFloatDataFormat) {
-            /*
-             * Since initializeRaster is requesting a float format this should
-             * be true on all high end graphics cards.
-             */
-            return writeTo;
-        }
-        ColorMapDataType neededType = null;
-        for (DrawableImage di : mosaicImage.getImagesToMosaic()) {
-            IImage image = di.getImage();
-            if (image.getStatus() != Status.LOADED
-                    && image.getStatus() != Status.STAGED) {
-                continue;
-            }
-            if (image instanceof GLColormappedImage) {
-                GLColormappedImage colorMapImage = (GLColormappedImage) image;
-                ColorMapDataType type = colorMapImage.getColorMapDataType();
-                if (neededType == null) {
-                    neededType = type;
-                } else if (neededType != type) {
-                    /*
-                     * Mosaicing images of different types. No Idea how to
-                     * handle this
-                     */
-                    return mosaicImage.getWrappedImage();
-                }
-            }
-        }
-
-        if (neededType != null && neededType != writeTo.getColorMapDataType()) {
-            GLOffscreenRenderingExtension offscreenExt = target
-                    .getExtension(GLOffscreenRenderingExtension.class);
-            int[] dimensions = { writeTo.getWidth(), writeTo.getHeight() };
-            writeTo.dispose();
-            writeTo = offscreenExt.constructOffscreenImage(neededType,
-                    dimensions, writeTo.getColorMapParameters());
-            mosaicImage.setWrappedImage(writeTo);
-        }
-        return writeTo;
     }
 
     /*
