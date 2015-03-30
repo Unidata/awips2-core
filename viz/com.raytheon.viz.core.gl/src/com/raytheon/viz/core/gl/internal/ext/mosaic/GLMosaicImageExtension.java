@@ -63,6 +63,7 @@ import com.raytheon.viz.core.gl.images.GLOffscreenColormappedImage;
  *                                    offscreen so interpolation works.
  * Apr 18, 2014  2947     bsteffen    Fix mosaicing of datamapped images.
  * Jan 26, 2015  3980     bsteffen    Fix mosaicing without luminance.
+ * Mar 12, 2015  4273     njensen     Fix mosaicing without luminance
  * 
  * </pre>
  * 
