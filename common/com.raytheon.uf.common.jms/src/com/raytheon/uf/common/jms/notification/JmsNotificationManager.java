@@ -60,7 +60,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * SOFTWARE HISTORY
  * 
- * Date       	 Ticket#  Engineer    Description
+ * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 08, 2008  1127     randerso    Initial Creation
  * Sep 03, 2008  1448     chammack    Refactored notification observer interface
@@ -69,7 +69,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 15, 2013  2389      rjpeter    Updated synchronization to remove session leaks.
  * Jul 21, 2014  3390      bsteffen   Extracted logic from the NotificationManagerJob
  * Oct 23, 2014  3390      bsteffen   Fix concurrency of disconnect and name threads.
- * 
+ * Apr 06, 2015  3343      rjpeter    Fix deadlock.
  * </pre>
  * 
  * @author randerso
@@ -162,8 +162,38 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     protected final ThreadPoolExecutor executorService;
 
-    private TimerTask task = null;
+    private final ReconnectTimerTask reconnectTask = new ReconnectTimerTask();
 
+    /**
+     * Timer task that can only have a single timer scheduled at a time.
+     */
+    private class ReconnectTimerTask extends TimerTask {
+        private boolean scheduled = false;
+
+        public synchronized void schedule() {
+            if (scheduled) {
+                return;
+            }
+
+            new Timer().schedule(this, 5 * 1000);
+            scheduled = true;
+        }
+
+        /*
+         * (non-Javadoc)
+         * 
+         * @see java.util.TimerTask#run()
+         */
+        @Override
+        public void run() {
+            synchronized (this) {
+                scheduled = false;
+            }
+
+            connect(false);
+        }
+
+    }
 
     public JmsNotificationManager(ConnectionFactory connectionFactory) {
         this(connectionFactory, "JmsNotificationPool");
@@ -184,29 +214,27 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
      * @param notifyError
      *            whether to report errors(through UFStatus) or ignore them.
      */
-    public void connect(boolean notifyError) {
+    public synchronized void connect(boolean notifyError) {
         if (connected) {
             return;
         }
         boolean successful = true;
-        synchronized (this) {
-            try {
-                disconnect(notifyError);
+        try {
+            disconnect(notifyError);
 
-                // Create a Connection
-                connection = connectionFactory.createConnection();
-                connection.setExceptionListener(this);
-                connection.start();
-                /* Enable thread caching. */
-                executorService.setKeepAliveTime(60, TimeUnit.SECONDS);
-                connected = true;
-            } catch (JMSException e) {
-                if (notifyError) {
-                    statusHandler.handle(Priority.SIGNIFICANT,
-                            "NotificationManager failed to connect.", e);
-                }
-                successful = false;
+            // Create a Connection
+            connection = connectionFactory.createConnection();
+            connection.setExceptionListener(this);
+            connection.start();
+            /* Enable thread caching. */
+            executorService.setKeepAliveTime(60, TimeUnit.SECONDS);
+            connected = true;
+        } catch (JMSException e) {
+            if (notifyError) {
+                statusHandler.handle(Priority.SIGNIFICANT,
+                        "NotificationManager failed to connect.", e);
             }
+            successful = false;
         }
 
         synchronized (listeners) {
@@ -278,22 +306,14 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         }
     }
 
+    /*
+     * NOTE: cannot synchronize on this in onException. Often called from within
+     * a synchronized on listeners and can end up in a deadlock scenario.
+     */
     @Override
     public void onException(JMSException e) {
         connected = false;
-        synchronized (this) {
-            if (task == null) {
-                task = new TimerTask() {
-                    @Override
-                    public void run() {
-                        JmsNotificationManager.this.task = null;
-                        connect(false);
-                    }
-                };
-                // needs to be configurable, currently 5 second reconnect
-                new Timer().schedule(task, 5 * 1000);
-            }
-        }
+        reconnectTask.schedule();
 
         synchronized (listeners) {
             // disconnect listeners
@@ -312,30 +332,31 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         addQueueObserver(queue, obs, null);
     }
 
-    public void addQueueObserver(String queue,
-            INotificationObserver obs, String queryString) {
+    public void addQueueObserver(String queue, INotificationObserver obs,
+            String queryString) {
         ListenerKey key = new ListenerKey(queue, queryString);
+        NotificationListener newListener = null;
 
         synchronized (listeners) {
             NotificationListener listener = listeners.get(key);
             if (listener == null) {
-                try {
-                    listener = new NotificationListener(executorService, queue,
-                            queryString,
-                            Type.QUEUE);
-                    listeners.put(key, listener);
-                    listener.addObserver(obs);
-                    if (connected) {
-                        listener.setupConnection(this);
-                    }
-                } catch (JMSException e) {
-                    statusHandler
-                            .error(
-                            "NotificationManager failed to create queue consumer.",
-                            e);
-                }
+                listener = new NotificationListener(executorService, queue,
+                        queryString, Type.QUEUE);
+                listeners.put(key, listener);
+                listener.addObserver(obs);
+                newListener = listener;
             } else {
                 listener.addObserver(obs);
+            }
+        }
+
+        if (newListener != null && connected) {
+            try {
+                newListener.setupConnection(this);
+            } catch (JMSException e) {
+                statusHandler.error(
+                        "NotificationManager failed to create queue consumer for queue ["
+                                + queue + "].", e);
             }
         }
     }
@@ -355,26 +376,28 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     public void addObserver(String topic, INotificationObserver obs,
             String queryString) {
         ListenerKey key = new ListenerKey(topic, queryString);
+        NotificationListener newListener = null;
 
         synchronized (listeners) {
             NotificationListener listener = listeners.get(key);
             if (listener == null) {
-                try {
-                    listener = new NotificationListener(executorService, topic,
-                            queryString,
-                            Type.TOPIC);
-                    listeners.put(key, listener);
-                    listener.addObserver(obs);
-                    if (connected) {
-                        listener.setupConnection(this);
-                    }
-                } catch (JMSException e) {
-                    statusHandler
-                            .error("NotificationManager failed to create consumer.",
-                                    e);
-                }
+                listener = new NotificationListener(executorService, topic,
+                        queryString, Type.TOPIC);
+                listeners.put(key, listener);
+                listener.addObserver(obs);
+                newListener = listener;
             } else {
                 listener.addObserver(obs);
+            }
+        }
+
+        if (newListener != null && connected) {
+            try {
+                newListener.setupConnection(this);
+            } catch (JMSException e) {
+                statusHandler.error(
+                        "NotificationManager failed to create topic consumer for topic ["
+                                + topic + "].", e);
             }
         }
     }
@@ -628,7 +651,6 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             this.executorService = executorService;
         }
 
-
         @Override
         public void run() {
             List<NotificationMessage> messageList = new ArrayList<NotificationMessage>();
@@ -720,10 +742,12 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         public Thread newThread(Runnable r) {
             Thread t = new Thread(group, r, namePrefix
                     + threadNumber.getAndIncrement(), 0);
-            if (t.isDaemon())
+            if (t.isDaemon()) {
                 t.setDaemon(false);
-            if (t.getPriority() != Thread.NORM_PRIORITY)
+            }
+            if (t.getPriority() != Thread.NORM_PRIORITY) {
                 t.setPriority(Thread.NORM_PRIORITY);
+            }
             return t;
         }
     }
