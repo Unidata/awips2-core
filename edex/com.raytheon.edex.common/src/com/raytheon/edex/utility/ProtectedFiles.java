@@ -32,16 +32,25 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Class for managing the protected file list
+ * Class for managing the protected file list. <br/>
+ * <br/>
+ * 
+ * When a plugin adds a file to PLUGIN_DIR it should only have entries for files
+ * in the plugin or related packages only installed with the plugin. The name of
+ * file placeed in PLUGIN_DIR should be based on the plugin name so it will be
+ * unique. For example plugin: com.raytheon.uf.viz.bmh use the name:
+ * com.raytheon.uf.viz.bmh.protectedFiles.txt
  * 
  * <pre>
  * 
@@ -49,6 +58,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 25, 2010            mschenke     Initial creation
+ * Apr 08, 2015 4346       rferrel      Load plugin entries into the BASE entry.
  * 
  * </pre>
  * 
@@ -64,6 +74,8 @@ public class ProtectedFiles {
     private static final String COMMENT = "#";
 
     private static final String PROTECTED_FILE = "protectedFiles.txt";
+
+    private static final String PLUGIN_DIR = "plugin-protectedFiles";
 
     private static final String BASE_HEADER = "# The layout of this file is a line that starts with a # is treated as a\n"
             + "# comment and any other line is treated as a protected base file in the \n"
@@ -189,13 +201,19 @@ public class ProtectedFiles {
             protectedFiles.clear();
             lastModifiedTime = file.lastModified();
             try {
-                BufferedReader br = new BufferedReader(new FileReader(file));
-                String line = null;
-                while ((line = br.readLine()) != null) {
-                    if (!line.startsWith(COMMENT) && !line.trim().equals("")) {
-                        line.replace("//", "/");
+                parseFile(file);
 
-                        protectedFiles.add(line);
+                if (LocalizationLevel.BASE.equals(level)) {
+                    // Merge plugins protected files.
+                    IPathManager pm = PathManagerFactory.getPathManager();
+                    LocalizationContext context = pm.getContext(
+                            LocalizationType.EDEX_STATIC,
+                            LocalizationLevel.BASE);
+                    String[] extensions = { ".txt" };
+                    LocalizationFile[] files = pm.listFiles(context,
+                            PLUGIN_DIR, extensions, false, true);
+                    for (LocalizationFile f : files) {
+                        parseFile(f.getFile());
                     }
                 }
             } catch (IOException e) {
@@ -203,6 +221,24 @@ public class ProtectedFiles {
                         "Error reading protected file list", e);
             }
         }
+    }
+
+    /**
+     * Add the file's entries to the protected file set.
+     * 
+     * @param file
+     * @throws IOException
+     */
+    private void parseFile(File file) throws IOException {
+        BufferedReader br = new BufferedReader(new FileReader(file));
+        String line = null;
+        while ((line = br.readLine()) != null) {
+            if (!line.startsWith(COMMENT) && !line.trim().isEmpty()) {
+                line.replace("//", "/");
+                protectedFiles.add(line);
+            }
+        }
+        br.close();
     }
 
     /**
