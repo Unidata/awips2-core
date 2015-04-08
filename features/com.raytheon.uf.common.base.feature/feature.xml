@@ -363,7 +363,7 @@
          id="org.apache.qpid"
          download-size="0"
          install-size="0"
-         version="0.30.0"/>
+         version="0.32.0"/>
 
    <plugin
          id="org.quartz"
