@@ -41,6 +41,12 @@
 
 		<ConstantField value="7" />
 		<ConstantField value="69" />
+		
+		<ConstantField value="8" />
+		<ConstantField value="47" />
+		
+		<ConstantField value="9" />
+		<ConstantField value="183" />
 	</Method>    
     <Method levels="Surface" name="PTyp.execute1">
         <Field level="Station" abbreviation="precipType"/>
