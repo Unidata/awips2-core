@@ -27,11 +27,10 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang.ArrayUtils;
 
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap;
-import com.googlecode.concurrentlinkedhashmap.ConcurrentLinkedHashMap.Builder;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
@@ -75,6 +74,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 24, 2014 3378        bclement    added createCache()
  * Jul 25, 2014 3378        bclement    removed uf prefix from system property
  * Nov 13, 2014 4953        randerso    Changed delete() to also remove .md5 file
+ * Apr 10, 2015 4391        njensen     Backported better cache
+ * 
  * </pre>
  * 
  * @author jelkins
@@ -493,8 +494,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      */
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
-        Builder<LocalizationFileKey, LocalizationFile> builder = new ConcurrentLinkedHashMap.Builder<LocalizationFileKey, LocalizationFile>();
-        return builder.maximumWeightedCapacity(CACHE_SIZE).build();
+        return new ConcurrentHashMap<>(CACHE_SIZE);
     }
 
 }

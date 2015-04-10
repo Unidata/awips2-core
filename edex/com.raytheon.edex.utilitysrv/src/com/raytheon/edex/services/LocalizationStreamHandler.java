@@ -22,8 +22,9 @@ package com.raytheon.edex.services;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
-import java.util.concurrent.ConcurrentHashMap;
 
 import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
@@ -54,6 +55,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Aug 11, 2010            mschenke     Initial creation
  * Jul 14, 2014 3372       njensen      fileMap is ConcurrentHashMap for thread safety
  * Jul 16, 2014 3378       bclement     removed cache
+ * Feb 17, 2015 4137       reblum       fixed timestamp on put requests
+ * Apr 10, 2015 4391       njensen      Backported above change
  * 
  * </pre>
  * 
@@ -202,7 +205,9 @@ public class LocalizationStreamHandler
                     changeType = FileChangeType.ADDED;
                 }
 
-                tmpFile.renameTo(file);
+                Files.move(tmpFile.toPath(), file.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+
 
                 try {
                     // attempt to generate checksum after change
