@@ -42,6 +42,9 @@
         <Field abbreviation="TCC"/>
         <ConstantField value="100.0"/>
     </Method>
+    <Method name="Alias" models="RTMA25 URMA25" displayName="Total Cloud Cover" >
+        <Field abbreviation="TCC"/>
+    </Method>    
     <Method name="Multiply">
         <Field abbreviation="TCC"/>
         <ConstantField value="100.0"/>
