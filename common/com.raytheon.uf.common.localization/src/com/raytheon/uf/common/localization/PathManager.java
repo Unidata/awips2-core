@@ -24,6 +24,8 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -70,6 +72,15 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 public class PathManager implements IPathManager {
     private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
             PathManager.class, "Localization");
+
+    private static final Comparator<LocalizationContext> LOCALIZATION_CTX_COMPARATOR = new Comparator<LocalizationContext>() {
+
+        @Override
+        public int compare(LocalizationContext o1, LocalizationContext o2) {
+            return LocalizationLevel.REVERSE_COMPARATOR.compare(
+                    o1.getLocalizationLevel(), o2.getLocalizationLevel());
+        }
+    };
 
     final Map<LocalizationFileKey, LocalizationFile> fileCache;
 
@@ -157,6 +168,40 @@ public class PathManager implements IPathManager {
         LocalizationFile[] files = getLocalizationFile(
                 contexts.toArray(new LocalizationContext[contexts.size()]),
                 name);
+
+        for (LocalizationFile file : files) {
+            if ((file != null) && file.exists()) {
+                // First file found in hierarchy is used
+                return file;
+            }
+        }
+
+        return null;
+    }
+
+    /*
+     * FIXME: This method was only added because of limitations in
+     * EDEXLocalizationAdapter--it isn't able to properly search for files on
+     * systems that have multiple sites activated on EDEX. It can only search
+     * the primary site's (or AW_SITE_IDENTIFIER) contexts. However, GFE will
+     * frequently need to search through one of the non-primary site's
+     * localization store. If the localization API and specifically the
+     * EDEXLocalizationApdater gets smartened up enough to handle multi-domain
+     * systems, this method should be able to go away.
+     */
+    @Override
+    public LocalizationFile getStaticLocalizationFile(
+            LocalizationContext[] contexts, String name) {
+        Validate.notNull(contexts, "Search contexts must not be null");
+        Validate.notNull(name, "Path name must not be null");
+
+        LocalizationContext[] searchContexts = new LocalizationContext[contexts.length];
+        System.arraycopy(contexts, 0, searchContexts, 0, contexts.length);
+        Arrays.sort(searchContexts, LOCALIZATION_CTX_COMPARATOR);
+
+        name = name.replace(File.separator, IPathManager.SEPARATOR);
+
+        LocalizationFile[] files = getLocalizationFile(searchContexts, name);
 
         for (LocalizationFile file : files) {
             if ((file != null) && file.exists()) {
@@ -443,9 +488,33 @@ public class PathManager implements IPathManager {
             contexts.addAll(java.util.Arrays.asList(searchContexts));
         }
 
-        LocalizationFile[] files = listFiles(
+        return listStaticFiles(
                 contexts.toArray(new LocalizationContext[contexts.size()]),
                 name, filter, recursive, filesOnly);
+    }
+
+    /*
+     * FIXME: This method was only added because of limitations in
+     * EDEXLocalizationAdapter--it isn't able to properly search for files on
+     * systems that have multiple sites activated on EDEX. It can only search
+     * the primary site's (or AW_SITE_IDENTIFIER) contexts. However, GFE will
+     * frequently need to search through one of the non-primary site's
+     * localization store. If the localization API and specifically the
+     * EDEXLocalizationApdater gets smartened up enough to handle multi-domain
+     * systems, this method should be able to go away.
+     */
+    @Override
+    public LocalizationFile[] listStaticFiles(LocalizationContext[] contexts,
+            String name, String[] filter, boolean recursive, boolean filesOnly) {
+        Validate.notNull(name, "Path name must not be null");
+        Validate.notNull(contexts, "Search contexts must not be null");
+
+        LocalizationContext[] searchContexts = new LocalizationContext[contexts.length];
+        System.arraycopy(contexts, 0, searchContexts, 0, contexts.length);
+        Arrays.sort(searchContexts, LOCALIZATION_CTX_COMPARATOR);
+
+        LocalizationFile[] files = listFiles(searchContexts, name, filter,
+                recursive, filesOnly);
         List<LocalizationFile> filterFiles = new ArrayList<LocalizationFile>();
 
         Map<String, LocalizationFile> filterMap = new HashMap<String, LocalizationFile>();

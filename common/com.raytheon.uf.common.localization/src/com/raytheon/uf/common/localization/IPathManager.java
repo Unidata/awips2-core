@@ -48,6 +48,9 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *                                     getStaticLocalizationFile, and getStaticFile APIs 
  *                                     Improved JavaDoc for all listStaticFiles, 
  *                                     getStaticLocalizationFile, and getStaticFile APIs.
+ * Apr 13, 2015 4383       dgilling    Added listStaticFiles, getStaticLocalizationFile
+ *                                     and getStaticFile that searches based on
+ *                                     LocalizationContexts.
  * 
  * </pre>
  * 
@@ -123,6 +126,23 @@ public interface IPathManager {
      */
     public LocalizationFile getStaticLocalizationFile(LocalizationType type,
             String name);
+
+    /**
+     * Finds the specified file by searching the specified
+     * {@code LocalizationContext}s. Note: If the same file exists in multiple
+     * localization levels, only the lowest level version of the file will be
+     * returned.
+     * <p>
+     * Returns {@code null} if file is not found.
+     * 
+     * @param contexts
+     *            the {@code LocalizationContext}s to search
+     * @param name
+     *            the name of the file to search for
+     * @return the file and the context it was found in
+     */
+    public LocalizationFile getStaticLocalizationFile(
+            LocalizationContext[] contexts, String name);
 
     /**
      * 
@@ -250,6 +270,34 @@ public interface IPathManager {
      * @return a list of files
      */
     public LocalizationFile[] listStaticFiles(LocalizationType type,
+            String name, String[] extensions, boolean recursive,
+            boolean filesOnly);
+
+    /**
+     * Lists all files in the specified {@code LocalizationContext}s in a
+     * particular directory. Note: If the same file exists in multiple
+     * localization levels, only the lowest level version of the file will be
+     * returned in the array.
+     * <p>
+     * Do not pass in a mix LocalizationContexts with different
+     * LocalizationTypes to this method, the results will be unreliable.
+     * 
+     * @param contexts
+     *            the {@code LocalizationContext}s to search
+     * @param name
+     *            the directory to look in
+     * @param extensions
+     *            a list of file extensions to look for, or {@code null} if no
+     *            filter
+     * @param recursive
+     *            {@code true} for recursive directory listing, {@code false}
+     *            for a single level listing
+     * @param filesOnly
+     *            {@code true} if only files are listed, {@code false} to list
+     *            both files and directories
+     * @return a list of files
+     */
+    public LocalizationFile[] listStaticFiles(LocalizationContext[] contexts,
             String name, String[] extensions, boolean recursive,
             boolean filesOnly);
 
