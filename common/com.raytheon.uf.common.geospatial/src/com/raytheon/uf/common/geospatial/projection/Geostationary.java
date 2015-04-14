@@ -54,6 +54,7 @@ import org.opengis.referencing.operation.MathTransform;
  * Jun 27, 2013           mschenke    Initial creation
  * Oct 02, 2013  2333     mschenke    Converted from libproj to CGMS algorithm
  * Nov 18, 2013  2528     bsteffen    Add hashCode/equals.
+ * Apr 14, 2015  4387     bsteffen    Fix the quadratic equation.
  * 
  * </pre>
  * 
@@ -77,6 +78,11 @@ public class Geostationary extends MapProjection {
 
     private double perspectiveHeight;
 
+    /**
+     * A discussion of the sweep axis can be found at
+     * http://trac.osgeo.org/proj/wiki/proj%3Dgeos This implementation has not
+     * been verified to work correctly when swapAxis is true.
+     * */
     private boolean swapAxis = false;
 
     private double rEq, rEq2;
@@ -153,7 +159,7 @@ public class Geostationary extends MapProjection {
         double b = -2 * perspectiveHeight * cosX * cosY;
         double c = perspectiveHeight * perspectiveHeight - rEq2;
 
-        double Vl = (-b - Math.sqrt(b * b - 4 * a * c)) / 2 * a;
+        double Vl = quadraticEquation(a, b, c);
         double Vx = Vl * cosX * cosY;
         double Vy = Vl * sinX;
         double Vz = Vl * sinY * cosX;
@@ -211,6 +217,40 @@ public class Geostationary extends MapProjection {
         }
         ptDst.setLocation(x / height_ratio, y / height_ratio);
         return ptDst;
+    }
+
+    /**
+     * Naive implementation of the quadratic equation.
+     * 
+     * @see #stableQuadraticEquation(double, double, double)
+     */
+    protected static double quadraticEquation(double a, double b, double c) {
+        return (-b - Math.sqrt(b * b - 4 * a * c)) / (2 * a);
+    }
+
+    /**
+     * A more stable implementation of
+     * {@link #quadraticEquation(double, double, double)}. This implementation
+     * is based off <a href=
+     * "http://en.wikipedia.org/wiki/Loss_of_significance#A_better_algorithm">a
+     * wikipedia article</a>, which is based off
+     * 
+     * <pre>
+     * Press, William H.; Flannery, Brian P.; Teukolsky, Saul A.; Vetterling, William T. (1992), <a href="http://www.nrbook.com/a/bookcpdf.php">Numerical Recipes in C</a> (Second ed.), Section 5.6: "Quadratic and Cubic Equations.
+     * </pre>
+     * 
+     * <p>
+     * This implementation is not currently used because the naive
+     * implementation is stable enough for the uses in this class. This method
+     * was left in as a development/debugging aid which can be used if there are
+     * stability concerns with the naive implementation.
+     * </p>
+     */
+    protected static double stableQuadraticEquation(double a, double b, double c) {
+        double x1 = (-b - Math.signum(b) * Math.sqrt(b * b - 4 * a * c))
+                / (2 * a);
+        double x2 = c / (a * x1);
+        return x2;
     }
 
     @Override
