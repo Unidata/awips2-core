@@ -20,7 +20,7 @@
     -->
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" scale="CONUS" density="1.0" magnification="1.0" zoomLevel="1.0" mapCenter="-96.867249 40.47502100000001 0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="d2DMapRenderableDisplay" scale="N. Hemisphere" density="1.0" magnification="1.0" mapCenter="-100 40 0.0" zoomLevel="0.30" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
@@ -30,14 +30,13 @@
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties renderingOrderId="MAP_OUTLINE" isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
                     </properties>
                     <resourceData xsi:type="mapResourceGroupData">
                         <resource>
                             <loadProperties loadWithoutData="false">
                                 <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
                                 </capabilities>
@@ -56,7 +55,6 @@
                         <resource>
                             <loadProperties loadWithoutData="false">
                                 <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
                                 </capabilities>
@@ -74,7 +72,6 @@
                         <resource>
                             <loadProperties loadWithoutData="false">
                                 <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
                                 </capabilities>
@@ -92,7 +89,6 @@
                         <resource>
                             <loadProperties loadWithoutData="false">
                                 <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
                                 </capabilities>
@@ -123,49 +119,46 @@
                                 <table>mapdata.county</table>
                             </resourceData>
                         </resource>
-                        <resource>
-                            <loadProperties loadWithoutData="false">
-                                <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
-                                </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
-                            </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
-                            </properties>
-                            <resourceData xsi:type="dbMapResourceData">
-                                <mapName>two lakes</mapName>
-                                <table>mapdata.lake</table>
-                                <geomField>the_geom</geomField>
-                                <constraint>name in ('Great Salt Lake', 'Lake Winnepeg')</constraint>
-                            </resourceData>
-                        </resource>                        
                         <mapName>State/County Boundaries</mapName>
                     </resourceData>
                 </resource>
+                <resource>
+                    <loadProperties loadWithoutData="false">
+                        <capabilities>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
+                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
+                    </properties>
+                </resource>
                 <timeMatcher xsi:type="d2DTimeMatcher" loadMode="VALID_TIME_SEQ" deltaFilter="0" forecastFilter="0"/>
                 <numberOfFrames>12</numberOfFrames>
-                <gridGeometry envelopeMaxY="4023747.8031403385" envelopeMinY="-535763.0304681085" envelopeMaxX="2889016.9103023135" envelopeMinX="-3217360.2108624117" rangeY="0 9999" rangeX="0 13391">
-                    <CRS>PROJCS["Lambert_Conformal_Conic_1SP", 
-  GEOGCS["WGS84(DD)", 
-    DATUM["WGS84", 
-      SPHEROID["WGS84", 6378137.0, 298.257223563]], 
-    PRIMEM["Greenwich", 0.0], 
-    UNIT["degree", 0.017453292519943295], 
-    AXIS["Geodetic longitude", EAST], 
-    AXIS["Geodetic latitude", NORTH]], 
-  PROJECTION["Lambert_Conformal_Conic_1SP"], 
-  PARAMETER["semi_major", 6371200.0], 
-  PARAMETER["semi_minor", 6371200.0], 
-  PARAMETER["central_meridian", -95.0], 
-  PARAMETER["latitude_of_origin", 25.0], 
-  PARAMETER["false_easting", 0.0], 
-  PARAMETER["false_northing", 0.0], 
-  UNIT["m", 1.0], 
-  AXIS["Easting", EAST], 
+
+  
+                  <gridGeometry rangeX="0 9999" rangeY="0 9999" envelopeMinX="-1.1026966741467461E7" envelopeMaxX="1.1272003702071536E7" envelopeMinY="-1.197446662274791E7" envelopeMaxY="1.0324516833231976E7">
+                  <CRS>PROJCS["Polar_Stereographic",
+  GEOGCS["WGS84",
+    DATUM["WGS84",
+      SPHEROID["WGS84", 6378137.0, 298.257223563]],
+    PRIMEM["Greenwich", 0.0],
+    UNIT["degree", 0.017453292519943295],
+    AXIS["Geodetic longitude", EAST],
+    AXIS["Geodetic latitude", NORTH]],
+  PROJECTION["Polar_Stereographic"],
+  PARAMETER["semi_major", 6371200.0],
+  PARAMETER["semi_minor", 6371200.0],
+  PARAMETER["central_meridian", -103.0],
+  PARAMETER["latitude_of_origin", 90.0],
+  PARAMETER["scale_factor", 1.0],
+  PARAMETER["false_easting", 0.0],
+  PARAMETER["false_northing", 0.0],
+  UNIT["m", 1.0],
+  AXIS["Easting", EAST],
   AXIS["Northing", NORTH]]</CRS>
+  
                 </gridGeometry>
             </descriptor>
         </displays>
