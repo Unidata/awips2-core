@@ -36,9 +36,9 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 21, 2010            mschenke     Initial creation
+ * Jan 21, 2010            mschenke    Initial creation
  * Mar 19, 2013 1807       rferrel     Added orderBy to the toString.
- * 
+ * Feb 25, 2015 3353       rjpeter     Remove duplicate fields.
  * </pre>
  * 
  * @author mschenke
@@ -133,6 +133,12 @@ public class DbQueryRequest implements IServerRequest {
     @DynamicSerializeElement
     private List<RequestField> fields = new ArrayList<RequestField>();
 
+    /**
+     * Used for dup elim of RequestField by field name when being added to
+     * fields list.
+     */
+    private transient Map<String, RequestField> uniqueFields = null;
+
     @DynamicSerializeElement
     private boolean distinct = false;
 
@@ -198,7 +204,8 @@ public class DbQueryRequest implements IServerRequest {
 
     /**
      * The fully qualified hibernate name of the fields to query
-     * (dataTime.refTime, modelInfo.parameterName)
+     * (dataTime.refTime, modelInfo.parameterName). Don't use directly without
+     * duplicate checking the fields.
      * 
      * @param fields
      */
@@ -235,10 +242,22 @@ public class DbQueryRequest implements IServerRequest {
     }
 
     public void addRequestField(String name, boolean max) {
-        RequestField field = new RequestField();
-        field.field = name;
-        field.max = max;
-        fields.add(field);
+        if (uniqueFields == null) {
+            uniqueFields = new HashMap<>();
+
+            for (RequestField field : fields) {
+                uniqueFields.put(field.field, field);
+            }
+        }
+
+        RequestField field = uniqueFields.get(name);
+        if (field == null) {
+            field = new RequestField();
+            field.field = name;
+            field.max = max;
+            fields.add(field);
+            uniqueFields.put(name, field);
+        }
     }
 
     public boolean isDistinct() {
@@ -311,7 +330,7 @@ public class DbQueryRequest implements IServerRequest {
                 + (orderBy == null ? "null" : String.format(
                         "[field=%s, mode=%s]", orderBy.field,
                         orderBy.mode.toString()))
-                + (limit == null ? "" : ", limit=" + limit) + "]";
+                        + (limit == null ? "" : ", limit=" + limit) + "]";
     }
 
 }

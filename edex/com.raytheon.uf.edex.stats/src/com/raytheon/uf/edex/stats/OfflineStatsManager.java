@@ -68,7 +68,8 @@ import com.raytheon.uf.edex.stats.data.StatsDataAccumulator;
  * May 22, 2013 1917       rjpeter     Renamed from Archiver, added generation of raw statistics,
  *                                     added method to purge statistics, moved saving of statistics
  *                                     to configured instead of site level.
- * Jum 02, 2014 2715       rferrel     Stats' directory location no longer uses localization.
+ * Jun 02, 2014 2715       rferrel     Stats' directory location no longer uses localization.
+ * Feb 18, 2015 4125       rjpeter     Create a StatsDataAccumulator.
  * </pre>
  * 
  * @author jsanchez
@@ -88,7 +89,8 @@ public class OfflineStatsManager {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result + (int) (epochHours ^ (epochHours >>> 32));
+            result = (prime * result)
+                    + (int) (epochHours ^ (epochHours >>> 32));
             return result;
         }
 
@@ -253,10 +255,12 @@ public class OfflineStatsManager {
      * @param bw
      * @param conf
      * @param agg
+     * @param accumulator
      * @throws IOException
      */
     private void writeCSVOutput(BufferedWriter bw, StatisticsEventConfig conf,
-            AggregateRecord agg) throws IOException {
+            AggregateRecord agg, StatsDataAccumulator accumulator)
+            throws IOException {
 
         Calendar startDate = agg.getStartDate();
         Calendar endDate = agg.getEndDate();
@@ -272,7 +276,7 @@ public class OfflineStatsManager {
             bw.write(fieldSdf.format(endDate.getTime()));
         }
 
-        StatsGroupingColumn grouping = StatsDataAccumulator
+        StatsGroupingColumn grouping = accumulator
                 .unmarshalGroupingColumnFromRecord(agg);
         for (StatsGrouping group : grouping.getGroup()) {
             bw.write(COMMA);
@@ -439,6 +443,7 @@ public class OfflineStatsManager {
 
                 Iterator<AggregateRecord> iter = aggregateRecords.iterator();
                 StatisticsKey prevKey = null;
+                StatsDataAccumulator accumulator = new StatsDataAccumulator();
 
                 while (iter.hasNext()) {
                     AggregateRecord agg = iter.next();
@@ -450,7 +455,7 @@ public class OfflineStatsManager {
                         bw = getAggregateBufferedWriter(curKey, conf);
                     }
 
-                    writeCSVOutput(bw, conf, agg);
+                    writeCSVOutput(bw, conf, agg, accumulator);
                 }
             } catch (IOException e) {
                 statusHandler.handle(Priority.ERROR, "Failed to write File: "

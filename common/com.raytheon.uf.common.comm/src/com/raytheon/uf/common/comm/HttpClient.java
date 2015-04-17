@@ -20,13 +20,11 @@
 
 package com.raytheon.uf.common.comm;
 
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
-import java.security.KeyStore;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -36,10 +34,15 @@ import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.apache.http.Header;
 import org.apache.http.HttpEntity;
+import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
+import org.apache.http.auth.AuthProtocolState;
 import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.AuthState;
 import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
 import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.config.AuthSchemes;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpUriRequest;
 import org.apache.http.client.protocol.HttpClientContext;
@@ -48,6 +51,8 @@ import org.apache.http.entity.AbstractHttpEntity;
 import org.apache.http.entity.ByteArrayEntity;
 import org.apache.http.entity.ContentType;
 import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.util.EntityUtils;
@@ -88,10 +93,12 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Feb 17, 2014  2756        bclement    added content type to response object
  *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
  *    6/18/2014     1712        bphillip    Updated Proxy configuration
- *    Aug 15, 2014  3524        njensen      Pass auth credentials on every https request
+ *    Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
  *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
  *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
- *    Nov 15, 2014  3757         dhladky     General HTTPS handler
+ *    Nov 15, 2014  3757        dhladky     General HTTPS handler
+ *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
+ *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
  * 
  * </pre>
  * 
@@ -137,7 +144,7 @@ public class HttpClient {
     private boolean previousConnectionFailed;
 
     private static volatile HttpClient instance;
-    
+
     /**
      * Number of times to retry in the event of a connection exception. Default
      * is 1.
@@ -158,9 +165,21 @@ public class HttpClient {
 
     private volatile CloseableHttpClient client;
 
-    private final HttpClientContext context = HttpClientContext.create();
-
     private final HttpClientConfig config;
+
+    /**
+     * The credentials provider is for https requests only and ensures that a
+     * user does not have to enter username/password authentication more than
+     * once per application startup.
+     */
+    private CredentialsProvider credentialsProvider;
+
+    private ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+        @Override
+        protected HttpClientContext initialValue() {
+            return HttpClientContext.create();
+        }
+    };
 
     /**
      * Public constructor.
@@ -217,15 +236,6 @@ public class HttpClient {
             }
         }
         return client;
-    }
-
-    /**
-     * Get if the instance is gzipping responses
-     * 
-     * @return true if gzipping responses
-     */
-    public boolean isGzipResponseHandling() {
-        return this.config.isHandlingGzipResponses();
     }
 
     /**
@@ -292,11 +302,8 @@ public class HttpClient {
      * @throws Exception
      */
     public String post(String address, String message) throws Exception {
-
         String returnValue = new String(postByteResult(address, message));
-
         return returnValue;
-
     }
 
     /**
@@ -332,6 +339,10 @@ public class HttpClient {
         if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
             IHttpsHandler handler = config.getHttpsHandler();
             org.apache.http.client.HttpClient client = getHttpsInstance();
+            URI uri = put.getURI();
+            String host = uri.getHost();
+            int port = uri.getPort();
+            HttpClientContext context = getHttpsContext(host, port);
             resp = client.execute(put, context);
 
             // Check for not authorized, 401
@@ -341,9 +352,6 @@ public class HttpClient {
                     authValue = resp.getFirstHeader(WWW_AUTHENTICATE)
                             .getValue();
                 }
-                URI uri = put.getURI();
-                String host = uri.getHost();
-                int port = uri.getPort();
 
                 String[] credentials = null;
                 if (handler != null) {
@@ -352,9 +360,17 @@ public class HttpClient {
                 if (credentials == null) {
                     return resp;
                 }
-                
-                this.setCredentials(host, port, null, credentials[0],
+                this.setupCredentials(host, port, credentials[0],
                         credentials[1]);
+                context = getHttpsContext(host, port);
+                /*
+                 * The context auth state gets set to FAILED on a 401 which
+                 * causes any future requests to abort prematurely. Therefore we
+                 * set it to unchallenged so it will try again with new
+                 * credentials.
+                 */
+                AuthState targetAuthState = context.getTargetAuthState();
+                targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
                 try {
                     resp = client.execute(put, context);
                 } catch (Exception e) {
@@ -465,11 +481,13 @@ public class HttpClient {
 
             if (resp.getStatusLine().getStatusCode() != SUCCESS_CODE
                     && handlerCallback instanceof DynamicSerializeStreamHandler) {
-                // the status code can be returned and/or processed
-                // depending on which post method and handlerCallback is used,
-                // so we only want to error off here if we're using a
-                // DynamicSerializeStreamHandler because deserializing will fail
-                // badly
+                /*
+                 * the status code can be returned and/or processed depending on
+                 * which post method and handlerCallback is used, so we only
+                 * want to error off here if we're using a
+                 * DynamicSerializeStreamHandler because deserializing will fail
+                 * badly
+                 */
                 int statusCode = resp.getStatusLine().getStatusCode();
                 DefaultInternalStreamHandler errorHandler = new DefaultInternalStreamHandler();
                 String exceptionMsg = null;
@@ -813,7 +831,7 @@ public class HttpClient {
     /**
      * Gets the network statistics for http traffic.
      * 
-     * @return
+     * @return network stats
      */
     public NetworkStatistics getStats() {
         return this.stats;
@@ -840,7 +858,7 @@ public class HttpClient {
          * input stream for later use.
          * 
          * @param is
-         * @throws VizException
+         * @throws CommunicationException
          */
         public abstract void handleStream(InputStream is)
                 throws CommunicationException;
@@ -909,33 +927,54 @@ public class HttpClient {
     }
 
     /**
-     * Set the credentials for SSL.
+     * Setup the credentials for SSL.
      * 
      * @param host
      *            The host
      * @param port
      *            The port
-     * @param realm
-     *            The realm
      * @param username
      *            The username
      * @param password
      *            The password
      */
-    public void setCredentials(String host, int port, String realm,
+    public synchronized void setupCredentials(String host, int port,
             String username, String password) {
-        CredentialsProvider cp = context.getCredentialsProvider();
-        if (cp == null) {
-            synchronized (context) {
-                cp = context.getCredentialsProvider();
-                if (cp == null) {
-                    cp = new BasicCredentialsProvider();
-                    context.setCredentialsProvider(cp);
-                }
-            }
+        if (credentialsProvider == null) {
+            credentialsProvider = new BasicCredentialsProvider();
         }
-        cp.setCredentials(new AuthScope(host, port),
+        credentialsProvider.setCredentials(new AuthScope(host, port,
+                AuthScope.ANY_REALM, AuthSchemes.BASIC),
                 new UsernamePasswordCredentials(username, password));
+    }
+
+    /**
+     * Gets a thread local HttpContext to use for an https request.
+     * 
+     * @return a safe context containing https credential and auth info
+     */
+    private HttpClientContext getHttpsContext(String host, int port) {
+        HttpClientContext context = httpsContext.get();
+        if (context.getCredentialsProvider() != credentialsProvider) {
+            context.setCredentialsProvider(credentialsProvider);
+        }
+
+        /*
+         * HttpContext, BasicAuthCache, BasicScheme, and the Base64 instance
+         * inside BasicScheme are not thread safe! Therefore we need one for
+         * each thread. (BasicCredentialsProvider is thread safe).
+         */
+        AuthCache authCache = context.getAuthCache();
+        if (authCache == null) {
+            authCache = new BasicAuthCache();
+            context.setAuthCache(authCache);
+        }
+        HttpHost hostObj = new HttpHost(host, port, HTTPS);
+        if (authCache.get(hostObj) == null) {
+            authCache.put(hostObj, new BasicScheme());
+        }
+
+        return context;
     }
 
     /**

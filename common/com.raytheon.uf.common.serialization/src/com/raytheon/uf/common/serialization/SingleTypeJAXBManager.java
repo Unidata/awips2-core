@@ -41,7 +41,7 @@ import javax.xml.bind.JAXBException;
  * Oct 01, 2013  2361      njensen     Initial creation
  * Jul 21, 2014  3373      bclement    added pooling boolean constructor
  * Aug 08, 2014  3503      bclement    removed ufstatus
- * 
+ * Feb 18, 2015  4125      rjpeter     Added unmarshalFromXml
  * </pre>
  * 
  * @author njensen
@@ -85,6 +85,7 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
      * @return A new instance from the XML representation
      * @throws SerializationException
      */
+    @Override
     public T unmarshalFromXmlFile(File file) throws SerializationException {
         return super.unmarshalFromXmlFile(type, file);
     }
@@ -97,9 +98,23 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
      * @return A new instance from the XML representation
      * @throws SerializationException
      */
+    @Override
     public T unmarshalFromXmlFile(String filePath)
             throws SerializationException {
         return super.unmarshalFromXmlFile(type, new File(filePath));
+    }
+
+    /**
+     * Instantiates an object from the XML representation in a string.
+     * 
+     * @param xml
+     *            The XML representation
+     * @return A new instance from the XML representation
+     * @throws JAXBException
+     */
+    @Override
+    public T unmarshalFromXml(String xml) throws JAXBException {
+        return super.unmarshalFromXml(type, xml);
     }
 
     /**

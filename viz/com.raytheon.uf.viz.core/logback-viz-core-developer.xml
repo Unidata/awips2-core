@@ -26,6 +26,10 @@
    	  <level value="ALL"/>
    </logger>
 
+   <logger name="ProductEditorLogger">
+      <level value="ALL"/>
+   </logger>
+
    <logger name="com.raytheon">
       <level value="INFO"/>
    </logger>

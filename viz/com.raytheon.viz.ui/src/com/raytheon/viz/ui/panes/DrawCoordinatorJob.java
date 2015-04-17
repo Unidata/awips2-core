@@ -35,6 +35,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.viz.core.jobs.JobCancelingBundleListener;
 import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
 
 /**
@@ -46,6 +47,7 @@ import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2007            chammack    Initial Creation.
  * Aug 2,  2013       2190 mschenke    Changed "panes" to Map to simplify code
+ * Feb 09, 2015       4092 bsteffen    Add bundle listener to trigger shutdown.
  * 
  * </pre>
  * 
@@ -82,14 +84,13 @@ public class DrawCoordinatorJob extends Job {
 
     private Map<IDisplayPaneContainer, DrawCoordinatedPane> panes = new IdentityHashMap<IDisplayPaneContainer, DrawCoordinatedPane>();
 
-    private boolean shouldRun = true;
-
     private static DrawCoordinatorJob instance = new DrawCoordinatorJob();
 
     private DrawCoordinatorJob() {
         super("Draw Coordinator");
         setSystem(true);
         schedule();
+        new JobCancelingBundleListener(this);
     }
 
     public static DrawCoordinatorJob getInstance() {
@@ -156,7 +157,7 @@ public class DrawCoordinatorJob extends Job {
         int framesSkippedInLastSegment = 0;
         long segmentStartTime = System.currentTimeMillis();
 
-        while (shouldRun) {
+        while (!monitor.isCanceled()) {
             try {
                 beforeTime = System.currentTimeMillis();
                 if (beforeTime - segmentStartTime > segmentCheckTime) {
@@ -189,6 +190,7 @@ public class DrawCoordinatorJob extends Job {
 
                     beforeTime = System.currentTimeMillis();
                     VizApp.runSync(new Runnable() {
+                        @Override
                         public void run() {
                             for (DrawCoordinatedPane pane : listToDraw) {
                                 pane.draw(draw);
@@ -230,11 +232,6 @@ public class DrawCoordinatorJob extends Job {
                         e);
             }
         }
-
         return Status.OK_STATUS;
-    }
-
-    public void shutdown() {
-        shouldRun = false;
     }
 }
