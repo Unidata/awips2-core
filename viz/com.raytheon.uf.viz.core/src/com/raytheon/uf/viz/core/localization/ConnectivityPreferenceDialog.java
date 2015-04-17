@@ -321,6 +321,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
             }
         });
 
+        /*
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site:");
         gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
@@ -341,6 +342,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
             }
 
         });
+        
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
         siteText.setLayoutData(gd);
@@ -361,6 +363,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
             alertVizText.setText(alertVizServer);
             alertVizText.setBackground(getTextColor(alertVizGood));
         }
+        */
     }
 
     private void createBottomButtons() {
@@ -487,6 +490,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         } else {
             validateAlertviz();
         }
+        /*
         if (siteText != null && !siteText.isDisposed()) {
             String site = siteText.getText().trim();
             if (!siteGood || !this.site.equals(site)) {
@@ -497,8 +501,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
         } else {
             validateSite();
         }
+        */
+        
+        this.site = "OAX";
 
-        boolean everythingGood = siteGood && localizationGood && alertVizGood;
+        boolean everythingGood = localizationGood && alertVizGood;
         updateStatus(everythingGood, status, details);
         return everythingGood;
     }
