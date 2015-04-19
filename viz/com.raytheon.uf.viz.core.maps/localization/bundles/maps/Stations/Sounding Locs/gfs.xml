@@ -25,20 +25,19 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="DOTTED" outlineOn="true"
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#85ADAD" />
-                            <capability xsi:type="labelableCapability" labelField="CWA"/>
+                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
                     <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
+                        opacity="1.0" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.cwa</table>
-                        <mapName>County Warning Areas</mapName>
+                    <resourceData xsi:type="spiResourceData">
+                        <filename>basemaps/GFSmodelBufr.spi</filename>
+                        <mapName>GFS</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

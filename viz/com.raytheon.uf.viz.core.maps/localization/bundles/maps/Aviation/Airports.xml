@@ -22,23 +22,22 @@
     <displayList>
         <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
-                <resource>
-                    <loadProperties>
-                        <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="DOTTED" outlineOn="true"
-                                outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#85ADAD" />
-                            <capability xsi:type="labelableCapability" labelField="CWA"/>
-                        </capabilities>
-                        <resourceType>PLAN_VIEW</resourceType>
-                    </loadProperties>
-                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
-                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
-                    </properties>
-                    <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.cwa</table>
-                        <mapName>County Warning Areas</mapName>
+                        <resource>
+                            <loadProperties>
+                                <capabilities>
+                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                                    <capability xsi:type="labelableCapability" labelField="name" />
+                                    <capability xsi:type="densityCapability" density="0.1"/>
+                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" isVisible="true">
+                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                            </properties>
+                            <resourceData xsi:type="lpiResourceData">
+                                <filename>airport.lpi</filename>
+                                <mapName>Airports</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

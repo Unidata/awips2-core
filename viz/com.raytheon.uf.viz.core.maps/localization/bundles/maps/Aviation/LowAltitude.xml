@@ -27,8 +27,7 @@
                         <capabilities>
                             <capability xsi:type="outlineCapability" lineStyle="DOTTED" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#85ADAD" />
-                            <capability xsi:type="labelableCapability" labelField="CWA"/>
+                            <capability xsi:type="colorableCapability" colorAsString="#333333" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
@@ -36,9 +35,9 @@
                         isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.cwa</table>
-                        <mapName>County Warning Areas</mapName>
+					<resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.lowaltitude</table>
+                        <mapName>Low Altitude Routes</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

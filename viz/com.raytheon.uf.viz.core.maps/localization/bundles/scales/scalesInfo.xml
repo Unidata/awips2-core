@@ -31,9 +31,11 @@
 	<mapScale displayName="Regional" fileName="Regional.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
 	</mapScale>
-	<mapScale displayName="States" fileName="States.xml">
+	<mapScale displayName="State" fileName="States.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
 	</mapScale>
 	<mapScale displayName="WFO" fileName="WFO.xml">
+	</mapScale>
+	<mapScale displayName="World" fileName="World.xml">
 	</mapScale>
 </mapScales>
