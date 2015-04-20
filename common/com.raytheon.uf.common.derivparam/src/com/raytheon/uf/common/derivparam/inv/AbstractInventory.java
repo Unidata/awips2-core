@@ -32,6 +32,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
 import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.locks.ReentrantLock;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
@@ -85,6 +86,7 @@ import com.raytheon.uf.common.time.DataTime;
  * Jan 30, 2014  #2725    ekladstrup  handle different exceptions for moving
  *                                    derived parameters to common
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
+ * Apr 06, 2015  #17215   D. Friedman Use ReentrantLock instead of synchronize
  * 
  * </pre>
  * 
@@ -94,6 +96,8 @@ import com.raytheon.uf.common.time.DataTime;
 public abstract class AbstractInventory implements DerivParamUpdateListener {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractInventory.class);
+
+    protected ReentrantLock lock = new ReentrantLock(true);
 
     protected class StackEntry {
 
@@ -198,34 +202,39 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @throws DataCubeException
      * 
      */
-    public synchronized void initTree(Map<String, DerivParamDesc> derParLibrary)
+    public void initTree(Map<String, DerivParamDesc> derParLibrary)
             throws DataCubeException {
-        DerivedParameterGenerator.registerUpdateListener(this);
-        if (derParLibrary == null) {
-            this.derParLibrary = new HashMap<String, DerivParamDesc>(0);
-        } else {
-            this.derParLibrary = derParLibrary;
-        }
-        DataTree newTree = null;
-        newTree = createBaseTree();
-        if (newTree == null) {
-            return;
-        }
-        allSources = null;
-        allParameters = null;
-        allLevels = null;
-        dataTree = newTree;
-        for (SourceNode sourceNode : dataTree.getSourceNodes().values()) {
-            doSupplement(sourceNode);
-            for (ParameterNode parameterNode : sourceNode.getChildNodes()
-                    .values()) {
-                String value = parameterNode.getValue();
-                if (this.derParLibrary.containsKey(value)) {
-                    DerivParamDesc derivParamDesc = this.derParLibrary
-                            .get(value);
-                    parameterNode.setParameterName(derivParamDesc.getName());
+        lock.lock();
+        try {
+            DerivedParameterGenerator.registerUpdateListener(this);
+            if (derParLibrary == null) {
+                this.derParLibrary = new HashMap<String, DerivParamDesc>(0);
+            } else {
+                this.derParLibrary = derParLibrary;
+            }
+            DataTree newTree = null;
+            newTree = createBaseTree();
+            if (newTree == null) {
+                return;
+            }
+            allSources = null;
+            allParameters = null;
+            allLevels = null;
+            dataTree = newTree;
+            for (SourceNode sourceNode : dataTree.getSourceNodes().values()) {
+                doSupplement(sourceNode);
+                for (ParameterNode parameterNode : sourceNode.getChildNodes()
+                        .values()) {
+                    String value = parameterNode.getValue();
+                    if (this.derParLibrary.containsKey(value)) {
+                        DerivParamDesc derivParamDesc = this.derParLibrary
+                                .get(value);
+                        parameterNode.setParameterName(derivParamDesc.getName());
+                    }
                 }
             }
+        } finally {
+            lock.unlock();
         }
     }
 
@@ -409,13 +418,16 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      */
     protected Collection<String> getAllParameters() {
         if (allParameters == null) {
-            synchronized (this) {
+            lock.lock();
+            try {
                 Collection<String> allParameters = new HashSet<String>(
                         derParLibrary.keySet());
                 for (String source : getAllSources()) {
                     allParameters.addAll(dataTree.getParameters(source));
                 }
                 return allParameters;
+            } finally {
+                lock.unlock();
             }
         } else {
             return allParameters;
@@ -561,170 +573,188 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @throws InterruptedException
      *             thrown if the thread was interupted during execution.
      */
-    protected synchronized List<AbstractRequestableNode> walkTree(
+    protected List<AbstractRequestableNode> walkTree(
             Class<? extends AbstractNode<?>> clazz,
             Collection<String> sourcesToProcess,
             Collection<String> paramsToProcess,
             Collection<Level> levelsToProcess, boolean derive,
             boolean includeConstant, BlockingQueue<String> returnQueue)
             throws InterruptedException {
-        if (sourcesToProcess == null || paramsToProcess == null
-                || levelsToProcess == null || sourcesToProcess.isEmpty()
-                || paramsToProcess.isEmpty() || levelsToProcess.isEmpty()
-                || derParLibrary == null) {
-            return Collections.emptyList();
-        }
-        if (clazz != null) {
-            // when clazz == null we need to link the aliases to the source
-            // which is handled later on, rendering this unnecessary
-            List<String> aliasSources = new ArrayList<String>();
-            for (String source : sourcesToProcess) {
-                SourceNode node = dataTree.getSourceNode(source);
-                if (node != null && sourceAliases.containsKey(node.getValue())) {
-                    aliasSources.addAll(sourceAliases.get(node.getValue()));
-                }
+        boolean locked = true;
+        lock.lockInterruptibly();
+        try {
+            if (sourcesToProcess == null || paramsToProcess == null
+                    || levelsToProcess == null || sourcesToProcess.isEmpty()
+                    || paramsToProcess.isEmpty() || levelsToProcess.isEmpty()
+                    || derParLibrary == null) {
+                return Collections.emptyList();
             }
-            // Make a new collection for sourcesToProcess if we modify it.
-            boolean cloneSources = true;
-            for (String aliasSource : aliasSources) {
-                if (!sourcesToProcess.contains(aliasSource)) {
-                    if (cloneSources) {
-                        sourcesToProcess = new ArrayList<String>(
-                                sourcesToProcess);
-                        cloneSources = false;
+            if (clazz != null) {
+                // when clazz == null we need to link the aliases to the source
+                // which is handled later on, rendering this unnecessary
+                List<String> aliasSources = new ArrayList<String>();
+                for (String source : sourcesToProcess) {
+                    SourceNode node = dataTree.getSourceNode(source);
+                    if (node != null && sourceAliases.containsKey(node.getValue())) {
+                        aliasSources.addAll(sourceAliases.get(node.getValue()));
                     }
-                    sourcesToProcess.add(aliasSource);
+                }
+                // Make a new collection for sourcesToProcess if we modify it.
+                boolean cloneSources = true;
+                for (String aliasSource : aliasSources) {
+                    if (!sourcesToProcess.contains(aliasSource)) {
+                        if (cloneSources) {
+                            sourcesToProcess = new ArrayList<String>(
+                                    sourcesToProcess);
+                            cloneSources = false;
+                        }
+                        sourcesToProcess.add(aliasSource);
+                    }
                 }
             }
-        }
-        List<AbstractRequestableNode> results = new ArrayList<AbstractRequestableNode>();
-        Set<StackEntry> nodata = new HashSet<StackEntry>(derParLibrary.size());
-        Deque<StackEntry> stack = new ArrayDeque<StackEntry>();
-        Iterator<String> sit = sourcesToProcess.iterator();
-        SOURCE_LOOP: while (sit.hasNext()) {
-            String source = sit.next();
-            SourceNode node = dataTree.getSourceNode(source);
-            if (node == null) {
-                continue;
-            }
-            nodata.clear();
-            Iterator<String> pit = paramsToProcess.iterator();
-            while (pit.hasNext()) {
-                if (Thread.interrupted()) {
-                    throw new InterruptedException();
+            List<AbstractRequestableNode> results = new ArrayList<AbstractRequestableNode>();
+            Set<StackEntry> nodata = new HashSet<StackEntry>(derParLibrary.size());
+            Deque<StackEntry> stack = new ArrayDeque<StackEntry>();
+            Iterator<String> sit = sourcesToProcess.iterator();
+            boolean first = true;
+            final long UNLOCK_TIME = 800;
+            SOURCE_LOOP: while (sit.hasNext()) {
+                if (first) {
+                    first = false;
+                } else if (lock.getQueueLength() > 0) {
+                    lock.unlock();
+                    locked = false;
+                    Thread.sleep(UNLOCK_TIME);
+                    lock.lockInterruptibly();
+                    locked = true;
                 }
-                String param = pit.next();
-                DerivParamDesc desc = derParLibrary.get(param);
-                // If there is no way to derive it and there are no nodes to
-                // composite average skip it for all levels
-                if (node.containsChildNode(param)
-                        || (desc != null && desc.getMethods() != null && !desc
-                                .getMethods().isEmpty())) {
-                    Iterator<Level> lit = levelsToProcess.iterator();
-                    while (lit.hasNext()) {
-                        Level level = lit.next();
-                        AbstractRequestableNode result = null;
-                        if (derive) {
-                            result = resolveNode(node, param, level, stack,
-                                    nodata);
-                        } else {
-                            ParameterNode pNode = node.getChildNode(param);
-                            result = (AbstractRequestableNode) (pNode == null ? null
-                                    : pNode.getChildNode(Long.toString(level
-                                            .getId())));
-                        }
-                        if (result == null) {
-                            continue;
-                        }
-
-                        if (!includeConstant) {
-                            if (result.isConstant()) {
+                String source = sit.next();
+                SourceNode node = dataTree.getSourceNode(source);
+                if (node == null) {
+                    continue;
+                }
+                nodata.clear();
+                Iterator<String> pit = paramsToProcess.iterator();
+                while (pit.hasNext()) {
+                    if (Thread.interrupted()) {
+                        throw new InterruptedException();
+                    }
+                    String param = pit.next();
+                    DerivParamDesc desc = derParLibrary.get(param);
+                    // If there is no way to derive it and there are no nodes to
+                    // composite average skip it for all levels
+                    if (node.containsChildNode(param)
+                            || (desc != null && desc.getMethods() != null && !desc
+                                    .getMethods().isEmpty())) {
+                        Iterator<Level> lit = levelsToProcess.iterator();
+                        while (lit.hasNext()) {
+                            Level level = lit.next();
+                            AbstractRequestableNode result = null;
+                            if (derive) {
+                                result = resolveNode(node, param, level, stack,
+                                        nodata);
+                            } else {
+                                ParameterNode pNode = node.getChildNode(param);
+                                result = (AbstractRequestableNode) (pNode == null ? null
+                                        : pNode.getChildNode(Long.toString(level
+                                                .getId())));
+                            }
+                            if (result == null) {
                                 continue;
-                            } else if (result instanceof AbstractDerivedDataNode) {
-                                // if we don't want constant fields I assume we
-                                // also don't want internal fields
-                                if (((AbstractDerivedDataNode) result)
-                                        .getDesc().isInternal()) {
+                            }
+
+                            if (!includeConstant) {
+                                if (result.isConstant()) {
+                                    continue;
+                                } else if (result instanceof AbstractDerivedDataNode) {
+                                    // if we don't want constant fields I assume we
+                                    // also don't want internal fields
+                                    if (((AbstractDerivedDataNode) result)
+                                            .getDesc().isInternal()) {
+                                        continue;
+                                    }
+                                }
+                            }
+
+                            if (!includeConstant && result.isConstant()) {
+                                continue;
+                            }
+                            if (clazz != null) {
+                                if (clazz == SourceNode.class) {
+                                    returnQueue.put(source);
+                                    sit.remove();
+                                    continue SOURCE_LOOP;
+                                } else if (clazz == ParameterNode.class) {
+                                    returnQueue.put(param);
+                                    pit.remove();
+                                    break;
+                                } else if (clazz == LevelNode.class
+                                        || result.getClass().isInstance(clazz)) {
+                                    returnQueue.put(result.getValue());
+                                    lit.remove();
                                     continue;
                                 }
-                            }
-                        }
-
-                        if (!includeConstant && result.isConstant()) {
-                            continue;
-                        }
-                        if (clazz != null) {
-                            if (clazz == SourceNode.class) {
-                                returnQueue.put(source);
-                                sit.remove();
-                                continue SOURCE_LOOP;
-                            } else if (clazz == ParameterNode.class) {
-                                returnQueue.put(param);
-                                pit.remove();
-                                break;
-                            } else if (clazz == LevelNode.class
-                                    || result.getClass().isInstance(clazz)) {
-                                returnQueue.put(result.getValue());
-                                lit.remove();
-                                continue;
-                            }
-                        } else {
-                            if (sourceAliases.containsKey(source)) {
-                                boolean supplement = false;
-                                List<AbstractRequestableNode> choices = new ArrayList<AbstractRequestableNode>();
-                                for (String aliasModel : sourceAliases
-                                        .get(source)) {
-                                    AbstractRequestableNode alias = null;
-                                    if (derive) {
-                                        alias = resolveNode(
-                                                dataTree.getSourceNode(aliasModel),
-                                                param, level, stack, nodata);
-                                    } else {
-                                        ParameterNode pNode = node
-                                                .getChildNode(param);
-                                        alias = (AbstractRequestableNode) (pNode == null ? null
-                                                : pNode.getChildNode(Long
-                                                        .toString(level.getId())));
-                                    }
-                                    if (alias != null) {
-                                        choices.add(alias);
-                                        if (aliasModel.equals(source)) {
-                                            supplement = true;
-                                        }
-                                    }
-
-                                }
-                                if (!choices.isEmpty()) {
-                                    DerivParamDesc d = desc;
-                                    DerivParamMethod method = null;
-                                    if (d == null) {
-                                        // We should at least provide an
-                                        // abbreviation.
-                                        d = new DerivParamDesc();
-                                        d.setAbbreviation(param);
-                                    }
-                                    if (supplement) {
-                                        // This Or node contains the original
-                                        // node defined for this
-                                        // model/parameter/level so it can be
-                                        // treated as a Supplement rather than
-                                        // an Or
-                                        method = new DerivParamMethod();
-                                        method.setName("Supplement");
-                                    }
-                                    OrLevelNode or = new OrLevelNode(level, d,
-                                            method, source, choices, false);
-                                    results.add(or);
-                                }
                             } else {
-                                results.add(result);
+                                if (sourceAliases.containsKey(source)) {
+                                    boolean supplement = false;
+                                    List<AbstractRequestableNode> choices = new ArrayList<AbstractRequestableNode>();
+                                    for (String aliasModel : sourceAliases
+                                            .get(source)) {
+                                        AbstractRequestableNode alias = null;
+                                        if (derive) {
+                                            alias = resolveNode(
+                                                    dataTree.getSourceNode(aliasModel),
+                                                    param, level, stack, nodata);
+                                        } else {
+                                            ParameterNode pNode = node
+                                                    .getChildNode(param);
+                                            alias = (AbstractRequestableNode) (pNode == null ? null
+                                                    : pNode.getChildNode(Long
+                                                            .toString(level.getId())));
+                                        }
+                                        if (alias != null) {
+                                            choices.add(alias);
+                                            if (aliasModel.equals(source)) {
+                                                supplement = true;
+                                            }
+                                        }
+
+                                    }
+                                    if (!choices.isEmpty()) {
+                                        DerivParamDesc d = desc;
+                                        DerivParamMethod method = null;
+                                        if (d == null) {
+                                            // We should at least provide an
+                                            // abbreviation.
+                                            d = new DerivParamDesc();
+                                            d.setAbbreviation(param);
+                                        }
+                                        if (supplement) {
+                                            // This Or node contains the original
+                                            // node defined for this
+                                            // model/parameter/level so it can be
+                                            // treated as a Supplement rather than
+                                            // an Or
+                                            method = new DerivParamMethod();
+                                            method.setName("Supplement");
+                                        }
+                                        OrLevelNode or = new OrLevelNode(level, d,
+                                                method, source, choices, false);
+                                        results.add(or);
+                                    }
+                                } else {
+                                    results.add(result);
+                                }
                             }
                         }
                     }
                 }
             }
+            return results;
+        } finally {
+            if (locked)
+                lock.unlock();
         }
-        return results;
     }
 
     /**
@@ -743,227 +773,232 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @param nodata
      * @return
      */
-    protected synchronized AbstractRequestableNode resolveNode(
+    protected AbstractRequestableNode resolveNode(
             SourceNode sourceNode, String param, Level level,
             Deque<StackEntry> stack, Set<StackEntry> nodata) {
-        ParameterNode pNode = sourceNode.getChildNode(param);
-        LevelNode lNode = pNode == null ? null : pNode.getChildNode(Long
-                .toString(level.getId()));
-        if (lNode != null) {
-            if (lNode.getClass() == CompositeAverageLevelNode.class
-                    && !stack.isEmpty()) {
-                stack.getFirst().autoAverage = true;
-            }
-            return (AbstractRequestableNode) lNode;
-        }
-        DerivParamDesc desc = derParLibrary.get(param);
-        if (desc == null) {
-            return null;
-        }
-        StackEntry se = new StackEntry(sourceNode.getValue(), param,
-                level.getId());
-        if (nodata.contains(se)) {
-            return null;
-        }
-        if (stack.contains(se)) {
-            Iterator<StackEntry> it = stack.descendingIterator();
-            while (it.hasNext()) {
-                StackEntry next = it.next();
-                if (next.equals(se)) {
-                    break;
-                } else {
-                    next.recursive = true;
+        lock.lock();
+        try {
+            ParameterNode pNode = sourceNode.getChildNode(param);
+            LevelNode lNode = pNode == null ? null : pNode.getChildNode(Long
+                    .toString(level.getId()));
+            if (lNode != null) {
+                if (lNode.getClass() == CompositeAverageLevelNode.class
+                        && !stack.isEmpty()) {
+                    stack.getFirst().autoAverage = true;
                 }
+                return (AbstractRequestableNode) lNode;
             }
-            return null;
-        }
-        // Any time this function returns after this point it must pop se, or
-        // else!
-        AbstractDerivedDataNode autoAveragedNode = null;
-        stack.push(se);
-        List<DerivParamMethod> methods = desc.getMethods();
-        if (methods != null) {
-            List<Object> request = new ArrayList<Object>();
-            for (DerivParamMethod method : methods) {
-                try {
-                    // verify valid models
-                    List<String> validModels = method.getValidModels();
-                    if (validModels != null && validModels.size() > 0) {
-                        if (!validModels.contains(sourceNode.getValue())) {
+            DerivParamDesc desc = derParLibrary.get(param);
+            if (desc == null) {
+                return null;
+            }
+            StackEntry se = new StackEntry(sourceNode.getValue(), param,
+                    level.getId());
+            if (nodata.contains(se)) {
+                return null;
+            }
+            if (stack.contains(se)) {
+                Iterator<StackEntry> it = stack.descendingIterator();
+                while (it.hasNext()) {
+                    StackEntry next = it.next();
+                    if (next.equals(se)) {
+                        break;
+                    } else {
+                        next.recursive = true;
+                    }
+                }
+                return null;
+            }
+            // Any time this function returns after this point it must pop se, or
+            // else!
+            AbstractDerivedDataNode autoAveragedNode = null;
+            stack.push(se);
+            List<DerivParamMethod> methods = desc.getMethods();
+            if (methods != null) {
+                List<Object> request = new ArrayList<Object>();
+                for (DerivParamMethod method : methods) {
+                    try {
+                        // verify valid models
+                        List<String> validModels = method.getValidModels();
+                        if (validModels != null && validModels.size() > 0) {
+                            if (!validModels.contains(sourceNode.getValue())) {
+                                continue;
+                            }
+                        }
+
+                        Set<Level> validLevels = method.getValidLevels();
+
+                        if (validLevels != null && !validLevels.contains(level)) {
                             continue;
                         }
-                    }
-
-                    Set<Level> validLevels = method.getValidLevels();
-
-                    if (validLevels != null && !validLevels.contains(level)) {
-                        continue;
-                    }
-                    request.clear();
-                    se.autoAverage = false;
-                    if (method.getName().equalsIgnoreCase("Supplement")) {
-                        continue;
-                    } else if (method.getFrameworkMethod() == FrameworkMethod.NODERIVATION) {
-                        stack.pop();
-                        return null;
-                    } else if (method.getFrameworkMethod() == FrameworkMethod.UNION
-                            && level.isRangeLevel()) {
-                        if (method.getFields().size() == 1) {
-                            // No Levels specified, use all in range
-                            SortedSet<Level> levels = LevelUtilities
-                                    .getOrderedSetOfStandardLevels(
-                                            level.getMasterLevel().getName())
-                                    .subSet(level.getLowerLevel(), true,
-                                            level.getUpperLevel(), true);
-                            for (Level fieldLevel : levels) {
-                                Object target = resolveField(sourceNode,
-                                        fieldLevel, method.getFields().get(0),
-                                        stack, nodata);
-                                if (target != null) {
-                                    request.add(target);
+                        request.clear();
+                        se.autoAverage = false;
+                        if (method.getName().equalsIgnoreCase("Supplement")) {
+                            continue;
+                        } else if (method.getFrameworkMethod() == FrameworkMethod.NODERIVATION) {
+                            stack.pop();
+                            return null;
+                        } else if (method.getFrameworkMethod() == FrameworkMethod.UNION
+                                && level.isRangeLevel()) {
+                            if (method.getFields().size() == 1) {
+                                // No Levels specified, use all in range
+                                SortedSet<Level> levels = LevelUtilities
+                                        .getOrderedSetOfStandardLevels(
+                                                level.getMasterLevel().getName())
+                                        .subSet(level.getLowerLevel(), true,
+                                                level.getUpperLevel(), true);
+                                for (Level fieldLevel : levels) {
+                                    Object target = resolveField(sourceNode,
+                                            fieldLevel, method.getFields().get(0),
+                                            stack, nodata);
+                                    if (target != null) {
+                                        request.add(target);
+                                    }
                                 }
+                            } else {
+                                // Only use specific Levels
+                                for (IDerivParamField field : method.getFields()) {
+                                    Object target = resolveField(sourceNode, level,
+                                            field, stack, nodata);
+                                    if (target != null) {
+                                        request.add(target);
+                                    }
+                                }
+                            }
+                            if (request.size() < 3) {
+                                request.clear();
                             }
                         } else {
-                            // Only use specific Levels
-                            for (IDerivParamField field : method.getFields()) {
-                                Object target = resolveField(sourceNode, level,
-                                        field, stack, nodata);
-                                if (target != null) {
-                                    request.add(target);
+                            for (IDerivParamField ifield : method.getFields()) {
+                                Object result = resolveField(sourceNode, level,
+                                        ifield, stack, nodata);
+                                if (result != null) {
+                                    request.add(result);
+                                } else if (method.getFrameworkMethod() != FrameworkMethod.OR) {
+                                    break;
+                                }
+                            }// field loop
+                        }
+                        if (request.size() == method.getFields().size()
+                                || ((method.getFrameworkMethod() == FrameworkMethod.UNION || method
+                                        .getFrameworkMethod() == FrameworkMethod.OR) && request
+                                        .size() > 0)) {
+                            AbstractDerivedDataNode newNode = createDerivedNode(
+                                    desc, method, level, request, sourceNode);
+                            if (newNode != null) {
+                                pNode = sourceNode.getChildNode(param);
+                                if (pNode == null) {
+                                    pNode = new ParameterNode();
+                                    pNode.setValue(desc.getAbbreviation());
+                                    pNode.setParameterName(desc.getName());
+                                    pNode.setParameterUnit(desc.getUnit()
+                                            .toString());
+                                    sourceNode.addChildNode(pNode);
+                                }
+                                if (!se.autoAverage) {
+                                    pNode.addChildNode(newNode);
+                                    stack.pop();
+                                    return newNode;
+                                } else if (autoAveragedNode == null) {
+                                    autoAveragedNode = newNode;
                                 }
                             }
                         }
-                        if (request.size() < 3) {
-                            request.clear();
-                        }
-                    } else {
-                        for (IDerivParamField ifield : method.getFields()) {
-                            Object result = resolveField(sourceNode, level,
-                                    ifield, stack, nodata);
-                            if (result != null) {
-                                request.add(result);
-                            } else if (method.getFrameworkMethod() != FrameworkMethod.OR) {
-                                break;
-                            }
-                        }// field loop
+                    } catch (Exception e) {
+                        statusHandler.handle(Priority.PROBLEM,
+                                "Population of gridTree for Derived Parameter ["
+                                        + desc.getAbbreviation() + "], method ["
+                                        + method.getName() + "] failed", e);
                     }
-                    if (request.size() == method.getFields().size()
-                            || ((method.getFrameworkMethod() == FrameworkMethod.UNION || method
-                                    .getFrameworkMethod() == FrameworkMethod.OR) && request
-                                    .size() > 0)) {
-                        AbstractDerivedDataNode newNode = createDerivedNode(
-                                desc, method, level, request, sourceNode);
-                        if (newNode != null) {
-                            pNode = sourceNode.getChildNode(param);
-                            if (pNode == null) {
-                                pNode = new ParameterNode();
-                                pNode.setValue(desc.getAbbreviation());
-                                pNode.setParameterName(desc.getName());
-                                pNode.setParameterUnit(desc.getUnit()
-                                        .toString());
-                                sourceNode.addChildNode(pNode);
-                            }
-                            if (!se.autoAverage) {
-                                pNode.addChildNode(newNode);
-                                stack.pop();
-                                return newNode;
-                            } else if (autoAveragedNode == null) {
-                                autoAveragedNode = newNode;
-                            }
-                        }
-                    }
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Population of gridTree for Derived Parameter ["
-                                    + desc.getAbbreviation() + "], method ["
-                                    + method.getName() + "] failed", e);
-                }
-            }// method loop
-        }
-        if (level.isRangeLevel()) {
-            Level upperLevel;
-            Level lowerLevel;
-            upperLevel = level.getUpperLevel();
-            lowerLevel = level.getLowerLevel();
-
-            List<AbstractRequestableNode> nodes = new ArrayList<AbstractRequestableNode>();
-            int endCount = 0;
-            AbstractRequestableNode target = resolveNode(sourceNode, param,
-                    upperLevel, stack, nodata);
-            if (target != null) {
-                endCount += 1;
-                nodes.add(target);
+                }// method loop
             }
-            if (level.getLevelonevalue() != level.getLeveltwovalue()) {
-                target = resolveNode(sourceNode, param, lowerLevel, stack,
-                        nodata);
+            if (level.isRangeLevel()) {
+                Level upperLevel;
+                Level lowerLevel;
+                upperLevel = level.getUpperLevel();
+                lowerLevel = level.getLowerLevel();
+
+                List<AbstractRequestableNode> nodes = new ArrayList<AbstractRequestableNode>();
+                int endCount = 0;
+                AbstractRequestableNode target = resolveNode(sourceNode, param,
+                        upperLevel, stack, nodata);
                 if (target != null) {
                     endCount += 1;
                     nodes.add(target);
                 }
-                SortedSet<Level> levels = null;
-                levels = LevelUtilities.getOrderedSetOfStandardLevels(
-                        level.getMasterLevel().getName()).subSet(lowerLevel,
-                        false, upperLevel, false);
-                for (Level fieldLevel : levels) {
-                    target = resolveNode(sourceNode, param, fieldLevel, stack,
+                if (level.getLevelonevalue() != level.getLeveltwovalue()) {
+                    target = resolveNode(sourceNode, param, lowerLevel, stack,
                             nodata);
                     if (target != null) {
+                        endCount += 1;
                         nodes.add(target);
                     }
+                    SortedSet<Level> levels = null;
+                    levels = LevelUtilities.getOrderedSetOfStandardLevels(
+                            level.getMasterLevel().getName()).subSet(lowerLevel,
+                            false, upperLevel, false);
+                    for (Level fieldLevel : levels) {
+                        target = resolveNode(sourceNode, param, fieldLevel, stack,
+                                nodata);
+                        if (target != null) {
+                            nodes.add(target);
+                        }
+                    }
+                } else {
+                    endCount *= 2;
                 }
-            } else {
-                endCount *= 2;
-            }
-            if (endCount == 2 || nodes.size() > 2) {
-                pNode = sourceNode.getChildNode(param);
-                CompositeAverageLevelNode newNode = new CompositeAverageLevelNode(
-                        level, desc, sourceNode.getValue(), nodes);
+                if (endCount == 2 || nodes.size() > 2) {
+                    pNode = sourceNode.getChildNode(param);
+                    CompositeAverageLevelNode newNode = new CompositeAverageLevelNode(
+                            level, desc, sourceNode.getValue(), nodes);
 
-                pNode.addChildNode(newNode);
+                    pNode.addChildNode(newNode);
+                    stack.pop();
+                    if (!stack.isEmpty()) {
+                        stack.getFirst().autoAverage = true;
+                    }
+                    return newNode;
+                }
+            }
+            if (autoAveragedNode != null) {
+                pNode.addChildNode(autoAveragedNode);
                 stack.pop();
-                if (!stack.isEmpty()) {
-                    stack.getFirst().autoAverage = true;
-                }
-                return newNode;
-            }
-        }
-        if (autoAveragedNode != null) {
-            pNode.addChildNode(autoAveragedNode);
-            stack.pop();
-            /*
-             * The check following this comment existed so that definitions that
-             * can be derived without auto-averaging will always be used before
-             * definitions that need auto-averaging, even if the auto-average
-             * happens in dependencies or dependiencies of dependencies etc.
-             * There are two problems with this, first if a user over rides a
-             * definition that does not use auto-average with a definition that
-             * uses auto-average the user override will never be used which can
-             * be very confusing if the auto-average is several layers deep. The
-             * second problem is that we don't save off the fact that it was
-             * derived using auto-average so if a parameter is requested later
-             * that uses this same node it will not be marked as auto-averaged
-             * so it will use this node even if an alternative exists that is
-             * not auto-average. The problem with this is that you derive the
-             * parameter differently depending on the order parameters are
-             * derived, which is a completely random order. This non-determinism
-             * is very bad so this check has been commented out with the
-             * possible side effect that sometimes auto-average may be used when
-             * it could have been avoided. Now auto-averaging will only be
-             * avoided if it happens in one of the direct dependencies of this
-             * definition.
-             */
+                /*
+                 * The check following this comment existed so that definitions that
+                 * can be derived without auto-averaging will always be used before
+                 * definitions that need auto-averaging, even if the auto-average
+                 * happens in dependencies or dependiencies of dependencies etc.
+                 * There are two problems with this, first if a user over rides a
+                 * definition that does not use auto-average with a definition that
+                 * uses auto-average the user override will never be used which can
+                 * be very confusing if the auto-average is several layers deep. The
+                 * second problem is that we don't save off the fact that it was
+                 * derived using auto-average so if a parameter is requested later
+                 * that uses this same node it will not be marked as auto-averaged
+                 * so it will use this node even if an alternative exists that is
+                 * not auto-average. The problem with this is that you derive the
+                 * parameter differently depending on the order parameters are
+                 * derived, which is a completely random order. This non-determinism
+                 * is very bad so this check has been commented out with the
+                 * possible side effect that sometimes auto-average may be used when
+                 * it could have been avoided. Now auto-averaging will only be
+                 * avoided if it happens in one of the direct dependencies of this
+                 * definition.
+                 */
 
-            // if (!stack.isEmpty()) {
-            // stack.getFirst().autoAverage = true;
-            // }
-            return autoAveragedNode;
+                // if (!stack.isEmpty()) {
+                // stack.getFirst().autoAverage = true;
+                // }
+                return autoAveragedNode;
+            }
+            if (!se.recursive) {
+                nodata.add(se);
+            }
+            stack.pop();
+            return null;
+        } finally {
+            lock.unlock();
         }
-        if (!se.recursive) {
-            nodata.add(se);
-        }
-        stack.pop();
-        return null;
     }
 
     /**
@@ -980,114 +1015,119 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      *         AbstractRequestableLevelNode
      * @throws VizCommunicationException
      */
-    private synchronized Object resolveField(SourceNode sourceNode,
+    private Object resolveField(SourceNode sourceNode,
             Level level, IDerivParamField ifield, Deque<StackEntry> stack,
             Set<StackEntry> nodata) {
-        // process the next field
-        if (ifield.getClass() == DerivParamConstantField.class) {
-            return new FloatRequestableData(
-                    (float) ((DerivParamConstantField) ifield).getValue());
-        }
-        DerivParamField field = (DerivParamField) ifield;
-        String fieldParamAbbrev = field.getParam();
-
-        // check static grid fields
-
-        Object pStatic = resolvePluginStaticData(sourceNode, field, level);
-        if (pStatic != null) {
-            return pStatic;
-        }
-
-        // Check to see if we can set the field from the
-        // masterlevel name
-        if (level.getMasterLevel().getName().equals(fieldParamAbbrev)) {
-
-            FloatRequestableData data = new FloatRequestableData(
-                    (float) level.getLevelonevalue());
-            data.setUnit(level.getMasterLevel().getUnit());
-            return data;
-        }
-
-        String validSource = field.getValidSource();
-        SourceNode fieldSourceNode = sourceNode;
-
-        if (validSource != null && validSource.length() > 0) {
-            fieldSourceNode = dataTree.getSourceNode(validSource);
-            if (fieldSourceNode == null) {
-                return null;
+        lock.lock();
+        try {
+            // process the next field
+            if (ifield.getClass() == DerivParamConstantField.class) {
+                return new FloatRequestableData(
+                        (float) ((DerivParamConstantField) ifield).getValue());
             }
-        }
+            DerivParamField field = (DerivParamField) ifield;
+            String fieldParamAbbrev = field.getParam();
 
-        LevelType type = field.getLevelType();
-        if (type == null || type == LevelType.Upper || type == LevelType.Lower) {
+            // check static grid fields
 
-            // By default, no mapping
-            Level fieldLevel = null;
-            LevelNode target = null;
-            if (type == null) {
-                fieldLevel = level;
-            } else if (level.isRangeLevel()) {
-                if (type == LevelType.Upper) {
-                    fieldLevel = level.getUpperLevel();
-                } else {
-                    fieldLevel = level.getLowerLevel();
+            Object pStatic = resolvePluginStaticData(sourceNode, field, level);
+            if (pStatic != null) {
+                return pStatic;
+            }
+
+            // Check to see if we can set the field from the
+            // masterlevel name
+            if (level.getMasterLevel().getName().equals(fieldParamAbbrev)) {
+
+                FloatRequestableData data = new FloatRequestableData(
+                        (float) level.getLevelonevalue());
+                data.setUnit(level.getMasterLevel().getUnit());
+                return data;
+            }
+
+            String validSource = field.getValidSource();
+            SourceNode fieldSourceNode = sourceNode;
+
+            if (validSource != null && validSource.length() > 0) {
+                fieldSourceNode = dataTree.getSourceNode(validSource);
+                if (fieldSourceNode == null) {
+                    return null;
                 }
-            } else {
-                SortedSet<Level> levels = null;
-                if (type == LevelType.Upper) {
-                    levels = LevelUtilities.getOrderedSetOfStandardLevels(
-                            level.getMasterLevel().getName()).tailSet(level,
-                            false);
+            }
+
+            LevelType type = field.getLevelType();
+            if (type == null || type == LevelType.Upper || type == LevelType.Lower) {
+
+                // By default, no mapping
+                Level fieldLevel = null;
+                LevelNode target = null;
+                if (type == null) {
+                    fieldLevel = level;
+                } else if (level.isRangeLevel()) {
+                    if (type == LevelType.Upper) {
+                        fieldLevel = level.getUpperLevel();
+                    } else {
+                        fieldLevel = level.getLowerLevel();
+                    }
                 } else {
-                    levels = LevelUtilities
-                            .getOrderedSetOfStandardLevels(
-                                    level.getMasterLevel().getName())
-                            .headSet(level, false).descendingSet();
+                    SortedSet<Level> levels = null;
+                    if (type == LevelType.Upper) {
+                        levels = LevelUtilities.getOrderedSetOfStandardLevels(
+                                level.getMasterLevel().getName()).tailSet(level,
+                                false);
+                    } else {
+                        levels = LevelUtilities
+                                .getOrderedSetOfStandardLevels(
+                                        level.getMasterLevel().getName())
+                                .headSet(level, false).descendingSet();
+                    }
+                    for (Level l : levels) {
+                        target = resolveNode(fieldSourceNode, fieldParamAbbrev, l,
+                                stack, nodata);
+                        if (target != null) {
+                            fieldLevel = l;
+                            break;
+                        }
+                    }
                 }
-                for (Level l : levels) {
-                    target = resolveNode(fieldSourceNode, fieldParamAbbrev, l,
-                            stack, nodata);
+
+                // If that level is defined than add a
+                // request to the map
+                if (fieldLevel != null && target == null) {
+                    target = resolveNode(fieldSourceNode, fieldParamAbbrev,
+                            fieldLevel, stack, nodata);
+                }
+                if (target != null) {
+                    return target;
+                }
+
+                // Level mapping must be handled seperately
+                // because it is valid for all requests
+            } else if (type == LevelType.LevelMapping) {
+                LevelNode target = null;
+                List<Level> levels;
+                levels = field.getLevelMapping().getLevels();
+                for (Level fieldLevel : levels) {
+                    target = resolveNode(fieldSourceNode, fieldParamAbbrev,
+                            fieldLevel, stack, nodata);
                     if (target != null) {
-                        fieldLevel = l;
                         break;
                     }
                 }
-            }
-
-            // If that level is defined than add a
-            // request to the map
-            if (fieldLevel != null && target == null) {
-                target = resolveNode(fieldSourceNode, fieldParamAbbrev,
-                        fieldLevel, stack, nodata);
-            }
-            if (target != null) {
-                return target;
-            }
-
-            // Level mapping must be handled seperately
-            // because it is valid for all requests
-        } else if (type == LevelType.LevelMapping) {
-            LevelNode target = null;
-            List<Level> levels;
-            levels = field.getLevelMapping().getLevels();
-            for (Level fieldLevel : levels) {
-                target = resolveNode(fieldSourceNode, fieldParamAbbrev,
-                        fieldLevel, stack, nodata);
                 if (target != null) {
-                    break;
+                    return target;
                 }
-            }
-            if (target != null) {
-                return target;
-            }
 
-            // Cube's are very different from other level
-            // mappings
-        } else if (type == LevelType.Cube) {
-            return getCubeNode(fieldSourceNode, field, stack, nodata);
+                // Cube's are very different from other level
+                // mappings
+            } else if (type == LevelType.Cube) {
+                return getCubeNode(fieldSourceNode, field, stack, nodata);
 
+            }
+            return null;
+        } finally {
+            lock.unlock();
         }
-        return null;
     }
 
     protected abstract LevelNode getCubeNode(SourceNode sNode,
