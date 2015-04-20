@@ -1,5 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <DerivedParameter unit="m" name="Visibility" abbreviation="Vis" xmlns:ns2="group">
+	<Method levels="Surface" name="Alias">
+    	<Field abbreviation="vis" level="2FHAG" />
+	</Method>
     <Method name="Alias" levels="Surface" models="modelsounding">
         <Field abbreviation="vsby" level="Station"/>
     </Method>
