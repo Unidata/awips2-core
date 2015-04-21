@@ -60,6 +60,7 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  * Sep 27, 2013  #2419     lvenable    Removed the ability to get the dual config list
  *                                     and added some convenience methods to clear and add
  *                                     to the include list.
+ * May 04, 2015   4419     rferrel     Handle sorting of lists
  * 
  * </pre>
  * 
@@ -482,6 +483,20 @@ public class DualList extends Composite {
             }
         }
 
+        if (config.isSortList()) {
+            java.util.List<String> sortedList = sortAvailable(availableList);
+            availableList.removeAll();
+            for (String s : sortedList) {
+                availableList.add(s);
+            }
+
+            sortedList = sortAvailable(selectedList);
+            selectedList.removeAll();
+            for (String s : sortedList) {
+                selectedList.add(s);
+            }
+        }
+
         enableDisableLeftRightButtons();
 
         entriesUpdated();
@@ -598,10 +613,7 @@ public class DualList extends Composite {
             return;
         }
 
-        for (String item : items) {
-            selectedList.add(item);
-        }
-
+        moveRight(items);
         availableList.removeAll();
 
         entriesUpdated();
@@ -621,10 +633,7 @@ public class DualList extends Composite {
 
         int firstIdxSelected = availableList.indexOf(items[0]);
 
-        for (String item : items) {
-            selectedList.add(item);
-        }
-
+        moveRight(items);
         availableList.remove(availableList.getSelectionIndices());
 
         if (availableList.getItemCount() > 0) {
@@ -638,6 +647,42 @@ public class DualList extends Composite {
         entriesUpdated();
         enableDisableUpDownButtons();
         enableDisableLeftRightButtons();
+    }
+
+    /**
+     * Place desired items to the right if needed sort and keep selected items.
+     * 
+     * @param items
+     */
+    private void moveRight(String[] items) {
+
+        for (String item : items) {
+            selectedList.add(item);
+        }
+
+        if (config.isSortList()) {
+            java.util.List<String> newSelectedList = sortAvailable(selectedList);
+            if (selectedList.getSelectionCount() == 0) {
+                selectedList.removeAll();
+                for (String s : newSelectedList) {
+                    selectedList.add(s);
+                }
+            } else {
+                java.util.List<String> selectedArray = Arrays
+                        .asList(selectedList.getSelection());
+                selectedList.removeAll();
+                int[] selIndices = new int[selectedArray.size()];
+                int index = 0;
+                for (String s : newSelectedList) {
+                    if (selectedArray.contains(s)) {
+                        selIndices[index++] = selectedList.getItemCount();
+                    }
+                    selectedList.add(s);
+                }
+                selectedList.select(selIndices);
+            }
+        }
+
     }
 
     /**
@@ -678,7 +723,7 @@ public class DualList extends Composite {
     public void reloadAvailableList() {
 
         String[] selectedStrings = availableList.getSelection();
-        ArrayList<String> availableListNew = new ArrayList<String>();
+        java.util.List<String> availableListNew = new ArrayList<String>();
 
         String[] selectedItemArray = selectedList.getItems();
         ArrayList<String> selectedItemList = new ArrayList<String>();
@@ -706,16 +751,15 @@ public class DualList extends Composite {
                 for (String s : selectedList.getSelection()) {
                     availableList.add(s);
                 }
+            }
 
-                // Sort the list();
-                availableListNew = sortAvailable(availableList);
+            // Sort the list();
+            availableListNew = sortAvailable(availableList);
 
-                availableList.removeAll();
+            availableList.removeAll();
 
-                for (String b : availableListNew) {
-                    availableList.add(b);
-                }
-
+            for (String b : availableListNew) {
+                availableList.add(b);
             }
         } else {
             if (moveAllLeft) {
@@ -737,15 +781,15 @@ public class DualList extends Composite {
                 for (String s : selectedList.getSelection()) {
                     availableList.add(s);
                 }
+            }
 
-                // Sort the list
-                availableListNew = sortAvailable(availableList);
+            // Sort the list
+            availableListNew = sortAvailable(availableList);
 
-                availableList.removeAll();
+            availableList.removeAll();
 
-                for (String b : availableListNew) {
-                    availableList.add(b);
-                }
+            for (String b : availableListNew) {
+                availableList.add(b);
             }
         }
 
@@ -773,7 +817,7 @@ public class DualList extends Composite {
         }
     }
 
-    private ArrayList<String> sortAvailable(List oldAvailableList) {
+    private java.util.List<String> sortAvailable(List oldAvailableList) {
 
         ArrayList<String> availableListsorted = new ArrayList<String>();
         String[] arr = oldAvailableList.getItems();
@@ -800,7 +844,12 @@ public class DualList extends Composite {
                 availableListsorted.add(a);
             }
 
-            Collections.sort(availableListsorted);
+            if (config.isCaseFlag()) {
+                Collections.sort(availableListsorted);
+            } else {
+                Collections.sort(availableListsorted,
+                        String.CASE_INSENSITIVE_ORDER);
+            }
         }
 
         return availableListsorted;
