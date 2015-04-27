@@ -3,6 +3,7 @@ package com.raytheon.uf.viz.core.tile;
 import java.awt.Rectangle;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -15,6 +16,7 @@ import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.numeric.DataUtilities;
 import com.raytheon.uf.common.numeric.buffer.ByteBufferWrapper;
+import com.raytheon.uf.common.numeric.buffer.DoubleBufferWrapper;
 import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
 import com.raytheon.uf.common.numeric.buffer.IntBufferWrapper;
 import com.raytheon.uf.common.numeric.buffer.ShortBufferWrapper;
@@ -45,6 +47,7 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Feb 25, 2014  2791     bsteffen    Initial creation
+ * Apr 27, 2015  4425     nabowle     Handle DoubleBuffers.
  * 
  * </pre>
  * 
@@ -79,6 +82,9 @@ public class DataSourceTileImageCreator implements TileImageCreator {
                         slice.height);
             } else if (buffer instanceof FloatBuffer) {
                 dest = new FloatBufferWrapper((FloatBuffer) buffer,
+                        slice.width, slice.height);
+            } else if (buffer instanceof DoubleBuffer) {
+                dest = new DoubleBufferWrapper((DoubleBuffer) buffer,
                         slice.width, slice.height);
             } else {
                 throw new VizException("Unsupported data type: "

@@ -8,6 +8,7 @@ com.raytheon.uf.common.datastorage.Request
 com.raytheon.uf.common.datastorage.StorageProperties
 com.raytheon.uf.common.datastorage.StorageStatus
 com.raytheon.uf.common.datastorage.records.ByteDataRecord
+com.raytheon.uf.common.datastorage.records.DoubleDataRecord
 com.raytheon.uf.common.datastorage.records.FloatDataRecord
 com.raytheon.uf.common.datastorage.records.IntegerDataRecord
 com.raytheon.uf.common.datastorage.records.LongDataRecord
