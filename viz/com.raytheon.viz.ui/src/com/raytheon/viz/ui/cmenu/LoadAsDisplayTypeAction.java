@@ -19,6 +19,11 @@
  **/
 package com.raytheon.viz.ui.cmenu;
 
+import org.eclipse.core.runtime.IProgressMonitor;
+import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.Job;
+
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -46,6 +51,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
  * Aug 10, 2011           njensen     Added runWithEvent
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
  *                                    ProcedureXmlManager
+ * Apr 06, 2015  ASM17215 D. Friedman Load in Job
  * 
  * </pre>
  * 
@@ -64,29 +70,37 @@ public abstract class LoadAsDisplayTypeAction extends AbstractRightClickAction {
      */
     @Override
     public void run() {
-        try {
-            ProcedureXmlManager jaxb = ProcedureXmlManager.getInstance();
-            ResourcePair rp = selectedRsc;
-            ResourceGroup group = new ResourceGroup();
-            group.getResourceList().add(rp);
-            String xml = jaxb.marshal(group);
-            group = jaxb.unmarshal(ResourceGroup.class, xml);
-            rp = group.getResourceList().get(0);
-            rp.setProperties(new ResourceProperties());
-            rp.getLoadProperties()
-                    .getCapabilities()
-                    .getCapability(rp.getResourceData(),
-                            DisplayTypeCapability.class)
-                    .setDisplayType(getDisplayType());
-            rp.instantiateResource(getDescriptor());
-            getDescriptor().getResourceList().add(rp);
-        } catch (SerializationException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unexpected error cloning resource", e);
-        } catch (VizException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Unexpected error cloning resource", e);
-        }
+        Job job = new Job("Loading as " + getDisplayType().toString().toLowerCase()) {
+
+            @Override
+            protected IStatus run(IProgressMonitor monitor) {
+                try {
+                    ProcedureXmlManager jaxb = ProcedureXmlManager.getInstance();
+                    ResourcePair rp = selectedRsc;
+                    ResourceGroup group = new ResourceGroup();
+                    group.getResourceList().add(rp);
+                    String xml = jaxb.marshal(group);
+                    group = jaxb.unmarshal(ResourceGroup.class, xml);
+                    rp = group.getResourceList().get(0);
+                    rp.setProperties(new ResourceProperties());
+                    rp.getLoadProperties()
+                            .getCapabilities()
+                            .getCapability(rp.getResourceData(),
+                                    DisplayTypeCapability.class)
+                            .setDisplayType(getDisplayType());
+                    rp.instantiateResource(getDescriptor());
+                    getDescriptor().getResourceList().add(rp);
+                } catch (SerializationException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unexpected error cloning resource", e);
+                } catch (VizException e) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Unexpected error cloning resource", e);
+                }
+                return Status.OK_STATUS;
+            }
+        };
+        job.schedule();
     }
 
     /*
