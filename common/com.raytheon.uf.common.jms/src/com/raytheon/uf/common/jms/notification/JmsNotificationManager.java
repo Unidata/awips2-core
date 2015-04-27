@@ -32,6 +32,7 @@ import java.util.concurrent.SynchronousQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.jms.BytesMessage;
@@ -69,7 +70,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 15, 2013  2389      rjpeter    Updated synchronization to remove session leaks.
  * Jul 21, 2014  3390      bsteffen   Extracted logic from the NotificationManagerJob
  * Oct 23, 2014  3390      bsteffen   Fix concurrency of disconnect and name threads.
- * Apr 06, 2015  3343      rjpeter    Fix deadlock.
+ * Apr 06, 2015  3343      rjpeter    Fix deadlock and reconnect.
  * </pre>
  * 
  * @author randerso
@@ -162,23 +163,12 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     protected final ThreadPoolExecutor executorService;
 
-    private final ReconnectTimerTask reconnectTask = new ReconnectTimerTask();
+    private final AtomicBoolean reconnectScheduled = new AtomicBoolean(false);
 
     /**
-     * Timer task that can only have a single timer scheduled at a time.
+     * Timer task that updates reconnectScheduled and attempts to connect.
      */
     private class ReconnectTimerTask extends TimerTask {
-        private boolean scheduled = false;
-
-        public synchronized void schedule() {
-            if (scheduled) {
-                return;
-            }
-
-            new Timer().schedule(this, 5 * 1000);
-            scheduled = true;
-        }
-
         /*
          * (non-Javadoc)
          * 
@@ -186,10 +176,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
          */
         @Override
         public void run() {
-            synchronized (this) {
-                scheduled = false;
-            }
-
+            reconnectScheduled.set(false);
             connect(false);
         }
 
@@ -313,7 +300,13 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     @Override
     public void onException(JMSException e) {
         connected = false;
-        reconnectTask.schedule();
+
+        /*
+         * Schedule task to attempt to reconnect in 5 seconds.
+         */
+        if (reconnectScheduled.compareAndSet(false, true)) {
+            new Timer().schedule(new ReconnectTimerTask(), 5 * 1000);
+        }
 
         synchronized (listeners) {
             // disconnect listeners
