@@ -19,10 +19,10 @@
         further_licensing_information.
     -->
 <mapScales>
-	<mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml">
+	<mapScale displayName="N Hemisphere" fileName="NHemisphere.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
 	</mapScale>
-	<mapScale displayName="North American" fileName="NorthAmerican.xml">
+	<mapScale displayName="N America" fileName="NorthAmerican.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
 	</mapScale>
 	<mapScale displayName="CONUS" fileName="CONUS.xml">
@@ -31,10 +31,12 @@
 	<mapScale displayName="Regional" fileName="Regional.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
 	</mapScale>
-	<mapScale displayName="State(s)" fileName="States.xml">
+	<mapScale displayName="State" fileName="States.xml">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
 	</mapScale>
 	<mapScale displayName="WFO" fileName="WFO.xml">
+	</mapScale>
+	<mapScale displayName="World" fileName="World.xml">
 	</mapScale>
 	<mapScale displayName="World" fileName="World.xml">
 	</mapScale>
