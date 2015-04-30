@@ -19,7 +19,7 @@
 ##
 
 from com.raytheon.uf.common.status import UFStatus
-from com.raytheon.uf.common.status import UFStatus_Priority as Priority
+Priority = UFStatus.Priority
 import logging
 
 #
@@ -33,6 +33,7 @@ import logging
 #    ------------    ----------    -----------    --------------------------
 #    07/19/09                      njensen       Initial Creation.
 #    02/13/2015      4038          rferrel        Force root logging to NOTSET
+#    Apr 25, 2015    4952          njensen        Updated for new JEP API
 #    
 # 
 #

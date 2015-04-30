@@ -36,6 +36,7 @@ import JUtil
 #    10/14/13         2250         mnash          Initial creation of JUtil handler
 #    02/06/14                      mnash          Fixed fallbacks by using OrderedDict,
 #                                                 fixed exception by declaring a size
+#    Apr 23, 2015    4259          njensen        Updated for new JEP API
 #
 #
 
@@ -53,8 +54,8 @@ def javaBasicsToPyBasics(obj, customConverter=None):
     Determines the correct method to call out of the dict to convert Java basic
     objects to Python
     '''
-    if hasattr(obj, 'jclassname'):
-        classname = obj.jclassname
+    if hasattr(obj, 'java_name'):
+        classname = obj.java_name
         if classname in javaBasics :
             return True, javaBasics[classname](obj)
         else :
@@ -188,8 +189,8 @@ def javaCollectionToPyCollection(obj, customConverter=None):
     Main method to register with JUtil for conversion of Java
     collections to Python collections.
     '''
-    if hasattr(obj, 'jclassname'):
-        classname = obj.jclassname
+    if hasattr(obj, 'java_name'):
+        classname = obj.java_name
         if classname in javaCollections :
             return True, javaCollections[classname](obj, customConverter)
         elif PyJavaUtil.isArray(obj):
