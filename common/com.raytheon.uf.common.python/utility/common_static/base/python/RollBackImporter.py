@@ -22,8 +22,8 @@
 #    
 #    Date            Ticket#       Engineer       Description
 #    ------------    ----------    -----------    --------------------------
-#    04/23/2015      4383          randerso       Changed to roll back everything, 
-#                                                 not just non-base files
+#    04/23/2015      4383          randerso       Changed to roll back everything under 
+#                                                 the utility tree, not just non-base files
 #
 ##
 
@@ -40,9 +40,14 @@ class RollBackImporter:
     def _import(self, name, globals=None, locals=None, fromlist=[], level=-1):
         result = self.realImport(name, globals, locals, fromlist, level)
         
-        # add to list of modules to be rolled back
-        self.newModules.add(result.__name__)
-
+        if hasattr(result, '__file__'):
+            if result.__file__.startswith("/awips2/edex/data/utility/"):
+#                 LogStream.logDebug("IMPORTING:", name, result)
+                self.newModules.add(result.__name__)
+#             else:
+#                 LogStream.logDebug("IGNORING NON-LOCALIZED:", name, result)
+#         else:
+#             LogStream.logDebug("IGNORING BUILTIN:", name, result)
         return result
 
     def rollback(self):
