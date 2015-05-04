@@ -37,6 +37,7 @@ import javax.xml.bind.annotation.XmlType;
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
  * Jun 09, 2014 3266       njensen     Remove ISerializableObject
+ * May 04, 2015 4284       bsteffen    Add subMenuId
  * 
  * </pre>
  * 
@@ -83,4 +84,11 @@ public class CommonIncludeMenuItem {
      */
     @XmlAttribute(name = "subMenu")
     public String subMenuName;
+
+    /**
+     * Provide an id for the sub menu. This is optional and is only used when
+     * subMenuName is also set.
+     */
+    @XmlAttribute
+    public String subMenuId;
 }
