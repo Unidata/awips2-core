@@ -30,6 +30,11 @@ def execute1(precipTypeStation,POP_hour_bestCatStation):
     return tmp.astype('float32')
 
 def execute2(CRAIN, CFRZR, CICEP, CSNOW):
+    # TODO - REMOVE THE FOLLOWING 4 CALLS TO nan_to_num WHEN DR 17265 IS DELIVERED
+    CRAIN = numpy.nan_to_num(CRAIN)
+    CFRZR = numpy.nan_to_num(CFRZR)
+    CICEP = numpy.nan_to_num(CICEP)
+    CSNOW = numpy.nan_to_num(CSNOW)
     tmp = 1.0*CRAIN+2.0*CFRZR+4.0*CICEP+8.0*CSNOW
     # convert numeric value into symbol
     tmp[tmp <= 0] = 0

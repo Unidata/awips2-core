@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<DerivedParameter unit="mm" name="Snow Accum" abbreviation="SAcc" xmlns:ns2="group">
+<DerivedParameter unit="mm" name="Snow Accum via Thickness" abbreviation="SAcc" xmlns:ns2="group">
     <Method name="Alias" levels="Surface" models="modelsounding">
         <Field abbreviation="snowFall" level="Station"/>
     </Method>
