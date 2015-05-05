@@ -117,7 +117,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Apr 21, 2014  2946     bsteffen    Allow auxillary purge rules in multiple files.
  * Jun 24, 2014  3314     randerso    Fix misspelling in message
  * Oct 16, 2014  3454     bphillip    Upgrading to Hibernate 4
- * Feb 19, 2015  4123     bsteffen    Log foreign key constriant violations.
+ * Feb 19, 2015  4123     bsteffen    Log foreign key constraint violations.
  * </pre>
  * 
  * @author bphillip
@@ -205,7 +205,7 @@ public abstract class PluginDao extends CoreDao {
     }
 
     public PluginDataObject[] persistToDatabase(PluginDataObject... records) {
-        if (records == null || records.length == 0) {
+        if ((records == null) || (records.length == 0)) {
             return records;
         }
         List<PluginDataObject> objects = Arrays.asList(records);
@@ -279,6 +279,7 @@ public abstract class PluginDao extends CoreDao {
                                     }
                                 } else {
                                     session.save(object);
+                                    subPersisted.add(object);
                                 }
                             } catch (PluginException e) {
                                 logger.handle(Priority.PROBLEM,
@@ -308,18 +309,22 @@ public abstract class PluginDao extends CoreDao {
                             populateDatauriCriteria(criteria, object);
                             criteria.setProjection(Projections.id());
                             Integer id = (Integer) criteria.uniqueResult();
+                            boolean add = true;
                             if (id != null) {
                                 object.setId(id);
                                 if (object.isOverwriteAllowed()) {
                                     session.update(object);
                                 } else {
                                     subDuplicates.add(object);
+                                    add = false;
                                 }
                             } else {
                                 session.save(object);
                             }
                             tx.commit();
-                            persisted.add(object);
+                            if (add) {
+                                persisted.add(object);
+                            }
                         } catch (ConstraintViolationException e) {
                             tx.rollback();
 
@@ -373,7 +378,7 @@ public abstract class PluginDao extends CoreDao {
                 }
             }
         }
-        return persisted.toArray(new PluginDataObject[0]);
+        return persisted.toArray(new PluginDataObject[persisted.size()]);
     }
 
     private void populateDatauriCriteria(Criteria criteria, PluginDataObject pdo)
