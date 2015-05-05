@@ -22,7 +22,7 @@
     <Method name="Alias">
         <Field abbreviation="CCOV"/>
     </Method>
-    <Method name="Alias" models="HRRR">
+    <Method name="Alias">
         <Field abbreviation="TCC"/>
     </Method>
     <Method name="Alias" levels="HiLyr">
@@ -42,9 +42,6 @@
         <Field abbreviation="TCC"/>
         <ConstantField value="100.0"/>
     </Method>
-    <Method name="Alias" models="RTMA25 URMA25" displayName="Total Cloud Cover" >
-        <Field abbreviation="TCC"/>
-    </Method>    
     <Method name="Multiply">
         <Field abbreviation="TCC"/>
         <ConstantField value="100.0"/>
