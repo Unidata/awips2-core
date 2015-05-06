@@ -78,6 +78,7 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  *                                      uses proper method to retrieve
  *                                      localized site.
  * Mar 20, 2013       1638 mschenke     Removed menu creation job use
+ * May 04, 2015  4284      bsteffen     Copy subMenuId
  * 
  * </pre>
  * 
@@ -171,6 +172,7 @@ public class DiscoverMenuContributions {
                         imc.installationLocation = im.installationLocation;
                         imc.removals = im.removals;
                         imc.subMenuName = im.subMenuName;
+                        imc.subMenuId = im.subMenuId;
                         imc.substitutions = VariableSubstitution.combine(
                                 mcf.substitutions, im.substitutions);
                         imc.visibleOnActionSet = im.visibleOnActionSet;
