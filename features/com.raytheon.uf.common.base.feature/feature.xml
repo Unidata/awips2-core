@@ -297,7 +297,7 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="2.3.0"/>
+         version="3.3.0"/>
 
    <plugin
          id="org.jep.linux64"
@@ -305,7 +305,7 @@
          arch="x86_64"
          download-size="0"
          install-size="0"
-         version="2.3.0"
+         version="3.3.0"
          fragment="true"/>
 
    <plugin
@@ -314,7 +314,7 @@
          arch="x86"
          download-size="0"
          install-size="0"
-         version="2.3.0"
+         version="3.3.0"
          fragment="true"/>
 
    <plugin
