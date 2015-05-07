@@ -76,5 +76,5 @@ def execute(threeDtemperature, threeDdewpoint, pressure, potentialTemperature, s
     pressure = zeros(potentialTemperature.shape, potentialTemperature.dtype)
     pressure[:] = pressureValue
     threeDshape = threeDpressure.shape
-    return DCapeFunc.dcapeFunc(useVirtualTemp, threeDpressure, threeDtemperature[0], threeDdewpoint[0], pressure, potentialTemperature, specificHumidity, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0]), maxEvaporation, maxRelativeHumidity).__numpy__[0]
+    return DCapeFunc.dcapeFunc(useVirtualTemp, threeDpressure, threeDtemperature[0], threeDdewpoint[0], pressure, potentialTemperature, specificHumidity, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0]), maxEvaporation, maxRelativeHumidity)
 

@@ -51,7 +51,8 @@ def execute(input, dist, dx, dy, times=1):
     #return executePython(input, npts, times)
 
 def executeJava(input, npts, times):
-    output = DistFilter.filter(input, npts, int(input.shape[1]), int(input.shape[0]), times).__numpy__[0]
+    # FIXME we shouldn't have to reverse shape[0] and shape[1]!
+    output = DistFilter.filter(input, npts, int(input.shape[1]), int(input.shape[0]), times)
     output[output==1e37] = NaN
     return output
     
