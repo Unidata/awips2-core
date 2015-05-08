@@ -39,11 +39,12 @@ import com.vividsolutions.jts.geom.LineString;
  * 
  * <pre>
  * 
- *      SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *     
- *      Date          Ticket#     Engineer    Description
- *      ------------	----------	-----------	--------------------------
- *      7/1/06                    chammack    Initial Creation.
+ * Date         Ticket#     Engineer    Description
+ * ------------	----------	-----------	--------------------------
+ * 7/1/06                   chammack    Initial Creation.
+ * Feb 12, 2015  3974       njensen     Overrode reset()
  * 
  * </pre>
  * 
@@ -52,9 +53,9 @@ import com.vividsolutions.jts.geom.LineString;
  */
 public class GLShadedShape extends GLShadedShapeBase implements IShadedShape {
 
-    private boolean mutable;
+    private final boolean mutable;
 
-    private List<RGB> colors = new ArrayList<RGB>();
+    private final List<RGB> colors = new ArrayList<RGB>();
 
     public GLShadedShape(GeneralGridGeometry targetGeometry, boolean mutable,
             boolean tessellate) {
@@ -84,9 +85,16 @@ public class GLShadedShape extends GLShadedShapeBase implements IShadedShape {
         super.addPolygonPixelSpace(contours);
     }
 
-    public void compile() {
+    @Override
+    public synchronized void compile() {
         super.compile();
         super.color(colors);
+        colors.clear();
+    }
+
+    @Override
+    public synchronized void reset() {
+        super.reset();
         colors.clear();
     }
 

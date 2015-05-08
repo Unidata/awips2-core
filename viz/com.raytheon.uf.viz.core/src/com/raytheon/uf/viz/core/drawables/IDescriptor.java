@@ -31,10 +31,45 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.IResourceGroup;
 
 /**
+ * An IDescriptor describes the interface to renderable displays related to a
+ * List of {@link AbstractVizResource}s and their data to display. This
+ * interface supports:
+ * <ul>
+ * <li>Coordinate Reference System of the display (e.g. latlon, lambert
+ * conformal, cartesian)</li>
+ * <li>Frames information (times to display)</li>
+ * <li>Grid geometry of the render space (see below)</li>
+ * <li>ResourceList of resources on the display</li>
+ * <li>Time Matcher (matches the differing times of resources to shared frames)</li>
+ * </ul>
  * 
- * IDescriptor
+ * Within Viz displays there are typically four different spaces (areas)
+ * describing x, y coordinates. When comparing coordinates to data or user
+ * input, it's important that the coordinates being compared are in the same
+ * space. The typical spaces are:
+ * <ul>
+ * <li>Render space (aka pixel space or GL space): A cartesian coordinate system
+ * that covers the entirety of what can be zoomed or panned to within the
+ * display. Used at the graphics layers. Render space is directly proportional
+ * to CRS space.</li>
+ * <li>Screen space (aka SWT space or canvas space): A cartesian coordinate
+ * system related to the x,y coordinates on the screen itself, such as a
+ * particular pixel location or the mouse location. For a single render/paint
+ * operation, this space is proportional to the render space and CRS space. A
+ * zoom, pan, frame change, etc (ie new render) will alter the ratio to the
+ * other spaces.</li>
+ * <li>CRS space (aka projection): A coordinate system describing the projection
+ * of the display, typically maps. Examples include latlon, mercator,
+ * stereographic, lambert conformal, or cartesian (non-maps). CRS space is
+ * directly proportional to render space.</li>
+ * <li>LatLon space (aka world space or WGS84): The most common CRS used to
+ * describe points on the Earth. Useful for map coordinate operations but less
+ * accurate for grid or shape operations that must take into into account the
+ * fact that the Earth is a spheroid for accurate displays.</li>
+ * </ul>
  * 
- * General Interface that describes the interface to renderable displays
+ * TODO Establish consistent and unambiguous names for the different spaces, and
+ * begin improving method signatures to avoid confusion and ambiguity.
  * 
  * <pre>
  * 
@@ -42,8 +77,9 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  *   
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
- *    Sep 4, 2007              chammack    Initial Creation.
+ *    Sep 04, 2007             chammack    Initial Creation.
  *    Oct 22, 2009   #3348     bsteffen    added ability to limit number of frames
+ *    Feb 10, 2015    3974     njensen     Improved javadoc
  * 
  * </pre>
  * 
@@ -156,7 +192,7 @@ public interface IDescriptor extends IResourceGroup {
                     || idx < 0
                     || (frameTimes != null && frameTimes.length > idx
                             && frameTimes[idx] != null && !frameTimes[idx]
-                            .isVisible())) {
+                                .isVisible())) {
                 return null;
             }
             return frames[idx];
@@ -170,33 +206,33 @@ public interface IDescriptor extends IResourceGroup {
     public static final int DEFAULT_WORLD_HEIGHT = 10000;
 
     /**
-     * DEPRECATED, use IFrameCoordinator.FrameChangeOperation and call
-     * getFrameCoordinator().changeFrame(...)
-     * 
      * Possible operations when changing frames:
      * 
      * FIRST - The first possible frame LAST - The last possible frame NEXT -
      * The next sequential frame PREVIOUS - The previous sequential frame
+     * 
+     * @deprecated Use IFrameCoordinator.FrameChangeOperation and call
+     *             getFrameCoordinator().changeFrame(...)
      */
     @Deprecated
     public static enum FrameChangeOperation {
         FIRST, LAST, NEXT, PREVIOUS
-    };
+    }
 
     /**
-     * DEPRECATED, use IFrameCoordinator.FrameChangeMode and call
-     * getFrameCoordinator().changeFrame(...)
-     * 
      * Possible modes for changing frames
      * 
      * TIME_ONLY - Advance only using time (ignore/stationary space) SPACE_ONLY
      * - Advance only in space (ignore/stationary time) TIME_AND_SPACE - Advance
      * in time and space (the highest spatial level
+     * 
+     * @deprecated Use IFrameCoordinator.FrameChangeMode and call
+     *             getFrameCoordinator().changeFrame(...)
      */
     @Deprecated
     public static enum FrameChangeMode {
         TIME_ONLY, SPACE_ONLY, TIME_AND_SPACE
-    };
+    }
 
     public static interface IFrameChangedListener {
         void frameChanged(IDescriptor descriptor, DataTime oldTime,
@@ -218,42 +254,40 @@ public interface IDescriptor extends IResourceGroup {
     public void removeFrameChangedListener(IFrameChangedListener listener);
 
     /**
-     * Use getFramesInfo() then use getFrameCount() on FramesInfo
-     * 
      * Get the number of time frames in the descriptor
      * 
      * @return the frame count
+     * @deprecated Use getFramesInfo() then use getFrameCount() on FramesInfo
      */
     @Deprecated
     public abstract int getFrameCount();
 
     /**
-     * Use getFramesInfo() for thread safe use!
-     * 
      * Get the current frame of the map descriptor
      * 
      * @return the current frame
+     * @deprecated Use getFramesInfo() for thread safe use!
+     * 
      */
     @Deprecated
     public abstract int getCurrentFrame();
 
     /**
-     * Use setFramesInfo(...) for thread safe use!
-     * 
      * Set the current frame of the map descriptor
      * 
      * @param frame
      *            the current frame number
+     * 
+     * @deprecated Use setFramesInfo(...) for thread safe use!
      */
     @Deprecated
     public abstract void setFrame(int frame);
 
     /**
-     * Use getFramesInfo() for thread safe use!
-     * 
      * Return the times for frames
      * 
-     * @return
+     * @return times of the frames
+     * @deprecated Use getFramesInfo() for thread safe use!
      */
     @Deprecated
     public DataTime[] getFrames();
@@ -261,7 +295,7 @@ public interface IDescriptor extends IResourceGroup {
     /**
      * Get coordinate reference system
      * 
-     * @return the coordinate referece system
+     * @return the coordinate reference system
      */
     public abstract CoordinateReferenceSystem getCRS();
 
@@ -303,21 +337,19 @@ public interface IDescriptor extends IResourceGroup {
     public abstract boolean unlimitNumberOfFrames();
 
     /**
-     * Use getFramesInfo() for thread safe use!
-     * 
      * Get the DataTimes of all of the frames of the display
      * 
      * @return the dataTimes
+     * @deprecated Use getFramesInfo() for thread safe use!
      */
     @Deprecated
     public DataTime[] getDataTimes();
 
     /**
-     * Use setFramesInfo(...) for thread safe use!
-     * 
      * Set the data times
      * 
      * @param dataTimes
+     * @deprecated Use setFramesInfo(...) for thread safe use!
      */
     @Deprecated
     public void setDataTimes(DataTime[] dataTimes);
@@ -339,9 +371,6 @@ public interface IDescriptor extends IResourceGroup {
             throws VizException;
 
     /**
-     * DEPRECATED, use getFrameCoordinator().changeFrame(...) with
-     * IFrameCoordinator.FrameChangeOperation/FrameChangeMode
-     * 
      * Change a frame given a specified operation mode
      * 
      * @param operation
@@ -349,6 +378,9 @@ public interface IDescriptor extends IResourceGroup {
      * 
      * @param mode
      *            the mode to use (see FrameChangeMode)
+     * 
+     * @deprecated Use getFrameCoordinator().changeFrame(...) with
+     *             IFrameCoordinator.FrameChangeOperation/FrameChangeMode
      */
     @Deprecated
     public abstract void changeFrame(FrameChangeOperation operation,
@@ -403,14 +435,15 @@ public interface IDescriptor extends IResourceGroup {
      * Determine what time the resource should be drawn at
      * 
      * @param rsc
-     * @return
+     * @return the data time for the resource that corresponds to the current
+     *         frame
      */
     public DataTime getTimeForResource(AbstractVizResource<?, ?> rsc);
 
     /**
      * Get the renderable display the descriptor is loaded to
      * 
-     * @return
+     * @return the renderable display
      */
     public IRenderableDisplay getRenderableDisplay();
 
@@ -425,10 +458,10 @@ public interface IDescriptor extends IResourceGroup {
     public void setRenderableDisplay(IRenderableDisplay display);
 
     /**
-     * determine if this descriptor can load resources from another descriptor
+     * Determines if this descriptor can load resources from another descriptor
      * 
      * @param other
-     * @return
+     * @return if the descriptor are compatible
      */
     public boolean isCompatible(IDescriptor other);
 
@@ -444,7 +477,7 @@ public interface IDescriptor extends IResourceGroup {
      * Thread safe method of getting the frame information including frame times
      * and frame index
      * 
-     * @return
+     * @return the FramesInfo
      */
     public FramesInfo getFramesInfo();
 

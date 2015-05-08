@@ -19,11 +19,22 @@
 ##
 
 #
-# Globally import and sets up instances of the scripts.
-# Designed to be used as a master controller for inspecting and running
-# python scripts from Java.
+# Globally imports and sets up instances of similarly structured python modules
+# and/or classes.  For example, if a set of python module files all contain a
+# class with the same common parent class.
 #
-# This class should remain purely python.  For Java interactions, extend this class.
+# Designed to be used as a master controller for inspecting and running
+# python modules/files from Java.  This class should remain purely python.
+# For Java interactions, extend this class.
+#
+# *IMPORTANT*: Under no condition should you ever delete a module object.  The
+# interpreter can potentially get quite messed up.  If you are absolutely sure
+# you do not want the module object around, you can pop it off sys.modules.  That
+# will decrease the module's reference count and it could potentially be garbage
+# collected if there are no more references.  However, popping it off sys.modules
+# can also lead to adverse effects such as screwing up the imports that that 
+# module imported.  (In short, look at addModule() removeModule() and
+# reloadModule() and if you override those, you do so at your own risk).
 #   
 #
 #    
@@ -40,6 +51,7 @@
 #    03/25/14         2963         randerso       Added check to instantiate method to
 #                                                 verify module contains desired class
 #                                                 throw a useful error message if not
+#    01/10/15         3974         njensen         Improved documentation
 #
 
 import os, string

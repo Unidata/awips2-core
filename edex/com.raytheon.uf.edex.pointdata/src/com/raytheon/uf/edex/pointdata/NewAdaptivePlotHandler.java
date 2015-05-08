@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.pointdata;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -41,7 +43,8 @@ import com.raytheon.uf.edex.core.EdexException;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 3, 2011            mschenke     Initial creation
+ * Aug 03, 2011            mschenke     Initial creation
+ * Feb 24, 2015  3978      njensen      Use openInputStream() to read template
  * 
  * </pre>
  * 
@@ -84,7 +87,21 @@ public class NewAdaptivePlotHandler implements
                         "Could not find adaptive plot template file: "
                                 + TEMPLATE);
             }
-            template = new String(file.read());
+
+            StringBuilder sb = new StringBuilder();
+            char[] buffer = new char[1024];
+            try (InputStream is = file.openInputStream()) {
+                try (InputStreamReader isr = new InputStreamReader(is)) {
+                    int read = isr.read(buffer);
+                    while (read > -1) {
+                        sb.append(buffer, 0, read);
+                        read = isr.read(buffer);
+                    }
+                }
+            }
+            if (sb.length() > 0) {
+                template = sb.toString();
+            }
         }
         Map<String, String> variables = new HashMap<String, String>();
         variables.put("filePath", DATA_DIR + request.getFileName());

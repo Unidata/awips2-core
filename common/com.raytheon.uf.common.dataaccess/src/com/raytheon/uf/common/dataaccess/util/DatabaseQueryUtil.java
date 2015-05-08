@@ -84,12 +84,17 @@ public class DatabaseQueryUtil {
     }
 
     /**
-     * Executes the provided query against the specified database and returns the results of the query execution.
+     * Executes the provided query against the specified database and returns
+     * the results of the query execution.
      * 
-     * @param mode the request mode
-     * @param query the query to execute
-     * @param database the database to execute the query against
-     * @param dataType the Data Access Framework factory data type
+     * @param mode
+     *            the request mode
+     * @param query
+     *            the query to execute
+     * @param database
+     *            the database to execute the query against
+     * @param dataType
+     *            the Data Access Framework factory data type
      * @return the information retrieved from the database
      */
     public static List<Object[]> executeDatabaseQuery(QUERY_MODE mode,

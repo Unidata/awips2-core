@@ -1,10 +1,11 @@
 <configuration debug="false" scan="true">
+   <!-- Only define when not wanting to use the UF Standard.
+   <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
+   -->
    
    <!-- this appender will send System.err and System.out to the console log -->
    <appender name="CaveConsoleAppender" class="com.raytheon.uf.common.status.logback.EnvConfigSysStreamFileAppender">      
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
       <!-- set envLogVar after encoder to avoid warning -->
       <envLogVar>LOGFILE_CONSOLE</envLogVar>
    </appender>
@@ -13,9 +14,7 @@
        -noredirect flag is used at cave startup-->
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
       <target>System.out</target> 
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
       <!-- TODO does anyone know why there is an InvertedThresholdFilter here? -->
       <filter class="com.raytheon.uf.common.status.logback.InvertedThresholdFilter">
          <level>INFO</level>         
@@ -26,9 +25,7 @@
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>WARN</level>
       </filter> 
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>
    
    <!-- this appender will log the messages sent to UFStatus -->
@@ -46,9 +43,7 @@
          <maxFileSize>2GB</maxFileSize>
       </triggeringPolicy>
       <append>true</append>
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>    
    
    <appender name="PerformanceLogAppender" class="com.raytheon.uf.common.status.logback.EnvConfigurableRollingFileAppender">
@@ -65,9 +60,7 @@
          <maxFileSize>2GB</maxFileSize>
       </triggeringPolicy>
       <append>true</append>
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>    
    
    <appender name="ProductEditorLogAppender" class="com.raytheon.uf.common.status.logback.EnvConfigurableRollingFileAppender">
@@ -84,9 +77,7 @@
          <maxFileSize>2GB</maxFileSize>
       </triggeringPolicy>
       <append>true</append>
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>    
    
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -123,17 +114,11 @@
       <level value="INFO"/>
    </logger>
 
-   <logger name="com.tc">
-      <level value="WARN"/>
-   </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
    </logger>
    <logger name="org.apache">
       <level value="INFO"/>
-   </logger>
-   <logger name="org.apache.activemq.spring">
-      <level value="WARN"/>
    </logger>
    <logger name="org.apache.commons.beanutils">
       <level value="WARN"/>

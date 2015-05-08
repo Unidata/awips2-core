@@ -20,8 +20,10 @@
 package com.raytheon.uf.common.geospatial.util;
 
 import java.util.ArrayList;
+import java.util.BitSet;
 import java.util.List;
 
+import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.geometry.Envelope;
@@ -53,6 +55,7 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Nov 14, 2013  2528     bsteffen    Initial creation
+ * Jan 29, 2015  3939     bsteffen    Add cross consistency checks.
  * 
  * </pre>
  * 
@@ -60,6 +63,8 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
  * @version 1.0
  */
 class BruteForceEnvelopeIntersection {
+
+    public static final double PI_TIMES_2 = 2.0 * Math.PI;
 
     private final ReferencedEnvelope sourceEnvelope;
 
@@ -70,6 +75,8 @@ class BruteForceEnvelopeIntersection {
     private final int width;
 
     private final int height;
+
+    private final MathTransform sourceCRSToLatLon;
 
     private final MathTransform latLonToTargetCRS;
 
@@ -98,12 +105,14 @@ class BruteForceEnvelopeIntersection {
         this.height = height;
         wwc = new WorldWrapChecker(this.targetEnvelope);
 
+        sourceCRSToLatLon = MapUtil.getTransformToLatLon(sourceEnvelope
+                .getCoordinateReferenceSystem());
+        latLonToTargetCRS = MapUtil.getTransformFromLatLon(targetEnvelope
+                .getCoordinateReferenceSystem());
+
         double[] latLonCoords = buildLatLonCoords();
         this.latLonCoords = new PackedCoordinateSequence.Double(latLonCoords, 2);
 
-        latLonToTargetCRS = MapUtil
-                .getTransformFromLatLon(targetEnvelope
-                        .getCoordinateReferenceSystem());
         double[] targetCoords = new double[latLonCoords.length];
         latLonToTargetCRS.transform(latLonCoords, 0, targetCoords, 0, width
                 * height);
@@ -113,11 +122,7 @@ class BruteForceEnvelopeIntersection {
     /**
      * Construct a grid of coordinates and reproject to lat/lon CRS.
      */
-    private double[] buildLatLonCoords() throws FactoryException,
-            TransformException {
-        MathTransform sourceCRSToLatLon = MapUtil
-                .getTransformToLatLon(sourceEnvelope
-                        .getCoordinateReferenceSystem());
+    private double[] buildLatLonCoords() throws TransformException {
         double worldMinX = this.sourceEnvelope.getMinX();
         double worldMinY = this.sourceEnvelope.getMinY();
         double dXWorld = this.sourceEnvelope.getWidth() / (width - 1);
@@ -151,15 +156,33 @@ class BruteForceEnvelopeIntersection {
          * world wrap corrected.
          */
         List<SimplePolygon> simpleCases = new ArrayList<SimplePolygon>();
-        List<Cell> worldWrappCells = new ArrayList<Cell>();
+        List<Cell> worldWrapCells = new ArrayList<Cell>();
+        /*
+         * Track the consistency of every row as we go so we don't have to
+         * recaluclate the previous row on every iteration.
+         */
+        BitSet upperCrossConsistencySet = new BitSet(width);
+        upperCrossConsistencySet.set(0, width);
         for (int j = 1; j < height; ++j) {
+            boolean leftCrossConsistency = true;
             for (int i = 1; i < width; ++i) {
+                boolean lowerRightCrossConsistency = checkCrossConsistency(i, j);
+                boolean upperRightCrossConsistency = upperCrossConsistencySet
+                        .get(i);
+                boolean rightCrossConsistency = lowerRightCrossConsistency
+                        & upperRightCrossConsistency;
+                boolean crossConsistency = leftCrossConsistency
+                        & rightCrossConsistency;
+                leftCrossConsistency = rightCrossConsistency;
+                upperCrossConsistencySet.set(i, lowerRightCrossConsistency);
+
                 Cell cell = new Cell(i, j);
                 if (!cell.isValid()) {
-                    // skip it
+                    continue;
                 } else if (cell.worldWrapCheck(wwc)) {
-                    worldWrappCells.add(cell);
-                } else {
+                    worldWrapCells.add(cell);
+                } else if (crossConsistency
+                        || cell.checkCenterConsistency(i, j)) {
                     for (SimplePolygon poly : simpleCases) {
                         if (poly.merge(cell)) {
                             cell = null;
@@ -174,18 +197,20 @@ class BruteForceEnvelopeIntersection {
         }
         /* Convert all simple case polygons into JTS polygons */
         GeometryFactory gf = new GeometryFactory();
-        List<Geometry> geoms = new ArrayList<Geometry>(simpleCases.size() + worldWrappCells.size() *2);
+        List<Geometry> geoms = new ArrayList<Geometry>(simpleCases.size()
+                + worldWrapCells.size() * 2);
         for (SimplePolygon poly : simpleCases) {
-            geoms.add(poly.asGeometry(gf));
+            Geometry g = poly.asGeometry(gf);
+            geoms.add(g);
         }
-        if(!worldWrappCells.isEmpty()){
+        if(!worldWrapCells.isEmpty()){
             /*
              * World wrap correct the cells that need it and transform the
              * corrected geometries.
              */
             WorldWrapCorrector corrector = new WorldWrapCorrector(
                     targetEnvelope);
-            for (Cell cell : worldWrappCells) {
+            for (Cell cell : worldWrapCells) {
                 Geometry geom = cell.asLatLonGeometry(gf);
                 geom = corrector.correct(geom);
                 geom = JTS.transform(geom, latLonToTargetCRS);
@@ -196,6 +221,147 @@ class BruteForceEnvelopeIntersection {
         }
         return gf.createGeometryCollection(geoms.toArray(new Geometry[0]))
                 .buffer(0);
+    }
+
+    /**
+     * This method tries to detect a certain type of inconsistency in a
+     * reprojection. To help explain this method here is a picture of some of
+     * the cells which are used during reprojection:
+     * 
+     * <pre>
+     * A---B---C
+     * |   |   |
+     * D---E---F
+     * |   |   |
+     * G---H---I
+     * </pre>
+     * 
+     * Each letter(A-I) in the picture represents a coordinate that has been
+     * reprojected, 4 coordinates make up the corners of a cell so this is 9
+     * coordinates making 4 cells. This method is dealing specifically with 5
+     * coordinates. Coordinate E is at the center of 'cross' and the 'arms' are
+     * made up of coordinates BFHD.
+     * 
+     * Reprojection causes all sorts of normal distortion in size and shape of
+     * the cells but if the arms of the cross are out of order then something
+     * has gone terribly wrong and that is what this method attempts to detect.
+     * This happens when a cell is directly over an inconsistency in the target
+     * projection that did not exist in the source projection, for example the
+     * inverse central meridian of a equidistant cylindrical projection(World
+     * Wrapping) or the south pole in a north polar stereographic.
+     * 
+     * Here is a simple picture showing the type of distortion this method
+     * detects:
+     * 
+     * <pre>
+     *     G---H---I
+     *    /   /   /
+     * A-/-B-/-C /
+     * |/  |/  |/
+     * D---E---F
+     * </pre>
+     * 
+     * If you start at coordinate B and list the coordinates of the cross
+     * clockwise you get BHFD which is out of order meaning the reprojection is
+     * invalid and one or more cells needs to be removed or corrected. This
+     * method does not tell specifically which cells have problems. More tests
+     * must be done to decide which cells and then those cells must be corrected
+     * or removed. The picture shows that some of the cells are overlapping, map
+     * projections should not cause this overlap. Any time this method reports
+     * inconsistency, the visualization of the reprojection will show a similar
+     * overlap.
+     * 
+     * In cases where this method cannot check for consistency it returns true
+     * because no inconsistency could be detected(even though there might be
+     * one). This happens if some coordinates are invalid or if the provided
+     * index is on the edge of the grid. If the order of the arms is reversed,
+     * true will be returned because it is legal for a map projection to change
+     * directions.
+     * 
+     * There are two major cases where this method fails to find inconsistency.
+     * <ol>
+     * <li>If a distortion intersects the cross in such a way that two arms are
+     * displaced then the ordering is reversed and it is not treated as an
+     * inconsistency.
+     * <li>Cells on the edge or near unreprojectable points cannot be verified
+     * because there is not enough points to create the 'cross'.</li>
+     * </ol>
+     * 
+     * Any time these two cases have occurred in real reprojections, the
+     * {@link WorldWrapChecker} is able to detect it so it is not considered
+     * worthwhile to add more consistency checks to try to validate these two
+     * cases.
+     * 
+     * @param x
+     *            the x index of the coordinate at the center of the 'cross'
+     * @param y
+     *            the y index of the coordinate at the center of the 'cross'
+     * @return false if an inconstency is detected, true if no inconsistency is
+     *         detected(This does not guarantee consistency)
+     */
+    private boolean checkCrossConsistency(int x, int y) {
+        if (x < 1 || y < 1 || x >= width - 1 || y >= height - 1) {
+            return true;
+        }
+        int centerindex = y * width + x;
+        double centerx = targetCoords.getOrdinate(centerindex, 0);
+        double centery = targetCoords.getOrdinate(centerindex, 1);
+
+        /*
+         * Calculate the angle from the center to each of the 4 vertices that
+         * should define a plane.
+         */
+        int upindex = (y - 1) * width + x;
+        double dx = targetCoords.getOrdinate(upindex, 0) - centerx;
+        double dy = targetCoords.getOrdinate(upindex, 1) - centery;
+        double angle_up = Math.atan2(dy, dx);
+
+        int downindex = (y + 1) * width + x;
+        dx = targetCoords.getOrdinate(downindex, 0) - centerx;
+        dy = targetCoords.getOrdinate(downindex, 1) - centery;
+        double angle_down = Math.atan2(dy, dx);
+
+        int leftindex = y * width + x - 1;
+        dx = targetCoords.getOrdinate(leftindex, 0) - centerx;
+        dy = targetCoords.getOrdinate(leftindex, 1) - centery;
+        double angle_left = Math.atan2(dy, dx);
+
+        int rightindex = y * width + x + 1;
+        dx = targetCoords.getOrdinate(rightindex, 0) - centerx;
+        dy = targetCoords.getOrdinate(rightindex, 1) - centery;
+        double angle_right = Math.atan2(dy, dx);
+
+        /*
+         * Calculate the rotation from each vertex to the next, forcing it
+         * positive makes it a clockwise rotation.
+         */
+        double a1 = angle_up - angle_left;
+        a1 = a1 >= 0 ? a1 : a1 + PI_TIMES_2;
+        double a2 = angle_left - angle_down;
+        a2 = a2 >= 0 ? a2 : a2 + PI_TIMES_2;
+        double a3 = angle_down - angle_right;
+        a3 = a3 >= 0 ? a3 : a3 + PI_TIMES_2;
+        double a4 = angle_right - angle_up;
+        a4 = a4 >= 0 ? a4 : a4 + PI_TIMES_2;
+
+        double a = a1 + a2 + a3 + a4;
+
+        /*
+         * Theoretically the round is only necessary to handle any floating
+         * point inaccuracies, the sum of the angles *should* be evenly
+         * divisible by 2π
+         */
+        long revolutions = Math.round(a / PI_TIMES_2);
+
+        /*
+         * If the vertices are in order clockwise than revolutions will be 1. If
+         * its counter clockwise then revolutions will be 3. If the vertices are
+         * out of order it will be 2. Any other number should be impossible.
+         */
+        if (Double.isNaN(a) || revolutions % 2 == 1) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -256,6 +422,39 @@ class BruteForceEnvelopeIntersection {
             return false;
 
         }
+        
+        /**
+         * Reprojects the center point of this cell from the source CRS to the
+         * target CRS. If the center in targetCRS is not within the border of
+         * the cell then something is wrong with the reprojection and this cell
+         * should not be used.
+         * 
+         * @return true if the center point reprojection indicates the cell is
+         *         valid, false otherwise.
+         */
+        public boolean checkCenterConsistency(int i, int j)
+                throws TransformException {
+            double worldMinX = sourceEnvelope.getMinX();
+            double worldMinY = sourceEnvelope.getMinY();
+            double dXWorld = sourceEnvelope.getWidth() / (width - 1);
+            double dYWorld = sourceEnvelope.getHeight() / (height - 1);
+
+            double y = worldMinY + (j - 0.5) * dYWorld;
+            double x = worldMinX + (i - 0.5) * dXWorld;
+
+            DirectPosition2D centerPoint = new DirectPosition2D(x, y);
+            sourceCRSToLatLon.transform(centerPoint, centerPoint);
+            latLonToTargetCRS.transform(centerPoint, centerPoint);
+            GeometryFactory gf = new GeometryFactory();
+            if (this.asTargetGeometry(gf)
+                    .contains(
+                            gf.createPoint(new Coordinate(centerPoint.x,
+                                    centerPoint.y)))) {
+                return true;
+            } else {
+                return false;
+            }
+        }
 
         public List<Coordinate> getTargetCoords() {
             List<Coordinate> result = new ArrayList<Coordinate>(4);
@@ -269,6 +468,15 @@ class BruteForceEnvelopeIntersection {
             Coordinate[] coordinates = new Coordinate[indices.length + 1];
             for (int i = 0; i < indices.length; i += 1) {
                 coordinates[i] = latLonCoords.getCoordinate(indices[i]);
+            }
+            coordinates[coordinates.length - 1] = coordinates[0];
+            return gf.createPolygon(gf.createLinearRing(coordinates), null);
+        }
+
+        public Polygon asTargetGeometry(GeometryFactory gf) {
+            Coordinate[] coordinates = new Coordinate[indices.length + 1];
+            for (int i = 0; i < indices.length; i += 1) {
+                coordinates[i] = targetCoords.getCoordinate(indices[i]);
             }
             coordinates[coordinates.length - 1] = coordinates[0];
             return gf.createPolygon(gf.createLinearRing(coordinates), null);

@@ -17,32 +17,44 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-
-package com.raytheon.viz.core.preferences;
+package com.raytheon.uf.edex.localization.http;
 
 /**
- * Constant definitions for plug-in preferences
+ * Exception encapsulating an HTTP error. Used only to send error messages to
+ * client.
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
- *   
- *    Date       	Ticket#		Engineer	Description
- *    ------------	----------	-----------	--------------------------
- *    7/1/06                    chammack    Initial Creation.
- *    12/03/07      461         bphillip    Added Time Constants
- *    1/10/2008     722         grichard    Added TextWS Constants.
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jan 15, 2015 3978       bclement     Initial creation
  * 
  * </pre>
  * 
- * @author chammack
+ * @author bclement
+ * @version 1.0
  */
-public class PreferenceConstants {
+public class LocalizationHttpException extends Exception {
 
-    public static final String P_ENABLE_3D = "enable3D";
+    private static final long serialVersionUID = 6071078985378997494L;
 
-    public static final String P_LAST_USER_TIME = "lastUserTime";
+    private final int errorCode;
 
-    public static final String P_LAST_USER_TIME_FROZEN = "lastUserTimeFrozen";
+    /**
+     * @param message
+     */
+    public LocalizationHttpException(int errorCode, String message) {
+        super(message);
+        this.errorCode = errorCode;
+    }
+
+    /**
+     * @return the errorCode
+     */
+    public int getErrorCode() {
+        return errorCode;
+    }
 
 }

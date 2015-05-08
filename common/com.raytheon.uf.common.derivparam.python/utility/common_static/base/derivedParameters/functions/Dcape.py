@@ -26,6 +26,7 @@
 #    Jun 05, 2013    2043          bsteffen       Ported from meteolib C
 #    May 06, 2014    3101          njensen        Cast numpy shape values to int
 #                                                  for cross platform compatibility
+#    Mar 26, 2015    DR17264       M. Foster      Correct error due to T/Td level mismatch
 
 from numpy import zeros
 from com.raytheon.uf.common.derivparam.python.function import DCapeFuncPythonAdapter as DCapeFunc
@@ -52,6 +53,17 @@ def execute(threeDtemperature, threeDdewpoint, pressure, potentialTemperature, s
     
     """
     
+    # Matt Foster:
+    # Check the number of levels in the T and Td cubes.
+    # If they are not equal, cut the difference off the top of the larger one.
+    tempZlevs = threeDtemperature[0].shape[0]
+    dewpZlevs = threeDdewpoint[0].shape[0]
+    if tempZlevs != dewpZlevs:
+        diff = abs(tempZlevs - dewpZlevs)
+        if tempZlevs > dewpZlevs:
+            threeDtemperature[0] = threeDtemperature[0][:-diff:]
+        else:
+            threeDdewpoint[0] = threeDdewpoint[0][:-diff:]
     threeDpressure = zeros(threeDtemperature[0].shape, threeDtemperature[0].dtype)
     
     # fill in the 3D pressure

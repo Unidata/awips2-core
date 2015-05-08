@@ -37,6 +37,7 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 06, 2015 3789       bclement    added getContentType(), execute throws UnsupportedFormatException
  * 
  * </pre>
  * 
@@ -47,6 +48,14 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
 public interface ISerializingStreamExecutor {
 
     /**
+     * @param format
+     * @return
+     * @throws UnsupportedFormatException
+     */
+    public String getContentType(String format)
+            throws UnsupportedFormatException;
+
+    /**
      * Deserializes the {@link IServerRequest} from the {@link InputStream}
      * passed in, executes the request and serializes the response out to the
      * {@link OutputStream} passed in
@@ -55,8 +64,13 @@ public interface ISerializingStreamExecutor {
      * @param in
      * @param outputFormat
      * @param out
+     * @throws UnsupportedFormatException
+     *             most errors are returned to the output stream in the
+     *             requested output format, however an exception is thrown if
+     *             requested output format is unsupported
      */
     public void execute(String inputFormat, InputStream in,
-            String outputFormat, OutputStream out);
+            String outputFormat, OutputStream out)
+            throws UnsupportedFormatException;
 
 }

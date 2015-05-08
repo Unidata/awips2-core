@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.personalities.cave.component;
 
-import java.io.IOException;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -63,7 +62,6 @@ import com.raytheon.viz.alerts.jobs.MenuUpdater;
 import com.raytheon.viz.alerts.observers.ProductAlertObserver;
 import com.raytheon.viz.core.CorePlugin;
 import com.raytheon.viz.core.mode.CAVEMode;
-import com.raytheon.viz.core.preferences.PreferenceConstants;
 import com.raytheon.viz.core.units.UnitRegistrar;
 
 /**
@@ -77,6 +75,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * ------------ ---------- ----------- --------------------------
  * Mar 20, 2013            mschenke    Initial creation
  * Sep 10, 2014 3612       mschenke    Refactored, mirgrated logic from awips
+ * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * 
  * </pre>
  * 
@@ -191,16 +190,7 @@ public class CAVEApplication implements IStandaloneComponent {
     /**
      * Cleanup called before existing to clean up any resources that need it.
      */
-    protected void cleanup() throws Exception {
-        try {
-            if (CAVEMode.getMode() == CAVEMode.PRACTICE) {
-                saveUserTime();
-            }
-        } catch (RuntimeException e) {
-            // catch any exceptions to ensure rest of finally block
-            // executes
-        }
-
+    protected void cleanup() {
         try {
             // disconnect from JMS
             NotificationManagerJob.disconnect();
@@ -337,34 +327,10 @@ public class CAVEApplication implements IStandaloneComponent {
     }
 
     /**
-     * Save the current state of SimulatedTime
-     * 
-     * @throws IOException
-     */
-    private void saveUserTime() throws IOException {
-        /*
-         * Save the current workstation time
-         */
-        long timeValue = 0;
-        if (!SimulatedTime.getSystemTime().isRealTime()) {
-            timeValue = SimulatedTime.getSystemTime().getTime().getTime();
-        }
-        CorePlugin.getDefault().getPreferenceStore()
-                .setValue(PreferenceConstants.P_LAST_USER_TIME, timeValue);
-        CorePlugin
-                .getDefault()
-                .getPreferenceStore()
-                .setValue(PreferenceConstants.P_LAST_USER_TIME_FROZEN,
-                        SimulatedTime.getSystemTime().isFrozen());
-        CorePlugin.getDefault().getPreferenceStore().save();
-    }
-
-    /**
      * Restore the prior state of SimulatedTime
      */
     private void initializeSimulatedTime() {
         long timeValue = 0;
-        boolean isFrozen = false;
 
         // If CorePlugin.getDefault() == null, assume running from a unit test
         if (CorePlugin.getDefault() != null) {
@@ -386,22 +352,9 @@ public class CAVEApplication implements IStandaloneComponent {
             }
         }
 
-        // if we're in practice mode and the user did not specify a DRT value on
-        // the CLI, restore their previous time setting
-        if ((CAVEMode.getMode() == CAVEMode.PRACTICE) && (timeValue == 0)) {
-            // Get the last saved time from the localization settings
-            timeValue = CorePlugin.getDefault().getPreferenceStore()
-                    .getLong(PreferenceConstants.P_LAST_USER_TIME);
-
-            // Get if the last saved time was a frozen modified time
-            isFrozen = CorePlugin.getDefault().getPreferenceStore()
-                    .getBoolean(PreferenceConstants.P_LAST_USER_TIME_FROZEN);
-        }
-
         SimulatedTime systemTime = SimulatedTime.getSystemTime();
         systemTime.notifyListeners(false);
         systemTime.setRealTime();
-        systemTime.setFrozen(isFrozen);
         if (timeValue != 0) {
             systemTime.setTime(new Date(timeValue));
         }

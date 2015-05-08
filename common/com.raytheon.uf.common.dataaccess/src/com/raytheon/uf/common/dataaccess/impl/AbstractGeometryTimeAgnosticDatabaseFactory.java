@@ -41,6 +41,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                    single request.
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 30, 2014  3184     njensen     Added optional identifiers
+ * Feb 03, 2015  4009     mapeters    Added validateRequest() call to getData()
  * 
  * </pre>
  * 
@@ -112,6 +113,7 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
      * @return an array of IGeometryData
      */
     protected IGeometryData[] getData(IDataRequest request) {
+        validateRequest(request);
         return super.executeDataQuery(this.assembleGetData(request), request);
     }
 

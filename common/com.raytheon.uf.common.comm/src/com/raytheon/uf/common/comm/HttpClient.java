@@ -99,6 +99,8 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Nov 15, 2014  3757        dhladky     General HTTPS handler
  *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
  *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
+ *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
+ *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
  * 
  * </pre>
  * 
@@ -114,6 +116,10 @@ public class HttpClient {
 
         public final String contentType;
 
+        /*
+         * TODO contemplate including headers in response object
+         */
+
         private HttpClientResponse(int code, byte[] data, String contentType) {
             this.code = code;
             this.data = data != null ? data : new byte[0];
@@ -124,7 +130,7 @@ public class HttpClient {
          * @return true if code is a 200 level return code
          */
         public boolean isSuccess() {
-            return code >= 200 && code < 300;
+            return HttpClient.isSuccess(code);
         }
 
         /**
@@ -134,8 +140,6 @@ public class HttpClient {
             return code == 404 || code == 410;
         }
     }
-
-    private static final int SUCCESS_CODE = 200;
 
     private static final String HTTPS = "https";
 
@@ -174,12 +178,22 @@ public class HttpClient {
      */
     private CredentialsProvider credentialsProvider;
 
-    private ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+    private final ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
         @Override
         protected HttpClientContext initialValue() {
             return HttpClientContext.create();
         }
     };
+
+    /**
+     * Checks if the http status code is considered a success
+     * 
+     * @param statusCode
+     * @return
+     */
+    private static boolean isSuccess(int statusCode) {
+        return statusCode >= 200 && statusCode < 300;
+    }
 
     /**
      * Public constructor.
@@ -479,41 +493,33 @@ public class HttpClient {
                 }
             }
 
-            if (resp.getStatusLine().getStatusCode() != SUCCESS_CODE
-                    && handlerCallback instanceof DynamicSerializeStreamHandler) {
+            int statusCode = resp.getStatusLine().getStatusCode();
+            boolean shouldThrow = false;
+            if (!isSuccess(statusCode)) {
                 /*
-                 * the status code can be returned and/or processed depending on
-                 * which post method and handlerCallback is used, so we only
-                 * want to error off here if we're using a
-                 * DynamicSerializeStreamHandler because deserializing will fail
-                 * badly
+                 * In general if we don't get a code 200, then we typically
+                 * receive a String message or String HTML, so we will handle
+                 * that with the default. However, we only want to throw
+                 * exceptions on certain cases because codes like 404 may be
+                 * handled well by parts of the system.
                  */
-                int statusCode = resp.getStatusLine().getStatusCode();
-                DefaultInternalStreamHandler errorHandler = new DefaultInternalStreamHandler();
-                String exceptionMsg = null;
-                try {
-                    errorHandler.handleStream(resp.getEntity().getContent());
-                    exceptionMsg = new String(errorHandler.byteResult);
-                } catch (IOException e) {
-                    statusHandler
-                            .warn("Error reading the server's error message");
+                if (handlerCallback instanceof DynamicSerializeStreamHandler) {
+                    shouldThrow = true;
                 }
-                if (exceptionMsg == null) {
-                    exceptionMsg = "HTTP server returned error code: "
-                            + statusCode;
-                }
-                throw new HttpServerException(exceptionMsg, statusCode);
+                handlerCallback = new DefaultInternalStreamHandler();
             }
 
-            // should only be able to get here if we didn't encounter the
-            // exceptions above on the most recent try
             processResponse(resp, handlerCallback);
             byte[] byteResult = null;
             if (handlerCallback instanceof DefaultInternalStreamHandler) {
                 byteResult = ((DefaultInternalStreamHandler) handlerCallback).byteResult;
             }
-            return new HttpClientResponse(resp.getStatusLine().getStatusCode(),
-                    byteResult, getContentType(resp));
+            if (shouldThrow) {
+                throw new HttpServerException(new String(byteResult),
+                        statusCode);
+            }
+            return new HttpClientResponse(statusCode, byteResult,
+                    getContentType(resp));
         } finally {
             if (ongoing != null) {
                 ongoing.decrementAndGet();
@@ -719,13 +725,28 @@ public class HttpClient {
      * 
      * @param request
      *            the request to execute
-     * @return the result and status code
+     * @return the byte[] result and status code
      * @throws CommunicationException
      */
     public HttpClientResponse executeRequest(HttpUriRequest request)
             throws CommunicationException {
-        DefaultInternalStreamHandler streamHandler = new DefaultInternalStreamHandler();
-        return process(request, streamHandler);
+        return executeRequest(request, new DefaultInternalStreamHandler());
+    }
+
+    /**
+     * Executes an HttpUriRequest and returns a response with a status code
+     * AFTER the IStreamHandler has processed the response body. Therefore, it
+     * is unlikely that the response will contain the actual response body, with
+     * the response body being consumed by the IStreamHandler.
+     * 
+     * @param request
+     *            the request to execute
+     * @return a response with a status code
+     * @throws CommunicationException
+     */
+    public HttpClientResponse executeRequest(HttpUriRequest request,
+            IStreamHandler handlerCallback) throws CommunicationException {
+        return process(request, handlerCallback);
     }
 
     /**
@@ -756,7 +777,7 @@ public class HttpClient {
      */
     private void checkStatusCode(HttpClientResponse response)
             throws CommunicationException {
-        if (response.code != SUCCESS_CODE) {
+        if (!isSuccess(response.code)) {
             throw new CommunicationException(
                     "Error reading server response.  Got error message: "
                             + response.data != null ? new String(response.data)

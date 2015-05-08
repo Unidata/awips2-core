@@ -63,6 +63,7 @@ import com.raytheon.viz.core.gl.internal.GLView2D;
  * Jul 10, 2012            bsteffen     Initial creation
  * Mar 21, 2013 1806       bsteffen    Update GL mosaicing to use dynamic data
  *                                     format for offscreen textures.
+ * Jan 26, 2015  3980      bsteffen    Add system property to disable luminance.
  * 
  * </pre>
  * 
@@ -89,7 +90,8 @@ public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
 
     private static boolean checkedLuminance = false;
 
-    private static boolean supportsLuminance = true;
+    private static boolean supportsLuminance = !Boolean
+            .getBoolean("gl.no.luminance");
 
     private Stack<ViewInfo> viewStack = new Stack<ViewInfo>();
 

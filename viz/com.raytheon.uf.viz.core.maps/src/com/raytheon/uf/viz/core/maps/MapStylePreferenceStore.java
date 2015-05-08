@@ -38,7 +38,6 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.jaxb.JAXBClassLocator;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -61,6 +60,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  *                                     Stored preferences in a sub-directory
  *                                     and observe changes.
  * Nov 08, 2013 2361       njensen     Use JAXBManager for XML
+ * Feb 24, 2015 3978       njensen     Removed OBE code
  * 
  * </pre>
  * 
@@ -76,8 +76,6 @@ public class MapStylePreferenceStore {
 
     private static final String MAPSTYLE_FILENAME = "mapStyles/mapstylepreferences.xml";
 
-    private static final String OLD_MAPSTYLE_FILENAME = "mapstylepreferences.xml";
-
     private static JAXBManager jaxb;
 
     private static class MapStylePreferenceKey {
@@ -91,36 +89,6 @@ public class MapStylePreferenceStore {
         public MapStylePreferenceKey(String perspective, String mapName) {
             this();
             this.perspective = perspective;
-            this.mapName = mapName;
-        }
-
-        /**
-         * @return the perspective
-         */
-        public String getPerspective() {
-            return perspective;
-        }
-
-        /**
-         * @param perspective
-         *            the perspective to set
-         */
-        public void setPerspective(String perspective) {
-            this.perspective = perspective;
-        }
-
-        /**
-         * @return the mapName
-         */
-        public String getMapName() {
-            return mapName;
-        }
-
-        /**
-         * @param mapName
-         *            the mapName to set
-         */
-        public void setMapName(String mapName) {
             this.mapName = mapName;
         }
 
@@ -220,31 +188,6 @@ public class MapStylePreferenceStore {
 
             siteLf.addFileUpdatedObserver(obs);
             userLf.addFileUpdatedObserver(obs);
-
-            /*
-             * DR 15649 for OB 13.3.1: If the map style preferences are in the
-             * old location, move it to the correct place. This code can be
-             * removed in the future.
-             */
-            if (!userLf.exists()) {
-                LocalizationFile oldUserLf = pathMgr.getLocalizationFile(
-                        pathMgr.getContext(LocalizationType.CAVE_STATIC,
-                                LocalizationLevel.USER), OLD_MAPSTYLE_FILENAME);
-
-                if (oldUserLf.exists()) {
-                    try {
-                        userLf.write(oldUserLf.read());
-                        oldUserLf.delete();
-                        statusHandler
-                                .handle(Priority.INFO,
-                                        "Moved user map style preferences to new location");
-                    } catch (LocalizationException e) {
-                        statusHandler.handle(Priority.PROBLEM,
-                                "Unable to move map style preferences", e);
-                        e.printStackTrace();
-                    }
-                }
-            }
         }
 
         if (siteLf.exists()) {

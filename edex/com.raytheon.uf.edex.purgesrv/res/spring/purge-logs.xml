@@ -5,6 +5,8 @@
 
     <bean id="purgeLogs" class="com.raytheon.uf.edex.purgesrv.PurgeLogs">
         <property name="logDirectory" value="${edex.home}/logs" />
+        <property name="uncompressedDays" value="${purge.log.uncompressed.days}" />
+        <property name="compressedDays" value="${purge.log.compressed.days}" />
     </bean>
 
     <camelContext id="purgeLogsContext"

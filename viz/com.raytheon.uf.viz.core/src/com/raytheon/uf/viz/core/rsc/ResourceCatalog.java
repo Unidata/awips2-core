@@ -49,6 +49,7 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  *    Jul 01, 2006              chammack    Initial Creation.
  *    Jun 07, 2013  2034        bsteffen    Clear all locks in resource catalog
  *                                          before runAsync.
+ *    Jan 16, 2015  4004        njensen     Added safety check for null metadata maps
  * 
  * </pre>
  * 
@@ -108,6 +109,11 @@ public class ResourceCatalog implements IDisposeListener {
                     AbstractRequestableResourceData reqResourceData = (AbstractRequestableResourceData) resourceData;
                     Map<String, RequestConstraint> metadata = reqResourceData
                             .getMetadataMap();
+                    if (metadata == null) {
+                        throw new IllegalStateException(
+                                resourceData.getClass().getName()
+                                        + " extends AbstractRequestableResourceData and therefore must have a metadata map");
+                    }
                     Map<String, RequestConstraint> metadataCopy = new HashMap<String, RequestConstraint>(
                             metadata);
                     for (Map<String, RequestConstraint> updateMap : DataCubeContainer
@@ -129,8 +135,8 @@ public class ResourceCatalog implements IDisposeListener {
      * @param displayID
      *            the id of the display
      */
-    public void removeResource(
-            final AbstractVizResource<?, ?> resource, String displayID) {
+    public void removeResource(final AbstractVizResource<?, ?> resource,
+            String displayID) {
         boolean dispose = false;
         synchronized (this) {
             Set<String> list = theMapping.get(resource);

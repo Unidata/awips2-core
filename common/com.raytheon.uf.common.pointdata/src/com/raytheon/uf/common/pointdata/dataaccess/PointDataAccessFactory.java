@@ -43,6 +43,7 @@ import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.message.response.ResponseMessageCatalog;
 import com.raytheon.uf.common.pointdata.PointDataConstants;
 import com.raytheon.uf.common.pointdata.PointDataContainer;
 import com.raytheon.uf.common.pointdata.PointDataDescription;
@@ -57,11 +58,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  * Data Access Factory for retrieving point data as a geometry.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Oct 31, 2013  2502     bsteffen    Initial creation
@@ -70,9 +71,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Feb 06, 2014  2672     bsteffen    Add envelope support
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * Sep 10, 2014  3615     nabowle     Add support for null count and level parameters.
- *
+ * Feb 19, 2015  4147     mapeters    Override getAvailableParameters().
+ * Feb 27, 2015  4179     mapeters    Use super's getAvailableValues().
+ * 
  * </pre>
- *
+ * 
  * @author bsteffen
  * @version 1.0
  */
@@ -119,7 +122,39 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
-        return getAvailableLocationNames(request, locationDatabaseKey);
+        return getAvailableValues(request, locationDatabaseKey, String.class);
+    }
+
+    @Override
+    public String[] getAvailableParameters(IDataRequest request) {
+        validateRequest(request, false);
+
+        Map<String, RequestConstraint> constraints = new HashMap<>();
+        constraints.put(PointDataServerRequest.REQUEST_MODE_KEY,
+                new RequestConstraint(
+                        PointDataServerRequest.REQUEST_MODE_PARAMETERS));
+        constraints.put(DBQUERY_PLUGIN_NAME_KEY,
+                new RequestConstraint(request.getDatatype()));
+        PointDataServerRequest serverRequest = new PointDataServerRequest(
+                constraints);
+
+        /*
+         * Store request string before constraints are removed during execution
+         * of the request (used if exception is thrown).
+         */
+        String serverRequestString = serverRequest.toString();
+
+        ResponseMessageCatalog response;
+        try {
+            response = (ResponseMessageCatalog) RequestRouter
+                    .route(serverRequest);
+        } catch (Exception e) {
+            throw new DataRetrievalException(
+                    "Failed to retrieve available parameters for request: "
+                            + serverRequestString, e);
+        }
+
+        return response.getValues();
     }
 
     @Override
@@ -180,9 +215,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     }
 
     /**
-     *
+     * 
      * Request point data from the server and convert to {@link IGeometryData}
-     *
+     * 
      * @param request
      *            the original request from the {@link DataAccessLayer}
      * @param dbQueryRequest
@@ -253,7 +288,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      * {@link PointDataServerRequest}. This is done because
      * {@link AbstractDataPluginFactory} makes really nice DbQueryRequests but
      * we can't use them for point data.
-     *
+     * 
      * @param request
      * @param dbQueryRequest
      * @return
@@ -303,7 +338,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Pull out location and time data from a {@link PointDataView} to build a
      * {@link DefaultGeometryData}.
-     *
+     * 
      * @param pdv
      *            view for a single record
      * @return {@link DefaultGeometryData} with locationName, time, and geometry
@@ -328,7 +363,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Make a {@link IGeometryData} object for each level in a 2 dimensional
      * data set.
-     *
+     * 
      * @param request
      *            the original request
      * @param p2d
@@ -406,7 +441,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Get the maximum number of values for all requested values of the 2d
      * parameter group.
-     *
+     * 
      * @param requestParameters
      *            The requested parameters.
      * @param p2d
@@ -437,7 +472,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Point data types with 2 dimensions need to register so the 2d parameters
      * can be grouped appropriately
-     *
+     * 
      * @param countParameter
      *            parameter name of an integer parameter identifying the number
      *            of valid levels.

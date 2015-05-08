@@ -38,6 +38,7 @@ import com.raytheon.uf.edex.requestsrv.serialization.StreamSerializer;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 06, 2015 3789       bclement    added getContentType()
  * 
  * </pre>
  * 
@@ -46,6 +47,8 @@ import com.raytheon.uf.edex.requestsrv.serialization.StreamSerializer;
  */
 
 public class ThriftStreamSerializer implements StreamSerializer {
+
+    public static final String CONTENT_TYPE = "application/dynamic-serialize";
 
     /*
      * (non-Javadoc)
@@ -72,6 +75,18 @@ public class ThriftStreamSerializer implements StreamSerializer {
     public Object deserialize(InputStream in) throws SerializationException {
         return DynamicSerializationManager.getManager(SerializationType.Thrift)
                 .deserialize(in);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * com.raytheon.uf.edex.requestsrv.serialization.StreamSerializer#getContentType
+     * ()
+     */
+    @Override
+    public String getContentType() {
+        return CONTENT_TYPE;
     }
 
 }

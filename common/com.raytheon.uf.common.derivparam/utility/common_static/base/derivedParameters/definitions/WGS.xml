@@ -19,6 +19,9 @@
         further_licensing_information.
     -->
 <DerivedParameter abbreviation="WGS" name="Wind Gust Speed" unit="m/s">
+	<Method levels="Surface" name="Alias">
+		<Field abbreviation="wgs" level="2FHAG" />
+	</Method>
     <Method name="Alias" levels="Surface">
     	<Field abbreviation="WGS" level="10FHAG"/>
     </Method>
