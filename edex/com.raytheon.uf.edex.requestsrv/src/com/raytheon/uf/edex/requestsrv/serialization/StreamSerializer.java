@@ -35,6 +35,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 06, 2015 3789       bclement    added getContentType()
  * 
  * </pre>
  * 
@@ -64,5 +65,10 @@ public interface StreamSerializer {
      * @throws SerializationException
      */
     public Object deserialize(InputStream in) throws SerializationException;
+
+    /**
+     * @return content type for serializer
+     */
+    public String getContentType();
 
 }

@@ -1,10 +1,12 @@
 <configuration debug="false" scan="false">
+   <!-- Only define when not wanting to use the UF Standard.
+   <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
+   -->
+
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
       <filter class="com.raytheon.uf.common.status.logback.InvertedThresholdFilter">
-         <level>INFO</level>         
+         <level>INFO</level>
       </filter>
    </appender>
 
@@ -12,10 +14,8 @@
       <target>System.err</target>
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>WARN</level>
-      </filter>       
-      <encoder> 
-         <pattern>%-5p %d [%t] %c{0}: %m%n</pattern> 
-      </encoder>
+      </filter>
+      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>
    
    <logger name="CaveLogger">
@@ -33,18 +33,11 @@
    <logger name="com.raytheon">
       <level value="INFO"/>
    </logger>
-
-   <logger name="com.tc">
-      <level value="WARN"/>
-   </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
    </logger>
    <logger name="org.apache">
       <level value="INFO"/>
-   </logger>
-   <logger name="org.apache.activemq.spring">
-      <level value="WARN"/>
    </logger>
    <logger name="org.apache.commons.beanutils">
       <level value="WARN"/>

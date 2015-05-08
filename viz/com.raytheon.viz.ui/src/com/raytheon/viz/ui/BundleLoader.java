@@ -39,6 +39,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Jan 8, 2013             mschenke    Initial creation
  * Feb 25, 2013 1640       bsteffen    Dispose old display in BundleLoader
  * Mar 22, 2013 1638       mschenke    Made not throw errors when no time matcher
+ * Mar 02, 2015 4204       njensen     Loading bundles potentially schedules a part rename
  * 
  * </pre>
  * 
@@ -69,7 +70,7 @@ public class BundleLoader extends Job {
 
     private class InstantiationTask implements Runnable {
 
-        private LoadItem loadItem;
+        private final LoadItem loadItem;
 
         private InstantiationTask(LoadItem loadItem) {
             this.loadItem = loadItem;
@@ -88,9 +89,9 @@ public class BundleLoader extends Job {
 
     }
 
-    protected IDisplayPaneContainer container;
+    protected final IDisplayPaneContainer container;
 
-    private Bundle bundle;
+    private final Bundle bundle;
 
     public BundleLoader(IDisplayPaneContainer container, Bundle bundle) {
         this("Bundle Loader", container, bundle);
@@ -101,6 +102,18 @@ public class BundleLoader extends Job {
         super(name);
         this.container = container;
         this.bundle = bundle;
+        final String bundleName = bundle.getName();
+        if (bundleName != null && !bundleName.isEmpty()
+                && container instanceof IRenameablePart) {
+            VizApp.runAsync(new Runnable() {
+                @Override
+                public void run() {
+                    ((IRenameablePart) BundleLoader.this.container)
+                            .setPartName(bundleName);
+                }
+
+            });
+        }
     }
 
     /**

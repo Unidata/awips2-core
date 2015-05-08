@@ -1,3 +1,23 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
+
 package com.raytheon.uf.viz.personalities.cave.menu;
 
 import java.util.ArrayList;
@@ -43,6 +63,22 @@ import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.actions.ContributedEditorMenuAction;
 import com.raytheon.viz.ui.editor.AbstractEditor;
 
+/**
+ * Enables viz to have custom right click actions on the workbench and tabs and
+ * also custom shutdown actions.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * ??? ??, ????            ?           Initial creation
+ * Mar 02, 2015  4204      njensen     Set the part on the action regardless of visibility
+ * 
+ * </pre>
+ * 
+ */
+
 @SuppressWarnings("restriction")
 public class VizEditorSystemMenu implements ISystemMenu {
 
@@ -53,13 +89,14 @@ public class VizEditorSystemMenu implements ISystemMenu {
 
     private static class CustomCloseAll extends SystemMenuCloseAll {
 
-        private IStackPresentationSite presentation;
+        private final IStackPresentationSite presentation;
 
         public CustomCloseAll(IStackPresentationSite presentation) {
             super(presentation);
             this.presentation = presentation;
         }
 
+        @Override
         public void run() {
             boolean dirty = false;
             List<IEditorReference> editorRefs = new ArrayList<IEditorReference>();
@@ -96,13 +133,14 @@ public class VizEditorSystemMenu implements ISystemMenu {
 
     private static class CustomCloseOthers extends SystemMenuCloseOthers {
 
-        private IStackPresentationSite presentation;
+        private final IStackPresentationSite presentation;
 
         public CustomCloseOthers(IStackPresentationSite presentation) {
             super(presentation);
             this.presentation = presentation;
         }
 
+        @Override
         public void run() {
             boolean dirty = false;
             List<IEditorReference> editorRefs = new ArrayList<IEditorReference>();
@@ -141,25 +179,25 @@ public class VizEditorSystemMenu implements ISystemMenu {
 
     }
 
-    private MenuManager menuManager = new MenuManager();
+    private final MenuManager menuManager = new MenuManager();
 
-    private SystemMenuRestore restore;
+    private final SystemMenuRestore restore;
 
-    private SystemMenuMove move;
+    private final SystemMenuMove move;
 
-    private SystemMenuMinimize minimize;
+    private final SystemMenuMinimize minimize;
 
-    private SystemMenuMaximize maximize;
+    private final SystemMenuMaximize maximize;
 
-    private SystemMenuClose close;
+    private final SystemMenuClose close;
 
-    private SystemMenuCloseOthers closeOthers;
+    private final SystemMenuCloseOthers closeOthers;
 
-    private SystemMenuCloseAll closeAll;
+    private final SystemMenuCloseAll closeAll;
 
     private List<ContributedEditorMenuAction> userContributionActions;
 
-    private ActionFactory.IWorkbenchAction openAgain;
+    private final ActionFactory.IWorkbenchAction openAgain;
 
     private Menu lastShown;
 
@@ -225,6 +263,10 @@ public class VizEditorSystemMenu implements ISystemMenu {
                         }
                         action.setId(el.getAttribute("name"));
                         action.setText(el.getAttribute("name"));
+                        String perspectiveId = el.getAttribute("perspectiveId");
+                        if (perspectiveId != null) {
+                            action.setPerspectiveId(perspectiveId);
+                        }
                         userContributionActions.add(action);
                     } catch (CoreException e) {
                         statusHandler.error(
@@ -246,6 +288,7 @@ public class VizEditorSystemMenu implements ISystemMenu {
      * org.eclipse.ui.internal.presentations.util.ISystemMenu#show(org.eclipse
      * .swt.graphics.Point, org.eclipse.ui.presentations.IPresentablePart)
      */
+    @Override
     public void show(Control parent, Point displayCoordinates,
             IPresentablePart currentSelection) {
         if (lastShown != null) {
@@ -268,8 +311,8 @@ public class VizEditorSystemMenu implements ISystemMenu {
         }
 
         for (ContributedEditorMenuAction action : userContributionActions) {
+            action.setPart(currentSelection);
             if (action.shouldBeVisible()) {
-                action.setPart(currentSelection);
                 toShow.add(new ActionContributionItem(action));
             }
         }
@@ -283,6 +326,7 @@ public class VizEditorSystemMenu implements ISystemMenu {
     /**
      * Dispose resources associated with this menu
      */
+    @Override
     public void dispose() {
         openAgain.dispose();
         menuManager.dispose();

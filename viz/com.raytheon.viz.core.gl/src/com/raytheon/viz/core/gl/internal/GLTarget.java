@@ -104,7 +104,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * <pre>
  * 
  * SOFTWARE HISTORY
- *                
+ * 
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Jul 01, 2006           chammack    Initial Creation.
@@ -114,7 +114,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Oct 16, 2007  468      njensen     drawString() supports rotation.
  * Mar 18, 2008           chammack    Improve legend rendering
  * Mar 12, 2009  2092     njensen     Added offscreen rendering support
- * Jul 01, 2010  6146     bkowal      The offset that is needed to set the 
+ * Jul 01, 2010  6146     bkowal      The offset that is needed to set the
  *                                    &quot;Y&quot; coordinate of the legend
  *                                    text that is drawn is now calculated based
  *                                    on the font size rather than being
@@ -151,6 +151,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  *                                    calls now handled by {@link AbstractGraphicsTarget}
  * Aug 18, 2014  3512     bclement    fixed NPE when GLStats called without canvas
  * Aug 21, 2014  3459     randerso    Throw exception if attempt to draw non-GL wireframeshape
+ * Jan 26, 2015  3974     njensen     Always tesselate shaded shapes so concave shapes draw correctly
  * 
  * </pre>
  * 
@@ -426,12 +427,12 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * (non-Javadoc)
      * 
      * @see com.raytheon.uf.viz.core.IGraphicsTarget#createShadedShape(boolean,
-     * org.geotools.coverage.grid.GeneralGridGeometry, boolean)
+     * org.geotools.coverage.grid.GeneralGridGeometry)
      */
     @Override
     public IShadedShape createShadedShape(boolean mutable,
-            GeneralGridGeometry targetGeometry, boolean tesselate) {
-        return new GLShadedShape(targetGeometry, mutable, tesselate);
+            GeneralGridGeometry targetGeometry) {
+        return new GLShadedShape(targetGeometry, mutable, true);
     }
 
     /*

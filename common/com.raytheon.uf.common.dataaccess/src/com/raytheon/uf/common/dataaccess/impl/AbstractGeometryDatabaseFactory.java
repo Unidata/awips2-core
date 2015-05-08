@@ -26,9 +26,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
-import com.raytheon.uf.common.dataaccess.IDataFactory;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil;
@@ -57,6 +57,9 @@ import com.vividsolutions.jts.geom.Geometry;
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 30, 2014  3184     njensen     Added optional identifiers
  *                                     Overrode checkForInvalidIdentifiers()
+ * Jan 28, 2015  4009     mapeters    Overrode getAvailableParameters(), 
+ *                                    added assembleGetAvailableParameters().
+ * Feb 03, 2015  4009     mapeters    Overrode getAvailableLevels().
  * 
  * </pre>
  * 
@@ -65,7 +68,7 @@ import com.vividsolutions.jts.geom.Geometry;
  */
 
 public abstract class AbstractGeometryDatabaseFactory extends
-        AbstractDataFactory implements IDataFactory {
+        AbstractDataFactory {
 
     /*
      * for now, we will assume that we will always be executing sql queries. If
@@ -192,7 +195,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
         }
 
         Collections.sort(dataTimes);
-        return dataTimes.toArray(new DataTime[dataTimes.size()]);
+        return dataTimes.toArray(new DataTime[0]);
     }
 
     /**
@@ -244,7 +247,31 @@ public abstract class AbstractGeometryDatabaseFactory extends
         }
 
         Collections.sort(locations, String.CASE_INSENSITIVE_ORDER);
-        return locations.toArray(new String[locations.size()]);
+        return locations.toArray(new String[0]);
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see com.raytheon.uf.common.dataaccess.impl.AbstractDataFactory#
+     * getAvailableParameters(com.raytheon.uf.common.dataaccess.IDataRequest)
+     */
+    @Override
+    public String[] getAvailableParameters(IDataRequest request) {
+        this.validateRequest(request, false);
+        List<Object[]> results = this.executeQuery(
+                this.assembleGetAvailableParameters(request), request);
+        List<String> parameters = new ArrayList<String>();
+        for (Object[] objects : results) {
+            parameters.add((String) objects[0]);
+        }
+        return parameters.toArray(new String[0]);
+    }
+
+    @Override
+    public Level[] getAvailableLevels(IDataRequest request) {
+        throw new IncompatibleRequestException(request.getDatatype()
+                + " data does not support the concept of levels");
     }
 
     /*
@@ -335,6 +362,21 @@ public abstract class AbstractGeometryDatabaseFactory extends
             IDataRequest request);
 
     /**
+     * Builds a postgres-specific SQL query used to retrieve available
+     * parameters (columns) of the requested table from the database
+     * 
+     * @param request
+     *            the request that we are processing
+     * @return the query
+     */
+    protected String assembleGetAvailableParameters(IDataRequest request) {
+        String[] table = ((String) (request.getIdentifiers().get("table")))
+                .split("\\.");
+        return "select column_name from information_schema.columns where table_schema = '"
+                + table[0] + "' and table_name = '" + table[1] + "'";
+    }
+
+    /**
      * Builds the data objects that will be returned by calls to getData() on
      * the factory
      * 
@@ -356,7 +398,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
             resultList.add(this.makeGeometry(row, paramNames, attrs));
         }
 
-        return resultList.toArray(new DefaultGeometryData[resultList.size()]);
+        return resultList.toArray(new DefaultGeometryData[0]);
     }
 
     /**

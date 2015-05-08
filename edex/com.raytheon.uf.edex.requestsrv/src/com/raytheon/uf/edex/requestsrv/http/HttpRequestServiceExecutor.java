@@ -20,15 +20,15 @@
 package com.raytheon.uf.edex.requestsrv.http;
 
 import java.io.InputStream;
-import java.io.OutputStream;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
-import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.requestsrv.serialization.ISerializingStreamExecutor;
 import com.raytheon.uf.edex.requestsrv.serialization.SerializingStreamExecutor;
+import com.raytheon.uf.edex.requestsrv.serialization.UnsupportedFormatException;
 
 /**
  * Class that takes an {@link HttpServletRequest} and translates into an
@@ -41,6 +41,8 @@ import com.raytheon.uf.edex.requestsrv.serialization.SerializingStreamExecutor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
+ * Jan 05, 2015 3789       bclement    modified for camel rest implementation
+ * Jan 15, 2015 3789       bclement    don't close the request stream
  * 
  * </pre>
  * 
@@ -65,79 +67,55 @@ public class HttpRequestServiceExecutor {
     }
 
     /**
-     * Executes the {@link HttpServletRequest} by deserializing into an
+     * Executes the request in the input stream by deserializing into an
      * {@link IServerRequest} object and serializing the response to the
      * {@link HttpServletResponse} directly based on the request (Accept: ,
      * Content-Type, url, etc)
      * 
-     * @param request
+     * @param requestStream
      *            The http request to read from
+     * @param requestFormat
+     *            request body format
      * @param response
      *            The http response to write to
      * @throws Exception
      */
-    public void execute(HttpServletRequest request, HttpServletResponse response)
-            throws Exception {
-        String inFormat = getRequestFormat(request);
-        if (inFormat == null) {
+    public void execute(InputStream requestStream,
+            String requestFormat, String acceptEncoding,
+            HttpServletResponse response) throws Exception {
+        if (requestFormat == null) {
             throw new IllegalArgumentException(
                     "Unable to determine HTTP body format from request");
         }
-        String outFormat = getResponseFormat(request);
-        if (outFormat == null) {
-            outFormat = inFormat;
-        }
+        /*
+         * TODO: Use HTTP "Accept:" header to determine best response format,
+         * default to request format if none set in accept
+         */
+        String responseFormat = requestFormat;
 
-        try (InputStream in = request.getInputStream();
-                OutputStream out = response.getOutputStream()) {
-            executor.execute(inFormat, in, outFormat, out);
+        ProtectiveHttpOutputStream out = new ProtectiveHttpOutputStream(
+                response, acceptEncoding);
+        try {
+            String responseContentType = executor
+                    .getContentType(responseFormat);
+            response.setContentType(responseContentType);
+            executor.execute(requestFormat, requestStream, responseFormat, out);
+        } catch (UnsupportedFormatException e) {
+            /* unsupported format was specified on the path, report as 404 */
+            if (!out.used()) {
+                /* output stream wasn't used, we can report the error */
+                response.setStatus(HttpServletResponse.SC_NOT_FOUND);
+                response.setContentType("text/plain");
+                out.write(("No handlers for specified format: " + requestFormat)
+                        .getBytes());
+            }
+        } finally {
+            if (out != null) {
+                /* flushed needed or HttpGenerator warns of 'extra content' */
+                out.flush();
+                out.close();
+            }
         }
-    }
-
-    /**
-     * Given the {@link HttpServletRequest}, return the body request format
-     * 
-     * @param request
-     * @return
-     */
-    private static String getRequestFormat(HttpServletRequest request) {
-        // Start with format in path if any
-        String responseFormat = getFormatFromRequestPath(request.getPathInfo());
-        if (responseFormat == null) {
-            // No format specified in path, check content type
-            responseFormat = request.getContentType();
-        }
-        return responseFormat;
-    }
-
-    /**
-     * Given the {@link HttpServletRequest}, return the desired response format
-     * 
-     * @param request
-     * @return
-     */
-    private static String getResponseFormat(HttpServletRequest request) {
-        // TODO: Use HTTP "Accept:" header to determine best response format,
-        // default to request format if none set in accept
-        return getRequestFormat(request);
-    }
-
-    /**
-     * Parses the HTTP request path and returns the desired response format or
-     * null if none specified in the path. Format is:
-     * 
-     * <br>
-     * <code>/servicePath[/format[/requestClass]]</code>
-     * 
-     * @param path
-     * @return
-     */
-    private static String getFormatFromRequestPath(String path) {
-        String[] pathParts = StringUtil.split(path, '/');
-        if (pathParts.length > 1) {
-            return pathParts[1];
-        }
-        return null;
     }
 
 }

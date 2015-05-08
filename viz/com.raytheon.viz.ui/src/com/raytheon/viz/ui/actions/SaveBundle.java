@@ -33,6 +33,7 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
@@ -42,6 +43,7 @@ import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.UiUtil;
+import com.raytheon.viz.ui.editor.AbstractEditor;
 
 /**
  * Save a bundle to disk
@@ -54,7 +56,8 @@ import com.raytheon.viz.ui.UiUtil;
  * ------------- -------- ----------- --------------------------
  * Jan 29, 2007           chammack    Initial Creation.
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
- *                                    ProcedureXmlManager
+ *                                     ProcedureXmlManager
+ * Mar 02, 2015  4204     njensen     Extract part name as bundle name
  * 
  * </pre>
  * 
@@ -122,21 +125,36 @@ public class SaveBundle extends AbstractHandler {
     }
 
     public static Bundle extractCurrentBundle() {
-        IRenderableDisplay[] displays = UiUtil
-                .getDisplaysFromContainer(EditorUtil.getActiveVizContainer());
-        List<AbstractRenderableDisplay> absdisplays = new ArrayList<AbstractRenderableDisplay>();
-        for (IRenderableDisplay display : displays) {
-            if ((display instanceof AbstractRenderableDisplay)) {
-                absdisplays.add((AbstractRenderableDisplay) display);
+        IEditorPart part = EditorUtil.getActiveEditor();
+        if (part instanceof AbstractEditor) {
+            AbstractEditor editor = (AbstractEditor) part;
+            IRenderableDisplay[] displays = UiUtil
+                    .getDisplaysFromContainer(editor);
+            List<AbstractRenderableDisplay> absdisplays = new ArrayList<AbstractRenderableDisplay>();
+            for (IRenderableDisplay display : displays) {
+                if ((display instanceof AbstractRenderableDisplay)) {
+                    absdisplays.add((AbstractRenderableDisplay) display);
+                }
             }
+
+            Bundle bundle = new Bundle();
+            bundle.setName(editor.getPartName());
+            bundle.setDisplays(absdisplays
+                    .toArray(new AbstractRenderableDisplay[absdisplays.size()]));
+            bundle.setLoopProperties(EditorUtil.getActiveVizContainer()
+                    .getLoopProperties());
+            return bundle;
+        } else {
+            String msg = null;
+            if (part == null) {
+                msg = "No editor selected";
+            } else {
+                msg = "Cannot save an editor of type: "
+                        + part.getClass().getName();
+            }
+            throw new IllegalStateException(msg);
         }
 
-        Bundle bundle = new Bundle();
-        bundle.setDisplays(absdisplays
-                .toArray(new AbstractRenderableDisplay[absdisplays.size()]));
-        bundle.setLoopProperties(EditorUtil.getActiveVizContainer()
-                .getLoopProperties());
-        return bundle;
     }
 
 }

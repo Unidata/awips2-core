@@ -156,7 +156,7 @@
          id="org.apache.camel"
          download-size="0"
          install-size="0"
-         version="2.13.2"/>
+         version="2.14.1"/>
 
    <plugin
          id="org.apache.commons.management"
@@ -197,6 +197,20 @@
 
    <plugin
          id="com.raytheon.uf.edex.requestsrv"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.raytheon.uf.common.http"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.raytheon.uf.edex.localization.http"
          download-size="0"
          install-size="0"
          version="0.0.0"

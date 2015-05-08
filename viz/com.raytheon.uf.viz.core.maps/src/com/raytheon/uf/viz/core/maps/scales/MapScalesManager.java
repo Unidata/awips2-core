@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.maps.scales;
 
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -35,7 +37,6 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
@@ -67,6 +68,7 @@ import com.raytheon.viz.ui.actions.LoadSerializedXml;
  *                                    ProcedureXmlManager
  * Mar 24, 2014  2954     mpduff      Log when missing map scale files
  * Jul 15, 2014  2954     njensen     Added fallbacks when missing map scale files
+ * Feb 24, 2015  3978     njensen     Use openInputStream() to read bundleXml
  * 
  * </pre>
  * 
@@ -154,9 +156,20 @@ public class MapScalesManager {
         }
 
         private void loadBundleXml() {
-            try {
-                this.bundleXml = new String(scaleFile.getFile().read());
-            } catch (LocalizationException e) {
+            StringBuilder sb = new StringBuilder();
+            char[] buffer = new char[1024];
+            try (InputStream is = scaleFile.getFile().openInputStream()) {
+                try (InputStreamReader isr = new InputStreamReader(is)) {
+                    int read = isr.read(buffer);
+                    while (read > -1) {
+                        sb.append(buffer, 0, read);
+                        read = isr.read(buffer);
+                    }
+                    if (sb.length() > 0) {
+                        bundleXml = sb.toString();
+                    }
+                }
+            } catch (Exception e) {
                 // Ignore, error will be reported in getScaleBundle
             }
         }
@@ -248,8 +261,7 @@ public class MapScalesManager {
             throws SerializationException {
         String filename = scalesDir + IPathManager.SEPARATOR + scalesFile;
         LocalizationFile locFile = PathManagerFactory.getPathManager()
-                .getStaticLocalizationFile(
-filename);
+                .getStaticLocalizationFile(filename);
         MapScales scales = null;
         try {
             this.scalesFile = new AutoUpdatingLocalizationFile(locFile);
@@ -280,8 +292,7 @@ filename);
         loadMapScales(scales);
     }
 
-    private synchronized void loadMapScales(MapScales scales)
- {
+    private synchronized void loadMapScales(MapScales scales) {
         List<ManagedMapScale> storedScales = new ArrayList<ManagedMapScale>();
         List<PartId> failedParts = new ArrayList<PartId>();
         for (MapScale scale : scales.getScales()) {

@@ -50,6 +50,7 @@ import org.apache.camel.component.file.GenericFileOperations;
  * Sep 2, 2010             rjpeter     Initial creation
  * May 9, 2013  1989       njensen     Camel 2.11 compatibility
  * May 6, 2014  3115       bclement    Camel 2.12.3 compatibility
+ * Jan 5, 2015  3800       bclement    Camel 2.14.1 compatibility
  * 
  * </pre>
  * 
@@ -154,5 +155,17 @@ public class FileChangedExclusiveReadLockStrategy implements
     @Override
     public void setReadLockLoggingLevel(LoggingLevel level) {
         // new in camel 2.12.3
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
+     * setMarkerFiler(boolean)
+     */
+    @Override
+    public void setMarkerFiler(boolean arg0) {
+        // new in camel 2.14.1
     }
 }

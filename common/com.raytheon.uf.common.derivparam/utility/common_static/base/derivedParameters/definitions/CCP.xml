@@ -22,7 +22,7 @@
     <Method name="Alias">
         <Field abbreviation="CCOV"/>
     </Method>
-    <Method name="Alias" models="HRRR">
+    <Method name="Alias">
         <Field abbreviation="TCC"/>
     </Method>
     <Method name="Alias" levels="HiLyr">

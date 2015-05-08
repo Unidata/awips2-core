@@ -46,6 +46,7 @@ import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
 import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
+import com.raytheon.viz.ui.IRenameablePart;
 import com.raytheon.viz.ui.color.BackgroundColor;
 import com.raytheon.viz.ui.color.IBackgroundColorChangedListener;
 import com.raytheon.viz.ui.input.InputManager;
@@ -56,7 +57,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * Provides the basis for editors
+ * Provides the basis for editors in viz
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -64,7 +65,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * ------------- -------- ----------- --------------------------
  * Oct 10, 2006           chammack    Initial Creation.
  * Jun 12, 2014  3264     bsteffen    Make listeners thread safe.
- * 
+ * Mar 02, 2015  4204     njensen     Deprecated setTabTitle and overrode setPartName
  * 
  * </pre>
  * 
@@ -72,10 +73,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1
  */
 public abstract class AbstractEditor extends EditorPart implements
-        IDisplayPaneContainer, IBackgroundColorChangedListener, ISaveablePart2 {
+        IDisplayPaneContainer, IBackgroundColorChangedListener, ISaveablePart2,
+        IRenameablePart {
 
     /** The set of those listening for IRenderableDisplay changes */
-    private Set<IRenderableDisplayChangedListener> renderableDisplayListeners;
+    private final Set<IRenderableDisplayChangedListener> renderableDisplayListeners;
 
     /** The editor input for the editor */
     protected EditorInput editorInput;
@@ -351,7 +353,12 @@ public abstract class AbstractEditor extends EditorPart implements
 
     /**
      * Set the title of the tab
+     * 
+     * @deprecated Use setPartName(String) instead
+     * 
+     * @param title
      */
+    @Deprecated
     public void setTabTitle(String title) {
         this.setPartName(title);
     }
@@ -406,6 +413,7 @@ public abstract class AbstractEditor extends EditorPart implements
         return "com.raytheon.viz.ui.tools.nav.PanTool";
     }
 
+    @Override
     public void setColor(BGColorMode mode, RGB newColor) {
         setColor(getDisplayPanes(), newColor);
     }
@@ -570,5 +578,10 @@ public abstract class AbstractEditor extends EditorPart implements
     @Override
     public void setFocus() {
         editorInput.getPaneManager().setFocus();
+    }
+
+    @Override
+    public void setPartName(String partName) {
+        super.setPartName(partName);
     }
 }

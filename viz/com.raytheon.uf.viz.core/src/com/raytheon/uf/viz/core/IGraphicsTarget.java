@@ -51,7 +51,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * <pre>
  * 
  * SOFTWARE HISTORY
- *    
+ * 
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Jul 01, 2006           chammack    Initial Creation.
@@ -65,8 +65,9 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
  * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() functions that take in spatialChopFlag
  * Aug 07, 2014  3492     mapeters    Removed setUseBuiltinColorbar() and drawFilledCircle() methods.
- * Aug 13, 2014  3492     mapeters    Deprecated createWireframeShape() functions that take in 
+ * Aug 13, 2014  3492     mapeters    Deprecated createWireframeShape() functions that take in
  *                                    a float simplificationLevel.
+ * Jan 26, 2015  3974     njensen     Deprecated usage of tesselate on createShadedShape()
  * 
  * </pre>
  * 
@@ -75,563 +76,569 @@ import com.raytheon.uf.viz.core.exception.VizException;
  */
 public interface IGraphicsTarget extends IImagingExtension {
 
-	/** Defines alignment characteristics */
-	public static enum HorizontalAlignment {
-		CENTER, LEFT, RIGHT
-	};
+    /** Defines alignment characteristics */
+    public static enum HorizontalAlignment {
+        CENTER, LEFT, RIGHT
+    }
 
-	public static enum VerticalAlignment {
-		TOP, MIDDLE, BOTTOM
-	}
+    public static enum VerticalAlignment {
+        TOP, MIDDLE, BOTTOM
+    }
 
-	/** Defines text characteristics */
-	public static enum TextStyle {
-		/**
-		 * @deprecated Normal is indicated by adding no other styles to a
-		 *             {@link DrawableString}
-		 */
-		@Deprecated
-		NORMAL,
+    /** Defines text characteristics */
+    public static enum TextStyle {
+        /**
+         * @deprecated Normal is indicated by adding no other styles to a
+         *             {@link DrawableString}
+         */
+        @Deprecated
+        NORMAL,
 
-		/**
-		 * @deprecated Word Wrap is not supported in all targets, not fully
-		 *             supported by any target, and rarely used. Wrapping should
-		 *             now be performed before rendering.
-		 * 
-		 */
-		@Deprecated
-		WORD_WRAP,
+        /**
+         * @deprecated Word Wrap is not supported in all targets, not fully
+         *             supported by any target, and rarely used. Wrapping should
+         *             now be performed before rendering.
+         * 
+         */
+        @Deprecated
+        WORD_WRAP,
 
-		/**
-		 * Draw a filled rectangle behind text.
-		 */
-		BLANKED, 
-		
-		/**
-		 * Draw a rectangle around text.
-		 */
-		BOXED, 
-		
-		/**
-		 * Draw a shadow behind the text.
-		 */
-		DROP_SHADOW, 
-		
-		/**
-		 * Draw an underline beneath the text.
-		 */
-		UNDERLINE, 
-		
-		/**
-		 * Draw a line over the text.
-		 */
-		OVERLINE, 
-		
-		/**
-		 * Draw a strike through the middle of text.
-		 */
-		STRIKETHROUGH;
-	};
+        /**
+         * Draw a filled rectangle behind text.
+         */
+        BLANKED,
 
-	/**
-	 * DEFAULT should be treated as SOLID by the target, but Objects drawing on
-	 * the target may want to switch default to a different style before drawing
-	 */
-	public static enum LineStyle {
-		DEFAULT, //
-		SOLID, //
-		DASHED(4, (short) 0xAAAA), //
-		DASHED_LARGE(4, (short) 0xEEEE), //
-		DOTTED(1, (short) 0xAAAA), //
-		DASH_DOTTED(1, (short) 0xE4E4),
-		// Task 69 : Added for NMAP
-		SHORT_DASHED(8, (short) 0xAAAA), // GEMPAK line type 2
-		MEDIUM_DASHED(3, (short) 0xF8F8), // GEMPAK line type 3
-		LONG_DASH_SHORT_DASH(3, (short) 0xFC38), // GEMPAK line type 4
-		LONG_DASHED(3, (short) 0xFCFC), // GEMPAK line type 5
-		LONG_DASH_THREE_SHORT_DASHES(3, (short) 0xFDB6), // GEMPAK line type 6
-		LONG_DASH_DOT(2, (short) 0xFFE4), // GEMPAK line type 7
-		LONG_DASH_THREE_DOTS(2, (short) 0xFC92), // GEMPAK line type 8
-		MEDIUM_DASH_DOT(2, (short) 0xFF88), // GEMPAK line type 9
-		DOTS(1, (short) 0x8888); // GEMPAK line type 10
+        /**
+         * Draw a rectangle around text.
+         */
+        BOXED,
 
-		private final int factor;
+        /**
+         * Draw a shadow behind the text.
+         */
+        DROP_SHADOW,
 
-		private final short pattern;
+        /**
+         * Draw an underline beneath the text.
+         */
+        UNDERLINE,
 
-		LineStyle() {
-			this.factor = 0;
-			this.pattern = 0;
-		}
+        /**
+         * Draw a line over the text.
+         */
+        OVERLINE,
 
-		LineStyle(int factor, short pattern) {
-			if (factor < 1) {
-				this.factor = 1;
-			} else if (factor > 255) {
-				this.factor = 255;
-			} else {
-				this.factor = factor;
-			}
-			this.pattern = pattern;
-		}
+        /**
+         * Draw a strike through the middle of text.
+         */
+        STRIKETHROUGH;
+    }
 
-		public int getFactor() {
-			return factor;
-		}
+    /**
+     * DEFAULT should be treated as SOLID by the target, but Objects drawing on
+     * the target may want to switch default to a different style before drawing
+     */
+    public static enum LineStyle {
+        DEFAULT, //
+        SOLID, //
+        DASHED(4, (short) 0xAAAA), //
+        DASHED_LARGE(4, (short) 0xEEEE), //
+        DOTTED(1, (short) 0xAAAA), //
+        DASH_DOTTED(1, (short) 0xE4E4),
+        // Task 69 : Added for NMAP
+        SHORT_DASHED(8, (short) 0xAAAA), // GEMPAK line type 2
+        MEDIUM_DASHED(3, (short) 0xF8F8), // GEMPAK line type 3
+        LONG_DASH_SHORT_DASH(3, (short) 0xFC38), // GEMPAK line type 4
+        LONG_DASHED(3, (short) 0xFCFC), // GEMPAK line type 5
+        LONG_DASH_THREE_SHORT_DASHES(3, (short) 0xFDB6), // GEMPAK line type 6
+        LONG_DASH_DOT(2, (short) 0xFFE4), // GEMPAK line type 7
+        LONG_DASH_THREE_DOTS(2, (short) 0xFC92), // GEMPAK line type 8
+        MEDIUM_DASH_DOT(2, (short) 0xFF88), // GEMPAK line type 9
+        DOTS(1, (short) 0x8888); // GEMPAK line type 10
 
-		public short getPattern() {
-			return pattern;
-		}
+        private final int factor;
 
-		public int[] getSWTLineStyle() {
-			if (this.factor == 0 || this.pattern == 0) {
-				return null;
-			} else {
-				List<Integer> dashPattern = new ArrayList<Integer>();
+        private final short pattern;
 
-				int p = this.pattern & 0xFFFF;
+        LineStyle() {
+            this.factor = 0;
+            this.pattern = 0;
+        }
 
-				// strip trailing 0s
-				int prevLsb = p & 1;
-				while (prevLsb == 0) {
-					p >>= 1;
-					prevLsb = p & 1;
-				}
+        LineStyle(int factor, short pattern) {
+            if (factor < 1) {
+                this.factor = 1;
+            } else if (factor > 255) {
+                this.factor = 255;
+            } else {
+                this.factor = factor;
+            }
+            this.pattern = pattern;
+        }
 
-				int count = 0;
-				int sum = 0;
-				while (p != 0) {
-					int lsb = p & 1;
-					if (lsb != prevLsb) {
-						dashPattern.add(count * factor);
-						sum += count;
-						count = 0;
-						prevLsb = lsb;
-					}
-					count++;
-					p >>= 1;
-				}
-				if (prevLsb == 1 & count > 0) {
-					dashPattern.add(count * factor);
-					sum += count;
-				}
-				if (sum < 16) {
-					dashPattern.add((16 - sum) * factor);
-				}
+        public int getFactor() {
+            return factor;
+        }
 
-				int[] array = new int[dashPattern.size()];
-				for (int i = 0; i < dashPattern.size(); i++) {
-					array[i] = dashPattern.get(i);
-				}
-				return array;
-			}
-		}
-	}
+        public short getPattern() {
+            return pattern;
+        }
 
-	public static enum PointStyle {
+        public int[] getSWTLineStyle() {
+            if (this.factor == 0 || this.pattern == 0) {
+                return null;
+            } else {
+                List<Integer> dashPattern = new ArrayList<Integer>();
+
+                int p = this.pattern & 0xFFFF;
+
+                // strip trailing 0s
+                int prevLsb = p & 1;
+                while (prevLsb == 0) {
+                    p >>= 1;
+                    prevLsb = p & 1;
+                }
+
+                int count = 0;
+                int sum = 0;
+                while (p != 0) {
+                    int lsb = p & 1;
+                    if (lsb != prevLsb) {
+                        dashPattern.add(count * factor);
+                        sum += count;
+                        count = 0;
+                        prevLsb = lsb;
+                    }
+                    count++;
+                    p >>= 1;
+                }
+                if (prevLsb == 1 & count > 0) {
+                    dashPattern.add(count * factor);
+                    sum += count;
+                }
+                if (sum < 16) {
+                    dashPattern.add((16 - sum) * factor);
+                }
+
+                int[] array = new int[dashPattern.size()];
+                for (int i = 0; i < dashPattern.size(); i++) {
+                    array[i] = dashPattern.get(i);
+                }
+                return array;
+            }
+        }
+    }
+
+    public static enum PointStyle {
         NONE, POINT, CROSS, X, STAR, CIRCLE, DISC, BOX, SQUARE, DASH, PIPE
-	}
+    }
 
-	/** Defines the raster mode */
-	public static enum RasterMode {
-		ASYNCHRONOUS, SYNCHRONOUS
-	}
+    /** Defines the raster mode */
+    public static enum RasterMode {
+        ASYNCHRONOUS, SYNCHRONOUS
+    }
 
-	/**
-	 * DEPRECATED: For general IImage construction, use
-	 * initializeRaster(RenderedImage). Other image construction methods should
-	 * be done through extensions
-	 * 
-	 * @param requester
-	 *            the object to use for requesting data for the image
-	 * @param optionalParams
-	 *            color map parameters for colormapped images
-	 * @return an image
-	 */
-	@Deprecated
-	public abstract IImage initializeRaster(IDataPreparer preparer,
-			ColorMapParameters optionalParams);
+    /**
+     * DEPRECATED: For general IImage construction, use
+     * initializeRaster(RenderedImage). Other image construction methods should
+     * be done through extensions
+     * 
+     * @param preparer
+     *            the object to use for requesting data for the image
+     * @param optionalParams
+     *            color map parameters for colormapped images
+     * @return an image
+     */
+    @Deprecated
+    public abstract IImage initializeRaster(IDataPreparer preparer,
+            ColorMapParameters optionalParams);
 
-	/**
-	 * This method will create an IImage object from a RenderedImage callback.
-	 * The callback is used to construct the RenderableImage when it is needed.
-	 * All targets need to support IImage creation for RenderedImage. Other
-	 * IImage construction methods should be done through extensions
-	 * 
-	 * @param imageCallback
-	 * @return
-	 */
-	public abstract IImage initializeRaster(IRenderedImageCallback imageCallback);
+    /**
+     * This method will create an IImage object from a RenderedImage callback.
+     * The callback is used to construct the RenderableImage when it is needed.
+     * All targets need to support IImage creation for RenderedImage. Other
+     * IImage construction methods should be done through extensions
+     * 
+     * @param imageCallback
+     * @return
+     */
+    public abstract IImage initializeRaster(IRenderedImageCallback imageCallback);
 
-	/**
-	 * Given the font, construct it with default values for the font
-	 * 
-	 * @param font
-	 * @return
-	 */
-	public abstract IFont initializeFont(String font);
+    /**
+     * Given the font, construct it with default values for the font
+     * 
+     * @param font
+     * @return
+     */
+    public abstract IFont initializeFont(String font);
 
-	/**
-	 * Create a font object
-	 * 
-	 * @param fontName
-	 *            the font name
-	 * @param size
-	 *            the size in points
-	 * @param styles
-	 *            the font styles
-	 * @return a prepared font reference
-	 */
-	public abstract IFont initializeFont(String fontName, float size,
-			IFont.Style[] styles);
+    /**
+     * Create a font object
+     * 
+     * @param fontName
+     *            the font name
+     * @param size
+     *            the size in points
+     * @param styles
+     *            the font styles
+     * @return a prepared font reference
+     */
+    public abstract IFont initializeFont(String fontName, float size,
+            IFont.Style[] styles);
 
-	/**
-	 * Create a font object from a truetype font file
-	 * 
-	 * @deprecated {@link #initializeFont(File, com.raytheon.uf.viz.core.drawables.IFont.FontType, float, com.raytheon.uf.viz.core.drawables.IFont.Style[])}
-	 *             should be used instead
-	 * 
-	 * @param fontFile
-	 *            the truetype font
-	 * @param size
-	 *            the size in points
-	 * @param styles
-	 *            the font styles
-	 * @return a prepared font reference
-	 */
-	@Deprecated
-	public abstract IFont initializeFont(File fontFile, float size,
-			IFont.Style[] styles);
+    /**
+     * Create a font object from a truetype font file
+     * 
+     * @deprecated {@link #initializeFont(File, com.raytheon.uf.viz.core.drawables.IFont.FontType, float, com.raytheon.uf.viz.core.drawables.IFont.Style[])}
+     *             should be used instead
+     * 
+     * @param fontFile
+     *            the truetype font
+     * @param size
+     *            the size in points
+     * @param styles
+     *            the font styles
+     * @return a prepared font reference
+     */
+    @Deprecated
+    public abstract IFont initializeFont(File fontFile, float size,
+            IFont.Style[] styles);
 
-	/**
-	 * Create a font object from font file
-	 * 
-	 * 
-	 * @param fontFile
-	 *            the font file
-	 * @param type
-	 *            the type of the font file
-	 * @param size
-	 *            the size in points
-	 * @param styles
-	 *            the font styles
-	 * @return a prepared font reference
-	 */
-	public abstract IFont initializeFont(File fontFile, IFont.FontType type,
-			float size, IFont.Style[] styles);
+    /**
+     * Create a font object from font file
+     * 
+     * 
+     * @param fontFile
+     *            the font file
+     * @param type
+     *            the type of the font file
+     * @param size
+     *            the size in points
+     * @param styles
+     *            the font styles
+     * @return a prepared font reference
+     */
+    public abstract IFont initializeFont(File fontFile, IFont.FontType type,
+            float size, IFont.Style[] styles);
 
-	/**
-	 * Draw a raster to a target, given an extent and an alpha (transparency)
-	 * value. Assumes synchronous operation.
-	 * 
-	 * This operation will block on unavailable data.
-	 * 
-	 * @param image
-	 *            the image reference object to draw
-	 * @param extent
-	 *            the extent of the drawable area
-	 * @param paintProps
-	 *            the paint properties
-	 * @return status whether the raster was able to be drawn
-	 * @throws VizException
-	 */
-	public abstract boolean drawRaster(IImage image, PixelCoverage extent,
-			PaintProperties paintProps) throws VizException;
+    /**
+     * Draw a raster to a target, given an extent and an alpha (transparency)
+     * value. Assumes synchronous operation.
+     * 
+     * This operation will block on unavailable data.
+     * 
+     * @param image
+     *            the image reference object to draw
+     * @param extent
+     *            the extent of the drawable area
+     * @param paintProps
+     *            the paint properties
+     * @return status whether the raster was able to be drawn
+     * @throws VizException
+     */
+    public abstract boolean drawRaster(IImage image, PixelCoverage extent,
+            PaintProperties paintProps) throws VizException;
 
-	/**
-	 * Draw a raster to a target, given an extent and an alpha (transparency)
-	 * value
-	 * 
-	 * Depending on the raster mode, this operation may or may not block on
-	 * unavailable data.
-	 * 
-	 * In synchronous mode, it will attempt to do everything possible to draw
-	 * the imagery even if it means delaying the thread.
-	 * 
-	 * If in asychronous mode, it should return false back to notify that a
-	 * redraw should be rescheduled. Ideally, by the time the refresh occurs,
-	 * the raster should be available.
-	 * 
-	 * @param image
-	 *            the image reference object to draw
-	 * @param extent
-	 *            the extent of the drawable area
-	 * @param paintProps
-	 *            the paint properties
-	 * @param mode
-	 *            the drawing mode (synchronous, asynchronous)
-	 * @return status whether the raster was able to be drawn
-	 * @throws VizException
-	 */
-	public abstract boolean drawRaster(IImage image, PixelCoverage extent,
-			PaintProperties paintProps, RasterMode mode) throws VizException;
+    /**
+     * Draw a raster to a target, given an extent and an alpha (transparency)
+     * value
+     * 
+     * Depending on the raster mode, this operation may or may not block on
+     * unavailable data.
+     * 
+     * In synchronous mode, it will attempt to do everything possible to draw
+     * the imagery even if it means delaying the thread.
+     * 
+     * If in asychronous mode, it should return false back to notify that a
+     * redraw should be rescheduled. Ideally, by the time the refresh occurs,
+     * the raster should be available.
+     * 
+     * @param image
+     *            the image reference object to draw
+     * @param extent
+     *            the extent of the drawable area
+     * @param paintProps
+     *            the paint properties
+     * @param mode
+     *            the drawing mode (synchronous, asynchronous)
+     * @return status whether the raster was able to be drawn
+     * @throws VizException
+     */
+    public abstract boolean drawRaster(IImage image, PixelCoverage extent,
+            PaintProperties paintProps, RasterMode mode) throws VizException;
 
-	/**
-	 * Draw the DrawableString object to the screen
-	 * 
-	 * @param parameters
-	 * @throws VizException
-	 */
-	public abstract void drawStrings(DrawableString... parameters)
-			throws VizException;
+    /**
+     * Draw the DrawableString object to the screen
+     * 
+     * @param parameters
+     * @throws VizException
+     */
+    public abstract void drawStrings(DrawableString... parameters)
+            throws VizException;
 
-	/**
-	 * Draw multiple DrawableString objects to the screen, an implementor of
-	 * this interface may choose to optimize drawing of multiple strings using
-	 * this method to be faster than individual calls with a single
-	 * DrawableString.
-	 * 
-	 * @param parameters
-	 * @throws VizException
-	 */
-	public abstract void drawStrings(Collection<DrawableString> parameters)
-			throws VizException;
+    /**
+     * Draw multiple DrawableString objects to the screen, an implementor of
+     * this interface may choose to optimize drawing of multiple strings using
+     * this method to be faster than individual calls with a single
+     * DrawableString.
+     * 
+     * @param parameters
+     * @throws VizException
+     */
+    public abstract void drawStrings(Collection<DrawableString> parameters)
+            throws VizException;
 
-	/**
-	 * Get the string bounds for the parameters
-	 * 
-	 * @param parameters
-	 * @return
-	 */
-	public abstract Rectangle2D getStringsBounds(DrawableString parameters);
+    /**
+     * Get the string bounds for the parameters
+     * 
+     * @param parameters
+     * @return
+     */
+    public abstract Rectangle2D getStringsBounds(DrawableString parameters);
 
-	/**
-	 * Get the string bounds for the specified string using parameters as the
-	 * information about the string, this function ignores the String[] in
-	 * parameters
-	 * 
-	 * @param parameters
-	 * @param string
-	 * @return
-	 */
-	public abstract Rectangle2D getStringsBounds(DrawableString parameters,
-			String string);
+    /**
+     * Get the string bounds for the specified string using parameters as the
+     * information about the string, this function ignores the String[] in
+     * parameters
+     * 
+     * @param parameters
+     * @param string
+     * @return
+     */
+    public abstract Rectangle2D getStringsBounds(DrawableString parameters,
+            String string);
 
-	/**
-	 * Draw a (set of) filled shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the shaded shape object
-	 * @param alpha
-	 *            the alpha blending coefficient
-	 * @throws VizException
-	 */
-	public abstract void drawShadedShape(IShadedShape shape, float alpha)
-			throws VizException;
+    /**
+     * Draw a (set of) filled shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the shaded shape object
+     * @param alpha
+     *            the alpha blending coefficient
+     * @throws VizException
+     */
+    public abstract void drawShadedShape(IShadedShape shape, float alpha)
+            throws VizException;
 
-	/**
-	 * Draw a (set of) filled shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the shaded shape object
-	 * @param alpha
-	 *            the alpha blending coefficient
-	 * @param brightness
-	 *            the brightness blending coefficient
-	 * @throws VizException
-	 */
-	public abstract void drawShadedShape(IShadedShape shape, float alpha,
-			float brightness) throws VizException;
+    /**
+     * Draw a (set of) filled shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the shaded shape object
+     * @param alpha
+     *            the alpha blending coefficient
+     * @param brightness
+     *            the brightness blending coefficient
+     * @throws VizException
+     */
+    public abstract void drawShadedShape(IShadedShape shape, float alpha,
+            float brightness) throws VizException;
 
-	/**
-	 * Draw a (set of) filled shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param alpha
-	 *            the alpha blending coefficient
-	 * @param brightness
-	 *            the brightness blending coefficient
-	 * @param shapes
-	 *            the shaded shapes object
-	 * @throws VizException
-	 */
-	public abstract void drawShadedShapes(float alpha, float brightness,
-			IShadedShape... shapes) throws VizException;
+    /**
+     * Draw a (set of) filled shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param alpha
+     *            the alpha blending coefficient
+     * @param brightness
+     *            the brightness blending coefficient
+     * @param shapes
+     *            the shaded shapes object
+     * @throws VizException
+     */
+    public abstract void drawShadedShapes(float alpha, float brightness,
+            IShadedShape... shapes) throws VizException;
 
-	/**
-	 * Draw a (set of) wireframe shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the wireframe shape object
-	 * @param color
-	 *            the color of the shape
-	 * @param lineWidth
-	 *            the line width
-	 * @throws VizException
-	 */
-	public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
-			float lineWidth) throws VizException;
+    /**
+     * Draw a (set of) wireframe shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the wireframe shape object
+     * @param color
+     *            the color of the shape
+     * @param lineWidth
+     *            the line width
+     * @throws VizException
+     */
+    public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
+            float lineWidth) throws VizException;
 
-	/**
-	 * Draw a (set of) wireframe shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the wireframe shape object
-	 * @param color
-	 *            the color of the shape
-	 * @param lineWidth
-	 *            the line width
-	 * @param lineStyle
-	 *            style of the line
-	 * @throws VizException
-	 */
-	public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
-			float lineWidth, LineStyle lineStyle) throws VizException;
+    /**
+     * Draw a (set of) wireframe shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the wireframe shape object
+     * @param color
+     *            the color of the shape
+     * @param lineWidth
+     *            the line width
+     * @param lineStyle
+     *            style of the line
+     * @throws VizException
+     */
+    public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
+            float lineWidth, LineStyle lineStyle) throws VizException;
 
-	/**
-	 * Draw a (set of) wireframe shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the wireframe shape object
-	 * @param color
-	 *            the color of the shape
-	 * @param lineWidth
-	 *            the line width
-	 * @param lineStyle
-	 *            style of the line
-	 * @param alpha
-	 *            the alpha of the object being drawn
-	 * @throws VizException
-	 */
-	public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
-			float lineWidth, LineStyle lineStyle, float alpha)
-			throws VizException;
+    /**
+     * Draw a (set of) wireframe shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the wireframe shape object
+     * @param color
+     *            the color of the shape
+     * @param lineWidth
+     *            the line width
+     * @param lineStyle
+     *            style of the line
+     * @param alpha
+     *            the alpha of the object being drawn
+     * @throws VizException
+     */
+    public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
+            float lineWidth, LineStyle lineStyle, float alpha)
+            throws VizException;
 
-	/**
-	 * Draw a (set of) wireframe shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the wireframe shape object
-	 * @param color
-	 *            the color of the shape
-	 * @param lineWidth
-	 *            the line width
-	 * @param lineStyle
-	 *            style of the line
-	 * @param font
-	 *            the font to be used for labeling
-	 * @throws VizException
-	 */
-	public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
-			float lineWidth, LineStyle lineStyle, IFont font)
-			throws VizException;
+    /**
+     * Draw a (set of) wireframe shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the wireframe shape object
+     * @param color
+     *            the color of the shape
+     * @param lineWidth
+     *            the line width
+     * @param lineStyle
+     *            style of the line
+     * @param font
+     *            the font to be used for labeling
+     * @throws VizException
+     */
+    public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
+            float lineWidth, LineStyle lineStyle, IFont font)
+            throws VizException;
 
-	/**
-	 * Draw a (set of) wireframe shape(s)
-	 * 
-	 * HIGH PERFORMANCE OPERATION
-	 * 
-	 * @param shape
-	 *            the wireframe shape object
-	 * @param color
-	 *            the color of the shape
-	 * @param lineWidth
-	 *            the line width
-	 * @param lineStyle
-	 *            style of the line
-	 * @param font
-	 *            the font to be used for labeling
-	 * @param alpha
-	 *            the alpha of the object being drawn
-	 * @throws VizException
-	 */
-	public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
-			float lineWidth, LineStyle lineStyle, IFont font, float alpha)
-			throws VizException;
+    /**
+     * Draw a (set of) wireframe shape(s)
+     * 
+     * HIGH PERFORMANCE OPERATION
+     * 
+     * @param shape
+     *            the wireframe shape object
+     * @param color
+     *            the color of the shape
+     * @param lineWidth
+     *            the line width
+     * @param lineStyle
+     *            style of the line
+     * @param font
+     *            the font to be used for labeling
+     * @param alpha
+     *            the alpha of the object being drawn
+     * @throws VizException
+     */
+    public abstract void drawWireframeShape(IWireframeShape shape, RGB color,
+            float lineWidth, LineStyle lineStyle, IFont font, float alpha)
+            throws VizException;
 
-	/**
-	 * Draw a rectangle (This is not a high performance operation. Use
-	 * drawShadedShape or drawWireframeShape.)
-	 * 
-	 * @param rect
-	 *            the rectangle to draw
-	 * @throws VizException
-	 */
-	public abstract void drawRect(IExtent pe, RGB color, float lineWidth,
-			double alpha) throws VizException;
+    /**
+     * Draw a rectangle (This is not a high performance operation. Use
+     * drawShadedShape or drawWireframeShape.)
+     * 
+     * @param pe
+     *            the rectangle to draw
+     * @param color
+     *            the color of the rectangle
+     * @param lineWidth
+     *            the width of the rectangle's lines
+     * @param alpha
+     *            the alpha/transparency of the rectangle
+     * @throws VizException
+     */
+    public abstract void drawRect(IExtent pe, RGB color, float lineWidth,
+            double alpha) throws VizException;
 
-	/**
-	 * Draw a shaded rectangle
-	 * 
-	 * @param pe
-	 *            the area of the rectangle
-	 * @param color
-	 *            the color of the rectangle
-	 * @param alpha
-	 *            the alpha blending factor
-	 * @param pattern
-	 *            the fill pattern or null for solid fill
-	 * @throws VizException
-	 */
-	public abstract void drawShadedRect(IExtent pe, RGB color, double alpha,
-			byte[] pattern) throws VizException;
+    /**
+     * Draw a shaded rectangle
+     * 
+     * @param pe
+     *            the area of the rectangle
+     * @param color
+     *            the color of the rectangle
+     * @param alpha
+     *            the alpha blending factor
+     * @param pattern
+     *            the fill pattern or null for solid fill
+     * @throws VizException
+     */
+    public abstract void drawShadedRect(IExtent pe, RGB color, double alpha,
+            byte[] pattern) throws VizException;
 
-	/**
-	 * Draws a cicle with parameters about the circle
-	 * 
-	 * @param circle
-	 */
-	public abstract void drawCircle(DrawableCircle... circles)
-			throws VizException;
+    /**
+     * Draws circles with parameters about each circle
+     * 
+     * @param circles
+     */
+    public abstract void drawCircle(DrawableCircle... circles)
+            throws VizException;
 
-	/**
-	 * Draws a line with the parameters for the line
-	 * 
-	 * @param lines
-	 * @throws VizException
-	 */
-	public abstract void drawLine(DrawableLine... lines) throws VizException;
+    /**
+     * Draws a line with the parameters for the line
+     * 
+     * @param lines
+     * @throws VizException
+     */
+    public abstract void drawLine(DrawableLine... lines) throws VizException;
 
-	/**
-	 * DEPRECATED: Use {@link #drawCircle(DrawableCircle...)}
-	 * 
-	 */
-	@Deprecated
-	public void drawArc(double x1, double y1, double z1, double radius,
-			RGB color, float width, int startAzimuth, int arcWidth,
-			LineStyle lineStyle, boolean includeSides) throws VizException;
+    /**
+     * DEPRECATED: Use {@link #drawCircle(DrawableCircle...)}
+     * 
+     */
+    @Deprecated
+    public void drawArc(double x1, double y1, double z1, double radius,
+            RGB color, float width, int startAzimuth, int arcWidth,
+            LineStyle lineStyle, boolean includeSides) throws VizException;
 
-	/**
-	 * Returns a point on a circle given the origin (x1,y1) radius and angle
-	 * (polar coordinates )
-	 * 
-	 * @param x1
-	 * @param y1
-	 * @param z1
-	 * @param radius
-	 * @param angle
-	 * @return double[x1,y1]
-	 * @throws VizException
-	 */
-	public abstract double[] getPointOnCircle(double x1, double y1, double z1,
-			double radius, double angle) throws VizException;
+    /**
+     * Returns a point on a circle given the origin (x1,y1) radius and angle
+     * (polar coordinates )
+     * 
+     * @param x1
+     * @param y1
+     * @param z1
+     * @param radius
+     * @param angle
+     * @return double[x1,y1]
+     * @throws VizException
+     */
+    public abstract double[] getPointOnCircle(double x1, double y1, double z1,
+            double radius, double angle) throws VizException;
 
-	/**
-	 * Create a wireframe shape object
-	 * 
-	 * @param mutable
-	 *            whether the shape changes after creation
-	 * @param descriptor
-	 *            the map descriptor
-	 * @return a wireframe shape object
-	 */
-	public abstract IWireframeShape createWireframeShape(boolean mutable,
-			IDescriptor descriptor);
+    /**
+     * Create a wireframe shape object
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param descriptor
+     *            the map descriptor
+     * @return a wireframe shape object
+     */
+    public abstract IWireframeShape createWireframeShape(boolean mutable,
+            IDescriptor descriptor);
 
-	    /**
+    /**
      * Create a wireframe shape object
      * 
      * @param mutable
@@ -641,19 +648,18 @@ public interface IGraphicsTarget extends IImagingExtension {
      * @param simplificationLevel
      *            the simplification level
      * @return a wireframe shape object
-     * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)
-
+     * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)}
      */
     @Deprecated
-	public abstract IWireframeShape createWireframeShape(boolean mutable,
-			IDescriptor descriptor, float simplificationLevel);
+    public abstract IWireframeShape createWireframeShape(boolean mutable,
+            IDescriptor descriptor, float simplificationLevel);
 
-	        /**
+    /**
      * Create a wireframe shape object
      * 
      * @param mutable
      *            whether the shape changes after creation
-     * @param descriptor
+     * @param geom
      *            the geometry for the shape
      * @param simplificationLevel
      *            the simplification level
@@ -662,8 +668,8 @@ public interface IGraphicsTarget extends IImagingExtension {
      *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
      */
     @Deprecated
-	public abstract IWireframeShape createWireframeShape(boolean mutable,
-			GeneralGridGeometry geom, float simplificationLevel);
+    public abstract IWireframeShape createWireframeShape(boolean mutable,
+            GeneralGridGeometry geom, float simplificationLevel);
 
     /**
      * Create a wireframe shape object with options
@@ -683,9 +689,9 @@ public interface IGraphicsTarget extends IImagingExtension {
      * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)}
      */
     @Deprecated
-	public abstract IWireframeShape createWireframeShape(boolean mutable,
-			IDescriptor descriptor, float simplificationLevel,
-			boolean spatialChopFlag, IExtent extent);
+    public abstract IWireframeShape createWireframeShape(boolean mutable,
+            IDescriptor descriptor, float simplificationLevel,
+            boolean spatialChopFlag, IExtent extent);
 
     /**
      * @param mutableFlag
@@ -694,8 +700,8 @@ public interface IGraphicsTarget extends IImagingExtension {
      *            the geometry the shape is made for
      * @return
      */
-	public abstract IWireframeShape createWireframeShape(boolean mutableFlag,
-			GeneralGridGeometry geom);
+    public abstract IWireframeShape createWireframeShape(boolean mutableFlag,
+            GeneralGridGeometry geom);
 
     /**
      * @param mutable
@@ -708,336 +714,352 @@ public interface IGraphicsTarget extends IImagingExtension {
      *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
      */
     @Deprecated
-	public abstract IWireframeShape createWireframeShape(boolean mutable,
-			GeneralGridGeometry geom, float simplificationLevel,
-			boolean spatialChopFlag, IExtent extent);
+    public abstract IWireframeShape createWireframeShape(boolean mutable,
+            GeneralGridGeometry geom, float simplificationLevel,
+            boolean spatialChopFlag, IExtent extent);
 
-	/**
-	 * DEPRECATED: Use
-	 * {@link #createShadedShape(boolean, GeneralGridGeometry, boolean)} instead
-	 * 
-	 */
-	@Deprecated
-	public abstract IShadedShape createShadedShape(boolean mutable,
-			IDescriptor descriptor, boolean tesselate);
+    /**
+     * DEPRECATED: Use
+     * {@link #createShadedShape(boolean, GeneralGridGeometry, boolean)} instead
+     * 
+     */
+    @Deprecated
+    public abstract IShadedShape createShadedShape(boolean mutable,
+            IDescriptor descriptor, boolean tesselate);
 
-	/**
-	 * Create a shaded shape object
-	 * 
-	 * @param mutable
-	 *            whether the shape changes after creation
-	 * @param targetGeometry
-	 *            the geometry the shape is made for
-	 * @param tesselate
-	 *            whether a shape requires tesselation to be convex
-	 * @return a shaded shape object
-	 */
-	public abstract IShadedShape createShadedShape(boolean mutable,
-			GeneralGridGeometry targetGeometry, boolean tesselate);
+    /**
+     * Create a shaded shape object
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param targetGeometry
+     *            the geometry the shape is made for
+     * @param tesselate
+     *            whether a shape requires tesselation to be convex
+     * @return a shaded shape object
+     * 
+     * @deprecated Use {@link #createShadedShape(boolean, GeneralGridGeometry)}
+     *             instead
+     */
+    @Deprecated
+    public abstract IShadedShape createShadedShape(boolean mutable,
+            GeneralGridGeometry targetGeometry, boolean tesselate);
 
-	/**
-	 * Initialization
-	 * 
-	 */
-	public abstract void init();
+    /**
+     * Create a shaded shape object
+     * 
+     * @param mutable
+     *            whether the shape changes after creation
+     * @param targetGeometry
+     *            the geometry the shape is made for
+     * @return a shaded shape object
+     */
+    public abstract IShadedShape createShadedShape(boolean mutable,
+            GeneralGridGeometry targetGeometry);
 
-	/**
-	 * Start a frame with a given extent. Must call endFrame after drawing is
-	 * complete.
-	 * 
-	 * @param view
-	 *            viewable area of the frame
-	 * @param isClearBackground
-	 *            whether background should be cleared prior to drawing
-	 */
-	public abstract void beginFrame(IView view, boolean isClearBackground);
+    /**
+     * Initialization
+     * 
+     */
+    public abstract void init();
 
-	/**
-	 * End a frame
-	 * 
-	 */
-	public abstract void endFrame();
+    /**
+     * Start a frame with a given extent. Must call endFrame after drawing is
+     * complete.
+     * 
+     * @param view
+     *            viewable area of the frame
+     * @param isClearBackground
+     *            whether background should be cleared prior to drawing
+     */
+    public abstract void beginFrame(IView view, boolean isClearBackground);
 
-	/**
-	 * Trigger a resize (using the canvas)
-	 * 
-	 */
-	public abstract void resize();
+    /**
+     * End a frame
+     * 
+     */
+    public abstract void endFrame();
 
-	/**
-	 * Dispose of allocated resources. Must call init() after calling dispose()
-	 * to begin using target again.
-	 * 
-	 */
-	public abstract void dispose();
+    /**
+     * Trigger a resize (using the canvas)
+     * 
+     */
+    public abstract void resize();
 
-	/**
-	 * Take a screenshot of the current extent
-	 * 
-	 * @return a buffered image containing the current extent
-	 */
-	public abstract BufferedImage screenshot();
+    /**
+     * Dispose of allocated resources. Must call init() after calling dispose()
+     * to begin using target again.
+     * 
+     */
+    public abstract void dispose();
 
-	/**
-	 * Set up a clipping plane
-	 * 
-	 * This should be done before drawing.
-	 * 
-	 * @param extent
-	 *            clipping plane bounds
-	 */
-	public abstract void setupClippingPlane(IExtent extent);
+    /**
+     * Take a screenshot of the current extent
+     * 
+     * @return a buffered image containing the current extent
+     */
+    public abstract BufferedImage screenshot();
 
-	/**
-	 * Clears the clipping plane
-	 * 
-	 * 
-	 */
-	public abstract void clearClippingPlane();
+    /**
+     * Set up a clipping plane
+     * 
+     * This should be done before drawing.
+     * 
+     * @param extent
+     *            clipping plane bounds
+     */
+    public abstract void setupClippingPlane(IExtent extent);
 
-	/**
-	 * Notifies the target that a refresh is needed
-	 * 
-	 * @param needsRefresh
-	 *            true if a refresh is needed
-	 */
-	public abstract void setNeedsRefresh(boolean needsRefresh);
+    /**
+     * Clears the clipping plane
+     * 
+     * 
+     */
+    public abstract void clearClippingPlane();
 
-	/**
-	 * Return true if a refresh is currently needed
-	 * 
-	 * @return true if a refresh is needed
-	 */
-	public abstract boolean isNeedsRefresh();
+    /**
+     * Notifies the target that a refresh is needed
+     * 
+     * @param needsRefresh
+     *            true if a refresh is needed
+     */
+    public abstract void setNeedsRefresh(boolean needsRefresh);
 
-	/**
-	 * Sets the background color of the panes.
-	 * 
-	 * @param backgroundColor
-	 *            the background color to set
-	 */
-	public abstract void setBackgroundColor(RGB backgroundColor);
+    /**
+     * Return true if a refresh is currently needed
+     * 
+     * @return true if a refresh is needed
+     */
+    public abstract boolean isNeedsRefresh();
 
-	/**
-	 * Draw the drawable colormap to the screen
-	 * 
-	 * @param colorMap
-	 *            the colorMap to draw
-	 */
-	public abstract void drawColorRamp(DrawableColorMap colorMap)
-			throws VizException;
+    /**
+     * Sets the background color of the panes.
+     * 
+     * @param backgroundColor
+     *            the background color to set
+     */
+    public abstract void setBackgroundColor(RGB backgroundColor);
 
-	/**
-	 * Return the default font object
-	 * 
-	 * @return the default font object
-	 */
-	public abstract IFont getDefaultFont();
+    /**
+     * Draw the drawable colormap to the screen
+     * 
+     * @param colorMap
+     *            the colorMap to draw
+     */
+    public abstract void drawColorRamp(DrawableColorMap colorMap)
+            throws VizException;
 
-	/**
-	 * DEPRECATED: Should not be used for anything
-	 * 
-	 * @return
-	 */
-	@Deprecated
-	public String getViewType();
+    /**
+     * Return the default font object
+     * 
+     * @return the default font object
+     */
+    public abstract IFont getDefaultFont();
 
-	/**
-	 * Draw a point
-	 * 
-	 * @param x
-	 * @param y
-	 * @param z
-	 * @param color
-	 * @param pointStyle
-	 * @throws VizException
-	 */
-	public void drawPoint(double x, double y, double z, RGB color,
-			PointStyle pointStyle) throws VizException;
+    /**
+     * DEPRECATED: Should not be used for anything
+     * 
+     * @return
+     */
+    @Deprecated
+    public String getViewType();
 
-	/**
-	 * Draw multiple points to the screen, an implementor of this interface may
-	 * choose to optimize drawing of multiple points using this method to be
-	 * faster calling drawPoint multiple times
-	 * 
-	 * @param locations
-	 *            each element in location should be either a double[2] {x,y} or
-	 *            a double[3] {x,y,z}
-	 * @param color
-	 * @param pointStyle
-	 * @param magnification
-	 * @throws VizException
-	 */
-	public void drawPoints(Collection<double[]> locations, RGB color,
-			PointStyle pointStyle, float magnification) throws VizException;
+    /**
+     * Draw a point
+     * 
+     * @param x
+     * @param y
+     * @param z
+     * @param color
+     * @param pointStyle
+     * @throws VizException
+     */
+    public void drawPoint(double x, double y, double z, RGB color,
+            PointStyle pointStyle) throws VizException;
 
-	/**
-	 * Draw a point
-	 * 
-	 * @param x
-	 * @param y
-	 * @param z
-	 * @param color
-	 * @param pointStyle
-	 * @param magnification
-	 * @throws VizException
-	 */
-	public void drawPoint(double x, double y, double z, RGB color,
-			PointStyle pointStyle, float magnification) throws VizException;
+    /**
+     * Draw multiple points to the screen, an implementor of this interface may
+     * choose to optimize drawing of multiple points using this method to be
+     * faster calling drawPoint multiple times
+     * 
+     * @param locations
+     *            each element in location should be either a double[2] {x,y} or
+     *            a double[3] {x,y,z}
+     * @param color
+     * @param pointStyle
+     * @param magnification
+     * @throws VizException
+     */
+    public void drawPoints(Collection<double[]> locations, RGB color,
+            PointStyle pointStyle, float magnification) throws VizException;
 
-	/**
-	 * Gets the targets current view
-	 * 
-	 * @return
-	 */
-	public IView getView();
+    /**
+     * Draw a point
+     * 
+     * @param x
+     * @param y
+     * @param z
+     * @param color
+     * @param pointStyle
+     * @param magnification
+     * @throws VizException
+     */
+    public void drawPoint(double x, double y, double z, RGB color,
+            PointStyle pointStyle, float magnification) throws VizException;
 
-	/**
-	 * Use drawStrings(DrawableString parameters)
-	 */
-	@Deprecated
-	public abstract void drawString(IFont font, String text, double x,
-			double y, double z, TextStyle textStyle, RGB color,
-			HorizontalAlignment horizontalAlignment,
-			VerticalAlignment verticalAlignment, Double rotation)
-			throws VizException;
+    /**
+     * Gets the targets current view
+     * 
+     * @return
+     */
+    public IView getView();
 
-	/**
-	 * Use drawStrings(DrawableString parameters)
-	 */
-	@Deprecated
-	public abstract void drawString(IFont font, String text, double x,
-			double y, double z, TextStyle textStyle, RGB color,
-			HorizontalAlignment horizontalAlignment, Double rotation)
-			throws VizException;
+    /**
+     * Use drawStrings(DrawableString parameters)
+     */
+    @Deprecated
+    public abstract void drawString(IFont font, String text, double x,
+            double y, double z, TextStyle textStyle, RGB color,
+            HorizontalAlignment horizontalAlignment,
+            VerticalAlignment verticalAlignment, Double rotation)
+            throws VizException;
 
-	/**
-	 * Use drawStrings(DrawableString parameters)
-	 */
-	@Deprecated
-	public abstract void drawStrings(IFont font, String[] text, double x,
-			double y, double z, TextStyle textStyle, RGB[] colors,
-			HorizontalAlignment horizontalAlignment,
-			VerticalAlignment verticalAlignment) throws VizException;
+    /**
+     * Use drawStrings(DrawableString parameters)
+     */
+    @Deprecated
+    public abstract void drawString(IFont font, String text, double x,
+            double y, double z, TextStyle textStyle, RGB color,
+            HorizontalAlignment horizontalAlignment, Double rotation)
+            throws VizException;
 
-	/**
-	 * Use getStringsBounds(DrawableStrings...) functions
-	 * 
-	 * Determines the bounds of a string in pixels
-	 * 
-	 * @param font
-	 *            the font to use (optional: can be null, will use default Font)
-	 * @param text
-	 *            the text to measure
-	 * @return the bounds of the text string in pixels
-	 */
-	@Deprecated
-	public abstract Rectangle2D getStringBounds(IFont font, String text);
+    /**
+     * Use drawStrings(DrawableString parameters)
+     */
+    @Deprecated
+    public abstract void drawStrings(IFont font, String[] text, double x,
+            double y, double z, TextStyle textStyle, RGB[] colors,
+            HorizontalAlignment horizontalAlignment,
+            VerticalAlignment verticalAlignment) throws VizException;
 
-	/**
-	 * Use getStringsBounds(DrawableStrings...) functions
-	 * 
-	 * Determines the bounds of a string array in pixels
-	 * 
-	 * @param font
-	 *            the font to use (optional: can be null, will use default Font)
-	 * @param text
-	 *            the text array to measure
-	 * @return the bounds of the text strings in pixels
-	 */
-	@Deprecated
-	public abstract Rectangle2D getStringBounds(IFont font, String[] text,
-			TextStyle style);
+    /**
+     * Use getStringsBounds(DrawableStrings...) functions
+     * 
+     * Determines the bounds of a string in pixels
+     * 
+     * @param font
+     *            the font to use (optional: can be null, will use default Font)
+     * @param text
+     *            the text to measure
+     * @return the bounds of the text string in pixels
+     */
+    @Deprecated
+    public abstract Rectangle2D getStringBounds(IFont font, String text);
 
-	/**
-	 * DEPRECATED: call drawCircle(DrawableCircle...)
-	 * 
-	 * @param x1
-	 *            origin X
-	 * @param y1
-	 *            origin Y
-	 * @param z1
-	 *            origin z
-	 * @param radius
-	 *            radius of circle (in miles)
-	 * @param color
-	 *            color of line
-	 * @param width
-	 *            width of line
-	 * @throws VizException
-	 */
-	@Deprecated
-	public abstract void drawCircle(double x1, double y1, double z1,
-			double radius, RGB color, float width) throws VizException;
+    /**
+     * Use getStringsBounds(DrawableStrings...) functions
+     * 
+     * Determines the bounds of a string array in pixels
+     * 
+     * @param font
+     *            the font to use (optional: can be null, will use default Font)
+     * @param text
+     *            the text array to measure
+     * @return the bounds of the text strings in pixels
+     */
+    @Deprecated
+    public abstract Rectangle2D getStringBounds(IFont font, String[] text,
+            TextStyle style);
 
-	/**
-	 * DEPRECATED: Use drawLines(DrawableLine...)
-	 * 
-	 * Draw a line (This is not a high performance operation. Use drawWireframe
-	 * to draw sets of lines.)
-	 * 
-	 * @param x1
-	 *            first x coordinate
-	 * @param y1
-	 *            first y coordinate
-	 * @param z1
-	 *            first z coordinate
-	 * @param x2
-	 *            second x coordinate
-	 * @param y2
-	 *            second y coordinate
-	 * @param z2
-	 *            second z coordinate
-	 * @param color
-	 *            color of the line
-	 * @param width
-	 *            width of the line
-	 * @param lineStyle
-	 *            style of the line
-	 * @throws VizException
-	 */
-	@Deprecated
-	public abstract void drawLine(double x1, double y1, double z1, double x2,
-			double y2, double z2, RGB color, float width, LineStyle lineStyle)
-			throws VizException;
+    /**
+     * DEPRECATED: call drawCircle(DrawableCircle...)
+     * 
+     * @param x1
+     *            origin X
+     * @param y1
+     *            origin Y
+     * @param z1
+     *            origin z
+     * @param radius
+     *            radius of circle (in miles)
+     * @param color
+     *            color of line
+     * @param width
+     *            width of line
+     * @throws VizException
+     */
+    @Deprecated
+    public abstract void drawCircle(double x1, double y1, double z1,
+            double radius, RGB color, float width) throws VizException;
 
-	/**
-	 * DEPRECATED: Use drawLines(DrawableLine...)
-	 * 
-	 * Draw a line (This is not a high performance operation. Use drawWireframe
-	 * to draw sets of lines.)
-	 * 
-	 * @param x1
-	 *            first x coordinate
-	 * @param y1
-	 *            first y coordinate
-	 * @param z1
-	 *            first z coordinate
-	 * @param x2
-	 *            second x coordinate
-	 * @param y2
-	 *            second y coordinate
-	 * @param z2
-	 *            second z coordinate
-	 * @param color
-	 *            color of the line
-	 * @param width
-	 *            width of the line
-	 * @throws VizException
-	 */
-	@Deprecated
-	public abstract void drawLine(double x1, double y1, double z1, double x2,
-			double y2, double z2, RGB color, float width) throws VizException;
+    /**
+     * DEPRECATED: Use drawLines(DrawableLine...)
+     * 
+     * Draw a line (This is not a high performance operation. Use drawWireframe
+     * to draw sets of lines.)
+     * 
+     * @param x1
+     *            first x coordinate
+     * @param y1
+     *            first y coordinate
+     * @param z1
+     *            first z coordinate
+     * @param x2
+     *            second x coordinate
+     * @param y2
+     *            second y coordinate
+     * @param z2
+     *            second z coordinate
+     * @param color
+     *            color of the line
+     * @param width
+     *            width of the line
+     * @param lineStyle
+     *            style of the line
+     * @throws VizException
+     */
+    @Deprecated
+    public abstract void drawLine(double x1, double y1, double z1, double x2,
+            double y2, double z2, RGB color, float width, LineStyle lineStyle)
+            throws VizException;
 
-	/**
-	 * Can be used to request any extension for this target. Will throw
-	 * VizException if no extension available
-	 * 
-	 * @param <T>
-	 * @param extensionClass
-	 * @return
-	 */
-	public abstract <T extends IGraphicsExtensionInterface> T getExtension(
-			Class<T> extensionClass) throws VizException;
+    /**
+     * DEPRECATED: Use drawLines(DrawableLine...)
+     * 
+     * Draw a line (This is not a high performance operation. Use drawWireframe
+     * to draw sets of lines.)
+     * 
+     * @param x1
+     *            first x coordinate
+     * @param y1
+     *            first y coordinate
+     * @param z1
+     *            first z coordinate
+     * @param x2
+     *            second x coordinate
+     * @param y2
+     *            second y coordinate
+     * @param z2
+     *            second z coordinate
+     * @param color
+     *            color of the line
+     * @param width
+     *            width of the line
+     * @throws VizException
+     */
+    @Deprecated
+    public abstract void drawLine(double x1, double y1, double z1, double x2,
+            double y2, double z2, RGB color, float width) throws VizException;
+
+    /**
+     * Can be used to request any extension for this target. Will throw
+     * VizException if no extension available
+     * 
+     * @param <T>
+     * @param extensionClass
+     * @return
+     */
+    public abstract <T extends IGraphicsExtensionInterface> T getExtension(
+            Class<T> extensionClass) throws VizException;
 
 }

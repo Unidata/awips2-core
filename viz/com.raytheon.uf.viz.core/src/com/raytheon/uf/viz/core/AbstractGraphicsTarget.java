@@ -71,8 +71,8 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Jul 30, 2014  3465     mapeters    Updated deprecated drawString() and drawLine() calls.
  * Aug 07, 2014  3492     mapeters    Updated deprecated createWireframeShape() calls and removed
  *                                    setUseBuiltinColorbar() and drawFilledCircle() methods.
- * Aug 14, 2014  3523     mapeters    Updated deprecated {@link DrawableString#textStyle} 
- *                                    assignments.
+ * Aug 14, 2014  3523     mapeters    Updated deprecated DrawableString.textStyle assignments.
+ * Jan 26, 2015  3974     njensen     Deprecated createShadedShape(boolean, Object, boolean)
  * 
  * </pre>
  * 
@@ -296,10 +296,18 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     }
 
     @Override
+    @Deprecated
     public IShadedShape createShadedShape(boolean mutable,
             IDescriptor descriptor, boolean tesselate) {
         return createShadedShape(mutable, descriptor.getGridGeometry(),
                 tesselate);
+    }
+
+    @Override
+    @Deprecated
+    public IShadedShape createShadedShape(boolean mutable,
+            GeneralGridGeometry targetGeometry, boolean tesselate) {
+        return createShadedShape(mutable, targetGeometry);
     }
 
     @Override

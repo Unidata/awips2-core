@@ -24,44 +24,53 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
-import java.util.Set;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.purge.PurgeLogger;
 
 /**
- * 
  * PurgeLogs compresses or removes log files ( and archives ) from logDirectory
- * based on the millisecond timestamp in the filename
+ * based on the YYYYMMDD timestamp in the filename.
  * 
  * <pre>
- * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 4, 2011            ekladstrup     Initial creation
- * Feb 14, 2013 1638      mschenke      Moved class to purgesrv project from edex.logs
- * 
+ * Date         Ticket   Engineer    Description
+ * ------------ -------- ----------- --------------------------
+ * May 4, 2011           ekladstrup  Initial creation.
+ * Feb 14, 2013 1638     mschenke    Moved class to purgesrv project from edex.logs.
+ * Feb 26, 2015 4165     rjpeter     Make purge configurable.
  * </pre>
  * 
  * @author ekladstrup
  * @version 1.0
  */
 public class PurgeLogs {
-    private static final Pattern logTimePattern = Pattern
-            .compile("^(.*)(\\d{4}\\d{2}\\d{2})(.*)\\.log$");
+    private static final int DEFAULT_UNCOMPRESSED_DAYS = 6;
 
-    private static final Pattern zipTimePattern = Pattern
-            .compile("^(\\d{4}\\d{2}\\d{2})\\.zip$");
+    private static final int DEFAULT_COMPRESSED_DAYS = 14;
+
+    private enum FILE_OPERATION {
+        COMPRESS, DELETE
+    }
+
+    private static final Pattern TIME_PATTERN = Pattern
+            .compile("^.*(\\d{4}\\d{2}\\d{2})\\.(?:log|zip)(?:\\.\\d+)?(?:\\.lck)?$");
 
     private static final SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMdd");
 
@@ -69,9 +78,9 @@ public class PurgeLogs {
 
     private String logDirectory;
 
-    public PurgeLogs() {
+    private int compressedDays = DEFAULT_COMPRESSED_DAYS;
 
-    }
+    private int uncompressedDays = DEFAULT_UNCOMPRESSED_DAYS;
 
     public synchronized void purge() {
         // System.out.println("start purge logs");
@@ -81,188 +90,179 @@ public class PurgeLogs {
         if (logDirectory != null) {
             File logDir = new File(logDirectory);
             if (logDir.exists()) {
-                Matcher m = null;
                 // from edex log directory get age of logs and archives per day
-                HashMap<Date, ArrayList<String>> logsByDay = new HashMap<Date, ArrayList<String>>();
+                Map<Date, List<String>> filesByDay = new HashMap<>();
                 String[] fileNames = logDir.list();
                 for (String fileName : fileNames) {
-                    m = null;
                     // check that it is a log file
-                    int group = 0;
-                    if (fileName.endsWith(".log")) {
-                        // get timestamp from the log
-                        m = logTimePattern.matcher(fileName);
-                        group = 2;
-                    } else if (fileName.endsWith(".zip")) {
-                        // check date on the zip
-                        m = zipTimePattern.matcher(fileName);
-                        group = 1;
-                    } else {
+                    Matcher m = TIME_PATTERN.matcher(fileName);
+                    if (m.matches() == false) {
                         skipped++;
                         PurgeLogger.logInfo(
                                 "Skipped unknown file: " + fileName, plugin);
                         continue;
                     }
 
-                    if (m != null && m.find()) {
-                        // found match
-                        try {
-                            Date day = sdf.parse(m.group(group));
-                            if (logsByDay.containsKey(day)) {
-                                logsByDay.get(day).add(fileName);
-                            } else {
-                                ArrayList<String> files = new ArrayList<String>();
-                                files.add(fileName);
-                                logsByDay.put(day, files);
-                            }
-                        } catch (ParseException e) {
-                            skipped++;
-                            // improper date format, just skip this file.
-                            PurgeLogger.logError(
-                                    "Invalid date format encountered in filename: "
-                                            + fileName, plugin);
+                    // found match
+                    try {
+                        Date day = sdf.parse(m.group(1));
+                        List<String> files = filesByDay.get(day);
+
+                        if (files == null) {
+                            files = new ArrayList<>(50);
+                            filesByDay.put(day, files);
                         }
-                    } else {
+
+                        files.add(fileName);
+                    } catch (ParseException e) {
                         skipped++;
-                        PurgeLogger.logInfo(
-                                "Skipped file with invalid fileName: "
+                        // improper date format, just skip this file.
+                        PurgeLogger.logError(
+                                "Invalid date format encountered in filename: "
                                         + fileName, plugin);
                     }
                 }
 
-                // any zip files over 30 days delete
-                removeMonthOldFiles(logsByDay);
+                // delete any files over COMPRESSED_DAYS
+                int count = process(filesByDay, compressedDays,
+                        FILE_OPERATION.DELETE);
+                PurgeLogger.logInfo("Removed " + count + " old files", plugin);
 
-                // remove and .zip files before compressing logs
-                removeZipFilesFromList(logsByDay);
-
-                // any logs over 7 days remaining need to be zipped up
-                compressWeekOldLogs(logsByDay);
-
+                // compress and remove any files over UNCOMPRESSED_DAYS
+                count = process(filesByDay, uncompressedDays,
+                        FILE_OPERATION.COMPRESS);
+                PurgeLogger.logInfo("Archived " + count + " files", plugin);
             }
         }
+
         PurgeLogger.logInfo("Skipped processing " + skipped + " files", plugin);
         PurgeLogger.logInfo("---------END LOG PURGE-----------", plugin);
-        // System.out.println("purge logs finished");
     }
 
     /**
-     * remove zip files from the list of files
+     * Processes the filesByDay before the cut off by performing the given
+     * operation. Entries that are processed are removed from the filesByDay
+     * map.
      * 
-     * @param logsByDay
+     * @param filesByDay
+     * @param dayCutOff
+     * @param op
+     * @return
      */
-    private void removeZipFilesFromList(
-            HashMap<Date, ArrayList<String>> logsByDay) {
-        Set<Date> keySet = logsByDay.keySet();
-        for (Date key : keySet) {
-            ArrayList<String> files = logsByDay.get(key);
-            ArrayList<String> filesToRemove = new ArrayList<String>();
+    private int process(Map<Date, List<String>> filesByDay, int dayCutOff,
+            FILE_OPERATION op) {
+        // generate cut off time
+        Calendar cutoffTime = TimeUtil.newGmtCalendar();
+        TimeUtil.minCalendarFields(cutoffTime, Calendar.HOUR_OF_DAY,
+                Calendar.MINUTE, Calendar.SECOND, Calendar.MILLISECOND);
+        cutoffTime.add(Calendar.DAY_OF_MONTH, -dayCutOff);
+
+        int count = 0;
+        Iterator<Entry<Date, List<String>>> iter = filesByDay.entrySet()
+                .iterator();
+        while (iter.hasNext()) {
+            Entry<Date, List<String>> entry = iter.next();
+            Date key = entry.getKey();
+            if (key.getTime() < cutoffTime.getTimeInMillis()) {
+                List<String> files = entry.getValue();
+                iter.remove();
+
+                if (files == null || files.isEmpty()) {
+                    // safety check
+                    continue;
+                }
+
+                switch (op) {
+                case COMPRESS:
+                    // add all files in the list into YYYYMMDD.zip
+                    String name = sdf.format(key) + ".zip";
+                    count += compressFiles(name, files);
+                    break;
+                case DELETE:
+                    count += removeFiles(files);
+                    break;
+                }
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Deletes files.
+     * 
+     * @param files
+     * @return
+     */
+    private int removeFiles(List<String> files) {
+        int count = 0;
+
+        for (String file : files) {
+            // delete the file
+            String fullPath = logDirectory + "/" + file;
+            File tmp = new File(fullPath);
+            if (tmp.exists()) {
+                count++;
+                tmp.delete();
+            }
+        }
+
+        return count;
+    }
+
+    /**
+     * Add files to archive and deletes original file.
+     * 
+     * @param zipName
+     * @param files
+     * @return
+     */
+    private int compressFiles(String zipName, List<String> files) {
+        int count = 0;
+
+        File zipFile = new File(logDirectory, zipName);
+        if (files.contains(zipName)) {
+            // zip file already exists, don't do anything
+            return 0;
+        }
+
+        try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(
+                zipFile))) {
             for (String file : files) {
-                if (file.endsWith(".zip")) {
-                    filesToRemove.add(file);
-                }
-            }
-            for (String file : filesToRemove) {
-                files.remove(file);
-            }
-        }
-    }
+                File tmpFile = new File(logDirectory, file);
+                if (tmpFile.exists()) {
+                    count++;
+                    try (InputStream in = new FileInputStream(tmpFile)) {
+                        zos.putNextEntry(new ZipEntry(file));
 
-    /**
-     * purges month old log and zip files
-     * 
-     * @param logsByDay
-     */
-    private void removeMonthOldFiles(HashMap<Date, ArrayList<String>> logsByDay) {
-        long thirtyDays = 30L * 24L * 60L * 60L * 1000L;
-        Date now = new Date();
-        int count = 0;
-        Set<Date> keys = logsByDay.keySet();
-        for (Date key : keys) {
-            if (now.getTime() - key.getTime() >= thirtyDays) {
-                ArrayList<String> filesToRemove = new ArrayList<String>();
-                for (String file : logsByDay.get(key)) {
-                    filesToRemove.add(file);
-                    // delete the file
-                    // System.out.println("deleting month old file");
-                    String fullPath = logDirectory + "/" + file;
-                    File tmp = new File(fullPath);
-                    if (tmp.exists()) {
-                        count++;
-                        tmp.delete();
-                    }
-                }
-                ArrayList<String> all = logsByDay.get(key);
-                for (String file : filesToRemove) {
-                    all.remove(file);
-                }
-            }
-        }
-        PurgeLogger.logInfo("Removed " + count + " old files", plugin);
-    }
-
-    /**
-     * compresses ( then removes the loose files ) logs more than 7 days old
-     * 
-     * @param logsByDay
-     */
-    private void compressWeekOldLogs(HashMap<Date, ArrayList<String>> logsByDay) {
-        // any log files over 7 days old tarball per day and delete files
-        Date now = new Date();
-        long sevenDays = 7L * 24L * 60L * 60L * 1000L;
-        int count = 0;
-        // go through all keys and all which are more than 7 days old
-        // tarball up
-        Set<Date> keys = logsByDay.keySet();
-        for (Date key : keys) {
-            if (now.getTime() - key.getTime() >= sevenDays
-                    && logsByDay.get(key) != null
-                    && logsByDay.get(key).size() > 0) {
-                // add all files in the arraylist into YYYYMMDD.zip
-                String name = sdf.format(key) + ".zip";
-                try {
-                    ZipOutputStream zos = new ZipOutputStream(
-                            new FileOutputStream(logDirectory + "/" + name));
-                    for (String file : logsByDay.get(key)) {
-                        String fullPath = logDirectory + "/" + file;
-                        File tmpFile = new File(fullPath);
-                        if (tmpFile.exists()) {
-                            count++;
-                            FileInputStream in = new FileInputStream(fullPath);
-
-                            zos.putNextEntry(new ZipEntry(file));
-
-                            int len;
-                            byte[] buffer = new byte[4096];
-                            while ((len = in.read(buffer)) > 0) {
-                                zos.write(buffer, 0, len);
-                            }
-
-                            zos.closeEntry();
-                            // System.out.println("deleting week old file");
-                            tmpFile.delete();
-                            in.close();
+                        int len;
+                        byte[] buffer = new byte[4096];
+                        while ((len = in.read(buffer)) > 0) {
+                            zos.write(buffer, 0, len);
                         }
-                    }
-                    zos.close();
-                } catch (FileNotFoundException e) {
-                    // we check if the file exists before opening, this should
-                    // never happen
-                    e.printStackTrace();
-                    PurgeLogger.logError("Unexpected exception caught", plugin,
-                            e);
 
-                } catch (IOException e) {
-                    // This should not happen either, could be caused by
-                    // attempting to write in a folder where the user does not
-                    // have proper permissions
-                    e.printStackTrace();
-                    PurgeLogger.logError("Unexpected excetion caught", plugin,
-                            e);
+                        tmpFile.delete();
+                    } finally {
+                        zos.closeEntry();
+                    }
                 }
             }
+        } catch (FileNotFoundException e) {
+            /*
+             * we check if the file exists before opening, this should never
+             * happen
+             */
+            PurgeLogger.logError("Unexpected exception caught", plugin, e);
+
+        } catch (IOException e) {
+            /*
+             * This should not happen either, could be caused by attempting to
+             * write in a folder where the user does not have proper permissions
+             */
+            PurgeLogger.logError("Unexpected excetion caught", plugin, e);
         }
-        PurgeLogger.logInfo("Archived " + count + " files", plugin);
+
+        return count;
     }
 
     /**
@@ -281,5 +281,63 @@ public class PurgeLogs {
      */
     public String getLogDirectory() {
         return logDirectory;
+    }
+
+    /**
+     * @return the compressedDays
+     */
+    public int getCompressedDays() {
+        return compressedDays;
+    }
+
+    /**
+     * @param compressedDays
+     *            the compressedDays to set
+     */
+    public void setCompressedDays(String compressedDays) {
+        try {
+            this.compressedDays = Integer.parseInt(compressedDays);
+        } catch (NumberFormatException e) {
+            PurgeLogger.logError(
+                    "compressedDays not a valid integer.  Setting to default of "
+                            + DEFAULT_COMPRESSED_DAYS, plugin, e);
+            this.compressedDays = DEFAULT_COMPRESSED_DAYS;
+        }
+
+        if (this.compressedDays < 0) {
+            this.compressedDays = 0;
+            PurgeLogger.logError(
+                    "compressedDays cannot be negative, setting to 0", plugin);
+        }
+    }
+
+    /**
+     * @return the uncompressedDays
+     */
+    public int getUncompressedDays() {
+        return uncompressedDays;
+    }
+
+    /**
+     * @param uncompressedDays
+     *            the uncompressedDays to set
+     */
+    public void setUncompressedDays(String uncompressedDays) {
+        try {
+            this.uncompressedDays = Integer.parseInt(uncompressedDays);
+        } catch (NumberFormatException e) {
+            PurgeLogger.logError(
+                    "uncompressedDays not a valid integer.  Setting to default of "
+                            + DEFAULT_UNCOMPRESSED_DAYS, plugin, e);
+            this.uncompressedDays = DEFAULT_UNCOMPRESSED_DAYS;
+        }
+
+        if (this.uncompressedDays < 0) {
+            this.uncompressedDays = 0;
+            PurgeLogger
+                    .logError(
+                            "uncompressedDays cannot be negative, setting to 0",
+                            plugin);
+        }
     }
 }

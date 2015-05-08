@@ -27,6 +27,9 @@ import javax.media.opengl.GL;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
 
@@ -44,6 +47,8 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * Jul 19, 2012            bsteffen     Initial creation
  * Aug 14, 2014 3512       bclement     added continuous low memory warning
  * Aug 18, 2014 3512       bclement     added no-shell version of printStats()
+ * Jan 26, 2015 3970       bsteffen     Do not print non zero nvidia eviction on the first call.
+ * Mar 03, 2015 4176       bsteffen     Handle exceptional cases without throwing exceptions.
  * 
  * </pre>
  * 
@@ -51,6 +56,9 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * @version 1.0
  */
 public class GLStats {
+
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(GLStats.class);
 
     // how many seconds to wait before checking for high memory usage.
     private static final int CHECK_FREQ_SECONDS = 15;
@@ -115,48 +123,58 @@ public class GLStats {
      *            memory usage.
      */
     public static void printStats(GL gl, Shell sh) {
-        // test both check freq and print freq, the check freq should be fairly
-        // low so as soon as low memory conditions are reached we will
-        // report it so if it is a precursor to a crash it will be in the logs,
-        // the print time will be significantly higher to avoid
-        // spamming the logs if the user is operating normally with high memory
-        // usage.
+        /*
+         * test both check freq and print freq, the check freq should be fairly
+         * low so as soon as low memory conditions are reached we will report it
+         * so if it is a precursor to a crash it will be in the logs, the print
+         * time will be significantly higher to avoid spamming the logs if the
+         * user is operating normally with high memory usage.
+         */
         long curTime = System.currentTimeMillis();
         if (curTime - lastCheckTime < CHECK_FREQ_SECONDS * 1000) {
             // don't check if it hasn't been very long
             return;
         }
-        lastCheckTime = curTime;
 
-        boolean lowMem = false;
-        StringBuilder output = new StringBuilder(1024);
-        output.append("-High Graphics Memory usage has been detected.\n");
-        output.append("-Here are some statistics that might help with that.\n");
-        lowMem |= getSystemStats(output);
-        boolean thisJvmAtFault = getImageCacheStats(output);
-        lowMem |= thisJvmAtFault;
-        lowMem |= getNvidiaStats(gl, output);
-        lowMem |= getAtiStats(gl, output);
-
-        if (lowMem) {
-            if (curTime - lastPrintTime > PRINT_FREQ_SECONDS * 1000) {
-                lastPrintTime = curTime;
-                System.out.println(output.toString());
-                System.out.println();
+        try {
+            boolean lowMem = false;
+            StringBuilder output = new StringBuilder(1024);
+            output.append("-High Graphics Memory usage has been detected.\n");
+            output.append("-Here are some statistics that might help with that.\n");
+            lowMem |= getSystemStats(output);
+            boolean thisJvmAtFault = getImageCacheStats(output);
+            lowMem |= thisJvmAtFault;
+            lowMem |= getNvidiaStats(gl, output);
+            lowMem |= getAtiStats(gl, output);
+            lastCheckTime = curTime;
+            if (lowMem) {
+                if (curTime - lastPrintTime > PRINT_FREQ_SECONDS * 1000) {
+                    lastPrintTime = curTime;
+                    System.out.println(output.toString());
+                    System.out.println();
+                }
+                if (sh != null && thisJvmAtFault
+                        && curTime - lastNominalTime > CONTINUOUS_HIGH_MILLIS) {
+                    /* only redisplay warning after it has been nominal again */
+                    lastNominalTime = Long.MAX_VALUE;
+                    MessageDialog
+                            .openWarning(
+                                    sh,
+                                    "High graphics memory usage",
+                                    "Continuous high graphics memory usage detected. "
+                                            + "Consider closing some tabs to avoid system instability.");
+                }
+            } else {
+                lastNominalTime = curTime;
             }
-            if (sh != null && thisJvmAtFault
-                    && curTime - lastNominalTime > CONTINUOUS_HIGH_MILLIS) {
-                /* only redisplay warning after it has been nominal again */
-                lastNominalTime = Long.MAX_VALUE;
-                MessageDialog
-                        .openWarning(
-                                sh,
-                                "High graphics memory usage",
-                                "Continuous high graphics memory usage detected. "
-                                        + "Consider closing some tabs to avoid system instability.");
-            }
-        } else {
-            lastNominalTime = curTime;
+        } catch (Throwable e) {
+            /*
+             * This is just a logging and informational framework and should not
+             * allow any problems propagate out of this method and cause
+             * problems to the caller.
+             */
+            statusHandler.handle(Priority.DEBUG,
+                    "An unexpected error occured in GLStats", e);
         }
     }
 
@@ -230,6 +248,19 @@ public class GLStats {
             tmp.rewind();
             int nvxEvictionMem = tmp.get();
 
+            if (nvxTotalAvailableMem <= 0) {
+                /*
+                 * It doesn't make sense to have zero or less memory. Just
+                 * assume this is a non-compliant implementation of the memory
+                 * info extension and do no further checking.
+                 */
+                statusHandler
+                        .handle(Priority.DEBUG,
+                                "GLStats has detected an invalid implementation of GL_NVX_gpu_memory_info that is reporting GPU_MEMORY_INFO_TOTAL_AVAILABLE_MEMORY_NVX as"
+                                        + nvxTotalAvailableMem);
+                return false;
+            }
+
             int nvxPercent = (nvxTotalAvailableMem - nvxCurrentAvailableMem)
                     * 100 / nvxTotalAvailableMem;
 
@@ -252,7 +283,8 @@ public class GLStats {
 
             int evictions = nvxEvictionCount - lastNvxEvictionCount;
             lastNvxEvictionCount = nvxEvictionCount;
-            return nvxPercent > MEM_PRINT_THRESHOLD_PERCENT || evictions > 0;
+            return nvxPercent > MEM_PRINT_THRESHOLD_PERCENT
+                    || (evictions > 0 && lastCheckTime != 0);
         }
         return false;
     }

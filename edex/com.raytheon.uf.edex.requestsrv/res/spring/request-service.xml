@@ -2,24 +2,28 @@
 	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
 	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-            
-	<camelContext id="request-service-camel"
-		xmlns="http://camel.apache.org/schema/spring"
-		errorHandlerRef="errorHandler">
+    
+    <camelContext id="request-service-camel"
+        xmlns="http://camel.apache.org/schema/spring"
+        errorHandlerRef="errorHandler">
+        
+        <propertyPlaceholder id="requestServiceProperties"
+                             location="classpath:edex-requestsrv.properties"/>
+        
+        <restConfiguration component="jetty" host="0.0.0.0" port="{{env:HTTP_PORT}}" >
+            <endpointProperty key="disableStreamCache" value="{{edex.requestsrv.http.disableStreamCache}}" />
+            <endpointProperty key="chunked" value="{{edex.requestsrv.http.chunked}}" />
+        </restConfiguration>
 
-		<endpoint id="webServiceEndpoint"
-			uri="jetty:http://0.0.0.0:${HTTP_PORT}${HTTP_SERVER_PATH}?${edex.requestsrv.http.properties}" />
-
-		<route id="webServiceRoute" streamCache="false">
-			<from uri="webServiceEndpoint" />
-			<setBody>
-				<simple>
-					bodyAs(javax.servlet.http.HttpServletRequest)
-				</simple>
-			</setBody>
-			<bean ref="httpServiceExecutor" method="execute(${body}, ${in.header.CamelHttpServletResponse})"/>
-		</route>
-	</camelContext>
+        <rest path="{{env:HTTP_SERVER_PATH}}">
+            <post uri="/{format}">
+                <to uri="bean:httpServiceExecutor?method=execute(${body}, ${header.format}, ${in.header.accept-encoding}, ${in.header.CamelHttpServletResponse})" />
+            </post>
+            <post uri="/">
+                <to uri="bean:httpServiceExecutor?method=execute(${body}, ${in.header.content-type}, ${in.header.accept-encoding}, ${in.header.CamelHttpServletResponse})" />
+            </post>
+        </rest>
+    </camelContext>
 
 	<bean factory-bean="handlerRegistry" factory-method="register">
 	  	<constructor-arg value="com.raytheon.uf.common.serialization.comm.RemoteServiceRequest"/>

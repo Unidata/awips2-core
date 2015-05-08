@@ -31,8 +31,13 @@ import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IView;
 
 /**
- * This interface defines the combination of a renderable object and the area
- * over which it is displayed over.
+ * Interface that defines the combination of a renderable object and the area
+ * which it is displayed over.
+ * 
+ * This interface supports operations specific to rendering while the
+ * {@link IDescriptor} that is associated with the IRenderableDisplay supports
+ * operations related to frames, AbstractVizResources on the display, and
+ * conversions between coordinate systems.
  * 
  * <pre>
  * 
@@ -41,15 +46,12 @@ import com.raytheon.uf.viz.core.IView;
  *  Date         Ticket#     Engineer    Description
  *  ------------ ----------  ----------- --------------------------
  *  Jan 30, 2007             chammack    Initial Creation.
- *  
+ *  Feb 10, 2015  3974       njensen     Improved javadoc
+ * 
  * </pre>
  * 
  * @author chammack
  * @version 1
- */
-/**
- * @author randerso
- * 
  */
 public interface IRenderableDisplay extends IRenderable {
 
@@ -88,9 +90,9 @@ public interface IRenderableDisplay extends IRenderable {
     public abstract int getWorldHeight();
 
     /**
-     * Get the X,Y,Z coordinates for the display
+     * Get the X,Y,Z dimensions for the display
      * 
-     * @return
+     * @return the dimensions of the display
      */
     public abstract int[] getDimensions();
 
@@ -148,15 +150,15 @@ public interface IRenderableDisplay extends IRenderable {
     /**
      * Get the pixelExtent for the view area
      * 
-     * @return
+     * @return the pixel extent
      */
     public abstract IExtent getExtent();
 
     /**
-     * use the renderable display dimensions
+     * Use the renderable display dimensions to calculate a zoom level
      * 
      * @param dimensions
-     * @return
+     * @return the suggested zoom level
      */
     public double recalcZoomLevel(int[] dimensions);
 
@@ -170,7 +172,7 @@ public interface IRenderableDisplay extends IRenderable {
     /**
      * Get the canvas bounds
      * 
-     * @param bounds
+     * @return the canvas bounds
      */
     public abstract Rectangle getBounds();
 
@@ -298,21 +300,21 @@ public interface IRenderableDisplay extends IRenderable {
     /**
      * Is the display being swapped
      * 
-     * @return
+     * @return if the display is in the midst of swapping
      */
     public boolean isSwapping();
 
     /**
-     * get the globals object
+     * get the globals map
      * 
-     * @return
+     * @return the map of globals
      */
     public Map<String, Object> getGlobalsMap();
 
     /**
      * Get the IDisplayPaneContainer the renderable display is loaded to
      * 
-     * @return
+     * @return the IDisplayPaneContainer
      */
     public IDisplayPaneContainer getContainer();
 
@@ -333,7 +335,7 @@ public interface IRenderableDisplay extends IRenderable {
     /**
      * Get the graphics adapter for the display
      * 
-     * @return
+     * @return the graphics adapter
      */
     public AbstractGraphicsFactoryAdapter getGraphicsAdapter();
 

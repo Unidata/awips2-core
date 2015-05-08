@@ -50,6 +50,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sep 17, 2012 #875       rferrel     Added check that file exists before 
  *                                      deleting it.
  * Jul 25, 2014 3378       bclement    path manager added to global observers
+ * Feb 18, 2015 4137       reblum      path manager removed from global observers
  * 
  * </pre>
  * 
@@ -154,7 +155,8 @@ public class LocalizationNotificationObserver {
                 // Contract between IPathManager/LocalizationFile will force
                 // this to never occur and will be developer mistake if so
                 throw new RuntimeException(
-                        "Internal Error: Attempted to register LocalizationFile which had already been registered");
+                        "Internal Error: Attempted to register LocalizationFile which had already been registered "
+                                + lf.toString());
             }
         }
     }
@@ -186,7 +188,6 @@ public class LocalizationNotificationObserver {
     private LocalizationNotificationObserver() {
         observedFiles = new ConcurrentHashMap<LocalizationTypeFileKey, Set<LocalizationFile>>();
         pm = (PathManager) PathManagerFactory.getPathManager();
-        globalObservers.add(pm);
     }
 
     public synchronized void fileUpdateMessageRecieved(FileUpdatedMessage fum) {

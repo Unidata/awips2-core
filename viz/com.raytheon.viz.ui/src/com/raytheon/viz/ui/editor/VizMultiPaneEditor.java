@@ -19,6 +19,9 @@
  **/
 package com.raytheon.viz.ui.editor;
 
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.viz.ui.panes.PaneManager;
@@ -33,6 +36,7 @@ import com.raytheon.viz.ui.panes.PaneManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 18, 2011            mschenke     Initial creation
+ * Mar 02, 2015 4204       njensen      Only add "n Panel" to title if not already there
  * 
  * </pre>
  * 
@@ -43,9 +47,12 @@ import com.raytheon.viz.ui.panes.PaneManager;
 public class VizMultiPaneEditor extends AbstractEditor implements
         IMultiPaneEditor {
 
+    private static final Pattern P = Pattern.compile("\\d* Panel");
+
     /**
      * Set the title of the tab
      */
+    @Override
     public void setTabTitle(String title) {
         editorInput.setName(title);
         updateTitle();
@@ -58,7 +65,10 @@ public class VizMultiPaneEditor extends AbstractEditor implements
         // set the name on the tab
         String name = getEditorName();
         if (getNumberofPanes() > 1) {
-            name = getNumberofPanes() + " Panel " + name;
+            Matcher m = P.matcher(name);
+            if (!m.find()) {
+                name = getNumberofPanes() + " Panel " + name;
+            }
         }
         setPartName(name);
     }

@@ -59,6 +59,7 @@ import com.raytheon.viz.core.gl.images.GLOffscreenColormappedImage;
  * Apr 08, 2014  2950     bsteffen    Always use float for maximum precision 
  *                                    offscreen so interpolation works.
  * Apr 18, 2014  2947     bsteffen    Fix mosaicing of datamapped images.
+ * Jan 26, 2015  3980     bsteffen    Fix mosaicing without luminance.
  * 
  * </pre>
  * 

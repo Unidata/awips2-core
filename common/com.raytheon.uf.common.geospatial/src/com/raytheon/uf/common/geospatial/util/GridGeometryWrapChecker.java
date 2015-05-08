@@ -40,8 +40,8 @@ import org.opengis.referencing.operation.TransformException;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 5, 2012            bsteffen     Initial creation
- * 
+ * Oct 5, 2012             bsteffen    Initial creation
+ * Mar 4, 2015  3959       rjpeter     Added NO_WRAP.
  * </pre>
  * 
  * @author bsteffen
@@ -50,7 +50,9 @@ import org.opengis.referencing.operation.TransformException;
 
 public class GridGeometryWrapChecker {
 
-    private static double TOLERANCE = 0.00001;
+    public static final int NO_WRAP = -1;
+
+    private static final double TOLERANCE = 0.00001;
 
     /**
      * 
@@ -130,15 +132,15 @@ public class GridGeometryWrapChecker {
             // changed significantly. Additionally the wrapped x value
             // should fall exactly on a grid cell.
             if (corner1.x > nx - 1) {
-                return -1;
+                return NO_WRAP;
             } else if (Math.abs(corner1.y - 0) > TOLERANCE) {
-                return -1;
+                return NO_WRAP;
             } else if (Math.abs(corner2.y - ny + 1) > TOLERANCE) {
-                return -1;
+                return NO_WRAP;
             } else if (Math.abs(corner1.x + sourceWrapX - nx) > TOLERANCE) {
-                return -1;
+                return NO_WRAP;
             } else if (Math.abs(corner2.x + sourceWrapX - nx) > TOLERANCE) {
-                return -1;
+                return NO_WRAP;
             } else {
                 return sourceWrapX;
             }
@@ -146,12 +148,12 @@ public class GridGeometryWrapChecker {
             // Every known crs which can world wrap does not throw factory
             // exceptions when getting transformation so if an exception is
             // thrown assume it is because the grid does not world wrap.
-            return -1;
+            return NO_WRAP;
         } catch (TransformException e) {
             // this exception is expected for some grids that do not world
             // wrap, often because while checking transformation is performed
             // for invalid coordinates.
-            return -1;
+            return NO_WRAP;
         }
     }
 
