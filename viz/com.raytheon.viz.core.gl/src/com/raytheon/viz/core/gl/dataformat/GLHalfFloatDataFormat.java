@@ -23,7 +23,7 @@ import java.nio.Buffer;
 import java.nio.FloatBuffer;
 import java.nio.ShortBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Half Float data format
@@ -59,12 +59,12 @@ public class GLHalfFloatDataFormat extends AbstractGLColorMapDataFormat {
 
     @Override
     public int getTextureInternalFormat() {
-        return GL.GL_LUMINANCE16F_ARB;
+        return GL2.GL_LUMINANCE16F;
     }
 
     @Override
     public int getTextureType() {
-        return GL.GL_HALF_FLOAT_ARB;
+        return GL2.GL_HALF_FLOAT;
     }
 
     /*
@@ -122,7 +122,7 @@ public class GLHalfFloatDataFormat extends AbstractGLColorMapDataFormat {
      */
     @Override
     public Float getValue(int x, int y, GLColorMapData data, Buffer dataBuffer) {
-        if (data.getTextureType() != GL.GL_HALF_FLOAT_ARB) {
+        if (data.getTextureType() != GL2.GL_HALF_FLOAT) {
             throw new IllegalArgumentException(
                     "Cannot process texture of type " + data.getTextureType());
         } else if (!(dataBuffer instanceof ShortBuffer)) {

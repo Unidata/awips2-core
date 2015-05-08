@@ -26,7 +26,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * 
@@ -95,7 +95,7 @@ public class GLDisposalManager {
      * 
      * @param gl
      */
-    public static void performDispose(GL gl) {
+    public static void performDispose(GL2 gl) {
         GLDisposer disposer = disposeQueue.poll();
         while (disposer != null) {
             disposer.dispose(gl);
@@ -110,7 +110,7 @@ public class GLDisposalManager {
     }
 
     public static abstract class GLDisposer {
-        protected abstract void dispose(GL gl);
+        protected abstract void dispose(GL2 gl);
 
         final public void dispose() {
             GLDisposalManager.dispose(this);

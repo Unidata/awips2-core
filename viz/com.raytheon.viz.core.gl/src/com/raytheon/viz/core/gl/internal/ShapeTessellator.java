@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.FloatBuffer;
 
-import javax.media.opengl.glu.GLUtessellatorCallback;
+import com.jogamp.opengl.glu.GLUtessellatorCallback;
 
 import org.eclipse.swt.graphics.RGB;
 

@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl;
 
 import com.raytheon.uf.viz.core.drawables.IFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * Interface for gl font
