@@ -44,7 +44,7 @@ import jep.NamingConventionClassEnquirer;
  * @version 1.0
  */
 
-public abstract class PythonInterpreter {
+public abstract class PythonInterpreter implements AutoCloseable {
 
     private static final String CLEANUP = "def cleanup():\n"
             + "   g = globals()\n" + "   for i in g:\n"
@@ -193,6 +193,11 @@ public abstract class PythonInterpreter {
         } catch (Throwable t) {
             t.printStackTrace();
         }
+    }
+
+    @Override
+    public void close() {
+        this.dispose();
     }
 
 }
