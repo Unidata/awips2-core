@@ -26,6 +26,22 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.style.AbstractStylePreferences;
 
+/**
+ * Style preferences POJO for arrows.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * May 11, 2015  #4384     dgilling     Add minimum magnitude field.
+ * 
+ * </pre>
+ * 
+ * @author xxxxxxxx
+ * @version 1.0
+ */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "arrowStyle")
 public class ArrowPreferences extends AbstractStylePreferences {
@@ -33,12 +49,23 @@ public class ArrowPreferences extends AbstractStylePreferences {
     @XmlElement
     private double scale = 1.0;
 
+    @XmlElement
+    private double minimumMagnitude = Double.NaN;
+
     public void setScale(double scale) {
         this.scale = scale;
     }
 
     public double getScale() {
         return scale;
+    }
+
+    public double getMinimumMagnitude() {
+        return minimumMagnitude;
+    }
+
+    public void setMinimumMagnitude(double minimumMagnitude) {
+        this.minimumMagnitude = minimumMagnitude;
     }
 
     // TODO this should contain some other preferences
@@ -53,9 +80,7 @@ public class ArrowPreferences extends AbstractStylePreferences {
     // vertical coordinate value. Presence of the item `log' in the rule
     // (delimited by commas like everything else) will cause this to vary with
     // the natural log of the vertical coordinate value.
-    // 4. This is the magnitude value, in display units, that is the smallest
-    // value for which to show an arrow. Defaults to zero.
-    // 5. This is the magnitude value, in display units, that is the largest
+    // 4. This is the magnitude value, in display units, that is the largest
     // value for which to show an arrow. Defaults to an arbitrarily large
     // number.
 }
