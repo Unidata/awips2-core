@@ -37,6 +37,7 @@ import java.util.List;
  * Jan 07, 2013  1431      mpduff      Add case sensitive and exclude flags.
  * Aug 20, 2013  1733      mpduff      Add match flag.
  * Sep 27, 2013  #2419     lvenable    Updated include description.
+ * May 04, 2015  4419      rferrel     Add {@link #sortList} flag.
  * 
  * </pre>
  * 
@@ -101,6 +102,8 @@ public class DualListConfig {
      * Exclude search flag.
      */
     private boolean excludeFlag = false;
+
+    private boolean sortList = false;
 
     private IMenuData menuData;
 
@@ -361,5 +364,23 @@ public class DualListConfig {
      */
     public void setMatchAny(boolean matchAny) {
         this.matchAny = matchAny;
+    }
+
+    /**
+     * When true the dual lists should be sorted. Default is false.
+     * 
+     * @return sortList
+     */
+    public boolean isSortList() {
+        return sortList;
+    }
+
+    /**
+     * Set the sort state for the dual lists.
+     * 
+     * @param sortList
+     */
+    public void setSortList(boolean sortList) {
+        this.sortList = sortList;
     }
 }
