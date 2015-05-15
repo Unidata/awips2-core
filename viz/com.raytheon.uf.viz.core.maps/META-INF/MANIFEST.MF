@@ -30,3 +30,4 @@ Export-Package: com.raytheon.uf.viz.core.maps,
  com.raytheon.uf.viz.core.maps.menus,
  com.raytheon.uf.viz.core.maps.rsc,
  com.raytheon.uf.viz.core.maps.scales
+Bundle-ClassPath: com.raytheon.uf.viz.core.maps.jar
