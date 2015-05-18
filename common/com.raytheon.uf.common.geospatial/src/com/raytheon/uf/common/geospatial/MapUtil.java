@@ -545,6 +545,30 @@ public class MapUtil {
         }
     }
 
+    public static  ProjectedCRS constructSouthPolarStereo(double majorAxis,
+            double minorAxis, double stdParallel, double centralMeridian) {
+        try {
+            DefaultMathTransformFactory dmtFactory = new DefaultMathTransformFactory();
+            ParameterValueGroup parameters = dmtFactory
+                    .getDefaultParameters("Stereographic_South_Pole");
+
+            parameters.parameter("semi_major").setValue(majorAxis);
+            parameters.parameter("semi_minor").setValue(minorAxis);
+            parameters.parameter("standard_parallel_1").setValue(stdParallel);
+            parameters.parameter("central_meridian").setValue(centralMeridian);
+            parameters.parameter("false_easting").setValue(0.0);
+            parameters.parameter("false_northing").setValue(0.0);
+
+            String name = "AWIPS Polar Stereographic (SP: " + stdParallel
+                    + ", CM: " + centralMeridian + ")";
+
+            return constructProjection(name, parameters);
+        } catch (Exception e) {
+        	statusHandler.handle(Priority.WARN, e.getLocalizedMessage(), e);
+            return null;
+        }
+    }
+    
     public static GeographicCRS getLatLonProjection() {
         return LATLON_PROJECTION;
     }
