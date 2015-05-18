@@ -62,6 +62,6 @@
 	</mapScale>
 	<mapScale displayName="POES-NPOESS/Supernational" fileName="Supernational.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="SOUNDER/GOES-Sounder" fileName="GOES-Sounder.xml" areaScale="true">
+	<mapScale displayName="SOUNDER/GOES-Sounder" fileName="SOUNDER.xml" areaScale="true">
 	</mapScale>
 </mapScales>
