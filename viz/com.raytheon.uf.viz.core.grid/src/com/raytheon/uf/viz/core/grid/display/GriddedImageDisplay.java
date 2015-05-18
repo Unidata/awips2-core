@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc.displays;
+package com.raytheon.uf.viz.core.grid.display;
 
 import java.nio.Buffer;
 
@@ -48,6 +48,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 27, 2008            randerso     Initial creation
  * Aug 13, 2014 #3505      mapeters     Replaced deprecated CMDataPreparerManager
  *                                      reference in initializeRaster() call.
+ * May 18, 2015  4079      bsteffen     Move to core.grid
+ * 
  * </pre>
  * 
  * @author randerso

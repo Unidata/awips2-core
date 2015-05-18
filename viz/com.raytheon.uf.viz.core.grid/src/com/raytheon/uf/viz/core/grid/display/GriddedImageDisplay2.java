@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc.displays;
+package com.raytheon.uf.viz.core.grid.display;
 
 import java.nio.Buffer;
 
@@ -46,6 +46,7 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 11, 2012            mschenke     Initial creation
+ * May 18, 2015  4079      bsteffen     Move to core.grid
  * 
  * </pre>
  * 
