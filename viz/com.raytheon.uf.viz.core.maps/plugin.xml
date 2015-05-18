@@ -127,7 +127,7 @@
    <extension
          point="org.eclipse.ui.menus">
         <menuContribution
-           locationURI="menu:file">
+           locationURI="menu:d2dFile">
 	       <command
 	            commandId="com.raytheon.viz.ui.maps.createProjection"
 	            label="New Projection"
