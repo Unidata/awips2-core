@@ -6,7 +6,7 @@ import java.util.Calendar;
 
 import javax.persistence.Column;
 
-import com.raytheon.uf.common.serialization.ISerializableObject;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
@@ -19,13 +19,15 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Nov 05, 2012 1305       bgonzale    Added LogLevel enum and transient attribute.
  * Nov 08, 2013 2506       bgonzale    Added constructor.
+ * May 15, 2015 4493       dhladky     External delivery option
  * 
  * </pre>
  * 
  * @author jsanchez
  * @version 1.0
  */
-public abstract class Event implements Serializable, ISerializableObject {
+@DynamicSerialize
+public abstract class Event implements Serializable {
 
     private static final long serialVersionUID = 1L;
 
@@ -43,6 +45,10 @@ public abstract class Event implements Serializable, ISerializableObject {
 
     @DynamicSerializeElement
     protected LogLevel logLevel;
+    
+    // Default this to false
+    @DynamicSerializeElement
+    protected boolean external = false;
 
     public Event() {
         this(LogLevel.DEBUG);
@@ -95,6 +101,14 @@ public abstract class Event implements Serializable, ISerializableObject {
      */
     public void setLogLevel(LogLevel logLevel) {
         this.logLevel = logLevel;
+    }
+
+    public boolean isExternal() {
+        return external;
+    }
+
+    public void setExternal(boolean external) {
+        this.external = external;
     }
 
 }

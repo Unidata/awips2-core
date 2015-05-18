@@ -27,10 +27,12 @@ import java.util.Set;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.common.eventbus.EventBus;
+import com.raytheon.uf.common.event.Event;
 import com.raytheon.uf.common.event.IBaseEventBusHandler;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.event.handler.PublishExternalEvent;
 
 /**
  * EDEX implementation of {@link IBaseEventBusHandler}
@@ -43,7 +45,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * May 28, 2013 1650       djohnson     Simplified and extracted from {@link EdexEventBusHandler}.
  * Jun 20, 2013 1802       djohnson     Thread local is not safe across multiple transaction levels.
- * 
+ * May 14, 2015 4493       dhladky      External event delivery option.
  * </pre>
  * 
  * @author djohnson
@@ -55,6 +57,9 @@ public abstract class BaseEdexEventBusHandler<T> implements
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BaseEdexEventBusHandler.class);
+    
+    /** publishes external events **/
+    private PublishExternalEvent externalPublisher = PublishExternalEvent.getInstance();
 
     private static final String NULL_SUBSCRIBER = "Ignoring a null subscriber.";
 
@@ -91,9 +96,9 @@ public abstract class BaseEdexEventBusHandler<T> implements
      * {@inheritDoc}
      */
     @Override
-    public void publish(T event) {
-        if (event == null) {
-            throw new IllegalArgumentException("Cannot publish a null event");
+    public void publish(T eventObject) {
+        if (eventObject == null) {
+            throw new IllegalArgumentException("Cannot publish a null eventObject");
         }
 
         if (isTransactionActive()) {
@@ -101,14 +106,28 @@ public abstract class BaseEdexEventBusHandler<T> implements
             if (TransactionSynchronizationManager.isSynchronizationActive()) {
                     TransactionSynchronizationManager
                         .registerSynchronization(new EventTransactionSynchronization(
-                                event, googleEventBuses));
+                                eventObject, googleEventBuses));
             }
         } else {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler
                         .debug("Sending event from non-transactional operation");
             }
-            publishInternal(event);
+            
+            boolean deliverLocal = true;
+            // Publish events marked "external" to JMS external event topic
+            if (eventObject instanceof Event) {
+                Event event = (Event) eventObject;
+                if (event.isExternal()) {
+                    deliverLocal = false;
+                    externalPublisher.publish(event);
+                }
+            }
+
+            // Deliver non-local (and non-events) via Guava by default.
+            if (deliverLocal) {
+                publishInternal(eventObject);
+            }
         }
     }
 
