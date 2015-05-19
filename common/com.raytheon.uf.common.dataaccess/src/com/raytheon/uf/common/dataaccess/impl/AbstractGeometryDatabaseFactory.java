@@ -66,6 +66,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
  * Mar 18, 2015  4227     mapeters    Add buildDataTimeFromQueryResults(), add checks for 
  *                                    adding geom data, correctly get BinOffsetted times.
+ * May 19, 2015  4409     mapeters    Ignore null DataTimes in executeTimeQuery().
  * 
  * </pre>
  * 
@@ -184,7 +185,10 @@ public abstract class AbstractGeometryDatabaseFactory extends
         List<Object[]> results = this.executeQuery(query, request);
         List<DataTime> dataTimes = new ArrayList<DataTime>();
         for (Object[] objects : results) {
-            dataTimes.add(buildDataTimeFromQueryResults(objects));
+            DataTime dataTime = buildDataTimeFromQueryResults(objects);
+            if (dataTime != null) {
+                dataTimes.add(dataTime);
+            }
         }
 
         return dataTimes.toArray(new DataTime[0]);
