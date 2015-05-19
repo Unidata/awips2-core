@@ -21,3 +21,4 @@ Export-Package: com.raytheon.viz.core.gl,
  com.raytheon.viz.core.gl.ext.imaging,
  com.raytheon.viz.core.gl.glsl,
  com.raytheon.viz.core.gl.images
+Bundle-ClassPath: com.raytheon.viz.core.gl.jar

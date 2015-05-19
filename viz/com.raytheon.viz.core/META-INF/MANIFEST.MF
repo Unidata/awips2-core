@@ -33,3 +33,4 @@ Bundle-Vendor: Raytheon
 Bundle-Activator: com.raytheon.viz.core.CorePlugin
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ClassPath: com.raytheon.viz.core.jar

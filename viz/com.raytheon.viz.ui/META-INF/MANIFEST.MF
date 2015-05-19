@@ -40,3 +40,4 @@ Export-Package: com.raytheon.viz.ui,
  com.raytheon.viz.ui.views,
  com.raytheon.viz.ui.widgets,
  com.raytheon.viz.ui.widgets.duallist
+Bundle-ClassPath: com.raytheon.viz.ui.jar

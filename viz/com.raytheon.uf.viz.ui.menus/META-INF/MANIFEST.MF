@@ -30,3 +30,4 @@ Export-Package: com.raytheon.uf.viz.ui.menus,
  com.raytheon.uf.viz.ui.menus.widgets,
  com.raytheon.uf.viz.ui.menus.widgets.tearoff,
  com.raytheon.uf.viz.ui.menus.xml
+Bundle-ClassPath: com.raytheon.uf.viz.ui.menus.jar
