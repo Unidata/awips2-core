@@ -24,6 +24,7 @@ import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
+import java.security.UnrecoverableKeyException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
@@ -66,6 +67,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sep 04, 2014  3570      bclement     Initial creation
  * Nov 15, 2014  3757      dhladky      Added general certificate checks.
  * Jan 22, 2015  3952      njensen      Removed gzip handling as apache http client has it built-in
+ * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as trustMaterial.
  * 
  * </pre>
  * 
@@ -86,11 +88,12 @@ public class ApacheHttpClientCreator {
      * @throws NoSuchAlgorithmException
      * @throws KeyStoreException
      * @throws KeyManagementException
+     * @throws UnrecoverableKeyException 
      * @see {@link #createSslClient(HttpClientConfig, NetworkStatistics)}
      */
     public static CloseableHttpClient createSslClient(HttpClientConfig config)
             throws NoSuchAlgorithmException, KeyStoreException,
-            KeyManagementException {
+            KeyManagementException, UnrecoverableKeyException {
         return createSslClient(config, null);
     }
 
@@ -103,31 +106,54 @@ public class ApacheHttpClientCreator {
      * @throws NoSuchAlgorithmException
      * @throws KeyStoreException
      * @throws KeyManagementException
+     * @throws UnrecoverableKeyException 
      */
     public static CloseableHttpClient createSslClient(HttpClientConfig config,
             NetworkStatistics stats) throws NoSuchAlgorithmException,
-            KeyStoreException, KeyManagementException {
+            KeyStoreException, KeyManagementException, UnrecoverableKeyException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
+        IHttpsHandler handler = config.getHttpsHandler();
 
         /**
-         * TODO Need to validate whether this method of validation works
-         * correctly. It predicates that if this returns false, Java will
-         * automatically, (According to documentation) then validate using the
-         * loaded truststore(KeyStore) this should allow for "self" signed certs
-         * used by Data Delivery and such.
+         * If this returns false, Java will automatically, (According to
+         * documentation) then validate using the default java loaded
+         * truststore/keyStore. This override method allows for "self" signed
+         * certs that are locally verified and or submitted to remote servers.
+         * This method is used by Data Delivery and such.
          */
-        if (config.getHttpsHandler().isValidateCertificates()) {
+        if (handler.isValidateCertificates()) {
 
-            final KeyStore truststore = config.getHttpsHandler()
-                    .getTruststore();
-            // Load a local TrustStrategy for first check
+            final KeyStore truststore = handler.getTruststore();
+            // Load a local TrustStrategy for submitted cert validation
             TrustStrategy trustStrategy = new LocalTrustStrategy(truststore);
             sslCtxBuilder.loadTrustMaterial(truststore, trustStrategy);
 
-            // Validate Certificates
-            statusHandler.handle(Priority.DEBUG,
-                    "Proceeding with validation of certificates.");
+            if (handler.getKeystore() != null) {
+                /*
+                 * Validate certificates and submit key(s). This is the general
+                 * situation where sometimes you act as the server and validate
+                 * clients. Other times you act as a client and submit your key(s) to
+                 * remote servers.
+                 */
+                
+                final KeyStore keystore = handler.getKeystore();
+                sslCtxBuilder.loadKeyMaterial(keystore,
+                        handler.getKeystorePassword());
+                statusHandler
+                        .handle(Priority.DEBUG,
+                                "Proceeding with validation of certificates.  Presenting key(s) for validation.");
+
+            } else {
+                /*
+                 * Validate certificates w/o submitting keys.
+                 * This is only useful where you are a "server" 
+                 * and you only validate clients.
+                 */
+                statusHandler
+                        .handle(Priority.DEBUG,
+                                "Proceeding with validation of certificates.  Not presenting key(s) for validation.");
+            }
 
         } else {
             /*
@@ -145,7 +171,7 @@ public class ApacheHttpClientCreator {
 
             // Do no validation what so ever
             statusHandler.handle(Priority.DEBUG,
-                    "Proceeding with no validation of certificates.");
+                    "Proceeding with no validation of certificates or key submission.");
         }
 
         SSLContext sslCtx = sslCtxBuilder.build();
