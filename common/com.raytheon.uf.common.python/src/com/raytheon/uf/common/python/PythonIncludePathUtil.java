@@ -93,11 +93,7 @@ public class PythonIncludePathUtil {
      * @return the base python include path combined with subdirs
      */
     public static String getCommonPythonIncludePath(String... subDirs) {
-        int ndir = 1;
-        if (subDirs != null) {
-            ndir += subDirs.length;
-        }
-        String[] dirs = new String[ndir];
+        String[] dirs = new String[subDirs.length + 1];
         dirs[0] = getCommonPythonIncludePath();
         for (int i = 0; i < subDirs.length; i++) {
             dirs[i + 1] = getPath(COMMON_STATIC_BASE, PYTHON
