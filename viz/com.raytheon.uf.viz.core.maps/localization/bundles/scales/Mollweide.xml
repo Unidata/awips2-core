@@ -20,7 +20,7 @@
     -->
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" scale="World" density="1.0" magnification="1.0" mapCenter="0.00 0.0 0.0" zoomLevel="0.4" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="GOES13/Mollweide" mapCenter="-105.87429088383496 30.87365060952971 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
@@ -119,7 +119,7 @@
   PROJECTION["Equidistant_Cylindrical"], 
   PARAMETER["semi_major", 6371229.0], 
   PARAMETER["semi_minor", 6371229.0], 
-  PARAMETER["central_meridian", -120.0], 
+  PARAMETER["central_meridian", 0.0], 
   PARAMETER["latitude_of_origin", 0.0], 
   PARAMETER["standard_parallel_1", 0.0], 
   PARAMETER["false_easting", 0.0], 
@@ -132,3 +132,4 @@
         </displays>
     </displayList>
 </bundle>
+

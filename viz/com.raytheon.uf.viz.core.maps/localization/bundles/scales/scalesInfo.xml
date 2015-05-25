@@ -64,4 +64,8 @@
 	</mapScale>
 	<mapScale displayName="SAT/GOES-Sounder" fileName="SOUNDER.xml" areaScale="true">
 	</mapScale>
+	<mapScale displayName="SAT/Mollweide" fileName="Mollweide.xml" areaScale="true">
+	</mapScale>
+	<mapScale displayName="SAT/GOES-East-West" fileName="GEWCOMP.xml" areaScale="true">
+	</mapScale>
 </mapScales>
