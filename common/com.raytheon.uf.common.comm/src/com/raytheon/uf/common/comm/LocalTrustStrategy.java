@@ -48,6 +48,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 15, 2014 3757      dhladky      Initial Implementation.
+ * May 08, 2015 4435      dhladky      Updated logging of cert validation.
  * 
  * 
  * </pre>
@@ -64,7 +65,7 @@ public class LocalTrustStrategy implements TrustStrategy {
     private KeyStore truststore = null;
     
     public LocalTrustStrategy(KeyStore truststore) {
-        this.truststore = truststore;
+         this.truststore = truststore;
     }
     
     @Override
@@ -84,9 +85,13 @@ public class LocalTrustStrategy implements TrustStrategy {
          * etc.
          */
         if (truststore == null) {
+            statusHandler
+            .handle(Priority.INFO, "Truststore is NULL! ");
             return false;
         }
-
+        
+        statusHandler.handle(Priority.INFO, "TrustStore loaded, ready to validate aliases.");
+        
         try {
             // loop over the different aliases for this authority
             Enumeration<String> aliases = truststore.aliases();
@@ -94,9 +99,15 @@ public class LocalTrustStrategy implements TrustStrategy {
             for (String caAlias = aliases.nextElement(); aliases
                     .hasMoreElements();) {
 
+                statusHandler.handle(Priority.INFO, "Verifying alias: "
+                        + caAlias);
+
                 // Certifying Authority to check with
                 X509Certificate caCert = (X509Certificate) truststore
                         .getCertificate(caAlias);
+
+                statusHandler.handle(Priority.INFO, "Retrieved CA certifcate: "
+                        + caCert.toString());
 
                 // If one works we claim victory and return true;
                 for (X509Certificate cert : chain) {
@@ -104,34 +115,26 @@ public class LocalTrustStrategy implements TrustStrategy {
                     try {
                         caCert.verify(cert.getPublicKey());
                         isTrust = true;
+                        statusHandler.handle(Priority.INFO, "Verified! "
+                                + caAlias + " Cert Good!");
                         break;
-                        
+
                     } catch (InvalidKeyException e) {
-                        statusHandler
-                                .handle(Priority.WARN, "Invalid key: cert: "
-                                        + cert.toString() + "\n CA cert: "
-                                        + caCert.toString(), e);
+                        statusHandler.handle(Priority.WARN,
+                                "Invalid key: cert: " + cert.getPublicKey()
+                                        + "\n CA cert: " + caCert.getPublicKey());
                     } catch (NoSuchAlgorithmException e) {
-                        statusHandler
-                                .handle(Priority.WARN,
-                                        "No such algorithim: cert: "
-                                                + cert.toString()
-                                                + "\n CA cert: "
-                                                + caCert.toString(), e);
+                        statusHandler.handle(Priority.WARN,
+                                "No such algorithim: cert: " + cert.getSigAlgName()
+                                        + "\n CA cert: " + caCert.getSigAlgName());
                     } catch (NoSuchProviderException e) {
-                        statusHandler
-                                .handle(Priority.WARN,
-                                        "No such Provider: cert: "
-                                                + cert.toString()
-                                                + "\n CA cert: "
-                                                + caCert.toString(), e);
+                        statusHandler.handle(Priority.WARN,
+                                "No such Provider: cert: " + cert.toString()
+                                        + "\n CA cert: " + caCert.toString());
                     } catch (SignatureException e) {
-                        statusHandler
-                                .handle(Priority.WARN,
-                                        "Signature Failure: cert: "
-                                                + cert.toString()
-                                                + "\n CA cert: "
-                                                + caCert.toString(), e);
+                        statusHandler.handle(Priority.WARN,
+                                "Signature Failure: cert: " + cert.getSignature()
+                                        + "\n CA cert: " + caCert.getSignature());
                     }
                 }
 
