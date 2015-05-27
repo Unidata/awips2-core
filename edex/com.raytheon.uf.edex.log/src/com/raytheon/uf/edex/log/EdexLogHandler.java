@@ -28,6 +28,8 @@ import com.raytheon.uf.common.status.AbstractHandlerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.status.slf4j.Slf4JBridge;
+import com.raytheon.uf.common.status.slf4j.UFMarkers;
 
 /**
  * UFStatusHandler for EDEX
@@ -39,6 +41,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Oct 28, 2009            njensen     Initial creation
  * Jun 27, 2013 2142       njensen     Use SLF4J instead of log4j
+ * May 27, 2015 4473       njensen     Refactored
  * 
  * </pre>
  * 
@@ -47,8 +50,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  */
 
 public class EdexLogHandler implements IUFStatusHandler {
-
-    private static final Marker FATAL = MarkerFactory.getMarker("FATAL");
 
     private final Logger clazzLogger;
 
@@ -95,13 +96,6 @@ public class EdexLogHandler implements IUFStatusHandler {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandler#handle(com.raytheon.uf
-     * .common.status.UFStatus)
-     */
     @Override
     public void handle(UFStatus status) {
         handle(status, this.category);
@@ -109,44 +103,8 @@ public class EdexLogHandler implements IUFStatusHandler {
 
     @Override
     public void handle(UFStatus status, String category) {
-        Priority p = status.getPriority();
-        String statusMsg = status.getMessage();
-        if (category != null) {
-            StringBuilder sb = new StringBuilder(statusMsg.length() + 64);
-            sb.append(category);
-
-            String source = getSource();
-            if (source != null) {
-                sb.append(": ");
-                sb.append(source);
-            }
-
-            sb.append(" - ");
-            sb.append(statusMsg);
-            statusMsg = sb.toString();
-        }
-
-        Throwable t = status.getException();
-
-        switch (p) {
-        case CRITICAL:
-            clazzLogger.error(FATAL, statusMsg, t);
-            break;
-        case SIGNIFICANT:
-            clazzLogger.error(statusMsg, t);
-            break;
-        case PROBLEM:
-            clazzLogger.warn(statusMsg, t);
-            break;
-        case EVENTA: // fall through
-        case EVENTB:
-            clazzLogger.info(statusMsg, t);
-            break;
-        case VERBOSE:
-            clazzLogger.debug(statusMsg, t);
-            break;
-        }
-
+        handle(status.getPriority(), category, status.getMessage(),
+                status.getException());
     }
 
     private String getSource() {
@@ -165,43 +123,7 @@ public class EdexLogHandler implements IUFStatusHandler {
 
     @Override
     public void handle(Priority p, String category, String msg) {
-        // msg has been null if someone does e.getLocalizedMessage()
-        // and it is null which causes null pointer exception
-        msg = String.valueOf(msg);
-        if (category != null) {
-            StringBuilder sb = new StringBuilder(msg.length() + 64);
-            sb.append(category);
-
-            String source = getSource();
-            if (source != null) {
-                sb.append(": ");
-                sb.append(source);
-            }
-
-            sb.append(" - ");
-            sb.append(msg);
-            msg = sb.toString();
-        }
-
-        switch (p) {
-        case CRITICAL:
-            clazzLogger.error(FATAL, msg);
-            break;
-        case SIGNIFICANT:
-            clazzLogger.error(msg);
-            break;
-        case PROBLEM:
-            clazzLogger.warn(msg);
-            break;
-        case EVENTA: // fall through
-        case EVENTB:
-            clazzLogger.info(msg);
-            break;
-        case VERBOSE:
-            clazzLogger.debug(msg);
-            break;
-        }
-
+        handle(p, category, msg, null);
     }
 
     @Override
@@ -211,43 +133,32 @@ public class EdexLogHandler implements IUFStatusHandler {
 
     @Override
     public void handle(Priority p, String category, String msg, Throwable t) {
-        // msg has been null if someone does e.getLocalizedMessage()
-        // and it is null which causes null pointer exception
+        /*
+         * msg can be null if someone does e.getLocalizedMessage() and it is
+         * null which causes null pointer exception
+         */
         msg = String.valueOf(msg);
+        // detached ensures we will get a new instance
+        Marker marker = MarkerFactory.getDetachedMarker("edex");
         if (category != null) {
             StringBuilder sb = new StringBuilder(msg.length() + 64);
             sb.append(category);
+            marker.add(UFMarkers.getCategoryMarker(category));
 
             String source = getSource();
             if (source != null) {
                 sb.append(": ");
                 sb.append(source);
+                marker.add(UFMarkers.getSourceMarker(source));
             }
 
             sb.append(" - ");
             sb.append(msg);
             msg = sb.toString();
         }
+        marker.add(UFMarkers.getUFPriorityMarker(p));
 
-        switch (p) {
-        case CRITICAL:
-            clazzLogger.error(FATAL, msg, t);
-            break;
-        case SIGNIFICANT:
-            clazzLogger.error(msg, t);
-            break;
-        case PROBLEM:
-            clazzLogger.warn(msg, t);
-            break;
-        case EVENTA: // fall through
-        case EVENTB:
-            clazzLogger.info(msg, t);
-            break;
-        case VERBOSE:
-            clazzLogger.debug(msg, t);
-            break;
-        }
-
+        Slf4JBridge.logToSLF4J(clazzLogger, p, marker, msg, t);
     }
 
     @Override

@@ -10,6 +10,12 @@
       <envLogVar>LOGFILE_CONSOLE</envLogVar>
    </appender>
    
+   <!-- TODO should somehow be contributed from alertviz plugin -->
+   <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
+      <uri>tcp://localhost:61998</uri>
+      <destName>messages</destName>
+   </appender>
+   
    <!-- these two appenders will allow System.out and System.err to print to the console when
        -noredirect flag is used at cave startup-->
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
@@ -63,6 +69,7 @@
       <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
    </appender>    
    
+   <!-- TODO should somehow be contributed from viz.gfe plugin -->
    <appender name="ProductEditorLogAppender" class="com.raytheon.uf.common.status.logback.EnvConfigurableRollingFileAppender">
       <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
       <file>cave-producteditor.log</file>
@@ -83,6 +90,7 @@
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>
       <appender-ref ref="CaveLogAppender"/>
+      <appender-ref ref="AlertvizAppender"/>
    </appender> 
    
    <appender name="AsyncPerfLogAppender" class="ch.qos.logback.classic.AsyncAppender">

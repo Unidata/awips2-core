@@ -38,7 +38,8 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.style;bundle-version="1.0.0",
  org.reflections;bundle-version="0.9.9",
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
- com.raytheon.uf.common.jms;bundle-version="1.14.0";visibility:=reexport
+ com.raytheon.uf.common.jms;bundle-version="1.14.0";visibility:=reexport,
+ org.slf4j;bundle-version="1.7.5"
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, ch.qos.logback
 Export-Package: com.raytheon.uf.viz.core,

@@ -19,9 +19,9 @@
  **/
 package com.raytheon.uf.common.status;
 
-
 /**
- * TODO Add Description
+ * A default status handler factory, typically used only at startup before more
+ * advanced status handler factories can be initialized.
  * 
  * <pre>
  * 
@@ -31,6 +31,7 @@ package com.raytheon.uf.common.status;
  * ------------ ---------- ----------- --------------------------
  * Mar 15, 2011            randerso     Initial creation
  * Oct 23, 2013 2303       bgonzale     Merged VizStatusHandler and SysErrStatusHandler into StatusHandler.
+ * May 27, 2015 4473       njensen      Fixed StatusHandler creation
  * 
  * </pre>
  * 
@@ -38,17 +39,20 @@ package com.raytheon.uf.common.status;
  * @version 1.0
  */
 
-public class DefaultStatusHandlerFactory extends
-        AbstractHandlerFactory {
-    private static final IUFStatusHandler handler = new StatusHandler(
-            DefaultStatusHandlerFactory.class.getPackage().getName(),
-            "DEFAULT", "DEFAULT");
+public class DefaultStatusHandlerFactory extends AbstractHandlerFactory {
+
+    protected final IUFStatusHandler handler;
 
     private static final String CATEGORY = "DEFAULT";
 
-
     public DefaultStatusHandlerFactory() {
-        super(CATEGORY);
+        this(CATEGORY);
+    }
+
+    public DefaultStatusHandlerFactory(String category) {
+        super(category);
+        handler = new StatusHandler(DefaultStatusHandlerFactory.class
+                .getPackage().getName(), category, category);
     }
 
     /*
@@ -94,8 +98,7 @@ public class DefaultStatusHandlerFactory extends
     @Override
     protected IUFStatusHandler createInstance(String pluginId, String category,
             String source) {
-        return new StatusHandler(category, source,
-                pluginId);
+        return new StatusHandler(pluginId, category, source);
     }
 
     @Override
@@ -106,8 +109,7 @@ public class DefaultStatusHandlerFactory extends
     @Override
     public IUFStatusHandler createInstance(AbstractHandlerFactory factory,
             String pluginId, String category) {
-        return new StatusHandler(category, CATEGORY,
-                pluginId);
+        return new StatusHandler(pluginId, category, super.getCategory(null));
     }
 
 }
