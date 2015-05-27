@@ -27,7 +27,6 @@ import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.geometry.Envelope;
-import org.opengis.geometry.MismatchedDimensionException;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
@@ -56,6 +55,8 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
  * ------------- -------- ----------- --------------------------
  * Nov 14, 2013  2528     bsteffen    Initial creation
  * Jan 29, 2015  3939     bsteffen    Add cross consistency checks.
+ * May 27, 2015  4472     bsteffen    Ignore exceptions when building target
+ *                                    coordinates.
  * 
  * </pre>
  * 
@@ -113,9 +114,7 @@ class BruteForceEnvelopeIntersection {
         double[] latLonCoords = buildLatLonCoords();
         this.latLonCoords = new PackedCoordinateSequence.Double(latLonCoords, 2);
 
-        double[] targetCoords = new double[latLonCoords.length];
-        latLonToTargetCRS.transform(latLonCoords, 0, targetCoords, 0, width
-                * height);
+        double[] targetCoords = buildTargetCoords(latLonCoords);
         this.targetCoords = new PackedCoordinateSequence.Double(targetCoords, 2);
     }
 
@@ -144,11 +143,37 @@ class BruteForceEnvelopeIntersection {
     }
 
     /**
+     * Bulk conversion method which can ignore errors.
+     */
+    private double[] buildTargetCoords(double[] latLonCoords) {
+        double[] targetCoords = new double[latLonCoords.length];
+        try {
+            latLonToTargetCRS.transform(latLonCoords, 0, targetCoords, 0, width
+                    * height);
+        } catch (TransformException e) {
+            /*
+             * Don't care about exceptions just ensure unconvertible points are
+             * converted to NaN.
+             */
+            if (e.getLastCompletedTransform() != latLonToTargetCRS) {
+                for (int i = 0; i < targetCoords.length; i += 2) {
+                    try {
+                        latLonToTargetCRS.transform(latLonCoords, i,
+                                targetCoords, i, 1);
+                    } catch (TransformException e1) {
+                        targetCoords[i] = targetCoords[i + 1] = Double.NaN;
+                    }
+                }
+            }
+        }
+        return targetCoords;
+    }
+
+    /**
      * Perform the actual intersection operation by merging all {@link Cell}s
      * into {@link SimplePolygon} and finally converting those into Polygons.
      */
-    public Geometry reproject() throws MismatchedDimensionException,
-            TransformException {
+    public Geometry reproject() throws TransformException {
         /*
          * Loop over each cell and split into two groups. First group is the
          * "simple" cases that do not world wrap and can all be merged into one
