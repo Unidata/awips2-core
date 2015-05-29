@@ -37,10 +37,11 @@ import com.sun.opengl.util.texture.TextureCoords;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 16, 2013 2333       mschenke    Initial creation
- * Nov  4, 2013 2492       mschenke    Reworked to use GLSL Data mapping
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Oct 16, 2013  2333     mschenke  Initial creation
+ * Nov  4, 2013  2492     mschenke  Reworked to use GLSL Data mapping
+ * May 29, 2015  4507     bsteffen  Implemented setClearColor().
  * 
  * </pre>
  * 
@@ -144,6 +145,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     /**
      * @return the textureid
      */
+    @Override
     public int getTextureid() {
         return data.getTexId();
     }
@@ -301,6 +303,26 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     @Override
     public TextureCoords getTextureCoords() {
         return new TextureCoords(0, 1, 1, 0);
+    }
+
+    @Override
+    protected void setClearColor(GL gl) {
+        AbstractGLColorMapDataFormat dataFormat = getDataFormat();
+        if (dataFormat.isScaled()) {
+            /*
+             * Convert the no data value to its scaled equivalent so the shader
+             * will understand it.
+             */
+            double noData = colorMapParameters.getNoDataValue();
+            noData -= dataFormat.getDataFormatMin();
+            noData /= (dataFormat.getDataFormatMax() - dataFormat
+                    .getDataFormatMin());
+            gl.glClearColor((float) noData, 0.0f,
+                    0.0f, 0.0f);
+        } else {
+            gl.glClearColor(Float.NaN, 0.0f, 0.0f, 0.0f);
+        }
+
     }
 
 }
