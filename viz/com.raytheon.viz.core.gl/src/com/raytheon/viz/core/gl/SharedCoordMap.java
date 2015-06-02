@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.GLGeometryObject2D.GLGeometryObjectData;
@@ -95,7 +95,7 @@ public class SharedCoordMap {
         private SharedCoordinates(SharedCoordinateKey key, IGLTarget glTarget)
                 throws VizException {
             GLGeometryObjectData data = new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_TEXTURE_COORD_ARRAY);
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_TEXTURE_COORD_ARRAY);
             data.manageIndicies = false;
             textureCoords = new GLGeometryObject2D(data);
             populateTextureGeom(key, textureCoords);

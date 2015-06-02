@@ -35,9 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
-import javax.media.opengl.glu.GLUquadric;
+import com.jogamp.opengl.*;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.GLUquadric;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.RGB;
@@ -94,8 +95,8 @@ import com.raytheon.viz.core.gl.glsl.GLShaderProgram;
 import com.raytheon.viz.core.gl.images.GLBufferCMTextureData;
 import com.raytheon.viz.core.gl.images.GLImage;
 import com.raytheon.viz.core.gl.objects.GLTextureObject;
-import com.sun.opengl.util.Screenshot;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.AWTGLReadBufferUtil;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * 
@@ -171,7 +172,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             .getDefault().getPreferenceStore().getInt("colorMapCacheSize");
 
     /** The gl context */
-    protected final GL gl;
+    protected final GL2 gl;
 
     /** The eclipse GL canvas, not used if drawing offscreen */
     protected final GLCanvas theCanvas;
@@ -200,8 +201,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     /** The current Zoom level */
     protected double theCurrentZoom;
 
-    /** The GLU object */
-    protected final GLU glu = new GLU();
+    /** The GLUgl2 object */
+    protected final GLUgl2 glu = new GLUgl2();
 
     protected static final Map<String, GLTextureObject> loadedColorMaps = new LinkedHashMap<String, GLTextureObject>() {
 
@@ -284,13 +285,14 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             throw new VizException("Must provide GL-enabled canvas");
         }
 
+        
         theCanvas = (GLCanvas) canvas;
         theCanvas.setCurrent();
         theContext = new GLContextBridge(theCanvas);
 
         theContext.makeContextCurrent();
 
-        gl = GLU.getCurrentGL();
+        gl = GLUgl2.getCurrentGL2();
 
         theWidth = width;
         theHeight = height;
@@ -335,7 +337,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theContext.makeContextCurrent();
 
-        gl = GLU.getCurrentGL();
+        gl = GLUgl2.getCurrentGL2();
         theWidth = width;
         theHeight = height;
 
@@ -356,7 +358,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * @see com.raytheon.viz.core.gl.IGLTarget#getGl()
      */
     @Override
-    public GL getGl() {
+    public GL2 getGl() {
         return this.gl;
     }
 
@@ -366,7 +368,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * @see com.raytheon.viz.core.gl.IGLTarget#getGlu()
      */
     @Override
-    public GLU getGlu() {
+    public GLUgl2 getGlu() {
         return this.glu;
     }
 
@@ -415,10 +417,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void clearClippingPlane() {
-        gl.glDisable(GL.GL_CLIP_PLANE0);
-        gl.glDisable(GL.GL_CLIP_PLANE1);
-        gl.glDisable(GL.GL_CLIP_PLANE2);
-        gl.glDisable(GL.GL_CLIP_PLANE3);
+        gl.glDisable(GL2.GL_CLIP_PLANE0);
+        gl.glDisable(GL2.GL_CLIP_PLANE1);
+        gl.glDisable(GL2.GL_CLIP_PLANE2);
+        gl.glDisable(GL2.GL_CLIP_PLANE3);
         this.clippingPane = null;
     }
 
@@ -513,7 +515,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 alphaMaskTexture = new GLBufferCMTextureData(new ColorMapData(
                         ByteBuffer.wrap(mask), new int[] { mask.length },
                         ColorMapDataType.BYTE), new GLByteDataFormat());
-                gl.glActiveTexture(GL.GL_TEXTURE1);
+                gl.glActiveTexture(GL2.GL_TEXTURE1);
                 if (alphaMaskTexture.loadTexture(gl)) {
                     gl.glBindTexture(alphaMaskTexture.getTextureStorageType(),
                             alphaMaskTexture.getTexId());
@@ -522,31 +524,31 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 }
             }
 
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
 
-            gl.glEnable(GL.GL_TEXTURE_1D);
+            gl.glEnable(GL2.GL_TEXTURE_1D);
 
-            gl.glActiveTexture(GL.GL_TEXTURE0);
-            i.bind(gl, GL.GL_TEXTURE_1D);
+            gl.glActiveTexture(GL2.GL_TEXTURE0);
+            i.bind(gl, GL2.GL_TEXTURE_1D);
 
             if (colorMapParams.isInterpolate()) {
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_LINEAR);
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_LINEAR);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_LINEAR);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_LINEAR);
             } else {
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_NEAREST);
-                gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_NEAREST);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_NEAREST);
+                gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_NEAREST);
             }
 
-            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_S,
-                    GL.GL_CLAMP_TO_EDGE);
-            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_T,
-                    GL.GL_CLAMP_TO_EDGE);
-            gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE,
-                    GL.GL_REPLACE);
+            gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_WRAP_S,
+                    GL2.GL_CLAMP_TO_EDGE);
+            gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_WRAP_T,
+                    GL2.GL_CLAMP_TO_EDGE);
+            gl.glTexEnvi(GL2.GL_TEXTURE_ENV, GL2.GL_TEXTURE_ENV_MODE,
+                    GL2.GL_REPLACE);
 
             GLShaderProgram program = null;
             if (capabilities.cardSupportsShaders) {
@@ -567,20 +569,20 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                             backgroundColor.blue / 255.0f);
                 }
 
-                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE,
-                        GL.GL_ADD);
+                gl.glTexEnvi(GL2.GL_TEXTURE_ENV, GL2.GL_TEXTURE_ENV_MODE,
+                        GL2.GL_ADD);
 
-                gl.glEnable(GL.GL_BLEND);
+                gl.glEnable(GL2.GL_BLEND);
 
-                gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE,
-                        GL.GL_BLEND);
-                gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+                gl.glTexEnvi(GL2.GL_TEXTURE_ENV, GL2.GL_TEXTURE_ENV_MODE,
+                        GL2.GL_BLEND);
+                gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
 
                 gl.glColor4d(0.0, 0.0, 0.0, blendAlpha);
             } else {
-                gl.glEnable(GL.GL_BLEND);
-                gl.glBlendFunc(GL.GL_CONSTANT_ALPHA,
-                        GL.GL_ONE_MINUS_CONSTANT_ALPHA);
+                gl.glEnable(GL2.GL_BLEND);
+                gl.glBlendFunc(GL2.GL_CONSTANT_ALPHA,
+                        GL2.GL_ONE_MINUS_CONSTANT_ALPHA);
                 gl.glBlendColor(1.0f, 1.0f, 1.0f, blendAlpha);
                 gl.glColor4f(1.0f, 1.0f, 1.0f, blendAlpha);
             }
@@ -591,7 +593,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 double minLog = Math.log(logFactor);
                 double maxLog = Math.log(logFactor + 1.0);
 
-                gl.glBegin(GL.GL_TRIANGLE_STRIP);
+                gl.glBegin(GL2.GL_TRIANGLE_STRIP);
 
                 gl.glTexCoord1f(0.0f);
                 gl.glVertex2d(x1, y1);
@@ -618,7 +620,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
                 gl.glEnd();
             } else {
-                gl.glBegin(GL.GL_QUADS);
+                gl.glBegin(GL2.GL_QUADS);
 
                 gl.glTexCoord1f(0.0f);
                 gl.glVertex2d(x1, y1);
@@ -638,31 +640,31 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             gl.glBlendColor(1.0f, 1.0f, 1.0f, 1.0f);
 
             if (alphaMaskTexture != null) {
-                gl.glActiveTexture(GL.GL_TEXTURE1);
+                gl.glActiveTexture(GL2.GL_TEXTURE1);
                 gl.glBindTexture(alphaMaskTexture.getTextureStorageType(), 0);
 
                 alphaMaskTexture.dispose();
             }
 
-            gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
-            gl.glDisable(GL.GL_TEXTURE_1D);
+            gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
+            gl.glDisable(GL2.GL_TEXTURE_1D);
 
             if (program != null) {
                 program.endShader();
             }
 
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
             gl.glColor4f(0.66f, 0.66f, 0.66f, blendAlpha);
 
             gl.glLineWidth(1.5f);
             // Draw the border
-            gl.glBegin(GL.GL_QUADS);
+            gl.glBegin(GL2.GL_QUADS);
             gl.glVertex2d(x1, y1);
             gl.glVertex2d(x2, y1);
             gl.glVertex2d(x2, y2);
             gl.glVertex2d(x1, y2);
             gl.glEnd();
-            gl.glDisable(GL.GL_BLEND);
+            gl.glDisable(GL2.GL_BLEND);
         } finally {
             this.popGLState();
         }
@@ -682,7 +684,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             RGB prevColor = null;
             float prevWidth = 0.0f;
             LineStyle prevStyle = null;
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
 
             for (DrawableLine line : lines) {
                 RGB color = line.basics.color;
@@ -714,9 +716,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                             (float) point[2] });
                 }
 
-                gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-                gl.glVertexPointer(3, GL.GL_FLOAT, 0, buf.rewind());
-                gl.glDrawArrays(GL.GL_LINE_STRIP, 0, points.size());
+                gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
+                gl.glVertexPointer(3, GL2.GL_FLOAT, 0, buf.rewind());
+                gl.glDrawArrays(GL2.GL_LINE_STRIP, 0, points.size());
             }
         } finally {
             this.popGLState();
@@ -735,11 +737,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             double alpha) {
         this.pushGLState();
         try {
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
             gl.glColor3d(color.red / 255.0, color.green / 255.0,
                     color.blue / 255.0);
             gl.glLineWidth(lineWidth);
-            gl.glBegin(GL.GL_QUADS);
+            gl.glBegin(GL2.GL_QUADS);
 
             // gl.glVertex3d(extent.getMinX(), extent.getMinY(), 0);
             // gl.glVertex3d(extent.getMaxX(), extent.getMinY(), 0);
@@ -769,19 +771,19 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         try {
 
             // set the shading and alpha
-            gl.glEnable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.glEnable(GL2.GL_BLEND);
+            gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
             gl.glColor4d(color.red / 255.0, color.green / 255.0,
                     color.blue / 255.0, alpha);
 
             if (stipple != null) {
-                gl.glEnable(GL.GL_POLYGON_STIPPLE);
+                gl.glEnable(GL2.GL_POLYGON_STIPPLE);
 
                 gl.glPolygonStipple(stipple, 0);
             }
 
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-            gl.glBegin(GL.GL_QUADS);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
+            gl.glBegin(GL2.GL_QUADS);
 
             gl.glVertex2d(pe.getMinX(), pe.getMinY());
             gl.glVertex2d(pe.getMaxX(), pe.getMinY());
@@ -819,27 +821,27 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         pushGLState();
         try {
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
-            gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glEnableClientState(GL.GL_COLOR_ARRAY);
-            gl.glEnable(GL.GL_BLEND);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
+            gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glEnableClientState(GL2.GL_COLOR_ARRAY);
+            gl.glEnable(GL2.GL_BLEND);
             // if (cardSupportsHighEndFeatures) {
             gl.glBlendColor(1.0f, 1.0f, 1.0f, alpha);
             // alpha
-            gl.glBlendFunc(GL.GL_CONSTANT_ALPHA, GL.GL_ONE_MINUS_CONSTANT_ALPHA);
+            gl.glBlendFunc(GL2.GL_CONSTANT_ALPHA, GL2.GL_ONE_MINUS_CONSTANT_ALPHA);
             // brightness
-            // gl.glBlendFunc(GL.GL_CONSTANT_COLOR, GL.GL_ZERO);
+            // gl.glBlendFunc(GL2.GL_CONSTANT_COLOR, GL2.GL_ZERO);
             // both
             // }
             for (GLShadedShape shape : shapes) {
                 shape.paint(gl, capabilities.cardSupportsHighEndFeatures,
                         brightness);
             }
-            gl.glDisableClientState(GL.GL_COLOR_ARRAY);
-            gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glDisable(GL.GL_BLEND);
+            gl.glDisableClientState(GL2.GL_COLOR_ARRAY);
+            gl.glDisableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glDisable(GL2.GL_BLEND);
             // if (cardSupportsHighEndFeatures) {
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
             // }
         } finally {
             popGLState();
@@ -925,7 +927,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
         GLContextBridge.makeMasterContextCurrent();
 
-        GLDisposalManager.performDispose(GLU.getCurrentGL());
+        GLDisposalManager.performDispose(GLUgl2.getCurrentGL2());
 
         if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
             GLStats.printStats(gl, theCanvas.getShell());
@@ -980,10 +982,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     protected void handleLineStyle(LineStyle lineStyle) {
         if ((lineStyle != null) && (lineStyle != LineStyle.SOLID)
                 && (lineStyle != LineStyle.DEFAULT)) {
-            gl.glEnable(GL.GL_LINE_STIPPLE);
+            gl.glEnable(GL2.GL_LINE_STIPPLE);
             gl.glLineStipple(lineStyle.getFactor(), lineStyle.getPattern());
         } else {
-            gl.glDisable(GL.GL_LINE_STIPPLE);
+            gl.glDisable(GL2.GL_LINE_STIPPLE);
         }
     }
 
@@ -1005,11 +1007,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void init() {
         makeContextCurrent();
-        GLU glu = new GLU();
-        String exts = glu.gluGetString(GL.GL_EXTENSIONS);
-        String openGlRenderer = gl.glGetString(GL.GL_RENDERER);
-        String openGlVersion = gl.glGetString(GL.GL_VERSION);
-        String openGlVendor = gl.glGetString(GL.GL_VENDOR);
+        GLUgl2 glu = new GLUgl2();
+        String exts = glu.gluGetString(GL2.GL_EXTENSIONS);
+        String openGlRenderer = gl.glGetString(GL2.GL_RENDERER);
+        String openGlVersion = gl.glGetString(GL2.GL_VERSION);
+        String openGlVendor = gl.glGetString(GL2.GL_VENDOR);
 
         System.out.println(openGlRenderer + " " + openGlVersion + " "
                 + openGlVendor + " " + exts);
@@ -1021,16 +1023,16 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         // gl.glDisable(GL.GL_DEPTH_TEST);
 
-        gl.glEnable(GL.GL_STENCIL_TEST);
+        gl.glEnable(GL2.GL_STENCIL_TEST);
         gl.glClearStencil(0x0);
         gl.glClearDepth(1.0);
         gl.glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         gl.glColor3f(1.0f, 0.0f, 0.0f);
-        gl.glHint(GL.GL_PERSPECTIVE_CORRECTION_HINT, GL.GL_NICEST);
-        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glHint(GL2.GL_PERSPECTIVE_CORRECTION_HINT, GL.GL_NICEST);
+        gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glLoadIdentity();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
@@ -1124,25 +1126,25 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         GLTextureObject t = new GLTextureObject();
         GLContextBridge.releaseMasterContext();
         if (gl.isFunctionAvailable("glActiveTexture")) {
-            gl.glActiveTexture(GL.GL_TEXTURE1);
+            gl.glActiveTexture(GL2.GL_TEXTURE1);
         }
-        gl.glEnable(GL.GL_TEXTURE_1D);
-        t.bind(gl, GL.GL_TEXTURE_1D);
+        gl.glEnable(GL2.GL_TEXTURE_1D);
+        t.bind(gl, GL2.GL_TEXTURE_1D);
         bb.rewind();
-        gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_S,
-                GL.GL_CLAMP_TO_EDGE);
-        gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_WRAP_T,
-                GL.GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_WRAP_S,
+                GL2.GL_CLAMP_TO_EDGE);
+        gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_WRAP_T,
+                GL2.GL_CLAMP_TO_EDGE);
 
-        gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
-                GL.GL_NEAREST);
-        gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
-                GL.GL_NEAREST);
+        gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MAG_FILTER,
+                GL2.GL_NEAREST);
+        gl.glTexParameteri(GL2.GL_TEXTURE_1D, GL2.GL_TEXTURE_MIN_FILTER,
+                GL2.GL_NEAREST);
 
-        gl.glTexImage1D(GL.GL_TEXTURE_1D, 0, GL.GL_RGBA, glColorMap.getSize(),
-                0, GL.GL_RGBA, GL.GL_FLOAT, bb);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
-        gl.glDisable(GL.GL_TEXTURE_1D);
+        gl.glTexImage1D(GL2.GL_TEXTURE_1D, 0, GL2.GL_RGBA, glColorMap.getSize(),
+                0, GL2.GL_RGBA, GL2.GL_FLOAT, bb);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
+        gl.glDisable(GL2.GL_TEXTURE_1D);
 
         return t;
     }
@@ -1183,10 +1185,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         makeContextCurrent();
         gl.glViewport(0, 0, bounds.width, bounds.height);
-        gl.glMatrixMode(GL.GL_PROJECTION);
+        gl.glMatrixMode(GL2.GL_PROJECTION);
         gl.glLoadIdentity();
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glLoadIdentity();
 
         releaseContext();
@@ -1205,9 +1207,13 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         if (theCanvas != null) {
             theCanvas.swapBuffers();
         }
+        /*
         Rectangle bounds = this.canvasSize;
         BufferedImage bi = Screenshot.readToBufferedImage(bounds.width,
                 bounds.height, false);
+        */
+        AWTGLReadBufferUtil glReadBufferUtil = new AWTGLReadBufferUtil(gl.getGLProfile(), false);
+        BufferedImage image = glReadBufferUtil.readPixelsToBufferedImage(gl.getGL(), true);
         if (theCanvas != null) {
             theCanvas.swapBuffers();
         }
@@ -1215,7 +1221,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         if (needsRelease) {
             releaseContext();
         }
-        return bi;
+        return image;
     }
 
     /*
@@ -1277,7 +1283,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         // Clone to preserve clipping pane extent
         this.clippingPane = clippingPane.clone();
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glPushMatrix();
         double eqn[] = { 0.0, 1.0, 0.0, 0.0 };
 
@@ -1290,28 +1296,28 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         gl.glTranslated(extent.getMinX(), extent.getMinY(), 0);
 
         /* clip upper */
-        gl.glClipPlane(GL.GL_CLIP_PLANE0, eqn, 0);
-        gl.glEnable(GL.GL_CLIP_PLANE0);
+        gl.glClipPlane(GL2.GL_CLIP_PLANE0, eqn, 0);
+        gl.glEnable(GL2.GL_CLIP_PLANE0);
 
         /* clip left */
-        gl.glClipPlane(GL.GL_CLIP_PLANE1, eqn2, 0);
-        gl.glEnable(GL.GL_CLIP_PLANE1);
+        gl.glClipPlane(GL2.GL_CLIP_PLANE1, eqn2, 0);
+        gl.glEnable(GL2.GL_CLIP_PLANE1);
 
         gl.glTranslated(-extent.getMinX(), -extent.getMinY(), 0);
 
         gl.glTranslated(extent.getMaxX(), 0, 0);
 
         /* clip right */
-        gl.glClipPlane(GL.GL_CLIP_PLANE2, eqn4, 0);
-        gl.glEnable(GL.GL_CLIP_PLANE2);
+        gl.glClipPlane(GL2.GL_CLIP_PLANE2, eqn4, 0);
+        gl.glEnable(GL2.GL_CLIP_PLANE2);
         gl.glTranslated(-extent.getMaxX(), 0, 0);
 
         /* clip bottom */
         gl.glTranslated(0, extent.getMaxY(), 0);
-        gl.glClipPlane(GL.GL_CLIP_PLANE3, eqn3, 0);
-        gl.glEnable(GL.GL_CLIP_PLANE3);
+        gl.glClipPlane(GL2.GL_CLIP_PLANE3, eqn3, 0);
+        gl.glEnable(GL2.GL_CLIP_PLANE3);
 
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glPopMatrix();
     }
 
@@ -1323,7 +1329,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public double[] getModelView() {
         double[] modelMatrix = new double[16];
-        gl.glGetDoublev(GL.GL_MODELVIEW_MATRIX, modelMatrix, 0);
+        gl.glGetDoublev(GL2.GL_MODELVIEW_MATRIX, modelMatrix, 0);
         return modelMatrix;
     }
 
@@ -1335,7 +1341,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public double[] getProjection() {
         double[] projection = new double[16];
-        gl.glGetDoublev(GL.GL_PROJECTION_MATRIX, projection, 0);
+        gl.glGetDoublev(GL2.GL_PROJECTION_MATRIX, projection, 0);
         return projection;
     }
 
@@ -1347,7 +1353,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public int[] getViewPort() {
         int[] vp = new int[4];
-        gl.glGetIntegerv(GL.GL_VIEWPORT, vp, 0);
+        gl.glGetIntegerv(GL2.GL_VIEWPORT, vp, 0);
         return vp;
     }
 
@@ -1435,8 +1441,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void pushGLState() {
-        gl.glPushAttrib(GL.GL_COLOR_BUFFER_BIT | GL.GL_CURRENT_BIT
-                | GL.GL_ENABLE_BIT | GL.GL_TEXTURE_BIT | GL.GL_LINE_BIT);
+        gl.glPushAttrib(GL.GL_COLOR_BUFFER_BIT | GL2.GL_CURRENT_BIT
+                | GL2.GL_ENABLE_BIT | GL2.GL_TEXTURE_BIT | GL2.GL_LINE_BIT);
     }
 
     /*
@@ -1547,8 +1553,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         this.pushGLState();
         try {
-            gl.glEnable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+            gl.glEnable(GL2.GL_BLEND);
+            gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
 
             for (DrawableCircle circle : circles) {
                 boolean fill = circle.filled;
@@ -1568,14 +1574,14 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 double z = circle.basics.z;
                 boolean xOr = circle.basics.xOrColors;
 
-                gl.glPolygonMode(GL.GL_BACK, fill ? GL.GL_FILL : GL.GL_LINE);
+                gl.glPolygonMode(GL2.GL_BACK, fill ? GL2.GL_FILL : GL2.GL_LINE);
                 gl.glColor4d(color.red / 255.0, color.green / 255.0,
                         color.blue / 255.0, alpha);
                 gl.glLineWidth(width);
 
                 if (xOr) {
-                    gl.glEnable(GL.GL_COLOR_LOGIC_OP);
-                    gl.glLogicOp(GL.GL_XOR);
+                    gl.glEnable(GL2.GL_COLOR_LOGIC_OP);
+                    gl.glLogicOp(GL2.GL_XOR);
                 }
 
                 float startAzm = circle.startAzimuth;
@@ -1590,11 +1596,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                         && (totalAzimuth < 360.0);
 
                 if (fill) {
-                    gl.glBegin(GL.GL_TRIANGLE_FAN);
+                    gl.glBegin(GL2.GL_TRIANGLE_FAN);
                     gl.glVertex3d(x, y, z);
                 } else {
                     handleLineStyle(circle.lineStyle);
-                    gl.glBegin(GL.GL_LINE_STRIP);
+                    gl.glBegin(GL2.GL_LINE_STRIP);
                     if (includeSides) {
                         gl.glVertex3d(x, y, z);
                     }
@@ -1623,11 +1629,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 gl.glEnd();
 
                 if (xOr) {
-                    gl.glDisable(GL.GL_COLOR_LOGIC_OP);
+                    gl.glDisable(GL2.GL_COLOR_LOGIC_OP);
                 }
             }
 
-            gl.glDisable(GL.GL_BLEND);
+            gl.glDisable(GL2.GL_BLEND);
         } finally {
             this.popGLState();
         }
@@ -1642,37 +1648,37 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     public void handleError(int errorid) {
         String message = null;
         switch (errorid) {
-        case GL.GL_NO_ERROR:
+        case GL2.GL_NO_ERROR:
             break;
-        case GL.GL_INVALID_ENUM: {
+        case GL2.GL_INVALID_ENUM: {
             message = "Invalid enum passed to GL!";
             break;
         }
-        case GL.GL_INVALID_VALUE: {
+        case GL2.GL_INVALID_VALUE: {
             message = "Invalid value passed to GL!";
             break;
         }
-        case GL.GL_INVALID_OPERATION: {
+        case GL2.GL_INVALID_OPERATION: {
             message = "Invalid operation used!";
             break;
-        }
-        case GL.GL_STACK_OVERFLOW: {
+        }/*
+        case GL2.GL_STACK_OVERFLOW: {
             message = "Stack overflow, causing command ignored!";
             break;
         }
-        case GL.GL_STACK_UNDERFLOW: {
+        case GL2.GL_STACK_UNDERFLOW: {
             message = "Stack underflow, causing command ignored!";
             break;
-        }
-        case GL.GL_OUT_OF_MEMORY: {
+        }*/
+        case GL2.GL_OUT_OF_MEMORY: {
             message = "GL is OUT of memory!!";
             break;
         }
-        case GL.GL_TABLE_TOO_LARGE: {
+        case GL2.GL_TABLE_TOO_LARGE: {
             message = "GL table too large?";
             break;
         }
-        case GL.GL_INVALID_FRAMEBUFFER_OPERATION_EXT: {
+        case GL2.GL_INVALID_FRAMEBUFFER_OPERATION: {
             message = "Invalid FrameBuffer operation";
             break;
         }
@@ -1706,7 +1712,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         this.pushGLState();
         try {
             int pointsPerLocation = 1;
-            int geomType = GL.GL_LINES;
+            int geomType = GL2.GL_LINES;
             switch (pointStyle) {
             case PIPE:
             case POINT:
@@ -1720,11 +1726,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 break;
             }
             case BOX:
-                geomType = GL.GL_LINE_STRIP;
+                geomType = GL2.GL_LINE_STRIP;
                 pointsPerLocation = 5;
                 break;
             case SQUARE: {
-                geomType = GL.GL_QUADS;
+                geomType = GL2.GL_QUADS;
                 pointsPerLocation = 4;
                 break;
             }
@@ -1733,12 +1739,12 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 break;
             }
             case CIRCLE: {
-                geomType = GL.GL_LINE_STRIP;
+                geomType = GL2.GL_LINE_STRIP;
                 pointsPerLocation = (int) (17 * magnification);
                 break;
             }
             case DISC: {
-                geomType = GL.GL_TRIANGLE_FAN;
+                geomType = GL2.GL_TRIANGLE_FAN;
                 pointsPerLocation = (int) (18 * magnification);
                 break;
             }
@@ -1817,15 +1823,15 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 }
             }
 
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
             gl.glColor4d(color.red / 255.0, color.green / 255.0,
                     color.blue / 255.0, 1.0);
             gl.glLineWidth(magnification);
 
-            gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glVertexPointer(2, GL.GL_FLOAT, 0, buf.rewind());
-            int loop = geomType == GL.GL_LINES ? 1 : locations.size();
-            int size = geomType == GL.GL_LINES ? locations.size()
+            gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glVertexPointer(2, GL2.GL_FLOAT, 0, buf.rewind());
+            int loop = geomType == GL2.GL_LINES ? 1 : locations.size();
+            int size = geomType == GL2.GL_LINES ? locations.size()
                     * pointsPerLocation : pointsPerLocation;
             int cur = 0;
             for (int i = 0; i < loop; ++i) {
@@ -1833,7 +1839,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 cur += size;
             }
 
-            gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
+            gl.glDisableClientState(GL2.GL_VERTEX_ARRAY);
         } finally {
             popGLState();
         }

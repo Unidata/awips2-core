@@ -26,10 +26,10 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
-import javax.media.opengl.glu.GLUtessellator;
-import javax.media.opengl.glu.GLUtessellatorCallback;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.GLUtessellator;
+import com.jogamp.opengl.glu.GLUtessellatorCallback;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
@@ -159,21 +159,21 @@ public class GLShadedShapeBase implements IShape {
         allocateBuffers();
         if (tessellate) {
 
-            GLU glu = new GLU();
+        	GLUgl2 glu = new GLUgl2();
             Tessellator callback = new Tessellator();
             GLUtessellator tessellator = glu.gluNewTess();
 
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_VERTEX, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_BEGIN, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_END, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_ERROR, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_COMBINE, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_EDGE_FLAG, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_VERTEX, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_BEGIN, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_END, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_ERROR, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_COMBINE, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_EDGE_FLAG, callback);
             glu.gluTessNormal(tessellator, 0.0, 0.0, -1.0);
 
             for (FloatBuffer[] contours : polygons) {
-                glu.gluTessProperty(tessellator, GLU.GLU_TESS_WINDING_RULE,
-                        GLU.GLU_TESS_WINDING_ODD);
+                glu.gluTessProperty(tessellator, GLUgl2.GLU_TESS_WINDING_RULE,
+                		GLUgl2.GLU_TESS_WINDING_ODD);
                 glu.gluTessBeginPolygon(tessellator, (double[]) null);
                 int polygonStart = vertexBuffer.position() / 2;
                 for (FloatBuffer contour : contours) {
@@ -317,7 +317,7 @@ public class GLShadedShapeBase implements IShape {
         polygonLengthBuffer = null;
     }
 
-    protected synchronized void paint(GL gl,
+    protected synchronized void paint(GL2 gl,
             boolean cardSupportsHighEndFeatures, float brightness) {
         if (!polygons.isEmpty()) {
             compile();
@@ -343,27 +343,27 @@ public class GLShadedShapeBase implements IShape {
         vertexBuffer.rewind();
 
         if (fillPattern != null) {
-            gl.glEnable(GL.GL_POLYGON_STIPPLE);
+            gl.glEnable(GL2.GL_POLYGON_STIPPLE);
 
             gl.glPolygonStipple(fillPattern, 0);
         }
 
-        gl.glVertexPointer(2, GL.GL_FLOAT, 0, vertexBuffer);
-        gl.glColorPointer(3, GL.GL_UNSIGNED_BYTE, 0, colorBuffer);
+        gl.glVertexPointer(2, GL2.GL_FLOAT, 0, vertexBuffer);
+        gl.glColorPointer(3, GL2.GL_UNSIGNED_BYTE, 0, colorBuffer);
 
         if (tessellate) {
-            gl.glDrawArrays(GL.GL_TRIANGLES, 0, vertexBuffer.capacity() / 2);
+            gl.glDrawArrays(GL2.GL_TRIANGLES, 0, vertexBuffer.capacity() / 2);
         } else {
             contourLengthBuffer.rewind();
             contourStartBuffer.rewind();
             while (contourLengthBuffer.hasRemaining()) {
-                gl.glDrawArrays(GL.GL_POLYGON, contourStartBuffer.get(),
+                gl.glDrawArrays(GL2.GL_POLYGON, contourStartBuffer.get(),
                         contourLengthBuffer.get());
             }
         }
 
         if (fillPattern != null) {
-            gl.glDisable(GL.GL_POLYGON_STIPPLE);
+            gl.glDisable(GL2.GL_POLYGON_STIPPLE);
         }
     }
 

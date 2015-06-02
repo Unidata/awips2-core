@@ -202,7 +202,7 @@ public class VizDisplayPane implements IDisplayPane {
         // create the graphics adapter
         graphicsAdapter = display.getGraphicsAdapter();
         // create the canvas
-        this.canvas = graphicsAdapter.constrcutCanvas(canvasComp);
+        this.canvas = graphicsAdapter.constructCanvas(canvasComp);
         this.canvas.addDisposeListener(new DisposeListener() {
             @Override
             public void widgetDisposed(DisposeEvent e) {

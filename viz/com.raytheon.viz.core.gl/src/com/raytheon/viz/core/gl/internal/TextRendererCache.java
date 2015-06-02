@@ -25,10 +25,10 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.viz.core.gl.GLDisposalManager.GLDisposer;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * 
@@ -66,7 +66,7 @@ public class TextRendererCache {
                 final TextRenderer renderer = eldest.getValue();
                 new GLDisposer() {
                     @Override
-                    protected void dispose(GL gl) {
+                    protected void dispose(GL2 gl) {
                         renderer.dispose();
 
                     }

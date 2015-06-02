@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.viz.core.gl.dataformat.GLBufferColorMapData;
@@ -212,7 +212,7 @@ public class GLDataMappingFactory {
             refCount += 1;
         }
 
-        private synchronized void initialize(GL gl) {
+        private synchronized void initialize(GL2 gl) {
             if (initialized) {
                 return;
             }
@@ -331,7 +331,7 @@ public class GLDataMappingFactory {
      * @param colorMapSize
      * @return
      */
-    public static GLDataMapping constructGLDataMapping(GL gl, Unit<?> dataUnit,
+    public static GLDataMapping constructGLDataMapping(GL2 gl, Unit<?> dataUnit,
             Unit<?> colorMapUnit, float colorMapMin, float colorMapMax,
             int colorMapSize) {
         GLDataMapping mapping;

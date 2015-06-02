@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.internal.ext.mosaic;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -137,15 +137,15 @@ public abstract class GLMosaicImageExtension extends
                                 coverage));
             }
         } else if (image instanceof AbstractGLColormappedImage) {
-            GL gl = target.getGl();
+            GL2 gl = target.getGl();
             // activate on texture2 as 0 is radar image and 1 is colormap
-            gl.glActiveTexture(GL.GL_TEXTURE1);
+            gl.glActiveTexture(GL2.GL_TEXTURE1);
             gl.glBindTexture(writeToImage.getTextureStorageType(),
                     writeToImage.getTextureid());
 
             GLColormappedImageExtension.setupDataMapping(gl,
                     (AbstractGLColormappedImage) image,
-                    writeToImage.getDataUnit(), GL.GL_TEXTURE2, GL.GL_TEXTURE3);
+                    writeToImage.getDataUnit(), GL2.GL_TEXTURE2, GL2.GL_TEXTURE3);
             return image;
         }
         // Fall through here, no actual rendering will occur
@@ -163,16 +163,16 @@ public abstract class GLMosaicImageExtension extends
     @Override
     public void postImageRender(PaintProperties paintProps,
             AbstractGLImage image, Object data) throws VizException {
-        GL gl = target.getGl();
+        GL2 gl = target.getGl();
         // activate on texture2 as 0 is radar image
-        gl.glActiveTexture(GL.GL_TEXTURE1);
+        gl.glActiveTexture(GL2.GL_TEXTURE1);
         gl.glBindTexture(writeToImage.getTextureStorageType(), 0);
 
-        gl.glActiveTexture(GL.GL_TEXTURE2);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
+        gl.glActiveTexture(GL2.GL_TEXTURE2);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
 
-        gl.glActiveTexture(GL.GL_TEXTURE3);
-        gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
+        gl.glActiveTexture(GL2.GL_TEXTURE3);
+        gl.glBindTexture(GL2.GL_TEXTURE_1D, 0);
     }
 
     /*

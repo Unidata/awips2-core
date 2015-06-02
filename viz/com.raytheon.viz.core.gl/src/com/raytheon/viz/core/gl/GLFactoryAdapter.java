@@ -142,7 +142,7 @@ public class GLFactoryAdapter extends AbstractGraphicsFactoryAdapter {
      * (org.eclipse.swt.widgets.Composite)
      */
     @Override
-    public Canvas constrcutCanvas(Composite canvasComp) throws VizException {
+    public Canvas constructCanvas(Composite canvasComp) throws VizException {
         GLCanvas canvas;
         GLData data = GLContextBridge.getGLData();
         canvas = new GLCanvas(canvasComp, SWT.NONE, data);

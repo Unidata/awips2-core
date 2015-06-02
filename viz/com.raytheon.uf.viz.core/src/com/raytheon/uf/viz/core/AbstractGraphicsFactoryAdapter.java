@@ -111,7 +111,7 @@ public abstract class AbstractGraphicsFactoryAdapter {
      * @param canvasComp
      * @throws VizException
      */
-    public abstract Canvas constrcutCanvas(Composite canvasComp)
+    public abstract Canvas constructCanvas(Composite canvasComp)
             throws VizException;
 
 }

@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.objects;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * 
@@ -64,53 +64,53 @@ public class GLFrameBufferObject extends GLIdWrapper {
     }
 
     @Override
-    protected void genId(GL gl, int[] arr) {
-        gl.glGenFramebuffersEXT(1, arr, 0);
+    protected void genId(GL2 gl, int[] arr) {
+        gl.glGenFramebuffers(1, arr, 0);
     }
 
     @Override
-    protected void deleteId(GL gl, int[] arr) {
-        gl.glDeleteFramebuffersEXT(1, arr, 0);
+    protected void deleteId(GL2 gl, int[] arr) {
+        gl.glDeleteFramebuffers(1, arr, 0);
 
     }
 
-    public void bind(GL gl) {
-        gl.glBindFramebufferEXT(GL.GL_FRAMEBUFFER_EXT, id);
+    public void bind(GL2 gl) {
+        gl.glBindFramebuffer(GL2.GL_FRAMEBUFFER, id);
     }
 
-    public String checkStatus(GL gl) {
+    public String checkStatus(GL2 gl) {
         String errorMessage = null;
 
-        switch (gl.glCheckFramebufferStatusEXT(GL.GL_FRAMEBUFFER_EXT)) {
-        case GL.GL_FRAMEBUFFER_COMPLETE_EXT: {
+        switch (gl.glCheckFramebufferStatus(GL2.GL_FRAMEBUFFER)) {
+        case GL2.GL_FRAMEBUFFER_COMPLETE: {
             // Everything is ok.
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_ATTACHMENT: {
             errorMessage = "Error: Framebuffer incomplete, fbo attachement is NOT complete";
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_MISSING_ATTACHMENT: {
             errorMessage = "Error: Framebuffer incomplete, no image is attached to FBO";
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_DIMENSIONS: {
             errorMessage = "Error: Framebuffer incomplete, attached images have different dimensions";
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_FORMATS_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_FORMATS: {
             errorMessage = "Error: Framebuffer incomplete, color attached images have different internal formats";
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_DRAW_BUFFER: {
             errorMessage = "Error: Framebuffer incomplete, draw buffer";
             break;
         }
-        case GL.GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER_EXT: {
+        case GL2.GL_FRAMEBUFFER_INCOMPLETE_READ_BUFFER: {
             errorMessage = "Error: Framebuffer incomplete, read buffer";
             break;
         }
-        case GL.GL_FRAMEBUFFER_UNSUPPORTED_EXT: {
+        case GL2.GL_FRAMEBUFFER_UNSUPPORTED: {
             errorMessage = "Error: Framebuffer not supported by hardware/drivers";
             break;
         }
