@@ -21,9 +21,9 @@ package com.raytheon.uf.viz.productbrowser;
  **/
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -52,8 +52,6 @@ import org.eclipse.ui.part.ViewPart;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
-import com.raytheon.uf.viz.core.rsc.ResourceType;
-import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserInitializeJob;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
 
@@ -63,13 +61,13 @@ import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 03, 2010           mnash       Initial creation
- * May 02, 2013  1949     bsteffen    Switch Product Browser from uengine to
- *                                    DbQueryRequest.
- * May 13, 2014  3135     bsteffen    Make all queries async.
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 03, 2010           mnash     Initial creation
+ * May 02, 2013  1949     bsteffen  Switch Product Browser from uengine to
+ *                                  DbQueryRequest.
+ * May 13, 2014  3135     bsteffen  Make all queries async.
+ * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * 
  * </pre>
  * 
@@ -77,8 +75,7 @@ import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
  * @version 1.0
  */
 public class ProductBrowserView extends ViewPart {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(ProductBrowserView.class);
+    private static final transient IUFStatusHandler statusHandler = UFStatus.getHandler(ProductBrowserView.class);
 
     public static final String ID = "com.raytheon.uf.viz.productbrowser.ProductBrowserView";
 
@@ -118,8 +115,7 @@ public class ProductBrowserView extends ViewPart {
             }
         };
         refreshAction.setId("refreshAction");
-        refreshAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("refresh.gif"));
+        refreshAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("refresh.gif"));
 
         productInfoAction = new Action("Product Info") {
             @Override
@@ -128,8 +124,7 @@ public class ProductBrowserView extends ViewPart {
             }
         };
         productInfoAction.setId("productInfoAction");
-        productInfoAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("help.gif"));
+        productInfoAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("help.gif"));
 
         loadProductAction = new Action("Load Product") {
             @Override
@@ -138,10 +133,8 @@ public class ProductBrowserView extends ViewPart {
             }
         };
         loadProductAction.setId("loadProductAction");
-        loadProductAction.setImageDescriptor(ProductBrowserUtils
-                .getImageDescriptor("run.gif"));
+        loadProductAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("run.gif"));
     }
-
 
     /**
      * Creates the product browser that spans the entire view...
@@ -150,8 +143,7 @@ public class ProductBrowserView extends ViewPart {
      */
     public void createProductTree(final Composite parent) {
         GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        productTree = new Tree(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
-                | SWT.BORDER);
+        productTree = new Tree(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
         productTree.setLayoutData(gridData);
         productTree.addListener(SWT.MouseDoubleClick, new Listener() {
             @Override
@@ -203,7 +195,6 @@ public class ProductBrowserView extends ViewPart {
         productTree.setMenu(menu);
     }
 
-
     /**
      * Takes the menu during the right click and fills it with actions pertinent
      * to the product tree and pertinent to the item that is selected
@@ -219,19 +210,14 @@ public class ProductBrowserView extends ViewPart {
             }
             // if not a product, do not give opportunity to load things
             if (label.isProduct()) {
-                AbstractProductBrowserDataDefinition<?> def = getDataDef(selection[0]);
-                Map<ResourceType, List<DisplayType>> displayTypes = def
-                        .getDisplayTypes();
-                if (displayTypes != null && displayTypes.isEmpty() == false) {
+                ProductBrowserDataDefinition def = getDataDef(selection[0]);
+                String[] path = getProductURI(selection[0], false);
+                Collection<DisplayType> displayTypes = def.getValidDisplayTypes(path);
+                if (displayTypes != null && displayTypes.size() > 1) {
                     MenuManager menuMgr = new MenuManager("Load As...",
-                            ProductBrowserUtils.getImageDescriptor("run.gif"),
-                            "");
-                    for (ResourceType type : displayTypes.keySet()) {
-                        if (displayTypes.keySet().size() <= 1) {
-                            for (DisplayType types : displayTypes.get(type)) {
-                                menuMgr.add(getDisplayTypeAction(types));
-                            }
-                        }
+                            ProductBrowserUtils.getImageDescriptor("run.gif"), "");
+                    for (DisplayType type : displayTypes) {
+                        menuMgr.add(getDisplayTypeAction(type));
                     }
                     mgr.add(menuMgr);
                 } else {
@@ -271,45 +257,36 @@ public class ProductBrowserView extends ViewPart {
         for (IExtension ext : extensions) {
             IConfigurationElement[] config = ext.getConfigurationElements();
             for (IConfigurationElement element : config) {
-                AbstractProductBrowserDataDefinition<?> prod = null;
+                ProductBrowserDataDefinition prod = null;
                 try {
-                    prod = (AbstractProductBrowserDataDefinition<?>) element
-                            .createExecutableExtension("class");
+                    prod = (ProductBrowserDataDefinition) element.createExecutableExtension("class");
                 } catch (CoreException e) {
-                    statusHandler
-                            .error("A product browser data definition has failed to load.",
-                                    e);
+                    statusHandler.error("A product browser data definition has failed to load.", e);
                     continue;
                 }
-                String displayText = "Checking Availability of "
-                        + prod.displayName + "...";
-                /* Sort alphabetically. */
-                int index = 0;
-                for (TreeItem items : productTree.getItems()) {
-                    if (items.getText().compareToIgnoreCase(displayText) > 0) {
-                        break;
-                    } else {
-                        index++;
+                List<ProductBrowserLabel> labels = prod.getLabels(new String[0]);
+                for (ProductBrowserLabel label : labels) {
+                    String displayText = "Checking Availability of " + label.getName() + "...";
+                    /* Sort alphabetically. */
+                    int index = 0;
+                    for (TreeItem items : productTree.getItems()) {
+                        if (items.getText().compareToIgnoreCase(displayText) > 0) {
+                            break;
+                        } else {
+                            index++;
+                        }
                     }
+                    TreeItem ti = new TreeItem(productTree, SWT.NONE, index);
+                    ti.setText(displayText);
+                    ti.setData(LABEL_DATA_KEY, label);
+                    ti.setData(DEF_DATA_KEY, prod);
+                    Font font = ti.getFont();
+                    FontData fontData = font.getFontData()[0];
+                    fontData = new FontData(fontData.getName(), fontData.getHeight(), SWT.BOLD);
+                    font = new Font(ti.getDisplay(), fontData);
+                    ti.setFont(font);
+                    new ProductBrowserInitializeJob(ti).schedule();
                 }
-                TreeItem ti = new TreeItem(productTree, SWT.NONE, index);
-                ti.setText(displayText);
-                ProductBrowserLabel label = new ProductBrowserLabel(
-                        prod.displayName, prod.displayName);
-                if (prod instanceof AbstractRequestableProductBrowserDataDefinition<?>) {
-                    AbstractRequestableProductBrowserDataDefinition<?> arpbdd = (AbstractRequestableProductBrowserDataDefinition<?>) prod;
-                    label.setData(arpbdd.productName);
-                    label.setProduct(arpbdd.order.length == 0);
-                }
-                ti.setData(LABEL_DATA_KEY, label);
-                ti.setData(DEF_DATA_KEY, prod);
-                Font font = ti.getFont();
-                FontData fontData = font.getFontData()[0];
-                fontData = new FontData(fontData.getName(),
-                        fontData.getHeight(), SWT.BOLD);
-                font = new Font(ti.getDisplay(), fontData);
-                ti.setFont(font);
-                new ProductBrowserInitializeJob(ti).schedule();
             }
         }
     }
@@ -320,8 +297,7 @@ public class ProductBrowserView extends ViewPart {
      */
     private void getDataTypes() {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
-        IExtensionPoint point = registry
-                .getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
+        IExtensionPoint point = registry.getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
         if (point != null) {
             extensions = point.getExtensions();
         } else {
@@ -339,16 +315,9 @@ public class ProductBrowserView extends ViewPart {
                 }
                 // if not a product, do not give opportunity to load things
                 if (label.isProduct()) {
-                    AbstractProductBrowserDataDefinition<?> def = getDataDef(item);
+                    ProductBrowserDataDefinition def = getDataDef(item);
                     String[] path = getProductURI(item, false);
-                    if (type != null) {
-                        def.loadProperties
-                                .getCapabilities()
-                                .getCapability(def.resourceData,
-                                        DisplayTypeCapability.class)
-                                .setDisplayType(type);
-                    }
-                    def.constructResource(path, null);
+                    def.loadResource(path, type);
                 }
             }
         }
@@ -363,25 +332,9 @@ public class ProductBrowserView extends ViewPart {
             if (stringBuilder.length() > 0) {
                 stringBuilder.append("\n---------------\n");
             }
-            AbstractProductBrowserDataDefinition<?> prod = getDataDef(ti);
+            ProductBrowserDataDefinition prod = getDataDef(ti);
             String[] info = getProductURI(ti, false);
-            if (prod instanceof AbstractRequestableProductBrowserDataDefinition<?>) {
-                AbstractRequestableProductBrowserDataDefinition<?> aProd = (AbstractRequestableProductBrowserDataDefinition<?>) prod;
-                stringBuilder.append(aProd.PLUGIN_NAME + " = "
-                        + aProd.productName);
-            } else {
-                stringBuilder.append(prod.displayName);
-            }
-            for (int i = 1; i < info.length; i++) {
-                stringBuilder.append("\n");
-                if (prod instanceof AbstractRequestableProductBrowserDataDefinition<?>) {
-                    stringBuilder
-                            .append(((AbstractRequestableProductBrowserDataDefinition<?>) prod).order[i - 1]
-                                    + " = " + info[i]);
-                } else {
-                    stringBuilder.append(info[i]);
-                }
-            }
+            stringBuilder.append(prod.getProductInfo(info));
             productTree.setToolTipText(stringBuilder.toString());
         }
     }
@@ -416,9 +369,7 @@ public class ProductBrowserView extends ViewPart {
         return (ProductBrowserLabel) item.getData(LABEL_DATA_KEY);
     }
 
-    public static AbstractProductBrowserDataDefinition<?> getDataDef(
-            TreeItem item) {
-        return (AbstractProductBrowserDataDefinition<?>) item
-                .getData(DEF_DATA_KEY);
+    public static ProductBrowserDataDefinition getDataDef(TreeItem item) {
+        return (ProductBrowserDataDefinition) item.getData(DEF_DATA_KEY);
     }
 }
