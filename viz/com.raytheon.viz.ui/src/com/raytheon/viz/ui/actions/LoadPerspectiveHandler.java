@@ -20,12 +20,11 @@
 package com.raytheon.viz.ui.actions;
 
 import java.io.File;
+import java.io.InputStream;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
@@ -38,6 +37,7 @@ import org.eclipse.ui.internal.EditorAreaHelper;
 import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.internal.WorkbenchPage;
 
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -52,6 +52,8 @@ import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.BundleLoader;
 import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
+import com.raytheon.viz.ui.actions.OpenPerspectiveFileListDlg.FILE_SOURCE;
+import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.editor.AbstractEditor;
 
 /**
@@ -67,6 +69,8 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
  *                                    ProcedureXmlManager
  * Aug 11, 2014  3480     bclement    added info logging to execute()
+ * Jun 02, 2015  4401     bkowal      It is now also possible to load perspectives from
+ *                                    localization. Renamed class; originally LoadSerializedXml.
  * 
  * </pre>
  * 
@@ -74,52 +78,110 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * @version 1.0
  */
 
-public class LoadSerializedXml extends AbstractHandler {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(LoadSerializedXml.class);
+public class LoadPerspectiveHandler extends AbstractHandler {
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(LoadPerspectiveHandler.class);
+
+    private OpenPerspectiveFileListDlg dialog;
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
 
-        FileDialog fd = new FileDialog(shell, SWT.OPEN);
-        fd.setText("Load Displays...");
-        fd.setFilterExtensions(new String[] { "*.xml" });
-        fd.setFilterPath(System.getProperty("user.home"));
-        String retVal = fd.open();
-
-        if (retVal == null) {
-            return null;
-        }
-
-        String fileName = fd.getFilterPath() + File.separator
-                + fd.getFileName();
-
-        statusHandler.info("Loading display file: " + fileName);
-
-        Object obj = deserialize(new File(fileName));
-        try {
-            if (obj != null) {
-                if (obj instanceof Procedure) {
-                    loadProcedureToScreen((Procedure) obj, false);
-                } else if (obj instanceof Bundle) {
-                    loadBundle((Bundle) obj);
+        if (dialog == null || dialog.getShell() == null || dialog.isDisposed()) {
+            dialog = new OpenPerspectiveFileListDlg(shell,
+                    SavePerspectiveHandler.PERSPECTIVES_DIR);
+            dialog.setCloseCallback(new ICloseCallback() {
+                @Override
+                public void dialogClosed(Object returnValue) {
+                    if (returnValue instanceof LocalizationFile) {
+                        loadFromLocalization((LocalizationFile) returnValue);
+                    } else if (dialog.getFileSource() == FILE_SOURCE.FILESYSTEM) {
+                        loadFromFileSystem(dialog.getSelectedFileName());
+                    }
                 }
-            }
-        } catch (VizException e) {
-            String errMsg = "Error occurred during load";
-            statusHandler.handle(Priority.CRITICAL, errMsg, e);
+            });
+            dialog.open();
+        } else {
+            this.dialog.bringToTop();
         }
 
         return null;
     }
 
+    private void loadFromLocalization(LocalizationFile localizationFile) {
+        statusHandler.info("Loading perspective file: "
+                + localizationFile.getName());
+
+        Object obj = null;
+        try (InputStream is = localizationFile.openInputStream()) {
+            obj = ProcedureXmlManager.getInstance().unmarshal(is);
+        } catch (Exception e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to deserialize perspective localization file: "
+                            + localizationFile.getName() + ".", e);
+            return;
+        }
+        this.load(obj, localizationFile.getName());
+    }
+
+    private void loadFromFileSystem(String fileName) {
+        statusHandler.info("Loading perspective file: " + fileName);
+
+        Object obj = null;
+        try {
+            obj = ProcedureXmlManager.getInstance().unmarshal(Object.class,
+                    new File(fileName));
+        } catch (Exception e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to deserialize perspective file system file: "
+                            + fileName + ".", e);
+            return;
+        }
+        this.load(obj, fileName);
+    }
+
+    /**
+     * Attempts to load the specified {@link Bundle} or {@link Procedure} for
+     * display.
+     * 
+     * @param obj
+     *            the specified {@link Bundle} or {@link Procedure}
+     * @param source
+     *            identifying information used to notify the user if the
+     *            {@link Bundle} or {@link Procedure} could not be successfully
+     *            loaded.
+     */
+    private void load(Object obj, final String source) {
+        if (obj == null) {
+            return;
+        }
+
+        try {
+            if (obj instanceof Procedure) {
+                loadProcedureToScreen((Procedure) obj, false);
+            } else if (obj instanceof Bundle) {
+                loadBundle((Bundle) obj);
+            }
+        } catch (VizException e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to load perspective: " + source + ".", e);
+        }
+    }
+
+    /*
+     * This function is already wrapping a wrapped method. The only advantage
+     * that this layer of wrapping provides is catching an Exception and
+     * providing a generalized AlertViz message. However, a descriptive AlertViz
+     * message would be better.
+     */
+    @Deprecated
     public static Object deserialize(File fileName) {
         Object obj = null;
         try {
-            obj = ProcedureXmlManager.getInstance().unmarshal(
-                    Object.class, fileName);
+            obj = ProcedureXmlManager.getInstance().unmarshal(Object.class,
+                    fileName);
         } catch (Exception e) {
             String errMsg = "Error occurred during xml deserialization";
             statusHandler.handle(Priority.CRITICAL, errMsg, e);
