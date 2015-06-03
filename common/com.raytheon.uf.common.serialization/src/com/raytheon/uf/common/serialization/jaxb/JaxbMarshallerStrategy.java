@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,6 +34,9 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.ValidationEvent;
 import javax.xml.bind.ValidationEventHandler;
+import javax.xml.stream.XMLInputFactory;
+import javax.xml.stream.XMLStreamException;
+import javax.xml.stream.XMLStreamReader;
 
 import com.raytheon.uf.common.serialization.MarshalOptions;
 
@@ -48,6 +51,9 @@ import com.raytheon.uf.common.serialization.MarshalOptions;
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2014 3373       bclement     Initial creation
  * Aug 08, 2014 3503       bclement     removed ufstatus
+ * Jun 02, 2015 4496       nabowle      Unmarshal from XMLStreamReader if not 
+ *                                      using the CustomJAXBUnmarshaller to 
+ *                                      prevent XEE attacks.
  * 
  * </pre>
  * 
@@ -56,24 +62,32 @@ import com.raytheon.uf.common.serialization.MarshalOptions;
  */
 public class JaxbMarshallerStrategy {
 
+    private static final XMLInputFactory xif = XMLInputFactory.newFactory();
+
+    static {
+        // disable to prevent XML External Entity attacks.
+        xif.setProperty(XMLInputFactory.IS_SUPPORTING_EXTERNAL_ENTITIES, false);
+        xif.setProperty(XMLInputFactory.SUPPORT_DTD, false);
+    }
+
     private static final Logger log = Logger
             .getLogger(JaxbMarshallerStrategy.class.getName());
 
     /**
-     * 
+     *
      * Saves all validation events so if an error is caught handlers have an
      * option of getting more accurate information about what happened
-     * 
+     *
      * <pre>
-     * 
+     *
      * SOFTWARE HISTORY
-     * 
+     *
      * Date         Ticket#    Engineer    Description
      * ------------ ---------- ----------- --------------------------
      * Sep 2, 2011            ekladstrup     Initial creation
-     * 
+     *
      * </pre>
-     * 
+     *
      * @author ekladstrup
      * @version 1.0
      */
@@ -102,6 +116,18 @@ public class JaxbMarshallerStrategy {
         }
     }
 
+    /*
+     * Note about unmarshalling:
+     *
+     * Any unmarshallers that are not an instance of CustomerJAXBUnmarshaller
+     * will cause the xml source to be parsed by an XMLStreamReader to prevent
+     * External Entity Attacks.
+     *
+     * CustomJAXBUnmarshaller has it's own methods of preventing External Entity
+     * Attacks while still being able to continue loading the file if the xml is
+     * invalid.
+     */
+
     /**
      * @see JaxbMarshallerStrategy#unmarshalFromReader(Unmarshaller, Reader)
      * @param context
@@ -125,7 +151,16 @@ public class JaxbMarshallerStrategy {
     protected Object unmarshalFromReader(Unmarshaller unmarshaller,
             Reader reader) throws JAXBException {
         try {
-            return unmarshaller.unmarshal(reader);
+            if (unmarshaller instanceof CustomJAXBUnmarshaller) {
+                return unmarshaller.unmarshal(reader);
+            } else {
+                try {
+                    XMLStreamReader xsr = xif.createXMLStreamReader(reader);
+                    return unmarshaller.unmarshal(xsr);
+                } catch (XMLStreamException e) {
+                    throw new JAXBException(e);
+                }
+            }
         } finally {
             handleEvents(unmarshaller, null);
             try {
@@ -163,8 +198,16 @@ public class JaxbMarshallerStrategy {
     protected Object unmarshalFromInputStream(Unmarshaller msh, InputStream is)
             throws JAXBException {
         try {
-            Object obj = msh.unmarshal(is);
-            return obj;
+            if (msh instanceof CustomJAXBUnmarshaller) {
+                return msh.unmarshal(is);
+            } else {
+                try {
+                    XMLStreamReader xsr = xif.createXMLStreamReader(is);
+                    return msh.unmarshal(xsr);
+                } catch (XMLStreamException e) {
+                    throw new JAXBException(e);
+                }
+            }
         } finally {
             if (msh != null) {
                 handleEvents(msh, null);
@@ -270,7 +313,7 @@ public class JaxbMarshallerStrategy {
 
     /**
      * Processes the events received by an unmarshaller when parsing XML.
-     * 
+     *
      * @param msh
      *            the unmarshaller
      */

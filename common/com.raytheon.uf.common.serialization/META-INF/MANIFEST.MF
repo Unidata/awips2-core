@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Serialization Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.serialization
-Bundle-Version: 1.14.2.qualifier
+Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: Raytheon
 Eclipse-BuddyPolicy: global, dependent
 Comment: dependent policy is only here until SerializableManager is no longer used, as it ensures the ISerializableObject files can be detected
