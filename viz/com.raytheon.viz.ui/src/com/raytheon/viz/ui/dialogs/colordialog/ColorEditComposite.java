@@ -47,6 +47,7 @@ import com.raytheon.uf.common.colormap.ColorMap;
  *                                    is added and duplicate entries in the colormap
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
+ * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
  * 
  * </pre>
  * 
@@ -92,6 +93,11 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * GFE discrete check button.
      */
     private Button gfeDiscreteCheck;
+
+    /**
+     * Interpolate alpha only button.
+     */
+    private Button interpolateAlphaOnly;
 
     /**
      * Title for the upper color wheel.
@@ -250,6 +256,17 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
                 updateColorMap();
             }
         });
+
+        interpolateAlphaOnly = new Button(discreteGroup, SWT.CHECK);
+        interpolateAlphaOnly.setText("Interpolate Alpha Only");
+        interpolateAlphaOnly.setSelection(false);
+        interpolateAlphaOnly.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent event) {
+                upperColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
+                lowerColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
+            }
+        });
     }
 
     /**
@@ -391,6 +408,10 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
 
     public boolean isGFEDiscrete() {
         return gfeDiscreteCheck.getSelection();
+    }
+
+    public boolean isInterpolateAlphaOnly() {
+        return interpolateAlphaOnly.getSelection();
     }
 
     @Override
