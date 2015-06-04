@@ -42,21 +42,21 @@ import com.raytheon.uf.common.serialization.MarshalOptions;
 
 /**
  * Manages JAXB marshalling and unmarshalling including resource creation
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2014 3373       bclement     Initial creation
  * Aug 08, 2014 3503       bclement     removed ufstatus
- * Jun 02, 2015 4496       nabowle      Unmarshal from XMLStreamReader if not 
- *                                      using the CustomJAXBUnmarshaller to 
+ * Jun 02, 2015 4496       nabowle      Unmarshal from XMLStreamReader if not
+ *                                      using the CustomJAXBUnmarshaller to
  *                                      prevent XEE attacks.
- * 
+ *
  * </pre>
- * 
+ *
  * @author bclement
  * @version 1.0
  */
@@ -119,13 +119,17 @@ public class JaxbMarshallerStrategy {
     /*
      * Note about unmarshalling:
      *
-     * Any unmarshallers that are not an instance of CustomerJAXBUnmarshaller
-     * will cause the xml source to be parsed by an XMLStreamReader to prevent
-     * External Entity Attacks.
+     * Any unmarshallers that are not an instance of CustomJAXBUnmarshaller will
+     * use an XMLStreamReader to parse the source to prevent External Entity
+     * Attacks.
      *
-     * CustomJAXBUnmarshaller has it's own methods of preventing External Entity
-     * Attacks while still being able to continue loading the file if the xml is
-     * invalid.
+     * CustomJAXBUnmarshaller is only used when the list of Classes provided to
+     * JAXBContext.newInstance(...) contains JaxbDummyObject.class, which causes
+     * the jaxb.properties in this package to be loaded and then uses
+     * SerializationContextFactory.createContext() for the JAXBContext creation.
+     *
+     * CustomJAXBUnmarshaller uses CustomEntityResolver to prevent External
+     * Entity Attacks.
      */
 
     /**
