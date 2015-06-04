@@ -31,7 +31,7 @@ import org.eclipse.swt.widgets.TreeItem;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition;
+import com.raytheon.uf.viz.productbrowser.ProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
 
@@ -45,13 +45,13 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 13, 2014  3135     bsteffen    Initial creation
- * Jun 24, 2014  3279     bclement    added error handling and item.clearAll() 
- *                                      to run methods to fix eternal 'Loading...' problem
- * Jul 07, 2014  3135     bsteffen    Remove child nodes when there are no results.
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 13, 2014  3135     bsteffen  Initial creation
+ * Jun 24, 2014  3279     bclement  added error handling and item.clearAll() to
+ *                                   run methods to fix eternal 'Loading...' problem
+ * Jul 07, 2014  3135     bsteffen  Remove child nodes when there are no results.
+ * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * 
  * </pre>
  * 
@@ -67,7 +67,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
 
     protected TreeItem item;
 
-    protected final AbstractProductBrowserDataDefinition<?> def;
+    protected final ProductBrowserDataDefinition def;
 
     protected final String[] selection;
 
@@ -91,7 +91,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
     protected IStatus run(IProgressMonitor monitor) {
         IStatus rval = Status.OK_STATUS;
         try {
-            results = def.populateData(selection);
+            results = def.getLabels(selection);
             if (!item.isDisposed()) {
                 item.getDisplay().syncExec(this);
             }

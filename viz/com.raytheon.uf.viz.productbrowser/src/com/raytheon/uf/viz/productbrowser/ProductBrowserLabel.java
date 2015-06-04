@@ -28,9 +28,10 @@ import java.util.Comparator;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 21, 2010            mnash     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 21, 2010           mnash     Initial creation
+ * Jun 02, 2015  4153     bsteffen  remove definition.
  * 
  * </pre>
  * 
@@ -56,8 +57,6 @@ public class ProductBrowserLabel implements Comparable<ProductBrowserLabel>,
 
     private boolean product;
 
-    private AbstractProductBrowserDataDefinition<?> definition;
-
     public String getName() {
         return name;
     }
@@ -80,21 +79,6 @@ public class ProductBrowserLabel implements Comparable<ProductBrowserLabel>,
 
     public void setProduct(boolean product) {
         this.product = product;
-    }
-
-    /**
-     * @return the definition
-     */
-    public AbstractProductBrowserDataDefinition<?> getDefinition() {
-        return definition;
-    }
-
-    /**
-     * @param definition
-     *            the definition to set
-     */
-    public void setDefinition(AbstractProductBrowserDataDefinition<?> definition) {
-        this.definition = definition;
     }
 
     /*
