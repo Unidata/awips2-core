@@ -29,12 +29,16 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
 /**
  * Give Cave like GIS spatial queries to EDEX
  * 
+ * TODO Rewrite to use RequestRouter so we don't need two different
+ * SpatialDbQuery classes.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * July 08, 2009            dhladky     Initial creation
+ * July 08, 2009           dhladky     Initial creation
+ * Jun  05, 2015  4495     njensen     Change DEBUG to ERROR
  * 
  * </pre>
  * 
@@ -55,8 +59,9 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
      * Make a DB request
      * 
      * @param sql
-     * @return
+     * @return results of the request
      */
+    @Override
     public Object[] dbRequest(String sql, String dbname) {
         if (handler.isPriorityEnabled(Priority.DEBUG)) {
             handler.handle(Priority.DEBUG, "Edex SpatialQuery:  SQL to run: "
@@ -76,7 +81,11 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
             results = dao.executeSQLQuery(sql);
 
         } catch (Exception ed2) {
-            handler.handle(Priority.DEBUG,
+            /*
+             * TODO shouldn't catch this exception, should let it be thrown
+             * higher so calling code has to handle it
+             */
+            handler.handle(Priority.ERROR,
                     "Edex SpatialQuery: SQL Query Failed to process. SQL="
                             + sql, ed2);
         }
