@@ -1,5 +1,7 @@
 package com.raytheon.viz.ui;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -40,6 +42,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Feb 25, 2013 1640       bsteffen    Dispose old display in BundleLoader
  * Mar 22, 2013 1638       mschenke    Made not throw errors when no time matcher
  * Mar 02, 2015 4204       njensen     Loading bundles potentially schedules a part rename
+ * Jun 05, 2015 4495       njensen     Prevent NPE on file not found
  * 
  * </pre>
  * 
@@ -331,7 +334,7 @@ public class BundleLoader extends Job {
      * @param bundleText
      * @param variables
      * @param type
-     * @return
+     * @return a bundle
      * @throws VizException
      */
     public static Bundle getBundle(String bundleText,
@@ -346,8 +349,15 @@ public class BundleLoader extends Job {
         /** Is the bundle location the bundle xml or a file with the xml? */
         if (type == BundleInfoType.FILE_LOCATION) {
             /** File with xml */
-            b = Bundle.unmarshalBundle(PathManagerFactory.getPathManager()
-                    .getStaticFile(bundleText), variables);
+            File file = PathManagerFactory.getPathManager().getStaticFile(
+                    bundleText);
+            if (file == null || !file.exists()) {
+                throw new VizException(
+                        "Cannot find bundle file: " + bundleText,
+                        new FileNotFoundException(file != null ? file.getPath()
+                                : "null"));
+            }
+            b = Bundle.unmarshalBundle(file, variables);
         } else {
             /** bundleLocation variable contains the xml */
             b = Bundle.unmarshalBundle(bundleText, variables);
