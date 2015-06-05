@@ -81,6 +81,8 @@ import com.vividsolutions.jts.geom.Polygon;
  * ------------ ---------- ----------- --------------------------
  * Aug  9, 2011            bclement    Initial creation
  * Mar 11, 2014      #2718 randerso    Changes for GeoTools 10.5
+ * Jun 05, 2015      #4375 dgilling    Safer type handling in 
+ *                                     getSingleCoordinate.
  * 
  * </pre>
  * 
@@ -542,10 +544,10 @@ public class GeoJsonMapUtil {
 
     protected Coordinate getSingleCoordinate(List<?> l) throws JsonException {
         Coordinate coord;
-        double x = (Double) l.get(0);
-        double y = (Double) l.get(1);
+        double x = ((Number) l.get(0)).doubleValue();
+        double y = ((Number) l.get(1)).doubleValue();
         if (l.size() == 3) {
-            double z = (Double) l.get(2);
+            double z = ((Number) l.get(2)).doubleValue();
             coord = new Coordinate(x, y, z);
         } else if (l.size() == 2) {
             coord = new Coordinate(x, y);
