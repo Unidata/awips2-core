@@ -19,21 +19,19 @@
  **/
 package com.raytheon.viz.ui.actions;
 
+import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.jface.dialogs.ErrorDialog;
-import org.eclipse.jface.dialogs.MessageDialog;
-import org.eclipse.swt.SWT;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.IWorkbenchPage;
@@ -41,18 +39,33 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.internal.WorkbenchPage;
 
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationFileOutputStream;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
+import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.viz.ui.IRenameablePart;
-import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.UiUtil.ContainerPart;
 import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
+import com.raytheon.viz.ui.actions.PerspectiveFileListDlg.FILE_SOURCE;
+import com.raytheon.viz.ui.dialogs.ICloseCallback;
+import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
 
 /**
- * SaveProcedure
+ * SavePerspectiveHandler
  * 
  * Save a procedure that currently maps the current state of the screen
  * including the editor and any side views.
@@ -65,13 +78,22 @@ import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
  *    ------------ ----------  ----------- --------------------------
  *    Sep 11, 2007             chammack    Initial Creation.
  *    Mar 02, 2015  4204       njensen     Set bundle name to part name
+ *    Jun 02, 2015  4401       bkowal      It is now also possible to load displays from
+ *                                         localization. Renamed class; originally SaveProcedure.
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1
  */
-public class SaveProcedure extends AbstractHandler {
+public class SavePerspectiveHandler extends AbstractHandler {
+
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(SavePerspectiveHandler.class);
+
+    public static final String PERSPECTIVES_DIR = "/perspectives";
+
+    private PerspectiveFileListDlg saveAsDlg;
 
     /*
      * (non-Javadoc)
@@ -82,66 +104,94 @@ public class SaveProcedure extends AbstractHandler {
      */
     @Override
     public Object execute(ExecutionEvent arg0) throws ExecutionException {
-
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
-        String fileName = null;
-        FileDialog fd = new FileDialog(shell, SWT.SAVE);
-        fd.setOverwrite(true);
-        fd.setFileName(fileName);
-        fd.setFilterExtensions(new String[] { "*.xml" });
-        fd.setFilterPath(System.getProperty("user.home"));
-        while (fileName == null) {
-            String retVal = fd.open();
-            if (retVal == null) {
-                return null;
-            }
+        if (this.saveAsDlg == null || this.saveAsDlg.getShell() == null
+                || this.saveAsDlg.isDisposed()) {
+            saveAsDlg = new PerspectiveFileListDlg(
+                    "Save Perspective Display As...", shell,
+                    VizLocalizationFileListDlg.Mode.SAVE, PERSPECTIVES_DIR);
+            saveAsDlg.setCloseCallback(new ICloseCallback() {
 
-            String name = fd.getFileName();
-            fileName = fd.getFilterPath() + File.separator + name;
-            if (name != null && name.endsWith(".xml") == false) {
-                name += ".xml";
-                fd.setFileName(name);
-                fileName = fd.getFilterPath() + File.separator + name;
-                if (new File(fileName).exists()) {
-                    boolean result = MessageDialog
-                            .openQuestion(
-                                    shell,
-                                    "Confirm Overwrite",
-                                    "A file named \""
-                                            + name
-                                            + "\" already exists.  Do you want to replace it?");
-                    if (result == false) {
-                        fileName = null;
+                @Override
+                public void dialogClosed(Object returnValue) {
+                    String fn = saveAsDlg.getSelectedFileName();
+                    if (fn == null) {
+                        return;
+                    }
+
+                    if (saveAsDlg.getFileSource() == FILE_SOURCE.LOCALIZATION) {
+                        saveProcedureLocalization(fn);
+                    } else if (saveAsDlg.getFileSource() == FILE_SOURCE.FILESYSTEM) {
+                        saveProcedureFileSystem(fn);
                     }
                 }
-            }
-        }
 
-        FileWriter fw = null;
-        try {
-            Procedure procedure = getCurrentProcedure();
-            String xml = procedure.toXML();
-            fw = new FileWriter(fileName);
-            fw.write(xml);
-        } catch (Exception e) {
-            final String errMsg = "Error occurred during procedure save.";
-            Status status = new Status(Status.ERROR, UiPlugin.PLUGIN_ID, 0,
-                    errMsg, e);
-            ErrorDialog.openError(Display.getCurrent().getActiveShell(),
-                    "ERROR", errMsg, status);
-            throw new ExecutionException(errMsg, e);
-        } finally {
-            if (fw != null) {
-                try {
-                    fw.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
+            });
+            saveAsDlg.open();
+        } else {
+            this.saveAsDlg.bringToTop();
         }
 
         return null;
+    }
+
+    private void saveProcedureLocalization(final String fileName) {
+        String xml = null;
+        Procedure procedure = getCurrentProcedure();
+        try {
+            xml = procedure.toXML();
+        } catch (VizException e) {
+            final String errMsg = "Error occurred during procedure save.";
+            statusHandler.handle(Priority.CRITICAL, errMsg, e);
+            return;
+        }
+
+        IPathManager pm = PathManagerFactory.getPathManager();
+
+        LocalizationContext context = pm.getContext(
+                LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
+
+        LocalizationFile localizationFile = pm.getLocalizationFile(context,
+                PERSPECTIVES_DIR + File.separator + fileName);
+
+        LocalizationFileOutputStream lfos = null;
+        boolean writeSuccessful = false;
+        try {
+            lfos = localizationFile.openOutputStream();
+            lfos.write(xml.getBytes());
+            writeSuccessful = true;
+        } catch (Exception e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to write localization file: " + fileName + ".", e);
+        } finally {
+            if (lfos != null) {
+                try {
+                    if (writeSuccessful) {
+                        lfos.closeAndSave();
+                    } else {
+                        lfos.close();
+                    }
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.CRITICAL,
+                            "Failed to save localization file: " + fileName
+                                    + ".", e);
+                }
+            }
+        }
+    }
+
+    private void saveProcedureFileSystem(final String fileName) {
+        final Path procedurePath = Paths.get(fileName);
+        try (BufferedWriter br = Files.newBufferedWriter(procedurePath,
+                Charset.defaultCharset())) {
+            Procedure procedure = getCurrentProcedure();
+            String xml = procedure.toXML();
+            br.write(xml);
+        } catch (Exception e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to write perspective file: " + fileName + ".", e);
+        }
     }
 
     public static Procedure getCurrentProcedure() {

@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.core.procedures;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.Collection;
 
 import javax.xml.bind.JAXBException;
@@ -53,6 +54,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceGroup;
  * ------------- -------- ----------- --------------------------
  * Oct 18, 2013  2491     bsteffen    Initial creation
  * Jul 14, 2014  3373     bclement    jaxb manager api changes
+ * Jun 05, 2015  4401     bkowal      Added {@link #unmarshal(InputStream)}.
  * 
  * </pre>
  * 
@@ -205,4 +207,17 @@ public class ProcedureXmlManager {
         return getManager().unmarshalFromXmlFile(clazz, file);
     }
 
+    /**
+     * Instantiates an {@link Object} from the XML representation in the
+     * specified {@link InputStream}.
+     * 
+     * @param inputStream
+     *            the specified {@link InputStream}
+     * @return the instantiated {@link Object}
+     * @throws SerializationException
+     */
+    public Object unmarshal(InputStream inputStream)
+            throws SerializationException {
+        return getManager().unmarshalFromInputStream(inputStream);
+    }
 }
