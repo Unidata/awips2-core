@@ -39,6 +39,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 27, 2013            dgilling     Initial creation
+ * May 20, 2015  4509      njensen      Added getCommonPythonIncludePath(String...)
  * 
  * </pre>
  * 
@@ -50,6 +51,9 @@ public class PythonIncludePathUtil {
 
     protected static final IPathManager PATH_MANAGER = PathManagerFactory
             .getPathManager();
+
+    protected static final LocalizationContext COMMON_STATIC_BASE = PATH_MANAGER
+            .getContext(LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
 
     private static Map<LocalizationContext, Map<String, String>> pathMap = new HashMap<LocalizationContext, Map<String, String>>();
 
@@ -71,9 +75,31 @@ public class PythonIncludePathUtil {
         return fsPath;
     }
 
+    /**
+     * Gets the path for the common_static/base/python directory
+     * 
+     * @return the path to that python directory
+     */
     public static String getCommonPythonIncludePath() {
-        return getPath(PATH_MANAGER.getContext(LocalizationType.COMMON_STATIC,
-                LocalizationLevel.BASE), PYTHON);
+        return getPath(COMMON_STATIC_BASE, PYTHON);
+    }
+
+    /**
+     * Builds a python include path of common_static/base/python and any
+     * subdirectories if specified, such as common_static/base/python/time
+     * 
+     * @param subDirs
+     *            varargs argument of a subdir name, such as "time"
+     * @return the base python include path combined with subdirs
+     */
+    public static String getCommonPythonIncludePath(String... subDirs) {
+        String[] dirs = new String[subDirs.length + 1];
+        dirs[0] = getCommonPythonIncludePath();
+        for (int i = 0; i < subDirs.length; i++) {
+            dirs[i + 1] = getPath(COMMON_STATIC_BASE, PYTHON
+                    + IPathManager.SEPARATOR + subDirs[i]);
+        }
+        return PyUtil.buildJepIncludePath(dirs);
     }
 
 }
