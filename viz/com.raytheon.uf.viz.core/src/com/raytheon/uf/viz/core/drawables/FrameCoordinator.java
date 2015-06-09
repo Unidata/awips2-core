@@ -871,7 +871,7 @@ public class FrameCoordinator implements IFrameCoordinator {
                 dateIndex = indexToUpdateTo(currentFrames, currentIndex,
                         newFrames,
                         dateIndex);
-                if ((dateIndex >= 0) && (dateIndex < (newFrames.length - 1))) {
+                if ((dateIndex >= 0) && (dateIndex < newFrames.length)) {
                     return dateIndex;
                 }
             }
