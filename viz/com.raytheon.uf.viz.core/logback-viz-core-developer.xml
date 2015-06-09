@@ -31,7 +31,7 @@
    </logger>
    
    <logger name="PerformanceLogger">
-   	  <level value="ALL"/>
+      <level value="ALL"/>
    </logger>
 
    <!-- TODO should somehow be contributed from viz.gfe plugin -->

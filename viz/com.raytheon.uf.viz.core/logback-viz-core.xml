@@ -109,8 +109,8 @@
    </logger>
 
    <logger name="PerformanceLogger" additivity="false">
-   	  <level value="ALL"/>
-   	  <appender-ref ref="AsyncPerfLogAppender"/>
+      <level value="ALL"/>
+      <appender-ref ref="AsyncPerfLogAppender"/>
    </logger>
 
    <logger name="ProductEditorLogger" additivity="false">
