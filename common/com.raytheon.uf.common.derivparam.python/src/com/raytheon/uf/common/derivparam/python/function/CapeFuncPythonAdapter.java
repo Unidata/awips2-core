@@ -19,11 +19,11 @@
  **/
 package com.raytheon.uf.common.derivparam.python.function;
 
-import jep.INumpyable;
+import jep.NDArray;
 
 /**
  * Calls {@link com.raytheon.uf.common.wxmath.CapeFunc} and transforms the
- * output into an INumpyable.
+ * output into an NDArray.
  * 
  * <pre>
  * 
@@ -32,6 +32,7 @@ import jep.INumpyable;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 13, 2013            njensen     Initial creation
+ * Apr 22, 2015  4259      njensen     Updated for new JEP API
  * 
  * </pre>
  * 
@@ -41,54 +42,26 @@ import jep.INumpyable;
 
 public class CapeFuncPythonAdapter {
 
-    public static class CapeCinPair implements INumpyable {
-
-        private final int nx;
-
-        private final int ny;
-
-        private final float[] cape;
-
-        private final float[] cin;
-
-        public CapeCinPair(int nx, int ny, float[] cape, float[] cin) {
-            this.nx = nx;
-            this.ny = ny;
-            this.cape = cape;
-            this.cin = cin;
-        }
-
-        @Override
-        public Object[] getNumpy() {
-            return new Object[] { cape, cin };
-        }
-
-        @Override
-        public int getNumpyX() {
-            return nx;
-        }
-
-        @Override
-        public int getNumpyY() {
-            return ny;
-        }
-
-    }
-
-    public static INumpyable capeFunc(float usetv, float[] p_dat,
+    public static NDArray<?>[] capeFunc(float usetv, float[] p_dat,
             float[] tve_dat, float[] p0, float[] th0, float[] sh0, int nx,
             int ny, int nz) {
         float[][] result = com.raytheon.uf.common.wxmath.CapeFunc.capeFunc(
                 usetv, p_dat, tve_dat, p0, th0, sh0, nx, ny, nz);
-        return new CapeCinPair(ny, nx, result[0], result[1]);
+        NDArray<?>[] arr = new NDArray[2];
+        arr[0] = new NDArray<float[]>(result[0], nx, ny);
+        arr[1] = new NDArray<float[]>(result[1], nx, ny);
+        return arr;
     }
 
-    public static INumpyable capeFuncTop(float usetv, float[] p_dat,
+    public static NDArray<?>[] capeFuncTop(float usetv, float[] p_dat,
             float[] tve_dat, float[] p0, float[] th0, float[] sh0,
             float[] ptop, int nx, int ny, int nz) {
         float[][] result = com.raytheon.uf.common.wxmath.CapeFunc.capeFuncTop(
                 usetv, p_dat, tve_dat, p0, th0, sh0, ptop, nx, ny, nz);
-        return new CapeCinPair(ny, nx, result[0], result[1]);
+        NDArray<?>[] arr = new NDArray[2];
+        arr[0] = new NDArray<float[]>(result[0], nx, ny);
+        arr[1] = new NDArray<float[]>(result[1], nx, ny);
+        return arr;
     }
 
 }

@@ -23,6 +23,7 @@ import java.util.List;
 
 import jep.Jep;
 import jep.JepException;
+import jep.NamingConventionClassEnquirer;
 
 /**
  * Interfaces to a native python interpreter with JEP.
@@ -35,6 +36,7 @@ import jep.JepException;
  * Dec 07, 2009            njensen     Initial creation
  * Sep 05, 2013  #2307     dgilling    Remove constructor without explicit
  *                                     ClassLoader.
+ * Apr 27, 2015   4259     njensen     Update for new JEP API
  * 
  * </pre>
  * 
@@ -42,7 +44,7 @@ import jep.JepException;
  * @version 1.0
  */
 
-public abstract class PythonInterpreter {
+public abstract class PythonInterpreter implements AutoCloseable {
 
     private static final String CLEANUP = "def cleanup():\n"
             + "   g = globals()\n" + "   for i in g:\n"
@@ -50,6 +52,22 @@ public abstract class PythonInterpreter {
             + "         g[i] = None\n\n";
 
     protected Jep jep;
+
+    /**
+     * Constructor
+     * 
+     * @param anIncludePath
+     *            the python include path, with multiple directories being
+     *            separated by :
+     * @param aClassLoader
+     *            the java classloader to use for importing java classes inside
+     *            python
+     * @throws JepException
+     */
+    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader)
+            throws JepException {
+        this(null, anIncludePath, aClassLoader);
+    }
 
     /**
      * Constructor
@@ -66,8 +84,7 @@ public abstract class PythonInterpreter {
      */
     public PythonInterpreter(String aFilePath, String anIncludePath,
             ClassLoader aClassLoader) throws JepException {
-        jep = new Jep(false, anIncludePath, aClassLoader);
-        initializeJep(aFilePath, null);
+        this(aFilePath, anIncludePath, aClassLoader, null);
     }
 
     /**
@@ -79,12 +96,15 @@ public abstract class PythonInterpreter {
      * @param aClassLoader
      *            the java classloader to use for importing java classes inside
      *            python
+     * @param preEvals
+     *            String statements to be run by the python interpreter
+     *            immediately. This is generally used to create global vars in
+     *            the python interpreter.
      * @throws JepException
      */
-    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader)
-            throws JepException {
-        jep = new Jep(false, anIncludePath, aClassLoader);
-        initializeJep(null, null);
+    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader,
+            List<String> preEvals) throws JepException {
+        this(null, anIncludePath, aClassLoader, preEvals);
     }
 
     /**
@@ -107,29 +127,9 @@ public abstract class PythonInterpreter {
     public PythonInterpreter(String aFilePath, String anIncludePath,
             ClassLoader aClassLoader, List<String> preEvals)
             throws JepException {
-        jep = new Jep(false, anIncludePath, aClassLoader);
+        jep = new Jep(false, anIncludePath, aClassLoader,
+                new NamingConventionClassEnquirer());
         initializeJep(aFilePath, preEvals);
-    }
-
-    /**
-     * Constructor
-     * 
-     * @param anIncludePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
-     * @param preEvals
-     *            String statements to be run by the python interpreter
-     *            immediately. This is generally used to create global vars in
-     *            the python interpreter.
-     * @throws JepException
-     */
-    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader,
-            List<String> preEvals) throws JepException {
-        jep = new Jep(false, anIncludePath, aClassLoader);
-        initializeJep(null, preEvals);
     }
 
     /**
@@ -145,9 +145,6 @@ public abstract class PythonInterpreter {
      */
     private void initializeJep(String filePath, List<String> preEvals)
             throws JepException {
-        // this enables easy import of java classes in the python script
-        jep.eval("import JavaImporter");
-
         if (preEvals != null) {
             for (String statement : preEvals) {
                 jep.eval(statement);
@@ -196,6 +193,11 @@ public abstract class PythonInterpreter {
         } catch (Throwable t) {
             t.printStackTrace();
         }
+    }
+
+    @Override
+    public void close() {
+        this.dispose();
     }
 
 }

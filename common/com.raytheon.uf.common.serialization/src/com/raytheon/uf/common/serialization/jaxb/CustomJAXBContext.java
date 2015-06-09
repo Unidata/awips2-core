@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,18 +29,24 @@ import com.sun.xml.internal.bind.v2.runtime.JAXBContextImpl;
 
 /**
  * Custom JAXBContext, used to create CustomJAXBUnmarshaller (which creates
- * needed CustomContentHandler)
- * 
+ * needed CustomContentHandler).
+ *
+ * This class is created by
+ * {@link SerializationContextFactory#createContext(Class[], java.util.Map)}
+ * when a call to {@link JAXBContext#newInstance(Class...)} includes
+ * {@link JaxbDummyObject}.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 13, 2011            mschenke     Initial creation
- * 
+ * Jun 04, 2015 4496       nabowle      Updated javadoc.
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  * @version 1.0
  */
@@ -58,7 +64,7 @@ public class CustomJAXBContext extends JAXBContext {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.JAXBContext#createMarshaller()
      */
     @Override
@@ -68,7 +74,7 @@ public class CustomJAXBContext extends JAXBContext {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.JAXBContext#createUnmarshaller()
      */
     @Override
@@ -78,7 +84,7 @@ public class CustomJAXBContext extends JAXBContext {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.JAXBContext#createValidator()
      */
     @Override

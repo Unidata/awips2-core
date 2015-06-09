@@ -28,6 +28,7 @@ import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizCommunicationException;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.exception.VizServerSideException;
+import com.raytheon.uf.viz.core.requests.ThriftClient;
 
 /**
  * 
@@ -41,12 +42,15 @@ import com.raytheon.uf.viz.core.exception.VizServerSideException;
  *    ------------	----------	-----------	--------------------------
  *    7/1/06                    chammack    Initial Creation.
  *    4/17/08       1088        chammack    Refactored to use apache httpclient
+ *    5/21/15       4495        njensen     Deprecated
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1
+ * @deprecated use {@link ThriftClient} instead
  */
+@Deprecated
 public class Connector {
 
     private static final String ENDPOINT_NAME = "/pyproductthrift";

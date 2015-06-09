@@ -17,66 +17,46 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.python;
-
-import jep.INumpyable;
+package com.raytheon.viz.core.contours.util;
 
 /**
- * Simple wrapper of data to send to python
+ * TODO Add Description
  * 
  * <pre>
+ * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 10, 2011            rjpeter     Initial creation
+ * May 27, 2010            rjpeter     Initial creation
+ * 
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 
-public class PythonNumpyFloatArray implements INumpyable {
+public class FortConConfig {
+    public int mode;
 
-    private float[] messageData;
+    public float[] seed;
 
-    private int nx;
+    public float badlo;
 
-    private int ny;
+    public float badhi;
 
-    public PythonNumpyFloatArray(float[] data, int nx, int ny) {
-        this.messageData = data;
-        this.nx = nx;
-        this.ny = ny;
-    }
+    public float xOffset;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see jep.INumpyable#getNumpy()
-     */
-    @Override
-    public Object[] getNumpy() {
-        return new Object[] { messageData };
-    }
+    public float yOffset;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see jep.INumpyable#getNumpyX()
-     */
-    @Override
-    public int getNumpyX() {
-        return nx;
-    }
+    public int labelSpacingLine;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see jep.INumpyable#getNumpyY()
-     */
-    @Override
-    public int getNumpyY() {
-        return ny;
-    }
+    public int labelSpacingOverall;
 
+    public int minMaxRadius;
+
+    public boolean generateMins;
+
+    public boolean generateMaxes;
+
+    public String labelFormat;
 }

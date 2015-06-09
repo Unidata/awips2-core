@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Capabilities
 Bundle-SymbolicName: com.raytheon.viz.core;singleton:=true
-Bundle-Version: 1.14.4.qualifier
+Bundle-Version: 1.15.0.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  com.raytheon.uf.common.localization,
@@ -26,10 +26,10 @@ Export-Package:
  com.raytheon.viz.core.mode,
  com.raytheon.viz.core.preferences,
  com.raytheon.viz.core.rsc,
- com.raytheon.viz.core.rsc.displays,
  com.raytheon.viz.core.rsc.hdf5,
  com.raytheon.viz.core.rsc.jts
 Bundle-Vendor: Raytheon
 Bundle-Activator: com.raytheon.viz.core.CorePlugin
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-ClassPath: com.raytheon.viz.core.jar

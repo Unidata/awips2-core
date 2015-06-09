@@ -26,13 +26,12 @@ import java.util.List;
 import java.util.Map;
 
 import jep.JepException;
+import jep.NDArray;
 
-import com.raytheon.uf.common.datastorage.records.ByteDataRecord;
+import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
-import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
-import com.raytheon.uf.common.datastorage.records.LongDataRecord;
-import com.raytheon.uf.common.datastorage.records.ShortDataRecord;
 import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.derivparam.library.DerivedParameterRequest;
 import com.raytheon.uf.common.inventory.tree.CubeLevel;
@@ -52,6 +51,7 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Oct 29, 2013  2476     njensen     Renamed numeric methods to numpy
  * Apr 11, 2014  2947     bsteffen    Allow returning NaN
  * May 01, 2014  3101     njensen     Safe cast result shape values to Number
+ * Apr 20, 2015  4259     njensen     Updated for new Jep API
  * 
  * </pre>
  * 
@@ -245,10 +245,12 @@ public class MasterDerivScript extends PythonInterpreter {
             setDataRecordArg(argName, (IDataRecord) argValue);
         } else if (argValue instanceof float[]) {
             float[] val = (float[]) argValue;
-            jep.setNumpy(argName, val, val.length, 1);
+            NDArray<float[]> arr = new NDArray<>(val, val.length);
+            jep.set(argName, arr);
         } else if (argValue instanceof int[]) {
             int[] val = (int[]) argValue;
-            jep.setNumpy(argName, val, val.length, 1);
+            NDArray<int[]> arr = new NDArray<>(val, val.length);
+            jep.set(argName, arr);
         } else if (argValue instanceof Float) {
             jep.set(argName, (argValue));
         } else if (argValue instanceof DerivedParameterRequest) {
@@ -299,60 +301,6 @@ public class MasterDerivScript extends PythonInterpreter {
         return result;
     }
 
-    protected void getExecutionResult(List<IDataRecord> result, long[] shape)
-            throws JepException {
-        filterResult();
-        // create result as a list with a single float array
-        Object valObj = jep.getValue(RESULT);
-        if (valObj instanceof float[]) {
-            if (shape == null) {
-                shape = getResultShape();
-            }
-            result.add(new FloatDataRecord(DATA_NAME, "", (float[]) valObj,
-                    shape.length, shape));
-        } else if (valObj instanceof double[]) {
-            if (shape == null) {
-                shape = getResultShape();
-            }
-            double[] dData = (double[]) valObj;
-            float[] fData = new float[dData.length];
-            for (int i = 0; i < dData.length; i++) {
-                fData[i] = (float) dData[i];
-            }
-            result.add(new FloatDataRecord(DATA_NAME, "", fData, shape.length,
-                    shape));
-        } else if (valObj instanceof int[]) {
-            if (shape == null) {
-                shape = getResultShape();
-            }
-            result.add(new IntegerDataRecord(DATA_NAME, "", (int[]) valObj,
-                    shape.length, shape));
-        } else if (valObj instanceof byte[]) {
-            if (shape == null) {
-                shape = getResultShape();
-            }
-            result.add(new ByteDataRecord(DATA_NAME, "", (byte[]) valObj,
-                    shape.length, shape));
-        } else if (valObj instanceof String[]) {
-            if (shape == null) {
-                shape = getResultShape();
-            }
-            result.add(new StringDataRecord(DATA_NAME, "", (String[]) valObj,
-                    shape.length, shape));
-        } else {
-            // wrap value in containers to meet return type requirements
-            float[] oneVal = new float[1];
-            if (!(valObj instanceof Float)) {
-                // try to coerce it to a float
-                jep.eval(RESULT + " = float(" + RESULT + ")");
-                valObj = jep.getValue(RESULT);
-            }
-            oneVal[0] = ((Float) valObj).floatValue();
-            result.add(new FloatDataRecord(DATA_NAME, "", oneVal, 1,
-                    new long[] { 1 }));
-        }
-    }
-
     private void filterResult() throws JepException {
         // String conversion
         jep.eval("import numpy");
@@ -365,86 +313,96 @@ public class MasterDerivScript extends PythonInterpreter {
         jep.eval("del globals()['numpy']");
     }
 
-    private long[] getResultShape() throws JepException {
-        jep.eval("import numpy");
-        int nDims = (Integer) jep.getValue("len(numpy.shape(" + RESULT + "))");
-
-        long[] dims = new long[nDims];
-        for (int i = 0; i < nDims; i++) {
-            dims[i] = ((Number) jep.getValue("numpy.shape(" + RESULT + ")[" + i
-                    + "]")).longValue();
-        }
-
-        if (dims.length == 2) {
-            // TODO: this is ridiculous
-            long swap = dims[0];
-            dims[0] = dims[1];
-            dims[1] = swap;
-        }
-
-        jep.eval("numpy = None");
-        jep.eval("del globals()['numpy']");
-        return dims;
-    }
-
     private void setDataRecordArg(String argName, IDataRecord argValue)
             throws JepException {
-        boolean reshape = true;
         long[] sizes = argValue.getSizes();
-        if (argValue instanceof FloatDataRecord) {
-            FloatDataRecord record = (FloatDataRecord) argValue;
-            if (sizes.length == 2) {
-                jep.setNumpy(argName, record.getFloatData(), (int) sizes[0],
-                        (int) sizes[1]);
-                reshape = false;
-            } else {
-                evaluateArgument(argName, record.getFloatData());
-            }
-            jep.eval("import numpy");
-            jep.eval(argName + "[" + argName + " <= -9999] = numpy.NaN");
-            jep.eval(argName + "[" + argName + " >= 999999] = numpy.NaN");
-            jep.eval("numpy = None");
-            jep.eval("del globals()['numpy']");
-        } else if (argValue instanceof IntegerDataRecord) {
-            IntegerDataRecord record = (IntegerDataRecord) argValue;
-            if (sizes.length == 2) {
-                jep.setNumpy(argName, record.getIntData(), (int) sizes[0],
-                        (int) sizes[1]);
-                reshape = false;
-            } else {
-                evaluateArgument(argName, record.getIntData());
-            }
-        } else if (argValue instanceof ByteDataRecord) {
-            ByteDataRecord record = (ByteDataRecord) argValue;
-            if (sizes.length == 2) {
-                jep.setNumpy(argName, record.getByteData(), (int) sizes[0],
-                        (int) sizes[1]);
-                reshape = false;
-            } else {
-                evaluateArgument(argName, record.getByteData());
+        int[] isizes = new int[sizes.length];
+        for (int i = 0; i < sizes.length; i++) {
+            /*
+             * FIXME BAD! We shouldn't be reversing these, but putting them in
+             * the correct order will break any deriv param python math using
+             * the location of each point in relation to nearby points.
+             * Unfortunately the deriv param math in those cases was altered to
+             * account for the incorrect x/y ordering that existed previously.
+             */
+            // isizes[i] = (int) sizes[i];
+            isizes[i] = (int) sizes[sizes.length - 1 - i];
+        }
+        if (!(argValue instanceof StringDataRecord)) {
+            NDArray<?> arr = new NDArray<>(argValue.getDataObject(), isizes);
+            jep.set(argName, arr);
+            // numpy.NaN only supports float types
+            if (argValue instanceof FloatDataRecord
+                    || argValue instanceof DoubleDataRecord) {
+                jep.eval("import numpy");
+                jep.eval(argName + "[" + argName + " <= -9999] = numpy.NaN");
+                jep.eval(argName + "[" + argName + " >= 999999] = numpy.NaN");
+                jep.eval("numpy = None");
+                jep.eval("del globals()['numpy']");
             }
         } else {
             jep.set(argName, argValue);
             jep.eval("import numpy");
-            if (argValue instanceof LongDataRecord) {
-                jep.eval(argName + " = numpy.array(" + argName
-                        + ".getLongData())");
-            } else if (argValue instanceof ShortDataRecord) {
-                jep.eval(argName + " = numpy.array(" + argName
-                        + ".getShortData())");
-            } else if (argValue instanceof StringDataRecord) {
-                jep.eval(argName + " = numpy.array(" + argName
-                        + ".getStringData())");
-            } else {
-                jep.eval(argName + " = numpy.array(" + argName
-                        + ".getDataObject())");
-            }
+            jep.eval(argName + " = numpy.array(" + argName
+                    + ".getStringData())");
+            jep.set("shape", argValue.getSizes());
+            jep.eval(argName + " = " + argName + ".reshape(tuple(shape))");
             jep.eval("numpy = None");
             jep.eval("del globals()['numpy']");
         }
-        if (reshape) {
-            jep.set("shape", argValue.getSizes());
-            jep.eval(argName + " = " + argName + ".reshape(tuple(shape))");
+    }
+
+    @SuppressWarnings("unchecked")
+    protected void getExecutionResult(List<IDataRecord> result, long[] shape)
+            throws JepException {
+        filterResult();
+        // create result as a list with a single float array
+        Object valObj = jep.getValue(RESULT);
+        if (valObj instanceof NDArray) {
+            NDArray<?> arr = (NDArray<?>) valObj;
+            Object data = arr.getData();
+            int[] dims = arr.getDimensions();
+            long[] sizes = new long[dims.length];
+            for (int i = 0; i < dims.length; i++) {
+                /*
+                 * FIXME BAD! We shouldn't be reversing these, but putting them
+                 * in the correct order will break any deriv param python math
+                 * using the location of each point in relation to nearby
+                 * points. Unfortunately the deriv param math in those cases was
+                 * altered to account for the incorrect x/y ordering that
+                 * existed previously.
+                 */
+                // sizes[i] = dims[i];
+                sizes[i] = dims[dims.length - 1 - i];
+            }
+            if (data instanceof double[]) {
+                // FIXME double support please? we shouldn't have to do this
+                double[] dData = (double[]) data;
+                float[] fData = new float[dData.length];
+                for (int i = 0; i < dData.length; i++) {
+                    fData[i] = (float) dData[i];
+                }
+                result.add(DataStoreFactory.createStorageRecord(DATA_NAME, "",
+                        fData, sizes.length, sizes));
+            } else {
+                result.add(DataStoreFactory.createStorageRecord(DATA_NAME, "",
+                        data, sizes.length, sizes));
+            }
+        } else if (valObj instanceof List<?>) {
+            // the only way to get in here is with Strings
+            String[] vals = ((List<String>) valObj).toArray(new String[0]);
+            result.add(new StringDataRecord(DATA_NAME, "", vals));
+        } else {
+            // wrap value in containers to meet return type requirements
+            float[] oneVal = new float[1];
+            if (!(valObj instanceof Float)) {
+                // try to coerce it to a float
+                jep.eval(RESULT + " = float(" + RESULT + ")");
+                valObj = jep.getValue(RESULT);
+            }
+            oneVal[0] = ((Float) valObj).floatValue();
+            result.add(new FloatDataRecord(DATA_NAME, "", oneVal, 1,
+                    new long[] { 1 }));
         }
     }
 

@@ -27,7 +27,7 @@
          id="com.google.guava"
          download-size="0"
          install-size="0"
-         version="11.0.2"/>
+         version="18.0.0"/>
 
    <plugin
          id="com.raytheon.uf.common.alertmonitor"
@@ -297,34 +297,7 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="2.3.0"/>
-
-   <plugin
-         id="org.jep.linux64"
-         os="linux"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="2.3.0"
-         fragment="true"/>
-
-   <plugin
-         id="org.jep.win32"
-         os="win32"
-         arch="x86"
-         download-size="0"
-         install-size="0"
-         version="2.3.0"
-         fragment="true"/>
-
-   <plugin
-         id="org.jep.win64"
-         os="win32"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         fragment="true"/>
+         version="3.3.0"/>
 
    <plugin
          id="org.slf4j"
@@ -363,7 +336,7 @@
          id="org.apache.qpid"
          download-size="0"
          install-size="0"
-         version="0.30.0"/>
+         version="0.32.0"/>
 
    <plugin
          id="org.quartz"
@@ -381,7 +354,7 @@
          id="ch.qos.logback"
          download-size="0"
          install-size="0"
-         version="1.0.13"/>
+         version="1.1.2"/>
 
    <plugin
          id="com.raytheon.uf.common.topo"
@@ -434,12 +407,6 @@
          download-size="0"
          install-size="0"
          version="2.9.1"/>
-
-   <plugin
-         id="com.googlecode.concurrentlinkedhashmap"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
 
    <plugin
          id="com.raytheon.uf.common.convert"

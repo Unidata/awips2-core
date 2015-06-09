@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.productbrowser;
  **/
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -50,7 +51,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
 import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
+import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants;
 import com.raytheon.viz.ui.BundleProductLoader;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -59,17 +60,22 @@ import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
- * Product browser abstract requestable implementation
+ * @deprecated The design of this class makes excessive use of internal state
+ *             that make it inherently thread-unsafe and confusing to implement.
+ *             New development of data definitions should be done by
+ *             implementing {@link ProductBrowserDataDefinition} directly
+ *             instead of extending this class.
  * 
- * <pre>
+ *             <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 03, 2010           mnash       Initial creation
- * May 02, 2013  1949     bsteffen    Switch Product Browser from uengine to
- *                                    DbQueryRequest.
- * May 13, 2014  3135     bsteffen    Remove ISerializableObject.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 03, 2010           mnash     Initial creation
+ * May 02, 2013  1949     bsteffen  Switch Product Browser from uengine to
+ *                                  DbQueryRequest.
+ * May 13, 2014  3135     bsteffen  Remove ISerializableObject.
+ * Jun 02, 2015  4153     bsteffen  Extract interface and deprecate.
  * 
  * </pre>
  * 
@@ -77,6 +83,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * @version 1.0
  * @param <T>
  */
+@Deprecated
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractRequestableProductBrowserDataDefinition<T extends AbstractRequestableResourceData>
         extends AbstractProductBrowserDataDefinition<T> {
@@ -93,7 +100,9 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     // request constraints
     protected String[] order = null;
 
-    protected static final String ORDER = "Order";
+    /** Use {@link ProductBrowserPreferenceConstants#FORMAT_DATA} instead */
+    @Deprecated
+    protected static final String ORDER = ProductBrowserPreferenceConstants.ORDER;
 
     /**
      * First population when product browser is opened, decides what data types
@@ -363,22 +372,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     @Override
     protected List<ProductBrowserPreference> configurePreferences() {
         List<ProductBrowserPreference> widgets = super.configurePreferences();
-        ProductBrowserPreference preference = null;
-        preference = new ProductBrowserPreference();
-        preference.setLabel(ORDER);
-        preference.setPreferenceType(PreferenceType.STRING_ARRAY);
-        preference.setValue(order);
-        preference
-                .setTooltip("Change the order to make things appear in a different order in the Product Browser");
-        widgets.add(preference);
-
-        preference = new ProductBrowserPreference();
-        preference.setLabel(FORMAT_DATA);
-        preference.setPreferenceType(PreferenceType.BOOLEAN);
-        preference.setValue(true);
-        preference
-                .setTooltip("Check to format the data or not (not will give exact parameter that is queried for, not the nice looking version");
-        widgets.add(preference);
+        widgets.add(ProductBrowserPreferenceConstants.createOrderPreference(order));
+        widgets.add(ProductBrowserPreferenceConstants.createFormatPreference());
         return widgets;
     }
 
@@ -392,5 +387,29 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
             order = temp.split(",");
         }
         return order;
+    }
+
+    @Override
+    public List<ProductBrowserLabel> getLabels(String[] selection) {
+        if (selection.length == 0) {
+            ProductBrowserLabel label = new ProductBrowserLabel(displayName, productName);
+            label.setData(productName);
+            label.setProduct(order.length == 0);
+            return Collections.singletonList(label);
+
+        }
+        return super.getLabels(selection);
+    }
+
+    @Override
+    public String getProductInfo(String[] selection) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(PLUGIN_NAME + " = " + productName);
+
+        for (int i = 1; i < selection.length; i++) {
+            stringBuilder.append("\n");
+            stringBuilder.append(order[i - 1] + " = " + selection[i]);
+        }
+        return stringBuilder.toString();
     }
 }

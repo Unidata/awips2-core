@@ -34,6 +34,7 @@ import java.security.KeyStore;
  * Feb 10, 2014    2704     njensen     Added credentialsFailed()
  * Sep 3, 2014     3570     bclement    added host and port to getCredentials()
  * Nov 15, 2014    3757     dhladky     Consolidated the Credentials handler to be a general HTTPS handler.
+ * May 10, 2015    4435     dhladky     KeyStore loading needed for presentation of keys to SSL servers.
  * 
  * 
  * </pre>
@@ -63,11 +64,22 @@ public interface IHttpsHandler {
     void credentialsFailed();
     
     /**
-     *
      * Get the trustore used to validate certificates
-     * @param truststore
+     * @return
      */
     KeyStore getTruststore();
+    
+    /**
+     * Get the keystore used to submit certificates
+     * @return
+     */
+    KeyStore getKeystore();
+    
+    /**
+     * Get the un-encrypted keystore password.
+     * @return
+     */
+    char[] getKeystorePassword();
     
     /**
      * Whether or not you care to validate certificates

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core;singleton:=true
-Bundle-Version: 1.14.6.qualifier
+Bundle-Version: 1.15.1.qualifier
 Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
@@ -87,3 +87,4 @@ Export-Package: com.raytheon.uf.viz.core,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.inventory.exception,
  com.raytheon.uf.viz.datacube
+Bundle-ClassPath: com.raytheon.uf.viz.core.jar,.

@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common Plug-in
 Bundle-SymbolicName: com.raytheon.edex.common
-Bundle-Version: 1.14.1.qualifier
+Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: RAYTHEON
 Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.db.dao,
@@ -38,5 +38,4 @@ Require-Bundle: org.apache.commons.lang,
  com.raytheon.uf.edex.core;visibility:=reexport,
  org.slf4j;bundle-version="1.7.5"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Import-Package: com.googlecode.concurrentlinkedhashmap,
- com.raytheon.uf.common.convert
+Import-Package: com.raytheon.uf.common.convert

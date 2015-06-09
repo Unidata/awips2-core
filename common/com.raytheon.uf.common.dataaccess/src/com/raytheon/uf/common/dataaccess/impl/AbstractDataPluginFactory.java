@@ -20,7 +20,6 @@
 package com.raytheon.uf.common.dataaccess.impl;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -65,6 +64,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                    times/locationNames.
  * Feb 27, 2015  4179     mapeters    Add getAvailableValues(), change methods
  *                                    to use it.
+ * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
  * 
  * 
  * </pre>
@@ -127,9 +127,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         for (Object result : results) {
             dataTimes.add((DataTime) result);
         }
-        Collections.sort(dataTimes);
 
-        return dataTimes.toArray(new DataTime[dataTimes.size()]);
+        return dataTimes.toArray(new DataTime[0]);
     }
 
     @Override
