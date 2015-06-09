@@ -17,9 +17,11 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.policy;
 
 import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
+
+import com.raytheon.uf.common.logback.LogbackUtil;
 
 /**
  * Fixed window rolling policy that determines the filename pattern from an
@@ -33,6 +35,7 @@ import ch.qos.logback.core.rolling.FixedWindowRollingPolicy;
  * ------------ ---------- ----------- --------------------------
  * Jun 26, 2013 2142       njensen     Initial creation
  * Oct 10, 2014 3675       njensen     Include pid in filename
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 

@@ -17,12 +17,14 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback;
 
-import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
+import ch.qos.logback.core.status.OnConsoleStatusListener;
+import ch.qos.logback.core.status.Status;
 
 /**
- * This class uses a standard pattern when an instance pattern is not defined.
+ * Status listener for Logback's internal status messages. Shows warnings and
+ * errors from logback itself to the console.
  * 
  * <pre>
  * 
@@ -30,37 +32,22 @@ import ch.qos.logback.classic.encoder.PatternLayoutEncoder;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 16, 2015 4015       rferrel     Initial creation
+ * Jun 27, 2013 2142       njensen     Initial creation
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 
- * @author rferrel
+ * @author njensen
  * @version 1.0
  */
 
-public class UFStdEncoder extends PatternLayoutEncoder {
-    /**
-     * When false %nopex is added to the standard pattern.
-     */
-    private boolean trace = true;
+public class UFLogbackInternalStatusListener extends OnConsoleStatusListener {
 
     @Override
-    public String getPattern() {
-        String pattern = super.getPattern();
-        if ((pattern == null) || pattern.trim().isEmpty()) {
-            pattern = LogbackUtil.getUFMessagePattern(context);
-            if (!trace) {
-                pattern += " %nopex";
-            }
+    public void addStatusEvent(Status status) {
+        if (status.getLevel() >= Status.WARN) {
+            super.addStatusEvent(status);
         }
-        return pattern;
     }
 
-    public boolean isTrace() {
-        return trace;
-    }
-
-    public void setTrace(boolean trace) {
-        this.trace = trace;
-    }
 }

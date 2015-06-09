@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.appender;
 
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -47,6 +47,7 @@ import ch.qos.logback.core.spi.AppenderAttachableImpl;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 15, 2014  #3633     dgilling     Initial creation
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 

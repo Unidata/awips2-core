@@ -4,8 +4,8 @@
    -->
 
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
-      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
-      <filter class="com.raytheon.uf.common.status.logback.InvertedThresholdFilter">
+      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+      <filter class="com.raytheon.uf.common.logback.filter.InvertedThresholdFilter">
          <level>INFO</level>
       </filter>
    </appender>
@@ -15,7 +15,7 @@
       <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
         <level>WARN</level>
       </filter>
-      <encoder class="com.raytheon.uf.common.status.logback.UFStdEncoder"/> 
+      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
    </appender>
       
    <!-- TODO should somehow be contributed from alertviz plugin -->
