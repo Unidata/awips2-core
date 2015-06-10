@@ -45,6 +45,7 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 2, 2015  4401       bkowal      Initial creation
+ * Jun 10, 2015 4401       bkowal      Fix comments.
  * 
  * </pre>
  * 
@@ -85,7 +86,7 @@ public class PerspectiveFileListDlg extends VizLocalizationFileListDlg {
      */
     @Override
     protected void createButtonComp(Composite mainComp) {
-        // Add buttom comp
+        // Add button comp
         Composite buttonComp = new Composite(mainComp, SWT.NONE);
         buttonComp.setLayout(new GridLayout(1, false));
         GridData gd = new GridData(SWT.CENTER, SWT.FILL, false, false);

@@ -20,8 +20,6 @@
 package com.raytheon.viz.ui.actions;
 
 import java.io.BufferedWriter;
-import java.io.File;
-import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -29,7 +27,6 @@ import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.swt.widgets.Shell;
@@ -39,18 +36,7 @@ import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.internal.WorkbenchPage;
 
-import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFileOutputStream;
-import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -80,18 +66,16 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  *    Mar 02, 2015  4204       njensen     Set bundle name to part name
  *    Jun 02, 2015  4401       bkowal      It is now also possible to load displays from
  *                                         localization. Renamed class; originally SaveProcedure.
+ *    Jun 10, 2015  4401       bkowal      Extend {@link AbstractVizPerspectiveLocalizationHandler}.
  * 
  * </pre>
  * 
  * @author chammack
  * @version 1
  */
-public class SavePerspectiveHandler extends AbstractHandler {
-
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(SavePerspectiveHandler.class);
-
-    public static final String PERSPECTIVES_DIR = "/perspectives";
+@SuppressWarnings("restriction")
+public class SavePerspectiveHandler extends
+        AbstractVizPerspectiveLocalizationHandler {
 
     private PerspectiveFileListDlg saveAsDlg;
 
@@ -103,7 +87,7 @@ public class SavePerspectiveHandler extends AbstractHandler {
      * .ExecutionEvent)
      */
     @Override
-    public Object execute(ExecutionEvent arg0) throws ExecutionException {
+    public Object execute(final ExecutionEvent event) throws ExecutionException {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
         if (this.saveAsDlg == null || this.saveAsDlg.getShell() == null
@@ -121,12 +105,11 @@ public class SavePerspectiveHandler extends AbstractHandler {
                     }
 
                     if (saveAsDlg.getFileSource() == FILE_SOURCE.LOCALIZATION) {
-                        saveProcedureLocalization(fn);
+                        savePerspectiveLocalization(fn, event);
                     } else if (saveAsDlg.getFileSource() == FILE_SOURCE.FILESYSTEM) {
                         saveProcedureFileSystem(fn);
                     }
                 }
-
             });
             saveAsDlg.open();
         } else {
@@ -136,7 +119,8 @@ public class SavePerspectiveHandler extends AbstractHandler {
         return null;
     }
 
-    private void saveProcedureLocalization(final String fileName) {
+    private void savePerspectiveLocalization(final String fileName,
+            final ExecutionEvent event) {
         String xml = null;
         Procedure procedure = getCurrentProcedure();
         try {
@@ -147,38 +131,7 @@ public class SavePerspectiveHandler extends AbstractHandler {
             return;
         }
 
-        IPathManager pm = PathManagerFactory.getPathManager();
-
-        LocalizationContext context = pm.getContext(
-                LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
-
-        LocalizationFile localizationFile = pm.getLocalizationFile(context,
-                PERSPECTIVES_DIR + File.separator + fileName);
-
-        LocalizationFileOutputStream lfos = null;
-        boolean writeSuccessful = false;
-        try {
-            lfos = localizationFile.openOutputStream();
-            lfos.write(xml.getBytes());
-            writeSuccessful = true;
-        } catch (Exception e) {
-            statusHandler.handle(Priority.CRITICAL,
-                    "Failed to write localization file: " + fileName + ".", e);
-        } finally {
-            if (lfos != null) {
-                try {
-                    if (writeSuccessful) {
-                        lfos.closeAndSave();
-                    } else {
-                        lfos.close();
-                    }
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.CRITICAL,
-                            "Failed to save localization file: " + fileName
-                                    + ".", e);
-                }
-            }
-        }
+        this.savePerspectiveLocalization(fileName, xml.getBytes(), event);
     }
 
     private void saveProcedureFileSystem(final String fileName) {
@@ -249,7 +202,7 @@ public class SavePerspectiveHandler extends AbstractHandler {
             }
         }
 
-        if (bundleList.size() > 0) {
+        if (bundleList.isEmpty() == false) {
             procedure.setBundles(bundleList.toArray(new Bundle[bundleList
                     .size()]));
         }

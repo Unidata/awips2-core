@@ -20,9 +20,11 @@
 package com.raytheon.viz.ui.actions;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 
-import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.swt.widgets.Shell;
@@ -52,7 +54,6 @@ import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.BundleLoader;
 import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
-import com.raytheon.viz.ui.actions.OpenPerspectiveFileListDlg.FILE_SOURCE;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.editor.AbstractEditor;
 
@@ -71,6 +72,8 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Aug 11, 2014  3480     bclement    added info logging to execute()
  * Jun 02, 2015  4401     bkowal      It is now also possible to load perspectives from
  *                                    localization. Renamed class; originally LoadSerializedXml.
+ * Jun 10, 2015  4401     bkowal      It is now possible to optionally upload a local file system file
+ *                                    to localization when loading it.
  * 
  * </pre>
  * 
@@ -78,14 +81,21 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * @version 1.0
  */
 
-public class LoadPerspectiveHandler extends AbstractHandler {
-    private static final IUFStatusHandler statusHandler = UFStatus
+@SuppressWarnings("restriction")
+public class LoadPerspectiveHandler extends
+        AbstractVizPerspectiveLocalizationHandler {
+
+    /**
+     * TODO: Remove this {@link IUFStatusHandler} when the
+     * {@link #deserialize(File)} method is removed.
+     */
+    private static final IUFStatusHandler deprecatedStatusHandler = UFStatus
             .getHandler(LoadPerspectiveHandler.class);
 
     private OpenPerspectiveFileListDlg dialog;
 
     @Override
-    public Object execute(ExecutionEvent event) throws ExecutionException {
+    public Object execute(final ExecutionEvent event) throws ExecutionException {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
 
@@ -97,8 +107,12 @@ public class LoadPerspectiveHandler extends AbstractHandler {
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
                         loadFromLocalization((LocalizationFile) returnValue);
-                    } else if (dialog.getFileSource() == FILE_SOURCE.FILESYSTEM) {
-                        loadFromFileSystem(dialog.getSelectedFileName());
+                    } else if (returnValue instanceof Path) {
+                        Path filePath = (Path) returnValue;
+                        if (dialog.importIntoLocalization()) {
+                            importIntoLocalization(filePath, event);
+                        }
+                        loadFromFileSystem(filePath);
                     }
                 }
             });
@@ -126,20 +140,42 @@ public class LoadPerspectiveHandler extends AbstractHandler {
         this.load(obj, localizationFile.getName());
     }
 
-    private void loadFromFileSystem(String fileName) {
-        statusHandler.info("Loading perspective file: " + fileName);
+    private void importIntoLocalization(Path filePath,
+            final ExecutionEvent event) {
+        statusHandler.info("Importing local perspective file: "
+                + filePath.toString() + " into localization.");
+
+        final byte[] fileContents;
+        try {
+            fileContents = Files.readAllBytes(filePath);
+        } catch (IOException e) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Failed to read localization file: " + filePath.toString()
+                            + " for upload.", e);
+            return;
+        }
+
+        /*
+         * Get the name of the file for localization.
+         */
+        String fileName = filePath.getFileName().toString();
+        this.savePerspectiveLocalization(fileName, fileContents, event, true);
+    }
+
+    private void loadFromFileSystem(Path filePath) {
+        statusHandler.info("Loading perspective file: " + filePath.toString());
 
         Object obj = null;
         try {
             obj = ProcedureXmlManager.getInstance().unmarshal(Object.class,
-                    new File(fileName));
+                    filePath.toFile());
         } catch (Exception e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to deserialize perspective file system file: "
-                            + fileName + ".", e);
+                            + filePath.toString() + ".", e);
             return;
         }
-        this.load(obj, fileName);
+        this.load(obj, filePath.toString());
     }
 
     /**
@@ -170,11 +206,10 @@ public class LoadPerspectiveHandler extends AbstractHandler {
         }
     }
 
-    /*
-     * This function is already wrapping a wrapped method. The only advantage
-     * that this layer of wrapping provides is catching an Exception and
-     * providing a generalized AlertViz message. However, a descriptive AlertViz
-     * message would be better.
+    /**
+     * @deprecated Use {@link ProcedureXmlManager#unmarshal(Class, String)}
+     *             directly instead. TODO: Remove the deprecatedStatusHandler
+     *             when this method is completely eliminated and removed.
      */
     @Deprecated
     public static Object deserialize(File fileName) {
@@ -184,7 +219,7 @@ public class LoadPerspectiveHandler extends AbstractHandler {
                     fileName);
         } catch (Exception e) {
             String errMsg = "Error occurred during xml deserialization";
-            statusHandler.handle(Priority.CRITICAL, errMsg, e);
+            deprecatedStatusHandler.handle(Priority.CRITICAL, errMsg, e);
         }
         return obj;
     }
@@ -279,7 +314,7 @@ public class LoadPerspectiveHandler extends AbstractHandler {
     }
 
     /**
-     * Use {@link BundleLoader} instead
+     * @deprecated Use {@link BundleLoader} instead
      * 
      * @param editor
      *            the container to load to

@@ -38,6 +38,8 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * ------------ ---------- ----------- --------------------------
  * ???                                 Initial creation
  * 02 Jun 2015  4401       bkowal      Re-factored for reuse.
+ * 10 Jun 2015  4401       bkowal      Update {@link #hasChildren()} to use
+ *                                     {@link List#isEmpty()}.
  * 
  * </pre>
  * 
@@ -78,7 +80,8 @@ public class VizLocalizationFileTree {
             // if we didn't find it travers the children
             iter = children.iterator();
             while (iter.hasNext()) {
-                VizLocalizationFileTree child = iter.next().findChildByText(text);
+                VizLocalizationFileTree child = iter.next().findChildByText(
+                        text);
                 if (child != null) {
                     return child;
                 }
@@ -97,10 +100,7 @@ public class VizLocalizationFileTree {
     }
 
     public boolean hasChildren() {
-        if (children != null && children.size() > 0) {
-            return true;
-        }
-        return false;
+        return (this.children != null && this.children.isEmpty() == false);
     }
 
     /**
