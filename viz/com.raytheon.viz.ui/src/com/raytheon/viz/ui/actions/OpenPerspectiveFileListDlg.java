@@ -20,6 +20,7 @@
 package com.raytheon.viz.ui.actions;
 
 import java.io.File;
+import java.nio.file.Paths;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
@@ -31,6 +32,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileTree;
 import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
 
 /**
@@ -44,6 +46,8 @@ import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 2, 2015  4401       bkowal      Initial creation
+ * Jun 10, 2015 4401       bkowal      It is now possible to optionally upload a local file system file
+ *                                     to localization when loading it.
  * 
  * </pre>
  * 
@@ -60,6 +64,8 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
     private FILE_SOURCE fileSource = FILE_SOURCE.LOCALIZATION;
 
     private Button fileButton;
+
+    private Button importBtn;
 
     /**
      * Constructor.
@@ -100,7 +106,58 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
             }
         });
 
+        this.importBtn = new Button(buttonComp, SWT.CHECK);
+        this.importBtn.setText("Import");
+        this.importBtn
+                .setToolTipText("Import selected local file system file into localization.");
+        this.importBtn.setEnabled(false);
+
         this.createCancelButton(buttonComp);
+    }
+
+    @Override
+    protected void handleLocalizationSelection() {
+        this.fileSource = FILE_SOURCE.LOCALIZATION;
+        this.importBtn.setSelection(false);
+        this.importBtn.setEnabled(false);
+        super.handleLocalizationSelection();
+    }
+
+    @Override
+    protected void showLocalizationAction(ShowType showType) {
+        /*
+         * This also results in resetting the selections; so, we want to undo /
+         * clear anything related to a file system load.
+         */
+        this.importBtn.setSelection(false);
+        this.importBtn.setEnabled(false);
+        super.showLocalizationAction(showType);
+    }
+
+    @Override
+    protected void selectAction() {
+        if (this.mode != Mode.OPEN) {
+            super.selectAction();
+        } else {
+            /*
+             * Depending on the currently set fileSource, we will either be
+             * returning a {@link LocalizationFile} or a {@link Path}.
+             */
+            this.fileName = this.localizationTF.getText();
+            if (this.fileSource == FILE_SOURCE.LOCALIZATION) {
+                VizLocalizationFileTree tmp = getSelectedTreeItem();
+                if (tmp == null) {
+                    this.displayOpenErrorDialog();
+                    return;
+                } else {
+                    setReturnValue(tmp.getFile());
+                }
+            } else {
+                setReturnValue(Paths.get(this.fileName));
+            }
+
+            close();
+        }
     }
 
     private void handleFileAction() {
@@ -126,13 +183,19 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
 
         this.fileName = selectedFileName;
         this.fileSource = FILE_SOURCE.FILESYSTEM;
-        close();
+        this.localizationTF.setText(this.fileName);
+        this.treeViewer.setSelection(null);
+        this.importBtn.setEnabled(true);
     }
 
     /**
-     * @return the fileSource
+     * Returns a boolean value indicating whether or not the loaded local file
+     * system file should also be imported into localization.
+     * 
+     * @return true, if the file should be imported into localization; during
+     *         load, false otherwise.
      */
-    public FILE_SOURCE getFileSource() {
-        return fileSource;
+    public boolean importIntoLocalization() {
+        return this.importBtn.getSelection();
     }
 }

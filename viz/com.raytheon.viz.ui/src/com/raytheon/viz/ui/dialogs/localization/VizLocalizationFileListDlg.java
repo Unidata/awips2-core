@@ -80,6 +80,8 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 03 Jul 2014 #3348       rferrel     Handle Enter event.
  * 03 Dec 2014  3549       njensen     Fix spacing/sizing of buttonComp
  * 02 Jun 2015  4401       bkowal      Re-factored for reuse.
+ * 10 Jun 2015  4401       bkowal      Prevent NPE when double-clicking with nothing
+ *                                     selected.
  * 
  * </pre>
  * 
@@ -100,7 +102,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected Text localizationTF;
 
     /** Tree that holds the localization data. */
-    private TreeViewer treeViewer;
+    protected TreeViewer treeViewer;
 
     /** OK button. */
     private Button okBtn;
@@ -351,13 +353,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         treeViewer.getTree().addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent arg0) {
-                if (!treeViewer.getTree().isDisposed()
-                        && treeViewer.getTree().getSelection().length > 0) {
-                    if (localizationTF != null && !localizationTF.isDisposed()) {
-                        localizationTF.setText(treeViewer.getTree()
-                                .getSelection()[0].getText());
-                    }
-                }
+                handleLocalizationSelection();
             }
 
             @Override
@@ -385,7 +381,17 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         }
     }
 
-    private void showLocalizationAction(ShowType showType) {
+    protected void handleLocalizationSelection() {
+        if (!treeViewer.getTree().isDisposed()
+                && treeViewer.getTree().getSelection().length > 0) {
+            if (localizationTF != null && !localizationTF.isDisposed()) {
+                localizationTF.setText(treeViewer.getTree().getSelection()[0]
+                        .getText());
+            }
+        }
+    }
+
+    protected void showLocalizationAction(ShowType showType) {
         this.selectedShowType = showType;
 
         treeViewer.getTree().removeAll();
@@ -574,6 +580,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      */
     private boolean checkSelectionToggle(
             VizLocalizationFileTree vizLocalizationFileTree) {
+        if (vizLocalizationFileTree == null) {
+            return false;
+        }
 
         if (vizLocalizationFileTree.hasChildren()) {
             // toggle and return true
@@ -592,7 +601,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      * 
      * @return The localization file tree.
      */
-    private VizLocalizationFileTree getSelectedTreeItem() {
+    protected VizLocalizationFileTree getSelectedTreeItem() {
         Object tmp = null;
         if (!treeViewer.getSelection().isEmpty()) {
             tmp = treeViewer.getTree().getSelection()[0].getData();
@@ -619,7 +628,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      * Action method that determines what mode the dialog is in. Action from the
      * OK button or double-clicking the item in the tree viewer.
      */
-    private void selectAction() {
+    protected void selectAction() {
 
         if (mode == Mode.SAVE) {
             if (localizationTF.getText() == null
@@ -712,7 +721,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      * Display a dialog letting the user know they have to select a file to open
      * it.
      */
-    private void displayOpenErrorDialog() {
+    protected void displayOpenErrorDialog() {
         MessageBox mb = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
         mb.setText("Selection Error");
         mb.setMessage("You must select a file to open it.");
