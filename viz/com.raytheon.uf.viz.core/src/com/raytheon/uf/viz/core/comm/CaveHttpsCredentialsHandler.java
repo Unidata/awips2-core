@@ -43,6 +43,7 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * Feb 10, 2014    2704    njensen     Added credentialsFailed()
  * Sep 03, 2014    3570    bclement    added host and port to getCredentials()
  * Nov 15, 2014    3757    dhladky     Added flag for certificate validation checks
+ * May 10, 2015    4435    dhladky     Updated interface to allow for loading keyStores.
  * 
  * </pre>
  * 
@@ -89,6 +90,22 @@ public class CaveHttpsCredentialsHandler implements IHttpsHandler {
          * Intentionally not implemented. By returning null, Java will fall back
          * to the default which contains all the major certificate vendors.
          */
+        return null;
+    }
+
+    @Override
+    public KeyStore getKeystore() {
+        /** 
+         * Load the keyStore you wish to submit keys for certificates from.
+         * If in the future CAVE needs to submit SSL cert keys to a server. This is
+         * Where they would come from. 
+         */
+        return null;
+    }
+
+    @Override
+    public char[] getKeystorePassword() {
+        /** un-encrypted password to your keyStore */
         return null;
     }
 
