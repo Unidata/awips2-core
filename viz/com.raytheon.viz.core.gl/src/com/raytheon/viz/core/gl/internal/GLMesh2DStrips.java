@@ -45,9 +45,10 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinateKey;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 1, 2010            mschenke     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Jul 01, 2010           mschenke  Initial creation
+ * Jun 11, 2015  4551     bsteffen  Add minNumDivs to getNumDivisions
  * 
  * </pre>
  * 
@@ -164,11 +165,11 @@ public class GLMesh2DStrips extends AbstractGLMesh {
 
             int horzDiv = MIN_HORZ_DIVS;
             if (maxHorzDiv > MIN_HORZ_DIVS) {
-                // start off estimating the number of horzintal divisions by
+                // start off estimating the number of horizontal divisions by
                 // using only the top and bottom.
-                int horzDivTop = getNumDivisions(tl, null, tr, null,
+                int horzDivTop = getNumDivisions(tl, null, tr, null, 4,
                         maxHorzDiv, mt);
-                int horzDivBot = getNumDivisions(bl, null, br, null,
+                int horzDivBot = getNumDivisions(bl, null, br, null, 4,
                         maxHorzDiv, mt);
                 horzDiv = Math.max(horzDivTop, horzDivBot);
             }
@@ -183,7 +184,7 @@ public class GLMesh2DStrips extends AbstractGLMesh {
                     double botY = bl[1] + (br[1] - bl[1]) * i / horzDiv;
                     double[] top = { topX, topY };
                     double[] bot = { botX, botY };
-                    int vertDivTest = getNumDivisions(top, null, bot, null,
+                    int vertDivTest = getNumDivisions(top, null, bot, null, 4,
                             maxVertDiv, mt);
                     vertDiv = Math.max(vertDiv, vertDivTest);
                 }
@@ -198,7 +199,7 @@ public class GLMesh2DStrips extends AbstractGLMesh {
                 double rightY = br[1] + (tr[1] - br[1]) * i / vertDiv;
                 double[] left = { leftX, leftY };
                 double[] right = { rightX, rightY };
-                int horzDivTest = getNumDivisions(left, null, right, null,
+                int horzDivTest = getNumDivisions(left, null, right, null, 4,
                         maxHorzDiv, mt);
                 horzDiv = Math.max(horzDiv, horzDivTest);
             }
@@ -220,8 +221,42 @@ public class GLMesh2DStrips extends AbstractGLMesh {
 
     private static final double THRESHOLD = 0.1;
 
+    /**
+     * Use a binary search to determine the number of divisions required to
+     * accurately represent a line.
+     * 
+     * @param p1
+     *            end point of a line in the native CRS.
+     * @param r1
+     *            end point of the line in the reprojected CRS. If this is null
+     *            it will be calculated, it is only passed in as an optimization
+     *            when this method calls itself recursively.
+     * @param p3
+     *            the second endpoint of the line in the native crs.
+     * @param r3
+     *            the second endpoint of the line in the reprojected CRS. It can
+     *            be null, same as r1.
+     * @param minNumDivs
+     *            minimum number of divisions. Some reprojections do not appear
+     *            distorted until you have reached at least 4 divisions. For
+     *            example when transforming a Lat/Lon grid that is centered on
+     *            the equator to a Mercator 2SP projection the. The first
+     *            division will land on the equator which is not detected as
+     *            distortion. The second division can theoretically land on the
+     *            SP which will not be detected as a distortion. the third
+     *            division will accurately detect the distortion.
+     * @param maxNumDivs
+     *            maximum number of times the line should be divided, used to
+     *            limit the level of recursion.
+     * @param mt
+     *            transform to use to repoject form the source CRS to the
+     *            destination CRS.
+     * @return the number of divisions to accuratly represent this line. A
+     *         number between minNumDivs and maxNumDivs.
+     * @throws TransformException
+     */
     private int getNumDivisions(double[] p1, double[] r1, double[] p3,
-            double[] r3, double maxNumDivs, MathTransform mt)
+            double[] r3, double minNumDivs, double maxNumDivs, MathTransform mt)
             throws TransformException {
         if (r1 == null) {
             r1 = new double[p1.length];
@@ -252,14 +287,16 @@ public class GLMesh2DStrips extends AbstractGLMesh {
         double dX = r2[0] - interp2[0];
         double dY = r2[1] - interp2[1];
         double d = Math.hypot(dX, dY);
-        if (d < THRESHOLD || maxNumDivs < 1) {
+        if (minNumDivs <= 1 && (d < THRESHOLD || maxNumDivs < 1)) {
             return 1;
         } else {
-            int nd1 = getNumDivisions(p1, r1, p2, r2, maxNumDivs / 2, mt);
+            int nd1 = getNumDivisions(p1, r1, p2, r2, minNumDivs / 2,
+                    maxNumDivs / 2, mt);
             if (nd1 * 2 >= maxNumDivs) {
                 return (int) Math.ceil(maxNumDivs);
             }
-            int nd2 = getNumDivisions(p2, r2, p3, r3, maxNumDivs / 2, mt);
+            int nd2 = getNumDivisions(p2, r2, p3, r3, minNumDivs / 2,
+                    maxNumDivs / 2, mt);
             if (nd2 * 2 >= maxNumDivs) {
                 return (int) Math.ceil(maxNumDivs);
             }
