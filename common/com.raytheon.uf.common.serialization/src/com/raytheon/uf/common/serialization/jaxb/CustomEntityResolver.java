@@ -30,9 +30,10 @@ import org.xml.sax.ext.EntityResolver2;
  * An entity resolver that always resolves all external entities to an empty
  * InputSource. This Prevents external entities such as
  * {@code <!ENTITY xxe SYSTEM "file:///dev/random">} but not
- * exponential/quadratic expansion attacks like the Billion Lolz, though that
- * can be limited by setting {@code -DentityExpansionLimit=N}. The JDK defaults
- * to 64000 if this isn't set.
+ * exponential/quadratic expansion attacks like the Billion Laughs
+ * (http://en.wikipedia.org/wiki/Billion_laughs), though that can be limited by
+ * setting {@code -DentityExpansionLimit=N}. The JDK defaults to 64000 if this
+ * isn't set.
  *
  * <br/>
  * <br/>

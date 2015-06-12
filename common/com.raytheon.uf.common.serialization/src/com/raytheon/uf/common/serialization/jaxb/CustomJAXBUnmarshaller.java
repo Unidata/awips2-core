@@ -43,21 +43,24 @@ import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XmlVisitor;
 
 /**
  * Custom JAXB Unmarshaller, used to set custom content handler. Delegates
- * everything else
+ * everything else.
  *
+ * This class will only be used by a JAXBManager when {@link JaxbDummyObject} is
+ * included in the classes provided to its constructor.
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 13, 2011            mschenke    Initial creation
  * May 21, 2015 4496       nabowle     Set custom entity resolver to prevent
  *                                     external entities from being loaded when
  *                                     unmarshalling from a reader.
- *
+ * 
  * </pre>
- *
+ * 
  * @author mschenke
  * @version 1.0
  */
