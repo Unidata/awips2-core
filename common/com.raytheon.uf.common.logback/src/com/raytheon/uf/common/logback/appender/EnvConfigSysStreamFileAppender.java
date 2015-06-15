@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.appender;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -26,6 +26,8 @@ import java.io.PrintStream;
 import org.apache.commons.io.output.TeeOutputStream;
 
 import ch.qos.logback.core.OutputStreamAppender;
+
+import com.raytheon.uf.common.logback.LogbackUtil;
 
 /**
  * Appender that modifies System.out and System.err PrintStreams to print to
@@ -39,6 +41,7 @@ import ch.qos.logback.core.OutputStreamAppender;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2014 3675       njensen     Initial creation
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 

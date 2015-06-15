@@ -320,7 +320,28 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
             gl.glClearColor((float) noData, 0.0f,
                     0.0f, 0.0f);
         } else {
-            gl.glClearColor(Float.NaN, 0.0f, 0.0f, 0.0f);
+            /*
+             * The default value of no data value is NaN. NaN does not work on
+             * some graphics cards. Specifically the Intel Corporation Xeon
+             * E3-1200 v2/3rd Gen Core processor Graphics Controller (rev 09)
+             * running on CentOS 6. On this card it seemed impossible to use
+             * shader to set the gl_FragColor to a non-NaN value if the existing
+             * value in the FBO is NaN.
+             * 
+             * At the time of this writing(Jun 2015) only offscreen rendering
+             * performed by the mosaic extension uses this function and the
+             * datatypes that use mosaicing set the no data value to a non-NaN
+             * value.
+             * 
+             * NaN values have been tested and work fine on some nvidia graphics
+             * cards.
+             * 
+             * If new datatypes ever use this functionality and need NaN it will
+             * require further investigation to determine if the intel cards are
+             * deficient or if nvidia is providing functionality outside the
+             * scope of the spec.
+             */
+            gl.glClearColor((float) colorMapParameters.getNoDataValue(), 0.0f, 0.0f, 0.0f);
         }
 
     }

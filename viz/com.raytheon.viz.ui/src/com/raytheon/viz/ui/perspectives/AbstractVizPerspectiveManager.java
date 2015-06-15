@@ -62,7 +62,7 @@ import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.viz.ui.VizWorkbenchManager;
-import com.raytheon.viz.ui.actions.LoadSerializedXml;
+import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 import com.raytheon.viz.ui.color.BackgroundColor;
 import com.raytheon.viz.ui.color.IBackgroundColorChangedListener;
 import com.raytheon.viz.ui.editor.AbstractEditor;
@@ -82,6 +82,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  * Jun 19, 2013 2116        bsteffen    Do not deactivate contexts for parts
  *                                      when closing an inactive perspective.
  * Jan 14, 2014 2594        bclement    added low memory notification
+ * Jun 05, 2015 4401        bkowal      Renamed LoadSerializedXml to
+ *                                      LoadPerspectiveHandler.
  * 
  * </pre>
  * 
@@ -495,8 +497,9 @@ public abstract class AbstractVizPerspectiveManager implements
                 filePath);
         try {
             Procedure proc = null;
-            proc = (Procedure) LoadSerializedXml.deserialize(defaultBundle);
-            LoadSerializedXml.loadProcedureToScreen(proc, true);
+            proc = (Procedure) LoadPerspectiveHandler
+                    .deserialize(defaultBundle);
+            LoadPerspectiveHandler.loadProcedureToScreen(proc, true);
         } catch (VizException e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Error activating perspective", e);
@@ -610,7 +613,7 @@ public abstract class AbstractVizPerspectiveManager implements
             }
         }
     }
-    
+
     /**
      * Notify perspective manager when heap space is running low. Default action
      * is to pop up a warning to the user. Perspectives can override the default

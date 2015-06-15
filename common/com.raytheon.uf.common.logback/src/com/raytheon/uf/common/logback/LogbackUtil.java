@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback;
 
 import ch.qos.logback.core.Context;
 
@@ -34,6 +34,7 @@ import com.raytheon.uf.common.util.SystemUtil;
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2014 3675       njensen     Initial creation
  * Feb 18, 2015 4015       rferrel     Standard constants and determineLogFilenamePattern.
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 
@@ -78,7 +79,7 @@ public class LogbackUtil {
      *            the filename that potentially contains %PID%
      * @return the new filename with %PID% replaced if it was present
      */
-    protected static String replacePid(String filename) {
+    public static String replacePid(String filename) {
         return filename.replace("%PID%", Integer.toString(SystemUtil.getPid()));
     }
 
@@ -88,7 +89,7 @@ public class LogbackUtil {
      * @param context
      * @return format
      */
-    protected static String getUFMessagePattern(Context context) {
+    public static String getUFMessagePattern(Context context) {
         String format = context.getProperty(LOG_MESSAGE_PATTERN_PROP);
         if (format == null) {
             format = UF_MESSAGE_PATTERN;
@@ -102,8 +103,8 @@ public class LogbackUtil {
      * @param name
      * @return filenamePattern
      */
-    protected static String determineUFFilenamePattern(Context context,
-            String name) throws AssertionError {
+    public static String determineUFFilenamePattern(Context context, String name)
+            throws AssertionError {
 
         String logDirHome = context.getProperty(LOG_DIR_HOME_PROP);
         String logBase = context.getProperty(LOG_FILE_BASE_PROP);

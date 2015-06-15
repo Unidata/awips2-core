@@ -17,9 +17,11 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.policy;
 
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
+
+import com.raytheon.uf.common.logback.LogbackUtil;
 
 /**
  * Class uses a standard filename pattern when one is not defined. It also sets
@@ -32,6 +34,7 @@ import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 17, 2015 4015       rferrel     Initial creation
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 

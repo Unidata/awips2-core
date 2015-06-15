@@ -17,10 +17,12 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.appender;
 
 import ch.qos.logback.classic.spi.ILoggingEvent;
 import ch.qos.logback.core.rolling.RollingFileAppender;
+
+import com.raytheon.uf.common.logback.LogbackUtil;
 
 /**
  * RollingFileAppender retrieves the value set for property EnvLogVar from the
@@ -36,6 +38,7 @@ import ch.qos.logback.core.rolling.RollingFileAppender;
  * Mar 21, 2013 1638       mschenke    Moved from alertviz to core
  * Jun 27, 2013 2142       njensen     Use SLF4J instead of log4j
  * Oct 10, 2014 3675       njensen     Include pid in filename
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
  * 
  * </pre>
  * 
