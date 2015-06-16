@@ -77,10 +77,14 @@ public class GLContextBridge {
     private final GLContext context;
 
     public GLContextBridge(int width, int height) throws VizException {
-    	GLProfile glp = GLProfile.getDefault();
-        GLCapabilities glCap = new GLCapabilities(null);
-        if (!GLDrawableFactory.getFactory(glp)
-                .canCreateGLPbuffer(GLProfile.getDefaultDevice(), glp)) {
+    	/*
+    	 * This doesn't get called when CAVE is started, so this is not where
+    	 * the problems exists.  May need to come back and fix it later.
+    	 */
+    	GLProfile glp = GLProfile.get(GLProfile.GL2);
+        GLCapabilities glCap = new GLCapabilities(glp);
+        if (!GLDrawableFactory.getFactory(glCap.getGLProfile())
+                .canCreateGLPbuffer(GLProfile.getDefaultDevice(), glCap.getGLProfile())) {
             throw new VizException(
                     "Graphics card does not support GLPbuffer and "
                             + "therefore does not support offscreen rendering.");
@@ -90,19 +94,25 @@ public class GLContextBridge {
                 null, width, height, null);
         */
         GLOffscreenAutoDrawable drawable = GLDrawableFactory.getFactory(glp).
-        		createOffscreenAutoDrawable(GLProfile.getDefaultDevice(), 
-        		glCap, null, width, height);
+        		createOffscreenAutoDrawable(null, glCap, null, width, height);
         this.context = drawable.createContext(null);
+        this.context.makeCurrent();
         this.canvas = null;
         activeContext = this;
         releaseContext();
     }
 
     public GLContextBridge(GLCanvas canvas) {
-    	GLProfile glp = GLProfile.getDefault();
+    	/* 
+    	 * this is called when CAVE/D2D is started...
+    	 */
+    	//GLProfile glp = GLProfile.getDefault();
+    	GLProfile glp = GLProfile.get(GLProfile.GL2);
         this.canvas = canvas;
         this.canvas.setCurrent();
-        this.context = GLDrawableFactory.getFactory(glp).createExternalGLContext();
+        this.context = GLDrawableFactory.getFactory( glp ).createExternalGLContext();
+        
+        this.context.makeCurrent();
         activeContext = this;
         releaseContext();
     }
@@ -121,7 +131,13 @@ public class GLContextBridge {
             throw new RuntimeException(
                     "Cannot make gl context current, GLCanvas is disposed");
         }
+        //Integer isCurrent = context.makeCurrent();
+
         GLContext oldContext = GLContext.getCurrent();
+        //Integer isOldCurrent = oldContext.makeCurrent();
+        //Integer cont1 = GLContext.CONTEXT_CURRENT;
+        //Integer cont2 = GLContext.CONTEXT_CURRENT_NEW;
+        //Integer cont0 = GLContext.CONTEXT_NOT_CURRENT;
         if (context != oldContext) {
             if (oldContext != null) {
                 oldContext.release();
@@ -131,6 +147,7 @@ public class GLContextBridge {
                         "Cannot make gl context current, Unknown error occured.");
             }
         }
+        context.makeCurrent();
         boolean retVal = (activeContext != this);
         activeContext = this;
         return retVal;
@@ -208,4 +225,5 @@ public class GLContextBridge {
             }
         }
     }
+
 }

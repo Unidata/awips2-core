@@ -36,7 +36,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.jogamp.opengl.*;
-import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.glu.GLUquadric;
 import com.jogamp.opengl.glu.gl2.GLUgl2;
 
@@ -277,6 +276,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     public GLTarget(Canvas canvas, float width, float height)
             throws VizException {
+    	
+    	System.out.println("GLTarget.GLTarget()");
 
         /*
          * Make sure we are passed something we can draw on
@@ -285,14 +286,20 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             throw new VizException("Must provide GL-enabled canvas");
         }
 
-        
+        //gl = GLU.getCurrentGL().getGL2();
         theCanvas = (GLCanvas) canvas;
         theCanvas.setCurrent();
         theContext = new GLContextBridge(theCanvas);
-
+        
+    	System.out.println("----------> GLTarget:293 thread "+ Thread.currentThread().getName());
+    	System.out.println("----------> GLTarget:294 thread "+ Thread.currentThread().getId());
+    	System.out.println("----------> GLTarget:295 current thread "+ Thread.currentThread());
+    	
         theContext.makeContextCurrent();
 
+        // This must be called AFTER makeContextCurrent()
         gl = GLUgl2.getCurrentGL2();
+
 
         theWidth = width;
         theHeight = height;
@@ -334,7 +341,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         theCanvas = null;
         canvasSize = new Rectangle(0, 0, (int) width, (int) height);
         theContext = new GLContextBridge((int) width, (int) height);
-
+    	System.out.println("----------> GLTarget:340 thread "+ Thread.currentThread().getName());
+    	System.out.println("----------> GLTarget:341 thread "+ Thread.currentThread().getId());
+    	System.out.println("----------> GLTarget:342 current thread "+ Thread.currentThread());
         theContext.makeContextCurrent();
 
         gl = GLUgl2.getCurrentGL2();
@@ -455,6 +464,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void dispose() {
+    	
+    	System.out.println("GLTarget.dispose()");
 
         if (defaultFont != null) {
             defaultFont.disposeInternal();
@@ -1006,13 +1017,14 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void init() {
+    	System.out.println("----------> hello");
         makeContextCurrent();
         GLUgl2 glu = new GLUgl2();
+        
         String exts = glu.gluGetString(GL2.GL_EXTENSIONS);
         String openGlRenderer = gl.glGetString(GL2.GL_RENDERER);
         String openGlVersion = gl.glGetString(GL2.GL_VERSION);
         String openGlVendor = gl.glGetString(GL2.GL_VENDOR);
-
         System.out.println(openGlRenderer + " " + openGlVersion + " "
                 + openGlVendor + " " + exts);
 
@@ -1156,6 +1168,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public boolean makeContextCurrent() {
+    	//System.out.println("GLTarget.makeContextCurrent()");
         return theContext.makeContextCurrent();
     }
 
@@ -1514,24 +1527,35 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * com.raytheon.uf.viz.core.IGraphicsTarget#getStringsBounds(com.raytheon
      * .uf.viz.core.DrawStringsParameters, java.lang.String)
      */
-    @Override
+	@Override
     public Rectangle2D getStringsBounds(DrawableString parameters, String string) {
-        IFont font = parameters.font;
+
+    	//this.makeContextCurrent();
+        //theContext.makeContextCurrent();
+    	//GLContext.makeCurrent();
+    	
+    	IFont font = parameters.font;
         if (font == null) {
             font = getDefaultFont();
         }
 
         double fontPercentage = this.calculateFontResizePercentage(font)
                 * parameters.magnification;
-
+        //GLContextBridge.makeMasterContextCurrent();
+        GLContextBridge.makeMasterContextCurrent();
         TextRenderer textRenderer = ((IGLFont) font).getTextRenderer();
+    	//System.out.println("----------> thread "+ Thread.currentThread().getName() + ": " + string);
+    	//System.out.println("----------> thread "+ Thread.currentThread().getId());
+    	//System.out.println("----------> current thread "+ Thread.currentThread());
 
+        
         // use apostrophe and y to get full ascender and descender in height
         Rectangle2D b1 = textRenderer.getBounds("'y");
 
         // add character to start and end of string to so leading and
         // trailing spaces will be included
         Rectangle2D b2 = textRenderer.getBounds("'" + string + "y");
+        //GLContextBridge.releaseMasterContext();
 
         // Make Necessary Adjustments To The Calculated Bounds Based On The
         // Pane Size And The Scale Associated With The Pane Size.

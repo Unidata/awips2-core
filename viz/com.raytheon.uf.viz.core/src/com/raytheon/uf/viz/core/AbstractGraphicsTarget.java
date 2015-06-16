@@ -173,7 +173,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         double totalHeight = 0;
 
         Rectangle2D bounds = null;
-
+        
         for (String string : text) {
             Rectangle2D txtBounds = getStringsBounds(parameters, string);
             if (txtBounds.getWidth() > maxWidth) {
