@@ -26,6 +26,7 @@ from numpy import degrees
 from numpy import radians
 from numpy import abs
 from numpy import isscalar, empty, float32
+from numpy import NaN
 
 def execute(u, v, magDir=None):
     """ Make a vector from u,v or mag, dir.
@@ -75,6 +76,9 @@ def magDirRadiansTo(mag, dir):
     return componentsTo(u,v)
 
 def magDirDegreesTo(mag, dir):
+    # in nwps1 model, it uses -999 to denote no value in the direction grid
+    # so we assume anything less than -360 is invalid
+    dir[dir<-360] = NaN
     return magDirRadiansTo(mag, radians(dir))
 
 def componentsFrom(u,v):
@@ -86,4 +90,7 @@ def magDirRadiansFrom(mag, dir):
     return componentsFrom(u,v)
 
 def magDirDegreesFrom(mag, dir):
+    # in nwps1 model, it uses -999 to denote no value in the direction grid
+    # so we assume anything less than -360 is invalid
+    dir[dir<-360] = NaN
     return magDirRadiansFrom(mag, radians(dir))
