@@ -38,31 +38,31 @@
 	</mapScale>
 	<mapScale displayName="World" fileName="World.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="COMP/Arctic" fileName="Arctic.xml" areaScale="true">
+	<mapScale displayName="SAT/Arctic" fileName="Arctic.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="COMP/Antarctic" fileName="Antarctic.xml" areaScale="true">
+	<mapScale displayName="SAT/Antarctic" fileName="Antarctic.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="NEXRCOMP/CONUS" fileName="NEXRAD.xml" areaScale="true">
+	<mapScale displayName="SAT/NEXRCOMP" fileName="NEXRAD.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="POES-NPOESS/Alaska National" fileName="Alaska-National.xml" areaScale="true">
+	<mapScale displayName="SAT/Alaska National" fileName="Alaska-National.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES-15(P)/Alaska Regional" fileName="Alaska-Regional.xml" areaScale="true">
+	<mapScale displayName="SAT/Alaska Regional" fileName="Alaska-Regional.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES-13(N)/East CONUS" fileName="East-CONUS.xml" areaScale="true">
+	<mapScale displayName="SAT/East CONUS" fileName="East-CONUS.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES-15(P)/West CONUS" fileName="West-CONUS.xml" areaScale="true">
+	<mapScale displayName="SAT/West CONUS" fileName="West-CONUS.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="POES-NPOESS/Hawaii National" fileName="Hawaii-National.xml" areaScale="true">
+	<mapScale displayName="SAT/Hawaii National" fileName="Hawaii-National.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES-15(P)/Hawaii Regional" fileName="Hawaii-Regional.xml" areaScale="true">
+	<mapScale displayName="SAT/Hawaii Regional" fileName="Hawaii-Regional.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="POES-NPOESS/Puerto Rico National" fileName="Puerto-Rico-National.xml" areaScale="true">
+	<mapScale displayName="SAT/Puerto Rico National" fileName="Puerto-Rico-National.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES-13(N)/Puerto Rico Regional" fileName="Puerto-Rico-Regional.xml" areaScale="true">
+	<mapScale displayName="SAT/Puerto Rico Regional" fileName="Puerto-Rico-Regional.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="POES-NPOESS/Supernational" fileName="Supernational.xml" areaScale="true">
+	<mapScale displayName="SAT/Supernational" fileName="Supernational.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="SOUNDER/GOES-Sounder" fileName="GOES-Sounder.xml" areaScale="true">
+	<mapScale displayName="SAT/GOES-Sounder" fileName="SOUNDER.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="SAT/Mollweide" fileName="Mollweide.xml" areaScale="true">
 	</mapScale>
