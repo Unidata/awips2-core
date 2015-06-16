@@ -56,53 +56,17 @@
                         <resource>
                             <loadProperties loadWithoutData="false">
                                 <capabilities>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
+                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="2"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
                                 </capabilities>
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="750000"/>
+                                <pdProps maxDisplayWidth="750000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>State Boundaries</mapName>
                                 <table>mapdata.states</table>
-                                <geomField>the_geom</geomField>
-                            </resourceData>
-                        </resource>
-                        <resource>
-                            <loadProperties loadWithoutData="false">
-                                <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
-                                </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
-                            </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
-                            </properties>
-                            <resourceData xsi:type="dbMapResourceData">
-                                <mapName>Canada</mapName>
-                                <table>mapdata.canada</table>
-                                <geomField>the_geom</geomField>
-                            </resourceData>
-                        </resource>
-                        <resource>
-                            <loadProperties loadWithoutData="false">
-                                <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
-                                </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
-                            </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
-                            </properties>
-                            <resourceData xsi:type="dbMapResourceData">
-                                <mapName>Mexico</mapName>
-                                <table>mapdata.mexico</table>
                                 <geomField>the_geom</geomField>
                             </resourceData>
                         </resource>
@@ -132,8 +96,8 @@
                         <capabilities>
                             <capability xsi:type="imagingCapability" alpha="1.0" interpolationState="false" brightness="1.0" contrast="1.0"/>
                             <capability xsi:type="shadeableCapability" shaded="false"/>
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                            <capability xsi:type="colorableCapability" colorAsString="#ffffb3"/>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="3"/>
+                            <capability xsi:type="colorableCapability" colorAsString="#ffffff"/>
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>

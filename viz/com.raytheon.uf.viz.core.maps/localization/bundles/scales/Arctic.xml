@@ -20,7 +20,7 @@
     -->
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" scale="CONUS" density="1.0" magnification="1.0" mapCenter="-94 38 0.0" zoomLevel="0.3" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="COMP/Arctic" mapCenter="-124.99649696099044 89.94549482304896 0.0" zoomLevel="1.0">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
@@ -49,7 +49,6 @@
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name not in ('CANADA', 'UNITED STATES')</constraint>
                             </resourceData>
                         </resource>
                         <resource>
@@ -61,7 +60,7 @@
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
+                                <pdProps maxDisplayWidth="10000000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>Canada</mapName>
@@ -78,7 +77,7 @@
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="750000" minDisplayWidth="0"/>
+                                <pdProps maxDisplayWidth="1750000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>County Boundaries</mapName>
@@ -94,7 +93,7 @@
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="750000" minDisplayWidth="0"/>
+                                <pdProps maxDisplayWidth="10000000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>State Boundaries Zoom</mapName>
@@ -102,52 +101,35 @@
                                 <geomField>the_geom</geomField>
                             </resourceData>
                         </resource>
-                        <resource>
-                            <loadProperties loadWithoutData="false">
-                                <capabilities>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="2"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#cc5000"/>
-                                </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
-                            </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="750000"/>
-                            </properties>
-                            <resourceData xsi:type="dbMapResourceData">
-                                <mapName>State Boundaries</mapName>
-                                <table>mapdata.states</table>
-                                <geomField>the_geom</geomField>
-                            </resourceData>
-                        </resource>
-
                         <mapName>State/County Boundaries</mapName>
                     </resourceData>
                 </resource>
 
                 <timeMatcher xsi:type="d2DTimeMatcher" loadMode="VALID_TIME_SEQ" deltaFilter="0" forecastFilter="0"/>
                 <numberOfFrames>12</numberOfFrames>
-                <gridGeometry envelopeMaxY="1.0324516833231976E7" envelopeMinY="-1.197446662274791E7" envelopeMaxX="1.1272003702071536E7" envelopeMinX="-1.1026966741467461E7" rangeY="0 9999" rangeX="0 9999">
-                    <CRS>PROJCS["Stereographic_North_Pole", 
-  GEOGCS["WGS84(DD)", 
-    DATUM["WGS84", 
-      SPHEROID["WGS84", 6378137.0, 298.257223563]], 
-    PRIMEM["Greenwich", 0.0], 
-    UNIT["degree", 0.017453292519943295], 
-    AXIS["Geodetic longitude", EAST], 
-    AXIS["Geodetic latitude", NORTH]], 
-  PROJECTION["Stereographic_North_Pole"], 
-  PARAMETER["semi_major", 6371200.0], 
-  PARAMETER["semi_minor", 6371200.0], 
-  PARAMETER["central_meridian", -100.0], 
-  PARAMETER["standard_parallel_1", 90.0], 
-  PARAMETER["scale_factor", 1.0], 
-  PARAMETER["false_easting", 0.0], 
-  PARAMETER["false_northing", 0.0], 
-  UNIT["m", 1.0], 
-  AXIS["Easting", EAST], 
-  AXIS["Northing", NORTH]]</CRS>
+                <gridGeometry rangeX="0 2175" rangeY="0 2175" envelopeMinX="-4348020.249561578" envelopeMaxX="4352019.812938422" envelopeMinY="-4352019.323989757" envelopeMaxY="4348020.738510243">
+                    <CRS>PROJCS["AWIPS Polar Stereographic (SP: 60.0, CM: -170.0)", 
+GEOGCS["WGS84(DD)", 
+DATUM["WGS84", 
+SPHEROID["WGS84", 6378137.0, 298.257223563]], 
+PRIMEM["Greenwich", 0.0], 
+UNIT["degree", 0.017453292519943295], 
+AXIS["Geodetic longitude", EAST], 
+AXIS["Geodetic latitude", NORTH]], 
+PROJECTION["Stereographic_North_Pole"], 
+PARAMETER["semi_major", 6371229.0], 
+PARAMETER["semi_minor", 6371229.0], 
+PARAMETER["central_meridian", -170.0], 
+PARAMETER["Standard_Parallel_1", 60.0], 
+PARAMETER["scale_factor", 1.0], 
+PARAMETER["false_easting", 0.0], 
+PARAMETER["false_northing", 0.0], 
+UNIT["m", 1.0], 
+AXIS["Easting", EAST], 
+AXIS["Northing", NORTH]]</CRS>
                 </gridGeometry>
             </descriptor>
         </displays>
     </displayList>
 </bundle>
+
