@@ -75,7 +75,7 @@
          point="com.raytheon.viz.ui.contextualMenu">
       <contextualMenu
             actionClass="com.raytheon.uf.viz.core.maps.actions.SaveMapStyleAction"
-            capabilityClass="com.raytheon.uf.viz.core.maps.rsc.AbstractMapResource"
+            capabilityClass="com.raytheon.uf.viz.core.maps.rsc.StyledMapResource"
             name="Save Map Style"
             sortID="600">
       </contextualMenu>
