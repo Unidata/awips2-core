@@ -28,6 +28,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
@@ -52,6 +53,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
  *                                    ProcedureXmlManager
  * Apr 06, 2015  ASM17215 D. Friedman Load in Job
+ * Jun 11, 2015  ASM17603 D. Friedman Fix 17215: Load to correct pane
  * 
  * </pre>
  * 
@@ -70,6 +72,8 @@ public abstract class LoadAsDisplayTypeAction extends AbstractRightClickAction {
      */
     @Override
     public void run() {
+        // Capture active pane now, then instantiate in a job.
+        final IDescriptor descriptor = getDescriptor();
         Job job = new Job("Loading as " + getDisplayType().toString().toLowerCase()) {
 
             @Override
@@ -88,8 +92,8 @@ public abstract class LoadAsDisplayTypeAction extends AbstractRightClickAction {
                             .getCapability(rp.getResourceData(),
                                     DisplayTypeCapability.class)
                             .setDisplayType(getDisplayType());
-                    rp.instantiateResource(getDescriptor());
-                    getDescriptor().getResourceList().add(rp);
+                    rp.instantiateResource(descriptor);
+                    descriptor.getResourceList().add(rp);
                 } catch (SerializationException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Unexpected error cloning resource", e);
