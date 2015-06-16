@@ -53,6 +53,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.VizApp;
 
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
+import com.raytheon.viz.ui.widgets.FilterDelegate;
 
 /**
  * 
@@ -82,6 +83,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 02 Jun 2015  4401       bkowal      Re-factored for reuse.
  * 10 Jun 2015  4401       bkowal      Prevent NPE when double-clicking with nothing
  *                                     selected.
+ * 16 Jun 2015  4401       bkowal      Allow a user to filter files in open mode.
  * 
  * </pre>
  * 
@@ -91,6 +93,8 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     private static final String EXT = ".xml";
+
+    protected FilterDelegate filterDelegate;
 
     /** Flag indicating the data will only be at the root level. */
     protected boolean oneLevel = true;
@@ -261,36 +265,16 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         /*
          * Add a text control to the dialog if it isn't in delete mode.
          */
-        if (this.mode != Mode.DELETE) {
+        if (this.mode == Mode.SAVE) {
             localizationTF = new Text(textComp, SWT.BORDER);
             gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
             // gd.widthHint = 150;
             localizationTF.setLayoutData(gd);
-
-            /*
-             * If this is the open dialog, make the text control uneditable. The
-             * reason for this is that currently this dialog doesn't do anything
-             * with the text that the user could enter into the box. In AWIPS I,
-             * entering in a name that doesn't exist will bring up the
-             * procedures dialog with the entered name but no products. In AWIPS
-             * II, the dialog just closes. Until this gets addressed the text
-             * control should be uneditable.
-             */
-            if (this.mode == Mode.OPEN) {
-                localizationTF.setEditable(false);
-                localizationTF.addSelectionListener(new SelectionAdapter() {
-
-                    @Override
-                    public void widgetDefaultSelected(SelectionEvent e) {
-                        if (localizationTF.getText().length() > 0) {
-                            selectAction();
-                        }
-                    }
-                });
-            }
         }
 
         if (this.mode == Mode.OPEN) {
+            this.filterDelegate = new FilterDelegate(textComp,
+                    new VizLocalizationTreeFilter());
 
             Composite showComp = new Composite(textComp, SWT.NONE);
             showComp.setLayout(new GridLayout(3, false));
@@ -349,6 +333,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         gd.heightHint = 170;
 
         treeViewer = new TreeViewer(textComp, SWT.SINGLE | SWT.BORDER);
+        if (this.mode == Mode.OPEN) {
+            this.filterDelegate.setTreeViewer(treeViewer);
+        }
         treeViewer.getTree().setLayoutData(gd);
         treeViewer.getTree().addSelectionListener(new SelectionAdapter() {
             @Override
@@ -396,7 +383,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
         treeViewer.getTree().removeAll();
         treeViewer.getTree().clearAll(true);
-        localizationTF.setText("");
+        if (this.mode != Mode.OPEN) {
+            localizationTF.setText("");
+        }
         updateTreeViewerData();
     }
 
@@ -416,6 +405,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             protected org.eclipse.core.runtime.IStatus run(
                     org.eclipse.core.runtime.IProgressMonitor monitor) {
                 fileTree = populateDataList();
+                if (mode == Mode.OPEN) {
+                    filterDelegate.setFilterInput(fileTree);
+                }
                 VizApp.runAsync(new Runnable() {
                     @Override
                     public void run() {
