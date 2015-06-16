@@ -68,4 +68,6 @@
 	</mapScale>
 	<mapScale displayName="SAT/GOES-East-West" fileName="GEWCOMP.xml" areaScale="true">
 	</mapScale>
+	<mapScale displayName="World" fileName="World.xml">
+	</mapScale>
 </mapScales>

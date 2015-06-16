@@ -130,7 +130,7 @@
            locationURI="menu:d2dFile">
 	       <command
 	            commandId="com.raytheon.viz.ui.maps.createProjection"
-	            label="Map Projection..."
+	            label="New Projection"
 	            style="push">
 	       </command>
         </menuContribution>
