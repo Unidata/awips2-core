@@ -17,6 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+
 package com.raytheon.uf.common.serialization;
 
 import java.util.HashMap;
@@ -33,7 +34,10 @@ import net.sf.cglib.reflect.FastClass;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 3, 2008  #1448      chammack    Initial creation
+ * Sep 03, 2008  #1448     chammack    Initial creation
+ * Jun 16, 2015   4561     njensen     getFastClass() throws more specific
+ *                                      exception
+ * 
  * </pre>
  * 
  * @author chammack
@@ -43,7 +47,7 @@ import net.sf.cglib.reflect.FastClass;
 public class SerializationCache {
 
     /** The beanmap generator cache */
-    private static Map<Class<?>, BeanMap.Generator> generators = new HashMap<Class<?>, BeanMap.Generator>();;
+    private static Map<Class<?>, BeanMap.Generator> generators = new HashMap<Class<?>, BeanMap.Generator>();
 
     /** The beanmap cache */
     private static Map<Class<?>, BeanMap> beanMaps = new HashMap<Class<?>, BeanMap>();
@@ -116,9 +120,10 @@ public class SerializationCache {
      * @param name
      *            the name
      * @return the fastclass
-     * @throws Exception
+     * @throws ClassNotFoundException
      */
-    public static FastClass getFastClass(String name) throws Exception {
+    public static FastClass getFastClass(String name)
+            throws ClassNotFoundException {
         synchronized (classCache) {
             FastClass fc = classCache.get(name);
             if (fc == null) {
