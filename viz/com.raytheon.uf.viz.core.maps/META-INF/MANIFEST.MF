@@ -30,3 +30,6 @@ Export-Package: com.raytheon.uf.viz.core.maps,
  com.raytheon.uf.viz.core.maps.menus,
  com.raytheon.uf.viz.core.maps.rsc,
  com.raytheon.uf.viz.core.maps.scales
+Import-Package: com.raytheon.uf.common.dataplugin.satellite,
+ com.raytheon.viz.satellite.rsc,
+ gov.noaa.nws.ncep.viz.common.area
