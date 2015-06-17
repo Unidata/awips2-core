@@ -19,11 +19,14 @@
  **/
 package com.raytheon.viz.ui.dialogs.localization;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.viz.ui.widgets.IFilterInput;
 
 /**
  * 
@@ -40,6 +43,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * 02 Jun 2015  4401       bkowal      Re-factored for reuse.
  * 10 Jun 2015  4401       bkowal      Update {@link #hasChildren()} to use
  *                                     {@link List#isEmpty()}.
+ * 16 Jun 2015  4401       bkowal      Updated so that it could provide input to a filter.
  * 
  * </pre>
  * 
@@ -47,7 +51,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * @version 1.0
  */
 
-public class VizLocalizationFileTree {
+public class VizLocalizationFileTree implements IFilterInput {
     private LinkedList<VizLocalizationFileTree> children = null;
 
     private String text = null;
@@ -60,12 +64,20 @@ public class VizLocalizationFileTree {
     }
 
     public VizLocalizationFileTree addChild(String text, LocalizationFile file) {
+        VizLocalizationFileTree child = new VizLocalizationFileTree(text, file);
+        this.addChild(child);
+        return child;
+    }
+
+    public void addChild(VizLocalizationFileTree child) {
         if (children == null) {
             children = new LinkedList<VizLocalizationFileTree>();
         }
-        VizLocalizationFileTree child = new VizLocalizationFileTree(text, file);
         children.add(child);
-        return child;
+    }
+
+    public boolean isFileNode() {
+        return (this.file != null);
     }
 
     public VizLocalizationFileTree findChildByText(String text) {
@@ -131,5 +143,13 @@ public class VizLocalizationFileTree {
      */
     public LocalizationFile getFile() {
         return file;
+    }
+
+    @Override
+    public List<Object> getObjects() {
+        if (this.hasChildren()) {
+            return new ArrayList<Object>(this.children);
+        }
+        return Collections.emptyList();
     }
 }
