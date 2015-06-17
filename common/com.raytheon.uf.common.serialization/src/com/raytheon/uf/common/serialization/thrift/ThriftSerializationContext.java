@@ -26,6 +26,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -33,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.beans.BeanMap;
@@ -93,6 +96,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Jun 24, 2014  3271     njensen     Better safety checks and error msgs
  * Jul 25, 2014  3445     bclement    added castNumber()
  * Jun 15, 2015  4561     njensen     Major cleanup, added read and ignore methods
+ * Jun 17, 2015  4564     njensen     Added date/time conversion in deserializeField()
  * 
  * </pre>
  * 
@@ -1011,7 +1015,12 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                  */
                 bm.put(field.name, obj);
             } catch (ClassCastException e) {
-                /* attempt to recover if both types are numbers */
+                /*
+                 * TODO should we continue to add special handling in here, we
+                 * should break this out to a separate method
+                 */
+
+                /* attempt to recover if both types are numbers or times */
                 Class<?> fieldClass = findFieldClass(fc.getJavaClass(),
                         field.name);
                 if (obj instanceof Number) {
@@ -1020,6 +1029,17 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                      * due to primitive number classes, castNumber() will check
                      */
                     obj = castNumber((Number) obj, fieldClass);
+                    bm.put(field.name, obj);
+                } else if (obj instanceof Date
+                        && Calendar.class.isAssignableFrom(fieldClass)) {
+                    Calendar c = Calendar.getInstance(TimeZone
+                            .getTimeZone("GMT"));
+                    c.setTime((Date) obj);
+                    obj = c;
+                    bm.put(field.name, obj);
+                } else if (obj instanceof Calendar
+                        && Date.class.isAssignableFrom(fieldClass)) {
+                    obj = ((Calendar) obj).getTime();
                     bm.put(field.name, obj);
                 } else {
                     throw e;
