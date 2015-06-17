@@ -14,6 +14,7 @@
                 <value>com.raytheon.uf.common.message.response.ResponseMessageCatalog</value>
                 <value>com.raytheon.uf.common.message.response.ResponseMessageError</value>
                 <value>com.raytheon.uf.common.message.response.ResponseMessageGeneric</value>
+                <value>com.raytheon.uf.common.dataplugin.obs.metar.MetarRecord</value>
             </list>
         </constructor-arg>
     </bean>
