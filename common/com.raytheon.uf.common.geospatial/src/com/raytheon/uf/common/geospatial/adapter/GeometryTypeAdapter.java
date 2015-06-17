@@ -19,11 +19,16 @@
  **/
 package com.raytheon.uf.common.geospatial.adapter;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.vividsolutions.jts.geom.Geometry;
+import com.vividsolutions.jts.io.OutputStreamOutStream;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
 import com.vividsolutions.jts.io.WKBWriter;
@@ -37,6 +42,7 @@ import com.vividsolutions.jts.io.WKBWriter;
  * ------------ ----------  ----------- --------------------------
  * Aug 11, 2008             chammack    Initial creation
  * Aug 08, 2014  3503       bclement    moved from common.serialization to common.geospatial
+ * Jun 17, 2015  4561       njensen     Use ByteArrayOutputStreamPool for efficiency
  * 
  * </pre>
  * 
@@ -45,13 +51,6 @@ import com.vividsolutions.jts.io.WKBWriter;
  */
 public class GeometryTypeAdapter implements ISerializationTypeAdapter<Geometry> {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.esb.serialize.ISerializationFactory#deserialize(com
-     * .raytheon.edex.esb.serialize.ISerializer)
-     */
     @Override
     public Geometry deserialize(IDeserializationContext serializer)
             throws SerializationException {
@@ -75,13 +74,6 @@ public class GeometryTypeAdapter implements ISerializationTypeAdapter<Geometry> 
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.esb.serialize.ISerializationFactory#serialize(com.raytheon
-     * .edex.esb.serialize.ISerializer, java.lang.Object)
-     */
     @Override
     public void serialize(ISerializationContext serializer, Geometry object)
             throws SerializationException {
@@ -90,7 +82,21 @@ public class GeometryTypeAdapter implements ISerializationTypeAdapter<Geometry> 
             data = new byte[0];
         } else {
             WKBWriter writer = new WKBWriter();
-            data = writer.write(object);
+            /*
+             * We use one of our pooled streams because the default behavior of
+             * WKBWriter is to inefficiently start with a byte[32] and then grow
+             * it repeatedly as needed.
+             */
+            try (ByteArrayOutputStream baos = ByteArrayOutputStreamPool
+                    .getInstance().getStream()) {
+                // seriously JTS, you couldn't use java.io.OutputStream?
+                OutputStreamOutStream out = new OutputStreamOutStream(baos);
+                writer.write(object, out);
+                data = baos.toByteArray();
+            } catch (IOException e) {
+                throw new SerializationException(
+                        "Error writing geometry to WKB format", e);
+            }
         }
 
         serializer.writeBinary(data);
