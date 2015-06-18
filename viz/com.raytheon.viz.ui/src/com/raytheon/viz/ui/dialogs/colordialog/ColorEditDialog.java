@@ -362,6 +362,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
             undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
             redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
             saveBtn.setEnabled(currentColormapName != null);
+            colorEditComp.enableAlphaOnly();
         }
     }
 

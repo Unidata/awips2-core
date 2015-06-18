@@ -263,8 +263,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
         interpolateAlphaOnly.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                upperColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
-                lowerColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
+                enableAlphaOnly();
             }
         });
     }
@@ -423,6 +422,15 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
         rgbRdo.setEnabled(enabled);
         hsbRdo.setEnabled(enabled);
         colorCount.setEnabled(enabled);
+        gfeDiscreteCheck.setEnabled(enabled);
+        interpolateAlphaOnly.setEnabled(enabled);
     }
 
+    /**
+     * Enable alpha slider only based on interpolation selection
+     */
+    public void enableAlphaOnly() {
+        upperColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
+        lowerColorWheel.enableAlphaOnly(!interpolateAlphaOnly.getSelection());
+    }
 }
