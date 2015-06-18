@@ -12,6 +12,7 @@
    
    <!-- TODO should somehow be contributed from alertviz plugin -->
    <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
+      <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
       <uri>tcp://localhost:61998</uri>
       <destName>messages</destName>
    </appender>
@@ -89,7 +90,11 @@
    
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>
-      <appender-ref ref="CaveLogAppender"/>
+      <appender-ref ref="CaveLogAppender"/>      
+   </appender>
+   
+   <appender name="AsyncAlertvizAppender" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>500</queueSize>      
       <appender-ref ref="AlertvizAppender"/>
    </appender> 
    
@@ -106,6 +111,7 @@
    <logger name="CaveLogger" additivity="false">
       <level value="ALL"/>
       <appender-ref ref="AsyncCaveLogAppender"/>
+      <appender-ref ref="AsyncAlertvizAppender"/>
    </logger>
 
    <logger name="PerformanceLogger" additivity="false">

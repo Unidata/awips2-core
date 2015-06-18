@@ -64,6 +64,7 @@ import com.vividsolutions.jts.geom.Triangle;
  *                                    are used.
  * May 27, 2015  4472     bsteffen    Change the way the border is calculated
  *                                    to handle untransformable corners better.
+ * Jun 11, 2015  4551     bsteffen    Add minNumDivs to calculateEdge
  * 
  * </pre>
  * 
@@ -943,8 +944,13 @@ public class EnvelopeIntersection {
 
         borderPoints.add(new Coordinate(transformedPoint1[0],
                 transformedPoint1[1]));
+        /*
+         * Minimum of 2 points are needed to ensure that very large envelopes
+         * with no distortion still get the edge divided because the world wrap
+         * corrector cannot handle a single line that spans more than 180°
+         */
         calculateEdge(borderPoints, point1, transformedPoint1, point2,
-                transformedPoint2, maxNumDivs, threshold, transform);
+                transformedPoint2, 2, maxNumDivs, threshold, transform);
         borderPoints.add(new Coordinate(transformedPoint2[0],
                 transformedPoint2[1]));
 
@@ -978,8 +984,8 @@ public class EnvelopeIntersection {
      */
     private static void calculateEdge(List<Coordinate> borderList,
             double[] point1, double[] transformedPoint1, double[] point3,
-            double[] transformedPoint3, int maxNumDivs, double threshold,
-            MathTransform transform) {
+            double[] transformedPoint3, int minNumDivs, int maxNumDivs,
+            double threshold, MathTransform transform) {
         if (transformedPoint1 == null) {
             transformedPoint1 = transform(transform, point1);
         }
@@ -995,13 +1001,15 @@ public class EnvelopeIntersection {
         double dX = transformedPoint2[0] - interp2[0];
         double dY = transformedPoint2[1] - interp2[1];
         double d = Math.hypot(dX, dY);
-        if (d >= threshold && maxNumDivs >= 1) {
+        if (minNumDivs > 1 || (d >= threshold && maxNumDivs >= 1)) {
             calculateEdge(borderList, point1, transformedPoint1, point2,
-                    transformedPoint2, maxNumDivs / 2, threshold, transform);
+                    transformedPoint2, minNumDivs / 2, maxNumDivs / 2,
+                    threshold, transform);
             borderList.add(new Coordinate(transformedPoint2[0],
                     transformedPoint2[1]));
             calculateEdge(borderList, point2, transformedPoint2, point3,
-                    transformedPoint3, maxNumDivs / 2, threshold, transform);
+                    transformedPoint3, minNumDivs / 2, maxNumDivs / 2,
+                    threshold, transform);
         }
     }
 
