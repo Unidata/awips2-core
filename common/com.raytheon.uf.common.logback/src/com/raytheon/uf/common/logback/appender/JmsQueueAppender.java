@@ -17,35 +17,35 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.appender;
 
-import ch.qos.logback.core.status.OnConsoleStatusListener;
-import ch.qos.logback.core.status.Status;
+import javax.jms.JMSException;
+import javax.jms.Queue;
+import javax.jms.Session;
 
 /**
- * Status listener for Logback's internal status messages. Shows warnings and
- * errors from logback itself to the console.
+ * An appender that sends log messages to a JMS queue.
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 27, 2013 2142       njensen     Initial creation
- * 
+ * May 22, 2015 4473       njensen     Initial creation
+ *
  * </pre>
  * 
  * @author njensen
  * @version 1.0
  */
 
-public class UFLogbackInternalStatusListener extends OnConsoleStatusListener {
+public abstract class JmsQueueAppender extends AbstractJmsAppender {
 
-    public void addStatusEvent(Status status) {
-        if (status.getLevel() >= Status.WARN) {
-            super.addStatusEvent(status);
-        }
+    @Override
+    protected Queue createDestination(Session session, String name)
+            throws JMSException {
+        return session.createQueue(name);
     }
 
 }

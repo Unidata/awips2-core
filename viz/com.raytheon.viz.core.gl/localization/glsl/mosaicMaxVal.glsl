@@ -24,7 +24,7 @@ void main(void) {
 	if (imageValue != imageData.noDataValue && imageValue == imageValue) {
 		// Convert image value to mosaic value
 		imageValue = dataToColorMapValue(imageValue, imageToMosaicDataValues, imageToMosaicColorValues, imageToMosaicValues);
-		if (imageValue > mosaicValue) {
+		if (imageValue > mosaicValue || mosaicValue != mosaicValue || mosaicValue == mosaicData.noDataValue) {
 			newValue = imageValue;
 		}
 	}

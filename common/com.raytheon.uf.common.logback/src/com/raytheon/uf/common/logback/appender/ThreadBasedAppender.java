@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.status.logback;
+package com.raytheon.uf.common.logback.appender;
 
 import java.util.Iterator;
 import java.util.Map.Entry;
@@ -33,6 +33,8 @@ import ch.qos.logback.core.UnsynchronizedAppenderBase;
 import ch.qos.logback.core.rolling.RollingFileAppender;
 import ch.qos.logback.core.rolling.TimeBasedRollingPolicy;
 import ch.qos.logback.core.spi.AppenderAttachable;
+
+import com.raytheon.uf.common.logback.LogbackUtil;
 
 /**
  * Appender for logging based on the thread name of the logging event. Since
@@ -51,6 +53,8 @@ import ch.qos.logback.core.spi.AppenderAttachable;
  * Apr 29, 2014 3114       rjpeter     Make plugin contributable.
  * Aug 22, 2014 3534       rjpeter     Extend UnsynchronizedAppenderBase.
  * Feb 18, 2015 4015       rferrel     Use LogfileUtil constants.
+ * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
+ * 
  * </pre>
  * 
  * @author rjpeter
