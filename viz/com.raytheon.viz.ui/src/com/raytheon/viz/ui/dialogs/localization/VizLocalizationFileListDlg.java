@@ -84,6 +84,8 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * 10 Jun 2015  4401       bkowal      Prevent NPE when double-clicking with nothing
  *                                     selected.
  * 16 Jun 2015  4401       bkowal      Allow a user to filter files in open mode.
+ * 22 Jun 2015  4401       bkowal      Do not access {@link #localizationTF} when opening
+ *                                     a localization file.
  * 
  * </pre>
  * 
@@ -660,7 +662,6 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                 close();
             }
         } else if (mode == Mode.OPEN) {
-            fileName = localizationTF.getText();
             VizLocalizationFileTree tmp = getSelectedTreeItem();
             if (tmp != null) {
                 // it must be a localization file tree, that is what the content
