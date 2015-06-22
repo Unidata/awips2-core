@@ -1446,8 +1446,8 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 }
             }
         } catch (Exception e) {
-            throw new SerializationException("Error deserializing list/array",
-                    e);
+            throw new SerializationException(
+                    "Error deserializing list/array of field " + fieldName, e);
         }
     }
 
