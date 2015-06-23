@@ -17,6 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+
 package com.raytheon.uf.common.serialization;
 
 import java.io.ByteArrayOutputStream;
@@ -82,6 +83,7 @@ import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
  * Aug 08, 2014 3503        bclement    moved registration of spatial serialization adapters to common.geospatial
  * Aug 15, 2014 3541        mschenke    Made getSerializationMetadata(String) static and renamed inspect to match\
  * Aug 27, 2014 3503        bclement    improved error message in registerAdapter()
+ * Jun 16, 2015 4561        njensen     Deprecated EnclosureType
  * 
  * </pre>
  * 
@@ -131,13 +133,17 @@ public class DynamicSerializationManager {
         registerAdapter(Buffer.class, new BufferAdapter());
     }
 
+    /**
+     * @deprecated No longer used.
+     */
+    @Deprecated
     public enum EnclosureType {
         FIELD, COLLECTION
-    };
+    }
 
     public static enum SerializationType {
         Thrift
-    };
+    }
 
     /**
      * Serialize an object to a byte array
@@ -176,7 +182,8 @@ public class DynamicSerializationManager {
      * 
      * @param obj
      *            the object
-     * @return a byte array with a serialized version of the object
+     * @param os
+     *            the output stream
      * @throws SerializationException
      */
     public void serialize(Object obj, OutputStream os)
@@ -309,9 +316,11 @@ public class DynamicSerializationManager {
      * @return
      */
     public static SerializationMetadata getSerializationMetadata(String name) {
-        // we can't synchronize on this because it's possible the
-        // Class.forName() will trigger code that comes back into here and
-        // then deadlocks
+        /*
+         * we can't synchronize on this because it's possible the
+         * Class.forName() will trigger code that comes back into here and then
+         * deadlocks
+         */
         SerializationMetadata sm = serializedAttributes.get(name);
         if (sm == null) {
             try {
@@ -321,7 +330,11 @@ public class DynamicSerializationManager {
                     serializedAttributes.put(name, NO_METADATA);
                 }
             } catch (ClassNotFoundException e) {
-                e.printStackTrace();
+                /*
+                 * ignore, it will return null and if it's an issue it will be
+                 * thrown as an exception later
+                 */
+                // e.printStackTrace();
             }
         }
 
