@@ -2,6 +2,23 @@
    <!-- Only define when not wanting to use the UF Standard.
    <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
    -->
+   
+   <!-- 
+       if you want to send messages to alertviz instead of alertview,
+         1. change this property of alertview.enabled to false
+         2. comment out AlertViewAppender and uncomment AlertvizAppender
+         3. change CaveLogger below to send to AlertvizAppender  
+           -->
+   <property scope="system" name="alertview.enabled" value="true" />      
+   
+   <!-- TODO should somehow be contributed from alertviz plugin -->
+   <!-- appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
+      <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
+      <uri>tcp://localhost:61998</uri>
+      <destName>messages</destName>
+   </appender-->
+   
+   <appender name="AlertViewAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />
 
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
@@ -16,18 +33,11 @@
         <level>WARN</level>
       </filter>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>
-      
-   <!-- TODO should somehow be contributed from alertviz plugin -->
-   <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
-      <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
-      <uri>tcp://localhost:61998</uri>
-      <destName>messages</destName>
-   </appender>
+   </appender>            
    
    <logger name="CaveLogger">
       <level value="ALL"/>
-      <appender-ref ref="AlertvizAppender"/>
+      <appender-ref ref="AlertViewAppender"/>
    </logger>
    
    <logger name="PerformanceLogger">
