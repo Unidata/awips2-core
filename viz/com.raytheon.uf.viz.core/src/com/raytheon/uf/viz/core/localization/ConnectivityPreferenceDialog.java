@@ -30,6 +30,8 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -331,6 +333,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
             public void widgetDefaultSelected(SelectionEvent e) {
                 // user hit Enter
             	validate();
+            }
+        });
+        localizationSrv.addModifyListener(new ModifyListener() {
+        	public void modifyText(ModifyEvent e) {
+        		validate();
             }
         });
 
