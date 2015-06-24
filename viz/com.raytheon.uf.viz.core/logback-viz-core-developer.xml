@@ -18,6 +18,7 @@
       <destName>messages</destName>
    </appender-->
    
+   <!--  TODO should somehow be contributed from alertview plugin -->
    <appender name="AlertViewAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />
 
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
