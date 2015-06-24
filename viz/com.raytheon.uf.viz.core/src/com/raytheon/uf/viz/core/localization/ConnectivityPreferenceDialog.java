@@ -310,7 +310,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         
         String[] pastOptions =  { 
         		"http://edex.unidata.ucar.edu:9581/services", 
-        		"http://edex-azure.unidata.ucar.edu:9581/services",
+        //		"http://edex-azure.unidata.ucar.edu:9581/services",
         		"http://localhost:9581/services"
         		};
         
