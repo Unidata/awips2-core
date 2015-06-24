@@ -73,6 +73,8 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
+ * Jun 24, 2015           mjames@ucar Always prompt user to connect, allow combo for multiple 
+ * 									  default servers.
  * 
  * 
  * </pre>
@@ -96,7 +98,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
             localizationGood = results.hasConnectivity;
             appendDetails(buildDetails(results));
             if (!results.hasConnectivity && status == null) {
-                status = buildErrorMessage(results);
+            	status = "Can not connect to " + serverName(results.server);
             }
         }
     }
@@ -113,6 +115,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         }
 
     }
+    
+    
 
     private Shell shell;
 
@@ -137,7 +141,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     private boolean siteGood = false;
 
-    private String site = "OAX";
+    private String site = "";
 
     protected Text siteText;
 
@@ -172,8 +176,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         this.title = title;
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
-        site = LocalizationManager.getInstance().getSite();
-        //site = "OAX";
+        LocalizationManager.getInstance().setCurrentSite(site);
         if (checkAlertViz) {
             alertVizServer = LocalizationManager.getInstance()
                     .getLocalizationStore()
@@ -212,9 +215,12 @@ public class ConnectivityPreferenceDialog extends Dialog {
             updateStatus(false, status, details);
 
             shell.open();
-            if (prompt) {
-                validate();
-            }
+            
+            this.site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+            validateSite();
+            boolean everythingGood = siteGood && localizationGood && alertVizGood;
+            updateStatus(everythingGood, status, details);
+            
             while (!shell.isDisposed()) {
                 if (!display.readAndDispatch()) {
                     display.sleep();
@@ -242,11 +248,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         comp.setLayout(new GridLayout(3, false));
         comp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
-        Label lbl = new Label(comp, SWT.NONE);
-        lbl.setText("Status:");
-
         GridData gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        statusLabel = new Label(comp, SWT.BORDER);
+        statusLabel = new Label(comp, SWT.NONE);
         statusLabel.setLayoutData(gd);
         statusLabel.setText("");
 
@@ -294,14 +297,23 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     protected void createTextBoxes(Composite textBoxComp) {
         localizationLabel = new Label(textBoxComp, SWT.RIGHT);
-        localizationLabel.setText("Localization Server:");
+        localizationLabel.setText("EDEX Server");
         GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
+        /*
         String[] pastOptions = ServerRemembrance.getServerOptions(
                 LocalizationManager.getInstance().getLocalizationStore(),
                 LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+        */
+        
+        String[] pastOptions =  { 
+        		"http://edex.unidata.ucar.edu:9581/services", 
+        		"http://edex-azure.unidata.ucar.edu:9581/services",
+        		"http://localhost:9581/services"
+        		};
+        
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
@@ -318,11 +330,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
             @Override
             public void widgetDefaultSelected(SelectionEvent e) {
                 // user hit Enter
-                performOk();
+            	validate();
             }
         });
 
-        
+        /*
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site:");
         gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
@@ -349,9 +361,10 @@ public class ConnectivityPreferenceDialog extends Dialog {
         siteText.setLayoutData(gd);
         siteText.setText(site == null ? "" : site);
         siteText.setBackground(getTextColor(siteGood));
-
+		*/
+        
         if (alertVizServer != null) {
-            label = new Label(textBoxComp, SWT.RIGHT);
+            Label label = new Label(textBoxComp, SWT.RIGHT);
             label.setText("Alert Server:");
             gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
             gd.horizontalIndent = 20;
@@ -374,6 +387,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         GridData gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
         centeredComp.setLayoutData(gd);
 
+        /*
         gd = new GridData(80, SWT.DEFAULT);
         Button validateBtn = new Button(centeredComp, SWT.NONE);
         validateBtn.setText("Validate");
@@ -384,10 +398,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 validate();
             }
         });
+        */
 
-        gd = new GridData(80, SWT.DEFAULT);
+        gd = new GridData(120, SWT.DEFAULT);
         Button okBtn = new Button(centeredComp, SWT.NONE);
-        okBtn.setText("OK");
+        okBtn.setText("Start CAVE");
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -491,20 +506,6 @@ public class ConnectivityPreferenceDialog extends Dialog {
         } else {
             validateAlertviz();
         }
-        
-        if (siteText != null && !siteText.isDisposed()) {
-            String site = siteText.getText().trim();
-            if (!siteGood || !this.site.equals(site)) {
-                this.site = site;
-                validateSite();
-                siteText.setBackground(getTextColor(siteGood));
-            }
-        } else {
-            validateSite();
-        }
-        
-        
-        //this.site = "OAX";
 
         boolean everythingGood = siteGood && localizationGood && alertVizGood;
         updateStatus(everythingGood, status, details);
@@ -535,9 +536,14 @@ public class ConnectivityPreferenceDialog extends Dialog {
     protected Color getTextColor(boolean isGood) {
         if (isGood) {
             // need to return null so it will fall back to the default
+            
+            
+            //return display.getSystemColor(SWT.COLOR_GREEN);
             return null;
+
         } else {
-            return display.getSystemColor(SWT.COLOR_RED);
+        	return null;
+            //return display.getSystemColor(SWT.COLOR_RED);
         }
     }
 
@@ -587,7 +593,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
     }
 
     public void setSite(String site) {
-        this.site = site;
+        //this.site = site;
     }
 
     public boolean isSiteGood() {
@@ -708,8 +714,9 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 && detailsText != null && !detailsText.isDisposed()) {
             statusLabel.setForeground(getForegroundColor(good));
             detailsText.setText(details != null ? details : "");
+            validateSite();
             if (good) {
-                statusLabel.setText("Successful connection");
+                statusLabel.setText("Connected to " + serverName(this.localization));
             } else {
                 if (status != null) {
                     statusLabel.setText(status);
@@ -721,7 +728,12 @@ public class ConnectivityPreferenceDialog extends Dialog {
         }
     }
 
-    /**
+    private String serverName(String localization) {
+		
+		return localization.replace("http://", "").replace(":9581/services","");
+	}
+
+	/**
      * Method for when the ok button is pressed, either through a click or Enter
      * on an appropriate field.
      */
