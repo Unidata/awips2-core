@@ -2,14 +2,28 @@
    <!-- Only define when not wanting to use the UF Standard.
    <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
    -->
+   <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />
    
-   <!-- this appender will send System.err and System.out to the console log -->
-   <appender name="CaveConsoleAppender" class="com.raytheon.uf.common.logback.appender.EnvConfigSysStreamFileAppender">      
-      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-      <!-- set envLogVar after encoder to avoid warning -->
-      <envLogVar>LOGFILE_CONSOLE</envLogVar>
-   </appender>
-   
+   <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+      <directory>${LOGDIR}</directory>
+      <name>cave_${startTime}_pid_%PID%_logs.log</name>
+   </define>
+
+   <define name="consoleLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+       <directory>${LOGDIR}</directory>
+       <name>cave_${startTime}_pid_%PID%_console.log</name>
+   </define>
+
+   <define name="producteditorLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+       <directory>${LOGDIR}</directory>
+       <name>cave_${startTime}_pid_%PID%_producteditor.log</name>
+   </define>
+
+   <define name="performanceLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+       <directory>${LOGDIR}</directory>
+       <name>cave_${startTime}_pid_%PID%_perf.log</name>
+   </define>
+
    <!-- TODO should somehow be contributed from alertviz plugin -->
    <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
       <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
@@ -19,72 +33,26 @@
    
    <!-- these two appenders will allow System.out and System.err to print to the console when
        -noredirect flag is used at cave startup-->
-   <appender name="console" class="ch.qos.logback.core.ConsoleAppender">
-      <target>System.out</target> 
+
+  <!-- this appender will log the messages sent to UFStatus and replaces console and errConsole appenders. -->
+   <appender name="CaveLogAppender" class="ch.qos.logback.core.FileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-      <!-- TODO does anyone know why there is an InvertedThresholdFilter here? -->
-      <filter class="com.raytheon.uf.common.logback.filter.InvertedThresholdFilter">
-         <level>INFO</level>         
-      </filter>
-   </appender>
-   <appender name="errConsole" class="ch.qos.logback.core.ConsoleAppender">
-      <target>System.err</target>
-      <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
-        <level>WARN</level>
-      </filter> 
-      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+      <file>${caveLogFile}</file>
    </appender>
    
-   <!-- this appender will log the messages sent to UFStatus -->
-   <appender name="CaveLogAppender" class="com.raytheon.uf.common.logback.appender.EnvConfigurableRollingFileAppender">
-      <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
-      <file>cave-logs.log</file>
-      <envLogVar>LOGFILE_CAVE</envLogVar>
-      <rollingPolicy class="com.raytheon.uf.common.logback.policy.EnvConfigurableFixedWindowRollingPolicy">
-         <fileNamePattern>cave-logs.log%i</fileNamePattern>
-         <envLogVar>LOGFILE_CAVE</envLogVar>
-         <minIndex>1</minIndex>
-         <maxIndex>5</maxIndex>
-      </rollingPolicy>
-      <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-         <maxFileSize>2GB</maxFileSize>
-      </triggeringPolicy>
-      <append>true</append>
+   <appender name="consoleLog" class="com.raytheon.uf.common.logback.appender.ConsoleFileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>    
-   
-   <appender name="PerformanceLogAppender" class="com.raytheon.uf.common.logback.appender.EnvConfigurableRollingFileAppender">
-      <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
-      <file>cave-performance.log</file>
-      <envLogVar>LOGFILE_PERFORMANCE</envLogVar>
-      <rollingPolicy class="com.raytheon.uf.common.logback.policy.EnvConfigurableFixedWindowRollingPolicy">
-         <fileNamePattern>cave-performance.log%i</fileNamePattern>
-         <envLogVar>LOGFILE_PERFORMANCE</envLogVar>
-         <minIndex>1</minIndex>
-         <maxIndex>5</maxIndex>
-      </rollingPolicy>
-      <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-         <maxFileSize>2GB</maxFileSize>
-      </triggeringPolicy>
-      <append>true</append>
+      <file>${consoleLogFile}</file> 
+   </appender>
+
+   <appender name="PerformanceLogAppender" class="ch.qos.logback.core.FileAppender">
+      <file>${performanceLogFile}</file>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
    </appender>    
    
    <!-- TODO should somehow be contributed from viz.gfe plugin -->
-   <appender name="ProductEditorLogAppender" class="com.raytheon.uf.common.logback.appender.EnvConfigurableRollingFileAppender">
-      <!--  file and fileNamePattern will be overridden by the env variable if present, but are required by logback -->
-      <file>cave-producteditor.log</file>
-      <envLogVar>LOGFILE_PRODUCT_EDITOR</envLogVar>
-      <rollingPolicy class="com.raytheon.uf.common.logback.policy.EnvConfigurableFixedWindowRollingPolicy">
-         <fileNamePattern>cave-producteditor.log%i</fileNamePattern>
-         <envLogVar>LOGFILE_PRODUCT_EDITOR</envLogVar>
-         <minIndex>1</minIndex>
-         <maxIndex>5</maxIndex>
-      </rollingPolicy>
-      <triggeringPolicy class="ch.qos.logback.core.rolling.SizeBasedTriggeringPolicy">
-         <maxFileSize>2GB</maxFileSize>
-      </triggeringPolicy>
-      <append>true</append>
+   <appender name="ProductEditorLogAppender" class="ch.qos.logback.core.FileAppender">
+      <file>${producteditorLogFile}</file>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
    </appender>    
    
@@ -151,8 +119,6 @@
    </logger>
    <root> 
       <level value="INFO"/> 
-      <appender-ref ref="console"/>
-      <appender-ref ref="errConsole"/>
-      <appender-ref ref="CaveConsoleAppender"/>
+      <appender-ref ref="consoleLog"/>
     </root> 
 </configuration> 

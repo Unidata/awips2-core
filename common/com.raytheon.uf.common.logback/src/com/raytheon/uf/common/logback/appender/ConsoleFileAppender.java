@@ -26,13 +26,12 @@ import java.io.PrintStream;
 import org.apache.commons.io.output.TeeOutputStream;
 
 import ch.qos.logback.core.OutputStreamAppender;
-
-import com.raytheon.uf.common.logback.LogbackUtil;
+import ch.qos.logback.core.util.OptionHelper;
 
 /**
  * Appender that modifies System.out and System.err PrintStreams to print to
  * their normal streams while also outputting to a file. The file is specified
- * by an environment variable and potentially includes the pid in the filename.
+ * by the setFile method.
  * 
  * <pre>
  * 
@@ -42,6 +41,7 @@ import com.raytheon.uf.common.logback.LogbackUtil;
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2014 3675       njensen     Initial creation
  * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
+ * Jun 22, 2015 4148       rferrel     Refactored from EnvConfigSysStreamFileAppender.
  * 
  * </pre>
  * 
@@ -49,10 +49,7 @@ import com.raytheon.uf.common.logback.LogbackUtil;
  * @version 1.0
  */
 
-public class EnvConfigSysStreamFileAppender<E> extends OutputStreamAppender<E> {
-
-    private String envLogVar;
-
+public class ConsoleFileAppender<E> extends OutputStreamAppender<E> {
     private static final PrintStream originalOut = System.out;
 
     private static final PrintStream originalErr = System.err;
@@ -60,30 +57,14 @@ public class EnvConfigSysStreamFileAppender<E> extends OutputStreamAppender<E> {
     private FileOutputStream fileStream;
 
     /**
-     * @param envLogVar
-     *            the envLogVar to set
+     * Create an output stream base on the file name.
+     * 
+     * @param filename
      */
-    public void setEnvLogVar(String envLogVar) {
-        this.envLogVar = envLogVar;
-        String filename = getOutputFilename();
-        configureStream(filename);
-    }
-
-    private String getOutputFilename() {
-        String file = null;
-        if (envLogVar == null || envLogVar.isEmpty()) {
-            this.addWarn("EnvConfigSysStreamFileAppender requires EnvLogVar to be set.");
-        } else {
-            file = System.getenv(envLogVar);
-            if (file == null || file.isEmpty()) {
-                this.addWarn("Appender needs environment variable, "
-                        + envLogVar + ", to be set.");
-            } else {
-                file = LogbackUtil.replacePid(file);
-            }
+    public void setFile(String filename) {
+        if (!OptionHelper.isEmpty(filename)) {
+            configureStream(filename);
         }
-
-        return file;
     }
 
     private void configureStream(String filename) {
@@ -130,5 +111,4 @@ public class EnvConfigSysStreamFileAppender<E> extends OutputStreamAppender<E> {
         this.reset();
         started = false;
     }
-
 }
