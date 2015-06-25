@@ -25,29 +25,35 @@ import com.raytheon.uf.common.util.StringUtil;
 /**
  * A response message that allows the &mu;Engine to respond when 
  * no results are available.
+ * 
+ * @deprecated Use IServerRequest/IRequestHandler framework instead
  * <pre>
  *
  * SOFTWARE HISTORY
  *
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
  * 14May2007    70          MW Fegan    Initial creation.
+ * 25Jun2015    4495        njensen     Deprecated
  * 
  * </pre>
  *
  * @author mfegan
  * @version 1
  */
-
+@Deprecated
 public class ResponseMessageNull extends AbstractResponseMessage {
     private String time = null;
+
     private String message = null;
+
     /**
      * Constructor. No arg constructor.
      */
     public ResponseMessageNull() {
         // intentionally empty
     }
+
     /**
      * Constructor. Private constructor used by @{link {@link #generateNullResponse(String, String, String)}.
      * 
@@ -56,11 +62,12 @@ public class ResponseMessageNull extends AbstractResponseMessage {
      * @param time the time of the response.
      */
     private ResponseMessageNull(String message, String uri, String time) {
-        this.fileType="ascii";
-        this.dataURI = StringUtil.isEmptyString(uri)?"":uri;
-        this.time = StringUtil.isEmptyString(time)?"":time;
-        this.message = StringUtil.isEmptyString(message)?"":message;
+        this.fileType = "ascii";
+        this.dataURI = StringUtil.isEmptyString(uri) ? "" : uri;
+        this.time = StringUtil.isEmptyString(time) ? "" : time;
+        this.message = StringUtil.isEmptyString(message) ? "" : message;
     }
+
     /**
      * Static method that creates an null Response Message. Uses the
      * private constructor to create the object.
@@ -71,33 +78,37 @@ public class ResponseMessageNull extends AbstractResponseMessage {
      * 
      * @return fully formed null response message
      */
-    public static ResponseMessageNull generateNullResponse(String message, String uri, String time) {
-        return new ResponseMessageNull(message,uri,time);
+    public static ResponseMessageNull generateNullResponse(String message,
+            String uri, String time) {
+        return new ResponseMessageNull(message, uri, time);
     }
-    
+
     /**
      * @return the message
      */
     public String getMessage() {
         return message;
     }
+
     /**
      * @param message the message to set
      */
     public void setMessage(String message) {
         this.message = message;
     }
+
     /**
      * @return the time
      */
     public String getTime() {
         return time;
     }
+
     /**
      * @param time the time to set
      */
     public void setTime(String time) {
         this.time = time;
     }
-    
+
 }
