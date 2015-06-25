@@ -67,6 +67,8 @@ import com.vividsolutions.jts.geom.Geometry;
  * Mar 18, 2015  4227     mapeters    Add buildDataTimeFromQueryResults(), add checks for 
  *                                    adding geom data, correctly get BinOffsetted times.
  * May 19, 2015  4409     mapeters    Ignore null DataTimes in executeTimeQuery().
+ * Jun 29, 2015  4585     dgilling    Stop validating parameters in
+ *                                    getAvailableLocationNames.
  * 
  * </pre>
  * 
@@ -248,7 +250,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
      */
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
-        this.validateRequest(request);
+        this.validateRequest(request, false);
         List<Object[]> results = this.executeQuery(
                 this.assembleGetAvailableLocationNames(request), request);
         List<String> locations = new ArrayList<String>();
