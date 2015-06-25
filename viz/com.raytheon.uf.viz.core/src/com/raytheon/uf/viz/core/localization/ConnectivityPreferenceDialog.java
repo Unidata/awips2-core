@@ -75,7 +75,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
- * Jun 24, 2015           mjames@ucar Always prompt user to connect, allow combo for multiple 
+ * Jun 25, 2015           mjames@ucar Always prompt user to connect, allow combo for multiple 
  * 									  default servers.
  * 
  * 
@@ -100,7 +100,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
             localizationGood = results.hasConnectivity;
             appendDetails(buildDetails(results));
             if (!results.hasConnectivity && status == null) {
-            	status = "Can not connect to " + serverName(results.server);
+            	if (results.server.length() > 0) {
+            		status = "Can not connect to " + serverName(results.server);
+            	} else {
+            		status = "Not connected";
+            	}
             }
         }
     }
@@ -141,9 +145,9 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     private boolean alertVizGood = true;
 
-    private boolean siteGood = false;
+    private boolean siteGood = true;
 
-    private String site = "";
+    private String site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
 
     protected Text siteText;
 
@@ -179,6 +183,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
         LocalizationManager.getInstance().setCurrentSite(site);
+        site = LocalizationManager.getInstance().getSite();
         if (checkAlertViz) {
             alertVizServer = LocalizationManager.getInstance()
                     .getLocalizationStore()
@@ -311,9 +316,9 @@ public class ConnectivityPreferenceDialog extends Dialog {
         */
         
         String[] pastOptions =  { 
-        		"http://edex.unidata.ucar.edu:9581/services", 
-        //		"http://edex-azure.unidata.ucar.edu:9581/services",
-        		"http://localhost:9581/services"
+        		"http://localhost:9581/services",
+        		//"http://edex-azure.unidata.ucar.edu:9581/services",
+        		"http://edex.unidata.ucar.edu:9581/services"
         		};
         
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
@@ -321,7 +326,6 @@ public class ConnectivityPreferenceDialog extends Dialog {
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
         localizationSrv.setText(localization == null ? "" : localization);
-        localizationSrv.widget.setBackground(getTextColor(localizationGood));
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -495,8 +499,6 @@ public class ConnectivityPreferenceDialog extends Dialog {
             if (!localizationGood || !this.localization.equals(localization)) {
                 this.localization = localization;
                 validateLocalization();
-                localizationSrv.widget
-                        .setBackground(getTextColor(localizationGood));
             }
         } else {
             validateLocalization();
@@ -542,15 +544,9 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     protected Color getTextColor(boolean isGood) {
         if (isGood) {
-            // need to return null so it will fall back to the default
-            
-            
-            //return display.getSystemColor(SWT.COLOR_GREEN);
-            return null;
-
+            return display.getSystemColor(SWT.COLOR_GREEN);
         } else {
-        	return null;
-            //return display.getSystemColor(SWT.COLOR_RED);
+            return display.getSystemColor(SWT.COLOR_RED);
         }
     }
 
