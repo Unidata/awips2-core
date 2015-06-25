@@ -12,7 +12,8 @@ Require-Bundle: com.raytheon.uf.edex.auth;bundle-version="1.14.1",
  com.raytheon.uf.common.util;bundle-version="1.14.1",
  com.raytheon.uf.common.status;bundle-version="1.14.0",
  com.raytheon.uf.common.comm;bundle-version="1.14.0",
- com.raytheon.uf.common.http;bundle-version="1.15.0"
+ com.raytheon.uf.common.http;bundle-version="1.15.0",
+ org.slf4j;bundle-version="1.7.5"
 Import-Package: com.raytheon.edex.esb,
  javax.servlet,
  javax.servlet.http

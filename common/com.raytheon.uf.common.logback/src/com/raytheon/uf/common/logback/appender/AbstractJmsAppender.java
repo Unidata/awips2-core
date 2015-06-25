@@ -165,7 +165,7 @@ public abstract class AbstractJmsAppender extends AppenderBase<ILoggingEvent>
         }
     }
 
-    protected boolean isConnected() {
+    public boolean isConnected() {
         return connection != null && session != null && dest != null
                 && producer != null;
     }
