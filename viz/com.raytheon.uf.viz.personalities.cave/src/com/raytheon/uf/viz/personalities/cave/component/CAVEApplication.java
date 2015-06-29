@@ -35,8 +35,10 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.internal.WorkbenchPlugin;
+import org.osgi.framework.FrameworkUtil;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.pypies.PyPiesDataStoreFactory;
 import com.raytheon.uf.common.pypies.PypiesProperties;
@@ -76,6 +78,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Mar 20, 2013            mschenke    Initial creation
  * Sep 10, 2014 3612       mschenke    Refactored, mirgrated logic from awips
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
+ * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
  * 
  * </pre>
  * 
@@ -296,6 +299,11 @@ public class CAVEApplication implements IStandaloneComponent {
             boolean checkAlertServer) throws Exception {
         PathManagerFactory.setAdapter(new CAVELocalizationAdapter());
         new LocalizationInitializer(promptUI, checkAlertServer).run();
+        FrameworkUtil
+                .getBundle(getClass())
+                .getBundleContext()
+                .registerService(IPathManager.class,
+                        PathManagerFactory.getPathManager(), null);
     }
 
     /**
