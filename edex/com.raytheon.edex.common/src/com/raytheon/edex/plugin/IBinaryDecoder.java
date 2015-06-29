@@ -25,17 +25,22 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 /**
  * Describes a decoder that takes a byte array as input
  * 
+ * @deprecated Does not provide useful functionality.  Camel enables
+ * a variety of potential method signatures.
+ * 
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 11, 2008            chammack     Initial creation
+ * Nov 11, 2008            chammack    Initial creation
+ * Jun 25, 2015 4495       njensen     Deprecated
  * </pre>
  * 
  * @author chammack
  * @version 1.0
  */
 
+@Deprecated
 public interface IBinaryDecoder {
 
     /**
