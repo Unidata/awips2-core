@@ -49,6 +49,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * 11 Dec 2013  #2583      lvenable    Added a check to determine if current user,
  *                                     all users or all procedures should be requested.
  * 02 Jun 2015  #4401      bkowal      Re-factored for reuse.
+ * 30 Jun 2015  #4401      bkowal      Perspectives are now stored in common_static.
  * 
  * </pre>
  * 
@@ -65,9 +66,10 @@ public class VizOpenLocalizationFileListDlg extends VizLocalizationFileListDlg {
      *            Parent shell.
      */
     public VizOpenLocalizationFileListDlg(String title, Shell parent,
-            String localizationDirectory, String localizationIdentifier) {
+            String localizationDirectory, String localizationIdentifier,
+            LocalizationType localizationType) {
         super(title, parent, Mode.OPEN, localizationDirectory,
-                localizationIdentifier);
+                localizationIdentifier, localizationType);
     }
 
     @Override
@@ -78,7 +80,7 @@ public class VizOpenLocalizationFileListDlg extends VizLocalizationFileListDlg {
         Set<LocalizationContext> searchContexts = new HashSet<LocalizationContext>();
 
         searchContexts.addAll(Arrays.asList(pm
-                .getLocalSearchHierarchy(LocalizationType.CAVE_STATIC)));
+                .getLocalSearchHierarchy(this.localizationType)));
 
         // If the show type is not the current user then look at loading the
         // remaining procedures.
@@ -100,7 +102,7 @@ public class VizOpenLocalizationFileListDlg extends VizLocalizationFileListDlg {
                         String[] available = pm.getContextList(level);
                         for (String s : available) {
                             LocalizationContext ctx = pm.getContext(
-                                    LocalizationType.CAVE_STATIC, level);
+                                    this.localizationType, level);
                             ctx.setContextName(s);
                             searchContexts.add(ctx);
                         }

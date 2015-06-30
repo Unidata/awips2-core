@@ -48,6 +48,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 10, 2015 4401       bkowal      Initial creation
+ * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
  * 
  * </pre>
  * 
@@ -94,7 +95,7 @@ public abstract class AbstractVizPerspectiveLocalizationHandler extends
         IPathManager pm = PathManagerFactory.getPathManager();
 
         LocalizationContext context = pm.getContext(
-                LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
+                LocalizationType.COMMON_STATIC, LocalizationLevel.USER);
 
         LocalizationFile localizationFile = pm.getLocalizationFile(context,
                 PERSPECTIVES_DIR + File.separator + fileName);

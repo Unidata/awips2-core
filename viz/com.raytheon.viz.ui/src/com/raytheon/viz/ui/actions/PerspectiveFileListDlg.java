@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
 
 /**
@@ -46,6 +47,7 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  * ------------ ---------- ----------- --------------------------
  * Jun 2, 2015  4401       bkowal      Initial creation
  * Jun 10, 2015 4401       bkowal      Fix comments.
+ * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
  * 
  * </pre>
  * 
@@ -75,7 +77,8 @@ public class PerspectiveFileListDlg extends VizLocalizationFileListDlg {
      */
     public PerspectiveFileListDlg(String title, Shell parent, Mode mode,
             String localizationDirectory) {
-        super(title, parent, mode, localizationDirectory, "perspectives");
+        super(title, parent, mode, localizationDirectory, "perspectives",
+                LocalizationType.COMMON_STATIC);
     }
 
     /*
