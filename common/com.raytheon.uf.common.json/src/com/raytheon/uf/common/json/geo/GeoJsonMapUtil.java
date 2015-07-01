@@ -31,6 +31,7 @@
 package com.raytheon.uf.common.json.geo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -83,6 +84,8 @@ import com.vividsolutions.jts.geom.Polygon;
  * Mar 11, 2014      #2718 randerso    Changes for GeoTools 10.5
  * Jun 05, 2015      #4375 dgilling    Safer type handling in 
  *                                     getSingleCoordinate.
+ * Jul 01, 2015      #4375 dgilling    Fix NullPointerException in
+ *                                     populateFeatureCollection.
  * 
  * </pre>
  * 
@@ -330,10 +333,9 @@ public class GeoJsonMapUtil {
             Map<String, Object> jsonObj, SimpleFeatureType type)
             throws JsonException {
         Object obj = jsonObj.get(FEATURES_KEY);
-        if (obj == null) {
-            if (type == null) {
-                type = new SimpleFeatureTypeBuilder().buildFeatureType();
-            }
+        if (obj == null
+                || (obj instanceof Collection && ((Collection) obj).isEmpty())
+                || (obj instanceof Object[] && ((Object[]) obj).length == 0)) {
             return new EmptyFeatureCollection(type);
         }
         if (!(obj instanceof List<?>)) {
