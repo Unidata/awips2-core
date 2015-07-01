@@ -315,6 +315,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
         */
         
+        // TODO: append instead of define
         String[] pastOptions =  { 
         		"http://localhost:9581/services",
         		//"http://edex-azure.unidata.ucar.edu:9581/services",
