@@ -50,10 +50,12 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
 import org.apache.http.protocol.HttpContext;
+import org.apache.http.util.VersionInfo;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.app.AppInfo;
 
 /**
  * Utility for constructing apache http client instances
@@ -68,6 +70,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Nov 15, 2014  3757      dhladky      Added general certificate checks.
  * Jan 22, 2015  3952      njensen      Removed gzip handling as apache http client has it built-in
  * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as trustMaterial.
+ * Jul 01, 2015  4021      bsteffen     Set User Agent
  * 
  * </pre>
  * 
@@ -212,9 +215,9 @@ public class ApacheHttpClientCreator {
                 registry);
         connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
         clientBuilder.setConnectionManager(connectionManager);
+        setUserAgent(clientBuilder);
 
         // build() call automatically adds gzip interceptors
-
         return clientBuilder.build();
     }
 
@@ -310,10 +313,55 @@ public class ApacheHttpClientCreator {
         PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
         connectionManager.setDefaultMaxPerRoute(config.getMaxConnections());
         clientBuilder.setConnectionManager(connectionManager);
+        setUserAgent(clientBuilder);
 
         // build() call automatically adds gzip interceptors
-
         return clientBuilder.build();
+    }
+
+    private static void setUserAgent(HttpClientBuilder clientBuilder) {
+        AppInfo appInfo = AppInfo.getInstance();
+        if (appInfo == null || appInfo.getName() == null) {
+            return;
+        }
+        StringBuilder userAgent = new StringBuilder(appInfo.getName());
+        if (appInfo.getVersion() != null) {
+            userAgent.append("/").append(appInfo.getVersion());
+        }
+        StringBuilder comments = new StringBuilder();
+        if (appInfo.getMode() != null) {
+            comments.append(appInfo.getMode());
+        }
+        String os = System.getProperty("os.name");
+        if (os != null) {
+            if (comments.length() != 0) {
+                comments.append("; ");
+            }
+            comments.append(os);
+        }
+        String javaVersion = System.getProperty("java.version");
+        if (javaVersion != null) {
+            if (comments.length() != 0) {
+                comments.append("; ");
+            }
+            comments.append("java " + javaVersion);
+        }
+        if (comments.length() != 0) {
+            userAgent.append(" (").append(comments).append(')');
+        }
+
+        /*
+         * We want to include the apache user agent as part of ours but they
+         * don't expose it so need to build it here
+         */
+        userAgent.append(" Apache-HttpClient/");
+        VersionInfo vi = VersionInfo.loadVersionInfo(
+                "org.apache.http.client",
+                HttpClientBuilder.class.getClassLoader());
+        String release = (vi != null) ? vi.getRelease()
+                : VersionInfo.UNAVAILABLE;
+        userAgent.append(release);
+        clientBuilder.setUserAgent(userAgent.toString());
     }
 
 }
