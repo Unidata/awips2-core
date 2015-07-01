@@ -99,7 +99,7 @@
        </path>
        <path
           application="CAVE"
-          localizationType="CAVE_STATIC"
+          localizationType="COMMON_STATIC"
           name="Perspectives"
           value="perspectives"
           recursive="true">

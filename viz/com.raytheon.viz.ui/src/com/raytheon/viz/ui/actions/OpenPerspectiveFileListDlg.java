@@ -36,6 +36,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileTree;
 import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
 
@@ -53,6 +54,7 @@ import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
  * Jun 10, 2015 4401       bkowal      It is now possible to optionally upload a local file system file
  *                                     to localization when loading it.
  * Jun 16, 2015 4401       bkowal      Track local files and make them available for selection.
+ * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
  * 
  * </pre>
  * 
@@ -86,7 +88,7 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
      */
     public OpenPerspectiveFileListDlg(Shell parent, String localizationDirectory) {
         super("Open Perspective Display", parent, localizationDirectory,
-                "perspectives");
+                "perspectives", LocalizationType.COMMON_STATIC);
     }
 
     /*

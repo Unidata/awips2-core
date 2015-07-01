@@ -86,6 +86,7 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * 16 Jun 2015  4401       bkowal      Allow a user to filter files in open mode.
  * 22 Jun 2015  4401       bkowal      Do not access {@link #localizationTF} when opening
  *                                     a localization file.
+ * 30 Jun 2015  4401       bkowal      Perspectives are now stored in common_static.
  * 
  * </pre>
  * 
@@ -95,6 +96,8 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
 public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     private static final String EXT = ".xml";
+
+    protected final LocalizationType localizationType;
 
     protected FilterDelegate filterDelegate;
 
@@ -185,13 +188,15 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      *            interacting with
      */
     public VizLocalizationFileListDlg(String title, Shell parent, Mode mode,
-            String localizationDirectory, String fileTypeDesc) {
+            String localizationDirectory, String fileTypeDesc,
+            LocalizationType localizationType) {
         super(parent, SWT.DIALOG_TRIM | SWT.RESIZE, CAVE.DO_NOT_BLOCK); // Win32
         setText(title);
 
         this.mode = mode;
         this.localizationDirectory = localizationDirectory;
         this.fileTypeDesc = fileTypeDesc;
+        this.localizationType = localizationType;
     }
 
     @Override
@@ -465,8 +470,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     private void openUserInTreeViewer() {
         if (!oneLevel) {
             IPathManager mgr = PathManagerFactory.getPathManager();
-            LocalizationContext ctx = mgr.getContext(
-                    LocalizationType.CAVE_STATIC, LocalizationLevel.USER);
+            LocalizationContext ctx = mgr.getContext(this.localizationType,
+                    LocalizationLevel.USER);
             String user = "USER - " + ctx.getContextName();
 
             // find in the tree
