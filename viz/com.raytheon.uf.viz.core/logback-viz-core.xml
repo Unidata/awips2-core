@@ -94,6 +94,8 @@
 
    <logger name="com.raytheon">
       <level value="INFO"/>
+      <appender-ref ref="AsyncCaveLogAppender"/>
+      <appender-ref ref="AsyncAlertvizAppender"/>
    </logger>
 
    <logger name="mx4j">

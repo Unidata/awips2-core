@@ -6,20 +6,23 @@
    <!-- 
        if you want to send messages to alertviz instead of alertview,
          1. change this property of alertview.enabled to false
-         2. comment out AlertViewAppender and uncomment AlertvizAppender
-         3. change CaveLogger below to send to AlertvizAppender  
+         2. comment out the AlertViewAppender and uncomment the StatusMessageAppender
+         
+         TODO: Come up with easier way to switch between the two.  We could do it
+         conditionally but that would require adding the Janino library which seems
+         like overkill for a single use case for developers.  
            -->
    <property scope="system" name="alertview.enabled" value="true" />      
    
    <!-- TODO should somehow be contributed from alertviz plugin -->
-   <!-- appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
+   <!-- appender name="AlertAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
       <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
       <uri>tcp://localhost:61998</uri>
       <destName>messages</destName>
    </appender-->
    
    <!--  TODO should somehow be contributed from alertview plugin -->
-   <appender name="AlertViewAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />
+   <appender name="AlertAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />
 
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
@@ -34,11 +37,17 @@
         <level>WARN</level>
       </filter>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>            
+   </appender>
+   
+   <!-- this is only used if alertviz is running inside the same process --> 
+   <logger name="AlertVizAdminLogger" additivity="false">
+      <level value="ERROR"/>
+      <appender-ref ref="errConsole"/>
+   </logger>          
    
    <logger name="CaveLogger">
       <level value="ALL"/>
-      <appender-ref ref="AlertViewAppender"/>
+      <appender-ref ref="AlertAppender"/>
    </logger>
    
    <logger name="PerformanceLogger">
@@ -52,6 +61,7 @@
 
    <logger name="com.raytheon">
       <level value="INFO"/>
+      <appender-ref ref="AlertAppender"/>
    </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
