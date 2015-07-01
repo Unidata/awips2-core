@@ -61,7 +61,6 @@
 
    <logger name="com.raytheon">
       <level value="INFO"/>
-      <appender-ref ref="AlertAppender"/>
    </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
