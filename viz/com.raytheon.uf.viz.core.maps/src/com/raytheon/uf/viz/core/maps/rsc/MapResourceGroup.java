@@ -54,6 +54,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.OutlineCapability;
  * ------------ ---------- ----------- --------------------------
  *                         randerso    Initial creation.
  * Feb 12, 2009            chammack    Rewrite for new resource model
+ * Jun 08, 2015  #4546     randerso    Changed to extend StyledMapResource
  * 
  * </pre>
  * 
@@ -61,7 +62,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.OutlineCapability;
  * @version 1.0
  */
 public class MapResourceGroup extends
-        AbstractMapResource<MapResourceGroupData, MapDescriptor> implements
+        StyledMapResource<MapResourceGroupData, MapDescriptor> implements
         IResourceGroup {
 
     protected IGraphicsTarget lastTarget;
@@ -84,8 +85,8 @@ public class MapResourceGroup extends
         this.resourceData.addChangeListener(new IResourceDataChanged() {
             @Override
             public void resourceChanged(ChangeType type, Object object) {
-                if (type == ChangeType.CAPABILITY
-                        && object instanceof AbstractCapability) {
+                if ((type == ChangeType.CAPABILITY)
+                        && (object instanceof AbstractCapability)) {
                     for (ResourcePair rp : resourceData.getResourceList()) {
                         rp.getLoadProperties()
                                 .getCapabilities()
