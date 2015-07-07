@@ -21,7 +21,11 @@ package com.raytheon.viz.ui.actions;
 
 import java.io.File;
 import java.nio.file.Paths;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.eclipse.jface.viewers.AbstractTreeViewer;
+import org.eclipse.jface.viewers.StructuredSelection;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -32,6 +36,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.FileDialog;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileTree;
 import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
 
@@ -48,6 +53,8 @@ import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
  * Jun 2, 2015  4401       bkowal      Initial creation
  * Jun 10, 2015 4401       bkowal      It is now possible to optionally upload a local file system file
  *                                     to localization when loading it.
+ * Jun 16, 2015 4401       bkowal      Track local files and make them available for selection.
+ * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
  * 
  * </pre>
  * 
@@ -67,6 +74,12 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
 
     private Button importBtn;
 
+    private VizLocalizationFileTree localFileSystemNode;
+
+    private VizLocalizationFileTree root;
+
+    private final Map<String, LocalPerspectiveFileTree> localNodesMap = new HashMap<>();
+
     /**
      * Constructor.
      * 
@@ -75,7 +88,7 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
      */
     public OpenPerspectiveFileListDlg(Shell parent, String localizationDirectory) {
         super("Open Perspective Display", parent, localizationDirectory,
-                "perspectives");
+                "perspectives", LocalizationType.COMMON_STATIC);
     }
 
     /*
@@ -117,10 +130,17 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
 
     @Override
     protected void handleLocalizationSelection() {
+        VizLocalizationFileTree tmp = getSelectedTreeItem();
+        if (tmp != null && tmp instanceof LocalPerspectiveFileTree) {
+            this.fileSource = FILE_SOURCE.FILESYSTEM;
+            this.fileName = tmp.getText();
+            this.importBtn.setEnabled(true);
+            return;
+        }
+
         this.fileSource = FILE_SOURCE.LOCALIZATION;
         this.importBtn.setSelection(false);
         this.importBtn.setEnabled(false);
-        super.handleLocalizationSelection();
     }
 
     @Override
@@ -131,7 +151,15 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
          */
         this.importBtn.setSelection(false);
         this.importBtn.setEnabled(false);
+        this.localNodesMap.clear();
+        this.localFileSystemNode = null;
         super.showLocalizationAction(showType);
+    }
+
+    @Override
+    protected VizLocalizationFileTree populateDataList() {
+        root = super.populateDataList();
+        return root;
     }
 
     @Override
@@ -143,7 +171,6 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
              * Depending on the currently set fileSource, we will either be
              * returning a {@link LocalizationFile} or a {@link Path}.
              */
-            this.fileName = this.localizationTF.getText();
             if (this.fileSource == FILE_SOURCE.LOCALIZATION) {
                 VizLocalizationFileTree tmp = getSelectedTreeItem();
                 if (tmp == null) {
@@ -183,8 +210,22 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
 
         this.fileName = selectedFileName;
         this.fileSource = FILE_SOURCE.FILESYSTEM;
-        this.localizationTF.setText(this.fileName);
-        this.treeViewer.setSelection(null);
+        if (this.localFileSystemNode == null) {
+            this.localFileSystemNode = root.addChild("[Local File System]",
+                    null);
+        }
+
+        LocalPerspectiveFileTree localNode = this.localNodesMap
+                .get(this.fileName);
+        if (localNode == null) {
+            localNode = new LocalPerspectiveFileTree(this.fileName);
+            this.localFileSystemNode.addChild(localNode);
+            this.localNodesMap.put(this.fileName, localNode);
+        }
+        this.treeViewer.refresh(false);
+        this.treeViewer.expandToLevel(this.localFileSystemNode,
+                AbstractTreeViewer.ALL_LEVELS);
+        this.treeViewer.setSelection(new StructuredSelection(localNode));
         this.importBtn.setEnabled(true);
     }
 

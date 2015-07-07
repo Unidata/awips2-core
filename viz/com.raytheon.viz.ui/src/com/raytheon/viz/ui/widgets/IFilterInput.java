@@ -17,15 +17,27 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.viz.ui.widgets;
+
+import java.util.List;
+
 /**
- * Plugin pattern base classes, interfaces and factory classes.
- * <P>
- * Each plug-in must implement the basic plug-in interfaces: 
- * {@link com.raytheon.edex.plugin.IMessageDecoder},
- * {@link com.raytheon.edex.plugin.IMessageWriter}, 
- * and {@link com.raytheon.edex.plugin.AbstractRecordSeparator}. 
- * Basic implementation classes are provided for
- * {@link com.raytheon.edex.plugin.RecordSeparatorImpl AbstractRecordSeparator} and
- * {@link com.raytheon.uf.common.datastorage.records.IDataRecord IDataRecord}.
+ * Defines a source of {@link Object}s to filter to the {@link FilterDelegate}.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jun 15, 2015 4401       bkowal      Initial creation
+ * 
+ * </pre>
+ * 
+ * @author bkowal
+ * @version 1.0
  */
-package com.raytheon.edex.plugin;
+
+public interface IFilterInput {
+    public List<Object> getObjects();
+}

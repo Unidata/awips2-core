@@ -47,6 +47,7 @@ import com.raytheon.uf.common.message.response.AbstractResponseMessage;
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2006            pheaberl     Initial creation
  * Sep 12, 2014 3583       bclement     removed serial version id
+ * 25Jun2015      4495      njensen     Deprecated
  * 
  * </pre>
  * 
@@ -55,6 +56,7 @@ import com.raytheon.uf.common.message.response.AbstractResponseMessage;
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
+@Deprecated
 public class ResponseMessageURI extends AbstractResponseMessage {
 
     @XmlElement

@@ -17,43 +17,42 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.viz.ui.actions;
 
-
-package com.raytheon.edex.exception;
-
-import com.raytheon.uf.edex.core.EdexException;
-
+import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileTree;
 
 /**
- * Exception thrown by the ESB specific client class.
+ * A node in the {@link VizLocalizationFileTree} representative of a local file
+ * on the file system.
  * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 06/14/2006              garmendariz Initial check-in
+ * Jun 16, 2015 4401       bkowal      Initial creation
  * 
  * </pre>
- *
- * @author garmendariz
+ * 
+ * @author bkowal
  * @version 1.0
  */
-public class ClientException extends EdexException {
 
-	/**
-	 * Default serial version UID
-	 */
-	private static final long serialVersionUID = 1L;
-	
-	/**
-	 * Default constructor
-	 * @param message	The error cause
-	 * @param e			The caught error
-	 */
-	public ClientException(String message, Exception e) {
-		super(message, e);
-	}
+public class LocalPerspectiveFileTree extends VizLocalizationFileTree {
 
+    /**
+     * Constructor.
+     * 
+     * @param text
+     *            the name of the local file system file.
+     */
+    public LocalPerspectiveFileTree(String text) {
+        super(text, null);
+    }
+
+    @Override
+    public boolean isFileNode() {
+        return true;
+    }
 }

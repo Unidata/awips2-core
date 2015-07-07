@@ -17,8 +17,36 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.viz.ui.dialogs.localization;
+
+import com.raytheon.viz.ui.widgets.AbstractVizTreeFilter;
+
 /**
- * Product response messages
+ * Determines which {@link VizLocalizationFileTree} elements should be filtered.
  * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jun 15, 2015 4401       bkowal      Initial creation
+ * 
+ * </pre>
+ * 
+ * @author bkowal
+ * @version 1.0
  */
-package com.raytheon.edex.msg;
+
+public class VizLocalizationTreeFilter extends AbstractVizTreeFilter {
+
+    @Override
+    protected boolean shouldFilter(Object element) {
+        if (element instanceof VizLocalizationFileTree
+                && ((VizLocalizationFileTree) element).isFileNode()) {
+            return true;
+        }
+
+        return false;
+    }
+}

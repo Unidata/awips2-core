@@ -7,7 +7,27 @@
   http://www.springframework.org/schema/context http://www.springframework.org/schema/context/spring-context-3.1.xsd
   http://www.springframework.org/schema/util
   http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+    <bean id="product" class="org.eclipse.core.runtime.Platform" factory-method="getProduct"/>
   
+    <bean id="productName" factory-bean="product" factory-method="getName"/>
+    
+    <bean id="version" factory-bean="product" factory-method="getProperty">
+       <constructor-arg value="version"/>
+    </bean>
+    
+    <bean id="args" class="com.raytheon.uf.viz.core.ProgramArguments" factory-method="getInstance"/>
+    
+    <bean id="component" factory-bean="args" factory-method="getString">
+       <constructor-arg value="-component"/>
+    </bean>
+    
+    <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
+        <constructor-arg ref="productName"/>
+        <constructor-arg ref="version"/>
+        <constructor-arg value="#{component != null ? component : 'viz'}"/>
+    </bean>
+
     <bean id="caveCredentialHandler" class="com.raytheon.uf.viz.core.comm.CaveHttpsCredentialsHandler" />
 
     <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
@@ -19,7 +39,7 @@
     
     <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder" factory-method="build"/>
     
-	<bean id="httpClient" class="com.raytheon.uf.common.comm.HttpClient" factory-method="configureGlobalInstance">
+	<bean id="httpClient" class="com.raytheon.uf.common.comm.HttpClient" factory-method="configureGlobalInstance" depends-on="appInfo">
 	   <constructor-arg ref="httpClientConfig"/>
 	</bean>	
 

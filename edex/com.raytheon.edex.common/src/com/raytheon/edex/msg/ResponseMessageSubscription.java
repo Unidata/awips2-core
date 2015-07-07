@@ -27,14 +27,17 @@ import com.raytheon.uf.common.util.StringUtil;
 
 /**
  * Represent a subscription response for the server. This message
- * is returned in response to a subscribe/unsubscribe request. 
+ * is returned in response to a subscribe/unsubscribe request.
+ * 
+ * @deprecated Use IServerRequest/IRequestHandler framework instead
  * <pre>
  *
  * SOFTWARE HISTORY
  *
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
  * 01Sep2006    #18         MW Fegan    Initial creation.
+ * 25Jun2015    4495        njensen     Deprecated
  * 
  * </pre>
  *
@@ -42,15 +45,19 @@ import com.raytheon.uf.common.util.StringUtil;
  * @version 1
  */
 
+@Deprecated
 public class ResponseMessageSubscription extends AbstractResponseMessage {
     private Boolean status;
+
     private String statusMessage;
+
     /**
      * Constructor.
      */
     public ResponseMessageSubscription() {
         // intentionally empty
     }
+
     /**
      * Constructor. Private constructor used by the generate message
      * method {@link #generateSubscriptionResponse(boolean, boolean, Exception)}.
@@ -59,14 +66,14 @@ public class ResponseMessageSubscription extends AbstractResponseMessage {
      * @param message client created message
      * @param cause the exception that caused the subscription to fail
      */
-    private ResponseMessageSubscription(boolean status, 
-                                        String message, 
-                                        Exception cause) {
+    private ResponseMessageSubscription(boolean status, String message,
+            Exception cause) {
         this.statusMessage = message;
         if (cause != null) {
             this.statusMessage += " Cause was " + StringUtil.printString(cause);
-            if(cause.getCause() != null) {
-                this.statusMessage += " " + StringUtil.printString(cause.getCause());
+            if (cause.getCause() != null) {
+                this.statusMessage += " "
+                        + StringUtil.printString(cause.getCause());
             }
         }
 
@@ -78,6 +85,7 @@ public class ResponseMessageSubscription extends AbstractResponseMessage {
         this.dataURI = "";
         this.validTime = new Date();
     }
+
     /**
      * Convience method to allow creation of an Subscription Response Message.
      * Clients may use this method to avoid some of the details of the message
@@ -92,37 +100,39 @@ public class ResponseMessageSubscription extends AbstractResponseMessage {
      *   
      * @return the Subscription Response Message
      */
-    public static ResponseMessageSubscription generateSubscriptionResponse(boolean subscribe,
-                                                                           boolean status,
-                                                                           Exception cause) {
-        String message = (subscribe ? "Subscribe ":"Unsubscribe ") + 
-                         (status ? "request successful."
-                                   : "request failed.");
+    public static ResponseMessageSubscription generateSubscriptionResponse(
+            boolean subscribe, boolean status, Exception cause) {
+        String message = (subscribe ? "Subscribe " : "Unsubscribe ")
+                + (status ? "request successful." : "request failed.");
         return new ResponseMessageSubscription(status, message, cause);
     }
+
     /**
      * @return the message
      */
     public String getStatusMessage() {
         return statusMessage;
     }
+
     /**
      * @param message the message to set
      */
     public void setStatusMessage(String message) {
         this.statusMessage = message;
     }
+
     /**
      * @return the status
      */
     public Boolean isStatus() {
         return status;
     }
+
     /**
      * @param status the status to set
      */
     public void setStatus(Boolean status) {
         this.status = status;
     }
-    
+
 }

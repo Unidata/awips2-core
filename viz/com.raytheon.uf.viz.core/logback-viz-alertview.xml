@@ -1,8 +1,16 @@
 <configuration debug="false" scan="true">
    <!-- Only define when not wanting to use the UF Standard.
    <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
-   -->
-   <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />
+   -->      
+   
+   <!-- TODO this is just a copy of logback-viz-core.xml but with
+         sending to alertview instead of alertviz. Ideally we ought
+         to be able to reuse the commonality or conditionally
+         select which appender to use. -->
+         
+   <property scope="system" name="alertview.enabled" value="true" />
+   
+   <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />            
    
    <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
       <directory>${LOGDIR}</directory>
@@ -24,22 +32,18 @@
        <name>cave_${startTime}_pid_%PID%_perf.log</name>
    </define>
 
-   <!-- TODO should somehow be contributed from alertviz plugin -->
-   <!-- this appender will send the messages over ActiveMQ JMS to AlertViz  -->
-   <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">   
-      <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
-      <uri>tcp://localhost:61998</uri>
-      <destName>messages</destName>
-   </appender>
+   <!--  TODO should somehow be contributed from alertview plugin -->
+   <!-- this appender will send messages to alertview -->
+   <appender name="AlertViewAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />   
 
-  <!-- this appender will log the messages to a file -->
+   <!-- this appender will log the messages to a file -->
    <appender name="CaveLogAppender" class="ch.qos.logback.core.FileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
       <file>${caveLogFile}</file>
    </appender>
-
+   
    <!-- this appender will log any System.out and System.err printouts to a
-         file while also allowing them through to System.out and System.err -->   
+         file while also allowing them through to System.out and System.err -->
    <appender name="consoleLog" class="com.raytheon.uf.common.logback.appender.ConsoleFileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
       <file>${consoleLogFile}</file> 
@@ -61,9 +65,9 @@
       <appender-ref ref="CaveLogAppender"/>      
    </appender>
    
-   <appender name="AsyncAlertvizAppender" class="ch.qos.logback.classic.AsyncAppender">
+   <appender name="AsyncAlertViewAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>      
-      <appender-ref ref="AlertvizAppender"/>
+      <appender-ref ref="AlertViewAppender"/>
    </appender> 
    
    <appender name="AsyncPerfLogAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -79,7 +83,7 @@
    <logger name="CaveLogger" additivity="false">
       <level value="ALL"/>
       <appender-ref ref="AsyncCaveLogAppender"/>
-      <appender-ref ref="AsyncAlertvizAppender"/>
+      <appender-ref ref="AsyncAlertViewAppender"/>
    </logger>
 
    <logger name="PerformanceLogger" additivity="false">

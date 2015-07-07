@@ -41,7 +41,6 @@ import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
 
 /**
@@ -60,6 +59,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Nov 09, 2012 1322        djohnson    Add close for Spring context.
  * Feb 15, 2013 1638        mschenke    Deleted unused functions and moved ones used by common/viz
  *                                      code into common projects
+ * Jun 25, 2015 4495        njensen     Removed dead code, deprecated near death code                                     
  * 
  * </pre>
  * 
@@ -68,26 +68,13 @@ import com.raytheon.uf.common.util.FileUtil;
  */
 public final class Util {
 
-    // public static final String MEMORY_FORMAT = "Used Memory: %f MB, Free
-    // Memory: %f MB, Heap Size: %f MB, Available: %f MB, Max Memory: %f MB";
-    public static final String MEMORY_FORMAT = "Used Memory: %f MB, Heap Size: %f MB, Max Memory: %f MB";
-
-    /*
-     * constants used in adjusting observation dates
-     */
-    public static final long MILLI_PER_SECOND = 1000;
-
-    public static final long MILLI_PER_HOUR = 3600000;
-
-    public static final long MILLI_PER_TWENTY = 1200000;
-
-    public static final long MILLI_PER_FOURTY = 2400000;
-
-    public static Log logger = LogFactory.getLog(Util.class);
+    protected static Log logger = LogFactory.getLog(Util.class);
 
     /**
      * Easy reference to system-dependent end of line
+     * @deprecated Use FileUtil.EOL instead
      */
+    @Deprecated
     public static final String EOL = FileUtil.EOL;
 
     private Util() {
@@ -95,35 +82,15 @@ public final class Util {
     }
 
     /**
-     * Get the filename from a fully qualified path
-     * 
-     * @param aFilePath
-     * @return The filename
-     */
-    public static String getFileNameFromPath(String aFilePath) {
-        String[] tokens;
-        String fileName = null;
-
-        // check for a valid file name
-        if (aFilePath != null && !aFilePath.isEmpty()) {
-
-            // split on the path separator to get the filename
-            tokens = aFilePath.split("[\\\\,/]");
-            fileName = tokens[tokens.length - 1];
-        }
-
-        return fileName;
-    }
-
-    /**
      * Converts a string in YYYYMMDDhhmmss format to a {@link Calendar}.
      * Milli-seconds are set to zero. If the input value is not a valid date
-     * time string, the current time is returned.
+     * time string, the current time is returned.     
      * 
      * @param date
      *            the formated date string
      * @return the calendar representing the date
      */
+    @Deprecated
     public static GregorianCalendar convertStr14ToCal(String date) {
         Pattern p = Pattern
                 .compile("(\\d{4})(\\d{2})(\\d{2})(\\d{2})(\\d{2})(\\d{2})");
@@ -158,6 +125,7 @@ public final class Util {
      * 
      * @throws MalformedURLException
      */
+    @Deprecated
     public static URLClassLoader getLibrariesClassLoader(File[] files)
             throws MalformedURLException {
         URL[] urls = new URL[files.length];
@@ -222,6 +190,9 @@ public final class Util {
      * follows: Any time group with a day (dd) in the future is set back one
      * month.
      * 
+     * @deprecated Use WMOTimeParser instead
+     * 
+     * 
      * @param baseTime
      *            the time to convert
      * 
@@ -230,6 +201,7 @@ public final class Util {
      * @throws DataFormatException
      *             if an error occurs
      */
+    @Deprecated
     public static Calendar findCurrentTime(String baseTime)
             throws DataFormatException {
         Calendar retVal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
@@ -252,106 +224,6 @@ public final class Util {
     }
 
     /**
-     * Creates a reference time for the the specified base time. Reference times
-     * are hh:00, hh:20, and hh:40. Times between fifteen minutes prior and five
-     * minutes after the reference time are rounded to the rererence time.
-     * 
-     * @param baseTime
-     *            the time to convert to reference time
-     * 
-     * @return the reference time
-     * 
-     * @throws DataFormatException
-     *             if any problem occurs.
-     */
-    public static Calendar findReferenceTime(String baseTime)
-            throws DataFormatException {
-        Calendar retVal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-        int minute = 0;
-        try {
-            String regexe = "(\\d{2})(\\d{2})(\\d{2})[Zz]?";
-            Pattern pattern = Pattern.compile(regexe);
-            Matcher matcher = pattern.matcher(baseTime);
-            if (matcher.matches()) {
-                minute = Integer.parseInt(matcher.group(3));
-                adjustDayHourMinute(retVal, matcher.group(1), matcher.group(2),
-                        matcher.group(3));
-                // get the time and truncate to the previous hour
-                long time = retVal.getTimeInMillis();
-                time -= time % MILLI_PER_HOUR;
-
-                if (minute < 5) {
-                    // nothing to do, the time should be correct.
-                } else if (minute < 25) {
-                    // need to add 20 minutes
-                    time += MILLI_PER_TWENTY;
-                } else if (minute < 45) {
-                    // need to add 40 minutes
-                    time += MILLI_PER_FOURTY;
-                } else {
-                    // need to add 60 minutes
-                    time += MILLI_PER_HOUR;
-                }
-                // reset the calendar to the reference time
-                retVal.setTimeInMillis(time);
-            } else {
-                throw new ParseException("Invalid format - does not match "
-                        + regexe, 0);
-            }
-        } catch (Exception e) {
-            throw new DataFormatException("Unable to find reference time for "
-                    + baseTime + ", exception was " + e.toString());
-        }
-        return retVal;
-    }
-
-    /**
-     * Computes the reference hour for the specified time.
-     * 
-     * @param baseTime
-     *            the time to convert to reference hour
-     * 
-     * @return the reference hour
-     * 
-     * @throws DataFormatException
-     *             if any problem occurs.
-     */
-    public static Calendar findReferenceHour(String baseTime)
-            throws DataFormatException {
-        Calendar retVal = Calendar.getInstance(TimeZone.getTimeZone("GMT"));
-        int minute = 0;
-        String regexe = "(\\d{2})(\\d{2})(\\d{2})[Zz]?";
-        Pattern pattern = Pattern.compile(regexe);
-        Matcher matcher = pattern.matcher(baseTime);
-        try {
-            if (matcher.matches()) {
-                minute = Integer.parseInt(matcher.group(3));
-                adjustDayHourMinute(retVal, matcher.group(1), matcher.group(2),
-                        matcher.group(3));
-                // get the time and truncate to the previous hour
-                long time = retVal.getTimeInMillis();
-                time -= time % MILLI_PER_HOUR;
-
-                /*
-                 * if past the cut point, round up to the next hour
-                 */
-                if (minute >= 45) {
-                    time += MILLI_PER_HOUR;
-                }
-                // reset the calendar to the reference hour
-                retVal.setTimeInMillis(time);
-            } else {
-                throw new ParseException("Invalid format - does not match "
-                        + regexe, 0);
-            }
-        } catch (Exception e) {
-            throw new DataFormatException("Unable to find reference hour for "
-                    + baseTime + ", exception was " + e.toString());
-        }
-        return retVal;
-    }
-
-    /**
      * Adjusts the calendar from the current date to the specified date. If the
      * specified date is later than the current date, the calendar is "backed
      * up" one month. In addition, the second and millisecond fields are set to
@@ -366,6 +238,7 @@ public final class Util {
      * @param minute
      *            the new minute of the hour
      */
+    @Deprecated
     private static void adjustDayHourMinute(Calendar cal, String day,
             String hour, String minute) {
         int iDay = Integer.parseInt(day);
@@ -393,11 +266,13 @@ public final class Util {
 
     /**
      * Closes any closeable object.
+     * @deprecated Use Java 1.7 try-with-resources
      * 
      * @param c
      *            An closeable target.
      * @return Close status.
      */
+    @Deprecated
     public static final String close(Closeable c) {
         String status = null;
 
@@ -411,19 +286,7 @@ public final class Util {
         return status;
     }
 
-    /**
-     * Retrieve date as a long in the index standard format: yyyy-MM-dd
-     * kk:mm:ss.SSS
-     * 
-     * @param time
-     *            Time in seconds
-     * @return A formatted date string from the time parameter
-     */
-    public static String formatDate(float time) {
-        Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis((long) time * MILLI_PER_SECOND);
-        return TimeUtil.formatCalendar(cal);
-    }
+    // TODO move the resize/subgrid methods somewhere better
 
     /**
      * Resizes a 1-D data array into a 2-D array based on the provided row and
@@ -493,6 +356,7 @@ public final class Util {
      * @param ctx
      *            the context
      */
+    @Deprecated
     public static String close(final ConfigurableApplicationContext ctx) {
         // Just adapt to a normal Java closeable
         return close(new Closeable() {

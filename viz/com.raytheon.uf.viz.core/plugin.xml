@@ -97,6 +97,13 @@
           value="basemaps" 
           recursive="true">
        </path>
+       <path
+          application="CAVE"
+          localizationType="COMMON_STATIC"
+          name="Perspectives"
+          value="perspectives"
+          recursive="true">
+       </path>
     </extension>
     <extension
    		point="com.raytheon.uf.viz.core.graphicsExtension">
