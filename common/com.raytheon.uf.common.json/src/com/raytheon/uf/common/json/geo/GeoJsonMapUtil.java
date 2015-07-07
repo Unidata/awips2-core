@@ -1,33 +1,22 @@
-/*
- * The following software products were developed by Raytheon:
- *
- * ADE (AWIPS Development Environment) software
- * CAVE (Common AWIPS Visualization Environment) software
- * EDEX (Environmental Data Exchange) software
- * uFrame™ (Universal Framework) software
- *
- * Copyright (c) 2010 Raytheon Co.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/org/documents/epl-v10.php
- *
- *
- * Contractor Name: Raytheon Company
- * Contractor Address:
- * 6825 Pine Street, Suite 340
- * Mail Stop B8
- * Omaha, NE 68106
- * 402.291.0100
- *
- *
- * SOFTWARE HISTORY
- *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 9, 2011            bclement     Initial creation
- *
- */
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.json.geo;
 
 import java.util.ArrayList;
@@ -48,6 +37,7 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -86,6 +76,8 @@ import com.vividsolutions.jts.geom.Polygon;
  *                                     getSingleCoordinate.
  * Jul 01, 2015      #4375 dgilling    Fix NullPointerException in
  *                                     populateFeatureCollection.
+ * Jul 07, 2015      #4375 dgilling    Set CRS on feature before adding default
+ *                                     geometry.
  * 
  * </pre>
  * 
@@ -452,23 +444,26 @@ public class GeoJsonMapUtil {
         String id = (String) jsonObj.get(ID_KEY);
         SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
         typeBuilder.setName(featureName);
-        Geometry geom = getFeatureGeom(jsonObj);
-        if (geom != null) {
-            typeBuilder.setDefaultGeometry(geomName);
-            typeBuilder.add(geomName, geom.getClass());
-        }
+
         Object crsObj = jsonObj.get(CRS_KEY);
-        CoordinateReferenceSystem crs = null;
+        CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
         if (crsObj != null) {
             if (crsObj instanceof Map) {
                 crs = populateCrs((Map<String, Object>) crsObj);
-                typeBuilder.setCRS(crs);
             } else {
                 throw new JsonException(
                         "Expected Map<String, Object> for CRS got"
                                 + crsObj.getClass());
             }
         }
+        typeBuilder.setCRS(crs);
+
+        Geometry geom = getFeatureGeom(jsonObj);
+        if (geom != null) {
+            typeBuilder.setDefaultGeometry(geomName);
+            typeBuilder.add(geomName, geom.getClass());
+        }
+
         List<Object> values = new ArrayList<Object>(0);
         Object propObj = jsonObj.get(PROP_KEY);
         if (propObj != null) {
