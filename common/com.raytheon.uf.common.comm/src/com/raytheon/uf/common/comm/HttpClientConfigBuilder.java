@@ -32,6 +32,7 @@ package com.raytheon.uf.common.comm;
  * Sep 03, 2014  3570      bclement     Initial creation
  * Nov 15, 2014  3757      dhladky      General HTTPS handler
  * Jan 26, 2015  3952      njensen      gzip handled by default
+ * Jul 06, 2015  4614      njensen      Add gzipEnabled
  * 
  * </pre>
  * 
@@ -51,6 +52,8 @@ public class HttpClientConfigBuilder {
     private boolean tcpNoDelay = true;
 
     private boolean expectContinueEnabled = true;
+
+    private boolean gzipEnabled = false;
 
     /**
      * 
@@ -81,7 +84,8 @@ public class HttpClientConfigBuilder {
      */
     public HttpClientConfig build() {
         return new HttpClientConfig(socketTimeout, connectionTimeout,
-                maxConnections, httpsHandler, tcpNoDelay, expectContinueEnabled);
+                maxConnections, httpsHandler, tcpNoDelay,
+                expectContinueEnabled, gzipEnabled);
     }
 
     /**
@@ -227,6 +231,14 @@ public class HttpClientConfigBuilder {
      */
     public void setExpectContinueEnabled(boolean expectContinueEnabled) {
         this.expectContinueEnabled = expectContinueEnabled;
+    }
+
+    public boolean isGzipEnabled() {
+        return gzipEnabled;
+    }
+
+    public void setGzipEnabled(boolean gzipEnabled) {
+        this.gzipEnabled = gzipEnabled;
     }
 
 }
