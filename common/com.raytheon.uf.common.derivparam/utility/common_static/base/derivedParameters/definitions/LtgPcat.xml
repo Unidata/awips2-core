@@ -18,8 +18,8 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter name="Categorical thunderstorm" abbreviation="ThPcat" xmlns:ns2="group">
-    <Method name="ThPcat" levels="Surface" models="bufrmosLAMP">
-        <Field level="Station" abbreviation="tstorm_bestCat"/>
+<DerivedParameter name="Categorical lightning potential" abbreviation="LtgPcat" xmlns:ns2="group">
+    <Method name="Alias" levels="Surface" models="bufrmosLAMP">
+        <Field level="Station" abbreviation="ltg_bestCat"/>
     </Method>
 </DerivedParameter>

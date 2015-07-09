@@ -18,8 +18,8 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter abbreviation="ThP2hr" name="2hr Thunderstorm probability" unit="%">
+<DerivedParameter abbreviation="LtgP2hr" name="2hr Lightning probability" unit="%">
     <Method name="Alias" levels="Surface" models="bufrmosLAMP">
-        <Field abbreviation="tstorm2hr" level="Station"/>
+        <Field abbreviation="ltg2hr" level="Station"/>
     </Method>
 </DerivedParameter>
