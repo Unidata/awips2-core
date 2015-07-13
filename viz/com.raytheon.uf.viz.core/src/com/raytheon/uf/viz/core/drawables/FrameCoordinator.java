@@ -43,6 +43,7 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 18, 2011            mschenke     Initial creation
+ * May 13, 2015  4461      bsteffen     Add determineFrameIndex
  * 
  * </pre>
  * 
@@ -268,19 +269,6 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Given the frames, and current index, return the index of the last
-     * vertical frame. Uses a default validator object that checks DataTime's
-     * visible flag
-     * 
-     * @param frames
-     * @param dataIndex
-     * @return
-     */
-    public static int getLastVerticalIndex(DataTime[] frames, int dataIndex) {
-        return getLastVerticalIndex(frames, dataIndex, DEFAULT_VALIDATOR);
-    }
-
-    /**
-     * Given the frames, and current index, return the index of the last
      * vertical frame.
      * 
      * @param frames
@@ -292,7 +280,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            used
      * @return
      */
-    public static int getLastVerticalIndex(DataTime[] frames, int dataIndex,
+    protected int getLastVerticalIndex(DataTime[] frames, int dataIndex,
             IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         for (int idx = frames.length - 1; idx >= 0; --idx) {
@@ -313,28 +301,12 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            frames to use
      * @param dataIndex
      *            the index to start at
-     * @return the first index with a different levelValue as dataIndex but same
-     *         time
-     */
-    public static int getFirstVerticalIndex(DataTime[] frames, int dataIndex) {
-        return getFirstVerticalIndex(frames, dataIndex, DEFAULT_VALIDATOR);
-    }
-
-    /**
-     * Returns the first index into timesteps that has a different levelValue as
-     * the DataTime at dataIndex but same time. Uses the DataTime.isVisible flag
-     * to determine if a frame is valid or not
-     * 
-     * @param frames
-     *            frames to use
-     * @param dataIndex
-     *            the index to start at
      * @param validator
      *            object to use to determine valid frames
      * @return the first index with a different levelValue as dataIndex but same
      *         time
      */
-    public static int getFirstVerticalIndex(DataTime[] frames, int dataIndex,
+    protected int getFirstVerticalIndex(DataTime[] frames, int dataIndex,
             IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         for (int idx = 0; idx < frames.length; ++idx) {
@@ -348,20 +320,6 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Get the last time index for the frames starting at the current index.
-     * Uses DataTime.isVisible for determining if a frame should be used or not
-     * 
-     * @param frames
-     *            frames to use
-     * @param dataIndex
-     *            the index to start at
-     * @return last time index
-     */
-    public static int getLastTimeIndex(DataTime[] frames, int dataIndex) {
-        return getLastTimeIndex(frames, dataIndex, DEFAULT_VALIDATOR);
-    }
-
-    /**
-     * Get the last time index for the frames starting at the current index.
      * 
      * @param frames
      *            frames to use
@@ -371,7 +329,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            object to use to determine valid frames
      * @return last time index
      */
-    public static int getLastTimeIndex(DataTime[] frames, int dataIndex,
+    protected int getLastTimeIndex(DataTime[] frames, int dataIndex,
             IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         double vert = currTime.getLevelValue();
@@ -384,20 +342,6 @@ public class FrameCoordinator implements IFrameCoordinator {
         }
 
         return dataIndex;
-    }
-
-    /**
-     * Returns the first datatime with same levelValue as DataTime at dataIndex.
-     * Will use DataTime.isVisible to determine if a frame is valid or not
-     * 
-     * @param frames
-     *            frame times to use
-     * @param dataIndex
-     *            the index to start at
-     * @return the first index with same levelValue as dataIndex
-     */
-    public static int getFirstTimeIndex(DataTime[] frames, int dataIndex) {
-        return getFirstTimeIndex(frames, dataIndex, DEFAULT_VALIDATOR);
     }
 
     /**
@@ -411,7 +355,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            Object to use to determine valid frames
      * @return the first index with same levelValue as dataIndex
      */
-    public static int getFirstTimeIndex(DataTime[] frames, int dataIndex,
+    protected int getFirstTimeIndex(DataTime[] frames, int dataIndex,
             IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         double vert = currTime.getLevelValue();
@@ -419,6 +363,53 @@ public class FrameCoordinator implements IFrameCoordinator {
         for (int idx = 0; idx < frames.length; ++idx) {
             DataTime dt = frames[idx];
             if (validator.isValid(dt) && vert == dt.getLevelValue()) {
+                return idx;
+            }
+        }
+
+        return dataIndex;
+    }
+
+    /**
+     * Get the last data time index for the frames starting at the current
+     * index.
+     * 
+     * @param frames
+     *            frames to use
+     * @param dataIndex
+     *            the index to start at
+     * @param validator
+     *            object to use to determine valid frames
+     * @return last data time index
+     */
+    protected int getLastDataTimeIndex(DataTime[] frames, int dataIndex,
+            IFrameValidator validator) {
+        for (int idx = frames.length - 1; idx >= 0; --idx) {
+            DataTime dt = frames[idx];
+            if (validator.isValid(dt)) {
+                return idx;
+            }
+        }
+
+        return dataIndex;
+    }
+
+    /**
+     * Returns the first datatime that is valid
+     * 
+     * @param frames
+     *            frame times to use
+     * @param dataIndex
+     *            the index to start at
+     * @param validator
+     *            Object to use to determine valid frames
+     * @return the first index that is valid
+     */
+    protected int getFirstDataTimeIndex(DataTime[] frames, int dataIndex,
+            IFrameValidator validator) {
+        for (int idx = 0; idx < frames.length; ++idx) {
+            DataTime dt = frames[idx];
+            if (validator.isValid(dt)) {
                 return idx;
             }
         }
@@ -436,7 +427,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            the operation
      * @return index to use
      */
-    private int getNextTimeIndex(DataTime[] frames, int dataIndex,
+    protected int getNextTimeIndex(DataTime[] frames, int dataIndex,
             FrameChangeOperation op, IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         double vert = currTime.getLevelValue();
@@ -545,7 +536,7 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            operation to use
      * @return index to use
      */
-    private int getNextVerticalIndex(DataTime[] frames, int dataIndex,
+    protected int getNextVerticalIndex(DataTime[] frames, int dataIndex,
             FrameChangeOperation op, IFrameValidator validator) {
         DataTime currTime = frames[dataIndex];
         int next = dataIndex;
@@ -653,27 +644,16 @@ public class FrameCoordinator implements IFrameCoordinator {
      *            operation to use
      * @return index to use
      */
-    private int getNextDataTimeIndex(DataTime[] frames, int dataIndex,
+    protected int getNextDataTimeIndex(DataTime[] frames, int dataIndex,
             FrameChangeOperation op, IFrameValidator validator) {
         int next = dataIndex;
         switch (op) {
         case FIRST: {
-            int length = frames.length;
-            for (int idx = 0; idx < length; ++idx) {
-                if (validator.isValid(frames[idx])) {
-                    next = idx;
-                    break;
-                }
-            }
+            next = getFirstDataTimeIndex(frames, dataIndex, validator);
             break;
         }
         case LAST: {
-            for (int idx = frames.length - 1; idx >= 0; --idx) {
-                if (validator.isValid(frames[idx])) {
-                    next = idx;
-                    break;
-                }
-            }
+            next = getLastDataTimeIndex(frames, dataIndex, validator);
             break;
         }
         case NEXT: {
@@ -870,6 +850,79 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     public void setCurrentAnimationMode(AnimationMode currentAnimationMode) {
         this.currentAnimationMode = currentAnimationMode;
+    }
+
+    @Override
+    public int determineFrameIndex(DataTime[] currentFrames,
+            int currentIndex, DataTime[] newFrames) {
+        if ((newFrames == null) || (newFrames.length == 0)) {
+            return -1;
+        }
+        // Next try to get the closest time to
+        if ((currentFrames != null) && (currentIndex >= 0)
+                && (currentIndex < currentFrames.length)) {
+            DataTime startTime = currentFrames[currentIndex];
+            int dateIndex = Arrays.binarySearch(newFrames, startTime);
+            if (dateIndex < 0) {
+                if (newFrames[0].getMatchValid() > startTime.getMatchValid()) {
+                    return 0;
+                }
+            } else {
+                dateIndex = indexToUpdateTo(currentFrames, currentIndex,
+                        newFrames,
+                        dateIndex);
+                if ((dateIndex >= 0) && (dateIndex < newFrames.length)) {
+                    return dateIndex;
+                }
+            }
+        }
+        // if that didn't work just return the last frame
+        return getLastDataTimeIndex(newFrames, -1, DEFAULT_VALIDATOR);
+    }
+
+    private int indexToUpdateTo(DataTime[] oldTimes, int oldIndex,
+            DataTime[] frames, int startFrame) {
+        int frameToUse = startFrame;
+        IRenderableDisplay display = descriptor.getRenderableDisplay();
+        if ((display != null) && (display.getContainer() != null)) {
+            IDisplayPaneContainer container = display.getContainer();
+            if (container.getLoopProperties().isLooping()) {
+                return frameToUse;
+            }
+        }
+        switch (currentAnimationMode) {
+        case Latest: {
+            if (oldIndex == getLastDataTimeIndex(oldTimes, oldIndex,
+                    DEFAULT_VALIDATOR)) {
+                frameToUse = getLastDataTimeIndex(frames, startFrame,
+                        DEFAULT_VALIDATOR);
+            }
+            break;
+        }
+        case Temporal: {
+            // was our old time the last frame for that time?
+            boolean wasLastForTime = (oldIndex == getLastTimeIndex(oldTimes,
+                    oldIndex, DEFAULT_VALIDATOR));
+            if (wasLastForTime) {
+                // check if a new time came in for our frame
+                int latestForTime = getLastTimeIndex(frames, startFrame,
+                        DEFAULT_VALIDATOR);
+                if (latestForTime > startFrame) {
+                    frameToUse = latestForTime;
+                }
+            }
+            break;
+        }
+        case Vertical: {
+            boolean wasLastForTime = (oldIndex == getLastVerticalIndex(
+                    oldTimes, oldIndex, DEFAULT_VALIDATOR));
+            if (wasLastForTime) {
+                frameToUse = getLastVerticalIndex(frames, startFrame,
+                        DEFAULT_VALIDATOR);
+            }
+        }
+        }
+        return frameToUse;
     }
 
 }

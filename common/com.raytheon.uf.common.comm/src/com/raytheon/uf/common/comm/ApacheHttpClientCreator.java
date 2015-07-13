@@ -71,6 +71,7 @@ import com.raytheon.uf.common.util.app.AppInfo;
  * Jan 22, 2015  3952      njensen      Removed gzip handling as apache http client has it built-in
  * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as trustMaterial.
  * Jul 01, 2015  4021      bsteffen     Set User Agent
+ * Jul 06, 2015  4614      njensen      Disable gzip by default
  * 
  * </pre>
  * 
@@ -87,12 +88,12 @@ public class ApacheHttpClientCreator {
 
     /**
      * @param config
-     * @return
+     * @return an http client based on the config
      * @throws NoSuchAlgorithmException
      * @throws KeyStoreException
      * @throws KeyManagementException
-     * @throws UnrecoverableKeyException 
-     * @see {@link #createSslClient(HttpClientConfig, NetworkStatistics)}
+     * @throws UnrecoverableKeyException
+     * @see #createSslClient(HttpClientConfig, NetworkStatistics)
      */
     public static CloseableHttpClient createSslClient(HttpClientConfig config)
             throws NoSuchAlgorithmException, KeyStoreException,
@@ -105,15 +106,16 @@ public class ApacheHttpClientCreator {
      * 
      * @param config
      * @param stats
-     * @return
+     * @return an https client based on the config
      * @throws NoSuchAlgorithmException
      * @throws KeyStoreException
      * @throws KeyManagementException
-     * @throws UnrecoverableKeyException 
+     * @throws UnrecoverableKeyException
      */
     public static CloseableHttpClient createSslClient(HttpClientConfig config,
             NetworkStatistics stats) throws NoSuchAlgorithmException,
-            KeyStoreException, KeyManagementException, UnrecoverableKeyException {
+            KeyStoreException, KeyManagementException,
+            UnrecoverableKeyException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
         IHttpsHandler handler = config.getHttpsHandler();
@@ -136,10 +138,10 @@ public class ApacheHttpClientCreator {
                 /*
                  * Validate certificates and submit key(s). This is the general
                  * situation where sometimes you act as the server and validate
-                 * clients. Other times you act as a client and submit your key(s) to
-                 * remote servers.
+                 * clients. Other times you act as a client and submit your
+                 * key(s) to remote servers.
                  */
-                
+
                 final KeyStore keystore = handler.getKeystore();
                 sslCtxBuilder.loadKeyMaterial(keystore,
                         handler.getKeystorePassword());
@@ -149,9 +151,9 @@ public class ApacheHttpClientCreator {
 
             } else {
                 /*
-                 * Validate certificates w/o submitting keys.
-                 * This is only useful where you are a "server" 
-                 * and you only validate clients.
+                 * Validate certificates w/o submitting keys. This is only
+                 * useful where you are a "server" and you only validate
+                 * clients.
                  */
                 statusHandler
                         .handle(Priority.DEBUG,
@@ -173,8 +175,9 @@ public class ApacheHttpClientCreator {
             });
 
             // Do no validation what so ever
-            statusHandler.handle(Priority.DEBUG,
-                    "Proceeding with no validation of certificates or key submission.");
+            statusHandler
+                    .handle(Priority.DEBUG,
+                            "Proceeding with no validation of certificates or key submission.");
         }
 
         SSLContext sslCtx = sslCtxBuilder.build();
@@ -217,7 +220,13 @@ public class ApacheHttpClientCreator {
         clientBuilder.setConnectionManager(connectionManager);
         setUserAgent(clientBuilder);
 
-        // build() call automatically adds gzip interceptors
+        /*
+         * build() call automatically adds gzip interceptors unless we
+         * explicitly disable that
+         */
+        if (!config.isGzipEnabled()) {
+            clientBuilder.disableContentCompression();
+        }
         return clientBuilder.build();
     }
 
@@ -271,10 +280,7 @@ public class ApacheHttpClientCreator {
 
     /**
      * @param config
-     * @return
-     * @throws KeyStoreException
-     * @throws NoSuchAlgorithmException
-     * @throws KeyManagementException
+     * @return an http client based on the config
      * @see #createClient(HttpClientConfig, NetworkStatistics)
      */
     public static CloseableHttpClient createClient(HttpClientConfig config) {
@@ -286,7 +292,7 @@ public class ApacheHttpClientCreator {
      * 
      * @param config
      * @param stats
-     * @return
+     * @return an http client based on the config
      */
     public static CloseableHttpClient createClient(HttpClientConfig config,
             NetworkStatistics stats) {
@@ -315,7 +321,13 @@ public class ApacheHttpClientCreator {
         clientBuilder.setConnectionManager(connectionManager);
         setUserAgent(clientBuilder);
 
-        // build() call automatically adds gzip interceptors
+        /*
+         * build() call automatically adds gzip interceptors unless we
+         * explicitly disable that
+         */
+        if (!config.isGzipEnabled()) {
+            clientBuilder.disableContentCompression();
+        }
         return clientBuilder.build();
     }
 
