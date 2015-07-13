@@ -21,9 +21,9 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.dataplugin.maps;bundle-version="1.0.0",
  com.raytheon.uf.viz.localization;bundle-version="1.12.1174",
  com.raytheon.uf.common.colormap;bundle-version="1.12.1174",
- com.raytheon.uf.common.dataplugin.satellite,
- com.raytheon.viz.satellite,
- gov.noaa.nws.ncep.viz.common
+ com.raytheon.uf.common.dataplugin.satellite;bundle-version="1.0.0",
+ com.raytheon.viz.satellite;bundle-version="1.0.0",
+ gov.noaa.nws.ncep.viz.common;bundle-version="1.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.core.maps,
