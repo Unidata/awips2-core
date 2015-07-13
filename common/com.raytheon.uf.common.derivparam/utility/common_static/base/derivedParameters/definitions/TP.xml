@@ -49,6 +49,10 @@
         <Field abbreviation="TP6hr"/>
         <Field abbreviation="TP12hr"/>
     </Method>
+    <Method name="Or" models="GFS215">
+        <Field abbreviation="TP3hr"/>
+        <Field abbreviation="TP6hr"/>
+    </Method>
     <Method name="Alias">
         <Field abbreviation="TP1hr"/>
     </Method>
