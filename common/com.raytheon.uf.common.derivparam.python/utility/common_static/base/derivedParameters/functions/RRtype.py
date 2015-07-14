@@ -62,6 +62,10 @@ def execute1(CSNOW,CICEP,CFRZR,CRAIN,RR):
 def execute2(CSNOW,CICEP,CFRZR,CRAIN,CXR):
 #   # USING composite reflectivity.  
     # Assign zeros to the array 
+    CRAIN = numpy.nan_to_num(CRAIN)
+    CFRZR = numpy.nan_to_num(CFRZR)
+    CICEP = numpy.nan_to_num(CICEP)
+    CSNOW = numpy.nan_to_num(CSNOW)
     tmp = numpy.zeros(CSNOW.shape,dtype=CSNOW.dtype)
     #
     # Transform the type grids. 

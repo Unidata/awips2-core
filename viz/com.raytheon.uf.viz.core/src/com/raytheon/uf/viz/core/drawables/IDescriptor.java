@@ -73,13 +73,14 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Sep 04, 2007             chammack    Initial Creation.
- *    Oct 22, 2009   #3348     bsteffen    added ability to limit number of frames
- *    Feb 10, 2015    3974     njensen     Improved javadoc
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Sep 04, 2007           chammack  Initial Creation.
+ * Oct 22, 2009  3348     bsteffen  added ability to limit number of frames
+ * Feb 10, 2015  3974     njensen   Improved javadoc
+ * May 13, 2015  4461     bsteffen  Add another FramesInfo constructor.
  * 
  * </pre>
  * 
@@ -115,6 +116,20 @@ public interface IDescriptor extends IResourceGroup {
             this.timeMap = timeMap;
             setFrames = true;
             setIndex = true;
+            setMap = true;
+        }
+
+        /**
+         * Constructor to use if wanting to change frames, and time map
+         * 
+         * @param frameTimes
+         * @param timeMap
+         */
+        public FramesInfo(DataTime[] frameTimes,
+                Map<AbstractVizResource<?, ?>, DataTime[]> timeMap) {
+            this.frameTimes = frameTimes;
+            this.timeMap = timeMap;
+            setFrames = true;
             setMap = true;
         }
 
