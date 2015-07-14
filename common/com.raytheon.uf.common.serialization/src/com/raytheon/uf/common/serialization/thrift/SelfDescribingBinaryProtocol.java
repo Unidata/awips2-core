@@ -51,15 +51,16 @@ import org.apache.thrift.transport.TTransport;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * Aug 7, 2008				chammack	Initial creation
- * Jun 17, 2010   #5091     njensen     Added primitive list methods
- * Jun 12, 2013    2102     njensen     Added max read length to prevent out
- *                                       of memory errors due to bad stream
- * Jul 23, 2013    2215     njensen     Updated for thrift 0.9.0
- * Aug 06, 2013    2228     njensen     Overrode readBinary() to ensure it
- *                                       doesn't read too much
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 07, 2008           chammack  Initial creation
+ * Jun 17, 2010  5091     njensen   Added primitive list methods
+ * Jun 12, 2013  2102     njensen   Added max read length to prevent out of
+ *                                  memory errors due to bad stream
+ * Jul 23, 2013  2215     njensen   Updated for thrift 0.9.0
+ * Aug 06, 2013  2228     njensen   Overrode readBinary() to ensure it doesn't
+ *                                  read too much
+ * Jul 13, 2015  4589     bsteffen  Copy arrays in chunks to save memory.
  * 
  * </pre>
  * 
@@ -68,6 +69,52 @@ import org.apache.thrift.transport.TTransport;
  */
 
 public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
+
+    /**
+     * The size(in bytes) of the intermediate buffer to use when converting
+     * primitive arrays to bytes.
+     * 
+     * When copying a primitive array to a {@link TTransport} each item in the
+     * array must be converted to bytes. There are three basic approaches we
+     * have used to do this conversion:
+     * <p>
+     * <ol>
+     * <li><b>Naive Loop</b> This is simply looping over each value, converting
+     * to bytes, and writing those bytes to the transport. When the code is run
+     * with JIT compilation disabled this is actually the fastest. In the real
+     * world, with JIT compilation enabled this method is the slowest. One
+     * possible explanation is that the JIT compiler cannot do much optimization
+     * within the loop because the transport is an interface so the JIT compiler
+     * cannot inline the method call efficiently.
+     * <li><b>Copy It All</b> This approach uses
+     * ByteBuffer.as&lt;Type&gt;Buffer().put(array) to copy all the data into a
+     * single byte[] and then passes this array into the transport. This method
+     * is much faster than the Naive Loop, presumably because the JIT can
+     * optimize the Buffer operation and because most streams can work more
+     * efficiently with larger arrays, this is especially true if the underlying
+     * transport uses System.arrayCopy, which works faster on large arrays. The
+     * down side to this approach is that it requires double the memory because
+     * it copies the whole thing.
+     * <li><b>Copying Chunks</b> This approach uses ByteBuffers to copy the
+     * data, similar to copying all the data, but the data is copied in many
+     * fixed sized chunks. This approach significantly reduces the memory
+     * necessary and in most cases it has been observed that this is actually
+     * faster than copying all of the data. One possible explanation for why it
+     * is faster is because the JVM takes longer to do large allocations so the
+     * smaller allocation size of the chunk speeds things up more than the slow
+     * down from multiple writes into the transport. The current chunk size was
+     * chosen after sampling a variety of sizes. In general smaller sizes tend
+     * to slow down and larger sizes offer only negligible benefit.
+     * </ol>
+     * <p>
+     * All comments about performance and JIT are based off observations about
+     * the Oracle JDK for java 1.7 running on a 64-bit x86 linux machine. In
+     * general the buffering approaches performed as much as 3x faster than the
+     * naive approach. Chunking offered performance gains as high as 20% over
+     * copying the entire array, although the major selling point is still the
+     * memory savings.
+     */
+    private static int ARRAY_CHUNK_SIZE = 1024;
 
     public static final byte FLOAT = 64;
 
@@ -240,11 +287,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeF32List(float[] arr) throws TException {
-        byte[] b = new byte[4 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        FloatBuffer fb = bb.asFloatBuffer();
-        fb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 4;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asFloatBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int floatChunkSize = ARRAY_CHUNK_SIZE / 4;
+            int remainder = arrLength % floatChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            FloatBuffer floats = ByteBuffer.wrap(bytes).asFloatBuffer();
+            for (int i = 0; i < fullChunkSize; i += floatChunkSize) {
+                floats.put(arr, i, floatChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                floats.rewind();
+            }
+            if (remainder > 0) {
+                floats.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 4);
+            }
+        }
     }
 
     /**
@@ -269,11 +334,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI32List(int[] arr) throws TException {
-        byte[] b = new byte[4 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        IntBuffer ib = bb.asIntBuffer();
-        ib.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 4;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asIntBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int intChunkSize = ARRAY_CHUNK_SIZE / 4;
+            int remainder = arrLength % intChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            IntBuffer ints = ByteBuffer.wrap(bytes).asIntBuffer();
+            for (int i = 0; i < fullChunkSize; i += intChunkSize) {
+                ints.put(arr, i, intChunkSize );
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                ints.rewind();
+            }
+            if (remainder > 0) {
+                ints.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 4);
+            }
+        }
     }
 
     /**
@@ -298,11 +381,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeD64List(double[] arr) throws TException {
-        byte[] b = new byte[8 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        DoubleBuffer pb = bb.asDoubleBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 8;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asDoubleBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int doubleChunkSize = ARRAY_CHUNK_SIZE / 8;
+            int remainder = arrLength % doubleChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            DoubleBuffer doubles = ByteBuffer.wrap(bytes).asDoubleBuffer();
+            for (int i = 0; i < fullChunkSize; i += doubleChunkSize) {
+                doubles.put(arr, i, doubleChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                doubles.rewind();
+            }
+            if (remainder > 0) {
+                doubles.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 8);
+            }
+        }
     }
 
     /**
@@ -327,11 +428,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI64List(long[] arr) throws TException {
-        byte[] b = new byte[8 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        LongBuffer pb = bb.asLongBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 8;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asLongBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int longChunkSize = ARRAY_CHUNK_SIZE / 8;
+            int remainder = arrLength % longChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            LongBuffer longs = ByteBuffer.wrap(bytes).asLongBuffer();
+            for (int i = 0; i < fullChunkSize; i += longChunkSize) {
+                longs.put(arr, i, longChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                longs.rewind();
+            }
+            if (remainder > 0) {
+                longs.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 8);
+            }
+        }
     }
 
     /**
@@ -356,11 +475,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI16List(short[] arr) throws TException {
-        byte[] b = new byte[2 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        ShortBuffer pb = bb.asShortBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 2;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asShortBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int shortChunkSize = ARRAY_CHUNK_SIZE / 2;
+            int remainder = arrLength % shortChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            ShortBuffer shorts = ByteBuffer.wrap(bytes).asShortBuffer();
+            for (int i = 0; i < fullChunkSize; i += shortChunkSize) {
+                shorts.put(arr, i, shortChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                shorts.rewind();
+            }
+            if (remainder > 0) {
+                shorts.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 2);
+            }
+        }
     }
 
     /**
