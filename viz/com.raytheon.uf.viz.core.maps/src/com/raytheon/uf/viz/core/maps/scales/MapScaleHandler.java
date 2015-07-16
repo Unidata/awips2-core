@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.viz.core.maps.scales;
 
-import gov.noaa.nws.ncep.viz.common.area.AreaMenusMngr;
+//import gov.noaa.nws.ncep.viz.common.area.AreaMenusMngr;
 
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
