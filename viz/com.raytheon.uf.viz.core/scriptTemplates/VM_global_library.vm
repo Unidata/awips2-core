@@ -147,27 +147,9 @@ query.addParameter("${name}","${constraint.constraintValue}","${operand}")
 return query.execute()
 #end
 
-#macro(hqlQuery $scriptMetadata)
-import HqlQuery
-request = HqlQuery.HqlQuery("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("database").constraintValue")
-return request.execute()
-#end
-
 #macro(sqlQuery $scriptMetadata)
 import SqlQuery
 request = SqlQuery.SqlQuery("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("database").constraintValue")
-return request.execute()
-#end
-
-#macro(sqlStatement $scriptMetadata)
-import SqlStatement
-request = SqlStatement.SqlStatement("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("database").constraintValue")
-return request.execute()
-#end
-
-#macro(hqlStatement $scriptMetadata)
-import HqlStatement
-request = HqlStatement.HqlStatement("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("database").constraintValue")
 return request.execute()
 #end
 

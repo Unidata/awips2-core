@@ -20,10 +20,28 @@
 
 package com.raytheon.uf.edex.database.plugin;
 
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.util.ArrayList;
+import java.util.Enumeration;
+import java.util.LinkedList;
 import java.util.List;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 
+import org.hibernate.SQLQuery;
+import org.hibernate.Session;
+import org.springframework.transaction.TransactionStatus;
+import org.springframework.transaction.support.TransactionCallbackWithoutResult;
+
+import com.raytheon.uf.common.dataplugin.PluginException;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
+import com.raytheon.uf.edex.database.DatabasePluginProperties;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 import com.raytheon.uf.edex.database.query.DatabaseQuery;
@@ -40,15 +58,18 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * ------------ ---------- ----------- --------------------------
  * 7/24/07      353        bphillip    Initial Check in
  * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
- * 
+ * Jul 10, 2015 4500       rjpeter     Changed to package scope, added runPluginScripts.
  * </pre>
  * 
  * @author bphillip
  * @version 1
  */
-public class PluginVersionDao extends CoreDao {
+class PluginVersionDao extends CoreDao {
 
     private static final String DB_INITIALIZED_SQL = "select relname from pg_class where relname = 'plugin_info'";
+
+    private static final String PLUGIN_DIR = EDEXUtil.getEdexPlugins()
+            + File.separator;
 
     /**
      * Creates a new PluginVersionDao.
@@ -150,4 +171,158 @@ public class PluginVersionDao extends CoreDao {
         }
     }
 
+    /**
+     * Runs all scripts for a particular plugin.
+     * 
+     * @param pluginName
+     *            The plugin to run the scripts for
+     * @throws PluginException
+     *             If errors occur accessing the database
+     */
+    protected void runPluginScripts(DatabasePluginProperties props)
+            throws PluginException {
+        final JarFile jar;
+        String pluginFQN = props.getPluginFQN();
+
+        try {
+            File jarFile = new File(PLUGIN_DIR, pluginFQN + ".jar");
+            if (!jarFile.exists()) {
+                /* check for any jar files of the format pluginFQN_version.jar */
+                Pattern p = Pattern.compile("^" + Pattern.quote(pluginFQN)
+                        + "_.*\\.jar$");
+                File pluginDir = new File(PLUGIN_DIR);
+                for (File f : pluginDir.listFiles()) {
+                    if (p.matcher(f.getName()).find()) {
+                        jarFile = f;
+                        break;
+                    }
+                }
+            }
+            jar = new JarFile(jarFile);
+        } catch (IOException e) {
+            throw new PluginException("Unable to find jar for plugin FQN "
+                    + pluginFQN, e);
+        }
+
+        String name = null;
+
+        try {
+            Enumeration<JarEntry> entries = jar.entries();
+            while (entries.hasMoreElements()) {
+                final JarEntry entry = entries.nextElement();
+                name = entry.getName();
+
+                /*
+                 * run the script bundled in the jar file from the res/scripts
+                 * folder inside the jar
+                 */
+                if (name.startsWith("res/scripts") && name.endsWith(".sql")) {
+                    logger.info("Executing plugin script: " + name);
+                    final List<String> statements = parseJarEntryForStatements(
+                            jar, entry);
+
+                    txTemplate.execute(new TransactionCallbackWithoutResult() {
+                        @Override
+                        public void doInTransactionWithoutResult(
+                                TransactionStatus status) {
+                            Session sess = getCurrentSession();
+                            for (String statement : statements) {
+                                /*
+                                 * SQL Injection not a concern as the entire
+                                 * statement was provided by file contained in
+                                 * the jar.
+                                 */
+                                SQLQuery query = sess.createSQLQuery(statement);
+                                query.executeUpdate();
+                            }
+                        }
+                    });
+                }
+            }
+        } catch (Exception e) {
+            logger.error("Error executing script " + name, e);
+            throw new PluginException("Unable to execute script " + name
+                    + " for plugin FQN " + pluginFQN, e);
+        } finally {
+            if (jar != null) {
+                try {
+                    jar.close();
+                } catch (IOException e) {
+                    throw new PluginException(
+                            "Unable to close jar for plugin FQN " + pluginFQN,
+                            e);
+                }
+            }
+        }
+    }
+
+    /**
+     * Parses a given jar entry for sql statements, ignoring all comments.
+     * 
+     * @param jar
+     * @param entry
+     * @throws IOException
+     */
+    private List<String> parseJarEntryForStatements(JarFile jar, JarEntry entry)
+            throws IOException {
+        final List<String> rval = new LinkedList<>();
+        BufferedReader reader = null;
+        InputStream stream = null;
+
+        try {
+            stream = jar.getInputStream(entry);
+            reader = new BufferedReader(new InputStreamReader(stream));
+
+            String line = null;
+            StringBuilder buffer = new StringBuilder();
+            boolean ignoringLines = false;
+
+            while ((line = reader.readLine()) != null) {
+                line = line.trim();
+                if (line.isEmpty()) {
+                    continue;
+                }
+
+                if (ignoringLines) {
+                    // looking for end of comment block
+                    if (line.endsWith("*/")) {
+                        ignoringLines = false;
+                    }
+                } else {
+                    if (line.startsWith("/*")) {
+                        // skip just this line?
+                        if (!line.endsWith("*/")) {
+                            ignoringLines = true;
+                        }
+                    } else if (!line.startsWith("--")) {
+                        // not a single line comment either
+                        buffer.append(line).append('\n');
+
+                        if (line.trim().endsWith(";")) {
+                            // end of statement
+                            rval.add(buffer.toString());
+                            buffer.setLength(0);
+                        }
+                    }
+                }
+            }
+        } finally {
+            if (reader != null) {
+                try {
+                    reader.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+            if (stream != null) {
+                try {
+                    stream.close();
+                } catch (IOException e) {
+                    // ignore
+                }
+            }
+        }
+
+        return rval;
+    }
 }

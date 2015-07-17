@@ -19,17 +19,13 @@
  **/
 package com.raytheon.uf.edex.database;
 
-import java.util.Map;
-
 import com.raytheon.uf.common.dataquery.requests.QlServerRequest;
-import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryLanguage;
+import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryType;
 import com.raytheon.uf.common.message.response.ResponseMessageGeneric;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
+import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
-import com.raytheon.uf.edex.database.tasks.HqlQueryTask;
-import com.raytheon.uf.edex.database.tasks.HqlStatementTask;
-import com.raytheon.uf.edex.database.tasks.SqlQueryTask;
-import com.raytheon.uf.edex.database.tasks.SqlStatementTask;
 
 /**
  * Handler for QlServerRequest objects
@@ -41,91 +37,43 @@ import com.raytheon.uf.edex.database.tasks.SqlStatementTask;
  * ------------ ---------- ----------- --------------------------
  * Feb 16, 2011 #8070      ekladstrup  Initial creation
  * Nov 08, 2013  2361      njensen     Removed saveOrUpdate mode
- * 
+ * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
  * </pre>
  * 
  * @author ekladstrup
  * @version 1.0
  */
 public class QlServerRequestHandler implements IRequestHandler<QlServerRequest> {
-
-    /*
-     * macros from VM_global_library.vm
-     * 
-     * #macro(hqlQuery $scriptMetadata) import HqlQuery request =
-     * HqlQuery.HqlQuery
-     * ("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("
-     * database").constraintValue") return request.execute() #end
-     * 
-     * #macro(sqlQuery $scriptMetadata) import SqlQuery request =
-     * SqlQuery.SqlQuery
-     * ("$scriptMetadata.remove("query").constraintValue","$scriptMetadata.remove("
-     * database").constraintValue") return request.execute() #end
-     * 
-     * #macro(sqlStatement $scriptMetadata) import SqlStatement request =
-     * SqlStatement
-     * .SqlStatement("$scriptMetadata.remove("query").constraintValue"
-     * ,"$scriptMetadata.remove("database").constraintValue") return
-     * request.execute() #end
-     * 
-     * #macro(hqlStatement $scriptMetadata) import HqlStatement request =
-     * HqlStatement
-     * .HqlStatement("$scriptMetadata.remove("query").constraintValue"
-     * ,"$scriptMetadata.remove("database").constraintValue") return
-     * request.execute() #end
-     * 
-     * #macro(saveOrUpdateObject $scriptMetadata) import SaveOrUpdateObject
-     * request =
-     * SaveOrUpdateObject.SaveOrUpdateObject("$scriptMetadata.remove("dbName
-     * ").constraintValue")
-     * 
-     * #foreach (${obj} in ${scriptMetadata.values()}) #if($obj.constraintValue
-     * != "satellite") request.addObject("$obj.constraintValue") #end #end
-     * 
-     * return request.execute() #end
-     */
-
     /**
      * 
      */
     @Override
     public Object handleRequest(QlServerRequest request) throws Exception {
-        // get request constraint map first
-        Map<String, RequestConstraint> map = request.getRcMap();
-
-        // get mode from map
-        String mode = map.get("mode").getConstraintValue();
-        map.remove("mode");
 
         // get database name
-        // set default first
-        String dbName = DaoConfig.DEFAULT_DB_NAME;
-        if (map.containsKey("database")) {
-            dbName = map.get("database").getConstraintValue();
-            map.remove("database");
+        String dbName = request.getDatabase();
+        if (dbName == null) {
+            dbName = DaoConfig.DEFAULT_DB_NAME;
         }
 
-        // get query
-        String query = null;
-        if (map.get("query") != null) {
-            query = map.get("query").getConstraintValue();
-        }
-
-        // perform action
-        // should perform the same actions as the macros above
         Object result = null;
-        if (mode.equals("sqlquery")) {
-            SqlQueryTask task = new SqlQueryTask(query, dbName);
-            result = task.execute();
-        } else if (mode.equals("hqlquery")) {
-            HqlQueryTask task = new HqlQueryTask(query, dbName);
-            result = task.execute();
-        } else if (mode.equals("sqlstatement")) {
-            SqlStatementTask task = new SqlStatementTask(query, dbName);
-            result = task.execute();
-        } else if (mode.equals("hqlstatement")) {
-            HqlStatementTask task = new HqlStatementTask(query, dbName);
-            result = task.execute();
+        CoreDao dao = new CoreDao(DaoConfig.forDatabase(dbName));
+        if (QueryLanguage.HQL.equals(request.getQuery())) {
+            if (QueryType.STATEMENT.equals(request.getType())) {
+                result = dao.executeHQLStatement(request.getQuery(),
+                        request.getParamMap());
+            } else {
+                result = dao.executeHQLQuery(request.getQuery(),
+                        request.getParamMap());
+            }
+        } else {
+            if (QueryType.STATEMENT.equals(request.getType())) {
+                result = dao.executeSQLUpdate(request.getQuery(),
+                        request.getParamMap());
+            } else {
+                result = dao.executeMappedSQLQuery(request.getQuery(),
+                        request.getParamMap());
+            }
         }
 
         // instead of placing a single value in an arraylist, just return the

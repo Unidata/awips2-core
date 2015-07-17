@@ -28,6 +28,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -94,7 +95,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
- * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery and executeSQLUpdate.
+ * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
  * </pre>
  * 
  * @author bphillip
@@ -684,7 +685,18 @@ public class CoreDao {
      * @return The list of objects returned by the query
      */
     public QueryResult executeHQLQuery(final String hqlQuery) {
+        return executeHQLQuery(hqlQuery, null);
+    }
 
+    /**
+     * Executes an HQL query
+     * 
+     * @param hqlQuery
+     *            The HQL query string
+     * @return The list of objects returned by the query
+     */
+    public QueryResult executeHQLQuery(final String hqlQuery,
+            final Map<String, Object> paramMap) {
         QueryResult result = txTemplate
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
@@ -694,6 +706,8 @@ public class CoreDao {
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         hibQuery.setCacheable(true);
+                        addParamsToQuery(hibQuery, paramMap);
+
                         List<?> queryResult = hibQuery.list();
 
                         QueryResultRow[] rows = new QueryResultRow[queryResult
@@ -737,7 +751,19 @@ public class CoreDao {
      *            The HQL statement string
      * @return The results of the statement
      */
-    public int executeHQLStatement(final String hqlStmt) {
+    public int executeHQLStatement(String hqlStmt) {
+        return executeHQLStatement(hqlStmt, null);
+    }
+
+    /**
+     * Executes an HQL statement
+     * 
+     * @param hqlStmt
+     *            The HQL statement string
+     * @return The results of the statement
+     */
+    public int executeHQLStatement(final String hqlStmt,
+            final Map<String, Object> paramMap) {
 
         int queryResult = txTemplate
                 .execute(new TransactionCallback<Integer>() {
@@ -745,8 +771,7 @@ public class CoreDao {
                     public Integer doInTransaction(TransactionStatus status) {
                         Query hibQuery = getCurrentSession().createQuery(
                                 hqlStmt);
-                        // hibQuery.setCacheMode(CacheMode.NORMAL);
-                        // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
+                        addParamsToQuery(hibQuery, paramMap);
                         return hibQuery.executeUpdate();
                     }
                 });
@@ -765,18 +790,7 @@ public class CoreDao {
      *         [] ]
      */
     public Object[] executeSQLQuery(final String sql) {
-
-        long start = System.currentTimeMillis();
-        List<?> queryResult = txTemplate
-                .execute(new TransactionCallback<List<?>>() {
-                    @Override
-                    public List<?> doInTransaction(TransactionStatus status) {
-                        return getCurrentSession().createSQLQuery(sql).list();
-                    }
-                });
-        logger.debug("executeSQLQuery took: "
-                + (System.currentTimeMillis() - start) + " ms");
-        return queryResult.toArray();
+        return executeSQLQuery(sql, null);
     }
 
     /**
@@ -789,21 +803,9 @@ public class CoreDao {
      */
     public Object[] executeSQLQuery(final String sql, final String param,
             final Object val) {
-
-        long start = System.currentTimeMillis();
-        List<?> queryResult = txTemplate
-                .execute(new TransactionCallback<List<?>>() {
-                    @Override
-                    public List<?> doInTransaction(TransactionStatus status) {
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(sql);
-                        addParamToSQLQuery(query, param, val);
-                        return query.list();
-                    }
-                });
-        logger.debug("executeSQLQuery took: "
-                + (System.currentTimeMillis() - start) + " ms");
-        return queryResult.toArray();
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeSQLQuery(sql, paramMap);
     }
 
     /**
@@ -824,21 +826,77 @@ public class CoreDao {
                     public List<?> doInTransaction(TransactionStatus status) {
                         SQLQuery query = getCurrentSession()
                                 .createSQLQuery(sql);
-
-                        if ((paramMap != null) && !paramMap.isEmpty()) {
-                            for (Map.Entry<String, Object> entry : paramMap
-                                    .entrySet()) {
-                                addParamToSQLQuery(query, entry.getKey(),
-                                        entry.getValue());
-                            }
-                        }
-
+                        addParamsToQuery(query, paramMap);
                         return query.list();
                     }
                 });
         logger.debug("executeSQLQuery took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return queryResult.toArray();
+    }
+
+    /**
+     * Executes a single SQL query. NOTE: Do not use String building to put
+     * values in to a query. Use the parameterized method to prevent SQL
+     * Injection.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql) {
+        return executeMappedSQLQuery(sql, null);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql,
+            final String param, final Object val) {
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeMappedSQLQuery(sql, paramMap);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql,
+            final Map<String, Object> paramMap) {
+        Object[] queryResult = executeSQLQuery(sql, paramMap);
+        QueryResultRow[] rows = new QueryResultRow[queryResult.length];
+        if (queryResult.length > 0) {
+            if (queryResult[0] instanceof Object[]) {
+                for (int i = 0; i < queryResult.length; i++) {
+                    QueryResultRow row = new QueryResultRow(
+                            (Object[]) queryResult[i]);
+                    rows[i] = row;
+                }
+
+            } else {
+                for (int i = 0; i < queryResult.length; i++) {
+                    QueryResultRow row = new QueryResultRow(
+                            new Object[] { queryResult[i] });
+                    rows[i] = row;
+                }
+            }
+        }
+
+        // TODO: regex to map field/colum names
+        QueryResult result = new QueryResult();
+        result.setRows(rows);
+        return result;
     }
 
     public List<?> executeCriteriaQuery(final List<Criterion> criterion) {
@@ -878,18 +936,7 @@ public class CoreDao {
      * @return Number of rows affected.
      */
     public int executeSQLUpdate(final String sql) {
-        long start = System.currentTimeMillis();
-        int updateResult = txTemplate
-                .execute(new TransactionCallback<Integer>() {
-                    @Override
-                    public Integer doInTransaction(TransactionStatus status) {
-                        return getCurrentSession().createSQLQuery(sql)
-                                .executeUpdate();
-                    }
-                });
-        logger.debug("executeSQLUpdate took: "
-                + (System.currentTimeMillis() - start) + " ms");
-        return updateResult;
+        return executeSQLUpdate(sql, null);
     }
 
     /**
@@ -906,20 +953,9 @@ public class CoreDao {
      */
     public int executeSQLUpdate(final String sql, final String param,
             final Object val) {
-        long start = System.currentTimeMillis();
-        int updateResult = txTemplate
-                .execute(new TransactionCallback<Integer>() {
-                    @Override
-                    public Integer doInTransaction(TransactionStatus status) {
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(sql);
-                        addParamToSQLQuery(query, param, val);
-                        return query.executeUpdate();
-                    }
-                });
-        logger.debug("executeSQLUpdate took: "
-                + (System.currentTimeMillis() - start) + " ms");
-        return updateResult;
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeSQLUpdate(sql, paramMap);
     }
 
     /**
@@ -941,15 +977,7 @@ public class CoreDao {
                     public Integer doInTransaction(TransactionStatus status) {
                         SQLQuery query = getCurrentSession()
                                 .createSQLQuery(sql);
-
-                        if ((paramMap != null) && !paramMap.isEmpty()) {
-                            for (Map.Entry<String, Object> entry : paramMap
-                                    .entrySet()) {
-                                addParamToSQLQuery(query, entry.getKey(),
-                                        entry.getValue());
-                            }
-                        }
-
+                        addParamsToQuery(query, paramMap);
                         return query.executeUpdate();
                     }
                 });
@@ -966,14 +994,21 @@ public class CoreDao {
      * @param paramName
      * @param paramValue
      */
-    protected static void addParamToSQLQuery(SQLQuery query, String paramName,
-            Object paramValue) {
-        if (paramValue instanceof Collection) {
-            query.setParameterList(paramName, (Collection<?>) paramValue);
-        } else if (paramValue instanceof Object[]) {
-            query.setParameterList(paramName, (Object[]) paramValue);
-        } else {
-            query.setParameter(paramName, paramValue);
+    protected static void addParamsToQuery(Query query,
+            Map<String, Object> paramMap) {
+        if ((paramMap != null) && !paramMap.isEmpty()) {
+            for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+                String paramName = entry.getKey();
+                Object paramValue = entry.getValue();
+                if (paramValue instanceof Collection) {
+                    query.setParameterList(paramName,
+                            (Collection<?>) paramValue);
+                } else if (paramValue instanceof Object[]) {
+                    query.setParameterList(paramName, (Object[]) paramValue);
+                } else {
+                    query.setParameter(paramName, paramValue);
+                }
+            }
         }
     }
 
@@ -988,6 +1023,7 @@ public class CoreDao {
      * @throws DataAccessLayerException
      *             If the statement fails
      */
+    @Deprecated
     public Object executeNativeSql(String sql, boolean transactional)
             throws DataAccessLayerException {
         Session session = null;
@@ -1062,6 +1098,7 @@ public class CoreDao {
         return results;
     }
 
+    @Deprecated
     public Object executeNativeSql(String sql) throws DataAccessLayerException {
         return executeNativeSql(sql, true);
     }
@@ -1096,86 +1133,6 @@ public class CoreDao {
         }
         results.setRows(rows.toArray(new QueryResultRow[] {}));
         return results;
-    }
-
-    /**
-     * Runs an SQL script
-     * 
-     * @param sqlScript
-     *            The SQL script text
-     * @throws DataAccessLayerException
-     *             If the script fails to execute
-     */
-    public void runScript(String sqlScript) throws DataAccessLayerException {
-        Session session = null;
-        Transaction trans = null;
-        Connection conn = null;
-
-        Statement stmt = null;
-        try {
-            session = getSession(true);
-            trans = session.beginTransaction();
-            conn = SessionFactoryUtils.getDataSource(getSessionFactory())
-                    .getConnection();
-            stmt = conn.createStatement();
-        } catch (SQLException e) {
-            throw new DataAccessLayerException(
-                    "Unable to create JDBC statement", e);
-        }
-        boolean success = true;
-        String[] scriptContents = sqlScript.split(";");
-        for (String line : scriptContents) {
-            if (!line.isEmpty()) {
-                try {
-                    stmt.addBatch(line + ";");
-
-                } catch (SQLException e1) {
-                    logger.warn("Script execution failed.  Rolling back transaction");
-                    trans.rollback();
-                    try {
-                        if (!conn.isClosed()) {
-                            conn.close();
-                        }
-                    } catch (SQLException e2) {
-                        logger.error("Cannot close database connection!!", e2);
-                    }
-                    if (session.isOpen()) {
-                        session.close();
-                    }
-                    throw new DataAccessLayerException(
-                            "Cannot execute SQL statement: " + line, e1);
-                }
-            }
-        }
-        try {
-            stmt.executeBatch();
-        } catch (SQLException e1) {
-            success = false;
-            trans.rollback();
-            logger.error("Error executing script.", e1);
-        }
-
-        try {
-            stmt.close();
-        } catch (SQLException e1) {
-            success = false;
-            trans.rollback();
-            logger.error("Unable to close JDBC statement!", e1);
-        }
-
-        if (success) {
-            trans.commit();
-        }
-        try {
-            if (!conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            logger.error("Cannot close database connection!!", e);
-        }
-        if (session.isOpen()) {
-            session.close();
-        }
     }
 
     /**
