@@ -17,15 +17,12 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.common.serialization.thrift.exception;
 
-package com.raytheon.uf.common.serialization.thrift;
-
-import org.apache.thrift.protocol.TField;
-
-import com.raytheon.uf.common.serialization.SerializationException;
+import org.apache.thrift.protocol.TSet;
 
 /**
- * An exception indicating that a field could not be deserialized from the {code
+ * An exception indicating that a set could not be deserialized from the {code
  * SelfDescribingBinaryProtocol}.
  * 
  * <pre>
@@ -34,39 +31,41 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 11, 2015 4561       njensen     Initial creation
+ * Jul 16, 2015  4561      njensen     Initial creation
  *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
+ * @version 1.0	
  */
 
-public class FieldDeserializationException extends SerializationException {
+public class SetDeserializationException extends
+        CollectionDeserializationException {
 
     private static final long serialVersionUID = 1L;
 
-    protected final TField field;
+    protected final TSet tset;
 
-    public FieldDeserializationException(TField field) {
-        this(field, null, null);
+    public SetDeserializationException(TSet tset, int index) {
+        this(tset, index, null, null);
     }
 
-    public FieldDeserializationException(TField field, String msg) {
-        this(field, msg, null);
+    public SetDeserializationException(TSet tset, int index, String msg) {
+        this(tset, index, msg, null);
     }
 
-    public FieldDeserializationException(TField field, Throwable t) {
-        this(field, null, t);
+    public SetDeserializationException(TSet tset, int index, Throwable t) {
+        this(tset, index, null, t);
     }
 
-    public FieldDeserializationException(TField field, String msg, Throwable t) {
-        super(msg, t);
-        this.field = field;
+    public SetDeserializationException(TSet tset, int index, String msg,
+            Throwable t) {
+        super(index, msg, t);
+        this.tset = tset;
     }
 
-    public TField getField() {
-        return field;
+    public TSet getTset() {
+        return tset;
     }
 
 }

@@ -43,7 +43,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 11, 2015            njensen     Initial creation
+ * Jun 11, 2015  4561      njensen     Initial creation
+ * Jul 17, 2015  4561      njensen     Added collection types to ObjectV1
  *
  * </pre>
  * 
@@ -53,6 +54,10 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 public class SerializationCompatibilityTest {
 
+    /**
+     * A POJO emulating the first version of an object to be
+     * serialized/deserialized.
+     */
     @DynamicSerialize
     public static class ObjectV1 {
 
@@ -64,6 +69,15 @@ public class SerializationCompatibilityTest {
 
         @DynamicSerializeElement
         public String name;
+
+        @DynamicSerializeElement
+        public Map<String, Object> rcMap;
+
+        @DynamicSerializeElement
+        public List<Object> rcList;
+
+        @DynamicSerializeElement
+        public Set<Object> rcSet;
 
         public int getX() {
             return x;
@@ -87,6 +101,30 @@ public class SerializationCompatibilityTest {
 
         public void setName(String name) {
             this.name = name;
+        }
+
+        public Map<String, Object> getRcMap() {
+            return rcMap;
+        }
+
+        public void setRcMap(Map<String, Object> rcMap) {
+            this.rcMap = rcMap;
+        }
+
+        public List<Object> getRcList() {
+            return rcList;
+        }
+
+        public void setRcList(List<Object> rcList) {
+            this.rcList = rcList;
+        }
+
+        public Set<Object> getRcSet() {
+            return rcSet;
+        }
+
+        public void setRcSet(Set<Object> rcSet) {
+            this.rcSet = rcSet;
         }
 
     }
@@ -300,6 +338,9 @@ public class SerializationCompatibilityTest {
         v1.name = "njensen";
         v1.x = 5;
         v1.y = new Integer(11);
+        v1.rcMap = new HashMap<>();
+        v1.rcList = new ArrayList<>();
+        v1.rcSet = new HashSet<>();
 
         /*
          * ObjectV1, ObjectV2, and ObjectV3 are all supposed to represent the

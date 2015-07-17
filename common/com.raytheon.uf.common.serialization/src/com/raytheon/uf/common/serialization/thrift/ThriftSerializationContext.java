@@ -58,6 +58,10 @@ import com.raytheon.uf.common.serialization.DynamicSerializationManager.Serializ
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationCache;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.FieldDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.ListDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.MapDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.SetDeserializationException;
 
 /**
  * Provides a serialization/deserialization capability built on top of the
@@ -97,6 +101,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Jul 25, 2014  3445     bclement    added castNumber()
  * Jun 15, 2015  4561     njensen     Major cleanup, added read and ignore methods
  * Jun 17, 2015  4564     njensen     Added date/time conversion in deserializeField()
+ * Jul 16, 2015  4561     njensen     Improved read and ignore of collection types
  * 
  * </pre>
  * 
@@ -113,6 +118,13 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     protected static final Logger log = LoggerFactory
             .getLogger(ThriftSerializationContext.class);
+
+    /**
+     * An integer that indicates no entries have been read from a map, list, or
+     * set type. Useful when trying to determine which index in a collection
+     * type failed to deserialize correctly.
+     */
+    protected static final int NO_ENTRIES_READ_YET = -1;
 
     protected final SelfDescribingBinaryProtocol protocol;
 
@@ -750,7 +762,37 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                         log.debug("Skipping deserialization of "
                                 + o.getClass().getSimpleName() + "."
                                 + failure.name, e);
-                        readAndIgnoreField(failure);
+
+                        /*
+                         * At this point readFieldBegin() was called so we're
+                         * past those bytes in the stream. If the field was a
+                         * tstruct, tmap, tlist, or tset then those bytes at the
+                         * front have also been read.
+                         */
+                        switch (failure.type) {
+                        case TType.STRUCT:
+                            readAndIgnoreStructFields();
+                            break;
+                        case TType.LIST:
+                            ListDeserializationException lde = (ListDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreList(lde.getTlist(), lde.getIndex());
+                            break;
+                        case TType.MAP:
+                            MapDeserializationException mde = (MapDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreMap(mde.getTmap(), mde.getIndex());
+                            break;
+                        case TType.SET:
+                            SetDeserializationException sde = (SetDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreSet(sde.getTset(), sde.getIndex());
+                            break;
+                        default:
+                            readAndIgnoreField(failure);
+                            break;
+                        }
+
                     }
                 }
             }
@@ -783,6 +825,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * fields.
      * 
      * @param fieldToSkip
+     *            the field to ignore
      * @throws SerializationException
      * @throws TException
      */
@@ -810,20 +853,24 @@ public class ThriftSerializationContext extends BaseSerializationContext {
          * about and understand its types
          */
         case TType.STRUCT:
-            // the struct name has already been read off
-            readAndIgnoreStructFields();
+            TStruct tstruct = protocol.readStructBegin();
+            readAndIgnoreStruct(tstruct);
             break;
         case TType.MAP:
-            readAndIgnoreMap();
+            TMap tmap = protocol.readMapBegin();
+            readAndIgnoreMap(tmap, NO_ENTRIES_READ_YET);
             break;
         case TType.LIST:
-            readAndIgnoreList();
+            TList tlist = protocol.readListBegin();
+            readAndIgnoreList(tlist, NO_ENTRIES_READ_YET);
             break;
         case TType.SET:
-            readAndIgnoreSet();
+            TSet tset = protocol.readSetBegin();
+            readAndIgnoreSet(tset, NO_ENTRIES_READ_YET);
             break;
         default:
             // do nothing
+            break;
         }
         protocol.readFieldEnd();
     }
@@ -831,25 +878,30 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     /**
      * Reads a struct off the stream, then just drops the struct's data.
      * 
+     * @param struct
+     *            the struct to ignore
+     * 
      * @throws SerializationException
      * @throws TException
      */
-    protected void readAndIgnoreStruct() throws SerializationException,
-            TException {
-        TStruct struct = protocol.readStructBegin();
+    protected void readAndIgnoreStruct(TStruct struct)
+            throws SerializationException, TException {
         char c0 = struct.name.charAt(0);
 
         if (Character.isDigit(c0)) {
             byte b = Byte.parseByte(struct.name);
             switch (b) {
             case TType.LIST:
-                readAndIgnoreList();
+                TList tlist = protocol.readListBegin();
+                readAndIgnoreList(tlist, NO_ENTRIES_READ_YET);
                 break;
             case TType.MAP:
-                readAndIgnoreMap();
+                TMap tmap = protocol.readMapBegin();
+                readAndIgnoreMap(tmap, NO_ENTRIES_READ_YET);
                 break;
             case TType.SET:
-                readAndIgnoreSet();
+                TSet tset = protocol.readSetBegin();
+                readAndIgnoreSet(tset, NO_ENTRIES_READ_YET);
                 break;
             default:
                 deserializeType(b, null, "");
@@ -875,11 +927,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             TField field = protocol.readFieldBegin();
             moreFields = (field.type != TType.STOP);
             if (moreFields) {
-                if (field.type == TType.STRUCT) {
-                    readAndIgnoreStruct();
-                } else {
-                    readAndIgnoreField(field);
-                }
+                readAndIgnoreField(field);
                 protocol.readFieldEnd();
             }
         }
@@ -888,15 +936,22 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     /**
      * Reads a map off the stream, then just drops the map's data.
      * 
+     * @param tmap
+     *            the tmap to ignore
+     * @param entriesRead
+     *            the number of entries in the map already read off the stream
+     * 
      * @throws TException
      * @throws SerializationException
      */
-    protected void readAndIgnoreMap() throws TException, SerializationException {
-        TMap tmap = protocol.readMapBegin();
-        for (int i = 0; i < tmap.size; i++) {
+    protected void readAndIgnoreMap(TMap tmap, int entriesRead)
+            throws TException, SerializationException {
+        for (int i = entriesRead + 1; i < tmap.size; i++) {
             // key followed by value
-            readAndIgnoreStruct();
-            readAndIgnoreStruct();
+            TStruct key = protocol.readStructBegin();
+            readAndIgnoreStruct(key);
+            TStruct value = protocol.readStructBegin();
+            readAndIgnoreStruct(value);
         }
         protocol.readMapEnd();
     }
@@ -904,13 +959,19 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     /**
      * Reads a set off the stream, then just drops the set's data.
      * 
+     * @param tset
+     *            the tset to ignore
+     * @param entriesRead
+     *            the number of entries in the set already read off the stream
+     * 
      * @throws TException
      * @throws SerializationException
      */
-    protected void readAndIgnoreSet() throws TException, SerializationException {
-        TSet tset = protocol.readSetBegin();
-        for (int i = 0; i < tset.size; i++) {
-            readAndIgnoreStruct();
+    protected void readAndIgnoreSet(TSet tset, int entriesRead)
+            throws TException, SerializationException {
+        for (int i = entriesRead + 1; i < tset.size; i++) {
+            TStruct tstruct = protocol.readStructBegin();
+            readAndIgnoreStruct(tstruct);
         }
         protocol.readSetEnd();
     }
@@ -919,18 +980,22 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * Reads a list or array off the stream, then just drops the list/array's
      * data.
      * 
+     * @param tlist
+     *            the tlist to ignore
+     * @param entriesRead
+     *            the number of entries in the list already read off the stream
+     * 
      * @throws TException
      * @throws SerializationException
      */
-    protected void readAndIgnoreList() throws TException,
-            SerializationException {
-        TList tlist = protocol.readListBegin();
+    protected void readAndIgnoreList(TList tlist, int entriesRead)
+            throws TException, SerializationException {
         switch (tlist.elemType) {
         case TType.BYTE:
             protocol.readI8List(tlist.size);
             break;
         case TType.BOOL:
-            for (int i = 0; i < tlist.size; i++) {
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
                 readBool();
             }
             break;
@@ -950,15 +1015,16 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             protocol.readD64List(tlist.size);
             break;
         case TType.STRING:
-            for (int i = 0; i < tlist.size; i++) {
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
                 readString();
             }
             break;
         case TType.VOID:
             break;
         case TType.STRUCT:
-            for (int i = 0; i < tlist.size; i++) {
-                readAndIgnoreStruct();
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
+                TStruct tstruct = protocol.readStructBegin();
+                readAndIgnoreStruct(tstruct);
             }
         }
         protocol.readListEnd();
@@ -1016,8 +1082,8 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 bm.put(field.name, obj);
             } catch (ClassCastException e) {
                 /*
-                 * TODO should we continue to add special handling in here, we
-                 * should break this out to a separate method
+                 * should we continue to add special handling in here, we should
+                 * break this out to a separate method
                  */
 
                 /* attempt to recover if both types are numbers or times */
@@ -1133,8 +1199,10 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
         case TType.MAP: {
             Map map = null;
+            TMap tmap = null;
+            int i = NO_ENTRIES_READ_YET;
             try {
-                TMap tmap = protocol.readMapBegin();
+                tmap = protocol.readMapBegin();
 
                 /*
                  * Attempt to get the exact implementation of Map as specified
@@ -1144,7 +1212,8 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     Class<?> fieldClazz = findFieldClass(fclazz.getJavaClass(),
                             fieldName);
                     if (fieldClazz == null) {
-                        throw new NoSuchFieldException(fieldName);
+                        throw new MapDeserializationException(tmap, i,
+                                new NoSuchFieldException(fieldName));
                     }
 
                     if (!fieldClazz.isInterface()
@@ -1163,13 +1232,13 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                  * runtime,we must assume an erased type, and do reflection on
                  * every component of the key and value pair.
                  */
-                for (int i = 0; i < tmap.size; i++) {
+                for (i = 0; i < tmap.size; i++) {
                     Object key = this.serializationManager.deserialize(this);
                     Object val = this.serializationManager.deserialize(this);
                     map.put(key, val);
                 }
             } catch (Exception e) {
-                throw new SerializationException(
+                throw new MapDeserializationException(tmap, i,
                         "Error deserializing map of field " + fieldName, e);
             }
             protocol.readMapEnd();
@@ -1177,8 +1246,10 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
         case TType.SET: {
             Set set = null;
+            TSet tset = null;
+            int i = NO_ENTRIES_READ_YET;
             try {
-                TSet tset = protocol.readSetBegin();
+                tset = protocol.readSetBegin();
 
                 /*
                  * Attempt to get the exact implementation of Set as specified
@@ -1188,7 +1259,8 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     Class<?> fieldClazz = findFieldClass(fclazz.getJavaClass(),
                             fieldName);
                     if (fieldClazz == null) {
-                        throw new NoSuchFieldException(fieldName);
+                        throw new SetDeserializationException(tset, i,
+                                new NoSuchFieldException(fieldName));
                     }
                     if (!fieldClazz.isInterface()
                             && Set.class.isAssignableFrom(fieldClazz)) {
@@ -1206,14 +1278,14 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                  * runtime,we must assume an erased type, and do reflection on
                  * every component of the set.
                  */
-                for (int i = 0; i < tset.size; i++) {
+                for (i = 0; i < tset.size; i++) {
                     set.add(this.serializationManager.deserialize(this));
                 }
 
                 protocol.readSetEnd();
                 return set;
             } catch (Exception e) {
-                throw new SerializationException(
+                throw new SetDeserializationException(tset, i,
                         "Error deserializing set of field " + fieldName, e);
             }
         }
@@ -1306,15 +1378,18 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      */
     protected Object deserializeArray(FastClass fclazz, String fieldName)
             throws SerializationException {
+        TList innerList = null;
+        int i = NO_ENTRIES_READ_YET;
         try {
-            TList innerList = protocol.readListBegin();
+            innerList = protocol.readListBegin();
 
             // Determine whether the list is really an array or if it is a list.
             Class<?> fieldClazz = null;
             if (fclazz != null) {
                 fieldClazz = findFieldClass(fclazz.getJavaClass(), fieldName);
                 if (fieldClazz == null) {
-                    throw new NoSuchFieldException(fieldName);
+                    throw new ListDeserializationException(innerList, i,
+                            new NoSuchFieldException(fieldName));
                 }
             }
 
@@ -1344,7 +1419,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 return byteArray;
             case TType.BOOL:
                 boolean[] boolArray = new boolean[innerList.size];
-                for (int i = 0; i < boolArray.length; i++) {
+                for (i = 0; i < boolArray.length; i++) {
                     boolArray[i] = readBool();
                 }
                 protocol.readListEnd();
@@ -1360,7 +1435,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             case TType.STRING:
                 if (fieldClazz == null || fieldClazz.isArray()) {
                     String[] stringArray = new String[innerList.size];
-                    for (int i = 0; i < stringArray.length; i++) {
+                    for (i = 0; i < stringArray.length; i++) {
                         stringArray[i] = readString();
                     }
                     protocol.readListEnd();
@@ -1378,7 +1453,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     if (list == null) {
                         list = new ArrayList<String>(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(readString());
                     }
                     return list;
@@ -1401,7 +1476,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     if (list == null) {
                         list = new ArrayList<String>(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(null);
                     }
                     return list;
@@ -1414,7 +1489,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     Object array = Array.newInstance(arrayComponent,
                             innerList.size);
 
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         Array.set(array, i,
                                 deserializeType(serializedType, null, ""));
                     }
@@ -1438,7 +1513,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     if (list == null) {
                         list = new ArrayList(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(this.serializationManager.deserialize(this));
                     }
                     protocol.readListEnd();
@@ -1446,7 +1521,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 }
             }
         } catch (Exception e) {
-            throw new SerializationException(
+            throw new ListDeserializationException(innerList, i,
                     "Error deserializing list/array of field " + fieldName, e);
         }
     }
