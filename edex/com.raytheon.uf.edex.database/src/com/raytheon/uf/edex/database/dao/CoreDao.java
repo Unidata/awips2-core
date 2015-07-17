@@ -20,9 +20,6 @@
 
 package com.raytheon.uf.edex.database.dao;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -32,9 +29,11 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
@@ -61,7 +60,6 @@ import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.processor.IDatabaseProcessor;
 import com.raytheon.uf.edex.database.query.DatabaseQuery;
@@ -96,6 +94,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
+ * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery and executeSQLUpdate.
  * </pre>
  * 
  * @author bphillip
@@ -756,7 +755,9 @@ public class CoreDao {
     }
 
     /**
-     * Queries for a resultset. The query should be a select statement<br>
+     * Executes a single SQL query. NOTE: Do not use String building to put
+     * values in to a query. Use the parameterized method to prevent SQL
+     * Injection.
      * 
      * @param sql
      *            An SQL query to execute
@@ -771,6 +772,68 @@ public class CoreDao {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
                         return getCurrentSession().createSQLQuery(sql).list();
+                    }
+                });
+        logger.debug("executeSQLQuery took: "
+                + (System.currentTimeMillis() - start) + " ms");
+        return queryResult.toArray();
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql, final String param,
+            final Object val) {
+
+        long start = System.currentTimeMillis();
+        List<?> queryResult = txTemplate
+                .execute(new TransactionCallback<List<?>>() {
+                    @Override
+                    public List<?> doInTransaction(TransactionStatus status) {
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(sql);
+                        addParamToSQLQuery(query, param, val);
+                        return query.list();
+                    }
+                });
+        logger.debug("executeSQLQuery took: "
+                + (System.currentTimeMillis() - start) + " ms");
+        return queryResult.toArray();
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql,
+            final Map<String, Object> paramMap) {
+
+        long start = System.currentTimeMillis();
+        List<?> queryResult = txTemplate
+                .execute(new TransactionCallback<List<?>>() {
+                    @Override
+                    public List<?> doInTransaction(TransactionStatus status) {
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(sql);
+
+                        if ((paramMap != null) && !paramMap.isEmpty()) {
+                            for (Map.Entry<String, Object> entry : paramMap
+                                    .entrySet()) {
+                                addParamToSQLQuery(query, entry.getKey(),
+                                        entry.getValue());
+                            }
+                        }
+
+                        return query.list();
                     }
                 });
         logger.debug("executeSQLQuery took: "
@@ -806,15 +869,15 @@ public class CoreDao {
     }
 
     /**
-     * Executes a an arbitrary sql statement. The sql should not be a select
-     * statement.
+     * Executes a single SQL statement. The SQL should not be a select
+     * statement. NOTE: Do not use String building to put values in to a
+     * statement. Use the parameterized method to prevent SQL Injection.
      * 
      * @param sql
      *            An SQL statement to execute
-     * @return How many items were updated
+     * @return Number of rows affected.
      */
     public int executeSQLUpdate(final String sql) {
-
         long start = System.currentTimeMillis();
         int updateResult = txTemplate
                 .execute(new TransactionCallback<Integer>() {
@@ -827,6 +890,91 @@ public class CoreDao {
         logger.debug("executeSQLUpdate took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return updateResult;
+    }
+
+    /**
+     * Executes a single SQL statement. The SQL should not be a select
+     * statement.
+     * 
+     * @param sql
+     *            An SQL statement to execute
+     * @param param
+     *            Named parameter
+     * @param val
+     *            Value of named parameter
+     * @return Number of rows affected.
+     */
+    public int executeSQLUpdate(final String sql, final String param,
+            final Object val) {
+        long start = System.currentTimeMillis();
+        int updateResult = txTemplate
+                .execute(new TransactionCallback<Integer>() {
+                    @Override
+                    public Integer doInTransaction(TransactionStatus status) {
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(sql);
+                        addParamToSQLQuery(query, param, val);
+                        return query.executeUpdate();
+                    }
+                });
+        logger.debug("executeSQLUpdate took: "
+                + (System.currentTimeMillis() - start) + " ms");
+        return updateResult;
+    }
+
+    /**
+     * Executes a single SQL statement. The SQL should not be a select
+     * statement.
+     * 
+     * @param sql
+     *            An SQL statement to execute
+     * @param paramMap
+     *            Map of named parameter to its value
+     * @return Number of rows affected.
+     */
+    public int executeSQLUpdate(final String sql,
+            final Map<String, Object> paramMap) {
+        long start = System.currentTimeMillis();
+        int updateResult = txTemplate
+                .execute(new TransactionCallback<Integer>() {
+                    @Override
+                    public Integer doInTransaction(TransactionStatus status) {
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(sql);
+
+                        if ((paramMap != null) && !paramMap.isEmpty()) {
+                            for (Map.Entry<String, Object> entry : paramMap
+                                    .entrySet()) {
+                                addParamToSQLQuery(query, entry.getKey(),
+                                        entry.getValue());
+                            }
+                        }
+
+                        return query.executeUpdate();
+                    }
+                });
+        logger.debug("executeSQLUpdate took: "
+                + (System.currentTimeMillis() - start) + " ms");
+        return updateResult;
+    }
+
+    /**
+     * Adds the specified parameter to the query. Checks for Collection an Array
+     * types for use with in lists.
+     * 
+     * @param query
+     * @param paramName
+     * @param paramValue
+     */
+    protected static void addParamToSQLQuery(SQLQuery query, String paramName,
+            Object paramValue) {
+        if (paramValue instanceof Collection) {
+            query.setParameterList(paramName, (Collection<?>) paramValue);
+        } else if (paramValue instanceof Object[]) {
+            query.setParameterList(paramName, (Object[]) paramValue);
+        } else {
+            query.setParameter(paramName, paramValue);
+        }
     }
 
     /**
@@ -1028,41 +1176,6 @@ public class CoreDao {
         if (session.isOpen()) {
             session.close();
         }
-    }
-
-    /**
-     * Executes an SQL script contained in a StringBuffer object
-     * 
-     * @param sqlScript
-     *            The SQL script
-     * @throws DataAccessLayerException
-     *             If script execution fails
-     */
-    public void runScript(StringBuffer sqlScript)
-            throws DataAccessLayerException {
-        runScript(sqlScript.toString());
-    }
-
-    /**
-     * Executes an SQL script defined in a file
-     * 
-     * @param script
-     *            The file containing the SQL statements
-     * @throws DataAccessLayerException
-     *             If reading the file fails
-     */
-    public void runScript(File script) throws DataAccessLayerException {
-        byte[] bytes = null;
-        try {
-            bytes = FileUtil.file2bytes(script);
-        } catch (FileNotFoundException e) {
-            throw new DataAccessLayerException(
-                    "Unable to open input stream to sql script: " + script);
-        } catch (IOException e) {
-            throw new DataAccessLayerException(
-                    "Unable to read script contents for script: " + script);
-        }
-        runScript(new StringBuffer().append(new String(bytes)));
     }
 
     /**

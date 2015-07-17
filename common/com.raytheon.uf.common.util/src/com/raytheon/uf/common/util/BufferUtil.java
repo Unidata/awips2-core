@@ -39,6 +39,7 @@ import java.nio.ShortBuffer;
  * ------------ ---------- ----------- --------------------------
  * Mar 01, 2010            mschenke    Initial creation
  * Apr 07, 2014 2968       njensen     Added asReadOnly() and duplicate()
+ * May 21, 2015 4495       njensen     Deprecated methods that are OBE
  * 
  * </pre>
  * 
@@ -48,6 +49,13 @@ import java.nio.ShortBuffer;
 
 public class BufferUtil {
 
+    /**
+     * @deprecated this is no longer necessary thanks to
+     *             GLColorMapDataFormatFactory
+     * @param datasetBounds
+     * @return a padded width
+     */
+    @Deprecated
     public static int wordAlignedByteWidth(Rectangle datasetBounds) {
         int paddedWidth = datasetBounds.width;
 
@@ -58,6 +66,13 @@ public class BufferUtil {
         return paddedWidth;
     }
 
+    /**
+     * @deprecated this is no longer necessary thanks to
+     *             GLColorMapDataFormatFactory
+     * @param datasetBounds
+     * @return a padded width
+     */
+    @Deprecated
     public static int wordAlignedShortWidth(Rectangle datasetBounds) {
         int paddedWidth = datasetBounds.width;
 
@@ -67,6 +82,15 @@ public class BufferUtil {
         return paddedWidth;
     }
 
+    /**
+     * @deprecated this is no longer necessary thanks to
+     *             GLColorMapDataFormatFactory
+     * @param byteData
+     * @param datasetBounds
+     * @param bytesPerPixel
+     * @return a direct byte buffer of the data
+     */
+    @Deprecated
     public static ByteBuffer wrapDirect(byte[] byteData,
             Rectangle datasetBounds, int bytesPerPixel) {
         int paddedWidth = wordAlignedByteWidth(new Rectangle(datasetBounds.x,
@@ -96,10 +120,26 @@ public class BufferUtil {
         return bb;
     }
 
+    /**
+     * @deprecated this is no longer necessary thanks to
+     *             GLColorMapDataFormatFactory
+     * @param byteData
+     * @param datasetBounds
+     * @return a direct byte buffer of the data
+     */
+    @Deprecated
     public static ByteBuffer wrapDirect(byte[] byteData, Rectangle datasetBounds) {
         return wrapDirect(byteData, datasetBounds, 1);
     }
 
+    /**
+     * @deprecated this is no longer necessary thanks to
+     *             GLColorMapDataFormatFactory
+     * @param shortBuffer
+     * @param datasetBounds
+     * @return a direct byte buffer of the data
+     */
+    @Deprecated
     public static ShortBuffer wrapDirect(short[] shortBuffer,
             Rectangle datasetBounds) {
 
@@ -185,7 +225,7 @@ public class BufferUtil {
      * Returns a new read-only view into a buffer
      * 
      * @param buffer
-     * @return
+     * @return a read-only view of the same buffer
      */
     public static Buffer asReadOnly(Buffer buffer) {
         Buffer ret = null;
@@ -211,10 +251,10 @@ public class BufferUtil {
     }
 
     /**
-     * Creates a new view into a buffer with an independent position and mark
+     * Creates a new view into the buffer with an independent position and mark.
      * 
      * @param buffer
-     * @return
+     * @return an independent view into the same buffer
      */
     public static Buffer duplicate(Buffer buffer) {
         Buffer ret = null;

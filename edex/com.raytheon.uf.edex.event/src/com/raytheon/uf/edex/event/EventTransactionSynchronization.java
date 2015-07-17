@@ -24,9 +24,11 @@ import java.util.Collection;
 import org.springframework.transaction.support.TransactionSynchronization;
 
 import com.google.common.eventbus.EventBus;
+import com.raytheon.uf.common.event.Event;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.event.handler.PublishExternalEvent;
 
 /**
  * Spring {@link TransactionSynchronization} that will post or discard events
@@ -40,6 +42,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 20, 2013 1802       djohnson     Initial creation
+ * May 14, 2015 4493       dhladky      transations for external delivery.
  * 
  * </pre>
  * 
@@ -52,13 +55,16 @@ class EventTransactionSynchronization implements
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(EventTransactionSynchronization.class);
 
-    private final Object event;
+    private final Object eventObject;
 
     private final Collection<EventBus> googleEventBuses;
+    
+    /** publishes external events **/
+    private PublishExternalEvent externalPublisher = PublishExternalEvent.getInstance();
 
-    public EventTransactionSynchronization(Object event,
+    public <T> EventTransactionSynchronization(T eventObject,
             Collection<EventBus> googleEventBuses) {
-        this.event = event;
+        this.eventObject = eventObject;
         this.googleEventBuses = googleEventBuses;
     }
 
@@ -109,16 +115,30 @@ class EventTransactionSynchronization implements
         if (status == TransactionSynchronization.STATUS_COMMITTED) {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler.debug("Posting event of type ["
-                        + event.getClass().getName() + "] on the event bus");
+                        + eventObject.getClass().getName() + "] on the event bus");
             }
 
-            for (EventBus eventBus : googleEventBuses) {
-                eventBus.post(event);
+            boolean deliverLocal = true;
+            // Publish events marked "external" to JMS external event topic
+            if (eventObject instanceof Event) {
+                Event event = (Event) eventObject;
+                if (event.isExternal()) {
+                    deliverLocal = false;
+                    externalPublisher.publish(event);
+                }
             }
+
+            // Deliver non-local (and non-events) via Guava by default.
+            if (deliverLocal) {
+                for (EventBus eventBus : googleEventBuses) {
+                    eventBus.post(eventObject);
+                }
+            }
+
         } else if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler.debug("Discarding event of type ["
-                        + event.getClass().getName()
+                        + eventObject.getClass().getName()
                         + "] due to transaction rolling back.");
             }
         }

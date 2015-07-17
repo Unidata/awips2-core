@@ -8,7 +8,7 @@
 
     <bean id="dupElim" class="com.raytheon.uf.edex.ingest.DupElimSrv"/>
     <bean id="persist" class="com.raytheon.uf.edex.ingest.PersistSrv" factory-method="getInstance"/>
-    <bean id="index" class="com.raytheon.uf.edex.ingest.IndexSrv"/>        
+    <bean id="index" class="com.raytheon.uf.edex.ingest.IndexSrv"/>
 
     <bean id="pluginNotifier" class="com.raytheon.uf.edex.ingest.notification.PluginNotifier"/>
 
@@ -28,7 +28,7 @@
             <bean ref="index" method="index"/>
             <bean ref="processUtil" method="log"/>
         </route>
-          
+
         <!-- Generic persist, index and alert route 
              Intended for routes that need persisting to HDF5, 
              Indexing and Alerting
@@ -40,7 +40,7 @@
             <bean ref="processUtil" method="log"/>
             <to uri="direct-vm:stageNotification"/> 
         </route>
-        
+
         <!-- Generic index and alert route 
              Intended for routes that need Indexing and Alerting
         -->
@@ -58,22 +58,27 @@
         <route id="notificationAggregation">
             <from uri="direct-vm:stageNotification"/>
             <bean ref="pluginNotifier" method="notify" />
-        </route>                
-        
+        </route>
+
         <route id="notificationTimer">
             <from uri="timer://notificationTimer?fixedRate=true&amp;period=1000" />
             <bean ref="pluginNotifier" method="sendQueuedNotifications" />
         </route>
-        
+
         <route id="logFailedData">
             <from uri="direct-vm:logFailedData" />
-            <bean ref="processUtil" method="logFailedData" />            
+            <bean ref="processUtil" method="logFailedData" />
         </route>
-        
+
         <route id="logFailureAsInfo">
             <from uri="direct-vm:logFailureAsInfo" />
-            <bean ref="processUtil" method="logFailureAsInfo" />         
+            <bean ref="processUtil" method="logFailureAsInfo" />
         </route>
-        
-    </camelContext>    
+
+        <route id="reloadTimer">
+            <from uri="timer://reloadTimer?fixedRate=true&amp;period=60s" />
+            <bean ref="pluginNotifier" method="reloadConfigurations" />
+        </route>
+
+    </camelContext>
  </beans>

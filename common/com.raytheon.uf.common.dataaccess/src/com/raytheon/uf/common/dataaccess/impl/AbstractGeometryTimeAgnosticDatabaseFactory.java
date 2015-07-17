@@ -42,6 +42,8 @@ import com.raytheon.uf.common.time.TimeRange;
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 30, 2014  3184     njensen     Added optional identifiers
  * Feb 03, 2015  4009     mapeters    Added validateRequest() call to getData()
+ * Mar 20, 2015  4227     mapeters    Remove assembleGetTimes() taking BinOffset, 
+ *                                    throw Exceptions in unused methods
  * 
  * </pre>
  * 
@@ -156,28 +158,29 @@ public abstract class AbstractGeometryTimeAgnosticDatabaseFactory extends
      */
     protected abstract String assembleGetData(IDataRequest request);
 
-    /**
-     * The following methods are no longer applicable to us.
-     * 
-     * Should we be throwing an exception
+    /*
+     * The following methods are no longer applicable to us, as they should
+     * never be called due to the above overrides of getAvailableTimes() and
+     * getGeometryData().
      */
     @Override
     protected String assembleGetTimes(IDataRequest request, boolean refTimeOnly) {
-        return null;
-    }
-
-    @Override
-    protected String assembleGetTimes(IDataRequest request, BinOffset binOffset) {
-        return null;
+        throw new IllegalStateException(
+                "This method should never be called due to the getAvailableTimes() "
+                        + "overrides in AbstractGeometryTimeAgnosticDatabaseFactory.");
     }
 
     @Override
     protected String assembleGetData(IDataRequest request, DataTime... times) {
-        return null;
+        throw new IllegalStateException(
+                "This method should never be called due to the getGeometryData() "
+                        + "overrides in AbstractGeometryTimeAgnosticDatabaseFactory.");
     }
 
     @Override
     protected String assembleGetData(IDataRequest request, TimeRange timeRange) {
-        return null;
+        throw new IllegalStateException(
+                "This method should never be called due to the getGeometryData() "
+                        + "overrides in AbstractGeometryTimeAgnosticDatabaseFactory.");
     }
 }

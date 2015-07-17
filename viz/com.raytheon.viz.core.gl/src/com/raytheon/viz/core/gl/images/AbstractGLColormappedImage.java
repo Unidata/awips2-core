@@ -37,10 +37,11 @@ import com.sun.opengl.util.texture.TextureCoords;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 16, 2013 2333       mschenke    Initial creation
- * Nov  4, 2013 2492       mschenke    Reworked to use GLSL Data mapping
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Oct 16, 2013  2333     mschenke  Initial creation
+ * Nov  4, 2013  2492     mschenke  Reworked to use GLSL Data mapping
+ * May 29, 2015  4507     bsteffen  Implemented setClearColor().
  * 
  * </pre>
  * 
@@ -144,6 +145,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     /**
      * @return the textureid
      */
+    @Override
     public int getTextureid() {
         return data.getTexId();
     }
@@ -301,6 +303,47 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     @Override
     public TextureCoords getTextureCoords() {
         return new TextureCoords(0, 1, 1, 0);
+    }
+
+    @Override
+    protected void setClearColor(GL gl) {
+        AbstractGLColorMapDataFormat dataFormat = getDataFormat();
+        if (dataFormat.isScaled()) {
+            /*
+             * Convert the no data value to its scaled equivalent so the shader
+             * will understand it.
+             */
+            double noData = colorMapParameters.getNoDataValue();
+            noData -= dataFormat.getDataFormatMin();
+            noData /= (dataFormat.getDataFormatMax() - dataFormat
+                    .getDataFormatMin());
+            gl.glClearColor((float) noData, 0.0f,
+                    0.0f, 0.0f);
+        } else {
+            /*
+             * The default value of no data value is NaN. NaN does not work on
+             * some graphics cards. Specifically the Intel Corporation Xeon
+             * E3-1200 v2/3rd Gen Core processor Graphics Controller (rev 09)
+             * running on CentOS 6. On this card it seemed impossible to use
+             * shader to set the gl_FragColor to a non-NaN value if the existing
+             * value in the FBO is NaN.
+             * 
+             * At the time of this writing(Jun 2015) only offscreen rendering
+             * performed by the mosaic extension uses this function and the
+             * datatypes that use mosaicing set the no data value to a non-NaN
+             * value.
+             * 
+             * NaN values have been tested and work fine on some nvidia graphics
+             * cards.
+             * 
+             * If new datatypes ever use this functionality and need NaN it will
+             * require further investigation to determine if the intel cards are
+             * deficient or if nvidia is providing functionality outside the
+             * scope of the spec.
+             */
+            gl.glClearColor((float) colorMapParameters.getNoDataValue(), 0.0f, 0.0f, 0.0f);
+        }
+
     }
 
 }

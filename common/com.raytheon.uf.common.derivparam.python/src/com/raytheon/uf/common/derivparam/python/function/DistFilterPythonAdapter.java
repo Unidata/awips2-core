@@ -19,13 +19,11 @@
  **/
 package com.raytheon.uf.common.derivparam.python.function;
 
-import jep.INumpyable;
-
-import com.raytheon.uf.common.python.PythonNumpyFloatArray;
+import jep.NDArray;
 
 /**
  * Calls {@link com.raytheon.uf.common.wxmath.DistFilter} and transforms the
- * output into an INumpyable.
+ * output into an NDArray.
  * 
  * <pre>
  * 
@@ -34,6 +32,7 @@ import com.raytheon.uf.common.python.PythonNumpyFloatArray;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 13, 2013            njensen     Initial creation
+ * Apr 22, 2015  4259      njensen     Updated for new JEP API
  * 
  * </pre>
  * 
@@ -43,11 +42,12 @@ import com.raytheon.uf.common.python.PythonNumpyFloatArray;
 
 public class DistFilterPythonAdapter {
 
-    public static INumpyable filter(float[] input, float npts, int nx, int ny,
-            int times) {
+    public static NDArray<float[]> filter(float[] input, float npts, int nx,
+            int ny, int times) {
         float[] result = com.raytheon.uf.common.wxmath.DistFilter.filter(input,
                 npts, nx, ny, times);
-        return new PythonNumpyFloatArray(result, nx, ny);
+        // FIXME we shouldn't have to reverse nx and ny!
+        return new NDArray<float[]>(result, ny, nx);
     }
 
 }

@@ -45,8 +45,9 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 7, 2009            njensen     Initial creation
- * Mar 29, 2011 8774      rferrel     Clean up process when execute halted.
+ * Dec 07, 2009            njensen     Initial creation
+ * Mar 29, 2011 8774       rferrel     Clean up process when execute halted.
+ * Apr 26, 2015 4259       njensen     Updated for new JEP API
  * 
  * </pre>
  * 
@@ -130,11 +131,11 @@ public class PythonProcess extends PythonInterpreter {
         sb.append("})");
         jep.eval(sb.toString());
         jep.eval("p.daemon = True");
-        // JavaImporter forwards sys.meta_path along into python. This creates
-        // the issue that if python tries to import something that JavaImporter
-        // will try to take over, then python tries to import it as Java and
-        // it fails. Resetting sys.meta_path to empty to bypass this issue in
-        // the new python process.
+        /*
+         * We don't want Jep's importer hook in the new process as it will fail
+         * to import java classes. Resetting sys.meta_path to empty to bypass
+         * this issue in the new python process.
+         */
         jep.eval("sys.meta_path=[]");
         jep.eval("timeout = " + timeout);
         // adding a timer to the function to determine if it needs killed

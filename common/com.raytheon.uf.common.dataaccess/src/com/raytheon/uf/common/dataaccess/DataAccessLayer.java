@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.dataaccess;
 
+import java.util.Arrays;
+
 import com.raytheon.uf.common.dataaccess.exception.DataFactoryNotFoundException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
@@ -55,6 +57,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 14, 2014  3184     njensen     Added new methods
  * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
+ * Mar 04, 2015  4217     mapeters    Sort available times.
  * 
  * </pre>
  * 
@@ -94,7 +97,9 @@ public class DataAccessLayer {
     public static DataTime[] getAvailableTimes(IDataRequest request,
             boolean refTimeOnly) {
         IDataFactory factory = getFactory(request);
-        return factory.getAvailableTimes(request, refTimeOnly);
+        DataTime[] times = factory.getAvailableTimes(request, refTimeOnly);
+        Arrays.sort(times);
+        return times;
     }
 
     /**
@@ -111,7 +116,9 @@ public class DataAccessLayer {
     public static DataTime[] getAvailableTimes(IDataRequest request,
             BinOffset binOffset) {
         IDataFactory factory = getFactory(request);
-        return factory.getAvailableTimes(request, binOffset);
+        DataTime[] times = factory.getAvailableTimes(request, binOffset);
+        Arrays.sort(times);
+        return times;
     }
 
     /**

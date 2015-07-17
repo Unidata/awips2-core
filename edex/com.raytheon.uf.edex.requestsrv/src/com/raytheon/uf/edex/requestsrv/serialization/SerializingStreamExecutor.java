@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.requestsrv.serialization;
 import java.io.InputStream;
 import java.io.OutputStream;
 
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.resp.AuthServerErrorResponse;
 import com.raytheon.uf.common.serialization.ExceptionWrapper;
@@ -39,7 +41,7 @@ import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
  * This executor executes the {@link IServerRequest} deserialized from an
  * {@link InputStream}. The serialization format is injected into this class
  * through the registry. Object response of request is then written to the
- * {@link OutputStream} passed in
+ * {@link OutputStream} passed in.
  * 
  * <pre>
  * 
@@ -49,6 +51,7 @@ import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2014 3541       mschenke    Initial creation
  * Jan 06, 2015 3789       bclement    added getContentType(), execute throws UnsupportedFormatException
+ * Jun 17, 2015 4561       njensen     Log serialization exception to two logs
  * 
  * </pre>
  * 
@@ -60,8 +63,7 @@ public class SerializingStreamExecutor extends
         GenericRegistry<String, StreamSerializer> implements
         ISerializingStreamExecutor {
 
-    // TODO: Rename handler?
-    private static final IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler requestLog = UFStatus
             .getNamedHandler("ThriftSrvRequestLogger");
 
     /** Default instance for convenient sharing of registry. */
@@ -109,19 +111,19 @@ public class SerializingStreamExecutor extends
             resp.setUpdatedData(e.getUpdatedData());
             resp.setException(ExceptionWrapper.wrapThrowable(e));
             response = resp;
-            statusHandler.error("Authorization issue with service request", e);
+            requestLog.error("Authorization issue with service request", e);
         } catch (Throwable t) {
             ServerErrorResponse resp = new ServerErrorResponse();
             resp.setException(ExceptionWrapper.wrapThrowable(t));
             response = resp;
-            statusHandler.error("Error executing request", t);
+            requestLog.error("Error executing request", t);
         }
 
         // Get serializer for output format
         StreamSerializer outputSerializer = getRegisteredObject(outputFormat);
         if (outputSerializer == null) {
             String msg = "No serializer registered for format: " + outputFormat;
-            statusHandler.error("Failed to format response object: " + response
+            requestLog.error("Failed to format response object: " + response
                     + ". " + msg);
             throw new UnsupportedFormatException(msg);
         }
@@ -145,11 +147,19 @@ public class SerializingStreamExecutor extends
                         .append((endTime - startTime)).append("ms");
                 sb.append(", response was size ").append(
                         SizeUtil.prettyByteSize(cout.getBytesWritten()));
-                statusHandler.info(sb.toString());
+                requestLog.info(sb.toString());
             }
         } catch (Throwable t) {
-            statusHandler.error(
+            /*
+             * When this happens, the stream is cut off mid-stream, leading to
+             * non-helpful error messages on the client. Therefore, we will log
+             * this in multiple locations so if someone checks the server logs
+             * they will hopefully see the problem.
+             */
+            LoggerFactory.getLogger("root").error(
                     "Failed to format response object: " + response, t);
+            requestLog
+                    .error("Failed to format response object: " + response, t);
         }
     }
 

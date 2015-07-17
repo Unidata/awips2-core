@@ -19,13 +19,11 @@
  **/
 package com.raytheon.uf.common.derivparam.python.function;
 
-import jep.INumpyable;
-
-import com.raytheon.uf.common.python.PythonNumpyFloatArray;
+import jep.NDArray;
 
 /**
  * Calls {@link com.raytheon.uf.common.wxmath.DCapeFunc} and transforms the
- * output into an INumpyable for python.
+ * output into an NDArray for python.
  * 
  * <pre>
  * 
@@ -34,6 +32,7 @@ import com.raytheon.uf.common.python.PythonNumpyFloatArray;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 13, 2013            njensen     Initial creation
+ * Apr 22, 2015  4259      njensen     Updated for new JEP API
  * 
  * </pre>
  * 
@@ -43,13 +42,13 @@ import com.raytheon.uf.common.python.PythonNumpyFloatArray;
 
 public class DCapeFuncPythonAdapter {
 
-    public static INumpyable dcapeFunc(float usetv, float[] p_dat,
+    public static NDArray<float[]> dcapeFunc(float usetv, float[] p_dat,
             float[] t_dat, float[] td_dat, float[] p0, float[] th0,
             float[] sh0, int nx, int ny, int nz, float max_evap, float max_rh) {
         float[] result = com.raytheon.uf.common.wxmath.DCapeFunc.dcapeFunc(
                 usetv, p_dat, t_dat, td_dat, p0, th0, sh0, nx, ny, nz,
                 max_evap, max_rh);
-        return new PythonNumpyFloatArray(result, ny, nx);
+        return new NDArray<float[]>(result, nx, ny);
     }
 
 }
