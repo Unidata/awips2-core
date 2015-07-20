@@ -22,7 +22,6 @@ package com.raytheon.uf.common.dataquery.db;
 
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -38,7 +37,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------- -------- ----------- --------------------------
  * Nov 07, 2008  1673     bphillip    Initial Creation
  * Dec 18, 2013  2579     bsteffen    Remove ISerializableObject
- * 
+ * Jul 13, 2015  4500     rjpeter     Allow names to not be mapped 
+ *                                    if access by column count only.
  * </pre>
  * 
  * @author bphillip
@@ -125,7 +125,7 @@ public class QueryResult {
                     "Cannot get result for row: " + rowNumber
                             + " Result size is: " + rows.length);
         }
-        if (!columnNames.containsValue(columnIndex)) {
+        if (!columnNames.isEmpty() && !columnNames.containsValue(columnIndex)) {
             throw new ArrayIndexOutOfBoundsException(
                     "Cannot get result for column index: " + columnIndex
                             + " Row size is: " + columnNames.size());
@@ -168,9 +168,7 @@ public class QueryResult {
      */
     public String[] getColumnNameArray() {
         String[] names = new String[columnNames.size()];
-        for (Iterator<String> it = columnNames.keySet().iterator(); it
-                .hasNext();) {
-            String key = it.next();
+        for (String key : columnNames.keySet()) {
             names[columnNames.get(key)] = key;
         }
         return names;
@@ -205,13 +203,15 @@ public class QueryResult {
         this.rows = rows;
     }
 
+    @Override
     public String toString() {
         StringBuffer buffer = new StringBuffer();
-        if (this.getResultCount()==0) {
+        if (this.getResultCount() == 0) {
             buffer.append("No Results returned");
         } else {
-            buffer.append("Column Order: ").append(
-                    Arrays.toString(this.getColumnNameArray())).append("\n");
+            buffer.append("Column Order: ")
+                    .append(Arrays.toString(this.getColumnNameArray()))
+                    .append("\n");
             for (int i = 0; i < this.getResultCount(); i++) {
                 buffer.append("Row ").append(i).append(": ");
                 buffer.append(rows[i].toString());

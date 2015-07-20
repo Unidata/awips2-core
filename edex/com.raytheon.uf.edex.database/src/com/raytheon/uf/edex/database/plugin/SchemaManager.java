@@ -18,22 +18,14 @@
  * further licensing information.
  **/
 
-package com.raytheon.uf.edex.database.schema;
+package com.raytheon.uf.edex.database.plugin;
 
-import java.io.BufferedReader;
-import java.io.File;
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.util.ArrayList;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.jar.JarEntry;
-import java.util.jar.JarFile;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -53,8 +45,6 @@ import com.raytheon.uf.edex.database.cluster.ClusterLocker;
 import com.raytheon.uf.edex.database.cluster.ClusterTask;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
-import com.raytheon.uf.edex.database.plugin.PluginVersion;
-import com.raytheon.uf.edex.database.plugin.PluginVersionDao;
 
 /**
  * Manages the ddl statements used to generate the database tables
@@ -74,7 +64,7 @@ import com.raytheon.uf.edex.database.plugin.PluginVersionDao;
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
  * 10/23/2014   3454       bphillip    Fix table creation error introduced from Hibernate 4 upgrade
- * 
+ * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
  * </pre>
  * 
  * @author bphillip
@@ -96,9 +86,6 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
 
     /** The singleton instance */
     private static SchemaManager instance;
-
-    /** The directory which the plugins reside */
-    private final String pluginDir;
 
     private final DatabasePluginRegistry dbPluginRegistry;
 
@@ -132,92 +119,6 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
      */
     private SchemaManager() {
         dbPluginRegistry = DatabasePluginRegistry.getInstance();
-        pluginDir = EDEXUtil.getEdexPlugins() + File.separator;
-    }
-
-    /**
-     * Runs all scripts for a particular plugin
-     * 
-     * @param pluginName
-     *            The plugin to run the scripts for
-     * @throws PluginException
-     *             If errors occur accessing the database
-     */
-    public void runPluginScripts(DatabasePluginProperties props)
-            throws PluginException {
-        JarFile jar = null;
-        String pluginFQN = props.getPluginFQN();
-
-        try {
-            File jarFile = new File(pluginDir, pluginFQN + ".jar");
-            if (!jarFile.exists()) {
-                /* check for any jar files of the format pluginFQN_version.jar */
-                Pattern p = Pattern.compile("^" + Pattern.quote(pluginFQN)
-                        + "_.*\\.jar$");
-                File pluginDir = new File(this.pluginDir);
-                for (File f : pluginDir.listFiles()) {
-                    if (p.matcher(f.getName()).find()) {
-                        jarFile = f;
-                        break;
-                    }
-                }
-            }
-            jar = new JarFile(jarFile);
-        } catch (IOException e) {
-            throw new PluginException("Unable to find jar for plugin FQN "
-                    + pluginFQN, e);
-        }
-
-        Enumeration<JarEntry> entries = jar.entries();
-        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase()));
-
-        while (entries.hasMoreElements()) {
-            JarEntry entry = entries.nextElement();
-            String name = entry.getName();
-            if (name.startsWith("res/scripts") && name.endsWith(".sql")) {
-                BufferedReader reader = null;
-                InputStream stream = null;
-
-                try {
-                    stream = jar.getInputStream(entry);
-                    reader = new BufferedReader(new InputStreamReader(stream));
-                    String line = null;
-                    StringBuilder buffer = new StringBuilder();
-                    while ((line = reader.readLine()) != null) {
-                        buffer.append(line);
-                    }
-                    dao.runScript(buffer.toString());
-                } catch (Exception e) {
-                    throw new PluginException(
-                            "Unable to execute scripts for plugin FQN "
-                                    + pluginFQN);
-                } finally {
-                    if (reader != null) {
-                        try {
-                            reader.close();
-                        } catch (IOException e) {
-                            // ignore
-                        }
-                    }
-                    if (stream != null) {
-                        try {
-                            stream.close();
-                        } catch (IOException e) {
-                            // ignore
-                        }
-                    }
-                }
-            }
-        }
-
-        if (jar != null) {
-            try {
-                jar.close();
-            } catch (IOException e) {
-                throw new PluginException("Unable to close jar for plugin FQN "
-                        + pluginFQN, e);
-            }
-        }
     }
 
     @Override
@@ -233,18 +134,19 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     + "SessionFactory";
             DatabaseSessionFactoryBean sessFactory = (DatabaseSessionFactoryBean) EDEXUtil
                     .getESBComponent(sessFactoryName);
+            PluginVersionDao pvd = new PluginVersionDao(props.getDatabase());
 
             // handle plugin versioning
             if (props.isForceCheck()) {
                 // use direct dialog to figure out
                 int rowsUpdated = exportSchema(props, sessFactory, true);
                 if (rowsUpdated > 0) {
-                    runPluginScripts(props);
+                    pvd.runPluginScripts(props);
                 }
             } else {
                 cl = new ClusterLocker(props.getDatabase());
-                ct = cl.lock("pluginVersion",
-                        props.getPluginFQN(), pluginLockTimeOutMillis, true);
+                ct = cl.lock("pluginVersion", props.getPluginFQN(),
+                        pluginLockTimeOutMillis, true);
                 int failedCount = 0;
 
                 while (!LockState.SUCCESSFUL.equals(ct.getLockState())) {
@@ -262,15 +164,17 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                         // no need to check plugin version
                         return;
                     }
+                    default:
+                        // NOOP
+                        break;
                     }
 
-                    ct = cl
-                            .lock("pluginVersion", props.getPluginFQN(),
-                                    pluginLockTimeOutMillis, true);
+                    ct = cl.lock("pluginVersion", props.getPluginFQN(),
+                            pluginLockTimeOutMillis, true);
                 }
 
                 haveLock = true;
-                PluginVersionDao pvd = new PluginVersionDao(props.getDatabase());
+
                 Boolean initialized = pvd.isPluginInitialized(props
                         .getPluginName());
 
@@ -278,7 +182,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     logger.info("Exporting DDL for " + pluginName
                             + " plugin...");
                     exportSchema(props, sessFactory, false);
-                    runPluginScripts(props);
+                    pvd.runPluginScripts(props);
                     PluginVersion pv = new PluginVersion(props.getPluginName(),
                             true, props.getTableName());
                     pvd.saveOrUpdate(pv);
@@ -288,7 +192,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                             + " plugin...");
                     dropSchema(props, sessFactory);
                     exportSchema(props, sessFactory, false);
-                    runPluginScripts(props);
+                    pvd.runPluginScripts(props);
                     PluginVersion pv = pvd.getPluginInfo(props.getPluginName());
                     pv.setInitialized(true);
                     pv.setTableName(props.getTableName());
@@ -408,7 +312,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             }
         }
         List<String> fqns = props.getDependencyFQNs();
-        if (fqns != null && fqns.size() > 0) {
+        if ((fqns != null) && (fqns.size() > 0)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -426,7 +330,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void removeAllDependentCreateSql(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory, List<String> createSql) {
         List<String> fqns = props.getDependencyFQNs();
-        if (fqns != null && fqns.size() > 0) {
+        if ((fqns != null) && (fqns.size() > 0)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -440,7 +344,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void removeAllDependentDropSql(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory, List<String> dropSql) {
         List<String> fqns = props.getDependencyFQNs();
-        if (fqns != null && fqns.size() > 0) {
+        if ((fqns != null) && (fqns.size() > 0)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -464,7 +368,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             if (forceResourceCheck || sql.startsWith("create sequence ")) {
                 valid = false;
                 Matcher matcher = createResourceNamePattern.matcher(sql);
-                if (matcher.matches() && matcher.groupCount() >= 1) {
+                if (matcher.matches() && (matcher.groupCount() >= 1)) {
                     String resourceName = matcher.group(1).toLowerCase();
                     StringBuilder tmp = new StringBuilder(resourceSelect);
                     tmp.append(resourceName);
@@ -510,7 +414,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             if (sql.startsWith("drop sequence ")) {
                 valid = false;
             } else if (sql.startsWith("drop table ")) {
-                if(!sql.startsWith("drop table if exists")){
+                if (!sql.startsWith("drop table if exists")) {
                     sql = sql.replace("drop table ", "drop table if exists ");
                 }
                 sql = sql.replace(";", " cascade;");
