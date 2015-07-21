@@ -78,6 +78,13 @@ public class QlServerRequest implements IServerRequest {
     @DynamicSerializeElement
     private Map<String, Object> paramMap;
 
+    /*
+     * TODO: Remove in 16.2.1. Left in for thin client compatibility.
+     */
+    @DynamicSerializeElement
+    @Deprecated
+    private Map<String, RequestConstraint> rcMap;
+
     public QlServerRequest() {
     }
 
@@ -163,6 +170,53 @@ public class QlServerRequest implements IServerRequest {
      */
     public void setParamMap(Map<String, Object> paramMap) {
         this.paramMap = paramMap;
+    }
+
+    /**
+     * @return the rcMap
+     */
+    @Deprecated
+    public Map<String, RequestConstraint> getRcMap() {
+        return rcMap;
+    }
+
+    /**
+     * @param rcMap
+     *            the rcMap to set
+     */
+    @Deprecated
+    public void setRcMap(Map<String, RequestConstraint> rcMap) {
+        this.rcMap = rcMap;
+
+        // convert legacy map
+        if (this.rcMap == null) {
+            return;
+        }
+
+        if (this.rcMap.containsKey("database")) {
+            this.database = rcMap.get("database").getConstraintValue();
+        }
+
+        if (this.rcMap.containsKey("query")) {
+            this.query = rcMap.get("query").getConstraintValue();
+        }
+
+        if (this.rcMap.containsKey("mode")) {
+            String mode = rcMap.get("mode").getConstraintValue();
+            if (mode.equals("sqlquery")) {
+                this.lang = QueryLanguage.SQL;
+                this.type = QueryType.QUERY;
+            } else if (mode.equals("hqlquery")) {
+                this.lang = QueryLanguage.HQL;
+                this.type = QueryType.QUERY;
+            } else if (mode.equals("sqlstatement")) {
+                this.lang = QueryLanguage.SQL;
+                this.type = QueryType.STATEMENT;
+            } else if (mode.equals("hqlstatement")) {
+                this.lang = QueryLanguage.HQL;
+                this.type = QueryType.STATEMENT;
+            }
+        }
     }
 
     @Override

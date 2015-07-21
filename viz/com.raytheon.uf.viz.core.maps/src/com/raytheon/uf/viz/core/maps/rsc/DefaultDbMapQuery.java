@@ -43,7 +43,6 @@ import com.vividsolutions.jts.geom.Geometry;
  * Sep 18, 2012      #1019 randerso    cleaned up geometry type query
  * Jan 30, 2013      #1551 bkowal      Refactored
  * Apr  9, 2014      #2997 randerso    Added queryWithinGeometry
- * Jul 13, 2015 4500       rjpeter     Add columns to query result.
  * </pre>
  * 
  * @author bsteffen
@@ -73,13 +72,8 @@ public class DefaultDbMapQuery implements DbMapQuery {
         final String query = MapsQueryUtil.assembleMapsTableQuery(geom,
                 columns, additionalConstraints, this.table, this.geomField);
 
-        QueryResult result = DirectDbQuery.executeMappedQuery(query.toString(),
-                MAPS, QueryLanguage.SQL);
-        int index = 0;
-        for (String column : columns) {
-            result.addColumnName(column, index++);
-        }
-        return result;
+        return DirectDbQuery.executeMappedQuery(query.toString(), MAPS,
+                QueryLanguage.SQL);
     }
 
     @Override
