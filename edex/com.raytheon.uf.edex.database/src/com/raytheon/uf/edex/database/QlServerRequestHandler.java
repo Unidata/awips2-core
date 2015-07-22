@@ -58,7 +58,7 @@ public class QlServerRequestHandler implements IRequestHandler<QlServerRequest> 
 
         Object result = null;
         CoreDao dao = new CoreDao(DaoConfig.forDatabase(dbName));
-        if (QueryLanguage.HQL.equals(request.getQuery())) {
+        if (QueryLanguage.HQL.equals(request.getLang())) {
             if (QueryType.STATEMENT.equals(request.getType())) {
                 result = dao.executeHQLStatement(request.getQuery(),
                         request.getParamMap());

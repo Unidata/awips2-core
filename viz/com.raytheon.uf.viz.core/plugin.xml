@@ -100,7 +100,7 @@
        <path
           application="CAVE"
           localizationType="COMMON_STATIC"
-          name="Perspectives"
+          name="Perspective Displays"
           value="perspectives"
           recursive="true">
        </path>

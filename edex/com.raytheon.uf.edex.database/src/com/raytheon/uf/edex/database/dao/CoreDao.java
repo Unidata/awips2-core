@@ -31,6 +31,8 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
@@ -104,6 +106,16 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
 public class CoreDao {
 
     protected final IUFStatusHandler logger = UFStatus.getHandler(getClass());
+
+    protected static final Pattern MAPPED_SQL_PATTERN = Pattern.compile(
+            "select (.+?) FROM .*", Pattern.CASE_INSENSITIVE
+                    | Pattern.MULTILINE);
+
+    /* Pattern used by postgis that need to be escaped */
+    protected static final Pattern COLONS = Pattern.compile("::");
+
+    protected static final String COLON_REPLACEMENT = Matcher
+            .quoteReplacement("\\:\\:");
 
     protected SessionFactory sessionFactory;
 
@@ -824,8 +836,10 @@ public class CoreDao {
                 .execute(new TransactionCallback<List<?>>() {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(sql);
+                        String replaced = COLONS.matcher(sql).replaceAll(
+                                COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession().createSQLQuery(
+                                replaced);
                         addParamsToQuery(query, paramMap);
                         return query.list();
                     }
@@ -893,9 +907,26 @@ public class CoreDao {
             }
         }
 
-        // TODO: regex to map field/colum names
         QueryResult result = new QueryResult();
         result.setRows(rows);
+        Matcher m = MAPPED_SQL_PATTERN.matcher(sql);
+        if (m.matches()) {
+            String group = m.group(1);
+            int colIndex = 0;
+            String[] columns = group.split(",");
+            for (String col : columns) {
+                col = col.toLowerCase();
+                int asIndex = col.indexOf(" as ");
+                if (asIndex > 0) {
+                    col = col.substring(asIndex + 4);
+                }
+
+                result.addColumnName(col.trim(), colIndex++);
+            }
+        } else {
+            logger.error("Unable to map query columns for query [" + sql + "]");
+        }
+
         return result;
     }
 
@@ -975,8 +1006,10 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        SQLQuery query = getCurrentSession()
-                                .createSQLQuery(sql);
+                        String replaced = COLONS.matcher(sql).replaceAll(
+                                COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession().createSQLQuery(
+                                replaced);
                         addParamsToQuery(query, paramMap);
                         return query.executeUpdate();
                     }
