@@ -3,6 +3,10 @@
     <Method name="Alias" levels="Surface" models="modelsounding">
         <Field abbreviation="snowFall" level="Station"/>
     </Method>
+    <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
+        <Field abbreviation="SA3hr"/>
+        <Field abbreviation="SA6hr"/>
+    </Method>
     <Method name="LinTrans" dtime="true">
         <Field timeShift="0" abbreviation="TP"/>
         <Field timeShift="0" abbreviation="snoRatOv2"/>
