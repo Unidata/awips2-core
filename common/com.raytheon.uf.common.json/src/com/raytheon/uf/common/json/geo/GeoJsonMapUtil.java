@@ -1,36 +1,26 @@
-/*
- * The following software products were developed by Raytheon:
- *
- * ADE (AWIPS Development Environment) software
- * CAVE (Common AWIPS Visualization Environment) software
- * EDEX (Environmental Data Exchange) software
- * uFrame™ (Universal Framework) software
- *
- * Copyright (c) 2010 Raytheon Co.
- * All rights reserved. This program and the accompanying materials
- * are made available under the terms of the Eclipse Public License v1.0
- * which accompanies this distribution, and is available at
- * http://www.eclipse.org/org/documents/epl-v10.php
- *
- *
- * Contractor Name: Raytheon Company
- * Contractor Address:
- * 6825 Pine Street, Suite 340
- * Mail Stop B8
- * Omaha, NE 68106
- * 402.291.0100
- *
- *
- * SOFTWARE HISTORY
- *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 9, 2011            bclement     Initial creation
- *
- */
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ * 
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ * 
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ * 
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.json.geo;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -47,6 +37,7 @@ import org.geotools.feature.simple.SimpleFeatureBuilder;
 import org.geotools.feature.simple.SimpleFeatureTypeBuilder;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 import org.opengis.feature.type.AttributeDescriptor;
@@ -81,6 +72,12 @@ import com.vividsolutions.jts.geom.Polygon;
  * ------------ ---------- ----------- --------------------------
  * Aug  9, 2011            bclement    Initial creation
  * Mar 11, 2014      #2718 randerso    Changes for GeoTools 10.5
+ * Jun 05, 2015      #4375 dgilling    Safer type handling in 
+ *                                     getSingleCoordinate.
+ * Jul 01, 2015      #4375 dgilling    Fix NullPointerException in
+ *                                     populateFeatureCollection.
+ * Jul 07, 2015      #4375 dgilling    Set CRS on feature before adding default
+ *                                     geometry.
  * 
  * </pre>
  * 
@@ -328,10 +325,9 @@ public class GeoJsonMapUtil {
             Map<String, Object> jsonObj, SimpleFeatureType type)
             throws JsonException {
         Object obj = jsonObj.get(FEATURES_KEY);
-        if (obj == null) {
-            if (type == null) {
-                type = new SimpleFeatureTypeBuilder().buildFeatureType();
-            }
+        if (obj == null
+                || (obj instanceof Collection && ((Collection) obj).isEmpty())
+                || (obj instanceof Object[] && ((Object[]) obj).length == 0)) {
             return new EmptyFeatureCollection(type);
         }
         if (!(obj instanceof List<?>)) {
@@ -448,23 +444,26 @@ public class GeoJsonMapUtil {
         String id = (String) jsonObj.get(ID_KEY);
         SimpleFeatureTypeBuilder typeBuilder = new SimpleFeatureTypeBuilder();
         typeBuilder.setName(featureName);
-        Geometry geom = getFeatureGeom(jsonObj);
-        if (geom != null) {
-            typeBuilder.setDefaultGeometry(geomName);
-            typeBuilder.add(geomName, geom.getClass());
-        }
+
         Object crsObj = jsonObj.get(CRS_KEY);
-        CoordinateReferenceSystem crs = null;
+        CoordinateReferenceSystem crs = DefaultGeographicCRS.WGS84;
         if (crsObj != null) {
             if (crsObj instanceof Map) {
                 crs = populateCrs((Map<String, Object>) crsObj);
-                typeBuilder.setCRS(crs);
             } else {
                 throw new JsonException(
                         "Expected Map<String, Object> for CRS got"
                                 + crsObj.getClass());
             }
         }
+        typeBuilder.setCRS(crs);
+
+        Geometry geom = getFeatureGeom(jsonObj);
+        if (geom != null) {
+            typeBuilder.setDefaultGeometry(geomName);
+            typeBuilder.add(geomName, geom.getClass());
+        }
+
         List<Object> values = new ArrayList<Object>(0);
         Object propObj = jsonObj.get(PROP_KEY);
         if (propObj != null) {
@@ -542,10 +541,10 @@ public class GeoJsonMapUtil {
 
     protected Coordinate getSingleCoordinate(List<?> l) throws JsonException {
         Coordinate coord;
-        double x = (Double) l.get(0);
-        double y = (Double) l.get(1);
+        double x = ((Number) l.get(0)).doubleValue();
+        double y = ((Number) l.get(1)).doubleValue();
         if (l.size() == 3) {
-            double z = (Double) l.get(2);
+            double z = ((Number) l.get(2)).doubleValue();
             coord = new Coordinate(x, y, z);
         } else if (l.size() == 2) {
             coord = new Coordinate(x, y);

@@ -61,15 +61,17 @@ import com.raytheon.viz.core.mode.CAVEMode;
  * 
  * SOFTWARE HISTORY
  * 
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * 02/26/07		140			bphillip	Initial Creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * 02/26/07     140         bphillip    Initial Creation
  * 11/26/07     443         bphillip    Modified to receive data URI lists
  * 02/28/08     966         chammack    Refactored to support generalized listeners
  * 05/08/08     1127        randerso    Changed to implement INotificationObserver
  * 10/06/08     1433        chammack    Updated to use VizStatus
  * 01/14/2013   1442        rferrel     Filter out simulated time "future" alerts.
  * Feb 15, 2013 1638        mschenke    Moved DataURINotificationMessage to uf.common.dataplugin
+ * Jun 19, 2015 4495        njensen     Updated verbose logging
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -361,7 +363,8 @@ public class ProductAlertObserver implements INotificationObserver {
         if (curTime - ALERT_LOG_INTERVAL > lastLogTime) {
             if (alertsProcessed > 0) {
                 statusHandler.handle(Priority.VERBOSE, "Processed "
-                        + alertsProcessed + " alerts in the last "
+                        + alertsProcessed
+                        + " new data notifications in the last "
                         + ((curTime - lastLogTime) / 60000) + " minutes");
                 alertsProcessed = 0;
             }

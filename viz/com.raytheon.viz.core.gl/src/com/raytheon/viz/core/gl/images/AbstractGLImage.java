@@ -27,22 +27,24 @@ import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.GLContextBridge;
+import com.raytheon.viz.core.gl.internal.GLTarget;
 import com.raytheon.viz.core.gl.objects.GLFrameBufferObject;
 import com.raytheon.viz.core.gl.objects.GLRenderBuffer;
 import com.sun.opengl.util.texture.TextureCoords;
 
 /**
  * 
- * TODO Add Description
+ * Base class for all images rendered by the {@link GLTarget}.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 2, 2011             bsteffen    Initial creation
- * Oct 16, 2013       2333 mschenke    Cleaned up usaAsFrameBuffer for clearer logic
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 02, 2011           bsteffen  Initial creation
+ * Oct 16, 2013  2333     mschenke  Cleaned up usaAsFrameBuffer for clearer logic
+ * May 29, 2015  4507     bsteffen  Add setClearColor().
  * 
  * </pre>
  * 
@@ -58,7 +60,7 @@ public abstract class AbstractGLImage implements IImage {
     private float contrast = 1.0f;
 
     /** The status of the image */
-    private Status theStatus = Status.UNLOADED;;
+    private Status theStatus = Status.UNLOADED;
 
     /** Should interpolation be used */
     protected boolean isInterpolated;
@@ -89,6 +91,7 @@ public abstract class AbstractGLImage implements IImage {
      * @param brightness
      *            the brightness to set
      */
+    @Override
     public void setBrightness(float brightness) {
         this.brightness = brightness;
     }
@@ -104,6 +107,7 @@ public abstract class AbstractGLImage implements IImage {
      * @param contrast
      *            the contrast to set
      */
+    @Override
     public void setContrast(float contrast) {
         this.contrast = contrast;
     }
@@ -126,6 +130,7 @@ public abstract class AbstractGLImage implements IImage {
      * 
      * @see com.raytheon.viz.core.drawables.IImage#getStatus()
      */
+    @Override
     public Status getStatus() {
         return theStatus;
     }
@@ -155,10 +160,12 @@ public abstract class AbstractGLImage implements IImage {
      * 
      * @see com.raytheon.viz.core.drawables.IImage#setInterpolated(boolean)
      */
+    @Override
     public void setInterpolated(boolean isInterpolated) {
         this.isInterpolated = isInterpolated;
     }
 
+    @Override
     public void dispose() {
         if (fbo != null) {
             fbo.dispose();
@@ -219,14 +226,23 @@ public abstract class AbstractGLImage implements IImage {
             // Bind the fbo for use
             fbo.bind(gl);
         }
-
-        gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        setClearColor(gl);
         if (rbuf != null && rbuf.isValid()) {
             gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
         } else {
             gl.glClear(GL.GL_COLOR_BUFFER_BIT);
         }
+    }
 
+    /**
+     * Call {@link GL#glClearColor(float, float, float, float)} to clear the
+     * image for use as a frame buffer. The default just set the RGBA to all 0
+     * which is great for color images because the 0 alpha causes nothing to
+     * display. For textures with no alpha(including luminance textures) there
+     * may a more appropriate default value so this method should be overridden.
+     */
+    protected void setClearColor(GL gl) {
+        gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
     /*

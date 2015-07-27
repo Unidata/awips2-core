@@ -440,7 +440,7 @@
        </activeWhen>
    </handler>
    <handler
-         class="com.raytheon.viz.ui.actions.SaveProcedure"
+         class="com.raytheon.viz.ui.actions.SavePerspectiveHandler"
          commandId="com.raytheon.viz.ui.saveProcedure">
  		<activeWhen>
        		<with variable="activeEditor">
@@ -449,7 +449,7 @@
        </activeWhen>
    </handler>
    <handler
-         class="com.raytheon.viz.ui.actions.LoadSerializedXml"
+         class="com.raytheon.viz.ui.actions.LoadPerspectiveHandler"
          commandId="com.raytheon.viz.ui.loadSerialized">
    </handler>
    <handler

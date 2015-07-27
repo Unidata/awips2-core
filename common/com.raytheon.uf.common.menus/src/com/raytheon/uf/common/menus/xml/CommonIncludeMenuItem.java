@@ -26,6 +26,8 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlType;
+import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 /**
  * Utilized in the index file, provides an include capability
@@ -37,6 +39,9 @@ import javax.xml.bind.annotation.XmlType;
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
  * Jun 09, 2014 3266       njensen     Remove ISerializableObject
+ * May 04, 2015 4284       bsteffen    Add subMenuId
+ * May 08, 2015 4411       mapeters    Ignore whitespace in xml for 
+ *                                     visibleOnActionSet and removals
  * 
  * </pre>
  * 
@@ -63,6 +68,7 @@ public class CommonIncludeMenuItem {
      * The items (identified by id) to remove from the include
      */
     @XmlElement(name = "remove")
+    @XmlJavaTypeAdapter(value = CollapsedStringAdapter.class)
     public String[] removals;
 
     /**
@@ -75,6 +81,7 @@ public class CommonIncludeMenuItem {
      * Determines which action sets to activate visibility
      */
     @XmlElement(name = "visibleOnActionSet")
+    @XmlJavaTypeAdapter(value = CollapsedStringAdapter.class)
     public String[] visibleOnActionSet;
 
     /**
@@ -83,4 +90,11 @@ public class CommonIncludeMenuItem {
      */
     @XmlAttribute(name = "subMenu")
     public String subMenuName;
+
+    /**
+     * Provide an id for the sub menu. This is optional and is only used when
+     * subMenuName is also set.
+     */
+    @XmlAttribute
+    public String subMenuId;
 }

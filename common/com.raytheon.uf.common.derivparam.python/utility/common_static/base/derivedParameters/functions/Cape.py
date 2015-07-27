@@ -100,6 +100,6 @@ def __execute(*args):
     pressure[:] = pressureValue
     threeDshape = pressureValues.shape
     if upperTerminationPressure is None:        
-        return CapeFunc.capeFunc(useVirtualTemp, pressureValues, temperatureValues, pressure, potentialTemperature, specificHumidity, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0])).__numpy__
+        return CapeFunc.capeFunc(useVirtualTemp, pressureValues, temperatureValues, pressure, potentialTemperature, specificHumidity, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0]))
     else:        
-        return CapeFunc.capeFuncTop(useVirtualTemp, pressureValues, temperatureValues, pressure, potentialTemperature, specificHumidity, upperTerminationPressure, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0])).__numpy__
+        return CapeFunc.capeFuncTop(useVirtualTemp, pressureValues, temperatureValues, pressure, potentialTemperature, specificHumidity, upperTerminationPressure, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0]))

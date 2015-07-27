@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,6 +23,7 @@ import java.awt.Rectangle;
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -32,6 +33,7 @@ import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.records.ByteDataRecord;
+import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
@@ -46,7 +48,8 @@ import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 27, 2009            mschenke     Initial creation
+ * Oct 27, 2009            mschenke    Initial creation
+ * Apr 27, 2015 4425       nabowle     Handle DoubleDataRecord.
  * 
  * </pre>
  * 
@@ -74,7 +77,7 @@ public class HDF5DataRetriever implements IColorMapDataRetrievalCallback {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.raytheon.uf.viz.core.data.IDataRetrievalCallback#getData()
      */
     @Override
@@ -99,6 +102,9 @@ public class HDF5DataRetriever implements IColorMapDataRetrievalCallback {
             } else if (rec instanceof ShortDataRecord) {
                 short[] data = ((ShortDataRecord) rec).getShortData();
                 buffer = ShortBuffer.wrap(data);
+            } else if (rec instanceof DoubleDataRecord) {
+                double[] data = ((DoubleDataRecord) rec).getDoubleData();
+                buffer = DoubleBuffer.wrap(data);
             }
             return new ColorMapData(buffer, new int[] { datasetBounds.width,
                     datasetBounds.height });

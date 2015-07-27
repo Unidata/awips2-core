@@ -51,6 +51,7 @@ from java.lang import String
 #                                                by javaObjToPyVal().
 #    08/20/13         2250         mnash         Handle Dates, doubles, and arrays
 #    10/15/13                      mnash         Refactor to reduce dependencies and clean up
+#    Apr 23, 2015     4259         njensen        Updated for new JEP API
 #
 #
 
@@ -124,7 +125,7 @@ def javaMapToPyDict(javaMap, customConverter=None):
     '''
     keys = javaMap.keySet()
     itr = keys.iterator()
-    if javaMap.jclassname == "java.util.LinkedHashMap":
+    if javaMap.java_name == "java.util.LinkedHashMap":
         pyDict = OrderedDict()
     else:
         pyDict = {}
