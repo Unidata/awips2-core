@@ -28,6 +28,7 @@ import java.util.Map.Entry;
 import javax.xml.bind.JAXBException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
@@ -61,6 +62,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  *                                     and observe changes.
  * Nov 08, 2013 2361       njensen     Use JAXBManager for XML
  * Feb 24, 2015 3978       njensen     Removed OBE code
+ * Jun 26, 2015 4598       randerso    Added better XML annotations
  * 
  * </pre>
  * 
@@ -69,7 +71,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  */
 
 @XmlRootElement()
-@XmlAccessorType(XmlAccessType.FIELD)
+@XmlAccessorType(XmlAccessType.NONE)
 public class MapStylePreferenceStore {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(MapStylePreferenceStore.class);
@@ -78,9 +80,12 @@ public class MapStylePreferenceStore {
 
     private static JAXBManager jaxb;
 
+    @XmlAccessorType(XmlAccessType.NONE)
     private static class MapStylePreferenceKey {
+        @XmlElement
         private String perspective;
 
+        @XmlElement
         private String mapName;
 
         private MapStylePreferenceKey() {
@@ -101,9 +106,9 @@ public class MapStylePreferenceStore {
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = prime * result
+            result = (prime * result)
                     + ((mapName == null) ? 0 : mapName.hashCode());
-            result = prime * result
+            result = (prime * result)
                     + ((perspective == null) ? 0 : perspective.hashCode());
             return result;
         }
@@ -143,12 +148,11 @@ public class MapStylePreferenceStore {
         }
     }
 
-    @XmlTransient
     private Map<MapStylePreferenceKey, Capabilities> combinedPreferences;
 
+    @XmlElement
     private Map<MapStylePreferenceKey, Capabilities> preferences;
 
-    @XmlTransient
     LocalizationFile siteLf, userLf;
 
     @XmlTransient
@@ -161,10 +165,11 @@ public class MapStylePreferenceStore {
     }
 
     private synchronized void loadFiles() {
-        if (needToLoad)
+        if (needToLoad) {
             needToLoad = false;
-        else
+        } else {
             return;
+        }
 
         IPathManager pathMgr = PathManagerFactory.getPathManager();
 
@@ -250,8 +255,9 @@ public class MapStylePreferenceStore {
         Capabilities value = combinedPreferences.get(key);
         if (value == null) {
             value = new Capabilities();
-        } else
+        } else {
             value = value.clone();
+        }
         return value;
     }
 

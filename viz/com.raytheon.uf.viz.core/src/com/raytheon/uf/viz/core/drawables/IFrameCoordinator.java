@@ -36,6 +36,7 @@ import com.raytheon.uf.viz.core.datastructure.LoopProperties;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 18, 2011            mschenke     Initial creation
+ * May 13, 2015  4461      bsteffen     Add determineFrameIndex
  * 
  * </pre>
  * 
@@ -53,7 +54,7 @@ public interface IFrameCoordinator {
      */
     public static enum FrameChangeOperation {
         FIRST, LAST, NEXT, PREVIOUS
-    };
+    }
 
     /**
      * Possible modes for changing frames
@@ -64,7 +65,7 @@ public interface IFrameCoordinator {
      */
     public static enum FrameChangeMode {
         TIME_ONLY, SPACE_ONLY, TIME_AND_SPACE
-    };
+    }
 
     /**
      * An enum specifying the different modes of animation. A bit D2D specific.
@@ -73,7 +74,7 @@ public interface IFrameCoordinator {
      */
     public static enum AnimationMode {
         Vertical, Temporal, Latest
-    };
+    }
 
     /**
      * Tell the coordinator to change frame based on the loop properties
@@ -110,4 +111,14 @@ public interface IFrameCoordinator {
      * @return
      */
     public AnimationMode getAnimationMode();
+
+    /**
+     * Used when changing the frames in the descriptor to determine which frame
+     * time should be displayed when the frames are changed. Because this method
+     * can be called from the descriptor while the frames are changing, it does
+     * not change the currently displayed frame but instead returns the index
+     * that should be displayed.
+     */
+    public int determineFrameIndex(DataTime[] currentFrames,
+            int currentIndex, DataTime[] newFrames);
 }
