@@ -21,14 +21,13 @@
 package com.raytheon.uf.viz.core.catalog;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
 import com.raytheon.uf.common.dataquery.requests.QlServerRequest;
-import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryType;
 import com.raytheon.uf.common.dataquery.requests.SaveOrUpdateRequest;
 import com.raytheon.uf.common.message.response.AbstractResponseMessage;
 import com.raytheon.uf.common.message.response.ResponseMessageError;
@@ -48,7 +47,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * 10/15/2008   1615       bphillip    Initial Creation
  * 12/11/2008   1777       bphillip    Added insert/update functionality
  * Nov 08, 2013 2361       njensen     Refactored/improved saveOrUpdateList()
- * 
+ * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
  * </pre>
  * 
  * @author bphillip
@@ -61,17 +60,19 @@ public class DirectDbQuery {
         SQL, HQL
     };
 
-    /** The constraints for the script creator */
-    private Map<String, RequestConstraint> constraints = new HashMap<String, RequestConstraint>();
-
     /** The hql Query */
-    private String query;
+    private final String query;
 
     /** The database name */
-    private String database;
+    private final String database;
 
     /** The language the query is written in */
-    private QueryLanguage queryLanguage;
+    private final QueryLanguage queryLanguage;
+
+    /**
+     * Parameter to value map
+     */
+    private final Map<String, Object> paramMap;
 
     /**
      * Executes a database query
@@ -88,7 +89,29 @@ public class DirectDbQuery {
      */
     public static List<Object[]> executeQuery(String query, String database,
             QueryLanguage language) throws VizException {
-        return new DirectDbQuery(query, database, language).performQuery();
+        return executeQuery(query, database, language, null);
+    }
+
+    /**
+     * Executes a database query
+     * 
+     * @param query
+     *            The query
+     * @param database
+     *            The database name
+     * @param language
+     *            The query language
+     * @param paramMap
+     *            The parameter mapping
+     * @return The results
+     * @throws VizException
+     *             If the query fails
+     */
+    public static List<Object[]> executeQuery(String query, String database,
+            QueryLanguage language, Map<String, Object> paramMap)
+            throws VizException {
+        return new DirectDbQuery(query, database, language, paramMap)
+                .performQuery();
     }
 
     /**
@@ -107,7 +130,29 @@ public class DirectDbQuery {
      */
     public static QueryResult executeMappedQuery(String query, String database,
             QueryLanguage language) throws VizException {
-        return new DirectDbQuery(query, database, language)
+        return executeMappedQuery(query, database, language, null);
+    }
+
+    /**
+     * Executes a database query. The results are returned in a QueryResult
+     * object
+     * 
+     * @param query
+     *            The query
+     * @param database
+     *            The database name
+     * @param language
+     *            The query language
+     * @param paramMap
+     *            The parameter mapping
+     * @return The results
+     * @throws VizException
+     *             If the query fails
+     */
+    public static QueryResult executeMappedQuery(String query, String database,
+            QueryLanguage language, Map<String, Object> paramMap)
+            throws VizException {
+        return new DirectDbQuery(query, database, language, paramMap)
                 .performMappedQuery();
     }
 
@@ -127,7 +172,30 @@ public class DirectDbQuery {
      */
     public static int executeStatement(String statement, String database,
             QueryLanguage language) throws VizException {
-        return new DirectDbQuery(statement, database, language)
+        return new DirectDbQuery(statement, database, language, null)
+                .performStatement();
+    }
+
+    /**
+     * Executes a non-query database statement. The number of rows modified is
+     * returned.
+     * 
+     * @param statement
+     *            The statement
+     * @param database
+     *            The database name
+     * @param language
+     *            The query language
+     * @param paramMap
+     *            The parameter mapping
+     * @return The number of rows modified
+     * @throws VizException
+     *             If the statement fails
+     */
+    public static int executeStatement(String statement, String database,
+            QueryLanguage language, Map<String, Object> paramMap)
+            throws VizException {
+        return new DirectDbQuery(statement, database, language, null)
                 .performStatement();
     }
 
@@ -144,7 +212,7 @@ public class DirectDbQuery {
      */
     public static int saveOrUpdate(Object obj, String database)
             throws VizException {
-        List<Object> objList = new ArrayList<Object>();
+        List<Object> objList = new ArrayList<Object>(1);
         objList.add(obj);
         return saveOrUpdate(objList, database);
     }
@@ -166,10 +234,20 @@ public class DirectDbQuery {
     }
 
     /**
-     * Private constructor to prevent instantiation
+     * Constructs a new DirectDbQuery
+     * 
+     * @param query
+     *            The query
+     * @param database
+     *            The database
+     * @param language
+     *            The query language
      */
     private DirectDbQuery() {
-        constraints.put("pluginName", new RequestConstraint("satellite"));
+        this.query = null;
+        this.database = null;
+        this.queryLanguage = null;
+        this.paramMap = null;
     }
 
     /**
@@ -182,13 +260,12 @@ public class DirectDbQuery {
      * @param language
      *            The query language
      */
-    private DirectDbQuery(String query, String database, QueryLanguage language) {
-        constraints.put("pluginName", new RequestConstraint("satellite"));
+    private DirectDbQuery(String query, String database,
+            QueryLanguage language, Map<String, Object> paramMap) {
         this.query = query;
         this.database = database;
-        queryLanguage = language;
-        constraints.put("query", new RequestConstraint(query));
-        constraints.put("database", new RequestConstraint(database));
+        this.queryLanguage = language;
+        this.paramMap = paramMap;
     }
 
     /**
@@ -207,25 +284,25 @@ public class DirectDbQuery {
             throw new VizException("Cannot execute null query");
         }
 
-        // place mode in the map so the handler knows what to do
+        QlServerRequest request = new QlServerRequest(query);
+        request.setDatabase(database);
+        request.setType(QueryType.QUERY);
+        request.setParamMap(paramMap);
+
+        // set the mode so the handler knows what to do
         if (queryLanguage == null) {
             throw new VizException("Query language not specified");
         } else if (queryLanguage.equals(QueryLanguage.HQL)) {
-            constraints.put("mode", new RequestConstraint("hqlquery"));
+            request.setLang(QlServerRequest.QueryLanguage.HQL);
         } else {
-            constraints.put("mode", new RequestConstraint("sqlquery"));
+            request.setLang(QlServerRequest.QueryLanguage.SQL);
         }
 
         // create request object
-        QlServerRequest request = new QlServerRequest(constraints);
         QueryResult retVal = null;
         // get result
         AbstractResponseMessage response = (AbstractResponseMessage) ThriftClient
                 .sendRequest(request);
-
-        if (constraints.containsKey("mode")) {
-            constraints.remove("mode");
-        }
 
         if (response instanceof ResponseMessageGeneric) {
             retVal = (QueryResult) ((ResponseMessageGeneric) response)
@@ -274,24 +351,23 @@ public class DirectDbQuery {
             throw new VizException("Cannot execute null statement");
         }
 
+        QlServerRequest request = new QlServerRequest(query);
+        request.setDatabase(database);
+        request.setType(QueryType.STATEMENT);
+        request.setParamMap(paramMap);
+
         // set the mode so the handler knows what to do
         if (queryLanguage == null) {
             throw new VizException("Query language not specified");
         } else if (queryLanguage.equals(QueryLanguage.HQL)) {
-            constraints.put("mode", new RequestConstraint("hqlstatement"));
+            request.setLang(QlServerRequest.QueryLanguage.HQL);
         } else {
-            constraints.put("mode", new RequestConstraint("sqlstatement"));
+            request.setLang(QlServerRequest.QueryLanguage.SQL);
         }
-
-        QlServerRequest request = new QlServerRequest(constraints);
 
         int retVal = 0;
         AbstractResponseMessage response = (AbstractResponseMessage) ThriftClient
                 .sendRequest(request);
-
-        if (constraints.containsKey("mode")) {
-            constraints.remove("mode");
-        }
 
         if (response instanceof ResponseMessageGeneric) {
             retVal = (Integer) ((ResponseMessageGeneric) response)
