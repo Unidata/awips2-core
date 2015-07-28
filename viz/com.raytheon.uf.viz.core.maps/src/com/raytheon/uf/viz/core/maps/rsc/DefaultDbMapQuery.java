@@ -43,7 +43,6 @@ import com.vividsolutions.jts.geom.Geometry;
  * Sep 18, 2012      #1019 randerso    cleaned up geometry type query
  * Jan 30, 2013      #1551 bkowal      Refactored
  * Apr  9, 2014      #2997 randerso    Added queryWithinGeometry
- * 
  * </pre>
  * 
  * @author bsteffen
