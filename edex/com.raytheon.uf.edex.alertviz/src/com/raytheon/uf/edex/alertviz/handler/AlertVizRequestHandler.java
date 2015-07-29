@@ -20,13 +20,15 @@
 
 package com.raytheon.uf.edex.alertviz.handler;
 
+import java.util.Map;
+
 import com.raytheon.uf.common.alertviz.AlertVizRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
- * TODO Add Description
+ * AlertViz Request Handler
  * 
  * <pre>
  * 
@@ -38,6 +40,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * 02/02/2011   6500       cjeanbap    Pass source value to EDEXUtility.
  * 03/14/2011   5149	   cjeanbap	   Removed debug log statements.
  * Feb 27, 2013 1638       mschenke    Removed dependency on uengine project
+ * Jul 27, 2015 4654       skorolev    Added filters
  * 
  * </pre>
  * 
@@ -48,7 +51,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
 public class AlertVizRequestHandler implements IRequestHandler<AlertVizRequest> {
 
     private static final String PLUGIN_ID = "com.raytheon.uf.edex.alertviz";
-    
+
     private static final String RESULT = "None";
 
     /**
@@ -67,9 +70,10 @@ public class AlertVizRequestHandler implements IRequestHandler<AlertVizRequest> 
         String message = request.getMessage();
         String details = request.toString();
         String audioFile = request.getAudioFile();
+        Map<String, String> filters = request.getFilters();
 
         EDEXUtil.sendMessageAlertViz(priority, PLUGIN_ID, sourceKey, category,
-                message, details, audioFile);
+                message, details, audioFile, filters);
 
         return RESULT;
     }
