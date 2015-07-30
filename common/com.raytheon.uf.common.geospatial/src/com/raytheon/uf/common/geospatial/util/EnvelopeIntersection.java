@@ -39,6 +39,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.Triangle;
 
 /**
  * Utility class capable of computing geometric intersection of one
@@ -59,7 +60,11 @@ import com.vividsolutions.jts.geom.Polygon;
  *                                    inside out by checking interior point
  * Nov 18, 2013  2528     bsteffen    Fall back to brute force when corner
  *                                    points are not found.
- * Feb 23, 2015  4022     bsteffen    Return empty polygon when empty envelopes are used.
+ * Feb 23, 2015  4022     bsteffen    Return empty polygon when empty envelopes
+ *                                    are used.
+ * May 27, 2015  4472     bsteffen    Change the way the border is calculated
+ *                                    to handle untransformable corners better.
+ * Jun 11, 2015  4551     bsteffen    Add minNumDivs to calculateEdge
  * 
  * </pre>
  * 
@@ -77,12 +82,97 @@ public class EnvelopeIntersection {
      * {@link Geometry} may contain multiple Geometries within it. But all
      * geometries will be {@link Polygon}s
      * 
-     * @param sourceEnvelope
-     * @param targetEnvelope
-     * @param threshold
-     * @return
-     * @throws TransformException
-     * @throws FactoryException
+     * When reprojecting envelopes with significantly different CRSs there is a
+     * trade off between accuracy and performance. This is easily visualized for
+     * a reprojection where a straight line in the source CRS becomes a curve in
+     * the target CRS. To accurately represent the curve you would need infinite
+     * points, which would be slow to calculate. The fastest way to calculate it
+     * would be to just use the end points, but then your curve becomes a
+     * straight line and you will be missing a chunk of the source envelope in
+     * the result. This particular method makes no strong guarantees about the
+     * performance or accuracy of the reprojection. It attempts to use
+     * reasonable thresholds for the reprojection. If more control is needed
+     * consider using one of the other methods in this class that provides more
+     * control.
+     * 
+     * @see #createEnvelopeIntersection(Envelope, Envelope, int)
+     * @see #createEnvelopeIntersection(Envelope, Envelope, double, int, int)
+     */
+    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
+            Envelope targetEnvelope) throws TransformException,
+            FactoryException {
+        return createEnvelopeIntersection(sourceEnvelope, targetEnvelope, 1000);
+    }
+
+    /**
+     * Performs the same basic function as
+     * {@link #createEnvelopeIntersection(Envelope, Envelope)} but provides a
+     * single performance/accuracy tuning parameter.
+     * 
+     * The effort parameter is used to control the performance/accuracy
+     * tradeoff. Smaller values for effort will complete faster but with a less
+     * accurate result. As a general guideline, reasonable values for effort are
+     * between 100 and 100000.
+     * 
+     * Values below 100 are possible but if the source and target have
+     * significant warping then significant pieces of the sourceEnvelope may be
+     * missing from the result.
+     * 
+     * Values above 100000 are also allowed but may take a long time to
+     * calculate or use excessive memory. If a reprojection is not accurate
+     * enough with an effort value of 100000 you should consider using
+     * {@link #createEnvelopeIntersection(Envelope, Envelope, double, int, int)}
+     * to tune specific parameters to get the desired result.
+     * 
+     * @see #createEnvelopeIntersection(Envelope, Envelope)
+     * @see #createEnvelopeIntersection(Envelope, Envelope, double, int, int)
+     */
+    public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
+            Envelope targetEnvelope, int effort) throws TransformException,
+            FactoryException {
+        /*
+         * Set maxHorDivisions and maxVertDivisions so that the aspect ratio of
+         * the source envelope is preserved and
+         * maxHorDivisions*maxVertDivisions=effort
+         */
+        double aspectRatio = sourceEnvelope.getSpan(0)
+                / sourceEnvelope.getSpan(1);
+        int maxHorDivisions = (int) Math.sqrt(effort * aspectRatio);
+        int maxVertDivisions = effort / maxHorDivisions;
+        /*
+         * Set threshold so that the average length of an edge of the target
+         * envelope is effort*threshold
+         */
+        double threshold = (targetEnvelope.getSpan(0) + targetEnvelope
+                .getSpan(1)) / (2 * effort);
+        return createEnvelopeIntersection(sourceEnvelope, targetEnvelope,
+                threshold, maxHorDivisions, maxVertDivisions);
+    }
+
+    /**
+     * Performs the same basic function as
+     * {@link #createEnvelopeIntersection(Envelope, Envelope)} but provides
+     * multiple performance/accuracy tuning parameter.
+     * 
+     * When computing the points along a curved reproject the line will be
+     * divided until the resulting LineString is within threshold distance of
+     * the actual curved line or until the maximum number of divisions is
+     * reached.
+     * 
+     * Since threshold is used to compare the distance of points in the target
+     * CRS, it is specified in the units of the target CRS(usually meters).
+     * Smaller threshold values will result in a slower, more accurate
+     * reprojection.
+     * 
+     * The maxHorDivisions and maxVertDivisions provide a bound for the number
+     * of times to divide a line that is being reprojected. maxHorDivisions is
+     * used for lines that are horizontal in the source envelope.
+     * maxVertDivisions is used for lines that are vertical in the source
+     * envelope. Specifying a larger number of divisions will result in a
+     * slower, more accurate reprojection.
+     * 
+     * @see #createEnvelopeIntersection(Envelope, Envelope)
+     * @see #createEnvelopeIntersection(Envelope, Envelope, int)
      */
     public static Geometry createEnvelopeIntersection(Envelope sourceEnvelope,
             Envelope targetEnvelope, double threshold, int maxHorDivisions,
@@ -145,77 +235,14 @@ public class EnvelopeIntersection {
                 gf.createLinearRing(new Coordinate[] { ul, ur, lr, ll, ul }),
                 null);
 
-        double midY = sourceREnvelope.getMinimum(1)
-                + (sourceREnvelope.getSpan(1) / 2.0);
-        double[] UL = new double[] { sourceREnvelope.getMinimum(0),
-                sourceREnvelope.getMinimum(1) };
-        UL = findNearestValidPoint(UL,
-                new double[] { sourceREnvelope.getMinimum(0), midY }, null,
-                sourceCRSToTargetCRS, true);
-
-        double[] UR = new double[] { sourceREnvelope.getMaximum(0),
-                sourceREnvelope.getMinimum(1) };
-        UR = findNearestValidPoint(UR,
-                new double[] { sourceREnvelope.getMaximum(0), midY }, null,
-                sourceCRSToTargetCRS, true);
-
-        double[] LR = new double[] { sourceREnvelope.getMaximum(0),
-                sourceREnvelope.getMaximum(1) };
-        LR = findNearestValidPoint(LR,
-                new double[] { sourceREnvelope.getMaximum(0), midY }, null,
-                sourceCRSToTargetCRS, true);
-
-        double[] LL = new double[] { sourceREnvelope.getMinimum(0),
-                sourceREnvelope.getMaximum(1) };
-        LL = findNearestValidPoint(LL,
-                new double[] { sourceREnvelope.getMinimum(0), midY }, null,
-                sourceCRSToTargetCRS, true);
-
-        if (UL == null || UR == null || LR == null || LL == null) {
-            /*
-             * If entire edges of the tile are invalid in target space then the
-             * algorithms below are not that good. For most cases they produce
-             * overly large polygons but there are cases where they completely
-             * miss intersections. For these cases the BruteForce method is
-             * worth the extra time to get a really accurate envelope.
-             */
+        List<Coordinate> borderPoints = calculateBorder(sourceREnvelope,
+                sourceCRSToTargetCRS, threshold, maxHorDivisions,
+                maxVertDivisions);
+        if (borderPoints == null) {
             return BruteForceEnvelopeIntersection.createEnvelopeIntersection(
                     sourceEnvelope, targetEnvelope, maxHorDivisions,
                     maxVertDivisions);
         }
-
-        List<Coordinate> borderPoints = new ArrayList<Coordinate>(
-                maxVertDivisions * 2 + maxHorDivisions * 2);
-        double[] out = new double[2];
-
-        // UL to UR
-        sourceCRSToTargetCRS.transform(UL, 0, out, 0, 1);
-        borderPoints.add(new Coordinate(out[0], out[1]));
-        calculateBorder(borderPoints, UL, null, UR, null, maxHorDivisions,
-                threshold, sourceCRSToTargetCRS);
-
-        // UR to LR
-        sourceCRSToTargetCRS.transform(UR, 0, out, 0, 1);
-        borderPoints.add(new Coordinate(out[0], out[1]));
-        calculateBorder(borderPoints, UR, null, LR, null, maxVertDivisions,
-                threshold, sourceCRSToTargetCRS);
-
-        // LR to LL
-        sourceCRSToTargetCRS.transform(LR, 0, out, 0, 1);
-        borderPoints.add(new Coordinate(out[0], out[1]));
-        calculateBorder(borderPoints, LR, null, LL, null, maxHorDivisions,
-                threshold, sourceCRSToTargetCRS);
-
-        // LL to UL
-        sourceCRSToTargetCRS.transform(LL, 0, out, 0, 1);
-        borderPoints.add(new Coordinate(out[0], out[1]));
-        calculateBorder(borderPoints, LL, null, UL, null, maxVertDivisions,
-                threshold, sourceCRSToTargetCRS);
-
-        // Add start point to complete linear ring
-        sourceCRSToTargetCRS.transform(UL, 0, out, 0, 1);
-        borderPoints.add(new Coordinate(out[0], out[1]));
-
         // Create valid continuous LineStrings for source border
         List<LineString> lineStrings = new ArrayList<LineString>();
         List<Coordinate> currString = new ArrayList<Coordinate>();
@@ -273,7 +300,7 @@ public class EnvelopeIntersection {
             try {
                 double[] in = new double[] { ul.x, ul.y, ur.x, ur.y, lr.x,
                         lr.y, ll.x, ll.y };
-                out = new double[in.length];
+                double[] out = new double[in.length];
                 targetCRSToSourceCRS.transform(in, 0, out, 0, 4);
                 for (int i = 0, idx = 0; i < 4 && !bad; i++, idx += 2) {
                     if (sourceREnvelope.contains(out[idx], out[idx + 1]) == false) {
@@ -484,6 +511,7 @@ public class EnvelopeIntersection {
                                         .toArray(new Coordinate[0])), null);
                         Coordinate pointA = lsA.getInteriorPoint()
                                 .getCoordinate();
+                        double[] out = new double[2];
                         targetCRSToSourceCRS.transform(new double[] { pointA.x,
                                 pointA.y }, 0, out, 0, 1);
                         if (sourceREnvelope.contains(out[0], out[1])) {
@@ -585,94 +613,418 @@ public class EnvelopeIntersection {
         }
     }
 
-    private static double[] findNearestValidPoint(double[] maxPoint,
-            double[] point, double[] prevPoint, MathTransform mt,
-            boolean checkMax) {
-        if (checkMax) {
-            try {
-                double[] tmp = new double[maxPoint.length];
-                mt.transform(maxPoint, 0, tmp, 0, 1);
-                if (!Double.isNaN(tmp[0]) && !Double.isNaN(tmp[1])) {
-                    return maxPoint;
-                }
-            } catch (TransformException e) {
-                // Ignore
+    /**
+     * 
+     * <p>
+     * Attempt to transform the border of the source envelope into target CRS.
+     * This transforms each of the 4 edges of the source envelope(see
+     * {@link #calculateEdge(double[], double[], int, double, MathTransform)}
+     * for details). In the simple case where all 4 edges of the source envelope
+     * are valid points in the target CRS, this will simply join the 4 edges
+     * into a single list and return.
+     * </p>
+     * 
+     * <p>
+     * This method attempts to detect and correct two types of transformation
+     * where some edge coordinates are not valid in the target CRS.
+     * <ol>
+     * <li>If an entire edge is invalid then this will attempt to connect the
+     * nearest valid points from the two adjacent edges. For example if the
+     * source envelope is an Equidistant Cylindrical projection with one edge
+     * along the north pole and the target CRS is a Mercator projection. Since
+     * the north pole cannot be represented in a Mercator projection the entire
+     * upper edge of the source envelope is invalid in the target CRS. This is
+     * corrected by joining the northern most valid points on the left and right
+     * edges. The end result is that the north pole is cut out of the
+     * reprojected envelope.</li>
+     * <li>If a corner point is invalid then this will attempt to connect the
+     * nearest valid points from the two adjacent edges. This happens often when
+     * the source envelope is in a Geostationary projection.</li>
+     * </ol>
+     * When performing these corrections an area of the source envelope
+     * containing the invalid points is removed. The area that is removed is a
+     * straight "cut" across the source envelope(removing either an edge or a
+     * corner). Because the boundary between valid/invalid is often not a
+     * straight line, it is likely that this cut will also remove some valid
+     * area. Too avoid removing too much valid, if the area being removed is
+     * unreasonably large the correction will be aborted and null will be
+     * returned.(Unreasonable is calculated based off the maxDivision
+     * arguments).
+     * </p>
+     * 
+     * <p>
+     * This does not currently detect cases where some points in the middle of
+     * an edge are not valid in the target CRS. In this case there will be
+     * Coordinates with NaN ordinates in the list.
+     * </p>
+     * 
+     * <p>
+     * For convenience, in the returned list the first and last Coordinate will
+     * be the same so it is easy to construct a polygon from the sequence, but
+     * this method does not guarantee that the results are a valid polygon.
+     * Often there will be redundant points or self intersections that must be
+     * corrected before the coordinates can be used to construct a polygon.
+     * </p>
+     * 
+     * <p>
+     * This method will return null for cases where there are too many invalid
+     * points to determine an accurate border.
+     * </p>
+     */
+    private static List<Coordinate> calculateBorder(
+            ReferencedEnvelope sourceEnvelope,
+            MathTransform sourceCRSToTargetCRS, double threshold,
+            int maxHorDivisions, int maxVertDivisions)
+            throws TransformException {
+        MathTransform targetCRSToSourceCRS = sourceCRSToTargetCRS.inverse();
+
+        /*
+         * This is an attempt to determine a "reasonable" amount of the source
+         * envelope to remove to compensate for untransformable areas. For the
+         * case of removing a single edge the minimum amount that can be removed
+         * is 1 division(hor or vert depending on which edge). "reasonable" is
+         * currently slightly larger than the average of the two maxDivisions.
+         */
+        double maximumRemovalPercent = 3.0 / (maxHorDivisions + maxVertDivisions);
+        double maximumRemovalArea = sourceEnvelope.getArea()
+                * maximumRemovalPercent;
+        /*
+         * This is probably too many, but unsure how to come up with a good
+         * smaller number.
+         */
+        int maxDiagnolDivisions = (maxHorDivisions + maxVertDivisions) / 2;
+
+        double[] UL = { sourceEnvelope.getMinX(), sourceEnvelope.getMinY() };
+        double[] UR = { sourceEnvelope.getMaxX(), sourceEnvelope.getMinY() };
+        double[] LR = { sourceEnvelope.getMaxX(), sourceEnvelope.getMaxY() };
+        double[] LL = { sourceEnvelope.getMinX(), sourceEnvelope.getMaxY() };
+
+        /*
+         * The order of the coordinates passed in matters, this will generate a
+         * clockwise sequence of points.
+         */
+        List<Coordinate> upperEdge = calculateEdge(UL, UR, maxHorDivisions,
+                threshold, sourceCRSToTargetCRS);
+        List<Coordinate> rightEdge = calculateEdge(UR, LR, maxVertDivisions,
+                threshold, sourceCRSToTargetCRS);
+        List<Coordinate> lowerEdge = calculateEdge(LR, LL, maxHorDivisions,
+                threshold, sourceCRSToTargetCRS);
+        List<Coordinate> leftEdge = calculateEdge(LL, UL, maxVertDivisions,
+                threshold, sourceCRSToTargetCRS);
+
+        /* No upper edge so attempt to add one. */
+        if (upperEdge.isEmpty() && !rightEdge.isEmpty() && !leftEdge.isEmpty()) {
+            Coordinate[] removedBounds = new Coordinate[5];
+            removedBounds[0] = new Coordinate(UL[0], UL[1]);
+            removedBounds[1] = new Coordinate(UR[0], UR[1]);
+
+            Coordinate top = leftEdge.get(leftEdge.size() - 1);
+            UL = new double[] { top.x, top.y };
+            targetCRSToSourceCRS.transform(UL, 0, UL, 0, 1);
+
+            top = rightEdge.get(0);
+            UR = new double[] { top.x, top.y };
+            targetCRSToSourceCRS.transform(UR, 0, UR, 0, 1);
+
+            removedBounds[2] = new Coordinate(UR[0], UR[1]);
+            removedBounds[3] = new Coordinate(UL[0], UL[1]);
+            removedBounds[4] = removedBounds[0];
+            double removedArea = gf.createPolygon(removedBounds).getArea();
+            if (removedArea > maximumRemovalArea) {
+                return null;
             }
-            checkMax = false;
+            upperEdge = calculateEdge(UL, UR, maxHorDivisions, threshold,
+                    sourceCRSToTargetCRS);
         }
-        try {
-            double[] tmp = new double[point.length];
-            mt.transform(point, 0, tmp, 0, 1);
-            if (!Double.isNaN(tmp[0]) && !Double.isNaN(tmp[1])) {
-                // point is valid, keep looking
-                double deltaX = (maxPoint[0] - point[0]) / 2.0;
-                double deltaY = (maxPoint[1] - point[1]) / 2.0;
-                double[] newPoint = new double[] { point[0] + deltaX,
-                        point[1] + deltaY };
-                return findNearestValidPoint(maxPoint, newPoint, point, mt,
-                        checkMax);
+        /* No lower edge so attempt to add one. */
+        if (lowerEdge.isEmpty() && !rightEdge.isEmpty() && !leftEdge.isEmpty()) {
+            Coordinate[] removedBounds = new Coordinate[5];
+            removedBounds[0] = new Coordinate(LL[0], LL[1]);
+            removedBounds[1] = new Coordinate(LR[0], LR[1]);
+
+            Coordinate low = leftEdge.get(0);
+            LL = new double[] { low.x, low.y };
+            targetCRSToSourceCRS.transform(LL, 0, LL, 0, 1);
+
+            low = rightEdge.get(rightEdge.size() - 1);
+            LR = new double[] { low.x, low.y };
+            targetCRSToSourceCRS.transform(LR, 0, LR, 0, 1);
+
+            removedBounds[2] = new Coordinate(LR[0], LR[1]);
+            removedBounds[3] = new Coordinate(LL[0], LL[1]);
+            removedBounds[4] = removedBounds[0];
+            double removedArea = gf.createPolygon(removedBounds).getArea();
+            if (removedArea > maximumRemovalArea) {
+                return null;
             }
-        } catch (TransformException e) {
-            // Ignore
+
+            lowerEdge = calculateEdge(LR, LL, maxHorDivisions, threshold,
+                    sourceCRSToTargetCRS);
         }
-        return prevPoint;
+        /* No right edge so attempt to add one. */
+        if (rightEdge.isEmpty() && !lowerEdge.isEmpty() && !upperEdge.isEmpty()) {
+            Coordinate[] removedBounds = new Coordinate[5];
+            removedBounds[0] = new Coordinate(UR[0], UR[1]);
+            removedBounds[1] = new Coordinate(LR[0], LR[1]);
+
+            Coordinate right = upperEdge.get(upperEdge.size() - 1);
+            UR = new double[] { right.x, right.y };
+            targetCRSToSourceCRS.transform(UR, 0, UR, 0, 1);
+
+            right = lowerEdge.get(0);
+            LR = new double[] { right.x, right.y };
+            targetCRSToSourceCRS.transform(LR, 0, LR, 0, 1);
+
+            removedBounds[2] = new Coordinate(LR[0], LR[1]);
+            removedBounds[3] = new Coordinate(UR[0], UR[1]);
+            removedBounds[4] = removedBounds[0];
+            double removedArea = gf.createPolygon(removedBounds).getArea();
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+            rightEdge = calculateEdge(UR, LR, maxVertDivisions, threshold,
+                    sourceCRSToTargetCRS);
+        }
+        /* No left edge so attempt to add one. */
+        if (leftEdge.isEmpty() && !lowerEdge.isEmpty() && !upperEdge.isEmpty()) {
+            Coordinate[] removedBounds = new Coordinate[5];
+            removedBounds[0] = new Coordinate(UL[0], UL[1]);
+            removedBounds[1] = new Coordinate(LL[0], LL[1]);
+
+            Coordinate right = upperEdge.get(0);
+            UL = new double[] { right.x, right.y };
+            targetCRSToSourceCRS.transform(UL, 0, UL, 0, 1);
+
+            right = lowerEdge.get(lowerEdge.size() - 1);
+            LL = new double[] { right.x, right.y };
+            targetCRSToSourceCRS.transform(LL, 0, LL, 0, 1);
+
+            removedBounds[2] = new Coordinate(LL[0], LL[1]);
+            removedBounds[3] = new Coordinate(UL[0], UL[1]);
+            removedBounds[4] = removedBounds[0];
+            double removedArea = gf.createPolygon(removedBounds).getArea();
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+            leftEdge = calculateEdge(LL, UL, maxVertDivisions, threshold,
+                    sourceCRSToTargetCRS);
+        }
+        if (upperEdge.isEmpty() || lowerEdge.isEmpty() || rightEdge.isEmpty()
+                || leftEdge.isEmpty()) {
+            return null;
+        }
+
+        List<Coordinate> borderPoints = new ArrayList<Coordinate>(
+                maxVertDivisions * 2 + maxHorDivisions * 2);
+
+        borderPoints.addAll(upperEdge.subList(0, upperEdge.size() - 1));
+        Coordinate upper = upperEdge.get(upperEdge.size() - 1);
+        Coordinate right = rightEdge.get(0);
+        /* Missing Upper Right corner. */
+        if (!upper.equals(right)) {
+            double[] u = new double[] { upper.x, upper.y };
+            double[] r = new double[] { right.x, right.y };
+            targetCRSToSourceCRS.transform(u, 0, u, 0, 1);
+            targetCRSToSourceCRS.transform(r, 0, r, 0, 1);
+
+            double removedArea = Triangle.area(new Coordinate(UR[0], UR[1]),
+                    new Coordinate(u[0], u[1]), new Coordinate(r[0], r[1]));
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+
+            List<Coordinate> diagnol = calculateEdge(u, r, maxDiagnolDivisions,
+                    threshold, sourceCRSToTargetCRS);
+            borderPoints.addAll(diagnol.subList(0, diagnol.size() - 1));
+        }
+
+        borderPoints.addAll(rightEdge.subList(0, rightEdge.size() - 1));
+        right = rightEdge.get(rightEdge.size() - 1);
+        Coordinate lower = lowerEdge.get(0);
+        /* Missing Lower Right corner. */
+        if (!right.equals(lower)) {
+            double[] r = new double[] { right.x, right.y };
+            double[] l = new double[] { lower.x, lower.y };
+            targetCRSToSourceCRS.transform(r, 0, r, 0, 1);
+            targetCRSToSourceCRS.transform(l, 0, l, 0, 1);
+
+            double removedArea = Triangle.area(new Coordinate(LR[0], LR[1]),
+                    new Coordinate(l[0], l[1]), new Coordinate(r[0], r[1]));
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+
+            List<Coordinate> diagnol = calculateEdge(r, l, maxDiagnolDivisions,
+                    threshold, sourceCRSToTargetCRS);
+            borderPoints.addAll(diagnol.subList(0, diagnol.size() - 1));
+        }
+
+        borderPoints.addAll(lowerEdge.subList(0, lowerEdge.size() - 1));
+        lower = lowerEdge.get(lowerEdge.size() - 1);
+        Coordinate left = leftEdge.get(0);
+        /* Missing Lower Left corner. */
+        if (!lower.equals(left)) {
+            double[] l1 = new double[] { lower.x, lower.y };
+            double[] l2 = new double[] { left.x, left.y };
+            targetCRSToSourceCRS.transform(l1, 0, l1, 0, 1);
+            targetCRSToSourceCRS.transform(l2, 0, l2, 0, 1);
+
+            double removedArea = Triangle.area(new Coordinate(LL[0], LL[1]),
+                    new Coordinate(l1[0], l1[1]), new Coordinate(l2[0], l2[1]));
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+
+            List<Coordinate> diagnol = calculateEdge(l1, l2,
+                    maxDiagnolDivisions, threshold, sourceCRSToTargetCRS);
+            borderPoints.addAll(diagnol.subList(0, diagnol.size() - 1));
+        }
+
+        borderPoints.addAll(leftEdge.subList(0, leftEdge.size() - 1));
+        left = leftEdge.get(leftEdge.size() - 1);
+        upper = upperEdge.get(0);
+        /* Missing Upper Left corner. */
+        if (!left.equals(upper)) {
+            double[] l = new double[] { left.x, left.y };
+            double[] u = new double[] { upper.x, upper.y };
+            targetCRSToSourceCRS.transform(l, 0, l, 0, 1);
+            targetCRSToSourceCRS.transform(u, 0, u, 0, 1);
+
+            double removedArea = Triangle.area(new Coordinate(UL[0], UL[1]),
+                    new Coordinate(l[0], l[1]), new Coordinate(u[0], u[1]));
+            if (removedArea > maximumRemovalArea) {
+                return null;
+            }
+
+            List<Coordinate> diagnol = calculateEdge(l, u, maxDiagnolDivisions,
+                    threshold, sourceCRSToTargetCRS);
+            borderPoints.addAll(diagnol);
+        } else {
+            borderPoints.add(left);
+        }
+
+        return borderPoints;
     }
 
-    private static int calculateBorder(List<Coordinate> borderList,
-            double[] point1, double[] transformedPoint1, double[] point3,
-            double[] transformedPoint3, double maxNumDivs, double threshold,
-            MathTransform transform) throws TransformException {
-        if (transformedPoint1 == null) {
-            transformedPoint1 = new double[point1.length];
-            for (int i = 0; i < point1.length; ++i) {
-                transformedPoint1[i] = Double.NaN;
+    /**
+     * Transform all the points needed(up to maxNumDivs) to get an accurate
+     * representation of a transformed line segment from point1 to point2. An
+     * accurate representation is one where the transformed line is within
+     * threshold distance of a 'perfect' representation of the line. This method
+     * is necessary because for many projections a straight line can be
+     * converted to a curved line in a different projection. The result of this
+     * method will be a set of points that follow the curve as accurately as
+     * possible.
+     * 
+     * In addition to transforming the line, if the endpoints are not valid in
+     * the target projection then they will be removed so that the endpoints of
+     * the result are guaranteed to be valid(but are not guaranteed to be the
+     * same as the points passed in). As a result, if there are no valid points
+     * on the line in the target projection this will return an empty list.
+     * Invalid points within the line are left in with the ordinates set to NaN.
+     * 
+     * This method is implemented as a recursive binary search. The midpoint of
+     * the line is transformed and if it is within threshold then the line is
+     * assumed to be straight and the algorithm is done. If however the midpoint
+     * is outside threshold it is used as the endpoint of a shorter line and the
+     * algorithm is repeated for each of the two line segments. After the search
+     * has completed the invalid endpoints are removed.
+     * 
+     * This method sets up the inputs to the binary search and hands it off to
+     * {@link #calculateEdge(List, double[], double[], double[], double[], int, double, MathTransform)}
+     * to perform the recursion.
+     */
+    private static List<Coordinate> calculateEdge(double[] point1,
+            double[] point2, int maxNumDivs, double threshold,
+            MathTransform transform) {
+        List<Coordinate> borderPoints = new ArrayList<>(maxNumDivs);
+
+        double[] transformedPoint1 = transform(transform, point1);
+        double[] transformedPoint2 = transform(transform, point2);
+
+        borderPoints.add(new Coordinate(transformedPoint1[0],
+                transformedPoint1[1]));
+        /*
+         * Minimum of 2 points are needed to ensure that very large envelopes
+         * with no distortion still get the edge divided because the world wrap
+         * corrector cannot handle a single line that spans more than 180°
+         */
+        calculateEdge(borderPoints, point1, transformedPoint1, point2,
+                transformedPoint2, 2, maxNumDivs, threshold, transform);
+        borderPoints.add(new Coordinate(transformedPoint2[0],
+                transformedPoint2[1]));
+
+        Coordinate c = borderPoints.get(borderPoints.size() - 1);
+        while (Double.isNaN(c.x) || Double.isNaN(c.y)) {
+            borderPoints.remove(borderPoints.size() - 1);
+            if (borderPoints.isEmpty()) {
+                break;
             }
-            try {
-                transform.transform(point1, 0, transformedPoint1, 0, 1);
-            } catch (TransformException e) {
-                // Eat exception, NaNs will do work for us
+            c = borderPoints.get(borderPoints.size() - 1);
+        }
+
+        if (!borderPoints.isEmpty()) {
+            c = borderPoints.get(0);
+            while (Double.isNaN(c.x) || Double.isNaN(c.y)) {
+                borderPoints.remove(0);
+                if (borderPoints.isEmpty()) {
+                    break;
+                }
+                c = borderPoints.get(0);
             }
         }
+
+        return borderPoints;
+    }
+
+    /**
+     * @see {@link #calculateEdge(double[], double[], int, double, MathTransform)}
+     *      for more information, this is the recursive component of the edge
+     *      finding algorithm.
+     */
+    private static void calculateEdge(List<Coordinate> borderList,
+            double[] point1, double[] transformedPoint1, double[] point3,
+            double[] transformedPoint3, int minNumDivs, int maxNumDivs,
+            double threshold, MathTransform transform) {
+        if (transformedPoint1 == null) {
+            transformedPoint1 = transform(transform, point1);
+        }
         if (transformedPoint3 == null) {
-            transformedPoint3 = new double[point3.length];
-            for (int i = 0; i < point3.length; ++i) {
-                transformedPoint3[i] = Double.NaN;
-            }
-            try {
-                transform.transform(point3, 0, transformedPoint3, 0, 1);
-            } catch (TransformException e) {
-                // Eat exception, NaNs will do work for us
-            }
+            transformedPoint3 = transform(transform, point3);
         }
 
         double[] point2 = { (point1[0] + point3[0]) / 2,
                 (point1[1] + point3[1]) / 2 };
-        double[] transformedPoint2 = new double[point2.length];
-        transform.transform(point2, 0, transformedPoint2, 0, 1);
+        double[] transformedPoint2 = transform(transform, point2);
         double[] interp2 = { (transformedPoint1[0] + transformedPoint3[0]) / 2,
                 (transformedPoint1[1] + transformedPoint3[1]) / 2 };
         double dX = transformedPoint2[0] - interp2[0];
         double dY = transformedPoint2[1] - interp2[1];
         double d = Math.hypot(dX, dY);
-        if (d < threshold || maxNumDivs < 1) {
-            return 1;
-        } else {
-            int nd1 = calculateBorder(borderList, point1, transformedPoint1,
-                    point2, transformedPoint2, maxNumDivs / 2, threshold,
-                    transform);
+        if (minNumDivs > 1 || (d >= threshold && maxNumDivs >= 1)) {
+            calculateEdge(borderList, point1, transformedPoint1, point2,
+                    transformedPoint2, minNumDivs / 2, maxNumDivs / 2,
+                    threshold, transform);
             borderList.add(new Coordinate(transformedPoint2[0],
                     transformedPoint2[1]));
-            if (nd1 * 2 >= maxNumDivs) {
-                nd1 = (int) Math.ceil(maxNumDivs);
-            }
-            int nd2 = calculateBorder(borderList, point2, transformedPoint2,
-                    point3, transformedPoint3, maxNumDivs / 2, threshold,
-                    transform);
-            if (nd2 * 2 >= maxNumDivs) {
-                nd2 = (int) Math.ceil(maxNumDivs);
-            }
-            return (Math.max(nd1, nd2) * 2);
+            calculateEdge(borderList, point2, transformedPoint2, point3,
+                    transformedPoint3, minNumDivs / 2, maxNumDivs / 2,
+                    threshold, transform);
         }
+    }
+
+    /**
+     * Transform method which converts errors into NaN. point is assumed to be a
+     * single point that needs to be transformed(so point.size should be 2).
+     */
+    private static double[] transform(MathTransform transform, double[] point) {
+        double[] transformedPoint = new double[point.length];
+        try {
+            transform.transform(point, 0, transformedPoint, 0, 1);
+        } catch (TransformException e) {
+            Arrays.fill(transformedPoint, Double.NaN);
+        }
+        return transformedPoint;
     }
 
     private static ReferencedEnvelope reference(Envelope envelope) {

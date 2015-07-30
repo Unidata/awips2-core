@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,18 +29,19 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * IGeometryData wrapper used as part of <code>GetGeometryDataResponse</code>.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Jun 03, 2013           dgilling    Initial creation
  * Jan 06, 2014  2537     bsteffen    Store geometry index instead of WKT.
- * 
+ * Jun 30, 2015  4569     nabowle     Switch to WKB.
+ *
  * </pre>
- * 
+ *
  * @author dgilling
  * @version 1.0
  */
@@ -52,13 +53,13 @@ public class GeometryResponseData extends AbstractResponseData {
     private Map<String, Object[]> dataMap;
 
     @DynamicSerializeElement
-    private int geometryWKTindex;
+    private int geometryWKBindex;
 
     public GeometryResponseData() {
         // no-op, for serialization
     }
 
-    public GeometryResponseData(final IGeometryData data, final int geometryWKTindex) {
+    public GeometryResponseData(final IGeometryData data, final int geometryWKBindex) {
         super(data);
 
         Set<String> parameters = data.getParameters();
@@ -76,7 +77,7 @@ public class GeometryResponseData extends AbstractResponseData {
             }
             dataMap.put(param, dataTuple);
         }
-        this.geometryWKTindex = geometryWKTindex;
+        this.geometryWKBindex = geometryWKBindex;
     }
 
     public Map<String, Object[]> getDataMap() {
@@ -87,11 +88,11 @@ public class GeometryResponseData extends AbstractResponseData {
         this.dataMap = dataMap;
     }
 
-    public int getGeometryWKTindex() {
-        return geometryWKTindex;
+    public int getGeometryWKBindex() {
+        return geometryWKBindex;
     }
 
-    public void setGeometryWKTindex(int geometryWKTindex) {
-        this.geometryWKTindex = geometryWKTindex;
+    public void setGeometryWKBindex(int geometryWKBindex) {
+        this.geometryWKBindex = geometryWKBindex;
     }
 }

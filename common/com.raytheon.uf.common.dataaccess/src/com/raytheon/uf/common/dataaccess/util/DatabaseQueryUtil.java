@@ -20,15 +20,14 @@
 package com.raytheon.uf.common.dataaccess.util;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
 import com.raytheon.uf.common.dataquery.requests.QlServerRequest;
-import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryLanguage;
+import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryType;
 import com.raytheon.uf.common.message.response.AbstractResponseMessage;
 import com.raytheon.uf.common.message.response.ResponseMessageError;
 import com.raytheon.uf.common.message.response.ResponseMessageGeneric;
@@ -43,8 +42,8 @@ import com.raytheon.uf.common.serialization.comm.RequestRouter;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 29, 2013            bkowal     Initial creation
- * 
+ * Jan 29, 2013            bkowal      Initial creation
+ * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
  * </pre>
  * 
  * @author bkowal
@@ -71,12 +70,6 @@ public class DatabaseQueryUtil {
         }
     }
 
-    private static final String CONSTRAINT_QUERY = "query";
-
-    private static final String CONSTRAINT_DATABASE = "database";
-
-    private static final String CONSTRAINT_MODE = "mode";
-
     /**
      * Constructor
      */
@@ -99,15 +92,29 @@ public class DatabaseQueryUtil {
      */
     public static List<Object[]> executeDatabaseQuery(QUERY_MODE mode,
             String query, String database, String dataType) {
-        Map<String, RequestConstraint> requestConstraintMap = new HashMap<String, RequestConstraint>();
-        requestConstraintMap
-                .put(CONSTRAINT_QUERY, new RequestConstraint(query));
-        requestConstraintMap.put(CONSTRAINT_DATABASE, new RequestConstraint(
-                database));
-        requestConstraintMap.put(CONSTRAINT_MODE,
-                new RequestConstraint(mode.getModeText()));
-        QlServerRequest serverRequest = new QlServerRequest(
-                requestConstraintMap);
+        QlServerRequest serverRequest = new QlServerRequest(query);
+        serverRequest.setDatabase(database);
+        switch (mode) {
+        case MODE_SQLQUERY:
+            serverRequest.setLang(QueryLanguage.SQL);
+            serverRequest.setType(QueryType.QUERY);
+            break;
+        case MODE_HQLQUERY:
+            serverRequest.setLang(QueryLanguage.HQL);
+            serverRequest.setType(QueryType.QUERY);
+            break;
+        case MODE_SQL_STATEMENT:
+            serverRequest.setLang(QueryLanguage.SQL);
+            serverRequest.setType(QueryType.STATEMENT);
+            break;
+        case MODE_HSQL_STATEMENT:
+            serverRequest.setLang(QueryLanguage.HQL);
+            serverRequest.setType(QueryType.STATEMENT);
+            break;
+        case MODE_SAVE_OR_UPDATE:
+            // unused
+            break;
+        }
 
         final String errorMessage = "Error retrieving " + dataType + " data";
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,6 +27,7 @@ import javax.measure.unit.NonSI;
 import javax.measure.unit.Unit;
 
 import com.raytheon.uf.common.datastorage.records.ByteDataRecord;
+import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
@@ -47,6 +48,7 @@ import com.raytheon.uf.common.inventory.exception.DataCubeException;
  * Jan 14, 2014  2661     bsteffen    Make vectors u,v only
  * Apr 11, 2014  2947     bsteffen    Perform unit conversion on more types of
  *                                    records.
+ * Apr 27, 2015  4425     nabowle     Add DoubleDataRecord conversion.
  * 
  * </pre>
  * 
@@ -171,7 +173,19 @@ public class AliasRequestableData extends AbstractRequestableData {
                     newData[c] = (float) converter.convert(data[c]);
                 }
             }
-        } else{
+        } else if (record instanceof DoubleDataRecord) {
+            double[] data = ((DoubleDataRecord) record).getDoubleData();
+            double[] doubleData = new double[data.length];
+            for (int c = 0; c < data.length; c++) {
+                if (data[c] == fillValue) {
+                    doubleData[c] = Double.NaN;
+                } else {
+                    doubleData[c] = converter.convert(data[c]);
+                }
+            }
+            return new DoubleDataRecord(record.getName(), record.getGroup(),
+                    doubleData, record.getDimension(), record.getSizes());
+        } else {
             return record;
         }
         return new FloatDataRecord(record.getName(), record.getGroup(),
@@ -180,7 +194,7 @@ public class AliasRequestableData extends AbstractRequestableData {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.viz.derivparam.data.AbstractRequestableData#getDependencies
      * ()

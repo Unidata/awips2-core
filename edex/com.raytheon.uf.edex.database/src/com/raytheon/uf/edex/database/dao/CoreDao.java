@@ -20,9 +20,6 @@
 
 package com.raytheon.uf.edex.database.dao;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.IOException;
 import java.io.Serializable;
 import java.sql.Connection;
 import java.sql.ResultSet;
@@ -31,10 +28,15 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.hibernate.Criteria;
 import org.hibernate.Query;
+import org.hibernate.SQLQuery;
 import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
@@ -61,7 +63,6 @@ import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.processor.IDatabaseProcessor;
 import com.raytheon.uf.edex.database.query.DatabaseQuery;
@@ -96,6 +97,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
+ * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
  * </pre>
  * 
  * @author bphillip
@@ -104,6 +106,16 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
 public class CoreDao {
 
     protected final IUFStatusHandler logger = UFStatus.getHandler(getClass());
+
+    protected static final Pattern MAPPED_SQL_PATTERN = Pattern.compile(
+            "select (.+?) FROM .*", Pattern.CASE_INSENSITIVE
+                    | Pattern.MULTILINE);
+
+    /* Pattern used by postgis that need to be escaped */
+    protected static final Pattern COLONS = Pattern.compile("::");
+
+    protected static final String COLON_REPLACEMENT = Matcher
+            .quoteReplacement("\\:\\:");
 
     protected SessionFactory sessionFactory;
 
@@ -685,7 +697,18 @@ public class CoreDao {
      * @return The list of objects returned by the query
      */
     public QueryResult executeHQLQuery(final String hqlQuery) {
+        return executeHQLQuery(hqlQuery, null);
+    }
 
+    /**
+     * Executes an HQL query
+     * 
+     * @param hqlQuery
+     *            The HQL query string
+     * @return The list of objects returned by the query
+     */
+    public QueryResult executeHQLQuery(final String hqlQuery,
+            final Map<String, Object> paramMap) {
         QueryResult result = txTemplate
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
@@ -695,6 +718,8 @@ public class CoreDao {
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         hibQuery.setCacheable(true);
+                        addParamsToQuery(hibQuery, paramMap);
+
                         List<?> queryResult = hibQuery.list();
 
                         QueryResultRow[] rows = new QueryResultRow[queryResult
@@ -738,7 +763,19 @@ public class CoreDao {
      *            The HQL statement string
      * @return The results of the statement
      */
-    public int executeHQLStatement(final String hqlStmt) {
+    public int executeHQLStatement(String hqlStmt) {
+        return executeHQLStatement(hqlStmt, null);
+    }
+
+    /**
+     * Executes an HQL statement
+     * 
+     * @param hqlStmt
+     *            The HQL statement string
+     * @return The results of the statement
+     */
+    public int executeHQLStatement(final String hqlStmt,
+            final Map<String, Object> paramMap) {
 
         int queryResult = txTemplate
                 .execute(new TransactionCallback<Integer>() {
@@ -746,8 +783,7 @@ public class CoreDao {
                     public Integer doInTransaction(TransactionStatus status) {
                         Query hibQuery = getCurrentSession().createQuery(
                                 hqlStmt);
-                        // hibQuery.setCacheMode(CacheMode.NORMAL);
-                        // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
+                        addParamsToQuery(hibQuery, paramMap);
                         return hibQuery.executeUpdate();
                     }
                 });
@@ -756,7 +792,9 @@ public class CoreDao {
     }
 
     /**
-     * Queries for a resultset. The query should be a select statement<br>
+     * Executes a single SQL query. NOTE: Do not use String building to put
+     * values in to a query. Use the parameterized method to prevent SQL
+     * Injection.
      * 
      * @param sql
      *            An SQL query to execute
@@ -764,18 +802,132 @@ public class CoreDao {
      *         [] ]
      */
     public Object[] executeSQLQuery(final String sql) {
+        return executeSQLQuery(sql, null);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql, final String param,
+            final Object val) {
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeSQLQuery(sql, paramMap);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql,
+            final Map<String, Object> paramMap) {
 
         long start = System.currentTimeMillis();
         List<?> queryResult = txTemplate
                 .execute(new TransactionCallback<List<?>>() {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
-                        return getCurrentSession().createSQLQuery(sql).list();
+                        String replaced = COLONS.matcher(sql).replaceAll(
+                                COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession().createSQLQuery(
+                                replaced);
+                        addParamsToQuery(query, paramMap);
+                        return query.list();
                     }
                 });
         logger.debug("executeSQLQuery took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return queryResult.toArray();
+    }
+
+    /**
+     * Executes a single SQL query. NOTE: Do not use String building to put
+     * values in to a query. Use the parameterized method to prevent SQL
+     * Injection.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql) {
+        return executeMappedSQLQuery(sql, null);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql,
+            final String param, final Object val) {
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeMappedSQLQuery(sql, paramMap);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     * 
+     * @param sql
+     *            An SQL query to execute
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public QueryResult executeMappedSQLQuery(final String sql,
+            final Map<String, Object> paramMap) {
+        Object[] queryResult = executeSQLQuery(sql, paramMap);
+        QueryResultRow[] rows = new QueryResultRow[queryResult.length];
+        if (queryResult.length > 0) {
+            if (queryResult[0] instanceof Object[]) {
+                for (int i = 0; i < queryResult.length; i++) {
+                    QueryResultRow row = new QueryResultRow(
+                            (Object[]) queryResult[i]);
+                    rows[i] = row;
+                }
+
+            } else {
+                for (int i = 0; i < queryResult.length; i++) {
+                    QueryResultRow row = new QueryResultRow(
+                            new Object[] { queryResult[i] });
+                    rows[i] = row;
+                }
+            }
+        }
+
+        QueryResult result = new QueryResult();
+        result.setRows(rows);
+        Matcher m = MAPPED_SQL_PATTERN.matcher(sql);
+        if (m.matches()) {
+            String group = m.group(1);
+            int colIndex = 0;
+            String[] columns = group.split(",");
+            for (String col : columns) {
+                col = col.toLowerCase();
+                int asIndex = col.indexOf(" as ");
+                if (asIndex > 0) {
+                    col = col.substring(asIndex + 4);
+                }
+
+                result.addColumnName(col.trim(), colIndex++);
+            }
+        } else {
+            logger.error("Unable to map query columns for query [" + sql + "]");
+        }
+
+        return result;
     }
 
     public List<?> executeCriteriaQuery(final List<Criterion> criterion) {
@@ -806,27 +958,91 @@ public class CoreDao {
     }
 
     /**
-     * Executes a an arbitrary sql statement. The sql should not be a select
+     * Executes a single SQL statement. The SQL should not be a select
+     * statement. NOTE: Do not use String building to put values in to a
+     * statement. Use the parameterized method to prevent SQL Injection.
+     * 
+     * @param sql
+     *            An SQL statement to execute
+     * @return Number of rows affected.
+     */
+    public int executeSQLUpdate(final String sql) {
+        return executeSQLUpdate(sql, null);
+    }
+
+    /**
+     * Executes a single SQL statement. The SQL should not be a select
      * statement.
      * 
      * @param sql
      *            An SQL statement to execute
-     * @return How many items were updated
+     * @param param
+     *            Named parameter
+     * @param val
+     *            Value of named parameter
+     * @return Number of rows affected.
      */
-    public int executeSQLUpdate(final String sql) {
+    public int executeSQLUpdate(final String sql, final String param,
+            final Object val) {
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeSQLUpdate(sql, paramMap);
+    }
 
+    /**
+     * Executes a single SQL statement. The SQL should not be a select
+     * statement.
+     * 
+     * @param sql
+     *            An SQL statement to execute
+     * @param paramMap
+     *            Map of named parameter to its value
+     * @return Number of rows affected.
+     */
+    public int executeSQLUpdate(final String sql,
+            final Map<String, Object> paramMap) {
         long start = System.currentTimeMillis();
         int updateResult = txTemplate
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        return getCurrentSession().createSQLQuery(sql)
-                                .executeUpdate();
+                        String replaced = COLONS.matcher(sql).replaceAll(
+                                COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession().createSQLQuery(
+                                replaced);
+                        addParamsToQuery(query, paramMap);
+                        return query.executeUpdate();
                     }
                 });
         logger.debug("executeSQLUpdate took: "
                 + (System.currentTimeMillis() - start) + " ms");
         return updateResult;
+    }
+
+    /**
+     * Adds the specified parameter to the query. Checks for Collection an Array
+     * types for use with in lists.
+     * 
+     * @param query
+     * @param paramName
+     * @param paramValue
+     */
+    protected static void addParamsToQuery(Query query,
+            Map<String, Object> paramMap) {
+        if ((paramMap != null) && !paramMap.isEmpty()) {
+            for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
+                String paramName = entry.getKey();
+                Object paramValue = entry.getValue();
+                if (paramValue instanceof Collection) {
+                    query.setParameterList(paramName,
+                            (Collection<?>) paramValue);
+                } else if (paramValue instanceof Object[]) {
+                    query.setParameterList(paramName, (Object[]) paramValue);
+                } else {
+                    query.setParameter(paramName, paramValue);
+                }
+            }
+        }
     }
 
     /**
@@ -840,6 +1056,7 @@ public class CoreDao {
      * @throws DataAccessLayerException
      *             If the statement fails
      */
+    @Deprecated
     public Object executeNativeSql(String sql, boolean transactional)
             throws DataAccessLayerException {
         Session session = null;
@@ -914,6 +1131,7 @@ public class CoreDao {
         return results;
     }
 
+    @Deprecated
     public Object executeNativeSql(String sql) throws DataAccessLayerException {
         return executeNativeSql(sql, true);
     }
@@ -948,121 +1166,6 @@ public class CoreDao {
         }
         results.setRows(rows.toArray(new QueryResultRow[] {}));
         return results;
-    }
-
-    /**
-     * Runs an SQL script
-     * 
-     * @param sqlScript
-     *            The SQL script text
-     * @throws DataAccessLayerException
-     *             If the script fails to execute
-     */
-    public void runScript(String sqlScript) throws DataAccessLayerException {
-        Session session = null;
-        Transaction trans = null;
-        Connection conn = null;
-
-        Statement stmt = null;
-        try {
-            session = getSession(true);
-            trans = session.beginTransaction();
-            conn = SessionFactoryUtils.getDataSource(getSessionFactory())
-                    .getConnection();
-            stmt = conn.createStatement();
-        } catch (SQLException e) {
-            throw new DataAccessLayerException(
-                    "Unable to create JDBC statement", e);
-        }
-        boolean success = true;
-        String[] scriptContents = sqlScript.split(";");
-        for (String line : scriptContents) {
-            if (!line.isEmpty()) {
-                try {
-                    stmt.addBatch(line + ";");
-
-                } catch (SQLException e1) {
-                    logger.warn("Script execution failed.  Rolling back transaction");
-                    trans.rollback();
-                    try {
-                        if (!conn.isClosed()) {
-                            conn.close();
-                        }
-                    } catch (SQLException e2) {
-                        logger.error("Cannot close database connection!!", e2);
-                    }
-                    if (session.isOpen()) {
-                        session.close();
-                    }
-                    throw new DataAccessLayerException(
-                            "Cannot execute SQL statement: " + line, e1);
-                }
-            }
-        }
-        try {
-            stmt.executeBatch();
-        } catch (SQLException e1) {
-            success = false;
-            trans.rollback();
-            logger.error("Error executing script.", e1);
-        }
-
-        try {
-            stmt.close();
-        } catch (SQLException e1) {
-            success = false;
-            trans.rollback();
-            logger.error("Unable to close JDBC statement!", e1);
-        }
-
-        if (success) {
-            trans.commit();
-        }
-        try {
-            if (!conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            logger.error("Cannot close database connection!!", e);
-        }
-        if (session.isOpen()) {
-            session.close();
-        }
-    }
-
-    /**
-     * Executes an SQL script contained in a StringBuffer object
-     * 
-     * @param sqlScript
-     *            The SQL script
-     * @throws DataAccessLayerException
-     *             If script execution fails
-     */
-    public void runScript(StringBuffer sqlScript)
-            throws DataAccessLayerException {
-        runScript(sqlScript.toString());
-    }
-
-    /**
-     * Executes an SQL script defined in a file
-     * 
-     * @param script
-     *            The file containing the SQL statements
-     * @throws DataAccessLayerException
-     *             If reading the file fails
-     */
-    public void runScript(File script) throws DataAccessLayerException {
-        byte[] bytes = null;
-        try {
-            bytes = FileUtil.file2bytes(script);
-        } catch (FileNotFoundException e) {
-            throw new DataAccessLayerException(
-                    "Unable to open input stream to sql script: " + script);
-        } catch (IOException e) {
-            throw new DataAccessLayerException(
-                    "Unable to read script contents for script: " + script);
-        }
-        runScript(new StringBuffer().append(new String(bytes)));
     }
 
     /**

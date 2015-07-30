@@ -70,16 +70,17 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  * 
  *    SOFTWARE HISTORY
  *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Aug 15, 2007             chammack    Initial Creation.
- *    Nov 30, 2007 461         bphillip    Using VizTime now for time matching
- *    Oct 22, 2009 3348        bsteffen    added ability to limit number of
- *                                         frames
- *    Jul 03, 2013 2154        bsteffen    Ensure all resource groups get
- *                                         removed from the time matcher.
- *    Apr 09, 2014 2997        randerso    Stopped printing stack trace for 
- *                                         otherwise ignored exception
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Aug 15, 2007           chammack    Initial Creation.
+ * Nov 30, 2007  461      bphillip    Using VizTime now for time matching
+ * Oct 22, 2009  3348     bsteffen    added ability to limit number of frames
+ * Jul 03, 2013  2154     bsteffen    Ensure all resource groups get removed
+ *                                    from the time matcher.
+ * Apr 09, 2014  2997     randerso    Stopped printing stack trace for 
+ *                                    otherwise ignored exception
+ * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
+ * 
  * </pre>
  * 
  * @author chammack
@@ -604,6 +605,10 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
                 } else {
                     timeManager.frames = null;
                 }
+                if (!info.setIndex) {
+                    setFrameInternal(frameCoordinator.determineFrameIndex(
+                            oldTimes, oldIdx, timeManager.frames));
+                }
             }
             if (info.setIndex) {
                 setFrameInternal(info.frameIndex);
@@ -624,6 +629,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         if (frameChanged) {
             notifyFrameChanged(oldTime, currTime);
         }
+
     }
 
     @Override
@@ -688,6 +694,11 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
     public IFrameCoordinator getFrameCoordinator() {
         return frameCoordinator;
     }
+
+    public void setFrameCoordinator(IFrameCoordinator frameCoordinator) {
+        this.frameCoordinator = frameCoordinator;
+    }
+
 
     private void init() {
         try {

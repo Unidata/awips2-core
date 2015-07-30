@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,11 +22,14 @@ package com.raytheon.uf.edex.ingest.notification;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import javax.xml.bind.JAXBException;
 
@@ -61,11 +64,11 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * to reduce dependencies as we no longer need to call a route directly. All
  * registration must occur before messages are being picked up. Otherwise
  * concurrency problems may occur.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 13, 2013            mnash       Initial creation.
@@ -73,13 +76,16 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  *                                     and support for pdo vs datauri.
  * Mar 19, 2014 2726       rjpeter     Added graceful shutdown support.
  * Jul 21, 2014 3373       bclement    JAXB manager API changes
+ * May 22, 2015 4008       nabowle     Add periodic check for updates and reload.
  * </pre>
- * 
+ *
  * @author mnash
  * @version 1.0
  */
 
 public class PluginNotifier implements IContextStateProcessor {
+    private static final String CONFIG_DIR = "notification";
+
     private static final IUFStatusHandler theHandler = UFStatus
             .getHandler(PluginNotifier.class);
 
@@ -91,87 +97,110 @@ public class PluginNotifier implements IContextStateProcessor {
     /**
      * Decision tree for plugin notification.
      */
-    private final DecisionTree<INotificationRouter> tree = new DecisionTree<INotificationRouter>();
+    private DecisionTree<INotificationRouter> tree = new DecisionTree<INotificationRouter>();
 
-    private final List<INotificationRouter> receiveAllRoutes = new LinkedList<INotificationRouter>();
+    private List<INotificationRouter> receiveAllRoutes = new LinkedList<INotificationRouter>();
 
-    private final List<INotificationRouter> filteredRoutes = new LinkedList<INotificationRouter>();
+    private List<INotificationRouter> filteredRoutes = new LinkedList<INotificationRouter>();
 
     /**
      * Set of loaded names. Used for duplicate detection.
      */
-    private final Set<String> loadedNames = new HashSet<String>();
+    private Set<String> loadedNames = new HashSet<String>();
+
+    /**
+     * ReadWriteLock to allow concurrent 'reads' in notify() and
+     * sendQueuedNotifications(), but block these methods when 'writing' while
+     * loading configurations. This class is predominantly reads.
+     */
+    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+
+    private Map<String, Long> modifiedTimes = new HashMap<String, Long>();
 
     public PluginNotifier() throws JAXBException {
         loadConfigurations();
     }
 
-    private synchronized void loadConfigurations() throws JAXBException {
-        JAXBManager mgr = new JAXBManager(true, PluginNotifierConfigList.class,
-                PluginNotifierConfig.class);
+    private void loadConfigurations() throws JAXBException {
+        lock.writeLock().lock();
+        try {
+            JAXBManager mgr = new JAXBManager(true,
+                    PluginNotifierConfigList.class, PluginNotifierConfig.class);
 
-        IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationFile[] files = pathMgr.listStaticFiles("notification",
-                new String[] { ".xml" }, false, true);
-        for (LocalizationFile lf : files) {
-            try {
-                File f = lf.getFile(true);
-                if (f.length() > 0) {
-                    // empty files may be used to override base files to remove
-                    // functionality
-                    InputStream is = null;
+            IPathManager pathMgr = PathManagerFactory.getPathManager();
+            LocalizationFile[] files = pathMgr.listStaticFiles(CONFIG_DIR,
+                    new String[] { ".xml" }, false, true);
+            for (LocalizationFile lf : files) {
+                try {
+                    File f = lf.getFile(true);
+                    modifiedTimes.put(f.getName(), f.lastModified());
+                    if (f.length() > 0) {
+                        /*
+                         * empty files may be used to override base files to
+                         * remove functionality
+                         */
+                        InputStream is = null;
 
-                    try {
-                        is = lf.openInputStream();
+                        try {
+                            is = lf.openInputStream();
 
-                        PluginNotifierConfigList confList = (PluginNotifierConfigList) mgr
-                                .unmarshalFromInputStream(is);
-                        List<PluginNotifierConfig> configs = confList
-                                .getNotificationConfigs();
-                        if ((configs != null) && !configs.isEmpty()) {
-                            for (PluginNotifierConfig conf : configs) {
-                                register(conf, false);
+                            PluginNotifierConfigList confList = (PluginNotifierConfigList) mgr
+                                    .unmarshalFromInputStream(is);
+                            List<PluginNotifierConfig> configs = confList
+                                    .getNotificationConfigs();
+                            if ((configs != null) && !configs.isEmpty()) {
+                                for (PluginNotifierConfig conf : configs) {
+                                    register(conf, false);
+                                }
                             }
-                        }
-                    } catch (SerializationException e) {
-                        theHandler.handle(Priority.PROBLEM,
-                                "Unable to deserialize " + f.getPath(), e);
-                    } catch (InvalidNotificationConfigException e) {
-                        theHandler.handle(
-                                Priority.PROBLEM,
-                                "Unable to load plugin configuration "
-                                        + f.getPath(), e);
-                    } finally {
-                        if (is != null) {
-                            try {
-                                is.close();
-                            } catch (IOException e) {
-                                // ignore
+                        } catch (SerializationException e) {
+                            theHandler.handle(Priority.PROBLEM,
+                                    "Unable to deserialize " + f.getPath(), e);
+                        } catch (InvalidNotificationConfigException e) {
+                            theHandler.handle(
+                                    Priority.PROBLEM,
+                                    "Unable to load plugin configuration "
+                                            + f.getPath(), e);
+                        } finally {
+                            if (is != null) {
+                                try {
+                                    is.close();
+                                } catch (IOException e) {
+                                    // ignore
+                                }
                             }
                         }
                     }
+                } catch (LocalizationException e) {
+                    theHandler.handle(Priority.PROBLEM,
+                            "Error occurred accessing file: " + lf, e);
                 }
-            } catch (LocalizationException e) {
-                theHandler.handle(Priority.PROBLEM,
-                        "Error occurred accessing file: " + lf, e);
             }
+        } finally {
+            lock.writeLock().unlock();
         }
     }
 
-    /**
-     * Register the given PluginNotifierConfig.
-     * 
-     * @param config
-     * @return
+    /*
+     * As part of 4008, dynamic plugin registration is commented out due to the
+     * difficulties in synchronizing changes on one vm/machine to multiple
+     * vms/machines.
      */
-    public synchronized void register(PluginNotifierConfig config)
-            throws InvalidNotificationConfigException {
-        register(config, true);
-    }
+
+    /*
+     * Register the given PluginNotifierConfig.
+     *
+     * @param config
+     *
+     * @return
+     *
+     * public void register(PluginNotifierConfig config) throws
+     * InvalidNotificationConfigException { register(config, true); }
+     */
 
     /**
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
      * @param rebuildTree
      *            Whether or not to rebuild the internal tree. If many things
@@ -179,29 +208,29 @@ public class PluginNotifier implements IContextStateProcessor {
      *            tree once at the end.
      * @return
      */
-    public synchronized void register(PluginNotifierConfig config,
+    private void register(PluginNotifierConfig config,
             boolean rebuildTree) throws InvalidNotificationConfigException {
         register(config, null, rebuildTree);
     }
 
-    /**
+    /*
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
-     * @param router
-     *            The INotificationRouter to use for this config. If null, will
-     *            use the default based on the config format.
+     *
+     * @param router The INotificationRouter to use for this config. If null,
+     * will use the default based on the config format.
+     *
      * @return
+     *
+     * public synchronized void register(PluginNotifierConfig config,
+     * INotificationRouter router) throws InvalidNotificationConfigException {
+     * register(config, router, true); }
      */
-    public synchronized void register(PluginNotifierConfig config,
-            INotificationRouter router)
-            throws InvalidNotificationConfigException {
-        register(config, router, true);
-    }
 
     /**
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
      * @param router
      *            The INotificationRouter to use for this config. If null, will
@@ -212,52 +241,58 @@ public class PluginNotifier implements IContextStateProcessor {
      *            tree once at the end.
      * @return
      */
-    public synchronized void register(PluginNotifierConfig config,
+    private void register(PluginNotifierConfig config,
             INotificationRouter router, boolean rebuildTree)
             throws InvalidNotificationConfigException {
-        validate(config);
+        this.lock.writeLock().lock();
+        try {
+            validate(config);
 
-        if (router == null) {
-            switch (config.getFormat()) {
-            case DATAURI:
-                router = new DataUriRouter(config);
-                break;
-            case PDO:
-                router = new PdoRouter(config);
-                break;
-            default:
-                throw new InvalidNotificationConfigException(
-                        "No INotificationRouter registered for format: "
-                                + config.getFormat());
+            if (router == null) {
+                switch (config.getFormat()) {
+                case DATAURI:
+                    router = new DataUriRouter(config);
+                    break;
+                case PDO:
+                    router = new PdoRouter(config);
+                    break;
+                default:
+                    throw new InvalidNotificationConfigException(
+                            "No INotificationRouter registered for format: "
+                                    + config.getFormat());
+                }
             }
+
+            Map<String, RequestConstraint>[] metadataMaps = config
+                    .getMetadataMap();
+            boolean receiveAll = (metadataMaps == null)
+                    || (metadataMaps.length == 0)
+                    || ((metadataMaps.length == 1) && ((metadataMaps[0] == null) || metadataMaps[0]
+                            .isEmpty()));
+
+            if (receiveAll) {
+                // null or empty constraint map implies receive all data
+                receiveAllRoutes.add(router);
+            } else {
+                filteredRoutes.add(router);
+                for (Map<String, RequestConstraint> metadataMap : metadataMaps) {
+                    tree.insertCriteria(metadataMap, router);
+                }
+
+                if (rebuildTree) {
+                    tree.rebuildTree();
+                }
+            }
+
+            loadedNames.add(config.getEndpointName());
+        } finally {
+            this.lock.writeLock().unlock();
         }
-
-        Map<String, RequestConstraint>[] metadataMaps = config.getMetadataMap();
-        boolean receiveAll = (metadataMaps == null)
-                || (metadataMaps.length == 0)
-                || ((metadataMaps.length == 1) && ((metadataMaps[0] == null) || metadataMaps[0]
-                        .isEmpty()));
-
-        if (receiveAll) {
-            // null or empty constraint map implies receive all data
-            receiveAllRoutes.add(router);
-        } else {
-            filteredRoutes.add(router);
-            for (Map<String, RequestConstraint> metadataMap : metadataMaps) {
-                tree.insertCriteria(metadataMap, router);
-            }
-
-            if (rebuildTree) {
-                tree.rebuildTree();
-            }
-        }
-
-        loadedNames.add(config.getEndpointName());
     }
 
     /**
      * Validate the passed config
-     * 
+     *
      * @param config
      * @return
      */
@@ -325,98 +360,112 @@ public class PluginNotifier implements IContextStateProcessor {
      * Rebuild the tree based on all register'd configurations.
      */
     public void rebuildTree() {
-        tree.rebuildTree();
+        lock.writeLock().lock();
+        try {
+            tree.rebuildTree();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
      * Checks the pdo's against the registered routes. Data will then be
      * transformed and queued or sent immediately depending on configuration.
-     * 
+     *
      * @param pdos
      * @return
      */
     public void notify(PluginDataObject... pdos) {
-        if ((pdos != null) && (pdos.length > 0)) {
-            ITimer timer = TimeUtil.getTimer();
-            timer.start();
-            if (!receiveAllRoutes.isEmpty()) {
-                for (PluginDataObject pdo : pdos) {
-                    for (INotificationRouter router : receiveAllRoutes) {
-                        router.process(pdo);
-                    }
-                }
-
-                for (INotificationRouter router : receiveAllRoutes) {
-                    try {
-                        router.sendImmediateData();
-                    } catch (EdexException e) {
-                        theHandler.handle(
-                                Priority.PROBLEM,
-                                "Unable to send notification data to "
-                                        + router.getRoute(), e);
-                    }
-                }
-            }
-
-            if (!filteredRoutes.isEmpty()) {
-                Set<INotificationRouter> routesWithData = new HashSet<INotificationRouter>();
-                for (PluginDataObject pdo : pdos) {
-                    try {
-                        List<INotificationRouter> routers = tree
-                                .searchTree(DataURIUtil.createDataURIMap(pdo));
-                        for (INotificationRouter router : routers) {
+        lock.readLock().lock();
+        try {
+            if ((pdos != null) && (pdos.length > 0)) {
+                ITimer timer = TimeUtil.getTimer();
+                timer.start();
+                if (!receiveAllRoutes.isEmpty()) {
+                    for (PluginDataObject pdo : pdos) {
+                        for (INotificationRouter router : receiveAllRoutes) {
                             router.process(pdo);
-                            routesWithData.add(router);
                         }
-                    } catch (PluginException e) {
-                        theHandler.handle(Priority.PROBLEM,
-                                e.getLocalizedMessage(), e);
+                    }
+
+                    for (INotificationRouter router : receiveAllRoutes) {
+                        try {
+                            router.sendImmediateData();
+                        } catch (EdexException e) {
+                            theHandler.handle(Priority.PROBLEM,
+                                    "Unable to send notification data to "
+                                            + router.getRoute(), e);
+                        }
                     }
                 }
 
-                for (INotificationRouter router : routesWithData) {
-                    try {
-                        router.sendImmediateData();
-                    } catch (EdexException e) {
-                        theHandler.handle(
-                                Priority.PROBLEM,
-                                "Unable to send notification data to "
-                                        + router.getRoute(), e);
+                if (!filteredRoutes.isEmpty()) {
+                    Set<INotificationRouter> routesWithData = new HashSet<INotificationRouter>();
+                    for (PluginDataObject pdo : pdos) {
+                        try {
+                            List<INotificationRouter> routers = tree
+                                    .searchTree(DataURIUtil
+                                            .createDataURIMap(pdo));
+                            for (INotificationRouter router : routers) {
+                                router.process(pdo);
+                                routesWithData.add(router);
+                            }
+                        } catch (PluginException e) {
+                            theHandler.handle(Priority.PROBLEM,
+                                    e.getLocalizedMessage(), e);
+                        }
+                    }
+
+                    for (INotificationRouter router : routesWithData) {
+                        try {
+                            router.sendImmediateData();
+                        } catch (EdexException e) {
+                            theHandler.handle(Priority.PROBLEM,
+                                    "Unable to send notification data to "
+                                            + router.getRoute(), e);
+                        }
                     }
                 }
+                timer.stop();
+                perfLog.logDuration("Processed " + pdos.length + " pdos",
+                        timer.getElapsedTime());
             }
-            timer.stop();
-            perfLog.logDuration("Processed " + pdos.length + " pdos",
-                    timer.getElapsedTime());
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
     /**
      * Send the queued notifications.
-     * 
+     *
      * @return
      */
     public void sendQueuedNotifications() {
-        for (INotificationRouter router : receiveAllRoutes) {
-            try {
-                router.sendQueuedData();
-            } catch (EdexException e) {
-                theHandler.handle(
-                        Priority.PROBLEM,
-                        "Unable to send notification data to "
-                                + router.getRoute(), e);
+        lock.readLock().lock();
+        try {
+            for (INotificationRouter router : receiveAllRoutes) {
+                try {
+                    router.sendQueuedData();
+                } catch (EdexException e) {
+                    theHandler.handle(
+                            Priority.PROBLEM,
+                            "Unable to send notification data to "
+                                    + router.getRoute(), e);
+                }
             }
-        }
 
-        for (INotificationRouter router : filteredRoutes) {
-            try {
-                router.sendQueuedData();
-            } catch (EdexException e) {
-                theHandler.handle(
-                        Priority.PROBLEM,
-                        "Unable to send notification data to "
-                                + router.getRoute(), e);
+            for (INotificationRouter router : filteredRoutes) {
+                try {
+                    router.sendQueuedData();
+                } catch (EdexException e) {
+                    theHandler.handle(
+                            Priority.PROBLEM,
+                            "Unable to send notification data to "
+                                    + router.getRoute(), e);
+                }
             }
+        } finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -438,5 +487,88 @@ public class PluginNotifier implements IContextStateProcessor {
     @Override
     public void postStop() {
         sendQueuedNotifications();
+    }
+
+    /**
+     * Attempts to reload the configurations if the configurations have changed.
+     * If there is an error, the previous configurations will continue to be
+     * used.
+     */
+    public void reloadConfigurations() {
+        if (!filesChanged()) {
+            return;
+        }
+
+        lock.writeLock().lock();
+        DecisionTree<INotificationRouter> treeBak = tree;
+        List<INotificationRouter> receiveAllRoutesBak = receiveAllRoutes;
+        List<INotificationRouter> filteredRoutesBak = filteredRoutes;
+        Set<String> loadedNamesBak = loadedNames;
+        Map<String, Long> modifiedTimesBak = modifiedTimes;
+        try {
+            tree = new DecisionTree<INotificationRouter>();
+            receiveAllRoutes = new LinkedList<INotificationRouter>();
+            filteredRoutes = new LinkedList<INotificationRouter>();
+            loadedNames = new HashSet<String>();
+            modifiedTimes = new HashMap<>();
+
+            loadConfigurations();
+
+            rebuildTree();
+
+            theHandler.handle(Priority.INFO, "Configurations were reloaded.");
+        } catch (Exception e) {
+            theHandler
+                    .handle(Priority.PROBLEM,
+                            "Could not reload the localizations files due to an error. Using previously loaded configurations.",
+                            e);
+            // fall back to previous configuration
+            tree = treeBak;
+            receiveAllRoutes = receiveAllRoutesBak;
+            filteredRoutes = filteredRoutesBak;
+            loadedNames = loadedNamesBak;
+            modifiedTimes = modifiedTimesBak;
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Determines if files have changed since the last check.
+     * 
+     * @return True if a file change is detected. False otherwise.
+     */
+    private boolean filesChanged() {
+        List<File> files = getNotificationFiles();
+
+        if (files.size() != this.modifiedTimes.size()) {
+            return true;
+        }
+
+        Long lastTime;
+        for (File file : files) {
+            lastTime = this.modifiedTimes.get(file.getName());
+            if (lastTime == null || !lastTime.equals(file.lastModified())) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Lists the files in the notification directory
+     *
+     * @return An array of the files in the notification directory
+     */
+    private List<File> getNotificationFiles() {
+        IPathManager pathMgr = PathManagerFactory.getPathManager();
+        LocalizationFile[] locfiles = pathMgr.listStaticFiles(CONFIG_DIR,
+                new String[] { ".xml" }, false, true);
+
+        List<File> files = new ArrayList<>();
+        for (LocalizationFile lf : locfiles) {
+            files.add(lf.getFile());
+        }
+        return files;
     }
 }

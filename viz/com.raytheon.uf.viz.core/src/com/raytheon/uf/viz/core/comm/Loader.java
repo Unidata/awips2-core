@@ -54,11 +54,15 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  *    Aug 19, 2009 2586        rjpeter     Updated error handling.
  *    Jul 05, 2013 1869        bsteffen    Fix goes sounding updates.
  *    Sep  9, 2013 2277        mschenke    Got rid of LayerProperty references
+ *    May 21, 2015 4495        njensen     Deprecated
+ *    
  * </pre>
  * 
  * @author chammack
  * @version 1
+ * @deprecated use {@link ThriftClient} instead
  */
+@Deprecated
 public class Loader {
 
     public static final String SELECT_MODE = "select";
@@ -86,7 +90,9 @@ public class Loader {
      *            the time out in milliseconds
      * @return a list of responses returned by the scripts
      * @throws VizException
+     * @deprecated don't use uEngine, use ThriftClient
      */
+    @Deprecated
     public static List<Object> loadScripts(String[] scripts, int timeOut)
             throws VizException {
         List<Object> responseList = new ArrayList<Object>();
@@ -115,11 +121,13 @@ public class Loader {
     /**
      * Load a plugin data object from a data uri
      * 
-     * @param obj
-     *            the request map
+     * @param dataURI
+     *            the data URI
      * @return the fully filled out plugindataobject
      * @throws VizException
+     * @deprecated use DataURIUtil.createDataURIMap(String) instead
      */
+    @Deprecated
     public static PluginDataObject loadData(String dataURI) throws VizException {
         Map<String, RequestConstraint> vals = new HashMap<String, RequestConstraint>();
 
@@ -151,7 +159,9 @@ public class Loader {
      *            the time out in milliseconds
      * @return a list of objects
      * @throws VizException
+     * @deprecated just don't use
      */
+    @Deprecated
     public static List<Object> loadData(String script, int timeOut)
             throws VizException {
         Validate.notNull(script, "Script can not be null");

@@ -51,7 +51,7 @@ import com.raytheon.uf.viz.core.maps.scales.MapScales.PartId;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
-import com.raytheon.viz.ui.actions.LoadSerializedXml;
+import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 
 /**
  * Manager for {@link MapScales}. May be constructed from any file or the
@@ -69,6 +69,8 @@ import com.raytheon.viz.ui.actions.LoadSerializedXml;
  * Mar 24, 2014  2954     mpduff      Log when missing map scale files
  * Jul 15, 2014  2954     njensen     Added fallbacks when missing map scale files
  * Feb 24, 2015  3978     njensen     Use openInputStream() to read bundleXml
+ * Jun 05, 2015 4401      bkowal      Renamed LoadSerializedXml to
+ *                                    LoadPerspectiveHandler.
  * 
  * </pre>
  * 
@@ -396,7 +398,7 @@ public class MapScalesManager {
             }
         }
         procedure.setBundles(bundles.toArray(new Bundle[bundles.size()]));
-        LoadSerializedXml.loadProcedureToScreen(procedure, window);
+        LoadPerspectiveHandler.loadProcedureToScreen(procedure, window);
     }
 
     /**

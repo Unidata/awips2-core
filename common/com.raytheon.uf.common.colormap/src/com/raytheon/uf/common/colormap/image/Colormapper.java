@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -42,9 +43,9 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Colormapper class, written to mimic colormapRaster.glsl in java. Any changes
  * to files mapping.glsl or colormapRaster.glsl will probably need to be
  * reflected here
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -54,9 +55,10 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Apr 15, 2014 3016       randerso    Check in Max's fix for getColorByIndex
  * Apr 22, 2014 2996       dgilling    Rewrite colorMap() to output images with
  *                                     proper transparency for GFE data.
- * 
+ * Apr 27, 2015 4425       nabowle     Handle ColorMapDataType.DOUBLE.
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  * @version 1.0
  */
@@ -72,7 +74,7 @@ public class Colormapper {
     /**
      * This method will color map a Buffer to a RenderedImage given size and
      * parameters
-     * 
+     *
      * @param buf
      * @param datasetBounds
      * @param parameters
@@ -137,7 +139,7 @@ public class Colormapper {
 
     /**
      * Builds a color model from a color map
-     * 
+     *
      * @param aColorMap
      * @return
      */
@@ -165,7 +167,7 @@ public class Colormapper {
     /**
      * Returns the double representation of the data value for the Buffer at the
      * given index
-     * 
+     *
      * @param buffer
      * @param idx
      * @param dataType
@@ -192,6 +194,9 @@ public class Colormapper {
         case FLOAT: {
             return ((FloatBuffer) buffer).get(idx);
         }
+        case DOUBLE: {
+            return ((DoubleBuffer) buffer).get(idx);
+        }
         }
         return 0.0;
     }
@@ -210,7 +215,7 @@ public class Colormapper {
 
     /**
      * Given a colorMap value linearly determine the index into cmapMin/cmapMax
-     * 
+     *
      * @param cmapValue
      * @param cmapMin
      * @param cmapMax
@@ -224,7 +229,7 @@ public class Colormapper {
     /**
      * This function logarithmically finds the index for the cmapValue into
      * cmapMin/cmapMax.
-     * 
+     *
      * @param cmapValue
      * @param cmapMin
      * @param cmapMax
@@ -305,7 +310,7 @@ public class Colormapper {
     /**
      * This function calculates a new index to use based on the logFactor and
      * passed in index
-     * 
+     *
      * @param index
      * @param logFactor
      * @return
@@ -330,7 +335,7 @@ public class Colormapper {
     /**
      * Returns an index for the cmapValue based on the
      * {@link ColorMapParameters}
-     * 
+     *
      * @param cmapValue
      * @param colorMapping
      * @return
@@ -359,7 +364,7 @@ public class Colormapper {
     /**
      * Gets the {@link Color} from the color map in the parameters at the index
      * (capped 0-1) passed in
-     * 
+     *
      * @param index
      * @param colorMapParameters
      * @return
@@ -404,7 +409,7 @@ public class Colormapper {
     /**
      * Returns a {@link Color} for the cmapValue based on the
      * {@link ColorMapParameters}
-     * 
+     *
      * @param cmapValue
      * @param colorMapParameters
      * @return

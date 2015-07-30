@@ -33,6 +33,7 @@ import com.raytheon.uf.common.numeric.filter.DataFilter;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Mar 06, 2014  2791     bsteffen    Initial creation
+ * Jun 11, 2015  4557     bsteffen    Fix addFilters
  * 
  * </pre>
  * 
@@ -76,8 +77,7 @@ public class FilteredDataSource implements DataSource {
             DataFilter[] oldFilters = oldSource.getFilters();
             DataFilter[] newFilters = Arrays.copyOf(oldFilters, filters.length
                     + oldFilters.length);
-            System.arraycopy(oldFilters, 0, newFilters, filters.length,
-                    oldFilters.length);
+            System.arraycopy(filters, 0, newFilters, oldFilters.length, filters.length);
             return new FilteredDataSource(oldSource.getWrappedSource(),
                     newFilters);
         }else{

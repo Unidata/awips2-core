@@ -20,7 +20,9 @@
 package com.raytheon.uf.viz.productbrowser;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 
@@ -30,26 +32,33 @@ import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.ResourceType;
-import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
+import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
+import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
+import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants;
 
 /**
- * The most basic class of a product for the product browser, every product
- * browser plugin should extend this class or one that extends this
+ * @deprecated The design of this class makes excessive use of internal state
+ *             that make it inherently thread-unsafe and confusing to implement.
+ *             New development of data definitions should be done by
+ *             implementing {@link ProductBrowserDataDefinition} directly
+ *             instead of extending this class.
  * 
- * <pre>
+ *             <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 6, 2010            mnash     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Oct 06, 2010           mnash     Initial creation
+ * Jun 02, 2015  4153     bsteffen  Extract interface and deprecate.
  * 
  * </pre>
  * 
  * @author mnash
  * @version 1.0
  */
-
-public abstract class AbstractProductBrowserDataDefinition<T extends AbstractResourceData> {
+@Deprecated
+public abstract class AbstractProductBrowserDataDefinition<T extends AbstractResourceData> implements
+        PreferenceBasedDataDefinition {
 
     // display name of product for the tree
     public String displayName;
@@ -64,12 +73,14 @@ public abstract class AbstractProductBrowserDataDefinition<T extends AbstractRes
     // a default value of false
     protected boolean defaultEnabled = true;
 
-    // the preference to enable or disable the plugin
-    protected static final String ENABLE_PLUGIN = "Enable";
+    /** Use {@link ProductBrowserPreferenceConstants#ENABLE_PLUGIN} instead */
+    @Deprecated
+    protected static final String ENABLE_PLUGIN = ProductBrowserPreferenceConstants.ENABLE_PLUGIN;
 
-    // the preference to enable or disable formatting of data
-    protected static final String FORMAT_DATA = "Format Data";
-
+    /** Use {@link ProductBrowserPreferenceConstants#FORMAT_DATA} instead */
+    @Deprecated
+    protected static final String FORMAT_DATA = ProductBrowserPreferenceConstants.FORMAT_DATA;
+    
     protected List<ProductBrowserPreference> preferences = null;
 
     /**
@@ -98,8 +109,7 @@ public abstract class AbstractProductBrowserDataDefinition<T extends AbstractRes
      * @param parameters
      * @return
      */
-    public List<ProductBrowserLabel> formatData(String param,
-            String[] parameters) {
+    public List<ProductBrowserLabel> formatData(String param, String[] parameters) {
         List<ProductBrowserLabel> temp = new ArrayList<ProductBrowserLabel>();
         for (int i = 0; i < parameters.length; i++) {
             temp.add(new ProductBrowserLabel(parameters[i], null));
@@ -147,16 +157,11 @@ public abstract class AbstractProductBrowserDataDefinition<T extends AbstractRes
      */
     protected List<ProductBrowserPreference> configurePreferences() {
         List<ProductBrowserPreference> widgets = new ArrayList<ProductBrowserPreference>();
-        ProductBrowserPreference preference = new ProductBrowserPreference();
-        preference.setLabel(ENABLE_PLUGIN);
-        preference.setPreferenceType(PreferenceType.BOOLEAN);
-        preference
-                .setTooltip("Select this to enable the product in the Product Browser");
-        preference.setValue(true);
-        widgets.add(preference);
+        widgets.add(ProductBrowserPreferenceConstants.createEnabledPreference());
         return widgets;
     }
 
+    @Override
     public List<ProductBrowserPreference> getPreferences() {
         IPreferenceStore store = Activator.getDefault().getPreferenceStore();
         if (preferences == null) {
@@ -214,4 +219,50 @@ public abstract class AbstractProductBrowserDataDefinition<T extends AbstractRes
     protected boolean isEnabled() {
         return (Boolean) getPreference(ENABLE_PLUGIN).getValue();
     }
+
+    @Override
+    public boolean checkAvailability() {
+        return populateInitial() != null;
+    }
+
+    @Override
+    public Collection<DisplayType> getValidDisplayTypes(String[] selection) {
+        Map<ResourceType, List<DisplayType>> displayTypeMap = getDisplayTypes();
+        EnumSet<DisplayType> result = EnumSet.noneOf(DisplayType.class);
+        if(displayTypeMap != null){
+            for(List<DisplayType> displayTypes: displayTypeMap.values()){
+                result.addAll(displayTypes);
+            }
+        }
+        return result;
+    }
+
+    @Override
+    public void loadResource(String[] selection, DisplayType displayType) {
+        if (displayType != null) {
+            loadProperties.getCapabilities().getCapability(resourceData, DisplayTypeCapability.class)
+                    .setDisplayType(displayType);
+        }
+        constructResource(selection, (ResourceType) null);
+    }
+
+    @Override
+    public List<ProductBrowserLabel> getLabels(String[] selection) {
+        if (selection.length == 0) {
+            return Collections.singletonList(new ProductBrowserLabel(displayName, displayName));
+        }
+        return populateData(selection);
+    }
+
+    @Override
+    public String getProductInfo(String[] selection) {
+        StringBuilder stringBuilder = new StringBuilder();
+        stringBuilder.append(displayName);
+        for (int i = 1; i < selection.length; i++) {
+            stringBuilder.append("\n");
+            stringBuilder.append(selection[i]);
+        }
+        return stringBuilder.toString();
+    }
+
 }

@@ -15,3 +15,4 @@ Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.time,
  javax.measure
 Export-Package: com.raytheon.uf.viz.topo
+Bundle-ClassPath: com.raytheon.uf.viz.topo.jar

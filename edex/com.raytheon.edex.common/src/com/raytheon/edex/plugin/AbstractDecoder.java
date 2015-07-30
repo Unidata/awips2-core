@@ -25,39 +25,26 @@ import org.apache.commons.logging.LogFactory;
 
 /**
  * Base class for plugin decoders.
- * <p>
  * The AbstractDecoder class provides logging support and class variables used
- * in child classes. The {@link AbstractDecoder#getCalendar(String)} method
- * provides a consistent Calendar conversion from a string representation of a
- * date.
- * <p>
- * Use of inherited logging support and the getCalendar method is demonstrated
- * in the following example the decode method of FileNameDecoder
+ * in child classes.
+ * 
+ * @deprecated Does not provide helpful functionality.
  * 
  * <pre>
- * <code>
- * if (product == null) {
- *     logger.error(&quot;Unable to locate a value for GOES product = &quot;
- *             + fileName.substring(4, 6) + &quot; and satellite = &quot; + satellite);
- *     throw new DecoderException(&quot;Unable to locate a value for GOES product = &quot;
- *             + fileName.substring(4, 6));
- * }
- * // parse the date
- * calendar = getCalendar(fileName.substring(7, 13));
- * </code>
- * &lt;pre&gt;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 06/14/06                garmendariz Initial check-in
  * 11/02/06     #39        brockwoo    Added wmo header field
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
+ * Jun 25, 2015 4495       njensen     Deprecated
  * 
- * &lt;/pre&gt;
- * &#064;author garmendariz
- * &#064;version 1.0
+ * 
+ * </pre>
+ * @author garmendariz
  * 
  */
+@Deprecated
 public abstract class AbstractDecoder {
 
     /** The logger */

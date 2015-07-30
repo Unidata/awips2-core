@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.core.data;
 import java.awt.Rectangle;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
+import java.nio.DoubleBuffer;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
@@ -41,6 +42,7 @@ import com.raytheon.uf.common.util.BufferUtil;
  * Jun 20, 2013     2122   mschenke    Made work with slicing from data with
  *                                     bounds not starting at 0,0
  * Apr 08, 2014     2968   njensen     Use BufferUtil for duplicate()
+ * Apr 27, 2015     4425   nabowle     Handle DoubleBuffers.
  * 
  * </pre>
  * 
@@ -53,7 +55,7 @@ public class BufferSlicer {
     /**
      * Slices a Buffer represented by a 2D bounds totalBounds into a Buffer
      * represented by bounds dataBounds.
-     * 
+     *
      * @param data
      * @param dataBounds
      * @param totalWidth
@@ -83,6 +85,8 @@ public class BufferSlicer {
             return slice((IntBuffer) data, dataBounds, totalBounds, dataSize);
         } else if (data instanceof FloatBuffer) {
             return slice((FloatBuffer) data, dataBounds, totalBounds, dataSize);
+        } else if (data instanceof DoubleBuffer) {
+            return slice((DoubleBuffer) data, dataBounds, totalBounds, dataSize);
         } else {
             throw new RuntimeException(
                     "Unhandled buffer passed in: " + data != null ? data
@@ -184,6 +188,31 @@ public class BufferSlicer {
                     * totalBounds.width);
             data.get(floats);
             newData.put(floats);
+        }
+        newData.rewind();
+        return newData;
+    }
+
+    private static DoubleBuffer slice(DoubleBuffer data, Rectangle dataBounds,
+            Rectangle totalBounds, int dataSize) {
+        DoubleBuffer newData = null;
+        // Get our new Buffer object
+        if (data.isDirect()) {
+            newData = ByteBuffer.allocateDirect(dataSize * 8)
+                    .order(data.order()).asDoubleBuffer();
+        } else {
+            newData = DoubleBuffer.allocate(dataSize);
+        }
+
+        int xOffset = (dataBounds.x - totalBounds.x);
+        int yOffset = (dataBounds.y - totalBounds.y);
+        newData.position(0);
+        double[] doubles = new double[dataBounds.width];
+        for (int i = 0; i < dataBounds.height; ++i) {
+            data.position((yOffset * totalBounds.width + xOffset) + i
+                    * totalBounds.width);
+            data.get(doubles);
+            newData.put(doubles);
         }
         newData.rewind();
         return newData;

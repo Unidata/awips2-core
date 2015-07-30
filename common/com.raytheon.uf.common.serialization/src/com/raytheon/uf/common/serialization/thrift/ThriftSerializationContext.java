@@ -17,6 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+
 package com.raytheon.uf.common.serialization.thrift;
 
 import java.lang.reflect.Array;
@@ -25,6 +26,8 @@ import java.math.BigDecimal;
 import java.math.BigInteger;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Calendar;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -32,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
+import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
 import net.sf.cglib.beans.BeanMap;
@@ -45,20 +49,37 @@ import org.apache.thrift.protocol.TMessage;
 import org.apache.thrift.protocol.TSet;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.serialization.BaseSerializationContext;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager;
-import com.raytheon.uf.common.serialization.DynamicSerializationManager.EnclosureType;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationMetadata;
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationCache;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.FieldDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.ListDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.MapDeserializationException;
+import com.raytheon.uf.common.serialization.thrift.exception.SetDeserializationException;
 
 /**
- * Provides a serialization capability based on the Thrift Binary Serialization
- * Format
+ * Provides a serialization/deserialization capability built on top of the
+ * Thrift Binary Serialization Format.
  * 
+ * The serialization encoding is self-describing, using {code TType} bytes to
+ * signify the type and also encoding class and field names.
  * 
+ * The deserialization decoding uses reflection in an attempt to match up field
+ * types based on class name and field name. Where possible it also has
+ * tolerance for divergences between the reflectively inspected class and the
+ * self-described encoding. For example, if the deserializer receives a float
+ * but was expecting a double, it will transform the float into a double. If the
+ * deserializer receives an unknown field on a class, it will skip that field
+ * and toss out those bytes.
+ * 
+ * Note that the divergence tolerance does not yet account for changes when a
+ * {code DynamicSerializeTypeAdapter} is used or an enum value does not exist.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -78,6 +99,9 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *                                    sometimes created by python.
  * Jun 24, 2014  3271     njensen     Better safety checks and error msgs
  * Jul 25, 2014  3445     bclement    added castNumber()
+ * Jun 15, 2015  4561     njensen     Major cleanup, added read and ignore methods
+ * Jun 17, 2015  4564     njensen     Added date/time conversion in deserializeField()
+ * Jul 16, 2015  4561     njensen     Improved read and ignore of collection types
  * 
  * </pre>
  * 
@@ -90,13 +114,23 @@ import com.raytheon.uf.common.serialization.SerializationException;
 public class ThriftSerializationContext extends BaseSerializationContext {
 
     /** The tag that is used to indicate the value of an enumeration */
-    private static final String ENUM_VALUE_TAG = "__enumValue__";
+    protected static final String ENUM_VALUE_TAG = "__enumValue__";
 
-    private final SelfDescribingBinaryProtocol protocol;
+    protected static final Logger log = LoggerFactory
+            .getLogger(ThriftSerializationContext.class);
 
-    private static Map<Class<?>, Byte> types;
+    /**
+     * An integer that indicates no entries have been read from a map, list, or
+     * set type. Useful when trying to determine which index in a collection
+     * type failed to deserialize correctly.
+     */
+    protected static final int NO_ENTRIES_READ_YET = -1;
 
-    private static Map<String, Class<?>> fieldClass = new ConcurrentHashMap<String, Class<?>>();
+    protected final SelfDescribingBinaryProtocol protocol;
+
+    protected static Map<Class<?>, Byte> types;
+
+    protected static Map<String, Class<?>> fieldClass = new ConcurrentHashMap<String, Class<?>>();
 
     /** Mapping of built in java types to thift types */
     static {
@@ -127,15 +161,9 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     public ThriftSerializationContext(SelfDescribingBinaryProtocol protocol,
             DynamicSerializationManager serializationManager) {
         super(serializationManager);
-
         this.protocol = protocol;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readBinary()
-     */
     @Override
     public byte[] readBinary() throws SerializationException {
         try {
@@ -145,11 +173,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readBool()
-     */
     @Override
     public boolean readBool() throws SerializationException {
         try {
@@ -159,11 +182,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readByte()
-     */
     @Override
     public byte readByte() throws SerializationException {
         try {
@@ -173,11 +191,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readDouble()
-     */
     @Override
     public double readDouble() throws SerializationException {
         try {
@@ -187,11 +200,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readFloat()
-     */
     @Override
     public float readFloat() throws SerializationException {
         try {
@@ -201,11 +209,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readI16()
-     */
     @Override
     public short readI16() throws SerializationException {
         try {
@@ -215,11 +218,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readI32()
-     */
     @Override
     public int readI32() throws SerializationException {
         try {
@@ -229,11 +227,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readI64()
-     */
     @Override
     public long readI64() throws SerializationException {
         try {
@@ -243,11 +236,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readString()
-     */
     @Override
     public String readString() throws SerializationException {
         try {
@@ -257,12 +245,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.serialize.ISerializationContext#writeBinary(byte[])
-     */
     @Override
     public void writeBinary(byte[] arg0) throws SerializationException {
         try {
@@ -272,11 +254,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeBool(boolean)
-     */
     @Override
     public void writeBool(boolean arg0) throws SerializationException {
         try {
@@ -286,11 +263,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeByte(byte)
-     */
     @Override
     public void writeByte(byte arg0) throws SerializationException {
         try {
@@ -300,12 +272,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.serialize.ISerializationContext#writeDouble(double)
-     */
     @Override
     public void writeDouble(double arg0) throws SerializationException {
         try {
@@ -315,11 +281,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeFloat(float)
-     */
     @Override
     public void writeFloat(float arg0) throws SerializationException {
         try {
@@ -329,11 +290,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeI16(short)
-     */
     @Override
     public void writeI16(short arg0) throws SerializationException {
         try {
@@ -343,11 +299,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeI32(int)
-     */
     @Override
     public void writeI32(int arg0) throws SerializationException {
         try {
@@ -357,11 +308,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeI64(long)
-     */
     @Override
     public void writeI64(long arg0) throws SerializationException {
         try {
@@ -371,13 +317,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.serialize.ISerializationContext#writeString(java.lang
-     * .String)
-     */
     @Override
     public void writeString(String arg0) throws SerializationException {
         try {
@@ -392,13 +331,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * 
      * @param val
      *            the value to serialize
-     * @param valClass
-     *            the class object
      * @param type
      *            the type
      * @throws SerializationException
      */
-    private void serializeType(Object val, Class<?> valClass, byte type)
+    protected void serializeType(Object val, byte type)
             throws SerializationException {
         try {
             switch (type) {
@@ -451,7 +388,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 protocol.writeMapEnd();
                 return;
             case TType.LIST:
-                serializeArray(val, valClass);
+                serializeArray(val);
                 return;
             case TType.VOID:
                 return;
@@ -466,37 +403,39 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     }
 
     /**
-     * Serialize an array/List
-     * 
+     * Serialize an array or List
      * 
      * @param val
      *            the object
-     * @param valClass
-     *            the class of the object
      * @throws TException
      *             if writing error occurs
      * @throws SerializationException
      */
-    private void serializeArray(Object val, Class<?> valClass)
-            throws TException, SerializationException {
+    protected void serializeArray(Object val) throws TException,
+            SerializationException {
         Iterator<?> iterator;
+        Class<?> valClass = val.getClass();
         if (valClass.isArray()) {
             Class<?> c = valClass.getComponentType();
             Byte b = lookupType(c);
             int arrayLength = Array.getLength(val);
 
             if (b == null) {
-                // Assume they are objects... throw exceptions if one of
-                // the components isn't serializable when it comes time
-                // to serialize it
+                /*
+                 * Assume they are objects... throw exceptions if one of the
+                 * components isn't serializable when it comes time to serialize
+                 * it
+                 */
                 b = TType.STRUCT;
             }
 
             TList list = new TList(b, arrayLength);
             protocol.writeListBegin(list);
 
-            // For speed, handle all the primitive types and Strings in the most
-            // optimized way
+            /*
+             * For speed, write the primitive types and Strings in the most
+             * optimized way
+             */
             if (c.equals(Float.TYPE)) {
                 float[] d = (float[]) val;
                 protocol.writeF32List(d);
@@ -523,12 +462,13 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             } else {
                 // Do it using reflection for objects
                 for (int k = 0; k < arrayLength; k++) {
-                    serializeType(Array.get(val, k), c, b);
+                    serializeType(Array.get(val, k), b);
                 }
             }
 
             protocol.writeListEnd();
         } else {
+            // it's a List, not an array
             iterator = ((List<?>) val).iterator();
             TList list = new TList(TType.STRUCT, ((List<?>) val).size());
             protocol.writeListBegin(list);
@@ -540,20 +480,26 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    public Byte lookupType(Class<?> clazz) {
+    /**
+     * Looks up the corresponding TType byte for the class
+     * 
+     * @param clazz
+     * @return
+     */
+    protected Byte lookupType(Class<?> clazz) {
         Byte b = types.get(clazz);
         if (b == null) {
             if (clazz.isArray()) {
                 b = TType.LIST;
             } else {
-                SerializationMetadata md = this.serializationManager
+                SerializationMetadata md = DynamicSerializationManager
                         .getSerializationMetadata(clazz.getName());
                 if (md != null || clazz.isEnum()) {
                     b = TType.STRUCT;
                 } else {
                     Class<?> superClazz = clazz.getSuperclass();
                     while (superClazz != null && md == null) {
-                        md = this.serializationManager
+                        md = DynamicSerializationManager
                                 .getSerializationMetadata(superClazz.getName());
                         if (md == null) {
                             superClazz = superClazz.getSuperclass();
@@ -590,7 +536,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             SerializationMetadata metadata) throws SerializationException {
         try {
             // Determine the type of the message
-
             Byte b = null;
             if (obj == null) {
                 b = TType.VOID;
@@ -604,16 +549,19 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                         "Don't know how to serialize class: " + obj.getClass());
             }
 
-            // If it is a struct, determine if we know enough about the class
-            // (it is properly annotated or it has a factory) for it to be
-            // serialized
-
+            /*
+             * If it is a struct, determine if we know enough about the class
+             * (it is properly annotated or it has a factory) for it to be
+             * serialized
+             */
             if (b == TType.STRUCT) {
                 if (metadata != null && metadata.serializationFactory != null) {
-                    // we need to encode the struct name to something
-                    // deserialization can recognize, for instance
-                    // java.nio.FloatBuffer instead of
-                    // java.nio.DirectFloatBufferS
+                    /*
+                     * we need to encode the struct name to something
+                     * deserialization can recognize, for instance
+                     * java.nio.FloatBuffer instead of
+                     * java.nio.DirectFloatBufferS
+                     */
                     String structName = metadata.adapterStructName.replace('.',
                             '_');
                     TStruct struct = new TStruct(structName);
@@ -634,13 +582,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 // Determine if the class is really an enum, if so, serialize it
                 // in a simple way
                 if (obj.getClass().isEnum()) {
-
                     TField enumValueField = new TField(ENUM_VALUE_TAG,
                             TType.STRING, (short) 0);
                     protocol.writeFieldBegin(enumValueField);
                     protocol.writeString(((Enum) obj).name());
                     protocol.writeFieldEnd();
-
                 } else {
                     // Otherwise it is a class
 
@@ -651,14 +597,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
                         Object val = beanMap.get(keyStr);
 
-                        Class<?> valClass = null;
                         Byte type = null;
                         ISerializationTypeAdapter attributeFactory = null;
                         // Determine if we know how to serialize this field
-
                         if (val != null) {
-                            valClass = val.getClass();
-
+                            Class<?> valClass = val.getClass();
                             type = lookupType(valClass);
                             attributeFactory = metadata.attributesWithFactories
                                     .get(keyStr);
@@ -669,9 +612,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                                                 + valClass.getName());
                             }
 
-                            // If it's not a first class type or has a
-                            // serialization factory, assume struct for now, if
-                            // there is no tags we'll find out soon
+                            /*
+                             * If it's not a first class type or has a
+                             * serialization factory, assume struct for now, if
+                             * there are no tags we'll find out soon
+                             */
                             if (type == null) {
                                 type = TType.STRUCT;
                             }
@@ -681,26 +626,22 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                         }
 
                         // Perform actual serialization
-                        serializeField(val, valClass, type, keyStr,
-                                attributeFactory, id);
+                        serializeField(val, type, keyStr, attributeFactory, id);
                         id++;
 
                     }
-
                     protocol.writeFieldStop();
                 }
                 protocol.writeStructEnd();
             } else {
-                // Wrap basic types with a struct with the typeId as the name
-                // This guarantees you know what you're getting even if they
-                // declare their list as List<Object>
+                /*
+                 * Wrap basic types with a struct with the typeId as the name.
+                 * This guarantees you know what you're getting even if they
+                 * declare their list as List<Object>
+                 */
                 TStruct tstruct = new TStruct("" + b);
                 protocol.writeStructBegin(tstruct);
-                Class<?> clazz = null;
-                if (obj != null) {
-                    clazz = obj.getClass();
-                }
-                serializeType(obj, clazz, b);
+                serializeType(obj, b);
                 protocol.writeStructEnd();
             }
         } catch (TException e) {
@@ -712,27 +653,23 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * Serialize a field
      * 
      * @param val
-     * @param valClass
      * @param type
      * @param keyStr
      * @param adapter
-     * @return
      * @throws TException
      * @throws SerializationException
      */
-    private boolean serializeField(Object val, Class<?> valClass, byte type,
-            String keyStr, ISerializationTypeAdapter adapter, short id)
-            throws TException, SerializationException {
+    protected void serializeField(Object val, byte type, String keyStr,
+            ISerializationTypeAdapter adapter, short id) throws TException,
+            SerializationException {
         TField field = new TField(keyStr, type, id);
         protocol.writeFieldBegin(field);
 
         if (type != TType.VOID) {
             // Otherwise, as long as it's not void, use basic type serialization
-            serializeType(val, valClass, type);
+            serializeType(val, type);
         }
         protocol.writeFieldEnd();
-
-        return false;
     }
 
     /**
@@ -744,26 +681,23 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     public Object deserializeMessage() throws SerializationException {
         Object retObj = null;
         TStruct struct = protocol.readStructBegin();
-
         String structName = struct.name.replace('_', '.');
 
         char c0 = structName.charAt(0);
-
         if (Character.isDigit(c0)) {
             // since fields/methods in java can't start with numeric, this means
             // that this struct contains a numerical value indicating the type
             byte b = Byte.parseByte(structName);
-            Object obj = deserializeType(b, null, null, "",
-                    EnclosureType.COLLECTION);
+            Object obj = deserializeType(b, null, "");
             return obj;
         }
-        SerializationMetadata md = this.serializationManager
+        SerializationMetadata md = DynamicSerializationManager
                 .getSerializationMetadata(structName);
 
         FastClass fc;
         try {
             fc = SerializationCache.getFastClass(structName);
-        } catch (Exception e) {
+        } catch (ClassNotFoundException e) {
             throw new SerializationException("Unable to load class: "
                     + structName, e);
         }
@@ -772,7 +706,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             // check to see if superclass has an adapter
             Class<?> superClazz = fc.getJavaClass().getSuperclass();
             while (superClazz != null && md == null) {
-                md = this.serializationManager
+                md = DynamicSerializationManager
                         .getSerializationMetadata(superClazz.getName());
                 superClazz = superClazz.getSuperclass();
             }
@@ -792,7 +726,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         BeanMap bm = null;
 
         try {
-
             if (fc.getJavaClass().isEnum()) {
                 // an enum
                 try {
@@ -810,7 +743,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     throw new SerializationException(
                             "Error constructing enum enum", e);
                 }
-
             } else {
                 // a "regular" class
                 try {
@@ -821,10 +753,48 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                             "Error instantiating class: " + struct.name, e);
                 }
 
-                while (deserializeField(md, o, fc, bm)) {
-                    ;
-                }
+                boolean moreFields = true;
+                while (moreFields) {
+                    try {
+                        moreFields = deserializeField(fc, bm);
+                    } catch (FieldDeserializationException e) {
+                        TField failure = e.getField();
+                        log.debug("Skipping deserialization of "
+                                + o.getClass().getSimpleName() + "."
+                                + failure.name, e);
 
+                        /*
+                         * At this point readFieldBegin() was called so we're
+                         * past those bytes in the stream. If the field was a
+                         * tstruct, tmap, tlist, or tset then those bytes at the
+                         * front have also been read.
+                         */
+                        switch (failure.type) {
+                        case TType.STRUCT:
+                            readAndIgnoreStructFields();
+                            break;
+                        case TType.LIST:
+                            ListDeserializationException lde = (ListDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreList(lde.getTlist(), lde.getIndex());
+                            break;
+                        case TType.MAP:
+                            MapDeserializationException mde = (MapDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreMap(mde.getTmap(), mde.getIndex());
+                            break;
+                        case TType.SET:
+                            SetDeserializationException sde = (SetDeserializationException) e
+                                    .getCause();
+                            readAndIgnoreSet(sde.getTset(), sde.getIndex());
+                            break;
+                        default:
+                            readAndIgnoreField(failure);
+                            break;
+                        }
+
+                    }
+                }
             }
 
             protocol.readStructEnd();
@@ -841,50 +811,301 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         return retObj;
     }
 
+    /*
+     * All of the read and ignore methods below emulate the same protocol read
+     * steps as standard reading/deserializing but diverge in that they don't
+     * care about what they read. This way the position in the stream can be
+     * advanced even if there's errors with a particular field.
+     */
+
+    /**
+     * Reads a field off the stream, presuming that the field begin bytes have
+     * already been read. Then just drops the field's data. Should be used to
+     * fast-forward the stream past irrelevant, misunderstood, or unknown
+     * fields.
+     * 
+     * @param fieldToSkip
+     *            the field to ignore
+     * @throws SerializationException
+     * @throws TException
+     */
+    protected void readAndIgnoreField(TField fieldToSkip)
+            throws SerializationException, TException {
+        switch (fieldToSkip.type) {
+        case TType.BOOL:
+        case TType.BYTE:
+        case TType.I16:
+        case TType.I32:
+        case TType.I64:
+        case TType.STRING:
+        case SelfDescribingBinaryProtocol.FLOAT:
+        case TType.DOUBLE:
+        case TType.VOID:
+            /*
+             * we can safely use deserializeType here because we know that all
+             * of these types are in every JVM
+             */
+            deserializeType(fieldToSkip.type, null, fieldToSkip.name);
+            break;
+        /*
+         * handle the types below differently to ensure the entire
+         * structure/object is read off the stream regardless of if we know
+         * about and understand its types
+         */
+        case TType.STRUCT:
+            TStruct tstruct = protocol.readStructBegin();
+            readAndIgnoreStruct(tstruct);
+            break;
+        case TType.MAP:
+            TMap tmap = protocol.readMapBegin();
+            readAndIgnoreMap(tmap, NO_ENTRIES_READ_YET);
+            break;
+        case TType.LIST:
+            TList tlist = protocol.readListBegin();
+            readAndIgnoreList(tlist, NO_ENTRIES_READ_YET);
+            break;
+        case TType.SET:
+            TSet tset = protocol.readSetBegin();
+            readAndIgnoreSet(tset, NO_ENTRIES_READ_YET);
+            break;
+        default:
+            // do nothing
+            break;
+        }
+        protocol.readFieldEnd();
+    }
+
+    /**
+     * Reads a struct off the stream, then just drops the struct's data.
+     * 
+     * @param struct
+     *            the struct to ignore
+     * 
+     * @throws SerializationException
+     * @throws TException
+     */
+    protected void readAndIgnoreStruct(TStruct struct)
+            throws SerializationException, TException {
+        char c0 = struct.name.charAt(0);
+
+        if (Character.isDigit(c0)) {
+            byte b = Byte.parseByte(struct.name);
+            switch (b) {
+            case TType.LIST:
+                TList tlist = protocol.readListBegin();
+                readAndIgnoreList(tlist, NO_ENTRIES_READ_YET);
+                break;
+            case TType.MAP:
+                TMap tmap = protocol.readMapBegin();
+                readAndIgnoreMap(tmap, NO_ENTRIES_READ_YET);
+                break;
+            case TType.SET:
+                TSet tset = protocol.readSetBegin();
+                readAndIgnoreSet(tset, NO_ENTRIES_READ_YET);
+                break;
+            default:
+                deserializeType(b, null, "");
+                break;
+            }
+        } else {
+            readAndIgnoreStructFields();
+        }
+    }
+
+    /**
+     * Reads a struct off the stream, presuming that the struct begin bytes have
+     * already been read. Then just drops the struct's data.
+     * 
+     * @throws TException
+     * @throws SerializationException
+     */
+    protected void readAndIgnoreStructFields() throws TException,
+            SerializationException {
+        boolean moreFields = true;
+        while (moreFields) {
+            // read a field off the structure
+            TField field = protocol.readFieldBegin();
+            moreFields = (field.type != TType.STOP);
+            if (moreFields) {
+                readAndIgnoreField(field);
+                protocol.readFieldEnd();
+            }
+        }
+    }
+
+    /**
+     * Reads a map off the stream, then just drops the map's data.
+     * 
+     * @param tmap
+     *            the tmap to ignore
+     * @param entriesRead
+     *            the number of entries in the map already read off the stream
+     * 
+     * @throws TException
+     * @throws SerializationException
+     */
+    protected void readAndIgnoreMap(TMap tmap, int entriesRead)
+            throws TException, SerializationException {
+        for (int i = entriesRead + 1; i < tmap.size; i++) {
+            // key followed by value
+            TStruct key = protocol.readStructBegin();
+            readAndIgnoreStruct(key);
+            TStruct value = protocol.readStructBegin();
+            readAndIgnoreStruct(value);
+        }
+        protocol.readMapEnd();
+    }
+
+    /**
+     * Reads a set off the stream, then just drops the set's data.
+     * 
+     * @param tset
+     *            the tset to ignore
+     * @param entriesRead
+     *            the number of entries in the set already read off the stream
+     * 
+     * @throws TException
+     * @throws SerializationException
+     */
+    protected void readAndIgnoreSet(TSet tset, int entriesRead)
+            throws TException, SerializationException {
+        for (int i = entriesRead + 1; i < tset.size; i++) {
+            TStruct tstruct = protocol.readStructBegin();
+            readAndIgnoreStruct(tstruct);
+        }
+        protocol.readSetEnd();
+    }
+
+    /**
+     * Reads a list or array off the stream, then just drops the list/array's
+     * data.
+     * 
+     * @param tlist
+     *            the tlist to ignore
+     * @param entriesRead
+     *            the number of entries in the list already read off the stream
+     * 
+     * @throws TException
+     * @throws SerializationException
+     */
+    protected void readAndIgnoreList(TList tlist, int entriesRead)
+            throws TException, SerializationException {
+        switch (tlist.elemType) {
+        case TType.BYTE:
+            protocol.readI8List(tlist.size);
+            break;
+        case TType.BOOL:
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
+                readBool();
+            }
+            break;
+        case TType.I16:
+            protocol.readI16List(tlist.size);
+            break;
+        case TType.I32:
+            protocol.readI32List(tlist.size);
+            break;
+        case TType.I64:
+            protocol.readI64List(tlist.size);
+            break;
+        case SelfDescribingBinaryProtocol.FLOAT:
+            protocol.readF32List(tlist.size);
+            break;
+        case TType.DOUBLE:
+            protocol.readD64List(tlist.size);
+            break;
+        case TType.STRING:
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
+                readString();
+            }
+            break;
+        case TType.VOID:
+            break;
+        case TType.STRUCT:
+            for (int i = entriesRead + 1; i < tlist.size; i++) {
+                TStruct tstruct = protocol.readStructBegin();
+                readAndIgnoreStruct(tstruct);
+            }
+        }
+        protocol.readListEnd();
+    }
+
+    /*
+     * End of read and ignore methods
+     */
+
     /**
      * Deserialize a field
      * 
-     * @param md
-     * @param o
      * @param fc
      * @param bm
      * @throws TException
      * @throws SerializationException
      */
-    private boolean deserializeField(SerializationMetadata md, Object o,
-            FastClass fc, BeanMap bm) throws TException, SerializationException {
-
+    protected boolean deserializeField(FastClass fc, BeanMap bm)
+            throws TException, SerializationException {
         TField field = protocol.readFieldBegin();
         Object obj = null;
 
+        /*
+         * TType.STOP indicates we've reached the end of serialized fields on
+         * the parent object
+         */
         if (field.type == TType.STOP) {
             return false;
         }
 
         if (field.type != TType.VOID) {
-            obj = deserializeType(field.type, o.getClass(), fc, field.name,
-                    EnclosureType.FIELD);
+            try {
+                obj = deserializeType(field.type, fc, field.name);
+            } catch (SerializationException e) {
+                throw new FieldDeserializationException(field, e);
+            }
             if (field.type == TType.STRING) {
-                Class<?> fieldClass = findFieldClass(o.getClass(), field.name);
+                Class<?> fieldClass = findFieldClass(fc.getJavaClass(),
+                        field.name);
                 if (fieldClass != null && fieldClass.isEnum()) {
-                    // special case to handle Strings sent from python and
-                    // transform them into enums, since python had no
-                    // knowledge of whether a string should translate
-                    // to a string or enum in java
+                    /*
+                     * special case to handle Strings sent from python and
+                     * transform them into enums, since python had no knowledge
+                     * of whether a string should translate to a string or enum
+                     * in java
+                     */
                     obj = Enum.valueOf((Class<Enum>) fieldClass, (String) obj);
                 }
             }
             try {
+                /*
+                 * cglib doesn't seem to mind if you put in extra fields that
+                 * don't exist in your version of the object
+                 */
                 bm.put(field.name, obj);
             } catch (ClassCastException e) {
-                /* attempt to recover if both types are numbers */
-                Class<?> fieldClass = findFieldClass(o.getClass(), field.name);
+                /*
+                 * should we continue to add special handling in here, we should
+                 * break this out to a separate method
+                 */
+
+                /* attempt to recover if both types are numbers or times */
+                Class<?> fieldClass = findFieldClass(fc.getJavaClass(),
+                        field.name);
                 if (obj instanceof Number) {
                     /*
                      * we can't easily determine if fieldClass is a number yet
                      * due to primitive number classes, castNumber() will check
                      */
                     obj = castNumber((Number) obj, fieldClass);
+                    bm.put(field.name, obj);
+                } else if (obj instanceof Date
+                        && Calendar.class.isAssignableFrom(fieldClass)) {
+                    Calendar c = Calendar.getInstance(TimeZone
+                            .getTimeZone("GMT"));
+                    c.setTime((Date) obj);
+                    obj = c;
+                    bm.put(field.name, obj);
+                } else if (obj instanceof Calendar
+                        && Date.class.isAssignableFrom(fieldClass)) {
+                    obj = ((Calendar) obj).getTime();
                     bm.put(field.name, obj);
                 } else {
                     throw e;
@@ -905,7 +1126,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * @throws ClassCastException
      *             if targetClass is not supported
      */
-    private static Number castNumber(Number source, Class<?> targetClass)
+    protected static Number castNumber(Number source, Class<?> targetClass)
             throws ClassCastException {
         Number rval;
         if (targetClass.equals(Byte.class) || targetClass.equals(byte.class)) {
@@ -940,70 +1161,64 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * Deserialize a type
      * 
      * @param type
-     * @param clazz
      * @param fclazz
      * @param fieldName
      * @param enclosureType
      * @return
      * @throws SerializationException
      */
-    private Object deserializeType(byte type, Class clazz, FastClass fclazz,
-            String fieldName, EnclosureType enclosureType)
-            throws SerializationException {
+    protected Object deserializeType(byte type, FastClass fclazz,
+            String fieldName) throws SerializationException {
         switch (type) {
         case TType.STRING: {
             try {
                 return protocol.readString();
             } catch (TException e) {
-                throw new SerializationException("Error reading string", e);
+                throw new SerializationException(
+                        "Error reading string of field " + fieldName, e);
             }
         }
         case TType.I16: {
             try {
                 return protocol.readI16();
             } catch (TException e) {
-                throw new SerializationException("Error reading short", e);
+                throw new SerializationException(
+                        "Error reading short of field " + fieldName, e);
             }
         }
         case TType.I32: {
             try {
                 return protocol.readI32();
             } catch (TException e) {
-                throw new SerializationException("Error reading int", e);
+                throw new SerializationException("Error reading int of field "
+                        + fieldName, e);
             }
         }
         case TType.LIST: {
             return deserializeArray(fclazz, fieldName);
         }
         case TType.MAP: {
-            // Since Java 1.5+ did not expose generics information at runtime,
-            // we must assume an erased type, and do reflection on every
-            // component of the key and value pair.
             Map map = null;
+            TMap tmap = null;
+            int i = NO_ENTRIES_READ_YET;
             try {
-                TMap tmap = protocol.readMapBegin();
+                tmap = protocol.readMapBegin();
+
+                /*
+                 * Attempt to get the exact implementation of Map as specified
+                 * in the class if available
+                 */
                 if (fclazz != null) {
-                    Class<?> clazzToTry = fclazz.getJavaClass();
-                    boolean fieldFound = false;
-                    while (!fieldFound && clazzToTry != null) {
-                        Field listField = null;
-                        try {
-                            listField = clazzToTry.getDeclaredField(fieldName);
-                        } catch (NoSuchFieldException e) {
-                            // try super class
-                            clazzToTry = clazzToTry.getSuperclass();
-                            continue;
-                        }
-                        Class<?> fieldClazz = listField.getType();
-                        if (!fieldClazz.isInterface()
-                                && Map.class.isAssignableFrom(fieldClazz)) {
-                            map = (Map) fieldClazz.newInstance();
-                        }
-                        fieldFound = true;
+                    Class<?> fieldClazz = findFieldClass(fclazz.getJavaClass(),
+                            fieldName);
+                    if (fieldClazz == null) {
+                        throw new MapDeserializationException(tmap, i,
+                                new NoSuchFieldException(fieldName));
                     }
 
-                    if (!fieldFound) {
-                        throw new NoSuchFieldException(fieldName);
+                    if (!fieldClazz.isInterface()
+                            && Map.class.isAssignableFrom(fieldClazz)) {
+                        map = (Map) fieldClazz.newInstance();
                     }
                 }
 
@@ -1012,47 +1227,44 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     map = new HashMap((int) (tmap.size / 0.75) + 1, 0.75f);
                 }
 
-                for (int i = 0; i < tmap.size; i++) {
+                /*
+                 * Since Java 1.5+ did not expose generics information at
+                 * runtime,we must assume an erased type, and do reflection on
+                 * every component of the key and value pair.
+                 */
+                for (i = 0; i < tmap.size; i++) {
                     Object key = this.serializationManager.deserialize(this);
                     Object val = this.serializationManager.deserialize(this);
                     map.put(key, val);
                 }
             } catch (Exception e) {
-                throw new SerializationException("Error deserializing map", e);
+                throw new MapDeserializationException(tmap, i,
+                        "Error deserializing map of field " + fieldName, e);
             }
+            protocol.readMapEnd();
             return map;
         }
         case TType.SET: {
             Set set = null;
+            TSet tset = null;
+            int i = NO_ENTRIES_READ_YET;
             try {
-                TSet tset = protocol.readSetBegin();
+                tset = protocol.readSetBegin();
 
-                // Since Java 1.5+ did not expose generics information at
-                // runtime,
-                // we must assume an erased type, and do reflection on every
-                // component of the set.
+                /*
+                 * Attempt to get the exact implementation of Set as specified
+                 * in the class if available
+                 */
                 if (fclazz != null) {
-                    Class<?> clazzToTry = fclazz.getJavaClass();
-                    boolean fieldFound = false;
-                    while (!fieldFound && clazzToTry != null) {
-                        Field listField = null;
-                        try {
-                            listField = clazzToTry.getDeclaredField(fieldName);
-                        } catch (NoSuchFieldException e) {
-                            // try super class
-                            clazzToTry = clazzToTry.getSuperclass();
-                            continue;
-                        }
-                        Class<?> fieldClazz = listField.getType();
-                        if (!fieldClazz.isInterface()
-                                && Set.class.isAssignableFrom(fieldClazz)) {
-                            set = (Set) fieldClazz.newInstance();
-                        }
-                        fieldFound = true;
+                    Class<?> fieldClazz = findFieldClass(fclazz.getJavaClass(),
+                            fieldName);
+                    if (fieldClazz == null) {
+                        throw new SetDeserializationException(tset, i,
+                                new NoSuchFieldException(fieldName));
                     }
-
-                    if (!fieldFound) {
-                        throw new NoSuchFieldException(fieldName);
+                    if (!fieldClazz.isInterface()
+                            && Set.class.isAssignableFrom(fieldClazz)) {
+                        set = (Set) fieldClazz.newInstance();
                     }
                 }
 
@@ -1061,49 +1273,60 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     set = new HashSet((int) (tset.size / 0.75) + 1, 0.75f);
                 }
 
-                for (int i = 0; i < tset.size; i++) {
+                /*
+                 * Since Java 1.5+ did not expose generics information at
+                 * runtime,we must assume an erased type, and do reflection on
+                 * every component of the set.
+                 */
+                for (i = 0; i < tset.size; i++) {
                     set.add(this.serializationManager.deserialize(this));
                 }
 
                 protocol.readSetEnd();
                 return set;
             } catch (Exception e) {
-                throw new SerializationException("Error deserializing set", e);
+                throw new SetDeserializationException(tset, i,
+                        "Error deserializing set of field " + fieldName, e);
             }
         }
         case SelfDescribingBinaryProtocol.FLOAT: {
             try {
                 return protocol.readFloat();
             } catch (TException e) {
-                throw new SerializationException("Error reading double", e);
+                throw new SerializationException(
+                        "Error reading float of field " + fieldName, e);
             }
         }
         case TType.BYTE: {
             try {
                 return protocol.readByte();
             } catch (TException e) {
-                throw new SerializationException("Error reading double", e);
+                throw new SerializationException("Error reading byte of field "
+                        + fieldName, e);
             }
         }
         case TType.I64: {
             try {
                 return protocol.readI64();
             } catch (TException e) {
-                throw new SerializationException("Error reading double", e);
+                throw new SerializationException("Error reading long of field "
+                        + fieldName, e);
             }
         }
         case TType.DOUBLE: {
             try {
                 return protocol.readDouble();
             } catch (TException e) {
-                throw new SerializationException("Error reading double", e);
+                throw new SerializationException(
+                        "Error reading double of field " + fieldName, e);
             }
         }
         case TType.BOOL: {
             try {
                 return protocol.readBool();
             } catch (TException e) {
-                throw new SerializationException("Error reading boolean", e);
+                throw new SerializationException(
+                        "Error reading boolean of field " + fieldName, e);
             }
         }
         case TType.STRUCT: {
@@ -1118,7 +1341,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     }
 
-    private Class<?> findFieldClass(Class<?> clazz, String fieldName) {
+    protected Class<?> findFieldClass(Class<?> clazz, String fieldName) {
         String key = clazz.getName() + "." + fieldName;
         Class<?> rval = fieldClass.get(key);
 
@@ -1129,15 +1352,15 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         rval = clazz;
 
         while (rval != null) {
-            Field listField = null;
+            Field field = null;
             try {
-                listField = rval.getDeclaredField(fieldName);
+                field = rval.getDeclaredField(fieldName);
             } catch (NoSuchFieldException e) {
                 // try super class
                 rval = rval.getSuperclass();
                 continue;
             }
-            rval = listField.getType();
+            rval = field.getType();
             fieldClass.put(key, rval);
             return rval;
         }
@@ -1153,40 +1376,30 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * @return
      * @throws SerializationException
      */
-    private Object deserializeArray(FastClass fclazz, String fieldName)
+    protected Object deserializeArray(FastClass fclazz, String fieldName)
             throws SerializationException {
+        TList innerList = null;
+        int i = NO_ENTRIES_READ_YET;
         try {
-            TList innerList = protocol.readListBegin();
-            // System.out.println("List sz: " + innerList.size);
+            innerList = protocol.readListBegin();
 
-            // Determine whether the list is really an array or if it is
-            // a list.
-            Class<?> listFieldClazz = null;
-            Field listField = null;
-
+            // Determine whether the list is really an array or if it is a list.
+            Class<?> fieldClazz = null;
             if (fclazz != null) {
-                Class c = fclazz.getJavaClass();
-                do {
-                    try {
-                        listField = c.getDeclaredField(fieldName);
-                    } catch (NoSuchFieldException e) {
-                        // ignore
-                    }
-                    c = c.getSuperclass();
-                } while (c != null && listField == null);
-
-                if (listField == null) {
-                    throw new SerializationException("Cannot find field "
-                            + fieldName);
+                fieldClazz = findFieldClass(fclazz.getJavaClass(), fieldName);
+                if (fieldClazz == null) {
+                    throw new ListDeserializationException(innerList, i,
+                            new NoSuchFieldException(fieldName));
                 }
-
-                listFieldClazz = listField.getType();
             }
 
-            // The type is an array or list. If the inner type matches a
-            // primitive or String, it's guaranteed be homogeneous in type,
-            // we can just read the data quickly as a block one right after
-            // another without a header.
+            /*
+             * The type is an array or List. If the inner type matches a
+             * primitive, it's guaranteed be homogeneous in type, we can just
+             * read the data quickly as one giant block. If the inner type is a
+             * String, we can quickly read block one right after another without
+             * a header.
+             */
             switch (innerList.elemType) {
             case SelfDescribingBinaryProtocol.FLOAT:
                 float[] fa = protocol.readF32List(innerList.size);
@@ -1206,7 +1419,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 return byteArray;
             case TType.BOOL:
                 boolean[] boolArray = new boolean[innerList.size];
-                for (int i = 0; i < boolArray.length; i++) {
+                for (i = 0; i < boolArray.length; i++) {
                     boolArray[i] = readBool();
                 }
                 protocol.readListEnd();
@@ -1220,9 +1433,9 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 protocol.readListEnd();
                 return shortArray;
             case TType.STRING:
-                if (listFieldClazz == null || listFieldClazz.isArray()) {
+                if (fieldClazz == null || fieldClazz.isArray()) {
                     String[] stringArray = new String[innerList.size];
-                    for (int i = 0; i < stringArray.length; i++) {
+                    for (i = 0; i < stringArray.length; i++) {
                         stringArray[i] = readString();
                     }
                     protocol.readListEnd();
@@ -1231,22 +1444,22 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     // this is a List but due to the encoded element type
                     // we can safely assume it's all Strings
                     List<String> list = null;
-                    if (listFieldClazz != null) {
-                        if (!listFieldClazz.isInterface()
-                                && List.class.isAssignableFrom(listFieldClazz)) {
-                            list = (List<String>) listFieldClazz.newInstance();
+                    if (fieldClazz != null) {
+                        if (!fieldClazz.isInterface()
+                                && List.class.isAssignableFrom(fieldClazz)) {
+                            list = (List<String>) fieldClazz.newInstance();
                         }
                     }
                     if (list == null) {
                         list = new ArrayList<String>(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(readString());
                     }
                     return list;
                 }
             case TType.VOID:
-                if (listFieldClazz == null || listFieldClazz.isArray()) {
+                if (fieldClazz == null || fieldClazz.isArray()) {
                     Object[] array = new Object[innerList.size];
                     protocol.readListEnd();
                     return array;
@@ -1254,54 +1467,53 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     // this is a List but due to the encoded element type
                     // we can safely assume it's all nulls
                     List<String> list = null;
-                    if (listFieldClazz != null) {
-                        if (!listFieldClazz.isInterface()
-                                && List.class.isAssignableFrom(listFieldClazz)) {
-                            list = (List<String>) listFieldClazz.newInstance();
+                    if (fieldClazz != null) {
+                        if (!fieldClazz.isInterface()
+                                && List.class.isAssignableFrom(fieldClazz)) {
+                            list = (List<String>) fieldClazz.newInstance();
                         }
                     }
                     if (list == null) {
                         list = new ArrayList<String>(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(null);
                     }
                     return list;
                 }
             default:
-                if (listFieldClazz != null && listFieldClazz.isArray()) {
+                if (fieldClazz != null && fieldClazz.isArray()) {
                     // Slower catch-all implementation
-                    Class<?> arrayComponent = listFieldClazz.getComponentType();
+                    Class<?> arrayComponent = fieldClazz.getComponentType();
                     Byte serializedType = innerList.elemType;
                     Object array = Array.newInstance(arrayComponent,
                             innerList.size);
 
-                    for (int i = 0; i < innerList.size; i++) {
-                        Array.set(
-                                array,
-                                i,
-                                deserializeType(serializedType, null, null, "",
-                                        EnclosureType.COLLECTION));
+                    for (i = 0; i < innerList.size; i++) {
+                        Array.set(array, i,
+                                deserializeType(serializedType, null, ""));
                     }
                     protocol.readListEnd();
                     return array;
                 } else {
-                    // This type is an actual List. Since Java 1.5+ did not
-                    // expose generics information at runtime, we must assume an
-                    // erased type, and do reflection on every component of the
-                    // list.
+                    /*
+                     * This type is an actual List. Since Java 1.5+ did not
+                     * expose generics information at runtime, we must assume an
+                     * erased type, and do reflection on every component of the
+                     * list.
+                     */
                     List list = null;
-                    if (listFieldClazz != null) {
-                        if (!listFieldClazz.isInterface()
-                                && List.class.isAssignableFrom(listFieldClazz)) {
-                            list = (List) listFieldClazz.newInstance();
+                    if (fieldClazz != null) {
+                        if (!fieldClazz.isInterface()
+                                && List.class.isAssignableFrom(fieldClazz)) {
+                            list = (List) fieldClazz.newInstance();
                         }
                     }
 
                     if (list == null) {
                         list = new ArrayList(innerList.size);
                     }
-                    for (int i = 0; i < innerList.size; i++) {
+                    for (i = 0; i < innerList.size; i++) {
                         list.add(this.serializationManager.deserialize(this));
                     }
                     protocol.readListEnd();
@@ -1309,28 +1521,16 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                 }
             }
         } catch (Exception e) {
-            throw new SerializationException("Error deserializing list/array",
-                    e);
+            throw new ListDeserializationException(innerList, i,
+                    "Error deserializing list/array of field " + fieldName, e);
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.ISerializationContext#writeMessageEnd()
-     */
     @Override
     public void writeMessageEnd() throws SerializationException {
         this.protocol.writeMessageEnd();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.serialize.ISerializationContext#writeMessageStart(java
-     * .lang.String)
-     */
     @Override
     public void writeMessageStart(String messageName)
             throws SerializationException {
@@ -1342,23 +1542,12 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.serialize.IDeserializationContext#readMessageEnd()
-     */
     @Override
     public void readMessageEnd() throws SerializationException {
         this.protocol.readMessageEnd();
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.serialize.IDeserializationContext#readMessageStart()
-     */
     @Override
     public String readMessageStart() throws SerializationException {
         try {
@@ -1369,13 +1558,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.IDeserializationContext#readFloatArray
-     * ()
-     */
     @Override
     public float[] readFloatArray() throws SerializationException {
         try {
@@ -1386,13 +1568,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.IDeserializationContext#readDoubleArray
-     * ()
-     */
     @Override
     public double[] readDoubleArray() throws SerializationException {
         try {
@@ -1403,13 +1578,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.ISerializationContext#writeFloatArray
-     * (float[])
-     */
     @Override
     public void writeFloatArray(float[] floats) throws SerializationException {
         try {
@@ -1420,13 +1588,6 @@ public class ThriftSerializationContext extends BaseSerializationContext {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.ISerializationContext#writeDoubleArray
-     * (double[])
-     */
     @Override
     public void writeDoubleArray(double[] dubs) throws SerializationException {
         try {

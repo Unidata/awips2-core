@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,6 +24,7 @@ import java.io.File;
 
 import com.raytheon.uf.common.datastorage.records.AbstractStorageRecord;
 import com.raytheon.uf.common.datastorage.records.ByteDataRecord;
+import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
 import com.raytheon.uf.common.datastorage.records.LongDataRecord;
@@ -34,9 +35,9 @@ import com.raytheon.uf.common.datastorage.records.StringDataRecord;
  * This class is used for constructing IDataStore objects. It is a single that
  * has an IDataStoreFactory that it uses to actually do the construction of the
  * IDataStore objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
@@ -46,10 +47,11 @@ import com.raytheon.uf.common.datastorage.records.StringDataRecord;
  * Jul 18, 2012        798  jkorman     Extracted methods {@link #createDataSetName}, {@link #createGroupName}, and
  *                                       {@link #isInterpolated} from various classes.
  * Nov 18, 2014    3549     njensen     Support StringDataRecord in both createStorageRecord() methods
- * 
- * 
+ * Apr 24, 2015    4425     nabowle     Add DoubleDataRecord
+ *
+ *
  * </pre>
- * 
+ *
  * @author chammack
  * @version 1
  */
@@ -87,7 +89,7 @@ public class DataStoreFactory {
 
     /**
      * Get the underlying IDataStoreFactory in the DataStoreFactory
-     * 
+     *
      * @return the underlying factory used for creating IDataStore objects
      */
     public IDataStoreFactory getUnderlyingFactory() {
@@ -96,7 +98,7 @@ public class DataStoreFactory {
 
     /**
      * Set the underlying factory to be used by the DataStoreFactory
-     * 
+     *
      * @param factory
      *            the underlying factory to use
      */
@@ -114,7 +116,7 @@ public class DataStoreFactory {
 
     /**
      * Create an AbstractStorageRecord from given parameters.
-     * 
+     *
      * @param name
      *            The name of the data item.
      * @param group
@@ -149,6 +151,9 @@ public class DataStoreFactory {
         } else if (String[].class == data.getClass()) {
             record = new StringDataRecord(name, group, (String[]) data,
                     dimension, sizes);
+        } else if ((double[].class) == data.getClass()) {
+            record = new DoubleDataRecord(name, group, (double[]) data,
+                    dimension, sizes);
         } else {
             throw new IllegalArgumentException(
                     "Don't know how to reconstruct for datatype: " + data);
@@ -159,7 +164,7 @@ public class DataStoreFactory {
     /**
      * Create an AbstractStorageRecord from given parameters for singly
      * dimensioned data.
-     * 
+     *
      * @param name
      *            The name of the data item.
      * @param group
@@ -184,6 +189,8 @@ public class DataStoreFactory {
             record = new FloatDataRecord(name, group, (float[]) data);
         } else if ((String[].class) == data.getClass()) {
             record = new StringDataRecord(name, group, (String[]) data);
+        } else if ((double[].class) == data.getClass()) {
+            record = new DoubleDataRecord(name, group, (double[]) data);
         }
 
         return record;
@@ -246,7 +253,7 @@ public class DataStoreFactory {
      * <td>/data/group/dsname-interpolated/2</td>
      * </tr>
      * </table>
-     * 
+     *
      * @param groupName
      *            The group name this data set belongs to. If null, an empty
      *            group name is generated.
@@ -330,7 +337,7 @@ public class DataStoreFactory {
      * <td>/data/group/dsname-interpolated</td>
      * </tr>
      * </table>
-     * 
+     *
      * @param groupName
      *            The base group name.
      * @param baseDataSet
@@ -367,7 +374,7 @@ public class DataStoreFactory {
 
     /**
      * Is the specified interpolation greater than the {@link BASE_LEVEL}?
-     * 
+     *
      * @param interpolatedLevel
      *            An interpolation level.
      * @return

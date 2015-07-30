@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -43,7 +43,10 @@ import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XmlVisitor;
 
 /**
  * Custom JAXB Unmarshaller, used to set custom content handler. Delegates
- * everything else
+ * everything else.
+ *
+ * This class will only be used by a JAXBManager when {@link JaxbDummyObject} is
+ * included in the classes provided to its constructor.
  * 
  * <pre>
  * 
@@ -51,7 +54,10 @@ import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XmlVisitor;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 13, 2011            mschenke     Initial creation
+ * Sep 13, 2011            mschenke    Initial creation
+ * May 21, 2015 4496       nabowle     Set custom entity resolver to prevent
+ *                                     external entities from being loaded when
+ *                                     unmarshalling from a reader.
  * 
  * </pre>
  * 
@@ -62,6 +68,8 @@ import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XmlVisitor;
 public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     private static final DefaultHandler dummyHandler = new DefaultHandler();
+
+    private static final CustomEntityResolver resolver = new CustomEntityResolver();
 
     private UnmarshallerImpl delegate;
 
@@ -77,7 +85,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * javax.xml.bind.helpers.AbstractUnmarshallerImpl#setEventHandler(javax
      * .xml.bind.ValidationEventHandler)
@@ -90,7 +98,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.helpers.AbstractUnmarshallerImpl#getEventHandler()
      */
     @Override
@@ -100,7 +108,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.Unmarshaller#getUnmarshallerHandler()
      */
     @Override
@@ -110,7 +118,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.Unmarshaller#unmarshal(org.w3c.dom.Node)
      */
     @Override
@@ -120,7 +128,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * javax.xml.bind.helpers.AbstractUnmarshallerImpl#unmarshal(org.xml.sax
      * .XMLReader, org.xml.sax.InputSource)
@@ -134,6 +142,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
         reader.setContentHandler(connector);
         reader.setErrorHandler(coordinator);
+        reader.setEntityResolver(resolver);
 
         try {
             reader.parse(source);
@@ -147,6 +156,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
         reader.setContentHandler(dummyHandler);
         reader.setErrorHandler(dummyHandler);
+        reader.setEntityResolver(dummyHandler);
 
         return result;
     }
@@ -162,7 +172,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.helpers.AbstractUnmarshallerImpl#getSchema()
      */
     @Override
@@ -172,7 +182,7 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see javax.xml.bind.helpers.AbstractUnmarshallerImpl#setSchema(javax.xml.
      * validation.Schema)
      */

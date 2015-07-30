@@ -26,25 +26,25 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.TreeItem;
 
-import com.raytheon.uf.viz.productbrowser.AbstractProductBrowserDataDefinition;
+import com.raytheon.uf.viz.productbrowser.ProductBrowserDataDefinition;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
 
 /**
  * 
  * Job for initializing {@link TreeItem}s for the {@link ProductBrowserView}.
  * The tree items are assumed to be initially in a loading state and this job
- * asynchronously calls
- * {@link AbstractProductBrowserDataDefinition#populateInitial()} to determine
- * if the item should be expandable and then removes or configures the item on
- * the UI thread.
+ * asynchronously calls {@link ProductBrowserDataDefinition#checkAvailability()}
+ * to determine if the item should be expandable and then removes or configures
+ * the item on the UI thread.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 13, 2014  3135     bsteffen    Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 13, 2014  3135     bsteffen  Initial creation
+ * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * 
  * </pre>
  * 
@@ -55,9 +55,9 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
 
     protected final TreeItem item;
 
-    protected final AbstractProductBrowserDataDefinition<?> def;
+    protected final ProductBrowserDataDefinition def;
 
-    protected String displayName;
+    protected boolean available = false;
 
     /**
      * Create a new Job for the provided item, this constructor must be called
@@ -81,7 +81,7 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
      */
     @Override
     protected IStatus run(IProgressMonitor monitor) {
-        displayName = def.populateInitial();
+        available = def.checkAvailability();
         if (!item.isDisposed()) {
             item.getDisplay().syncExec(this);
         }
@@ -98,9 +98,10 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
         if (item.isDisposed()) {
             return;
         }
-        if (displayName == null) {
+        if (!available) {
             item.dispose();
         } else {
+            String displayName = ProductBrowserView.getLabel(item).getName();
             item.setText(displayName);
             if (!ProductBrowserView.getLabel(item).isProduct()) {
                 /*
