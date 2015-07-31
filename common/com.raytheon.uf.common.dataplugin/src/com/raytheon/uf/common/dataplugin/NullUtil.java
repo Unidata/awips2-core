@@ -42,6 +42,8 @@ public class NullUtil {
      */
     public static final String NULL_STRING = "null";
 
+    public static final Float NULL_FLOAT = Float.NaN;
+
     /**
      * String to use when column entry length less then 4.
      */
@@ -60,6 +62,10 @@ public class NullUtil {
      */
     public static final boolean isNull(String value) {
         return NULL_STRING.equals(value);
+    }
+
+    public static final boolean isNull(Float value) {
+        return NULL_FLOAT.equals(value);
     }
 
     /**
@@ -109,5 +115,13 @@ public class NullUtil {
      */
     public static String converNullToEmpty(String value) {
         return (value == null) ? EMPTY_STRING : value;
+    }
+
+    public static Float convertNullFloatoNull(Float value) {
+        return NULL_FLOAT.equals(value) ? null : value;
+    }
+
+    public static Float convertNullToNullFloat(Float value) {
+        return (value == null) ? NULL_FLOAT : value;
     }
 }
