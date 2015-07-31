@@ -59,6 +59,7 @@ import com.raytheon.viz.ui.widgets.SpinScale;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 20 JUN 2007  933        lvenable    Initial creation
+ * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
  * 
  * </pre>
  * 
@@ -906,6 +907,19 @@ public class ColorWheelComp extends Composite implements MouseListener,
     }
 
     /**
+     * Enables or disables the alpha sliders only
+     * 
+     * @param enabled
+     *          true to enable, false to disable
+     */
+    public void enableAlphaOnly(boolean enabled) {
+        setEnabled(enabled);
+        super.setEnabled(true);
+        rgbAlphaScale.setEnabled(true);
+        hsbAlphaScale.setEnabled(true);
+    }
+
+    /**
      * Shows the RGB controls if the flag passed in is true, otherwise the HSB
      * controls are shown.
      * 
@@ -1055,6 +1069,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
         hueScale.setEnabled(enabled);
         satScale.setEnabled(enabled);
         brightScale.setEnabled(enabled);
+        hsbAlphaScale.setEnabled(enabled);
         setButton.setEnabled(enabled);
         fillButton.setEnabled(enabled);
         colorWheel.setEnabled(enabled);

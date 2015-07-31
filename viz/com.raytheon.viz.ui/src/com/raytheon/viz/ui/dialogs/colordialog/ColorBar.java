@@ -69,6 +69,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Apr 08, 2014 2950       bsteffen    Support dynamic color counts and resizing.
  *                                     for color editor's color bar for radar correlation coefficient.
  * Apr 11, 2014 DR 15811   Qinglu Lin  Added decimalPlaceMap and logic to have 4 decimal places
+ * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
  * 
  * </pre>
  * 
@@ -845,6 +846,40 @@ public class ColorBar extends Composite implements MouseListener,
                         newBrightness);
                 ColorData colorData = new ColorData(tmpRGB, newAlpha);
 
+                newColors.set(topSliderIndex + i, colorData);
+            }
+            newColors.set(bottomSliderIndex, endColorData);
+        }
+
+        setCurrentColors(newColors);
+    }
+
+    /**
+     * Interpolate between the start and end alpha values only.
+     * 
+     * @param startColorData
+     *            Starting color.
+     * @param endColorData
+     *            Ending color.
+     */
+    public void interpolateAlphaOnly(ColorData startColorData, ColorData endColorData) {
+        float numOfCells = bottomSliderIndex - topSliderIndex;
+        // Create a new color array using the current set of colors.
+        List<ColorData> newColors = getCurrentColorsCopy();
+        if (topSliderIndex == bottomSliderIndex) {
+            newColors.set(topSliderIndex, startColorData);
+        } else {
+            float deltaAlpha = (endColorData.alphaValue - startColorData.alphaValue)
+                    / numOfCells;
+
+            /*
+             * Loop through all of the cells and fill them with the interpolated
+             * colors.
+             */
+            for (int i = 0; i < numOfCells; i += 1) {
+                float newAlpha = (deltaAlpha * i) + startColorData.alphaValue;
+                ColorData colorData = new ColorData(newColors.get(i).rgbColor,
+                        checkRgbColor(newAlpha));
                 newColors.set(topSliderIndex + i, colorData);
             }
             newColors.set(bottomSliderIndex, endColorData);

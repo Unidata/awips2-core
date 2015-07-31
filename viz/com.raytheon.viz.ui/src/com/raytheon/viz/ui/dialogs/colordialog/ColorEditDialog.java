@@ -79,6 +79,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
  * Jun 30, 2014  3165     njensen     Cleaned up save actions
+ * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
  * 
  * </pre>
  * 
@@ -361,6 +362,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
             undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
             redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
             saveBtn.setEnabled(currentColormapName != null);
+            colorEditComp.enableAlphaOnly();
         }
     }
 
@@ -409,9 +411,14 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 ColorData lowerColorData = colorEditComp.getLowerColorWheel()
                         .getColorData();
 
-                colorEditComp.getColorBar().interpolate(upperColorData,
-                        lowerColorData,
-                        colorEditComp.getRgbRdo().getSelection());
+                if (colorEditComp.isInterpolateAlphaOnly()) {
+                    colorEditComp.getColorBar().interpolateAlphaOnly(upperColorData,
+                            lowerColorData);
+                } else {
+                    colorEditComp.getColorBar().interpolate(upperColorData,
+                            lowerColorData,
+                            colorEditComp.getRgbRdo().getSelection());
+                }
                 undoBtn.setEnabled(true);
                 colorEditComp.updateColorMap();
             }
