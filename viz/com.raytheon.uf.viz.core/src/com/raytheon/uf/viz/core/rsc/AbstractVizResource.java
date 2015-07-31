@@ -72,6 +72,8 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  *                                    can recycle better.
  * Mar 05, 2014  2843     bsteffen    Set status to disposed during recycle and
  *                                    when recycle fails.
+ * Jul 30, 2015  17761    D. Friemdan Support time matching based on descriptor
+ *                                    frame times.
  * 
  * 
  * </pre>
@@ -244,6 +246,17 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      */
     public DataTime[] getDataTimes() {
         return this.dataTimes.toArray(new DataTime[this.dataTimes.size()]);
+    }
+
+    /**
+     * Get a list of displayable times given the set of frame times as a hint.
+     *
+     * @param timeSteps Base frame time steps or null if not specified (the
+     * resource should return times as if it were the time match basis.)
+     * @return the currently loaded set of datatimes
+     */
+    public DataTime[] getMatchedDataTimes(DataTime[] timeSteps) {
+        return getDataTimes();
     }
 
     /**
