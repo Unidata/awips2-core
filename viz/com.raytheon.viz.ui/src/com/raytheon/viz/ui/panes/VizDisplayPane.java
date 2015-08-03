@@ -101,6 +101,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *           14 Jan 2007              ebabin      Update to remove lat/lon only for GLEditor an Gl4panelEDitor.
  *           Jul 9, 2008  #1228       chammack    Add capability for perspective contributed right click menus
  *           Oct 27, 2009 #2354       bsteffen    Configured input handler to use mouse preferences
+ *           Aug 3, 2015  ASM #14474  D. Friedman Synchronize view of all panes in a container
  * </pre>
  * 
  * @author chammack
@@ -479,6 +480,16 @@ public class VizDisplayPane implements IDisplayPane {
         if (!isVisible()) {
             // No need to paint again if not visible
             target.setNeedsRefresh(false);
+        }
+
+        if (container != null) {
+            IDisplayPane[] idp = container.getDisplayPanes();
+            for (IDisplayPane p : idp) {
+                if (p != this && p != null) {
+                    p.getRenderableDisplay().setExtent(
+                            getRenderableDisplay().getExtent().clone());
+                }
+            }
         }
     }
 
