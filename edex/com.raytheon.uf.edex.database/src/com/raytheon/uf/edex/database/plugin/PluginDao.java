@@ -118,6 +118,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Jun 24, 2014  3314     randerso    Fix misspelling in message
  * Oct 16, 2014  3454     bphillip    Upgrading to Hibernate 4
  * Feb 19, 2015  4123     bsteffen    Log foreign key constraint violations.
+ * Jul 27, 2015 17011     kshrestha   Changed to call deleteGroups
  * </pre>
  * 
  * @author bphillip
@@ -1145,7 +1146,7 @@ public abstract class PluginDao extends CoreDao {
                         if (uris == null) {
                             ds.deleteFiles(null);
                         } else {
-                            ds.deleteDatasets(uris.toArray(new String[uris
+                            ds.deleteGroups(uris.toArray(new String[uris
                                     .size()]));
                         }
                     } catch (Exception e) {
@@ -1154,6 +1155,7 @@ public abstract class PluginDao extends CoreDao {
                     }
                 }
                 hdf5FileToUriMap.clear();
+                previousRoundedDate = roundedDate;
             }
         }
 
@@ -1168,7 +1170,7 @@ public abstract class PluginDao extends CoreDao {
                     if (uris == null) {
                         ds.deleteFiles(null);
                     } else {
-                        ds.deleteDatasets(uris.toArray(new String[uris.size()]));
+                        ds.deleteGroups(uris.toArray(new String[uris.size()]));
                     }
                 } catch (Exception e) {
                     PurgeLogger.logError("Error occurred purging file: "
@@ -1485,7 +1487,7 @@ public abstract class PluginDao extends CoreDao {
                     uriList = new ArrayList<String>(50);
                     hdf5FileToUriPurged.put(file, uriList);
                 }
-                uriList.add(file);
+                uriList.add(pdo.getDataURI());
             } else {
                 // only need to track file, tracking last file
                 // instead of constantly indexing hashMap
