@@ -23,6 +23,7 @@ package com.raytheon.uf.edex.core;
 import java.io.File;
 import java.util.Calendar;
 import java.util.Date;
+import java.util.Map;
 import java.util.TimeZone;
 
 import org.apache.commons.logging.Log;
@@ -54,6 +55,7 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * 04/10/2014   2726        rjpeter     Added methods for waiting for edex to be running.
  * 06/25/2014   3165        njensen     Remove dead code
  * Jul 16, 2014 2914        garmendariz Remove EnvProperties
+ * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
  * </pre>
  * 
  * @author chammack
@@ -75,11 +77,9 @@ public class EDEXUtil implements ApplicationContextAware {
     private static final String EDEX_DATA = EDEX_HOME + File.separator + "data"
             + File.separator;
 
-    private static final String EDEX_UTILITY = EDEX_DATA
-            + "utility";
+    private static final String EDEX_UTILITY = EDEX_DATA + "utility";
 
-    private static final String EDEX_SHARE = EDEX_DATA
-            + "share";
+    private static final String EDEX_SHARE = EDEX_DATA + "share";
 
     static Log logger = LogFactory.getLog(EDEXUtil.class);
 
@@ -260,7 +260,7 @@ public class EDEXUtil implements ApplicationContextAware {
     }
 
     /**
-     * Send a message to alertViz
+     * Send a message to alertViz with filters
      * 
      * @param priority
      * @param pluginName
@@ -268,10 +268,12 @@ public class EDEXUtil implements ApplicationContextAware {
      * @param category
      * @param message
      * @param details
+     * @param audioFile
+     * @param filters
      */
     public static void sendMessageAlertViz(Priority priority,
             String pluginName, String source, String category, String message,
-            String details, String audioFile) {
+            String details, String audioFile, Map<String, String> filters) {
 
         StatusMessage sm = new StatusMessage();
         sm.setPriority(priority);
@@ -283,12 +285,31 @@ public class EDEXUtil implements ApplicationContextAware {
         sm.setDetails(details);
         sm.setEventTime(new Date());
         sm.setAudioFile(audioFile);
-
+        sm.setFilters(filters);
         try {
             getMessageProducer().sendAsync(alertEndpoint, sm);
         } catch (Exception e) {
             logger.error("Could not send message to AlertViz");
         }
+    }
+
+    /**
+     * Send a message to alertViz
+     * 
+     * @param priority
+     * @param pluginName
+     * @param source
+     * @param category
+     * @param message
+     * @param details
+     * @param audioFile
+     */
+    public static void sendMessageAlertViz(Priority priority,
+            String pluginName, String source, String category, String message,
+            String details, String audioFile) {
+
+        sendMessageAlertViz(priority, pluginName, source, category, message,
+                details, audioFile, null);
     }
 
     /**
