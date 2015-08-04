@@ -5,22 +5,22 @@
    <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />
    
    <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-      <directory>${LOGDIR}</directory>
+      <directory>${user.home}/${LOGDIR}</directory>
       <name>cave_${startTime}_pid_%PID%_logs.log</name>
    </define>
 
    <define name="consoleLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${LOGDIR}</directory>
+       <directory>${user.home}/${LOGDIR}</directory>
        <name>cave_${startTime}_pid_%PID%_console.log</name>
    </define>
 
    <define name="producteditorLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${LOGDIR}</directory>
+       <directory>${user.home}/${LOGDIR}</directory>
        <name>cave_${startTime}_pid_%PID%_producteditor.log</name>
    </define>
 
    <define name="performanceLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${LOGDIR}</directory>
+       <directory>${user.home}/${LOGDIR}</directory>
        <name>cave_${startTime}_pid_%PID%_perf.log</name>
    </define>
 
