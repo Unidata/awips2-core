@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.purgesrv;
 
-import java.sql.Timestamp;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.HashMap;
@@ -49,8 +48,8 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * May 1, 2012  #470       bphillip    Initial creation
  * Jun 24, 2014 #3314      randerso    Fix type safety warnings
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
- * 10/28/2014   3454        bphillip    Fix usage of getSession()
- * 
+ * 10/28/2014   3454       bphillip    Fix usage of getSession()
+ * Aug 05, 2015 4486       rjpeter     Changed Timestamp to Date.
  * </pre>
  * 
  * @author bphillip
@@ -177,7 +176,7 @@ public class PurgeDao extends CoreDao {
             @Override
             public Long doInTransaction(TransactionStatus status) {
                 Query hibQuery = getCurrentSession().createQuery(query);
-                Timestamp queryResult = (Timestamp) hibQuery.uniqueResult();
+                Date queryResult = (Date) hibQuery.uniqueResult();
                 if (queryResult == null) {
                     return -1L;
                 } else {

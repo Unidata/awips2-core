@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.dataaccess.impl;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Calendar;
 import java.util.Collection;
@@ -69,7 +68,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * May 19, 2015  4409     mapeters    Ignore null DataTimes in executeTimeQuery().
  * Jun 29, 2015  4585     dgilling    Stop validating parameters in
  *                                    getAvailableLocationNames.
- * 
+ * Aug 05, 2015  4486     rjpeter     Changed Timestamp to Date.
  * </pre>
  * 
  * @author bkowal
@@ -89,11 +88,11 @@ public abstract class AbstractGeometryDatabaseFactory extends
 
     protected static final String COL_NAME_OPTION = "**column name(s) of the table being queried";
 
-    private String databaseName;
+    private final String databaseName;
 
-    private String[] requiredIdentifiers;
+    private final String[] requiredIdentifiers;
 
-    private String[] optionalIdentifiers;
+    private final String[] optionalIdentifiers;
 
     /**
      * Constructor
@@ -200,8 +199,8 @@ public abstract class AbstractGeometryDatabaseFactory extends
         /*
          * verify that the object is one of the data types we are expecting.
          */
-        if (results[0] instanceof Timestamp) {
-            return new DataTime((Timestamp) results[0]);
+        if (results[0] instanceof Date) {
+            return new DataTime((Date) results[0]);
         } else if (results[0] instanceof DataTime) {
             return (DataTime) results[0];
         } else {
@@ -476,7 +475,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
         geometryData.setGeometry(geometry);
         geometryData.setLocationName(locationName);
         geometryData.setAttributes(attributes);
-        if ((data == null) == false && data.length > dataIndex) {
+        if (((data == null) == false) && (data.length > dataIndex)) {
             for (int i = dataIndex; i < data.length; i++) {
                 String name = paramNames[i - dataIndex];
                 Object dataItem = data[i];
