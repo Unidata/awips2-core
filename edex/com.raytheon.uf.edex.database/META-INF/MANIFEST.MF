@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Database
 Bundle-SymbolicName: com.raytheon.uf.edex.database
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.15.1.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
@@ -21,7 +21,8 @@ Require-Bundle: com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
  com.raytheon.uf.common.util,
  org.slf4j;bundle-version="1.7.5",
  org.reflections;bundle-version="0.9.9",
- com.raytheon.uf.common.numeric;bundle-version="1.14.0"
+ com.raytheon.uf.common.numeric;bundle-version="1.14.0",
+ com.raytheon.uf.common.dataaccess;bundle-version="1.15.1"
 Export-Package: com.raytheon.uf.edex.database,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.database.cluster.handler,
