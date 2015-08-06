@@ -26,9 +26,13 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 
+import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
+import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
+
+import com.raytheon.uf.edex.database.type.JavaUtilDateType;
 
 /**
  * Extension of the AnnotationSessionFactoryBean provided by Spring.
@@ -47,9 +51,8 @@ import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
  * 10/8/2008    1532        bphillip    Initial checkin
  * Jun 18, 2013 2117        djohnson    Remove use of config.buildSettings().
  * Oct 14, 2013 2361        njensen     Changes to support new technique for finding classes
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
- * 
- * 
+ * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
+ * Aug 05, 2015 4486        rjpeter     Ensure hibernate returns java.util.Date.
  * </pre>
  * 
  */
@@ -82,8 +85,8 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     public String[] getCreateSql(Set<Class<?>> classes)
             throws org.hibernate.AnnotationException {
         Configuration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateSchemaCreationScript(Dialect.getDialect(getConfiguration()
-                .getProperties()));
+        return tmp.generateSchemaCreationScript(Dialect
+                .getDialect(getConfiguration().getProperties()));
     }
 
     /**
@@ -100,12 +103,11 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     public String[] getDropSql(Collection<Class<?>> classes)
             throws org.hibernate.AnnotationException {
         Configuration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateDropSchemaScript(Dialect.getDialect(getConfiguration()
-                .getProperties()));
+        return tmp.generateDropSchemaScript(Dialect
+                .getDialect(getConfiguration().getProperties()));
     }
 
-    private Configuration loadNewConfigForClasses(
-            Collection<Class<?>> classes) {
+    private Configuration loadNewConfigForClasses(Collection<Class<?>> classes) {
         Configuration aConfig = new Configuration();
 
         for (Class<?> c : classes) {
@@ -133,6 +135,7 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
 
         // Set the annotated classes
         this.setAnnotatedClasses(annotatedClasses.toArray(new Class[] {}));
+
     }
 
     @Override
@@ -152,4 +155,10 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
         return accessibleClasses;
     }
 
+    @Override
+    protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
+        sfb.registerTypeOverride(new JavaUtilDateType(),
+                JavaUtilDateType.getRegistryKeys());
+        return super.buildSessionFactory(sfb);
+    }
 }

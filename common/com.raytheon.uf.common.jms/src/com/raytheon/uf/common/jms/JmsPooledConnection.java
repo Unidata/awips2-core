@@ -58,6 +58,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 21, 2013 1642       rjpeter     Fix deadlock scenario.
  * Feb 07, 2014 2357       rjpeter     Track by Thread, close session is it has no
  *                                     producers/consumers.
+ * Aug 05, 2015 4486       rjpeter     Fix NPE.
  * </pre>
  * 
  * @author rjpeter
@@ -223,11 +224,13 @@ public class JmsPooledConnection implements ExceptionListener {
                 availableSession = null;
             }
 
-            try {
-                conn.close();
-            } catch (Exception e) {
-                statusHandler.handle(Priority.WARN,
-                        "Failed to close connection " + conn, e);
+            if (conn != null) {
+                try {
+                    conn.close();
+                } catch (Exception e) {
+                    statusHandler.handle(Priority.WARN,
+                            "Failed to close connection " + conn, e);
+                }
             }
         }
         conn = null;

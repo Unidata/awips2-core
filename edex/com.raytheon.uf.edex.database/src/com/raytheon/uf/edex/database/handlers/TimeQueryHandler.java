@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.database.handlers;
 
-import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Date;
@@ -53,6 +52,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Apr 05, 2011            njensen     Initial creation
  * Mar 24, 2014    2941    mpduff      Sort data before returning it.
  * Feb 25, 2015 4159       rjpeter     Put in check for infinite recursion.
+ * Aug 05, 2015 4486       rjpeter     Changed Timestamp to Date.
  * </pre>
  * 
  * @author njensen
@@ -193,8 +193,8 @@ public class TimeQueryHandler implements IRequestHandler<TimeQueryRequest> {
             if (o != null) {
                 if (o instanceof DataTime) {
                     times.add((DataTime) o);
-                } else if (o instanceof Timestamp) {
-                    times.add(new DataTime((Timestamp) o));
+                } else if (o instanceof Date) {
+                    times.add(new DataTime((Date) o));
                 } else {
                     throw new Exception(
                             "Time query returned unexpected result: "
