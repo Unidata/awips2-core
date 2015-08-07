@@ -44,6 +44,7 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * ------------ ---------- ----------- --------------------------
  * Oct 18, 2011            mschenke     Initial creation
  * May 13, 2015  4461      bsteffen     Add determineFrameIndex
+ * Aug 07, 2015  4700      bsteffen     Add support for SPACE_AND_TIME
  * 
  * </pre>
  * 
@@ -174,6 +175,16 @@ public class FrameCoordinator implements IFrameCoordinator {
                 }
                 case TIME_AND_SPACE: {
                     newIndex = getNextDataTimeIndex(frames, frameIndex,
+                            operation, validator);
+                    if (operation == FrameChangeOperation.LAST) {
+                        currentAnimationMode = AnimationMode.Latest;
+                    } else {
+                        currentAnimationMode = AnimationMode.Temporal;
+                    }
+                    break;
+                }
+                case SPACE_AND_TIME: {
+                    newIndex = getNextSpaceTimeIndex(frames, frameIndex,
                             operation, validator);
                     if (operation == FrameChangeOperation.LAST) {
                         currentAnimationMode = AnimationMode.Latest;
@@ -636,6 +647,158 @@ public class FrameCoordinator implements IFrameCoordinator {
 
     /**
      * Given the FrameChangeOperation, figure out the next time/level to display
+     * looping through space and time
+     */
+    protected int getNextSpaceTimeIndex(DataTime[] frames, int dataIndex,
+            FrameChangeOperation op, IFrameValidator validator) {
+        int next = dataIndex;
+        switch (op) {
+        case FIRST: {
+            double lowestLevel = Double.POSITIVE_INFINITY;
+            long earliestTimeAtLowestLevel = Long.MAX_VALUE;
+            for (int i = 0; i < frames.length; i += 1) {
+                DataTime dtime = frames[i];
+                double level = dtime.getLevelValue().doubleValue();
+                long time = dtime.getValidTimeAsDate().getTime();
+                if (!validator.isValid(dtime)) {
+                    continue;
+                } else if (lowestLevel > level) {
+                    lowestLevel = level;
+                    earliestTimeAtLowestLevel = time;
+                    next = i;
+                } else if (lowestLevel == level
+                        && earliestTimeAtLowestLevel > time) {
+                    earliestTimeAtLowestLevel = time;
+                    next = i;
+                }
+            }
+            break;
+        }
+        case LAST: {
+            double highestLevel = Double.NEGATIVE_INFINITY;
+            long latestTimeAtHighestLevel = Long.MIN_VALUE;
+            for (int i = 0; i < frames.length; i += 1) {
+                DataTime dtime = frames[i];
+                double level = dtime.getLevelValue().doubleValue();
+                long time = dtime.getValidTimeAsDate().getTime();
+                if (!validator.isValid(dtime)) {
+                    continue;
+                } else if (highestLevel < level) {
+                    highestLevel = level;
+                    latestTimeAtHighestLevel = time;
+                    next = i;
+                } else if (highestLevel == level
+                        && latestTimeAtHighestLevel < time) {
+                    latestTimeAtHighestLevel = time;
+                    next = i;
+                }
+            }
+            break;
+        }
+        case NEXT: {
+            /* First try to find one at the same level, later time. */
+            double frameLevel = frames[dataIndex].getLevelValue();
+            long frameTime = frames[dataIndex].getValidTimeAsDate().getTime();
+            long earliestTimeAtLowestLevel = Long.MAX_VALUE;
+            for (int i = 0; i < frames.length; i += 1) {
+                DataTime dtime = frames[i];
+                double level = dtime.getLevelValue().doubleValue();
+                long time = dtime.getValidTimeAsDate().getTime();
+                if (!validator.isValid(dtime)) {
+                    continue;
+                } else if (frameLevel == level && time > frameTime
+                        && time < earliestTimeAtLowestLevel) {
+                    earliestTimeAtLowestLevel = time;
+                    next = i;
+                }
+            }
+            if(next == dataIndex){
+                /* Second try to find the earliest time at the next level up. */
+                double lowestLevel = Double.POSITIVE_INFINITY;
+                earliestTimeAtLowestLevel = Long.MAX_VALUE;
+                for (int i = 0; i < frames.length; i += 1) {
+                    DataTime dtime = frames[i];
+                    double level = dtime.getLevelValue().doubleValue();
+                    long time = dtime.getValidTimeAsDate().getTime();
+                    if (!validator.isValid(dtime)) {
+                        continue;
+                    } else if (level > frameLevel && level < lowestLevel) {
+                        lowestLevel = level;
+                        earliestTimeAtLowestLevel = time;
+                        next = i;
+                    } else if(level == lowestLevel && earliestTimeAtLowestLevel > time){
+                        earliestTimeAtLowestLevel = time;
+                        next = i;
+                    }
+                }
+                if(next == dataIndex){
+                    /*
+                     * If there is still nothing then the current frame must be
+                     * the last frame so loop back to the first frame.
+                     */
+                    return getNextSpaceTimeIndex(frames, dataIndex,
+                            FrameChangeOperation.FIRST, validator);
+                }
+            }
+            break;
+        }
+        case PREVIOUS: {
+            /* First try to find one at the same level, earlier time. */
+            double frameLevel = frames[dataIndex].getLevelValue();
+            long frameTime = frames[dataIndex].getValidTimeAsDate().getTime();
+            long latestTimeAtHighestLevel = Long.MIN_VALUE;
+            for (int i = 0; i < frames.length; i += 1) {
+                DataTime dtime = frames[i];
+                double level = dtime.getLevelValue().doubleValue();
+                long time = dtime.getValidTimeAsDate().getTime();
+                if (!validator.isValid(dtime)) {
+                    continue;
+                } else if (frameLevel == level && time < frameTime
+                        && time > latestTimeAtHighestLevel) {
+                    latestTimeAtHighestLevel = time;
+                    next = i;
+                }
+            }
+            if (next == dataIndex) {
+                /*
+                 * Second try to find the latest time at the previous level
+                 * down.
+                 */
+                double highestLevel = Double.NEGATIVE_INFINITY;
+                latestTimeAtHighestLevel = Long.MIN_VALUE;
+                for (int i = 0; i < frames.length; i += 1) {
+                    DataTime dtime = frames[i];
+                    double level = dtime.getLevelValue().doubleValue();
+                    long time = dtime.getValidTimeAsDate().getTime();
+                    if (!validator.isValid(dtime)) {
+                        continue;
+                    } else if (level < frameLevel && level > highestLevel) {
+                        highestLevel = level;
+                        latestTimeAtHighestLevel = time;
+                        next = i;
+                    } else if (level == highestLevel
+                            && latestTimeAtHighestLevel < time) {
+                        latestTimeAtHighestLevel = time;
+                        next = i;
+                    }
+                }
+                if (next == dataIndex) {
+                    /*
+                     * If there is still nothing then the current frame must be
+                     * the first frame so loop back to the last frame.
+                     */
+                    return getNextSpaceTimeIndex(frames, dataIndex,
+                            FrameChangeOperation.LAST, validator);
+                }
+            }
+            break;
+        }
+        }
+        return next;
+    }
+
+    /**
+     * Given the FrameChangeOperation, figure out the next time/level to display
      * looping through time and space
      * 
      * @param dataIndex
@@ -853,8 +1016,8 @@ public class FrameCoordinator implements IFrameCoordinator {
     }
 
     @Override
-    public int determineFrameIndex(DataTime[] currentFrames,
-            int currentIndex, DataTime[] newFrames) {
+    public int determineFrameIndex(DataTime[] currentFrames, int currentIndex,
+            DataTime[] newFrames) {
         if ((newFrames == null) || (newFrames.length == 0)) {
             return -1;
         }
@@ -869,8 +1032,7 @@ public class FrameCoordinator implements IFrameCoordinator {
                 }
             } else {
                 dateIndex = indexToUpdateTo(currentFrames, currentIndex,
-                        newFrames,
-                        dateIndex);
+                        newFrames, dateIndex);
                 if ((dateIndex >= 0) && (dateIndex < newFrames.length)) {
                     return dateIndex;
                 }
