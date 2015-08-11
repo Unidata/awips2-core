@@ -39,6 +39,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.TopologyException;
 import com.vividsolutions.jts.geom.Triangle;
 
 /**
@@ -50,21 +51,23 @@ import com.vividsolutions.jts.geom.Triangle;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Dec 14, 2012           mschenke    Initial creation
- * Sep 13, 2013  2309     bsteffen    Corrected Lines that are extrapolated to
- *                                    intersect the border will use projection
- *                                    factor from all 4 corners instead of 3.
- * Oct 08, 2013  2104     mschenke    Added case for where actual border is 
- *                                    inside out by checking interior point
- * Nov 18, 2013  2528     bsteffen    Fall back to brute force when corner
- *                                    points are not found.
- * Feb 23, 2015  4022     bsteffen    Return empty polygon when empty envelopes
- *                                    are used.
- * May 27, 2015  4472     bsteffen    Change the way the border is calculated
- *                                    to handle untransformable corners better.
- * Jun 11, 2015  4551     bsteffen    Add minNumDivs to calculateEdge
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Dec 14, 2012           mschenke  Initial creation
+ * Sep 13, 2013  2309     bsteffen  Corrected Lines that are extrapolated to
+ *                                  intersect the border will use projection
+ *                                  factor from all 4 corners instead of 3.
+ * Oct 08, 2013  2104     mschenke  Added case for where actual border is 
+ *                                  inside out by checking interior point
+ * Nov 18, 2013  2528     bsteffen  Fall back to brute force when corner
+ *                                  points are not found.
+ * Feb 23, 2015  4022     bsteffen  Return empty polygon when empty envelopes
+ *                                  are used.
+ * May 27, 2015  4472     bsteffen  Change the way the border is calculated to
+ *                                  handle untransformable corners better.
+ * Jun 11, 2015  4551     bsteffen  Add minNumDivs to calculateEdge
+ * Aug 11, 2015  4713     bsteffen  Fall back to brute force for topology
+ *                                  exception.
  * 
  * </pre>
  * 
@@ -436,8 +439,23 @@ public class EnvelopeIntersection {
                             correctedLs = gf.createLineString(lsCoords);
                         }
 
-                        // Intersect with targetBorder to trim LineString
-                        correctedLs = targetBorder.intersection(correctedLs);
+                        /* Intersect with targetBorder to trim LineString */
+                        try {
+                            correctedLs = targetBorder
+                                    .intersection(correctedLs);
+                        } catch (TopologyException e) {
+                            /*
+                             * This is known to happen when the target envelope
+                             * is stereographic and the source envelope contains
+                             * the point on the earth that is opposite of the
+                             * stereographic center. It would be better to
+                             * detect this case earlier but I don't know how.
+                             */
+                            return BruteForceEnvelopeIntersection
+                                    .createEnvelopeIntersection(sourceEnvelope,
+                                            targetEnvelope, maxHorDivisions,
+                                            maxVertDivisions);
+                        }
                     } else {
                         System.err
                                 .println("LineString lives completely outside target extent");
