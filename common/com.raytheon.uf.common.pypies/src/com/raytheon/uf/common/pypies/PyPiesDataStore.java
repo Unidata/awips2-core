@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
@@ -24,6 +25,7 @@ import com.raytheon.uf.common.pypies.request.CreateDatasetRequest;
 import com.raytheon.uf.common.pypies.request.DatasetDataRequest;
 import com.raytheon.uf.common.pypies.request.DatasetNamesRequest;
 import com.raytheon.uf.common.pypies.request.DeleteFilesRequest;
+import com.raytheon.uf.common.pypies.request.DeleteOrphansRequest;
 import com.raytheon.uf.common.pypies.request.DeleteRequest;
 import com.raytheon.uf.common.pypies.request.GroupsRequest;
 import com.raytheon.uf.common.pypies.request.RepackRequest;
@@ -42,19 +44,19 @@ import com.raytheon.uf.common.util.FileUtil;
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -62,9 +64,9 @@ import com.raytheon.uf.common.util.FileUtil;
 /**
  * Data Store implementation that communicates with a PyPIES server over http.
  * The requests and responses are all DynamicSerialized.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -73,10 +75,11 @@ import com.raytheon.uf.common.util.FileUtil;
  * Mon 07, 2013  DR 15294  D. Friedman Stream large requests
  * Feb 11, 2013      1526   njensen    use HttpClient.postDynamicSerialize() for memory efficiency
  * Feb 12, 2013     #1608  randerso    Added explicit deletes for groups and datasets
- * Nov 14, 2013  2393     bclement    removed interpolation
- * 
+ * Nov 14, 2013  2393      bclement    removed interpolation
+ * Jul 30, 2015  1574      nabowle     Add #deleteOrphanData(Date[])
+ *
  * </pre>
- * 
+ *
  * @author njensen
  * @version 1.0
  */
@@ -103,7 +106,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#addDataRecord(com.raytheon
      * .uf.common.datastorage.records.IDataRecord,
@@ -124,7 +127,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#addDataRecord(com.raytheon
      * .uf.common.datastorage.records.IDataRecord)
@@ -137,7 +140,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#createLinks(java.util.Map)
      */
@@ -150,7 +153,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#deleteDatasets(java.lang
      * .String[])
@@ -165,7 +168,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#deleteGroups(java.lang.
      * String[])
@@ -180,7 +183,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#getDatasets(java.lang.String
      * )
@@ -196,7 +199,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#retrieve(java.lang.String)
      */
@@ -211,7 +214,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#retrieve(java.lang.String,
      * java.lang.String, com.raytheon.uf.common.datastorage.Request)
@@ -230,7 +233,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#retrieveDatasets(java.lang
      * .String[], com.raytheon.uf.common.datastorage.Request)
@@ -248,7 +251,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#retrieveGroups(java.lang
      * .String[], com.raytheon.uf.common.datastorage.Request)
@@ -267,7 +270,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see com.raytheon.uf.common.datastorage.IDataStore#store()
      */
     @Override
@@ -277,7 +280,7 @@ public class PyPiesDataStore implements IDataStore {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.common.datastorage.IDataStore#store(com.raytheon.uf.common
      * .datastorage.IDataStore.StoreOp)
@@ -412,7 +415,7 @@ public class PyPiesDataStore implements IDataStore {
      * By default this method simply passes the request to
      * sendRequest(AbstractRequest). Method exists to be overridden for
      * implementations that cache data responses..
-     * 
+     *
      * @param obj
      * @return
      * @throws StorageException
@@ -510,6 +513,30 @@ public class PyPiesDataStore implements IDataStore {
             StringBuilder sb = new StringBuilder();
             sb.append("Error copying the following files: ");
             String[] failed = resp.getFailedFiles();
+            for (int i = 0; i < failed.length; i++) {
+                sb.append(failed[i]);
+                if (i < failed.length - 1) {
+                    sb.append(", ");
+                }
+            }
+            throw new StorageException(sb.toString(), null);
+        }
+    }
+
+    @Override
+    public void deleteOrphanData(Date oldestDate) throws StorageException {
+        if (oldestDate == null) {
+            return;
+        }
+
+        DeleteOrphansRequest req = new DeleteOrphansRequest(filename,
+                oldestDate);
+        FileActionResponse resp = (FileActionResponse) sendRequest(req);
+
+        String[] failed = resp.getFailedFiles();
+        if (failed != null && failed.length > 0) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("Error deleting the following orphaned files: ");
             for (int i = 0; i < failed.length; i++) {
                 sb.append(failed[i]);
                 if (i < failed.length - 1) {
