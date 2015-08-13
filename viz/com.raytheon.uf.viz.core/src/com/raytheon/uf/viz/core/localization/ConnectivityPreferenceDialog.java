@@ -318,8 +318,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         // TODO: append instead of define
         String[] pastOptions =  { 
         		"http://localhost:9581/services",
-        		//"http://edex-azure.unidata.ucar.edu:9581/services",
-        		"http://edex.unidata.ucar.edu:9581/services"
+        		"http://edex-azure.unidata.ucar.edu:9581/services"
+        		//"http://edex.unidata.ucar.edu:9581/services"
         		};
         
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
