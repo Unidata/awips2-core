@@ -40,7 +40,7 @@ def execute(T, wSp):
    WndChl = where(less_equal(mag, 3), T, 35.74 + (0.6215 * T) -
                (35.75 * (mag ** 0.16)) + (0.4275 * T * (mag ** 0.16)))
    # clip values where WindChill > T
-   WndChl[WndChl > T] = T
+   WndChl[WndChl > T] = T[WndChl > T]
    # substitute the temperature if WindChill >= 51 degrees
-   WndChl[T >= 51] = T
+   WndChl[T >= 51] = T[T >= 51]
    return WndChl

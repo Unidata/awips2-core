@@ -74,7 +74,7 @@ def execute3(T,DpT,wSpd):
     wSpd_kmh = wSpd * 3.6 #convert from m/s to km/h
     Hi = HeatIndex.calculate(TC,DpTC) #Outputs Celsius
     Wc = WindChill.calculate(TC,wSpd_kmh) #Outputs Celsius
-    Hi[Hi != -9999.0] = celciusToKelvin(Hi)
-    Wc[Wc != -9999.0] = celciusToKelvin(Wc)
-    Hi[Hi == -9999.0] = Wc
+    Hi[Hi != -9999.0] = celciusToKelvin(Hi)[Hi != -9999.0]
+    Wc[Wc != -9999.0] = celciusToKelvin(Wc)[Wc != -9999.0]
+    Hi[Hi == -9999.0] = Wc[Hi == -9999.0]
     return Hi
