@@ -26,18 +26,20 @@ import java.awt.image.RenderedImage;
 import java.awt.image.WritableRaster;
 import java.util.Hashtable;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.GLProfile;
 
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
+import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.internal.cache.IImageCacheable;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache;
 import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
-import com.sun.opengl.util.texture.Texture;
-import com.sun.opengl.util.texture.TextureCoords;
-import com.sun.opengl.util.texture.TextureData;
-import com.sun.opengl.util.texture.TextureIO;
+import com.jogamp.opengl.util.texture.Texture;
+import com.jogamp.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureData;
+import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
 
 /**
  * Represents a GL "RenderedImage"
@@ -114,7 +116,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
             if (getStatus() == Status.LOADED) {
                 if (theTexture != null) {
-                    theTexture.dispose();
+                    theTexture.destroy(null);
                     theTexture = null;
                 }
                 if (theStagedData != null) {
@@ -151,20 +153,20 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
      *            the OpenGL context
      * @throws VizException
      */
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         synchronized (this) {
-            Texture tex = TextureIO.newTexture(theStagedData);
+            Texture tex = AWTTextureIO.newTexture(theStagedData);
 
             theTexture = tex;
 
-            tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
-            tex.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            // tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NICEST);
-            // tex.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_NICEST);
-            tex.setTexParameteri(GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
-            tex.setTexParameteri(GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
-            // tex.setTexParameteri(GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
-            // tex.setTexParameteri(GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
+            tex.setTexParameteri(gl, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_NEAREST);
+            tex.setTexParameteri(gl, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_NEAREST);
+            // tex.setTexParameteri(gl, GL2.GL_TEXTURE_MIN_FILTER, GL2.GL_NICEST);
+            // tex.setTexParameteri(gl, GL2.GL_TEXTURE_MAG_FILTER, GL2.GL_NICEST);
+            tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_S, GL2.GL_CLAMP_TO_EDGE);
+            tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_T, GL2.GL_CLAMP_TO_EDGE);
+            // tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_S, GL2.GL_REPEAT);
+            // tex.setTexParameteri(gl, GL2.GL_TEXTURE_WRAP_T, GL2.GL_REPEAT);
 
             setStatus(Status.LOADED);
 
@@ -187,13 +189,13 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         if (rendImg == null) {
             return false;
         }
-
+        GLProfile glp = GLProfile.getDefault();
         if (rendImg instanceof BufferedImage) {
-            theStagedData = TextureIO.newTextureData((BufferedImage) rendImg,
+            theStagedData = AWTTextureIO.newTextureData(glp, (BufferedImage) rendImg,
                     false);
         } else {
             // convert to buf img
-            theStagedData = TextureIO.newTextureData(
+            theStagedData = AWTTextureIO.newTextureData(glp, 
                     fromRenderedToBuffered(rendImg), false);
         }
 

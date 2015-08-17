@@ -25,7 +25,7 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * GL font that is set by preferences page, listens for updates

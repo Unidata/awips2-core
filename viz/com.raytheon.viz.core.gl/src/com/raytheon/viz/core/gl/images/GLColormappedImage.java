@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl.images;
 
 import javax.measure.unit.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -67,7 +67,7 @@ public class GLColormappedImage extends AbstractGLColormappedImage {
      * .GLContext)
      */
     @Override
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         super.loadTexture(gl);
         // No need to keep around texture data after loading
         data.disposeTextureData();
