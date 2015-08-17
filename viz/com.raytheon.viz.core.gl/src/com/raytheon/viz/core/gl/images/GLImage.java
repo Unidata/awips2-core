@@ -115,7 +115,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
             if (getStatus() == Status.LOADED) {
                 if (theTexture != null) {
-                    ((IImage) theTexture).dispose();
+                    theTexture.destroy(null);
                     theTexture = null;
                 }
                 if (theStagedData != null) {
