@@ -68,7 +68,7 @@ def forceJavaCompatible(grid, correctType):
     
     Args: 
             grid: the numpy ndarray
-            correctType: a string of the correct dtype, e.g. 'int8'
+            correctType: the correct dtype, e.g. numpy.int8
                           
     Returns:
             a copy of the array as the specified dtype, or the original object
@@ -93,7 +93,7 @@ def checkdTypes(item, correctType):
     
     Args: 
             item: a numpy ndarray or a list or tuple of ndarrays
-            correctType: a string of the correct dtype, e.g. 'int8'
+            correctType: the correct dtype, e.g. numpy.int8
                           
     Returns:
             an object similar to item with any ndarrays converted to the correct dtype
