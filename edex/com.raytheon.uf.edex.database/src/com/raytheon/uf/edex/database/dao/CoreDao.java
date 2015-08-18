@@ -21,11 +21,6 @@
 package com.raytheon.uf.edex.database.dao;
 
 import java.io.Serializable;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -41,14 +36,12 @@ import org.hibernate.ScrollMode;
 import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
 import org.hibernate.SessionFactory;
-import org.hibernate.Transaction;
 import org.hibernate.criterion.Criterion;
 import org.hibernate.criterion.DetachedCriteria;
 import org.hibernate.criterion.Example;
 import org.hibernate.criterion.Property;
 import org.hibernate.metadata.ClassMetadata;
 import org.springframework.orm.hibernate4.HibernateTransactionManager;
-import org.springframework.orm.hibernate4.SessionFactoryUtils;
 import org.springframework.transaction.TransactionException;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
@@ -98,6 +91,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 10/28/2014   3454        bphillip    Fix usage of getSession()
  * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
  * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
+ * Aug 04, 2015 4500        rjpeter     Removed executeNativeSql.
  * </pre>
  * 
  * @author bphillip
@@ -1043,129 +1037,6 @@ public class CoreDao {
                 }
             }
         }
-    }
-
-    /**
-     * Executes a native SQL statement. This method completely bypasses
-     * Hibernate and uses JDBC directly
-     * 
-     * @param sql
-     *            The sql string
-     * @return A QueryResultObject if it was a query, else returns the number of
-     *         rows modified
-     * @throws DataAccessLayerException
-     *             If the statement fails
-     */
-    @Deprecated
-    public Object executeNativeSql(String sql, boolean transactional)
-            throws DataAccessLayerException {
-        Session session = null;
-        Transaction trans = null;
-        Connection conn = null;
-        Statement stmt = null;
-        SQLException exception = null;
-        Object results = null;
-
-        try {
-            session = getSession(true);
-            if (transactional) {
-                trans = session.beginTransaction();
-            }
-            conn = SessionFactoryUtils.getDataSource(getSessionFactory())
-                    .getConnection();
-            stmt = conn.createStatement();
-
-        } catch (SQLException e) {
-            throw new DataAccessLayerException(
-                    "Unable to create JDBC statement", e);
-        }
-        try {
-            boolean query = false;
-            if (transactional) {
-                query = stmt.execute(sql);
-            } else {
-                query = stmt.execute("COMMIT;" + sql);
-            }
-            if (query) {
-                results = mapResultSet(stmt.getResultSet());
-            } else {
-                results = stmt.getUpdateCount();
-            }
-
-        } catch (SQLException e1) {
-            exception = e1;
-            if (transactional) {
-                trans.rollback();
-            }
-            logger.error("Error executing script.", e1);
-        }
-
-        try {
-            stmt.close();
-        } catch (SQLException e1) {
-            exception = e1;
-            if (transactional) {
-                trans.rollback();
-            }
-            logger.error("Unable to close JDBC statement!", e1);
-        }
-
-        if ((exception == null) && transactional) {
-            trans.commit();
-        }
-        try {
-            if (!conn.isClosed()) {
-                conn.close();
-            }
-        } catch (SQLException e) {
-            exception = e;
-            logger.error("Cannot close database connection!!", e);
-        }
-        if (session.isOpen()) {
-            session.close();
-        }
-        if (exception != null) {
-            throw new DataAccessLayerException(
-                    "Unable to execute SQL update statement", exception);
-        }
-        return results;
-    }
-
-    @Deprecated
-    public Object executeNativeSql(String sql) throws DataAccessLayerException {
-        return executeNativeSql(sql, true);
-    }
-
-    /**
-     * Helper method for mapping JDBC result sets
-     * 
-     * @param rs
-     *            The raw ResultSet object
-     * @return The remapped results
-     * @throws SQLException
-     *             If mapping fails
-     */
-    private QueryResult mapResultSet(ResultSet rs) throws SQLException {
-        QueryResult results = new QueryResult();
-
-        ResultSetMetaData metadata = rs.getMetaData();
-
-        int columnCount = metadata.getColumnCount();
-        for (int i = 0; i < columnCount; i++) {
-            results.addColumnName(metadata.getColumnLabel(i + 1), i);
-        }
-
-        List<QueryResultRow> rows = new ArrayList<QueryResultRow>();
-        while (rs.next()) {
-            Object[] columnValues = new Object[columnCount];
-            for (int i = 1; i <= columnCount; i++) {
-                columnValues[i - 1] = rs.getObject(i);
-
-            }
-            rows.add(new QueryResultRow(columnValues));
-        }
-        results.setRows(rows.toArray(new QueryResultRow[] {}));
-        return results;
     }
 
     /**
