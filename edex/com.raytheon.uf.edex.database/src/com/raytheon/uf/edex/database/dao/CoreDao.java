@@ -92,6 +92,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
  * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
  * Aug 04, 2015 4500        rjpeter     Removed executeNativeSql.
+ * Aug 18, 2015 4758        rjpeter     Update MAPPED_SQL_PATTERN to work with multiline sql queries.
  * </pre>
  * 
  * @author bphillip
@@ -103,7 +104,7 @@ public class CoreDao {
 
     protected static final Pattern MAPPED_SQL_PATTERN = Pattern.compile(
             "select (.+?) FROM .*", Pattern.CASE_INSENSITIVE
-                    | Pattern.MULTILINE);
+                    | Pattern.MULTILINE | Pattern.DOTALL);
 
     /* Pattern used by postgis that need to be escaped */
     protected static final Pattern COLONS = Pattern.compile("::");
