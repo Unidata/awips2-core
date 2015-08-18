@@ -26,13 +26,13 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.ui.handlers.HandlerUtil;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFileOutputStream;
-import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -49,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Jun 10, 2015 4401       bkowal      Initial creation
  * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
+ * Aug 18, 2015 3806       njensen     Use SaveableOutputStream to save
  * 
  * </pre>
  * 
@@ -97,7 +98,7 @@ public abstract class AbstractVizPerspectiveLocalizationHandler extends
         LocalizationContext context = pm.getContext(
                 LocalizationType.COMMON_STATIC, LocalizationLevel.USER);
 
-        LocalizationFile localizationFile = pm.getLocalizationFile(context,
+        ILocalizationFile localizationFile = pm.getLocalizationFile(context,
                 PERSPECTIVES_DIR + File.separator + fileName);
         if (verifyOverwrite && localizationFile.exists()) {
             boolean result = MessageDialog.openQuestion(
@@ -108,32 +109,12 @@ public abstract class AbstractVizPerspectiveLocalizationHandler extends
             }
         }
 
-        LocalizationFileOutputStream lfos = null;
-        boolean writeSuccessful = false;
-        try {
-            lfos = localizationFile.openOutputStream();
-            lfos.write(fileContents);
-            writeSuccessful = true;
+        try (SaveableOutputStream sos = localizationFile.openOutputStream()) {
+            sos.write(fileContents);
+            sos.save();
         } catch (Exception e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to write localization file: " + fileName + ".", e);
-        } finally {
-            if (lfos != null) {
-                try {
-                    if (writeSuccessful) {
-                        lfos.closeAndSave();
-                        statusHandler
-                                .info("Successfully saved perspective localization file: "
-                                        + fileName + ".");
-                    } else {
-                        lfos.close();
-                    }
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.CRITICAL,
-                            "Failed to save localization file: " + fileName
-                                    + ".", e);
-                }
-            }
         }
     }
 }
