@@ -19,6 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.glsl;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -35,6 +36,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.glsl.internal.GLProgramManager;
+import com.raytheon.viz.core.gl.objects.GLVertexBufferObject;
 import com.sun.opengl.util.BufferUtil;
 
 /**
@@ -43,9 +45,9 @@ import com.sun.opengl.util.BufferUtil;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 19, 2015  4709     bsteffen  Allow setting vertex attributes.
  * 
  * </pre>
  * 
@@ -84,11 +86,9 @@ public class GLShaderProgram {
     // * attribute - Global read-only variables only available to the vertex
     // shader (and not the fragment shader). Passed from an OpenGL program,
     // these can be changed on a per vertex level.
-    // currently we are only using uniforms variables
     private Map<String, Object> loadedUniforms = new HashMap<String, Object>();
 
-    // TODO make configurable
-    private static final int MAX_MULTIGRIDS = 8;
+    private Map<String, Integer> loadedAttributes = new HashMap<>();
 
     private final String name;
 
@@ -145,6 +145,7 @@ public class GLShaderProgram {
             state = State.IN_USE;
         }
         loadedUniforms.clear();
+        loadedAttributes.clear();
     }
 
     /**
@@ -153,6 +154,11 @@ public class GLShaderProgram {
     public void endShader() {
         if (state == State.IN_USE) {
             gl.glUseProgram(0);
+            loadedUniforms.clear();
+            for (Integer attributeLocation : loadedAttributes.values()) {
+                gl.glDisableVertexAttribArray(attributeLocation);
+            }
+            loadedAttributes.clear();
             state = State.INITIALIZED;
         }
     }
@@ -252,6 +258,23 @@ public class GLShaderProgram {
                 setUniformInternal(key, value);
             }
         }
+    }
+
+    public void setVertexAttributeData(String key, int type, Buffer buffer) {
+        int location = gl.glGetAttribLocation(glslContext, key);
+        gl.glEnableVertexAttribArray(location);
+        gl.glVertexAttribPointer(location, 1, type, false, 0, buffer);
+        loadedAttributes.put(key, location);
+    }
+
+    public void setVertexAttributeData(String key, int type,
+            GLVertexBufferObject vbo) {
+        int location = gl.glGetAttribLocation(glslContext, key);
+        vbo.bind(gl, GL.GL_ARRAY_BUFFER);
+        gl.glEnableVertexAttribArray(location);
+        gl.glVertexAttribPointer(location, 1, type, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
+        loadedAttributes.put(key, location);
     }
 
     /**
