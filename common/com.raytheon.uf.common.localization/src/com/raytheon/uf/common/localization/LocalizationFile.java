@@ -30,8 +30,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 
-import javax.xml.bind.JAXBException;
-
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.ILocalizationAdapter.ListResponse;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -90,6 +88,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 11, 2015 4108        randerso    Implemented hashCode()
  * Feb 24, 2015 3978        njensen     Changed openInputStream() return type to InputStream
  *                                       Removed read() method
+ * Aug 18, 2015 3806        njensen     Implements ILocalizationFile, deprecated bad
+ *                                       methods, extracted jaxb convenience logic                                      
  * 
  * 
  * </pre>
@@ -98,7 +98,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 
-public final class LocalizationFile implements Comparable<LocalizationFile> {
+public final class LocalizationFile implements Comparable<LocalizationFile>,
+        ILocalizationFile {
 
     private static transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationFile.class);
@@ -253,6 +254,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return the file time stamp, may be null if file doesn't exist yet
      */
+    @Override
     public Date getTimeStamp() {
         return fileTimestamp;
     }
@@ -262,6 +264,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return the file check sum, may be null if file doesn't exist yet
      */
+    @Override
     public String getCheckSum() {
         return fileCheckSum;
     }
@@ -277,11 +280,16 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * local filesystem. Note that in some cases (e.g. when creating a file),
      * the File returned may not actually exist.
      * 
+     * @deprecated Please use openInputStream() for retrieving the file
+     *             contents, openOutputStream() for saving new file contents,
+     *             and the interface getters for getting metadata.
+     * 
      * @param retrieveFile
      *            a flag that specifies whether the file should be downloaded if
      *            the local file pointer doesn't exist
      * @return the file
      */
+    @Deprecated
     public File getFile(boolean retrieveFile) throws LocalizationException {
         if (retrieveFile) {
             fileRequested = true;
@@ -311,10 +319,15 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * the LocalizationFile and openOutputStream() for writing to the
      * LocalizationFile. ALWAYS close() the streams when done reading/writing as
      * those methods will auto lock the file. If must use this method, call
-     * FileLocker.lock/unlock when using the file
+     * FileLocker.lock/unlock when using the file.
+     * 
+     * @deprecated Please use openInputStream() for retrieving the file
+     *             contents, openOutputStream() for saving new file contents,
+     *             and the interface getters for getting metadata.
      * 
      * @return File pointer
      */
+    @Deprecated
     public File getFile() {
         try {
             return getFile(true);
@@ -336,6 +349,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * @return the InputStream to be used for reading the file
      * @throws LocalizationException
      */
+    @Override
     public InputStream openInputStream() throws LocalizationException {
         try {
             if (context.getLocalizationType() == LocalizationType.CAVE_STATIC
@@ -369,22 +383,26 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * @return the OutputStream to be used for writing to the file
      * @throws LocalizationException
      */
-    public LocalizationFileOutputStream openOutputStream()
-            throws LocalizationException {
+    @Override
+    public SaveableOutputStream openOutputStream() throws LocalizationException {
         return openOutputStream(false);
     }
 
     /**
      * Creates an OutputStream for the LocalizationFile
      * 
+     * @deprecated Appending will not be supported in the future.
+     * 
      * @param isAppending
      * @return the OutputStream to be used for writing to the file
      * @throws LocalizationException
      */
-    public LocalizationFileOutputStream openOutputStream(boolean isAppending)
+    @Deprecated
+    public SaveableOutputStream openOutputStream(boolean isAppending)
             throws LocalizationException {
         try {
-            return new LocalizationFileOutputStream(this, isAppending);
+            return new LocalizationSaveableFileOutputStream(
+                    new LocalizationFileOutputStream(this, isAppending));
         } catch (FileNotFoundException e) {
             throw new LocalizationException("Error opening input stream", e);
         }
@@ -394,26 +412,19 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * Writes the data to the underlying file. Also persists the file back to
      * the localization store.
      * 
+     * @deprecated Please use openOutputStream to write out contents.
+     * 
      * @param bytes
      * @throws LocalizationException
      */
+    @Deprecated
     public void write(byte[] bytes) throws LocalizationException {
-        LocalizationFileOutputStream os = null;
-        try {
-            os = openOutputStream();
-            os.write(bytes);
+        try (SaveableOutputStream sos = openOutputStream()) {
+            sos.write(bytes);
+            sos.save();
         } catch (IOException e) {
             throw new LocalizationException("Could not write to file "
                     + file.getName(), e);
-        } finally {
-            if (os != null) {
-                try {
-                    os.closeAndSave();
-                } catch (IOException e) {
-                    statusHandler.handle(Priority.INFO,
-                            "Failed to close output stream for file", e);
-                }
-            }
         }
     }
 
@@ -423,6 +434,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return the context
      */
+    @Override
     public LocalizationContext getContext() {
         return context;
     }
@@ -441,6 +453,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return true if the file is actually a directory
      */
+    @Override
     public boolean isDirectory() {
         return isDirectory;
     }
@@ -468,6 +481,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @throws LocalizationOpFailedException
      */
+    @Deprecated
     public boolean save() throws LocalizationOpFailedException {
         try {
             FileLocker.lock(this, file, Type.WRITE);
@@ -498,6 +512,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return the file path
      */
+    @Override
     public String getName() {
         return path;
     }
@@ -530,6 +545,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * 
      * @return true if the file exists
      */
+    @Override
     public boolean exists() {
         return (isNull() == false) && adapter.exists(this);
     }
@@ -583,42 +599,25 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * Returns the object version of this jaxb serialized file. Returns null if
      * the file does not exist or is empty.
      * 
-     * @param <T>
+     * @deprecated Please use openInputStream() to read in your object, or if
+     *             you must have convenience, use LocalizationXmlUtil
+     * 
      * @param resultClass
      * @param manager
      * @return the object representation umarshaled from this file
      * @throws LocalizationException
      */
+    @Deprecated
     public <T> T jaxbUnmarshal(Class<T> resultClass, JAXBManager manager)
             throws LocalizationException {
-        File f = getFile();
-        if (f.exists() && (f.length() > 0)) {
-            InputStream is = null;
-            try {
-                is = openInputStream();
-                T object = resultClass.cast(manager
-                        .unmarshalFromInputStream(is));
-                return object;
-            } catch (Exception e) {
-                throw new LocalizationException("Could not unmarshal file "
-                        + file.getName(), e);
-            } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        statusHandler.handle(Priority.WARN,
-                                "Failed to close input stream for file", e);
-                    }
-                }
-            }
-        }
-
-        return null;
+        return LocalizationXmlUtil.jaxbUnmarshal(this, resultClass, manager);
     }
 
     /**
      * Marshal the specified object into this file.
+     * 
+     * @deprecated Please use openOutputStream() to write out your object, or if
+     *             you must have convenience, use LocalizationXmlUtil
      * 
      * @param obj
      *            the object to marshal
@@ -626,15 +625,10 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * @param jaxbManager
      *            the jaxbManager
      */
+    @Deprecated
     public void jaxbMarshal(Object obj, JAXBManager jaxbManager)
             throws LocalizationException {
-        try {
-            String xml = jaxbManager.marshalToXml(obj);
-            write(xml.getBytes());
-        } catch (JAXBException e) {
-            throw new LocalizationException(
-                    "Unable to marshal the object to the file.", e);
-        }
+        LocalizationXmlUtil.jaxbMarshal(this, obj, jaxbManager);
     }
 
     @Override

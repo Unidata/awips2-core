@@ -46,13 +46,14 @@ import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.jface.util.SafeRunnable;
 
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFileOutputStream;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -75,6 +76,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                     and support for listeners
  * Feb 27, 2014 2861       mschenke    Rewrote to add thread safety and handle
  *                                     all LocalizationLevels
+ * Aug 18, 2015 3806       njensen     Use SaveableOutputStream to save   
  * 
  * </pre>
  * 
@@ -87,7 +89,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
     private static class LocalizationConfiguration {
 
-        private final LocalizationFile file;
+        private final ILocalizationFile file;
 
         private XMLConfiguration config;
 
@@ -95,7 +97,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         private boolean dirty = false;
 
-        public LocalizationConfiguration(LocalizationFile file) {
+        public LocalizationConfiguration(ILocalizationFile file) {
             this.file = file;
             this.config = new XMLConfiguration();
         }
@@ -124,14 +126,12 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         public void save() throws LocalizationException {
             if (isDirty()) {
-                LocalizationFileOutputStream out = file.openOutputStream();
-                try {
+                try (SaveableOutputStream sos = file.openOutputStream()) {
                     try {
-                        config.save(out);
-                        out.closeAndSave();
+                        config.save(sos);
+                        sos.save();
                         dirty = false;
-                    } catch (ConfigurationException e) {
-                        out.close();
+                    } catch (ConfigurationException | IOException e) {
                         throw new LocalizationException(
                                 "Error saving config.xml into localization", e);
                     }
@@ -347,6 +347,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * (org.eclipse.jface.util.IPropertyChangeListener)
      */
 
+    @Override
     public void addPropertyChangeListener(IPropertyChangeListener listener) {
         this.propertyChangeListeners.add(listener);
     }
@@ -358,6 +359,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * org.eclipse.jface.preference.IPreferenceStore#removePropertyChangeListener
      * (org.eclipse.jface.util.IPropertyChangeListener)
      */
+    @Override
     public void removePropertyChangeListener(IPropertyChangeListener listener) {
         this.propertyChangeListeners.remove(listener);
     }
@@ -398,6 +400,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         for (final IPropertyChangeListener listener : this.propertyChangeListeners) {
             SafeRunnable.run(new SafeRunnable(JFaceResources
                     .getString("PreferenceStore.changeError")) { //$NON-NLS-1$
+                        @Override
                         public void run() {
                             listener.propertyChange(pe);
                         }
@@ -414,6 +417,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * lang.String)
      */
 
+    @Override
     public boolean getDefaultBoolean(String name) {
         return getDefaultConfig().getBoolean(name,
                 IPreferenceStore.BOOLEAN_DEFAULT_DEFAULT);
@@ -427,6 +431,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * .String)
      */
 
+    @Override
     public double getDefaultDouble(String name) {
         return getDefaultConfig().getDouble(name,
                 IPreferenceStore.DOUBLE_DEFAULT_DEFAULT);
@@ -440,6 +445,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * .String)
      */
 
+    @Override
     public float getDefaultFloat(String name) {
         return getDefaultConfig().getFloat(name,
                 IPreferenceStore.FLOAT_DEFAULT_DEFAULT);
@@ -453,6 +459,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * .String)
      */
 
+    @Override
     public int getDefaultInt(String name) {
         return getDefaultConfig().getInt(name,
                 IPreferenceStore.INT_DEFAULT_DEFAULT);
@@ -466,6 +473,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * .String)
      */
 
+    @Override
     public long getDefaultLong(String name) {
         return getDefaultConfig().getLong(name,
                 IPreferenceStore.LONG_DEFAULT_DEFAULT);
@@ -479,6 +487,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * .String)
      */
 
+    @Override
     public String getDefaultString(String name) {
         return getDefaultConfig().getString(name,
                 IPreferenceStore.STRING_DEFAULT_DEFAULT);
@@ -679,6 +688,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @see
      * org.eclipse.jface.preference.IPreferenceStore#getLong(java.lang.String)
      */
+    @Override
     public long getLong(String name) {
         return getLong(COMBINED, name);
     }
@@ -1085,6 +1095,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * org.eclipse.jface.preference.IPreferenceStore#setValue(java.lang.String,
      * long)
      */
+    @Override
     public void setValue(String name, long value) {
         setValue(defaultPersistLevel, name, value);
     }
