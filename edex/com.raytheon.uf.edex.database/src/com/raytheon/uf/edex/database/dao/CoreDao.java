@@ -93,6 +93,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
  * Aug 04, 2015 4500        rjpeter     Removed executeNativeSql.
  * Aug 18, 2015 4758        rjpeter     Update MAPPED_SQL_PATTERN to work with multiline sql queries.
+ * Aug 19, 2015 4763        rjpeter     Update mappedSql to remove distinct and function definitions from name mapping.
  * </pre>
  * 
  * @author bphillip
@@ -854,6 +855,7 @@ public class CoreDao {
      * @return An array objects (multiple rows are returned as Object [ Object
      *         [] ]
      */
+    @Deprecated
     public QueryResult executeMappedSQLQuery(final String sql) {
         return executeMappedSQLQuery(sql, null);
     }
@@ -866,6 +868,7 @@ public class CoreDao {
      * @return An array objects (multiple rows are returned as Object [ Object
      *         [] ]
      */
+    @Deprecated
     public QueryResult executeMappedSQLQuery(final String sql,
             final String param, final Object val) {
         Map<String, Object> paramMap = new HashMap<>(1, 1);
@@ -881,6 +884,7 @@ public class CoreDao {
      * @return An array objects (multiple rows are returned as Object [ Object
      *         [] ]
      */
+    @Deprecated
     public QueryResult executeMappedSQLQuery(final String sql,
             final Map<String, Object> paramMap) {
         Object[] queryResult = executeSQLQuery(sql, paramMap);
@@ -910,10 +914,23 @@ public class CoreDao {
             int colIndex = 0;
             String[] columns = group.split(",");
             for (String col : columns) {
-                col = col.toLowerCase();
+                col = col.toLowerCase().trim();
+
+                // remove distinct from name return
+                if (col.startsWith("distinct ")) {
+                    col = col.substring(9);
+                }
+
                 int asIndex = col.indexOf(" as ");
                 if (asIndex > 0) {
                     col = col.substring(asIndex + 4);
+                } else {
+                    /* check for function and remove function definition if present */
+                    int parenIndex = col.indexOf('(');
+
+                    if (parenIndex > 0) {
+                        col = col.substring(0, parenIndex);
+                    }
                 }
 
                 result.addColumnName(col.trim(), colIndex++);
