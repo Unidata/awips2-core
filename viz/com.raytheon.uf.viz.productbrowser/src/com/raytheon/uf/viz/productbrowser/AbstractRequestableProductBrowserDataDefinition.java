@@ -29,6 +29,9 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
@@ -76,6 +79,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                  DbQueryRequest.
  * May 13, 2014  3135     bsteffen  Remove ISerializableObject.
  * Jun 02, 2015  4153     bsteffen  Extract interface and deprecate.
+ * Aug 13, 2015  4717     mapeters  Update order when its preference store value changes
  * 
  * </pre>
  * 
@@ -251,7 +255,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
         }
         Bundle b = new Bundle();
         b.setDisplays(new AbstractRenderableDisplay[] { display });
-        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b).schedule();
+        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b)
+                .schedule();
     }
 
     /**
@@ -372,7 +377,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     @Override
     protected List<ProductBrowserPreference> configurePreferences() {
         List<ProductBrowserPreference> widgets = super.configurePreferences();
-        widgets.add(ProductBrowserPreferenceConstants.createOrderPreference(order));
+        widgets.add(ProductBrowserPreferenceConstants
+                .createOrderPreference(order));
         widgets.add(ProductBrowserPreferenceConstants.createFormatPreference());
         return widgets;
     }
@@ -392,7 +398,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     @Override
     public List<ProductBrowserLabel> getLabels(String[] selection) {
         if (selection.length == 0) {
-            ProductBrowserLabel label = new ProductBrowserLabel(displayName, productName);
+            ProductBrowserLabel label = new ProductBrowserLabel(displayName,
+                    productName);
             label.setData(productName);
             label.setProduct(order.length == 0);
             return Collections.singletonList(label);
@@ -411,5 +418,23 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
             stringBuilder.append(order[i - 1] + " = " + selection[i]);
         }
         return stringBuilder.toString();
+    }
+
+    @Override
+    public List<ProductBrowserPreference> getPreferences() {
+        if (preferences == null) {
+            IPreferenceStore store = Activator.getDefault()
+                    .getPreferenceStore();
+            store.addPropertyChangeListener(new IPropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent event) {
+                    if (event.getProperty().equals(ORDER + displayName)) {
+                        // Update order from preference store
+                        getOrder();
+                    }
+                }
+            });
+        }
+        return super.getPreferences();
     }
 }

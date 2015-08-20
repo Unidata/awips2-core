@@ -31,19 +31,25 @@ import org.eclipse.core.runtime.IExtension;
 import org.eclipse.core.runtime.IExtensionPoint;
 import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.jface.action.Action;
+import org.eclipse.jface.action.IAction;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
+import org.eclipse.jface.viewers.DoubleClickEvent;
+import org.eclipse.jface.viewers.IDoubleClickListener;
+import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.MouseEvent;
+import org.eclipse.swt.events.MouseMoveListener;
+import org.eclipse.swt.events.TreeEvent;
 import org.eclipse.swt.graphics.Font;
 import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
@@ -52,8 +58,8 @@ import org.eclipse.ui.part.ViewPart;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
-import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserInitializeJob;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
+import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserUpdateDataTypeJob;
 
 /**
  * Product browser view implementation
@@ -68,6 +74,8 @@ import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
  *                                  DbQueryRequest.
  * May 13, 2014  3135     bsteffen  Make all queries async.
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
+ * Aug 10, 2015  4717     mapeters  Added collapse all button, don't collapse on refresh,
+ *                                  expand/collapse on double click.
  * 
  * </pre>
  * 
@@ -75,13 +83,14 @@ import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
  * @version 1.0
  */
 public class ProductBrowserView extends ViewPart {
-    private static final transient IUFStatusHandler statusHandler = UFStatus.getHandler(ProductBrowserView.class);
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(ProductBrowserView.class);
 
     public static final String ID = "com.raytheon.uf.viz.productbrowser.ProductBrowserView";
 
     public static final String LABEL_DATA_KEY = "label";
 
-    public static final String DEF_DATA_KEY = "defintion";
+    public static final String DEF_DATA_KEY = "definition";
 
     private static IExtension[] extensions;
 
@@ -90,6 +99,8 @@ public class ProductBrowserView extends ViewPart {
     private Action loadProductAction;
 
     private Action productInfoAction;
+
+    private Action collapseAction;
 
     private Action refreshAction;
 
@@ -108,14 +119,33 @@ public class ProductBrowserView extends ViewPart {
      * Provides the actions available to the product tree
      */
     private void createActions() {
+        collapseAction = new Action("Collapse All", IAction.AS_PUSH_BUTTON) {
+            @Override
+            public void run() {
+                for (TreeItem item : productTree.getItems()) {
+                    recursiveCollapse(item);
+                }
+            }
+
+            private void recursiveCollapse(TreeItem item) {
+                for (TreeItem child : item.getItems()) {
+                    recursiveCollapse(child);
+                }
+                item.setExpanded(false);
+            }
+        };
+        collapseAction.setImageDescriptor(ProductBrowserUtils
+                .getImageDescriptor("collapse.gif"));
+
         refreshAction = new Action("Refresh Browser") {
             @Override
             public void run() {
-                populateInitialProductTree();
+                refresh(null);
             }
         };
         refreshAction.setId("refreshAction");
-        refreshAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("refresh.gif"));
+        refreshAction.setImageDescriptor(ProductBrowserUtils
+                .getImageDescriptor("refresh.gif"));
 
         productInfoAction = new Action("Product Info") {
             @Override
@@ -124,7 +154,8 @@ public class ProductBrowserView extends ViewPart {
             }
         };
         productInfoAction.setId("productInfoAction");
-        productInfoAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("help.gif"));
+        productInfoAction.setImageDescriptor(ProductBrowserUtils
+                .getImageDescriptor("help.gif"));
 
         loadProductAction = new Action("Load Product") {
             @Override
@@ -133,7 +164,41 @@ public class ProductBrowserView extends ViewPart {
             }
         };
         loadProductAction.setId("loadProductAction");
-        loadProductAction.setImageDescriptor(ProductBrowserUtils.getImageDescriptor("run.gif"));
+        loadProductAction.setImageDescriptor(ProductBrowserUtils
+                .getImageDescriptor("run.gif"));
+    }
+
+    /**
+     * Refresh the available data types and their contents.
+     * 
+     * @param dataTypeName
+     *            the name of the data type to be refreshed, or null if all
+     *            should be refreshed
+     */
+    public void refresh(String dataTypeName) {
+        // Update top level tree elements
+        updateAvailableDataTypes(dataTypeName);
+        // Update all other tree elements
+        boolean refreshAll = (dataTypeName == null);
+        for (TreeItem item : productTree.getItems()) {
+            if (refreshAll
+                    || getLabel(item).getName().equalsIgnoreCase(dataTypeName)) {
+                recursiveRefresh(item);
+            }
+        }
+    }
+
+    private void recursiveRefresh(TreeItem item) {
+        if (item.getExpanded()) {
+            /*
+             * Only care about expanded items, collapsed items' contents will
+             * automatically be updated when they are expanded.
+             */
+            for (TreeItem child : item.getItems()) {
+                recursiveRefresh(child);
+            }
+            ProductBrowserQueryJob.startJob(item);
+        }
     }
 
     /**
@@ -143,31 +208,37 @@ public class ProductBrowserView extends ViewPart {
      */
     public void createProductTree(final Composite parent) {
         GridData gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        productTree = new Tree(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL | SWT.BORDER);
+        productTree = new Tree(parent, SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL
+                | SWT.BORDER);
         productTree.setLayoutData(gridData);
-        productTree.addListener(SWT.MouseDoubleClick, new Listener() {
+
+        /*
+         * Wrap productTree as TreeViewer to handle tree expansions and listen
+         * for double clicks
+         */
+        TreeViewer productTreeViewer = new TreeViewer(productTree) {
             @Override
-            public void handleEvent(Event event) {
-                if (event.button == 1) {
+            protected void handleTreeExpand(TreeEvent event) {
+                ProductBrowserQueryJob.startJob((TreeItem) event.item);
+            }
+        };
+        productTreeViewer.addDoubleClickListener(new IDoubleClickListener() {
+            @Override
+            public void doubleClick(DoubleClickEvent event) {
+                TreeItem[] selection = productTree.getSelection();
+                TreeItem selectedTreeItem = selection[0];
+                if (!getLabel(selectedTreeItem).isProduct()) {
+                    selectedTreeItem.setExpanded(!selectedTreeItem
+                            .getExpanded());
+                    ProductBrowserQueryJob.startJob(selectedTreeItem);
+                } else {
                     loadProductAction.run();
                 }
             }
         });
 
-        productTree.addListener(SWT.Expand, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                ProductBrowserQueryJob.startJob((TreeItem) event.item);
-            }
-        });
-
-        productTree.addListener(SWT.MouseMove, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                productTree.setToolTipText("");
-            }
-        });
-        populateInitialProductTree();
+        // Populate product tree with available data types
+        updateAvailableDataTypes(null);
     }
 
     /**
@@ -175,6 +246,7 @@ public class ProductBrowserView extends ViewPart {
      */
     private void createToolbar() {
         IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
+        mgr.add(collapseAction);
         mgr.add(refreshAction);
     }
 
@@ -212,10 +284,12 @@ public class ProductBrowserView extends ViewPart {
             if (label.isProduct()) {
                 ProductBrowserDataDefinition def = getDataDef(selection[0]);
                 String[] path = getProductURI(selection[0], false);
-                Collection<DisplayType> displayTypes = def.getValidDisplayTypes(path);
+                Collection<DisplayType> displayTypes = def
+                        .getValidDisplayTypes(path);
                 if (displayTypes != null && displayTypes.size() > 1) {
                     MenuManager menuMgr = new MenuManager("Load As...",
-                            ProductBrowserUtils.getImageDescriptor("run.gif"), "");
+                            ProductBrowserUtils.getImageDescriptor("run.gif"),
+                            "");
                     for (DisplayType type : displayTypes) {
                         menuMgr.add(getDisplayTypeAction(type));
                     }
@@ -246,46 +320,76 @@ public class ProductBrowserView extends ViewPart {
     }
 
     /**
-     * Take the initial plugins available and populate them if they have any
-     * data. This function does not populate the tree with the data, just the
-     * plugin names.
+     * Update (or initialize) the data types shown in the product tree based on
+     * the availability of their data. This function does not populate the tree
+     * with the data, just the plugin names.
      * 
-     * @param popData
+     * @param dataTypeName
+     *            the name of the data type to be updated, or null if all should
+     *            be updated
      */
-    public void populateInitialProductTree() {
-        productTree.removeAll();
+    private void updateAvailableDataTypes(String dataTypeName) {
+        boolean updateAll = (dataTypeName == null);
         for (IExtension ext : extensions) {
             IConfigurationElement[] config = ext.getConfigurationElements();
             for (IConfigurationElement element : config) {
                 ProductBrowserDataDefinition prod = null;
                 try {
-                    prod = (ProductBrowserDataDefinition) element.createExecutableExtension("class");
+                    prod = (ProductBrowserDataDefinition) element
+                            .createExecutableExtension("class");
                 } catch (CoreException e) {
-                    statusHandler.error("A product browser data definition has failed to load.", e);
+                    statusHandler
+                            .error("A product browser data definition has failed to load.",
+                                    e);
                     continue;
                 }
-                List<ProductBrowserLabel> labels = prod.getLabels(new String[0]);
+                List<ProductBrowserLabel> labels = prod
+                        .getLabels(new String[0]);
                 for (ProductBrowserLabel label : labels) {
-                    String displayText = "Checking Availability of " + label.getName() + "...";
-                    /* Sort alphabetically. */
+                    String labelName = label.getName();
+                    if (!updateAll && !labelName.equalsIgnoreCase(dataTypeName)) {
+                        continue;
+                    }
+                    TreeItem newDataType = null;
+                    // Sort alphabetically
                     int index = 0;
-                    for (TreeItem items : productTree.getItems()) {
-                        if (items.getText().compareToIgnoreCase(displayText) > 0) {
+                    for (TreeItem dataType : productTree.getItems()) {
+                        int compareValue = getLabel(dataType).getName()
+                                .compareToIgnoreCase(labelName);
+                        if (compareValue == 0) {
+                            /*
+                             * Copy the dataType and dispose it. Otherwise,
+                             * passing the same TreeItem instance to multiple
+                             * ProductBrowserUpdateDataTypeJobs can cause an
+                             * earlier job to interfere with a later one (the
+                             * later job should take priority).
+                             */
+                            newDataType = new TreeItem(productTree, SWT.NONE,
+                                    index);
+                            copyItem(dataType, newDataType);
+                            dataType.dispose();
+                            break;
+                        } else if (compareValue > 0) {
                             break;
                         } else {
                             index++;
                         }
                     }
-                    TreeItem ti = new TreeItem(productTree, SWT.NONE, index);
-                    ti.setText(displayText);
-                    ti.setData(LABEL_DATA_KEY, label);
-                    ti.setData(DEF_DATA_KEY, prod);
-                    Font font = ti.getFont();
-                    FontData fontData = font.getFontData()[0];
-                    fontData = new FontData(fontData.getName(), fontData.getHeight(), SWT.BOLD);
-                    font = new Font(ti.getDisplay(), fontData);
-                    ti.setFont(font);
-                    new ProductBrowserInitializeJob(ti).schedule();
+                    if (newDataType == null) {
+                        newDataType = new TreeItem(productTree, SWT.NONE, index);
+                        newDataType.setData(LABEL_DATA_KEY, label);
+                        newDataType.setData(DEF_DATA_KEY, prod);
+                        Font font = newDataType.getFont();
+                        FontData fontData = font.getFontData()[0];
+                        fontData = new FontData(fontData.getName(),
+                                fontData.getHeight(), SWT.BOLD);
+                        font = new Font(newDataType.getDisplay(), fontData);
+                        newDataType.setFont(font);
+                    }
+                    String displayText = "Checking Availability of "
+                            + labelName + "...";
+                    newDataType.setText(displayText);
+                    new ProductBrowserUpdateDataTypeJob(newDataType).schedule();
                 }
             }
         }
@@ -297,7 +401,8 @@ public class ProductBrowserView extends ViewPart {
      */
     private void getDataTypes() {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
-        IExtensionPoint point = registry.getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
+        IExtensionPoint point = registry
+                .getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
         if (point != null) {
             extensions = point.getExtensions();
         } else {
@@ -336,6 +441,13 @@ public class ProductBrowserView extends ViewPart {
             String[] info = getProductURI(ti, false);
             stringBuilder.append(prod.getProductInfo(info));
             productTree.setToolTipText(stringBuilder.toString());
+            productTree.addMouseMoveListener(new MouseMoveListener() {
+                @Override
+                public void mouseMove(MouseEvent e) {
+                    productTree.setToolTipText("");
+                    productTree.removeMouseMoveListener(this);
+                }
+            });
         }
     }
 
@@ -371,5 +483,44 @@ public class ProductBrowserView extends ViewPart {
 
     public static ProductBrowserDataDefinition getDataDef(TreeItem item) {
         return (ProductBrowserDataDefinition) item.getData(DEF_DATA_KEY);
+    }
+
+    /**
+     * Recursively copy a TreeItem (maintaining expanded state of it and its
+     * children).
+     * 
+     * @param oldItem
+     * @param newItem
+     */
+    public static void copyItem(TreeItem oldItem, TreeItem newItem) {
+        newItem.setText(oldItem.getText());
+        newItem.setFont(oldItem.getFont());
+        for (TreeItem oldChild : oldItem.getItems()) {
+            TreeItem newChild = new TreeItem(newItem, SWT.NONE);
+            if (newItem.getItemCount() == 1) {
+                /*
+                 * For recursive expansion to work newItem must be expanded
+                 * after newChild is created but before newChild is expanded.
+                 */
+                newItem.setExpanded(oldItem.getExpanded());
+            }
+            copyItem(oldChild, newChild);
+        }
+        newItem.setData(ProductBrowserView.LABEL_DATA_KEY,
+                ProductBrowserView.getLabel(oldItem));
+        newItem.setData(ProductBrowserView.DEF_DATA_KEY,
+                ProductBrowserView.getDataDef(oldItem));
+        ProductBrowserQueryJob job = (ProductBrowserQueryJob) oldItem
+                .getData(ProductBrowserQueryJob.JOB_DATA_KEY);
+        if (job != null) {
+            job.setItem(newItem);
+            newItem.setData(ProductBrowserQueryJob.JOB_DATA_KEY, job);
+        }
+    }
+
+    @Override
+    public void dispose() {
+        super.dispose();
+        Job.getJobManager().cancel(ProductBrowserQueryJob.class);
     }
 }
