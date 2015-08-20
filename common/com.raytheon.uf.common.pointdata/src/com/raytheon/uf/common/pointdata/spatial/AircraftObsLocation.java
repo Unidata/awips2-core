@@ -30,6 +30,8 @@ import org.hibernate.annotations.Type;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
+import com.raytheon.uf.common.dataplugin.annotations.NullFloat;
+import com.raytheon.uf.common.dataplugin.annotations.NullString;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
@@ -79,6 +81,7 @@ public class AircraftObsLocation implements ISpatialObject {
     // Id of the station making this observation.
     @Column(length = 16, nullable = false)
     @DataURI(position = 0)
+    @NullString
     @DynamicSerializeElement
     @Index(name = "%TABLE%_stationIndex")
     private String stationId;
@@ -91,11 +94,13 @@ public class AircraftObsLocation implements ISpatialObject {
 
     @Column(nullable = false)
     @DataURI(position = 1)
+    @NullFloat
     @DynamicSerializeElement
     private float latitude;
 
     @Column(nullable = false)
     @DataURI(position = 2)
+    @NullFloat
     @DynamicSerializeElement
     private float longitude;
 

@@ -29,6 +29,7 @@ package com.raytheon.uf.common.dataplugin;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 28, 2015 4360       rferrel     Initial creation
+ * Aug 20, 2015 4360       rferrel     Changed value for NULL_STRING and removed EMPTY_STRING.
  * 
  * </pre>
  * 
@@ -38,16 +39,14 @@ package com.raytheon.uf.common.dataplugin;
 
 public class NullUtil {
     /**
-     * String to use when column entry length greater then or equal to 4.
+     * String to use to replace null value in char field.
      */
-    public static final String NULL_STRING = "null";
-
-    public static final Float NULL_FLOAT = Float.NaN;
+    public static final String NULL_STRING = "";
 
     /**
-     * String to use when column entry length less then 4.
+     * Value to use to replace null value in float/double fields.
      */
-    public static final String EMPTY_STRING = "";
+    public static final Float NULL_FLOAT = Float.NaN;
 
     /**
      * Instance of class not allowed.
@@ -69,15 +68,6 @@ public class NullUtil {
     }
 
     /**
-     * 
-     * @param value
-     * @return true when value is the EMPTY_STRING
-     */
-    public static final boolean isEmpty(String value) {
-        return EMPTY_STRING.equals(value);
-    }
-
-    /**
      * Check value and if it is the NULL_STRING return null.
      * 
      * @param value
@@ -95,26 +85,6 @@ public class NullUtil {
      */
     public static String convertNullToNullString(String value) {
         return (value == null) ? NULL_STRING : value;
-    }
-
-    /**
-     * When value is null return the empty string.
-     * 
-     * @param value
-     * @return EMPTY_STRING or value
-     */
-    public static String convertEmptyToNull(String value) {
-        return isEmpty(value) ? null : value;
-    }
-
-    /**
-     * When value is the empty string return null.
-     * 
-     * @param value
-     * @return
-     */
-    public static String converNullToEmpty(String value) {
-        return (value == null) ? EMPTY_STRING : value;
     }
 
     public static Float convertNullFloatoNull(Float value) {

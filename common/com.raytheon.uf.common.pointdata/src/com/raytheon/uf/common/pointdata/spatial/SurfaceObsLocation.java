@@ -34,6 +34,8 @@ import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.NullUtil;
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
+import com.raytheon.uf.common.dataplugin.annotations.NullFloat;
+import com.raytheon.uf.common.dataplugin.annotations.NullString;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
@@ -96,6 +98,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     @Column(length = 48, nullable = false)
     @Index(name = "%TABLE%_stationIndex")
     @DataURI(position = 0)
+    @NullString
     @XmlAttribute
     @DynamicSerializeElement
     private String stationId = NullUtil.NULL_STRING;;
@@ -114,12 +117,14 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     private Point location;
 
     @DataURI(position = 1)
+    @NullFloat
     @Column(nullable = false)
     @XmlAttribute
     @DynamicSerializeElement
     private Float latitude = NullUtil.NULL_FLOAT;
 
     @DataURI(position = 2)
+    @NullFloat
     @Column(nullable = false)
     @XmlAttribute
     @DynamicSerializeElement
