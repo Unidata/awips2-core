@@ -40,6 +40,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * ------------ ---------- ----------- --------------------------
  * Oct 10, 2012            njensen     Initial creation
  * Mar 19, 2014  2882      dgilling    Create a new Type for null data.
+ * Aug 21, 2015  4409      mapeters    Create a new Type for Short data.
  * 
  * </pre>
  * 
@@ -50,8 +51,8 @@ import com.vividsolutions.jts.geom.Geometry;
 public interface IGeometryData extends IData {
 
     public static enum Type {
-        STRING, INT, LONG, FLOAT, DOUBLE, NULL;
-    };
+        STRING, SHORT, INT, LONG, FLOAT, DOUBLE, NULL;
+    }
 
     /**
      * Gets the geometry associated with this instance of data. The geometry

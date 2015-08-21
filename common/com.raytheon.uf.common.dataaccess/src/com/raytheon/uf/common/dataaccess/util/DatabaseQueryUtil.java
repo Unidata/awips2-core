@@ -44,6 +44,7 @@ import com.raytheon.uf.common.serialization.comm.RequestRouter;
  * ------------ ---------- ----------- --------------------------
  * Jan 29, 2013            bkowal      Initial creation
  * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
+ * Aug 21, 2015 4409       mapeters    Include query in error message.
  * </pre>
  * 
  * @author bkowal
@@ -116,7 +117,8 @@ public class DatabaseQueryUtil {
             break;
         }
 
-        final String errorMessage = "Error retrieving " + dataType + " data";
+        final String errorMessage = "Error retrieving " + dataType
+                + " data (failed query=\"" + query + "\")";
 
         // Execute the request.
         AbstractResponseMessage response = null;
