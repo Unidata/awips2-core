@@ -68,6 +68,7 @@ import com.raytheon.uf.viz.core.rsc.sampling.SamplingResource;
  * 06/24/2013       2140  randerso    Changed to use standardized paint error handling
  * Mar 3, 2014      2804  mschenke    Setup display to clip before each resource is
  *                                    to ensure resources do not affect each other
+ * Aug 17, 2015 ASM#14474 D. Friedman Update map center in scaleToClientArea.
  * 
  * 
  * </pre>
@@ -282,6 +283,12 @@ public class MapRenderableDisplay extends AbstractRenderableDisplay implements
             IGraphicsTarget target) {
         super.scaleAndBias(factor, screenX, screenY, target);
         setZoomLevel(recalcZoomLevel(getDimensions()));
+        setMapCenter(descriptor.pixelToWorld(getView().getExtent().getCenter()));
+    }
+
+    @Override
+    public void scaleToClientArea(Rectangle clientArea) {
+        super.scaleToClientArea(clientArea);
         setMapCenter(descriptor.pixelToWorld(getView().getExtent().getCenter()));
     }
 
