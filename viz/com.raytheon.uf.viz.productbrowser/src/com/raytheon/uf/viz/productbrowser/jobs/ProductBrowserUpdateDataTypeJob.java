@@ -31,11 +31,12 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
 
 /**
  * 
- * Job for initializing {@link TreeItem}s for the {@link ProductBrowserView}.
- * The tree items are assumed to be initially in a loading state and this job
- * asynchronously calls {@link ProductBrowserDataDefinition#checkAvailability()}
- * to determine if the item should be expandable and then removes or configures
- * the item on the UI thread.
+ * Job for adding/removing data types for the {@link ProductBrowserView} based
+ * on their availability. The tree item (corresponding to a data type) is
+ * assumed to be initially in a loading state and this job asynchronously calls
+ * {@link ProductBrowserDataDefinition#checkAvailability()} to determine if the
+ * item should be expandable and then removes or configures the item on the UI
+ * thread.
  * 
  * <pre>
  * 
@@ -45,13 +46,15 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * ------------- -------- --------- --------------------------
  * May 13, 2014  3135     bsteffen  Initial creation
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
+ * Aug 12, 2015  4717     mapeters  Renamed from ProductBrowserInitializeJob, only 
+ *                                  add "fake" tree item to items with no children.
  * 
  * </pre>
  * 
  * @author bsteffen
  * @version 1.0
  */
-public class ProductBrowserInitializeJob extends Job implements Runnable {
+public class ProductBrowserUpdateDataTypeJob extends Job implements Runnable {
 
     protected final TreeItem item;
 
@@ -66,7 +69,7 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
      * @param item
      *            a TreeItem from the {@link ProductBrowserView}
      */
-    public ProductBrowserInitializeJob(TreeItem item) {
+    public ProductBrowserUpdateDataTypeJob(TreeItem item) {
         super(item.getText());
         this.item = item;
         /*
@@ -103,7 +106,8 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
         } else {
             String displayName = ProductBrowserView.getLabel(item).getName();
             item.setText(displayName);
-            if (!ProductBrowserView.getLabel(item).isProduct()) {
+            if (!ProductBrowserView.getLabel(item).isProduct()
+                    && item.getItemCount() == 0) {
                 /*
                  * gives the tree the ability to be opened by adding a "fake"
                  * tree item that will be disposed of later
@@ -112,7 +116,5 @@ public class ProductBrowserInitializeJob extends Job implements Runnable {
                 fake.setText("Loading...");
             }
         }
-
     }
-
 }
