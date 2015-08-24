@@ -89,7 +89,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 24, 2015 3978        njensen     Changed openInputStream() return type to InputStream
  *                                       Removed read() method
  * Aug 18, 2015 3806        njensen     Implements ILocalizationFile, deprecated bad
- *                                       methods, extracted jaxb convenience logic                                      
+ *                                       methods, extracted jaxb convenience logic
+ * Aug 24, 2015 4393        njensen     Added IPathManager to constructor args                                                                            
  * 
  * 
  * </pre>
@@ -206,9 +207,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                 && (file == null);
     }
 
-    LocalizationFile(ILocalizationAdapter adapter, LocalizationContext context,
-            File file, Date date, String path, String checkSum,
-            boolean isDirectory, boolean existsOnServer,
+    LocalizationFile(IPathManager pathMgr, ILocalizationAdapter adapter,
+            LocalizationContext context, File file, Date date, String path,
+            String checkSum, boolean isDirectory, boolean existsOnServer,
             LocalizationLevel protectedLevel) {
         this.adapter = adapter;
         this.context = context;
@@ -219,7 +220,8 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
         this.isDirectory = isDirectory;
         this.path = LocalizationUtil.getSplitUnique(path);
         this.protectedLevel = protectedLevel;
-        LocalizationNotificationObserver.getInstance().addObservedFile(this);
+        ((LocalizationNotificationObserver) pathMgr.getObserver())
+                .addObservedFile(this);
     }
 
     /**
@@ -636,21 +638,11 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
         return context + IPathManager.SEPARATOR + path;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Comparable#compareTo(java.lang.Object)
-     */
     @Override
     public int compareTo(LocalizationFile o) {
         return getName().compareTo(o.getName());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -661,11 +653,6 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

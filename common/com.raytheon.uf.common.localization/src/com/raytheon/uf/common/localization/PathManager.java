@@ -63,6 +63,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sep 08, 2014 3592       randerso    Added single type listStaticFiles, 
  *                                     getStaticLocalizationFile, and getStaticFile APIs
  * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
+ * Aug 24, 2015 4393       njensen     Added field observer
  * 
  * </pre>
  * 
@@ -70,6 +71,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 public class PathManager implements IPathManager {
+
     private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
             PathManager.class, "Localization");
 
@@ -86,18 +88,14 @@ public class PathManager implements IPathManager {
 
     final ILocalizationAdapter adapter;
 
+    final ILocalizationNotificationObserver observer;
+
     PathManager(ILocalizationAdapter adapter) {
         this.adapter = adapter;
         this.fileCache = adapter.createCache();
+        this.observer = new LocalizationNotificationObserver(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getStaticFile(java.lang
-     * .String)
-     */
     @Override
     public File getStaticFile(String name) {
         LocalizationFile locFile = getStaticLocalizationFile(name);
@@ -109,14 +107,6 @@ public class PathManager implements IPathManager {
         return file;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getStaticFile(com.raytheon
-     * .uf.common.localization.LocalizationContext.LocalizationType,
-     * java.lang.String)
-     */
     @Override
     public File getStaticFile(LocalizationType type, String name) {
         LocalizationFile locFile = getStaticLocalizationFile(type, name);
@@ -136,13 +126,6 @@ public class PathManager implements IPathManager {
                 name);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getStaticLocalizationFile
-     * (java.lang.String)
-     */
     @Override
     public LocalizationFile getStaticLocalizationFile(String name) {
         Validate.notNull(name, "Path name must not be null");
@@ -213,13 +196,6 @@ public class PathManager implements IPathManager {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getFile(com.raytheon.
-     * edex.utility.LocalizationContext, java.lang.String)
-     */
     @Override
     public File getFile(LocalizationContext context, String name) {
         Validate.notNull(context, "Context must not be null");
@@ -246,13 +222,6 @@ public class PathManager implements IPathManager {
         return map;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getLocalizationFile(com
-     * .raytheon.edex.utility.LocalizationContext, java.lang.String)
-     */
     @Override
     public LocalizationFile getLocalizationFile(LocalizationContext context,
             String name) {
@@ -355,23 +324,16 @@ public class PathManager implements IPathManager {
                     response.fileName);
             if (file != null) {
                 // No cache file available and path is resolved, create
-                lf = new LocalizationFile(this.adapter, response.context, file,
-                        response.date, response.fileName, response.checkSum,
-                        response.isDirectory, response.existsOnServer,
-                        response.protectedLevel);
+                lf = new LocalizationFile(this, this.adapter, response.context,
+                        file, response.date, response.fileName,
+                        response.checkSum, response.isDirectory,
+                        response.existsOnServer, response.protectedLevel);
             }
             fileCache.put(key, lf);
         }
         return lf;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#listFiles(com.raytheon
-     * .edex.utility.LocalizationContext, java.lang.String, java.lang.String[])
-     */
     @Override
     public LocalizationFile[] listFiles(LocalizationContext context,
             String name, String[] filter, boolean recursive, boolean filesOnly) {
@@ -382,14 +344,6 @@ public class PathManager implements IPathManager {
                 recursive, filesOnly);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#listFiles(com.raytheon
-     * .edex.utility.LocalizationContext[], java.lang.String,
-     * java.lang.String[])
-     */
     @Override
     public LocalizationFile[] listFiles(LocalizationContext[] contexts,
             String name, String[] filter, boolean recursive, boolean filesOnly) {
@@ -443,13 +397,6 @@ public class PathManager implements IPathManager {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#listFiles(java.lang.
-     * String , java.lang.String[])
-     */
     @Override
     public LocalizationFile[] listStaticFiles(LocalizationType type,
             String name, String[] filter, boolean recursive, boolean filesOnly) {
@@ -458,13 +405,6 @@ public class PathManager implements IPathManager {
                 filter, recursive, filesOnly);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#listFiles(java.lang.
-     * String , java.lang.String[])
-     */
     @Override
     public LocalizationFile[] listStaticFiles(String name, String[] filter,
             boolean recursive, boolean filesOnly) {
@@ -536,14 +476,6 @@ public class PathManager implements IPathManager {
         return this.adapter.getContext(type, level);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getContextForSite(com
-     * .raytheon.uf.common.localization.LocalizationContext.LocalizationType,
-     * java.lang.String)
-     */
     @Override
     public LocalizationContext getContextForSite(LocalizationType type,
             String siteId) {
@@ -560,13 +492,6 @@ public class PathManager implements IPathManager {
         return this.adapter.getLocalSearchHierarchy(type);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getContextList(com.raytheon
-     * .uf.common.localization.LocalizationContext.LocalizationLevel)
-     */
     @Override
     public String[] getContextList(LocalizationLevel level) {
         try {
@@ -577,23 +502,11 @@ public class PathManager implements IPathManager {
         return new String[0];
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#getAvailableLevels()
-     */
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         return adapter.getAvailableLevels();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#storeCache(java.io.File)
-     */
     @Override
     public void storeCache(File cacheFile) throws IOException,
             SerializationException {
@@ -622,13 +535,6 @@ public class PathManager implements IPathManager {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.IPathManager#restoreCache(java.io
-     * .File)
-     */
     @Override
     @SuppressWarnings("unchecked")
     public void restoreCache(File cacheFile) throws IOException,
@@ -650,6 +556,7 @@ public class PathManager implements IPathManager {
             LocalizationFile file = new LocalizationFile();
             if (lre.getContext() != null && lre.getFileName() != null) {
                 file = new LocalizationFile(
+                        pm,
                         pm.adapter,
                         lre.getContext(),
                         pm.adapter.getPath(lre.getContext(), lre.getFileName()),
@@ -661,6 +568,11 @@ public class PathManager implements IPathManager {
                     .put(new LocalizationFileKey(key.getFileName(), key
                             .getContext()), file);
         }
+    }
+
+    @Override
+    public ILocalizationNotificationObserver getObserver() {
+        return observer;
     }
 
     @DynamicSerialize
@@ -677,8 +589,7 @@ public class PathManager implements IPathManager {
         }
 
         /**
-         * @param fileName
-         * @param context
+         *
          */
         public SerializableKey(LocalizationFileKey key) {
             this.fileName = key.path;
@@ -716,4 +627,5 @@ public class PathManager implements IPathManager {
         }
 
     }
+
 }

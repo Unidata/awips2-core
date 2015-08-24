@@ -38,7 +38,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Common localization notification observer. Automatically cleans up
- * LocaliationFiles listening using WeakReferences
+ * LocaliationFiles listening using WeakReferences. There should be one unique
+ * LocalizationNotificationObserver for each unique IPathManager.
  * 
  * <pre>
  * 
@@ -51,6 +52,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      deleting it.
  * Jul 25, 2014 3378       bclement    path manager added to global observers
  * Feb 18, 2015 4137       reblum      path manager removed from global observers
+ * Aug 24, 2015 4393       njensen     Class no longer a singleton
  * 
  * </pre>
  * 
@@ -58,7 +60,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * @version 1.0
  */
 
-public class LocalizationNotificationObserver {
+public class LocalizationNotificationObserver implements
+        ILocalizationNotificationObserver {
 
     private static class LocalizationTypeFileKey {
         private final LocalizationType type;
@@ -117,19 +120,15 @@ public class LocalizationNotificationObserver {
 
     public static final String LOCALIZATION_TOPIC = "edex.alerts.utility";
 
-    private static LocalizationNotificationObserver instance = null;
-
     private Set<ILocalizationFileObserver> globalObservers = new HashSet<ILocalizationFileObserver>();
 
     private final Map<LocalizationTypeFileKey, Set<LocalizationFile>> observedFiles;
 
-    private PathManager pm;
+    private final PathManager pm;
 
-    public static synchronized LocalizationNotificationObserver getInstance() {
-        if (instance == null) {
-            instance = new LocalizationNotificationObserver();
-        }
-        return instance;
+    LocalizationNotificationObserver(PathManager parent) {
+        observedFiles = new ConcurrentHashMap<LocalizationTypeFileKey, Set<LocalizationFile>>();
+        pm = parent;
     }
 
     /**
@@ -185,12 +184,8 @@ public class LocalizationNotificationObserver {
         }
     }
 
-    private LocalizationNotificationObserver() {
-        observedFiles = new ConcurrentHashMap<LocalizationTypeFileKey, Set<LocalizationFile>>();
-        pm = (PathManager) PathManagerFactory.getPathManager();
-    }
-
-    public synchronized void fileUpdateMessageRecieved(FileUpdatedMessage fum) {
+    @Override
+    public synchronized void fileUpdateMessageReceived(FileUpdatedMessage fum) {
         LocalizationType type = fum.getContext().getLocalizationType();
         String filename = LocalizationUtil.getSplitUnique(fum.getFileName());
 

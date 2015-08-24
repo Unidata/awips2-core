@@ -21,7 +21,9 @@ package com.raytheon.edex.utility;
 
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
+import com.raytheon.uf.common.localization.ILocalizationNotificationObserver;
 import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
@@ -35,7 +37,8 @@ import com.raytheon.uf.common.serialization.SerializationUtil;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 8, 2011            mschenke     Initial creation
+ * Apr 08, 2011            mschenke    Initial creation
+ * Aug 24, 2015  4393      njensen     Updates for observer changes
  * 
  * </pre>
  * 
@@ -47,7 +50,7 @@ public class EDEXLocalizationNotificationObserver {
 
     private static EDEXLocalizationNotificationObserver instance = null;
 
-    private LocalizationNotificationObserver observer;
+    private ILocalizationNotificationObserver observer;
 
     public static synchronized EDEXLocalizationNotificationObserver getInstance() {
         if (instance == null) {
@@ -57,22 +60,25 @@ public class EDEXLocalizationNotificationObserver {
     }
 
     private EDEXLocalizationNotificationObserver() {
-        observer = LocalizationNotificationObserver.getInstance();
-        observer.addGlobalFileChangeObserver(new ILocalizationFileObserver() {
+        observer = PathManagerFactory.getPathManager().getObserver();
+        ((LocalizationNotificationObserver) observer)
+                .addGlobalFileChangeObserver(new ILocalizationFileObserver() {
 
-            @Override
-            public void fileUpdated(FileUpdatedMessage message) {
-                System.out.println("Recieved " + message.getChangeType()
-                        + " message for " + message.getContext() + "/"
-                        + message.getFileName());
-            }
-        });
+                    @Override
+                    public void fileUpdated(FileUpdatedMessage message) {
+                        System.out.println("Received "
+                                + message.getChangeType() + " message for "
+                                + message.getContext() + "/"
+                                + message.getFileName());
+                    }
+                });
     }
 
     public void fileUpdated(byte[] bytes) throws LocalizationException {
         try {
-            Object obj = SerializationUtil.transformFromThrift(bytes);
-            observer.fileUpdateMessageRecieved((FileUpdatedMessage) obj);
+            FileUpdatedMessage obj = SerializationUtil.transformFromThrift(
+                    FileUpdatedMessage.class, bytes);
+            observer.fileUpdateMessageReceived(obj);
         } catch (SerializationException e) {
             throw new LocalizationException(
                     "Error processing file update message: "
