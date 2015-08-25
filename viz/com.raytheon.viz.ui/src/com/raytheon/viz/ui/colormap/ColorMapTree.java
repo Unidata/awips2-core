@@ -50,6 +50,7 @@ import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
  * Sep 11, 2014  3516     rferrel     file updates now inform the factory.
  *                                      getName() no longer returns a null.
  *                                      FileChangeListener now only gets colormaps changes.
+ * Aug 24, 2015  4393     njensen     Updates for observer changes                                     
  * 
  * </pre>
  * 
@@ -261,8 +262,7 @@ public class ColorMapTree {
      * when a notification arrives and the {@link ColorMapTree} has been garbage
      * collected.
      */
-    private static class FileChangeListener implements
-            ILocalizationFileObserver {
+    private class FileChangeListener implements ILocalizationFileObserver {
 
         private final Reference<ColorMapTree> treeRef;
 
@@ -274,7 +274,7 @@ public class ColorMapTree {
         public void fileUpdated(FileUpdatedMessage message) {
             ColorMapTree tree = treeRef.get();
             if (tree == null) {
-                LocalizationNotificationObserver.getInstance()
+                ((LocalizationNotificationObserver) pathManager.getObserver())
                         .removeGlobalFileChangeObserver(this);
             } else {
                 tree.handleUpdate(message);

@@ -29,14 +29,16 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
- * A generalized interface for constructing LocalizationFiles. NOTE: There will
- * only exist a single reference to any LocalizationFile. It is the
- * IPathManager's responsibility to ensure multiple objects of the same
- * LocalizationFile are not returned
+ * A generalized interface for getting ILocalizationFiles. Implementations
+ * should enforce that there will only exist a single reference to any
+ * ILocalizationFile per IPathManager instance. It is the IPathManager's
+ * responsibility to ensure multiple objects representing the same
+ * ILocalizationFile are not returned.
  * 
- * Note: Paths should use IPathManager.SEPARATOR as the separator for
- * consistency. The client OS could potentially differ from the localization
- * store's OS, and this ensures the path will be resolved correctly.
+ * Paths passed as String arguments to methods should use IPathManager.SEPARATOR
+ * as the separator for consistency. The client OS could potentially differ from
+ * the localization store's OS, and this ensures the path will be resolved
+ * correctly.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -51,6 +53,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Apr 13, 2015 4383       dgilling    Added listStaticFiles, getStaticLocalizationFile
  *                                     and getStaticFile that searches based on
  *                                     LocalizationContexts.
+ * Aug 24, 2015 4393       njensen     Added getObserver()                                    
  * 
  * </pre>
  * 
@@ -94,6 +97,12 @@ public interface IPathManager {
      * @return a pointer to the location on the filesystem
      */
     public File getStaticFile(LocalizationType type, String name);
+
+    /*
+     * TODO eventually these methods should gravitate towards returning the
+     * interface ILocalizationFile instead of the implementation
+     * LocalizationFile
+     */
 
     /**
      * 
@@ -366,5 +375,13 @@ public interface IPathManager {
      */
     public void restoreCache(File cacheFile) throws IOException,
             SerializationException;
+
+    /**
+     * Gets the observer for watching for changes to ILocalizationFiles that are
+     * returned by this IPathManager
+     * 
+     * @return the observer
+     */
+    public ILocalizationNotificationObserver getObserver();
 
 }
