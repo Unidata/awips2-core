@@ -284,7 +284,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @deprecated Please use openInputStream() for retrieving the file
      *             contents, openOutputStream() for saving new file contents,
-     *             and the interface getters for getting metadata.
+     *             and the interface getters for getting metadata. If the
+     *             localization file represents a directory, continue to use
+     *             this method for the time being.
      * 
      * @param retrieveFile
      *            a flag that specifies whether the file should be downloaded if
@@ -325,7 +327,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @deprecated Please use openInputStream() for retrieving the file
      *             contents, openOutputStream() for saving new file contents,
-     *             and the interface getters for getting metadata.
+     *             and the interface getters for getting metadata. If the
+     *             localization file represents a directory, continue to use
+     *             this method for the time being.
      * 
      * @return File pointer
      */
@@ -337,6 +341,17 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
             return adapter.getPath(context, path);
         }
     }
+
+    /*
+     * TODO: Come up with a way to get all the files (potentially recursive) in
+     * a directory without using getFile(). At the time of this comment writing
+     * (2015), getFile() on a directory is retrieving all the files within the
+     * directory. This is used for a lot of directories that are added to a
+     * python sub-interpreter's sys.path for importing modules. Therefore the
+     * files inside the directory need to be in some kind of environment or
+     * virtual environment that python can import them from, and
+     * openInputStream() can't handle that at present.
+     */
 
     /**
      * Creates an InputStream for the contents of the LocalizationFile. Calling
@@ -480,6 +495,11 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
 
     /**
      * Save the file back to the localization store
+     * 
+     * @deprecated Please use openOutputStream() to get a SaveableOutputStream
+     *             and then call the output stream's save() method after writing
+     *             out the contents to the stream.
+     * 
      * 
      * @throws LocalizationOpFailedException
      */
