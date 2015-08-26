@@ -19,11 +19,13 @@
  **/
 package com.raytheon.uf.common.localization;
 
+import java.io.ByteArrayInputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -90,7 +92,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                       Removed read() method
  * Aug 18, 2015 3806        njensen     Implements ILocalizationFile, deprecated bad
  *                                       methods, extracted jaxb convenience logic
- * Aug 24, 2015 4393        njensen     Added IPathManager to constructor args                                                                            
+ * Aug 24, 2015 4393        njensen     Added IPathManager to constructor args
+ * Aug 26, 2015 4691        njensen     Safely skip file locking on most read operations                                                                            
  * 
  * 
  * </pre>
@@ -104,6 +107,12 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
 
     private static transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationFile.class);
+
+    /**
+     * the max file size of a localization file to attempt to read without
+     * locking
+     */
+    private static final int EAGER_READ_MAXSIZE = 100 * 1024;
 
     /**
      * Class {@link LocalizationFile} exposes to the
@@ -383,10 +392,38 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                 return new FileInputStream(getFile());
             } else {
                 /*
-                 * LocalizationFileInputStream will ensure that the file is
-                 * locked before reading, with the lock released when the stream
-                 * is closed.
+                 * This code eagerly checks the checksum of the local file
+                 * against the checksum of the server file without acquiring a
+                 * lock. This is an optimization based on the idea that the
+                 * majority of times a file is requested to read, the file has
+                 * not changed, therefore we shouldn't waste time acquiring a
+                 * lock just to verify it.
+                 * 
+                 * If the checksum doesn't match, it falls back to the
+                 * LocalizationFileInputStream (which safely locks) and
+                 * therefore the only performance hit is we will read the file
+                 * contents into memory twice for the checksum check twice. Due
+                 * to the performance implications in that scenario, we only
+                 * apply the optimization to files smaller than a specific size.
                  */
+                File fsFile = getFile(false);
+                long length = fsFile.length();
+                if (length > 0 && length < EAGER_READ_MAXSIZE) {
+                    try {
+                        byte[] bytes = Files.readAllBytes(fsFile.toPath());
+                        ByteArrayInputStream bais = new ByteArrayInputStream(
+                                bytes);
+                        String checksum = Checksum.getMD5Checksum(bais);
+                        if (checksum.equals(fileCheckSum)) {
+                            bais.reset();
+                            return bais;
+                        }
+                    } catch (Exception e) {
+                        // ignore, fallback to the other behavior
+                    }
+                }
+
+                // eager checksum didn't work, do it the locking way
                 return new LocalizationFileInputStream(this);
             }
         } catch (FileNotFoundException e) {

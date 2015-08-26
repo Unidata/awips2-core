@@ -104,6 +104,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jun 19, 2014 3301       njensen     Acquire lock inside loop of retrieveFiles()
  * Jan 12, 2015 3993       njensen     Added checkPreinstalled()
  * Feb 16, 2015 3978       njensen     Use REST service for efficient GET of files
+ * Aug 26, 2015 4691       njensen     No longer using timestamp as part of needDownload()
  * 
  * </pre>
  * 
@@ -590,7 +591,7 @@ public class LocalizationManager implements IPropertyChangeListener {
              * it's very rare and needDownload() returns true if anything goes
              * wrong.
              */
-            if (needDownload(localFile, file.getTimeStamp(), file.getCheckSum())) {
+            if (needDownload(localFile, file.getCheckSum())) {
                 retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
                         file.getContext(), file.getName()) },
                         new Date[] { file.getTimeStamp() });
@@ -760,22 +761,19 @@ public class LocalizationManager implements IPropertyChangeListener {
          * this exact moment. However, this scenario is negligible since it's
          * very rare and needDownload() returns true if anything goes wrong.
          */
-        return needDownload(file, listResponseEntry.getDate(),
-                listResponseEntry.getChecksum());
+        return needDownload(file, listResponseEntry.getChecksum());
     }
 
     /**
-     * Checks if the file needs downloaded based on if it exists locally, the
-     * last modified timestamp, and the checksum. This method does no locking
-     * and if reading the file for the checksum goes wrong in any way, it will
-     * return true.
+     * Checks if the file needs downloaded based on if it exists locally and the
+     * checksum. This method does no locking and if reading the file for the
+     * checksum goes wrong in any way, it will return true.
      * 
      * @param file
-     * @param timeStamp
-     * @param checkSum
+     * @param remoteChecksum
      * @return
      */
-    private boolean needDownload(File file, Date timeStamp, String checkSum) {
+    private boolean needDownload(File file, String remoteChecksum) {
         if (file == null) {
             return false;
         }
@@ -783,26 +781,14 @@ public class LocalizationManager implements IPropertyChangeListener {
         if (!file.exists()) {
             return true;
         } else {
-            // Check modification dates
-            Date d = new Date(file.lastModified());
-            if (!d.equals(timeStamp) || file.lastModified() == 0) {
+            try {
                 // Check the checksum (integrity check)
-                try {
-                    String checksum = Checksum.getMD5Checksum(file);
-                    if (!checksum.equals(checkSum)) {
-                        return true;
-                    } else {
-                        // This line here can cause the Localization Perspective
-                        // to think the file was changed on the file system...
-                        // Should we be doing this?
-                        file.setLastModified(timeStamp.getTime());
-                    }
-                } catch (Throwable t) {
-                    // something went wrong, just re-download the file
-                    return true;
-                }
+                String localChecksum = Checksum.getMD5Checksum(file);
+                return !localChecksum.equals(remoteChecksum);
+            } catch (Throwable t) {
+                // something went wrong, just re-download the file
+                return true;
             }
-            return false;
         }
     }
 
