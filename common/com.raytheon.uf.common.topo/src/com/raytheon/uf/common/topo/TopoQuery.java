@@ -94,6 +94,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                     GridGeometry2D since GeoTools now changes the supplied
  *                                     math transform when creating GridGeometry2D
  * Oct 27, 2014 3795       randerso    Changed to allow topoLimit to be overridden by system property
+ * Jul 21, 2015            mjames@ucar Workaround for when sourceGeoCRS is null IFPServer will not start
  * 
  * </pre>
  * 
@@ -757,13 +758,17 @@ public class TopoQuery {
                 if (CRS.equalsIgnoreMetadata(sourceGeoCRS, targetGeoCRS)) {
                     // nothing...
                 } else {
-                    transforms.add(CRS.findMathTransform(targetGeoCRS,
+                	if (sourceGeoCRS != null) {
+                		transforms.add(CRS.findMathTransform(targetGeoCRS,
                             sourceGeoCRS));
+                	}
                 }
-                transforms.add(CRS.findMathTransform(sourceGeoCRS, sourceCRS,
-                        true));
-                sourceToGeoXforms.add(0,
-                        CRS.findMathTransform(sourceCRS, sourceGeoCRS));
+                if (sourceGeoCRS != null) {
+	                transforms.add(CRS.findMathTransform(sourceGeoCRS, sourceCRS,
+	                        true));
+	                sourceToGeoXforms.add(0,
+	                        CRS.findMathTransform(sourceCRS, sourceGeoCRS));
+                }
             } catch (FactoryException e) {
                 statusHandler.error(e.getMessage(), e);
                 return output;
