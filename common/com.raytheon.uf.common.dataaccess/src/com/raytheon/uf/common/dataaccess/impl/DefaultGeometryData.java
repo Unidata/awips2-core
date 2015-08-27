@@ -34,20 +34,21 @@ import com.vividsolutions.jts.geom.Geometry;
 /**
  * A default geometry data object if factory developers do not wish to create
  * their own IGeometryData implementations.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 09, 2012            njensen     Initial creation
  * Jun 03, 2013  #2023     dgilling    Implement getAttributes().
  * Jan 21, 2014  2667      bclement    attribute method comments
  * Mar 19, 2014  2882      dgilling    Handle null values with a special Type.
- *
+ * Aug 21, 2015  4409      mapeters    Support Short data type.
+ * 
  * </pre>
- *
+ * 
  * @author njensen
  * @version 1.0
  */
@@ -130,6 +131,9 @@ public class DefaultGeometryData implements IGeometryData {
             case STRING:
                 result = Double.valueOf((String) data.value);
                 break;
+            case SHORT:
+                result = (Short) data.value;
+                break;
             case INT:
                 result = (Integer) data.value;
                 break;
@@ -209,7 +213,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     *
+     * 
      * @param parameter
      *            the parameter name
      * @param value
@@ -221,7 +225,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     *
+     * 
      * @param parameter
      *            the parameter name
      * @param value
@@ -235,7 +239,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     *
+     * 
      * @param parameter
      *            the parameter name
      * @param value
@@ -249,7 +253,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     *
+     * 
      * @param parameter
      *            the parameter name
      * @param value
@@ -271,6 +275,8 @@ public class DefaultGeometryData implements IGeometryData {
                 // TODO do these ifs work or will any number fall into
                 // the first one?
                 data.type = Type.DOUBLE;
+            } else if (data.value instanceof Short) {
+                data.type = Type.SHORT;
             } else if (data.value instanceof Integer) {
                 data.type = Type.INT;
             } else if (data.value instanceof Long) {
@@ -287,7 +293,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Add a key/value pair to the attributes map. Attributes are metadata
      * providing additional information on the dataset.
-     *
+     * 
      * @param key
      * @param value
      */
@@ -314,7 +320,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Replace the attribute map with attrs. Attributes are metadata providing
      * additional information on the dataset.
-     *
+     * 
      * @param attrs
      */
     public void setAttributes(Map<String, Object> attrs) {
