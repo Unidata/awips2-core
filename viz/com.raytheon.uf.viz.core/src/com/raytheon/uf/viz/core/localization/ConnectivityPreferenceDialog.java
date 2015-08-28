@@ -414,7 +414,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
         gd = new GridData(120, SWT.DEFAULT);
         Button okBtn = new Button(centeredComp, SWT.NONE);
-        okBtn.setText("Start CAVE");
+        okBtn.setText("Startx CAVE");
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override

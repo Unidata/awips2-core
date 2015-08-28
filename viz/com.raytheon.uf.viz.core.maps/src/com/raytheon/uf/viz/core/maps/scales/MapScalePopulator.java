@@ -77,8 +77,7 @@ public class MapScalePopulator extends CompoundContributionItem {
         MenuManager menuMgr = new MenuManager("Scales", "mapControls");
         IDisplayPaneContainer cont = EditorUtil.getActiveVizContainer();
         
-        if ((cont != null && (cont.getActiveDisplayPane()
-                .getRenderableDisplay() instanceof IMapScaleDisplay))
+        if ((cont != null )
                 || EditorUtil.getActiveEditor() == null) {
 
         	/*
@@ -88,7 +87,7 @@ public class MapScalePopulator extends CompoundContributionItem {
              */
             for (ManagedMapScale scale : MapScalesManager.getInstance()
                     .getScales()) {
-            	if (!scale.getAreaScale()) {
+            	//if (!scale.getAreaScale()) {
 	                Map<String, String> parms = new HashMap<String, String>();
 	                parms.put(MapScaleHandler.SCALE_NAME_ID, scale.getDisplayName());
 	                CommandContributionItem item = new CommandContributionItem(
@@ -99,7 +98,7 @@ public class MapScalePopulator extends CompoundContributionItem {
 	                                null, CommandContributionItem.STYLE_PUSH, null,
 	                                true));
 	                menuMgr.add(item);		
-	        	}
+	        	//}
             }
 
 //            /*

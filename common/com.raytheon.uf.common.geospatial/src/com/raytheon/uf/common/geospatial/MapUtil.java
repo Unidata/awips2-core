@@ -90,7 +90,7 @@ import com.vividsolutions.jts.geom.Polygon;
  * May 27, 2014  3196     bsteffen    Remove jai.
  * Jun 05, 2014  3243     bsteffen    Add support for arbitrary latitude of
  *                                    origin for lambert conformal
- * 05/19/2015			  mjames@ucar Added decoding of GVAR native projection products
+ * 
  * </pre>
  * 
  * @author chammack
@@ -545,30 +545,6 @@ public class MapUtil {
         }
     }
 
-    public static  ProjectedCRS constructSouthPolarStereo(double majorAxis,
-            double minorAxis, double stdParallel, double centralMeridian) {
-        try {
-            DefaultMathTransformFactory dmtFactory = new DefaultMathTransformFactory();
-            ParameterValueGroup parameters = dmtFactory
-                    .getDefaultParameters("Stereographic_South_Pole");
-
-            parameters.parameter("semi_major").setValue(majorAxis);
-            parameters.parameter("semi_minor").setValue(minorAxis);
-            parameters.parameter("standard_parallel_1").setValue(stdParallel);
-            parameters.parameter("central_meridian").setValue(centralMeridian);
-            parameters.parameter("false_easting").setValue(0.0);
-            parameters.parameter("false_northing").setValue(0.0);
-
-            String name = "AWIPS Polar Stereographic (SP: " + stdParallel
-                    + ", CM: " + centralMeridian + ")";
-
-            return constructProjection(name, parameters);
-        } catch (Exception e) {
-        	statusHandler.handle(Priority.WARN, e.getLocalizedMessage(), e);
-            return null;
-        }
-    }
-    
     public static GeographicCRS getLatLonProjection() {
         return LATLON_PROJECTION;
     }
@@ -773,24 +749,6 @@ public class MapUtil {
         }
     }
 
-    public static ProjectedCRS constructNative(String type, String encoded) {
-        try {
-            ParameterValueGroup parameters = dmtFactory
-                    .getDefaultParameters("MCIDAS_AREA_NAV");
-
-            parameters.parameter("semi_major").setValue(1.0);
-            parameters.parameter("semi_minor").setValue(1.0);
-            parameters.parameter("central_meridian").setValue(0.0);
-            parameters.parameter("NAV_BLOCK_BASE64").setValue(encoded);
-
-            String name = "MCIDAS AREA " + type;
-
-            return constructProjection(name, parameters);
-        } catch (Exception e) {
-            statusHandler.handle(Priority.WARN, e.getLocalizedMessage(), e);
-            return null;
-        }
-    }
     /**
      * Adjust longitude to be in the range +/- 180
      * 
