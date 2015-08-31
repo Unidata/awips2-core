@@ -20,6 +20,9 @@
 
 package com.raytheon.viz.ui.dialogs;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jface.dialogs.Dialog;
@@ -45,16 +48,17 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ----------	----------	-----------	--------------------------
- * 12/20/07     561         Dan Fitch    Initial Creation.
- * 04/22/08     1088        chammack     Added dialog event propagation fix
- * 09/13/12     1165        lvenable     Update for the initial process
+ * Date         Ticket#     Engineer    Description
+ * ----------   ----------  ----------- --------------------------
+ * 12/20/07     561         dfitch      Initial Creation.
+ * 04/22/08     1088        chammack    Added dialog event propagation fix
+ * 09/13/12     1165        lvenable    Update for the initial process
  *                                       of removing the dialog blocking capability.
- * 09/20/12     1196        rferrel      Changes to setBlockOnOpen.
- * 09/27/12     1196        rferrel      Added bringToTop
- * 11/13/12     1298        rferrel      Override open to work in a similar manner
+ * 09/20/12     1196        rferrel     Changes to setBlockOnOpen.
+ * 09/27/12     1196        rferrel     Added bringToTop
+ * 11/13/12     1298        rferrel     Override open to work in a similar manner
  *                                        to CaveSWTDialogBase's open.
+ * Aug 31, 2015 4749        njensen     closeCallback now a List                                       
  * 
  * </pre>
  * 
@@ -70,8 +74,8 @@ public class CaveJFACEDialog extends Dialog implements
     /** Flag indicating of the dialog was visible. */
     private boolean wasVisible = true;
 
-    /** Callback called when the dialog is disposed. */
-    private ICloseCallback closeCallback = null;
+    /** Callbacks called when the dialog is disposed. */
+    private List<ICloseCallback> closeCallbacks = null;
 
     /** Flag indicating if the dialog was blocked when opened. */
     private boolean blockedOnOpen = false;
@@ -82,6 +86,7 @@ public class CaveJFACEDialog extends Dialog implements
      */
     protected CaveJFACEDialog(Shell parentShell) {
         this(parentShell, true);
+        closeCallbacks = new ArrayList<>();
     }
 
     /**
@@ -102,13 +107,6 @@ public class CaveJFACEDialog extends Dialog implements
         // setBlockOnOpen(false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.dialogs.Dialog#createContents(org.eclipse.swt.widgets
-     * .Composite)
-     */
     @Override
     protected Control createContents(Composite parent) {
         // Fix the transition delay between dialog and workbench
@@ -132,20 +130,13 @@ public class CaveJFACEDialog extends Dialog implements
                     mgr.removePespectiveDialog(CaveJFACEDialog.this);
                 }
 
-                callCloseCallback();
+                callCloseCallbacks();
             }
 
         });
         return comp;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.dialogs.Dialog#createButtonBar(org.eclipse.swt.widgets
-     * .Composite)
-     */
     @Override
     protected Control createButtonBar(Composite parent) {
         Composite buttonBar = (Composite) super.createButtonBar(parent);
@@ -155,13 +146,6 @@ public class CaveJFACEDialog extends Dialog implements
         return buttonBar;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.dialogs.Dialog#createDialogArea(org.eclipse.swt.widgets
-     * .Composite)
-     */
     @Override
     protected Control createDialogArea(Composite parent) {
         Composite comp = (Composite) super.createDialogArea(parent);
@@ -201,11 +185,16 @@ public class CaveJFACEDialog extends Dialog implements
     }
 
     /**
-     * Call the callback method as this dialog has been disposed.
+     * Call the callback methods as this dialog has been disposed.
      */
-    private void callCloseCallback() {
-        if (closeCallback != null) {
-            closeCallback.dialogClosed(new Integer(getReturnCode()));
+    private void callCloseCallbacks() {
+        if (!closeCallbacks.isEmpty()) {
+            ListIterator<ICloseCallback> itr = closeCallbacks
+                    .listIterator(closeCallbacks.size());
+            while (itr.hasPrevious()) {
+                ICloseCallback cb = itr.previous();
+                cb.dialogClosed(new Integer(getReturnCode()));
+            }
         }
     }
 
@@ -230,13 +219,13 @@ public class CaveJFACEDialog extends Dialog implements
     }
 
     /**
-     * Add a callback to the dialog. This callback will be called when the
-     * dialog is disposed.
+     * Add a callback to the dialog. The callback will be called when the dialog
+     * is disposed.
      * 
      * @param callback
      *            Callback to be called when the dialog is disposed.
      */
-    public void setCloseCallback(ICloseCallback callback) {
+    public void addCloseCallback(ICloseCallback callback) {
 
         /*
          * Since JFACE allows you to call setBlockOnOpen() after the
@@ -253,7 +242,7 @@ public class CaveJFACEDialog extends Dialog implements
             throw new RejectedExecutionException(sb.toString());
         }
 
-        this.closeCallback = callback;
+        this.closeCallbacks.add(callback);
     }
 
     /**
@@ -282,11 +271,6 @@ public class CaveJFACEDialog extends Dialog implements
         // blockedOnOpen = blockOnOpen;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.window.Window#open()
-     */
     @Override
     public int open() {
         if (isOpen()) {
