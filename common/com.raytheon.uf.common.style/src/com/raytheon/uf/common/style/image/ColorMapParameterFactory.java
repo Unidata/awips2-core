@@ -68,6 +68,7 @@ import com.raytheon.uf.common.util.GridUtil;
  *                                    adaptive building
  * Feb 28, 2014  2791     bsteffen    Add a build method that takes min/max
  *                                    data values.
+ * Aug 31, 2014  4709     bsteffen    Fix incremental labeling.
  * 
  * </pre>
  * 
@@ -504,12 +505,13 @@ public class ColorMapParameterFactory {
                 float increment = labeling.getIncrement();
                 float initialPoint = (float) (Math
                         .ceil(colorMapMin / increment) * increment);
-                float finalPoint = (float) (Math.floor(colorMapMin / increment) * increment);
+                float finalPoint = (float) (Math.floor(colorMapMax / increment) * increment);
                 int count = (int) ((finalPoint - initialPoint) / increment) + 1;
                 float[] vals = new float[count];
                 for (int i = 0; i < count; i += 1) {
                     vals[i] = initialPoint + increment * i;
                 }
+                params.setColorBarIntervals(vals);
             }
         }
 
