@@ -63,6 +63,8 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 11, 2015 4401       bkowal      Initial creation
+ * Aug 26, 2015 4800       bkowal      Prevent NPE if all required properties are
+ *                                     not set in time before the first filter.
  * 
  * </pre>
  * 
@@ -241,6 +243,10 @@ public class FilterDelegate {
     }
 
     private void filter() {
+        if (this.treeViewer == null) {
+            return;
+        }
+
         // call refresh on the tree to get the most up-to-date children
         this.treeViewer.refresh(false);
 
@@ -260,8 +266,10 @@ public class FilterDelegate {
         final String currentText = this.text.getText();
         this.filter.setCurrentText(currentText);
         final boolean expandedState = (currentText.isEmpty() == false);
-        for (Object ob : this.filterInput.getObjects()) {
-            this.treeViewer.setExpandedState(ob, expandedState);
+        if (this.filterInput != null) {
+            for (Object ob : this.filterInput.getObjects()) {
+                this.treeViewer.setExpandedState(ob, expandedState);
+            }
         }
 
         // call refresh on the tree after things are expanded
