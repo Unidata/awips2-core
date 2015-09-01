@@ -32,6 +32,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Dec 10, 2007            brockwoo    Full port to Java
  * Aug 11, 2014  #3459     randerso    Added a IVAMonitor interface to allow operations
  *                                     to be canceled in a timely fashion
+ * Aug 31, 2015  #4787     randerso    Fixed an error in getVaSimple that caused some points
+ *                                     to not be displayed.
  * 
  * </pre>
  * 
@@ -777,7 +779,6 @@ public class VA_Advanced {
         int ns, np, na;
         double lt, ln, dd2;
         double dx, dy, dz, d, dd;
-        int[] actdata;
 
         ns = input_coords.length;
 
@@ -796,8 +797,8 @@ public class VA_Advanced {
         yy = new double[ns];
         zz = new double[ns];
         this.assigned = new byte[ns];
+        int[] actdata = new int[ns];
         int active = 0;
-        actdata = new int[ns];
 
         /*
          * Here we calculate a unit vector on the earths surface which is used
@@ -881,8 +882,7 @@ public class VA_Advanced {
                 actdata[active + gg] = actdata[active + na];
             } else {
                 /* still working on preassigned stations. */
-                ++active;
-                g = actdata[active];
+                g = actdata[active++];
                 np--;
             }
 
