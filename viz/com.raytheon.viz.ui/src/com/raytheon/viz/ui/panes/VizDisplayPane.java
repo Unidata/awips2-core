@@ -101,7 +101,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *           14 Jan 2007              ebabin      Update to remove lat/lon only for GLEditor an Gl4panelEDitor.
  *           Jul 9, 2008  #1228       chammack    Add capability for perspective contributed right click menus
  *           Oct 27, 2009 #2354       bsteffen    Configured input handler to use mouse preferences
- *           Aug 3, 2015  ASM #14474  D. Friedman Synchronize view of all panes in a container
+ *           Aug 3, 2015  ASM #14474  D. Friedman Respond to resize immediately
  * </pre>
  * 
  * @author chammack
@@ -481,16 +481,6 @@ public class VizDisplayPane implements IDisplayPane {
             // No need to paint again if not visible
             target.setNeedsRefresh(false);
         }
-
-        if (container != null) {
-            IDisplayPane[] idp = container.getDisplayPanes();
-            for (IDisplayPane p : idp) {
-                if (p != this && p != null) {
-                    p.getRenderableDisplay().setExtent(
-                            getRenderableDisplay().getExtent().clone());
-                }
-            }
-        }
     }
 
     protected void drawEnd() {
@@ -831,27 +821,18 @@ public class VizDisplayPane implements IDisplayPane {
      * Resize the pane
      */
     protected void resize() {
-        synchronized (this) {
-            // Schedule this to run so resize can finish if doing multiple panes and 
-            // only called once if layout changing a lot
-            VizApp.runAsync(new Runnable() {
-                @Override
-                public void run() {
-                    if (canvas == null || canvas.isDisposed()) {
-                        return;
-                    }
+        if (canvas == null || canvas.isDisposed()) {
+            return;
+        }
 
-                    target.resize();
+        target.resize();
 
-                    Rectangle clientArea = canvas.getClientArea();
-                    if (renderableDisplay != null) {
-                        renderableDisplay.calcPixelExtent(clientArea);
-                        zoomLevel = renderableDisplay
-                                .recalcZoomLevel(renderableDisplay
-                                        .getDimensions());
-                    }
-                }
-            });
+        Rectangle clientArea = canvas.getClientArea();
+        if (renderableDisplay != null) {
+            renderableDisplay.calcPixelExtent(clientArea);
+            zoomLevel = renderableDisplay
+                    .recalcZoomLevel(renderableDisplay
+                            .getDimensions());
         }
     }
 

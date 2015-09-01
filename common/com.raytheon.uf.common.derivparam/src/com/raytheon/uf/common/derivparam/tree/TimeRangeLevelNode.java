@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.derivparam.tree;
 
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -37,6 +38,7 @@ import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.derivparam.inv.AvailabilityContainer;
 import com.raytheon.uf.common.derivparam.library.DerivParamDesc;
 import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
+import com.raytheon.uf.common.derivparam.library.DerivParamMethod.FrameworkMethod;
 import com.raytheon.uf.common.time.DataTime;
 
 /**
@@ -51,6 +53,8 @@ import com.raytheon.uf.common.time.DataTime;
  * ------------ ---------- ----------- --------------------------
  * Feb 8, 2010            bsteffen     Initial creation
  * Feb 13, 2013 1621      bsteffen     update getDataDependency to correctly handle sources with time ranges.
+ * Aug 4, 2015  DR 17615  M Porricelli Added less strict requirements for
+ *                                     needed data time steps for ModelRun method
  * 
  * </pre>
  * 
@@ -98,6 +102,12 @@ public class TimeRangeLevelNode extends AbstractAliasLevelNode {
             if (needed.isEmpty()) {
                 continue;
             }
+            Set<TimeAndSpace> matchedNeeded = TimeAndSpaceMatcher
+                    .getAll1(matcher.match(needed, dataMap.keySet()));
+            if (method.getFrameworkMethod() == FrameworkMethod.MODELRUN
+                    && !matchedNeeded.containsAll(needed)) {
+                needed = checkTimeSteps(needed, dataMap.keySet(), matchedNeeded);
+            }
             Map<TimeAndSpace, MatchResult> matched = matcher.match(needed,
                     dataMap.keySet());
             if (TimeAndSpaceMatcher.getAll1(matched).containsAll(needed)) {
@@ -131,12 +141,44 @@ public class TimeRangeLevelNode extends AbstractAliasLevelNode {
             if (!needed.isEmpty()) {
                 Set<TimeAndSpace> matchedNeeded = TimeAndSpaceMatcher
                         .getAll1(matcher.match(needed, allAvail));
+
+                if (method.getFrameworkMethod() == FrameworkMethod.MODELRUN
+                        && !matchedNeeded.containsAll(needed)) {
+                    needed = checkTimeSteps(needed, allAvail, matchedNeeded);
+                }
                 if (matchedNeeded.containsAll(needed)) {
                     goodAvail.add(ast);
                 }
             }
         }
         return goodAvail;
+    }
+
+    /*
+     * For model run displays, need to accommodate data that changes time steps
+     * For example, if data has TP3hr up to 84HR forecast and then switches to
+     * TP6hr, need to allow the process to display the 90HR fcst even if the
+     * 'needed' 87HR fcst time does not exist. Check below that the needed
+     * missing forecast hour is covered by a larger time step.
+     */
+    public Set<TimeAndSpace> checkTimeSteps(Set<TimeAndSpace> needed,
+            Set<TimeAndSpace> allAvail, Set<TimeAndSpace> matchedNeeded) {
+        Set<TimeAndSpace> newNeeded = new HashSet<TimeAndSpace>();
+        newNeeded.addAll(needed);
+        for (TimeAndSpace nAst : needed) {
+            if (!matchedNeeded.contains(nAst)) {
+                Date nAstDate = nAst.getTime().getValidPeriod().getCenterTime();
+                for (TimeAndSpace ast : allAvail) {
+                    Date astStart = ast.getTime().getValidPeriod().getStart();
+                    Date astEnd = ast.getTime().getValidPeriod().getEnd();
+                    if (astStart.before(nAstDate) && astEnd.after(nAstDate)) {
+                        newNeeded.remove(nAst);
+                        break;
+                    }
+                }
+            }
+        }
+        return newNeeded;
     }
 
     /**
