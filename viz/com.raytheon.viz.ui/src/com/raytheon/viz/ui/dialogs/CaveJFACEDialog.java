@@ -75,7 +75,7 @@ public class CaveJFACEDialog extends Dialog implements
     private boolean wasVisible = true;
 
     /** Callbacks called when the dialog is disposed. */
-    private List<ICloseCallback> closeCallbacks = null;
+    private List<ICloseCallback> closeCallbacks = new ArrayList<>();
 
     /** Flag indicating if the dialog was blocked when opened. */
     private boolean blockedOnOpen = false;
@@ -86,7 +86,6 @@ public class CaveJFACEDialog extends Dialog implements
      */
     protected CaveJFACEDialog(Shell parentShell) {
         this(parentShell, true);
-        closeCallbacks = new ArrayList<>();
     }
 
     /**
