@@ -39,11 +39,11 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
  * 7/1/06                   chammack    Initial Creation.
  * 7/2/07                   chammack    Update for Eclipse 3.3
- * 27Jun08      #1181       ebabin      Update for Skewt edit break.
+ * Sep 02, 2015  4749       njensen     Removed aTool.deactivate() from deselect()
  * 
  * </pre>
  * 
@@ -51,7 +51,9 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * @version 1
  */
 public class ModalToolManager {
-    private static final transient IUFStatusHandler statusHandler = UFStatus.getHandler(ModalToolManager.class);
+
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(ModalToolManager.class);
 
     private Map<String, AbstractModalTool> toolMap = new HashMap<String, AbstractModalTool>();
 
@@ -83,7 +85,6 @@ public class ModalToolManager {
             return;
         }
         toolMap.remove(aTool.categoryId);
-        aTool.deactivate();
     }
 
     /**
