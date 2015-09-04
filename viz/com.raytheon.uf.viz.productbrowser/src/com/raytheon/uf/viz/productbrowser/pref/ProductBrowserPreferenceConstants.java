@@ -19,6 +19,9 @@
  **/
 package com.raytheon.uf.viz.productbrowser.pref;
 
+import org.eclipse.jface.preference.IPreferenceStore;
+
+import com.raytheon.uf.viz.productbrowser.Activator;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
 
@@ -35,6 +38,7 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceTyp
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * Jun 02, 2015  4153     bsteffen  Initial creation
+ * Sep 03, 2015  4717     mapeters  Added getOrder().
  * 
  * </pre>
  * 
@@ -75,13 +79,30 @@ public class ProductBrowserPreferenceConstants {
      * Create a preference for the {@link #ORDER} preference, must be provided
      * with a default order.
      */
-    public static ProductBrowserPreference createOrderPreference(String[] defaultOrder) {
+    public static ProductBrowserPreference createOrderPreference(
+            String[] defaultOrder) {
         ProductBrowserPreference preference = new ProductBrowserPreference();
         preference.setLabel(ORDER);
         preference.setPreferenceType(PreferenceType.STRING_ARRAY);
         preference.setValue(defaultOrder);
-        preference.setTooltip("Change the order of items in the product browser tree");
+        preference
+                .setTooltip("Change the order of items in the product browser tree");
         return preference;
+    }
+
+    /**
+     * Get the {@link #ORDER} preference value from the preference store.
+     * 
+     * @param dataType
+     * @return the preference value, or null if no preference value is stored
+     */
+    public static String[] getOrder(String dataType) {
+        IPreferenceStore store = Activator.getDefault().getPreferenceStore();
+        String temp = store.getString(ORDER + dataType);
+        if (temp != null && !temp.isEmpty()) {
+            return temp.split(",");
+        }
+        return null;
     }
 
     /**
@@ -92,7 +113,8 @@ public class ProductBrowserPreferenceConstants {
         ProductBrowserPreference preference = new ProductBrowserPreference();
         preference.setLabel(FORMAT_DATA);
         preference.setPreferenceType(PreferenceType.BOOLEAN);
-        preference.setTooltip("Enables prettier names of parameters in the product browser (instead of the raw names)");
+        preference
+                .setTooltip("Enables prettier names of parameters in the product browser (instead of the raw names)");
         preference.setValue(true);
         return preference;
     }

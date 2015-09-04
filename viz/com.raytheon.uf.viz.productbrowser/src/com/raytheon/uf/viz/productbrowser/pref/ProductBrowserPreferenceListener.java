@@ -46,6 +46,7 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
  * ------------- -------- --------- --------------------------
  * Jun 04, 2015  4153     bsteffen  Initial creation
  * Aug 12, 2015  4717     mapeters  Break after each case in propertyChange's switch statement
+ * Sep 04, 2015  4717     mapeters  Prevent NPE in propertyChange()
  * 
  * </pre>
  * 
@@ -111,8 +112,7 @@ public class ProductBrowserPreferenceListener extends
         ProductBrowserPreference pref = this.get();
         if (pref == null) {
             store.removePropertyChangeListener(this);
-        }
-        if (propertyName.equals(event.getProperty())) {
+        } else if (propertyName.equals(event.getProperty())) {
             switch (pref.getPreferenceType()) {
             case BOOLEAN:
                 pref.setValue(store.getBoolean(propertyName));

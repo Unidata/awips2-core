@@ -43,6 +43,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
 import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
+import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants;
 
 /**
  * Builds each data type's preference specifically for product browser
@@ -58,6 +59,8 @@ import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
  *                                  data definition.
  * Aug 11, 2015  4717     mapeters  Remove performApply override, performOk only refreshes 
  *                                  this page's corresponding data type (not all data types).
+ * Sep 03, 2015  4717     mapeters  Add tool tip texts, pass old tree item order to 
+ *                                  {@link ProductBrowserView#refresh(String, String[])}
  * 
  * </pre>
  * 
@@ -128,12 +131,15 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
      */
     @Override
     public boolean performOk() {
+        String dataType = getTitle();
+        String[] oldOrder = ProductBrowserPreferenceConstants
+                .getOrder(dataType);
         boolean rval = super.performOk();
         for (IViewReference reference : PlatformUI.getWorkbench()
                 .getActiveWorkbenchWindow().getActivePage().getViewReferences()) {
             if (ProductBrowserView.ID.equals(reference.getId())) {
-                ((ProductBrowserView) reference.getPart(true))
-                        .refresh(getTitle());
+                ((ProductBrowserView) reference.getPart(true)).refresh(
+                        dataType, oldOrder);
                 break;
             }
         }
@@ -180,10 +186,14 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
             if (pref.getPreferenceType() == PreferenceType.EDITABLE_STRING) {
                 StringFieldEditor editor = new StringFieldEditor(prefName,
                         pref.getLabel(), getFieldEditorParent());
+                editor.getTextControl(getFieldEditorParent()).setToolTipText(
+                        pref.getTooltip());
                 editors.add(editor);
             } else if (pref.getPreferenceType() == PreferenceType.BOOLEAN) {
                 BooleanFieldEditor editor = new BooleanFieldEditor(prefName,
                         pref.getLabel(), getFieldEditorParent());
+                editor.getDescriptionControl(getFieldEditorParent())
+                        .setToolTipText(pref.getTooltip());
                 editors.add(editor);
             } else if (pref.getPreferenceType() == PreferenceType.STRING_ARRAY) {
                 final String[] values = ((String[]) pref.getValue());
@@ -228,6 +238,8 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
                             .getChildren()[i].setVisible(false);
                 }
 
+                editor.getLabelControl(getFieldEditorParent()).setToolTipText(
+                        pref.getTooltip());
                 editor.getButtonBoxControl(getFieldEditorParent()).layout();
                 editors.add(editor);
             }
