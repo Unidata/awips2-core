@@ -44,11 +44,13 @@ import com.vividsolutions.jts.geom.Geometry;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 8, 2012             mschenke    Initial creation
- * Apr 03, 2013 1824       bsteffen    Fix Tile Geometry creation.
- * Aug 27, 2013 2190       mschenke    Remove unused transforms
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 08, 2012           mschenke  Initial creation
+ * Apr 03, 2013  1824     bsteffen  Fix Tile Geometry creation.
+ * Aug 27, 2013  2190     mschenke  Remove unused transforms
+ * Sep 04, 2015  4828     bsteffen  Fix when tile center is not valid in
+ *                                  descriptor CRS.
  * 
  * </pre>
  * 
@@ -134,10 +136,12 @@ public class TileLevel {
             double mapPointX = out[0];
             double mapPointY = out[1];
             GridEnvelope targetEnv = targetGeometry.getGridRange();
+
             if (targetEnv.getLow(0) > mapPointX
                     || targetEnv.getHigh(0) < mapPointX
                     || targetEnv.getLow(1) > mapPointY
-                    || targetEnv.getHigh(1) < mapPointY) {
+                    || targetEnv.getHigh(1) < mapPointY
+                    || Double.isNaN(mapPointX) || Double.isNaN(mapPointY)) {
                 // Center of tile level outside target grid, use something on
                 // target grid for calculations
                 mapPointX = targetEnv.getLow(0) + targetEnv.getSpan(0) * 0.5;
