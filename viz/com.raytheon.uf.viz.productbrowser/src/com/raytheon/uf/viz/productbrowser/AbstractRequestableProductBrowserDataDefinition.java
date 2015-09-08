@@ -80,6 +80,8 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * May 13, 2014  3135     bsteffen  Remove ISerializableObject.
  * Jun 02, 2015  4153     bsteffen  Extract interface and deprecate.
  * Aug 13, 2015  4717     mapeters  Update order when its preference store value changes
+ * Sep 03, 2015  4717     mapeters  Get preference store order value using 
+ *                                  ProductBrowserPreferenceConstants.getOrder()
  * 
  * </pre>
  * 
@@ -104,7 +106,7 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     // request constraints
     protected String[] order = null;
 
-    /** Use {@link ProductBrowserPreferenceConstants#FORMAT_DATA} instead */
+    /** Use {@link ProductBrowserPreferenceConstants#ORDER} instead */
     @Deprecated
     protected static final String ORDER = ProductBrowserPreferenceConstants.ORDER;
 
@@ -387,12 +389,12 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
      * @return the order
      */
     protected String[] getOrder() {
-        String temp = Activator.getDefault().getPreferenceStore()
-                .getString(ORDER + displayName);
-        if (temp != null && !temp.isEmpty()) {
-            order = temp.split(",");
+        String[] order = ProductBrowserPreferenceConstants
+                .getOrder(displayName);
+        if (order != null) {
+            this.order = order;
         }
-        return order;
+        return this.order;
     }
 
     @Override
@@ -428,7 +430,9 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
             store.addPropertyChangeListener(new IPropertyChangeListener() {
                 @Override
                 public void propertyChange(PropertyChangeEvent event) {
-                    if (event.getProperty().equals(ORDER + displayName)) {
+                    if (event.getProperty().equals(
+                            ProductBrowserPreferenceConstants.ORDER
+                                    + displayName)) {
                         // Update order from preference store
                         getOrder();
                     }

@@ -60,6 +60,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserQueryJob;
 import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserUpdateDataTypeJob;
+import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants;
 
 /**
  * Product browser view implementation
@@ -76,6 +77,7 @@ import com.raytheon.uf.viz.productbrowser.jobs.ProductBrowserUpdateDataTypeJob;
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * Aug 10, 2015  4717     mapeters  Added collapse all button, don't collapse on refresh,
  *                                  expand/collapse on double click.
+ * Sep 03, 2015  4717     mapeters  Added maxDepth limitation to refresh.
  * 
  * </pre>
  * 
@@ -140,7 +142,7 @@ public class ProductBrowserView extends ViewPart {
         refreshAction = new Action("Refresh Browser") {
             @Override
             public void run() {
-                refresh(null);
+                refresh(null, null);
             }
         };
         refreshAction.setId("refreshAction");
@@ -174,28 +176,56 @@ public class ProductBrowserView extends ViewPart {
      * @param dataTypeName
      *            the name of the data type to be refreshed, or null if all
      *            should be refreshed
+     * @param oldOrder
+     *            the old order of items in the tree for the given data type
      */
-    public void refresh(String dataTypeName) {
+    public void refresh(String dataTypeName, String[] oldOrder) {
         // Update top level tree elements
         updateAvailableDataTypes(dataTypeName);
         // Update all other tree elements
         boolean refreshAll = (dataTypeName == null);
+        String[] newOrder = null;
+        // Default to arbitrary number larger than all data types' order length
+        int maxDepth = 50;
+        if (dataTypeName != null && oldOrder != null) {
+            newOrder = ProductBrowserPreferenceConstants.getOrder(dataTypeName);
+            if (newOrder != null) {
+                /*
+                 * Determine max depth at which to perform refreshes in tree
+                 * based on where the old and new orders differ (should go as
+                 * far as 1 level above first difference).
+                 */
+                for (int i = 0; i < oldOrder.length; i++) {
+                    if (!newOrder[i].equals(oldOrder[i])) {
+                        maxDepth = i;
+                        break;
+                    }
+                }
+            }
+        }
         for (TreeItem item : productTree.getItems()) {
             if (refreshAll
                     || getLabel(item).getName().equalsIgnoreCase(dataTypeName)) {
-                recursiveRefresh(item);
+                recursiveRefresh(item, maxDepth);
             }
         }
     }
 
-    private void recursiveRefresh(TreeItem item) {
-        if (item.getExpanded()) {
+    /**
+     * Recursively refresh the given item (if it is expanded) and its children
+     * (that are at most maxRelativeDepth levels below it).
+     * 
+     * @param item
+     * @param maxRelativeDepth
+     */
+    private void recursiveRefresh(TreeItem item, int maxRelativeDepth) {
+        if (item.getExpanded() && maxRelativeDepth >= 0) {
             /*
              * Only care about expanded items, collapsed items' contents will
              * automatically be updated when they are expanded.
              */
             for (TreeItem child : item.getItems()) {
-                recursiveRefresh(child);
+                recursiveRefresh(child, maxRelativeDepth - 1);
             }
             ProductBrowserQueryJob.startJob(item);
         }
