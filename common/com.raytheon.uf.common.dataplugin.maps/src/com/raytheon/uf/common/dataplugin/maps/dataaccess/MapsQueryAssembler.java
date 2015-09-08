@@ -44,6 +44,7 @@ import com.vividsolutions.jts.geom.Envelope;
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
  * Oct 30, 2013            mnash      Allow for no parameters to be set.
+ * Aug 31, 2015 4569       mapeters    Alias automatically retrieved location columns.
  * 
  * </pre>
  * 
@@ -173,17 +174,29 @@ public class MapsQueryAssembler {
 
         List<String> columns = new ArrayList<String>();
         if (locationQuery == false) {
-            // the first column will always be the geometry.
+            /*
+             * The first column will always be the geometry. We don't need to
+             * alias it because it can't be requested as a parameter since it
+             * must be converted to binary.
+             */
             columns.add("AsBinary(" + geomField + ")");
         }
 
         String locationField = null;
         if (request.getIdentifiers().containsKey(
                 IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)) {
+            /*
+             * The second column will always be the location name. We must alias
+             * it in case it is also included as a parameter (to make the two
+             * differentiable).
+             */
             locationField = request.getIdentifiers()
                     .get(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD).toString();
-            // the second column will always be the location name
-            columns.add(locationField);
+            StringBuilder locationFieldAliased = new StringBuilder(
+                    locationField).append(" as ")
+                    .append(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)
+                    .append(locationField);
+            columns.add(locationFieldAliased.toString());
         }
         if (locationQuery == false) {
             /*
