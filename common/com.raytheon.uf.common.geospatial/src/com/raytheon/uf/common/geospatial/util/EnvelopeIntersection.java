@@ -68,6 +68,9 @@ import com.vividsolutions.jts.geom.Triangle;
  * Jun 11, 2015  4551     bsteffen  Add minNumDivs to calculateEdge
  * Aug 11, 2015  4713     bsteffen  Fall back to brute force for topology
  *                                  exception.
+ * Sep 03, 2015  4831     bsteffen  Use approximateEquals when comparing
+ *                                  coordinates that have been through the
+ *                                  WorldWrapCorrector.
  * 
  * </pre>
  * 
@@ -356,9 +359,14 @@ public class EnvelopeIntersection {
                             Coordinate[] c2 = ls2.getCoordinates();
                             Coordinate c2_0 = c2[0];
                             Coordinate c2_l = c2[c2.length - 1];
-                            if (c1_0.equals(c2_l) || c1_l.equals(c2_0)) {
+
+                            boolean connectLS1toLS2 = approximateEquals(c1_l,
+                                    c2_0);
+                            boolean connectLS2toLS1 = approximateEquals(c1_0,
+                                    c2_l);
+                            if (connectLS2toLS1 || connectLS1toLS2) {
                                 // ls1 and ls2 are connected, create new geom
-                                if (c1_0.equals(c2_l)) {
+                                if (connectLS2toLS1) {
                                     Coordinate[] tmp = c1;
                                     c1 = c2;
                                     c2 = tmp;
@@ -1090,5 +1098,33 @@ public class EnvelopeIntersection {
                 buildPolygonList(polygons, geometry.getGeometryN(n));
             }
         }
+    }
+
+    /**
+     * Return true if two coordinates are very very close to eachother(within 4
+     * ULP). This is necessary when the world wrap corrector introduces very
+     * small rounding errors during the correction process.
+     * 
+     * @see Math#ulp(double)
+     */
+    private static boolean approximateEquals(Coordinate c1, Coordinate c2) {
+        return approximateEquals(c1.x, c2.x) && approximateEquals(c1.y, c2.y);
+    }
+
+    /**
+     * Return true if two doubles are very very close to eachother(within 4
+     * ULP).
+     * 
+     * @see #approximateEquals(Coordinate, Coordinate)
+     */
+    private static boolean approximateEquals(double d1, double d2) {
+        double test = d1;
+        for (int i = 0; i < 4; i += 1) {
+            if (test == d2) {
+                return true;
+            }
+            test = Math.nextAfter(test, d2);
+        }
+        return false;
     }
 }
