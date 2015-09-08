@@ -503,9 +503,8 @@ public class ColorMapParameterFactory {
                 params.setColorBarIntervals(labeling.getValues());
             } else if (labeling.getIncrement() != 0) {
                 float increment = labeling.getIncrement();
-                float initialPoint = (float) (Math
-                        .ceil(colorMapMin / increment) * increment);
-                float finalPoint = (float) (Math.floor(colorMapMax / increment) * increment);
+                float initialPoint = (float) (Math.ceil(displayMin / increment) * increment);
+                float finalPoint = (float) (Math.floor(displayMax / increment) * increment);
                 int count = (int) ((finalPoint - initialPoint) / increment) + 1;
                 float[] vals = new float[count];
                 for (int i = 0; i < count; i += 1) {
