@@ -35,8 +35,12 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.ui.PlatformUI;
 
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.SimulatedTime;
+import com.raytheon.viz.core.mode.CAVEMode;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 
 /**
@@ -55,6 +59,7 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * 09JUL2008    1234        ebabin      Updates for color, and display issues.
  * Oct 17, 2012 1229       rferrel     Made dialog non-blocking.
  * Jan 09, 2013 1442       rferrel     Changes to notify Simulated Time listeners
+ * Aug 31, 2015 17970      yteng       Notify user in GFE that system is in DRT mode
  * 
  * </pre>
  * 
@@ -322,6 +327,17 @@ public class SetTimeDialog extends CaveSWTDialog {
             @Override
             public void widgetSelected(SelectionEvent event) {
                 setVizTime();
+
+                if (CAVEMode.getMode().equals(CAVEMode.OPERATIONAL)
+                        && !SimulatedTime.getSystemTime().isRealTime()
+                        && PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+                            .getActivePage().getPerspective().getLabel().equals("GFE")
+                        && !CAVEMode.getFlagInDRT()) {
+                    UFStatus.getHandler().handle(
+                            Priority.WARN,
+                            "CAVE is in OPERATIONAL mode and CAVE clock is not set to real-time. Please close all GFE sessions, if any.");
+                }
+
                 shell.dispose();
             }
         });
@@ -355,7 +371,6 @@ public class SetTimeDialog extends CaveSWTDialog {
             systemTime.setTime(cal.getTime());
             systemTime.notifyListeners(true);
         }
-
     }
 
     /**
