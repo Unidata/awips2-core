@@ -1,7 +1,7 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
@@ -13,13 +13,16 @@
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 
 package com.raytheon.viz.core.mode;
 
+import java.io.File;
+
+import org.eclipse.core.runtime.Platform;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.Color;
@@ -30,16 +33,17 @@ import com.raytheon.uf.viz.core.ProgramArguments;
 
 /**
  * CAVEMode.
- * 
+ *
  * Holds the constants that define the CAVE mode.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ----------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer     Description
+ * ----------   ----------  -----------  --------------------------
  * 12/20/07     561         Dan Fitch    Initial Creation.
+ * 08/31/15     17970       yteng        Enable DRT Test
  * </pre>
- * 
+ *
  * @author Dan Fitch
  * @version 1
  */
@@ -81,6 +85,12 @@ public enum CAVEMode {
         return modeAtStartup;
     }
 
+    private static boolean flagInDRT = false;
+
+    public static boolean getFlagInDRT() {
+        return flagInDRT;
+    }
+
     /**
      * This should NOT be called by end users
      */
@@ -98,6 +108,8 @@ public enum CAVEMode {
             System.exit(0);
         }
 
+        String filepath = new File(Platform.getUserLocation().getURL().getPath(), "devTest").getPath();
+        flagInDRT = new CAVETestFlagReader(filepath, "devConfig.txt").getTestFlag();
     }
 
     public static Color getBackgroundColor() {
