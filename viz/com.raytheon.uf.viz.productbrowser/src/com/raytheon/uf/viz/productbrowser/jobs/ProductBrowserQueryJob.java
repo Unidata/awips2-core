@@ -55,6 +55,7 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * Aug 13, 2015  4717     mapeters  Moved copyItem() to ProductBrowserView, only allow
  *                                  8 jobs to run concurrently.
+ * Sep 11, 2015  4717     mapeters  Moved copyItem() back to here.
  * 
  * </pre>
  * 
@@ -66,13 +67,13 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
     private static final IUFStatusHandler log = UFStatus
             .getHandler(ProductBrowserQueryJob.class);
 
-    public static final String JOB_DATA_KEY = "queryJob";
+    protected static final String JOB_DATA_KEY = "queryJob";
 
-    private static final int maxConcurrentJobs = 8;
+    protected static final int maxConcurrentJobs = 8;
 
-    private static SchedulingRule[] schedulingRules;
+    protected static SchedulingRule[] schedulingRules;
 
-    private static int schedulingRulesIndex = 0;
+    protected static int schedulingRulesIndex = 0;
 
     protected TreeItem item;
 
@@ -164,7 +165,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
                         childLabel = ProductBrowserView.getLabel(childItem);
                         if (childLabel.equals(label)) {
                             TreeItem child = new TreeItem(item, SWT.NONE, i);
-                            ProductBrowserView.copyItem(childItem, child);
+                            copyItem(childItem, child);
                             childItem.dispose();
                             create = false;
                             break;
@@ -197,7 +198,40 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         item.setData(JOB_DATA_KEY, null);
     }
 
-    public void setItem(TreeItem item) {
+    /**
+     * Recursively copy a TreeItem. This is only needed if a query is repeated
+     * and returns items in a new order.
+     * 
+     * @param oldItem
+     * @param newItem
+     */
+    protected static void copyItem(TreeItem oldItem, TreeItem newItem) {
+        newItem.setText(oldItem.getText());
+        newItem.setFont(oldItem.getFont());
+        for (TreeItem oldChild : oldItem.getItems()) {
+            TreeItem newChild = new TreeItem(newItem, SWT.NONE);
+            if (newItem.getItemCount() == 1) {
+                /*
+                 * For recursive expansion to work newItem must be expanded
+                 * after newChild is created but before newChild is expanded.
+                 */
+                newItem.setExpanded(oldItem.getExpanded());
+            }
+            copyItem(oldChild, newChild);
+        }
+        newItem.setData(ProductBrowserView.LABEL_DATA_KEY,
+                ProductBrowserView.getLabel(oldItem));
+        newItem.setData(ProductBrowserView.DEF_DATA_KEY,
+                ProductBrowserView.getDataDef(oldItem));
+        ProductBrowserQueryJob job = (ProductBrowserQueryJob) oldItem
+                .getData(JOB_DATA_KEY);
+        if (job != null) {
+            job.setItem(newItem);
+            newItem.setData(JOB_DATA_KEY, job);
+        }
+    }
+
+    protected void setItem(TreeItem item) {
         this.item = item;
     }
 
@@ -238,7 +272,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
      * {@value #maxConcurrentJobs} jobs run concurrently so we don't eat up too
      * many threads.
      */
-    private void setSchedulingRule() {
+    protected void setSchedulingRule() {
         this.setRule(getSchedulingRules()[schedulingRulesIndex]);
         schedulingRulesIndex = (schedulingRulesIndex + 1) % maxConcurrentJobs;
     }
@@ -250,7 +284,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
      * 
      * @return the list of SchedulingRules
      */
-    private static SchedulingRule[] getSchedulingRules() {
+    protected static SchedulingRule[] getSchedulingRules() {
         if (schedulingRules == null) {
             schedulingRules = new SchedulingRule[maxConcurrentJobs];
             for (int i = 0; i < maxConcurrentJobs; i++) {
@@ -264,7 +298,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
      * ISchedulingRule implementation where conflicts are determined solely by
      * if two SchedulingRules are the same instance.
      */
-    private static class SchedulingRule implements ISchedulingRule {
+    protected static class SchedulingRule implements ISchedulingRule {
 
         @Override
         public boolean contains(ISchedulingRule rule) {

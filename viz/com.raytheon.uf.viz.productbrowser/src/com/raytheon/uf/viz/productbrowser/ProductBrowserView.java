@@ -78,6 +78,7 @@ import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants
  * Aug 10, 2015  4717     mapeters  Added collapse all button, don't collapse on refresh,
  *                                  expand/collapse on double click.
  * Sep 03, 2015  4717     mapeters  Added maxDepth limitation to refresh.
+ * Sep 11, 2015  4717     mapeters  Don't need to copy/dispose tree items when updating them.
  * 
  * </pre>
  * 
@@ -380,24 +381,14 @@ public class ProductBrowserView extends ViewPart {
                     if (!updateAll && !labelName.equalsIgnoreCase(dataTypeName)) {
                         continue;
                     }
-                    TreeItem newDataType = null;
+                    TreeItem dataTypeToUpdate = null;
                     // Sort alphabetically
                     int index = 0;
                     for (TreeItem dataType : productTree.getItems()) {
                         int compareValue = getLabel(dataType).getName()
                                 .compareToIgnoreCase(labelName);
                         if (compareValue == 0) {
-                            /*
-                             * Copy the dataType and dispose it. Otherwise,
-                             * passing the same TreeItem instance to multiple
-                             * ProductBrowserUpdateDataTypeJobs can cause an
-                             * earlier job to interfere with a later one (the
-                             * later job should take priority).
-                             */
-                            newDataType = new TreeItem(productTree, SWT.NONE,
-                                    index);
-                            copyItem(dataType, newDataType);
-                            dataType.dispose();
+                            dataTypeToUpdate = dataType;
                             break;
                         } else if (compareValue > 0) {
                             break;
@@ -405,21 +396,23 @@ public class ProductBrowserView extends ViewPart {
                             index++;
                         }
                     }
-                    if (newDataType == null) {
-                        newDataType = new TreeItem(productTree, SWT.NONE, index);
-                        newDataType.setData(LABEL_DATA_KEY, label);
-                        newDataType.setData(DEF_DATA_KEY, prod);
-                        Font font = newDataType.getFont();
+                    if (dataTypeToUpdate == null) {
+                        dataTypeToUpdate = new TreeItem(productTree, SWT.NONE,
+                                index);
+                        dataTypeToUpdate.setData(LABEL_DATA_KEY, label);
+                        dataTypeToUpdate.setData(DEF_DATA_KEY, prod);
+                        Font font = dataTypeToUpdate.getFont();
                         FontData fontData = font.getFontData()[0];
                         fontData = new FontData(fontData.getName(),
                                 fontData.getHeight(), SWT.BOLD);
-                        font = new Font(newDataType.getDisplay(), fontData);
-                        newDataType.setFont(font);
+                        font = new Font(dataTypeToUpdate.getDisplay(), fontData);
+                        dataTypeToUpdate.setFont(font);
                     }
                     String displayText = "Checking Availability of "
                             + labelName + "...";
-                    newDataType.setText(displayText);
-                    new ProductBrowserUpdateDataTypeJob(newDataType).schedule();
+                    dataTypeToUpdate.setText(displayText);
+                    new ProductBrowserUpdateDataTypeJob(dataTypeToUpdate)
+                            .schedule();
                 }
             }
         }
@@ -513,39 +506,6 @@ public class ProductBrowserView extends ViewPart {
 
     public static ProductBrowserDataDefinition getDataDef(TreeItem item) {
         return (ProductBrowserDataDefinition) item.getData(DEF_DATA_KEY);
-    }
-
-    /**
-     * Recursively copy a TreeItem (maintaining expanded state of it and its
-     * children).
-     * 
-     * @param oldItem
-     * @param newItem
-     */
-    public static void copyItem(TreeItem oldItem, TreeItem newItem) {
-        newItem.setText(oldItem.getText());
-        newItem.setFont(oldItem.getFont());
-        for (TreeItem oldChild : oldItem.getItems()) {
-            TreeItem newChild = new TreeItem(newItem, SWT.NONE);
-            if (newItem.getItemCount() == 1) {
-                /*
-                 * For recursive expansion to work newItem must be expanded
-                 * after newChild is created but before newChild is expanded.
-                 */
-                newItem.setExpanded(oldItem.getExpanded());
-            }
-            copyItem(oldChild, newChild);
-        }
-        newItem.setData(ProductBrowserView.LABEL_DATA_KEY,
-                ProductBrowserView.getLabel(oldItem));
-        newItem.setData(ProductBrowserView.DEF_DATA_KEY,
-                ProductBrowserView.getDataDef(oldItem));
-        ProductBrowserQueryJob job = (ProductBrowserQueryJob) oldItem
-                .getData(ProductBrowserQueryJob.JOB_DATA_KEY);
-        if (job != null) {
-            job.setItem(newItem);
-            newItem.setData(ProductBrowserQueryJob.JOB_DATA_KEY, job);
-        }
     }
 
     @Override
