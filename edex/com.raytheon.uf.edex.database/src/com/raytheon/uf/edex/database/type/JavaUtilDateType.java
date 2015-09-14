@@ -31,6 +31,8 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
+import com.raytheon.uf.common.time.FormattedDate;
+
 /**
  * Type override for java.util.Date so that hibernate returns a java.util.Date
  * instead of java.sql.Timestamp.
@@ -42,7 +44,7 @@ import org.hibernate.usertype.UserType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 05, 2015 4486       rjpeter     Initial creation.
- * 
+ * Sep 14, 2015 4486       rjpeter     Return FormattedDate.
  * </pre>
  * 
  * @author rjpeter
@@ -116,7 +118,7 @@ public class JavaUtilDateType implements UserType {
             return null;
         }
 
-        return new Date(s.getTime());
+        return new FormattedDate(s.getTime());
     }
 
     /*
@@ -147,7 +149,7 @@ public class JavaUtilDateType implements UserType {
             return null;
         }
 
-        return new Date(((Date) value).getTime());
+        return new FormattedDate(((Date) value).getTime());
     }
 
     /*
@@ -171,7 +173,7 @@ public class JavaUtilDateType implements UserType {
             return null;
         }
 
-        return new Date(((Date) value).getTime());
+        return new FormattedDate(((Date) value).getTime());
     }
 
     /*
@@ -187,7 +189,7 @@ public class JavaUtilDateType implements UserType {
             return null;
         }
 
-        return new Date(((Date) cached).getTime());
+        return new FormattedDate(((Date) cached).getTime());
     }
 
     /*
@@ -203,7 +205,7 @@ public class JavaUtilDateType implements UserType {
             return null;
         }
 
-        return new Date(((Date) original).getTime());
+        return new FormattedDate(((Date) original).getTime());
     }
 
     public static String[] getRegistryKeys() {

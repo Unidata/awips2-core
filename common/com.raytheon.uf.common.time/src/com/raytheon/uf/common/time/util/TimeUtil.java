@@ -59,7 +59,7 @@ import com.raytheon.uf.common.time.domain.api.ITimePoint;
  * Jan 28, 2014  2636      mpduff      Removed unused methods.
  * Feb 19, 2014  2631      mpduff      Added buildThreadLocalSimpleDateFormat(String, TimeZone).
  * May 14, 2014  3169      bclement    Added newGmtCalendar(int,int,int), newCalendar(Calendar) uses clone()
- * 
+ * Sep 15, 2015  4486      rjpeter     Removed Calendar create from formatDate.
  * </pre>
  * 
  * @author njensen
@@ -256,9 +256,9 @@ public final class TimeUtil {
      * @return The formatted date string from the Date instance
      */
     public static String formatDate(Date aDate) {
-        Calendar cal = Calendar.getInstance(GMT_TIME_ZONE);
-        cal.setTimeInMillis(aDate.getTime());
-        return formatCalendar(cal);
+        SimpleDateFormat mySdf = sdf.get();
+        mySdf.setTimeZone(GMT_TIME_ZONE);
+        return mySdf.format(aDate);
     }
 
     public static long formattedDateToLong(String formattedDate) {
@@ -346,13 +346,13 @@ public final class TimeUtil {
      * @return the greater of two Calendars; returns null if both are null.
      */
     public static Calendar max(Calendar lhs, Calendar rhs) {
-        if (lhs != null && rhs == null) {
+        if ((lhs != null) && (rhs == null)) {
             return lhs;
         }
-        if (lhs == null && rhs != null) {
+        if ((lhs == null) && (rhs != null)) {
             return rhs;
         }
-        if (lhs != null && rhs != null) {
+        if ((lhs != null) && (rhs != null)) {
             if (lhs.equals(rhs)) {
                 return lhs;
             } else {
@@ -370,13 +370,13 @@ public final class TimeUtil {
      * @return the lesser of two Calendars; returns null if both are null.
      */
     public static Calendar min(Calendar lhs, Calendar rhs) {
-        if (lhs != null && rhs == null) {
+        if ((lhs != null) && (rhs == null)) {
             return lhs;
         }
-        if (lhs == null && rhs != null) {
+        if ((lhs == null) && (rhs != null)) {
             return rhs;
         }
-        if (lhs != null && rhs != null) {
+        if ((lhs != null) && (rhs != null)) {
             if (lhs.equals(rhs)) {
                 return lhs;
             } else {
