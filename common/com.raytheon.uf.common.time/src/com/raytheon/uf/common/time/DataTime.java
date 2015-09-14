@@ -67,8 +67,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Aug 08, 2013  2245     bsteffen    Make all DataTime comparisons consistent.
  * Oct 14, 2013  2468     bsteffen    Add getValidTimeAsDate() for comparison
  *                                    performance.
- * Jul 14, 2014  2587     bclement    made reftime non null in hibernate
- * 
+ * Jul 14, 2014  2587     bclement    made reftime non null in hibernate.
+ * Sep 14, 2015  4486     rjpeter     Added IllegalArgumentException to String constructor.
  * </pre>
  * 
  * A DataTime has methods that allow the user to obtain the valid time,
@@ -199,12 +199,13 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     public DataTime(Date refTime, int fcstTime) {
         this.refTime = refTime;
         this.fcstTime = fcstTime;
-        long validTimeMillis = refTime.getTime() + ((long) fcstTime) * 1000;
+        long validTimeMillis = refTime.getTime() + (((long) fcstTime) * 1000);
         validPeriod = new TimeRange(validTimeMillis, validTimeMillis);
         utilityFlags = EnumSet.of(FLAG.FCST_USED);
     }
 
     public DataTime(String value) {
+        boolean valid = false;
 
         Matcher m = datePattern.matcher(value);
         CalendarConverter conv = new CalendarConverter();
@@ -214,23 +215,25 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
                     .getTime();
             validPeriod = new TimeRange(refTime, refTime);
             utilityFlags = EnumSet.noneOf(FLAG.class);
+            valid = true;
         }
 
         m = fcstPattern.matcher(value);
         if (m.find()) {
             if (m.group(1).contains(":")) {
                 String[] fcstTimeTokens = m.group(1).split(":");
-                fcstTime = Integer.parseInt(fcstTimeTokens[0]) * 3600
-                        + Integer.parseInt(fcstTimeTokens[1]) * 60;
+                fcstTime = (Integer.parseInt(fcstTimeTokens[0]) * 3600)
+                        + (Integer.parseInt(fcstTimeTokens[1]) * 60);
             } else {
                 fcstTime = Integer.parseInt(m.group(1)) * 3600;
             }
             if (refTime != null) {
-                long validTimeMillis = refTime.getTime() + ((long) fcstTime)
-                        * 1000;
+                long validTimeMillis = refTime.getTime()
+                        + (((long) fcstTime) * 1000);
                 validPeriod = new TimeRange(validTimeMillis, validTimeMillis);
             }
             utilityFlags = EnumSet.of(FLAG.FCST_USED);
+            valid = true;
         }
 
         m = periodPattern.matcher(value);
@@ -243,6 +246,12 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
             if (!cal1.equals(cal2)) {
                 utilityFlags.add(FLAG.PERIOD_USED);
             }
+            valid = true;
+        }
+
+        if (!valid) {
+            throw new IllegalArgumentException(
+                    "Invalid DataTime string.  Cannot parse [" + value + "]");
         }
     }
 
@@ -308,8 +317,8 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     public DataTime(Calendar refTime, int fcstTime) {
         this.refTime = refTime.getTime();
         this.fcstTime = fcstTime;
-        long validTimeMillis = refTime.getTimeInMillis() + ((long) fcstTime)
-                * 1000;
+        long validTimeMillis = refTime.getTimeInMillis()
+                + (((long) fcstTime) * 1000);
         validPeriod = new TimeRange(validTimeMillis, validTimeMillis);
         utilityFlags = EnumSet.of(FLAG.FCST_USED);
     }
@@ -409,7 +418,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
      * @return get the matching valid time
      */
     public long getMatchValid() {
-        return refTime.getTime() + 60 * ((((long) fcstTime) * 1000) / 60);
+        return refTime.getTime() + (60 * ((((long) fcstTime) * 1000) / 60));
     }
 
     public Double getLevelValue() {
@@ -436,8 +445,9 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
 
     public boolean equals(Object obj, boolean ignoreSpatial) {
 
-        if (obj == null || !(obj instanceof DataTime))
+        if ((obj == null) || !(obj instanceof DataTime)) {
             return false;
+        }
 
         DataTime rhs = (DataTime) obj;
 
@@ -449,10 +459,10 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
         Date rt2 = new Date(rhs.refTime.getTime());
 
         if (ignoreSpatial) {
-            return (rt1.equals(rt2) && fcstTime == rhs.fcstTime && validPeriod
+            return (rt1.equals(rt2) && (fcstTime == rhs.fcstTime) && validPeriod
                     .equals(rhs.validPeriod));
         } else {
-            return (rt1.equals(rt2) && fcstTime == rhs.fcstTime
+            return (rt1.equals(rt2) && (fcstTime == rhs.fcstTime)
                     && validPeriod.equals(rhs.validPeriod) && levelValue
                         .equals(rhs.levelValue));
         }
@@ -475,19 +485,21 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
      * @return the legend time string
      */
     public String getLegendString() {
-        if (legend != null)
+        if (legend != null) {
             return legend;
+        }
 
-        if (refTime.getTime() <= 1)
+        if (refTime.getTime() <= 1) {
             return ("");
+        }
 
         StringBuffer legendBuffer = new StringBuffer();
 
         // Get the valid time we will use
         Date validTime;
-        if ((utilityFlags.contains(FLAG.NO_VALID_PERIOD)))
+        if ((utilityFlags.contains(FLAG.NO_VALID_PERIOD))) {
             validTime = validPeriod.getEnd();
-        else {
+        } else {
             validTime = new Date(refTime.getTime() + (((long) fcstTime) * 1000));
         }
 
@@ -509,7 +521,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
 
         // code initial time like a green time and the forecast time in hours if
         // forecast time is non-zero.
-        if (fcstTime > 0 || utilityFlags.contains(FLAG.FCST_USED)) {
+        if ((fcstTime > 0) || utilityFlags.contains(FLAG.FCST_USED)) {
 
             long fcstTimeInSec = fcstTime;
             Calendar cal = new GregorianCalendar(TimeUtil.GMT_TIME_ZONE);
@@ -522,7 +534,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
 
             if (cal.get(Calendar.MINUTE) == 0) {
                 minute = "";
-                if (fcstTimeInSec > 864000 && fcstTimeInSec % 86400 == 0) {
+                if ((fcstTimeInSec > 864000) && ((fcstTimeInSec % 86400) == 0)) {
                     forcastTime = nf2.format(fcstTimeInSec / 86400);
                     forcastTimeUnit = "DAYS";
                 }
@@ -534,7 +546,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
         }
 
         // Add a notation of the length of the valid period if non-zero.
-        else if (validPeriod.getDuration() > 0
+        else if ((validPeriod.getDuration() > 0)
                 && (!utilityFlags.contains(FLAG.NO_VALID_PERIOD))) {
             // validPeriod duration is in millis, convert to minutes
             int m = (int) validPeriod.getDuration() / 1000 / 60;
@@ -542,17 +554,19 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
             int h = m / 60;
             // Get minutes remaining after hours
             m = m % 60;
-            if (m == 0)
+            if (m == 0) {
                 legendBuffer.append(h + "hrs ");
-            else
+            } else {
                 legendBuffer.append(h + ":" + m + " ");
+            }
 
-            if (validPeriod.getStart().equals(validTime))
+            if (validPeriod.getStart().equals(validTime)) {
                 legendBuffer.append("Begn ");
-            else if (validPeriod.getEnd().equals(validTime))
+            } else if (validPeriod.getEnd().equals(validTime)) {
                 legendBuffer.append("Endg ");
-            else
+            } else {
                 legendBuffer.append("Incl ");
+            }
         }
 
         legendBuffer.append(DATE_FORMAT.get().format(validTime));
@@ -568,8 +582,9 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
      * @return true if the date is null
      */
     public boolean isNull() {
-        if (this.refTime.getTime() == 0)
+        if (this.refTime.getTime() == 0) {
             return true;
+        }
 
         return false;
     }
@@ -579,6 +594,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
      * 
      * @see java.lang.Comparable#compareTo(java.lang.Object)
      */
+    @Override
     public int compareTo(DataTime o) {
         return DEFAULT_COMPARATOR.compare(this, o);
     }
@@ -638,8 +654,8 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     private String getForecastString() {
         if (utilityFlags.contains(FLAG.FCST_USED)) {
             int hrs = fcstTime / 3600;
-            int mins = (fcstTime - hrs * 3600) / 60;
-            if (fcstTime % 3600 == 0) {
+            int mins = (fcstTime - (hrs * 3600)) / 60;
+            if ((fcstTime % 3600) == 0) {
                 return "(" + hrs + ")";
             } else {
                 return "(" + hrs + ":" + mins + ")";
@@ -727,7 +743,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     public int hashCode() {
         HashCodeBuilder hashBuilder = new HashCodeBuilder();
         hashBuilder.append(refTime).append(fcstTime);
-        if (validPeriod != null && validPeriod.isValid()) {
+        if ((validPeriod != null) && validPeriod.isValid()) {
             hashBuilder.append(validPeriod.getStart());
             hashBuilder.append(validPeriod.getEnd());
         }
@@ -743,7 +759,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     @Override
     public DataTime clone() {
         boolean hasForecast = utilityFlags.contains(FLAG.FCST_USED)
-                || fcstTime > 0;
+                || (fcstTime > 0);
         boolean hasTimePeriod = utilityFlags.contains(FLAG.PERIOD_USED);
         DataTime rval = null;
         if (hasForecast && hasTimePeriod) {
