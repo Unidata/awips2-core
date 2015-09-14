@@ -26,7 +26,7 @@ import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.objects.GLVertexBufferObject;
@@ -110,7 +110,7 @@ public class GLGeometryObject2D {
         state = State.MUTABLE;
     }
 
-    public void compile(GL gl) throws VizException {
+    public void compile(GL2 gl) throws VizException {
         // We will use glMultiDrawArrays if the cardSupportsHighEndFeatures, so
         // we will keep track of a lenghts buffer
         state = State.COMPILED;
@@ -170,10 +170,10 @@ public class GLGeometryObject2D {
                 }
 
                 // bind and load
-                vbo.bind(gl, GL.GL_ARRAY_BUFFER);
-                gl.glBufferData(GL.GL_ARRAY_BUFFER, copy.capacity() * 4,
-                        copy.rewind(), GL.GL_STATIC_DRAW);
-                gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
+                vbo.bind(gl, GL2.GL_ARRAY_BUFFER);
+                gl.glBufferData(GL2.GL_ARRAY_BUFFER, copy.capacity() * 4,
+                        copy.rewind(), GL2.GL_STATIC_DRAW);
+                gl.glBindBuffer(GL2.GL_ARRAY_BUFFER, 0);
 
                 // dispose of coords
                 coordBuffer.dispose();
@@ -253,7 +253,7 @@ public class GLGeometryObject2D {
             points += 1;
         }
         if (points != idx && data.manageIndicies
-                && (data.geometryType != GL.GL_LINES || indicies.isEmpty())) {
+                && (data.geometryType != GL2.GL_LINES || indicies.isEmpty())) {
             indicies.add(idx);
         }
     }
@@ -266,7 +266,7 @@ public class GLGeometryObject2D {
         }
     }
 
-    public synchronized void paint(GL gl) throws VizException {
+    public synchronized void paint(GL2 gl) throws VizException {
         GLGeometryPainter.paintGeometries(gl, this);
     }
 

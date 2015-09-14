@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.dataformat;
 import java.nio.Buffer;
 import java.nio.IntBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 /**
  * GL Int data format
@@ -50,17 +50,17 @@ public class GLIntDataFormat extends AbstractGLColorMapDataFormat {
 
     @Override
     public int getTextureInternalFormat() {
-        return GL.GL_LUMINANCE;
+        return GL2.GL_LUMINANCE;
     }
 
     @Override
     public int getTextureType() {
-        return GL.GL_INT;
+        return GL2.GL_INT;
     }
 
     @Override
     public int getCopyBackTextureType() {
-        return GL.GL_UNSIGNED_INT;
+        return GL2.GL_UNSIGNED_INT;
     }
 
     /*
@@ -111,10 +111,10 @@ public class GLIntDataFormat extends AbstractGLColorMapDataFormat {
         IntBuffer buffer = (IntBuffer) dataBuffer;
         int value = buffer.get(index);
         switch (data.getTextureType()) {
-        case GL.GL_INT:
+        case GL2.GL_INT:
             // Raw data returned from this preparer
             return value;
-        case GL.GL_UNSIGNED_INT:
+        case GL2.GL_UNSIGNED_INT:
             // Data copied back from gl.
             return value + Integer.MIN_VALUE;
         default:

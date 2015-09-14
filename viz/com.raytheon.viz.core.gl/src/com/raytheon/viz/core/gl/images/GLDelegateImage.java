@@ -19,12 +19,12 @@
  **/
 package com.raytheon.viz.core.gl.images;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.sun.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureCoords;
 
 /**
  * GL image that wraps another gl image
@@ -125,7 +125,7 @@ public class GLDelegateImage<T extends AbstractGLImage> extends AbstractGLImage 
      * .media.opengl.GLContext)
      */
     @Override
-    public void loadTexture(GL gl) throws VizException {
+    public void loadTexture(GL2 gl) throws VizException {
         image.loadTexture(gl);
     }
 
