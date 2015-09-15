@@ -26,8 +26,6 @@ import org.eclipse.ui.actions.PerspectiveMenu;
 
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.SimulatedTime;
-import com.raytheon.viz.core.mode.CAVEMode;
 
 /**
  * Menu to show perspective list for opening perspectives
@@ -39,7 +37,6 @@ import com.raytheon.viz.core.mode.CAVEMode;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 12, 2011            mschenke     Initial creation
- * Aug 31, 2015 17970      yteng        Disable switch to GFE if not in real-time
  * 
  * </pre>
  * 
@@ -63,16 +60,6 @@ public class OpenPerspectiveMenu extends PerspectiveMenu {
     @Override
     protected void run(IPerspectiveDescriptor desc) {
         if (desc != null) {
-            if (CAVEMode.getMode().equals(CAVEMode.OPERATIONAL) &&
-                    !SimulatedTime.getSystemTime().isRealTime() &&
-                    !CAVEMode.getFlagInDRT() &&
-                    desc.getId().equals("com.raytheon.viz.ui.GFEPerspective")) {
-                UFStatus.getHandler().handle(
-                        Priority.WARN,
-                        "GFE cannot be launched while CAVE is in OPERATIONAL mode and CAVE clock is not set to real-time.");
-                return;
-            }
-
             try {
                 PlatformUI.getWorkbench().showPerspective(desc.getId(),
                         getWindow());
