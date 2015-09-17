@@ -318,7 +318,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         // TODO: append instead of define
         String[] pastOptions =  { 
         		"http://localhost:9581/services",
-        		"http://edex-azure.unidata.ucar.edu:9581/services"
+        		"http://edex:9581/services",
+        		"http://edex-cloud.unidata.ucar.edu:9581/services"
         		//"http://edex.unidata.ucar.edu:9581/services"
         		};
         
@@ -414,7 +415,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
         gd = new GridData(120, SWT.DEFAULT);
         Button okBtn = new Button(centeredComp, SWT.NONE);
-        okBtn.setText("Startx CAVE");
+        okBtn.setText("Start CAVE");
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
