@@ -35,8 +35,12 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Spinner;
+import org.eclipse.ui.PlatformUI;
 
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.SimulatedTime;
+import com.raytheon.viz.core.mode.CAVEMode;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 
 /**
@@ -55,6 +59,8 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * 09JUL2008    1234        ebabin      Updates for color, and display issues.
  * Oct 17, 2012 1229       rferrel     Made dialog non-blocking.
  * Jan 09, 2013 1442       rferrel     Changes to notify Simulated Time listeners
+ * Aug 31, 2015 17970      yteng       Notify user in GFE that system is in DRT mode
+ * Sep  3, 2015 17886      Qinglu Lin  Updated for popping up alertViz for WarnGen when CAVE in operational mode and DRT.
  * 
  * </pre>
  * 
@@ -322,6 +328,22 @@ public class SetTimeDialog extends CaveSWTDialog {
             @Override
             public void widgetSelected(SelectionEvent event) {
                 setVizTime();
+                if (CAVEMode.getMode().equals(CAVEMode.OPERATIONAL)
+                        && !SimulatedTime.getSystemTime().isRealTime()
+                        && !CAVEMode.getFlagInDRT()) {
+                    String label = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+                            .getActivePage().getPerspective().getLabel();
+                    if (label.equals("GFE") || label.equals("D2D")) {
+                        String displayLabel = null;
+                        if (label.equals("GFE"))
+                            displayLabel = label;
+                        else if (label.equals("D2D"))
+                            displayLabel = "WarnGen";
+                        String ms1 = "CAVE is in OPERATIONAL mode and the CAVE clock is not set to real-time, please close all";
+                        String ms2 = "sessions, if any.";
+                        UFStatus.getHandler().handle(Priority.WARN, String.format("%s %s %s", ms1, displayLabel, ms2));
+                    }
+                }
                 shell.dispose();
             }
         });
@@ -355,7 +377,6 @@ public class SetTimeDialog extends CaveSWTDialog {
             systemTime.setTime(cal.getTime());
             systemTime.notifyListeners(true);
         }
-
     }
 
     /**
