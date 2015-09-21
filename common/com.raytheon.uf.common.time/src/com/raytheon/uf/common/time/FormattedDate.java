@@ -62,7 +62,7 @@ public class FormattedDate extends Date {
 
     @Override
     public String toString() {
-        return TimeUtil.formatDate(this);
+        return TimeUtil.formatToSqlTimestamp(this);
     }
 
     /**
