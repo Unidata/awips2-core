@@ -51,7 +51,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Jan 21, 2010            mschenke    Initial creation
  * Mar 19, 2013 1807       rferrel     OrderBy now performed.
  * Aug 30, 2013 2298       rjpeter     Make getPluginName abstract
- * 
+ * Sep 21, 2015 4486       rjpeter     Pass entity to QueryParam.
  * </pre>
  * 
  * @author mschenke
@@ -158,7 +158,7 @@ public class DbQueryHandler implements IRequestHandler<DbQueryRequest> {
             }
             }
             QueryParam param = new QueryParam(key,
-                    constraint.getConstraintValue(), op);
+                    constraint.getConstraintValue(), op, entity);
             dbQuery.addQueryParam(param);
         }
 

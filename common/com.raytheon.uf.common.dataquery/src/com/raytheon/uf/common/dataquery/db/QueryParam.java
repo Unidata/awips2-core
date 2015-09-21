@@ -37,6 +37,7 @@ import com.raytheon.uf.common.dataplugin.annotations.NullString;
  * May 29, 2008 875        bphillip    Initial Creation
  * Oct 07, 2013 2392       rjpeter     Updated to auto handle passing a null value to an equal operand.
  * Aug 20, 2015 4360       rferrel     Created {@link #checkForNullValueReplacement(String, String)} to determine value to use in place of null.
+ * Sep 21, 2015 4486       rjpeter     Update checkForNullValueReplacement to handle null classname.
  * </pre>
  * 
  * @author bphillip
@@ -122,7 +123,7 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && "=".equals(operand)) {
+        if ((value == null) && "=".equals(operand)) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = operand;
@@ -157,7 +158,7 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && QueryOperand.EQUALS.equals(operand)) {
+        if ((value == null) && QueryOperand.EQUALS.equals(operand)) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = QueryParam.reverseTranslateOperand(operand);
@@ -235,6 +236,11 @@ public class QueryParam {
      * @param className
      */
     private void checkForNullValueReplacement(String fieldStr, String className) {
+        if (className == null) {
+            this.operand = "isNull";
+            return;
+        }
+
         Class<?> clazz = null;
         this.operand = "=";
         try {
