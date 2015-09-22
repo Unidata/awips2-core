@@ -53,6 +53,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jan 21, 2014 2627       njensen     Added logFailedData() and logFailureAsInfo()
  * Mar 04, 2014 2627       njensen     Harden static initialization
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
+ * Sep 22, 2015 ----       mjames@ucar Delete processed file after logging
  * 
  * </pre>
  * 
@@ -214,6 +215,12 @@ public class ProcessUtil {
             sb.append(df.format(latency));
             sb.append(" (sec)");
             processEvent.setProcessingLatency(latencyMilliseconds);
+        }
+        
+        if (dequeueTime != null && enqueueTime != null) {
+        	// immediately remove the file
+        	delete(fileName);
+        	sb.append(" (removed)");
         }
 
         // processing in less than 0 millis isn't trackable, usually due to an
