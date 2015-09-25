@@ -67,6 +67,7 @@ import com.raytheon.viz.ui.actions.ShowTimeDialog;
  * Jan 09, 2013 1442       rferrel     Added Simulated Time Change listener.
  * Nov 19, 2013 2439       rferrel     Adjust timer schedule to update when
  *                                     DRT rolls over to the next minute.
+ * Sep 21, 2015 4858       dgilling    Change SimulatedTime mode background color to red.
  * 
  * </pre>
  * 
@@ -280,9 +281,9 @@ public class TimeDisplay extends ContributionItem {
     /**
      * Updates the colors according to the following scheme:
      * <p>
-     * Black Font Grey Background: Using real time<br>
-     * White Font Black Background: Modified time not frozen<br>
-     * Yellow Font Black Background: Modified time frozen
+     * Black Font, Grey Background: Using real time<br>
+     * White Font, Red Background: Modified time not frozen<br>
+     * Yellow Font, Red Background: Modified time frozen
      */
     private void updateColors() {
         if (theTextArea != null && !theTextArea.isDisposed()) {
@@ -291,7 +292,7 @@ public class TimeDisplay extends ContributionItem {
                 theTextArea.setBackground(CAVEMode.getBackgroundColor());
             } else {
                 theTextArea.setBackground(Display.getDefault().getSystemColor(
-                        SWT.COLOR_BLACK));
+                        SWT.COLOR_RED));
                 if (SimulatedTime.getSystemTime().isFrozen()) {
                     theTextArea.setForeground(Display.getDefault()
                             .getSystemColor(SWT.COLOR_YELLOW));
