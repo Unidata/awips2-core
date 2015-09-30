@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz UI
 Bundle-SymbolicName: com.raytheon.viz.ui; singleton:=true
-Bundle-Version: 1.15.1.qualifier
+Bundle-Version: 1.15.2.qualifier
 Bundle-Activator: com.raytheon.viz.ui.UiPlugin
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon
@@ -35,6 +35,7 @@ Export-Package: com.raytheon.viz.ui,
  com.raytheon.viz.ui.perspectives,
  com.raytheon.viz.ui.presenter,
  com.raytheon.viz.ui.presenter.components,
+ com.raytheon.viz.ui.simulatedtime,
  com.raytheon.viz.ui.statusline,
  com.raytheon.viz.ui.tools,
  com.raytheon.viz.ui.views,
