@@ -44,8 +44,8 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
  * Class that manages the current editor/window using listeners. Use this to
- * retrieve current editor/window over PlatformUI as this class does not require
- * being ran on the UI thread
+ * retrieve current editor/window over PlatformUI as the methods on this class
+ * do not require being run on the UI thread.
  * 
  * <pre>
  * 
@@ -53,6 +53,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 30, 2009            mschenke     Initial creation
+ * Oct 01, 2015  4926      njensen      partBroughtToTop() calls partActivated()
  * 
  * </pre>
  * 
@@ -154,12 +155,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.IPartListener#partActivated(org.eclipse.ui.IWorkbenchPart)
-     */
     @Override
     public synchronized void partActivated(IWorkbenchPart part) {
         IWorkbenchWindow partWindow = part.getSite().getWorkbenchWindow();
@@ -176,33 +171,15 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.IPartListener#partBroughtToTop(org.eclipse.ui.IWorkbenchPart
-     * )
-     */
     @Override
     public synchronized void partBroughtToTop(IWorkbenchPart part) {
-        IWorkbenchWindow partWindow = part.getSite().getWorkbenchWindow();
-        IEditorPart currentEditor = activeEditorMap.get(partWindow);
-        if (part instanceof IEditorPart && currentEditor != part) {
-            activeEditorMap.put(partWindow, (IEditorPart) part);
-            if (part instanceof IDisplayPaneContainer) {
-                notifyListeners();
-            }
-            updateUI(part.getSite().getWorkbenchWindow());
-        }
-        ContextManager.getInstance(partWindow).activateContexts(part);
+        /*
+         * TODO given there is a distinction of methods between brought to top
+         * and activated, we should probably be handling them with more nuance
+         */
+        partActivated(part);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.IPartListener#partClosed(org.eclipse.ui.IWorkbenchPart)
-     */
     @Override
     public synchronized void partClosed(IWorkbenchPart part) {
         IWorkbenchWindow partWindow = part.getSite().getWorkbenchWindow();
@@ -214,13 +191,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         ContextManager.getInstance(partWindow).deactivateContexts(part);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.IPartListener#partDeactivated(org.eclipse.ui.IWorkbenchPart
-     * )
-     */
     @Override
     public synchronized void partDeactivated(IWorkbenchPart part) {
         IWorkbenchWindow window = getCurrentWindow();
@@ -230,12 +200,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         ContextManager.getInstance(window).deactivateContexts(part);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.IPartListener#partOpened(org.eclipse.ui.IWorkbenchPart)
-     */
     @Override
     public synchronized void partOpened(IWorkbenchPart part) {
         IWorkbenchWindow partWindow = part.getSite().getWorkbenchWindow();
@@ -306,7 +270,7 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
 
     @Override
     public void pageActivated(IWorkbenchPage page) {
-
+        // no-op
     }
 
     @Override
@@ -341,12 +305,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
                                 : null);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partHidden(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partHidden(IWorkbenchPartReference partRef) {
         IWorkbenchPart part = partRef.getPart(false);
@@ -364,12 +322,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partVisible(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partVisible(IWorkbenchPartReference partRef) {
         IWorkbenchPart part = partRef.getPart(false);
@@ -401,69 +353,33 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partActivated(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partActivated(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partBroughtToTop(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partBroughtToTop(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partClosed(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partClosed(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partDeactivated(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partDeactivated(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partOpened(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partOpened(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.IPartListener2#partInputChanged(org.eclipse.ui.
-     * IWorkbenchPartReference)
-     */
     @Override
     public void partInputChanged(IWorkbenchPartReference partRef) {
-
+        // no-op
     }
 }
