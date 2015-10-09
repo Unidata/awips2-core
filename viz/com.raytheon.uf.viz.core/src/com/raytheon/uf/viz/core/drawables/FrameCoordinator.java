@@ -34,24 +34,24 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
 /**
  * Default IFrameCoordinator implementation, functionality was originally in
  * AbstractDescriptor but became too d2d dependent so it was decided to move
- * into separate class so other people my provide different implementations
+ * into separate class so other people may provide different implementations.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 18, 2011            mschenke     Initial creation
- * May 13, 2015  4461      bsteffen     Add determineFrameIndex
- * Aug 07, 2015  4700      bsteffen     Add support for SPACE_AND_TIME
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- --------- --------------------------
+ * Oct 18, 2011           mschenke  Initial creation
+ * May 13, 2015  4461     bsteffen  Add determineFrameIndex
+ * Aug 07, 2015  4700     bsteffen  Add support for SPACE_AND_TIME
+ * Oct 09, 2015  4863     bsteffen  Maintain same valid time when frame
+ *                                  times change.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class FrameCoordinator implements IFrameCoordinator {
 
     /** Interface for determining if a frame is valid */
@@ -1027,8 +1027,29 @@ public class FrameCoordinator implements IFrameCoordinator {
             DataTime startTime = currentFrames[currentIndex];
             int dateIndex = Arrays.binarySearch(newFrames, startTime);
             if (dateIndex < 0) {
-                if (newFrames[0].getMatchValid() > startTime.getMatchValid()) {
+                long startValid = startTime.getMatchValid();
+                if (newFrames[0].getMatchValid() > startValid) {
+                    /*
+                     * Previously viewed time was earlier than all current times
+                     * so go as far back as possible.
+                     */
                     return 0;
+                } else {
+                    /*
+                     * Check if a new forecast time has replaced an old one so
+                     * the valid time is the same even though the dataTimes
+                     * aren't equal.
+                     */
+                    for (int i = 0; i < newFrames.length; i += 1) {
+                        if (newFrames[i].getMatchValid() == startValid) {
+                            dateIndex = indexToUpdateTo(currentFrames,
+                                    currentIndex, newFrames, i);
+                            if ((dateIndex >= 0)
+                                    && (dateIndex < newFrames.length)) {
+                                return dateIndex;
+                            }
+                        }
+                    }
                 }
             } else {
                 dateIndex = indexToUpdateTo(currentFrames, currentIndex,
