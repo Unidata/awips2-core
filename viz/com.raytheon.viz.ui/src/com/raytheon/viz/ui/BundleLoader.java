@@ -2,6 +2,7 @@ package com.raytheon.viz.ui;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
@@ -23,9 +24,11 @@ import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
+import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.core.procedures.Bundle;
+import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 
 /**
@@ -43,6 +46,8 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Mar 22, 2013 1638       mschenke    Made not throw errors when no time matcher
  * Mar 02, 2015 4204       njensen     Loading bundles potentially schedules a part rename
  * Jun 05, 2015 4495       njensen     Prevent NPE on file not found
+ * Oct 12, 2015 4932       njensen     ensureOneToOne() removes all panes when nPanes < nDisplays
+ *                                      getLoadItems() attempts to reuse 4-panel maps across all panes
  * 
  * </pre>
  * 
@@ -232,6 +237,43 @@ public class BundleLoader extends Job {
                         + " displays onto container with "
                         + containerPanes.length + " panes");
             }
+        } else if (containerPanes.length > 1) {
+            /*
+             * Special case of loading a bundle/set of multiple panes into an
+             * existing set of panes where the two sets have the same number of
+             * panes. As we are loading the new panes we need to attempt to keep
+             * their map resource properties in sync.
+             */
+            AbstractRenderableDisplay firstDisplay = bundleDisplays[0];
+            List<ResourcePair> mapsOnFirst = new ArrayList<ResourcePair>();
+            for (ResourcePair rp : firstDisplay.getDescriptor()
+                    .getResourceList()) {
+                if (rp.getProperties().isMapLayer()) {
+                    mapsOnFirst.add(rp);
+                }
+            }
+
+            for (int i = 1; i < bundleDisplays.length; i++) {
+                ResourceList rlist = bundleDisplays[i].getDescriptor()
+                        .getResourceList();
+                for (ResourcePair rp : rlist) {
+                    if (rp.getProperties().isMapLayer()) {
+                        for (ResourcePair original : mapsOnFirst) {
+                            if (rp.getResourceData().equals(
+                                    original.getResourceData())) {
+                                /*
+                                 * map is a match, reuse the reference to keep
+                                 * map properties in sync
+                                 */
+                                rlist.remove(rp);
+                                rlist.add(original);
+                                break;
+                            }
+                        }
+                    }
+                }
+            }
+
         }
 
         int numPanes = containerPanes.length;
@@ -292,13 +334,24 @@ public class BundleLoader extends Job {
             VizApp.runSync(new Runnable() {
                 @Override
                 public void run() {
-                    for (int i = numPanes; i < numDisplays; ++i) {
-                        // This will hit if fewer panes than displays
-                        mpe.addPane(bDisplays[i]);
-                    }
-                    for (int i = numDisplays; i < numPanes; ++i) {
-                        // This will hit if fewer displays than panes
-                        mpe.removePane(cPanes[i]);
+                    if (numPanes < numDisplays) {
+                        /*
+                         * fewer panes than displays, remove the panes to ensure
+                         * we don't keep any of their state around
+                         */
+                        for (int i = numPanes - 1; i > -1; i--) {
+                            mpe.removePane(cPanes[i]);
+                        }
+
+                        // now add in the displays
+                        for (int i = 0; i < numDisplays; ++i) {
+                            mpe.addPane(bDisplays[i]);
+                        }
+                    } else {
+                        // fewer displays than panes
+                        for (int i = numDisplays; i < numPanes; ++i) {
+                            mpe.removePane(cPanes[i]);
+                        }
                     }
                 }
             });
