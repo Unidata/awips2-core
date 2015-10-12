@@ -31,11 +31,13 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#    Engineer    Description
+ * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Feb 16, 2011  8070     ekladstrup  Initial creation
  * Dec 18, 2013  2579     bsteffen    Remove ISerializableObject
  * Jul 13, 2015  4500     rjpeter     Added paramMap, demystified interface.
+ * Oct 12, 2015  4932     njensen     Truncate toString() on long maps queries
+ * 
  * </pre>
  * 
  * @author ekladstrup
@@ -43,15 +45,16 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  */
 @DynamicSerialize
 public class QlServerRequest implements IServerRequest {
+
     /** The language of the query */
     public static enum QueryLanguage {
         SQL, HQL
-    };
+    }
 
     /** The language of the query */
     public static enum QueryType {
         QUERY, STATEMENT
-    };
+    }
 
     /**
      * The language to use. If not specified will default to sql.
@@ -78,14 +81,8 @@ public class QlServerRequest implements IServerRequest {
     @DynamicSerializeElement
     private Map<String, Object> paramMap;
 
-    /*
-     * TODO: Remove in 16.2.1. Left in for thin client compatibility.
-     */
-    @DynamicSerializeElement
-    @Deprecated
-    private Map<String, RequestConstraint> rcMap;
-
     public QlServerRequest() {
+
     }
 
     public QlServerRequest(String query) {
@@ -172,53 +169,6 @@ public class QlServerRequest implements IServerRequest {
         this.paramMap = paramMap;
     }
 
-    /**
-     * @return the rcMap
-     */
-    @Deprecated
-    public Map<String, RequestConstraint> getRcMap() {
-        return rcMap;
-    }
-
-    /**
-     * @param rcMap
-     *            the rcMap to set
-     */
-    @Deprecated
-    public void setRcMap(Map<String, RequestConstraint> rcMap) {
-        this.rcMap = rcMap;
-
-        // convert legacy map
-        if (this.rcMap == null) {
-            return;
-        }
-
-        if (this.rcMap.containsKey("database")) {
-            this.database = rcMap.get("database").getConstraintValue();
-        }
-
-        if (this.rcMap.containsKey("query")) {
-            this.query = rcMap.get("query").getConstraintValue();
-        }
-
-        if (this.rcMap.containsKey("mode")) {
-            String mode = rcMap.get("mode").getConstraintValue();
-            if (mode.equals("sqlquery")) {
-                this.lang = QueryLanguage.SQL;
-                this.type = QueryType.QUERY;
-            } else if (mode.equals("hqlquery")) {
-                this.lang = QueryLanguage.HQL;
-                this.type = QueryType.QUERY;
-            } else if (mode.equals("sqlstatement")) {
-                this.lang = QueryLanguage.SQL;
-                this.type = QueryType.STATEMENT;
-            } else if (mode.equals("hqlstatement")) {
-                this.lang = QueryLanguage.HQL;
-                this.type = QueryType.STATEMENT;
-            }
-        }
-    }
-
     @Override
     public String toString() {
         StringBuilder msg = new StringBuilder(80);
@@ -226,7 +176,14 @@ public class QlServerRequest implements IServerRequest {
         if (database != null) {
             msg.append("database=").append(database).append(", ");
         }
-        msg.append("query=").append(query).append(']');
+        msg.append("query=");
+        if ("maps".equals(database) && query.length() > 80) {
+            msg.append(query.substring(0, 80)).append("...");
+        } else {
+            msg.append(query);
+        }
+        msg.append(']');
+
         return msg.toString();
     }
 

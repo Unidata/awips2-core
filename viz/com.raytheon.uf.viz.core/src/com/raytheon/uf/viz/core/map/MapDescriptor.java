@@ -20,7 +20,6 @@
 
 package com.raytheon.uf.viz.core.map;
 
-import java.text.DecimalFormat;
 import java.text.NumberFormat;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -42,8 +41,6 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.PixelCoverage;
 import com.raytheon.uf.viz.core.drawables.AbstractDescriptor;
@@ -64,7 +61,7 @@ import com.vividsolutions.jts.geom.Envelope;
  * Jan 12, 2009           randerso    added getMapManager
  * Dec 22, 2009  3348     bsteffen    Moved getter/setters for numberOfFrames down to AbstractDescriptor
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
- * 
+ * Oct 12, 2015  4932     njensen     Removed unnecessary exception declarations
  * 
  * </pre>
  * 
@@ -75,12 +72,8 @@ import com.vividsolutions.jts.geom.Envelope;
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
 public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(MapDescriptor.class);
 
     public static final int LABEL_PADDING = 5;
-
-    // private static final int MOUSE_HEIGHT = 100;
 
     /**
      * Create a grid geometry for a projection given the crs, lower left, and
@@ -93,8 +86,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
      * @param urCoord
      *            lat/lon of the upper right corner
      * @return
-     * @throws FactoryException
-     * @throws TransformException
      */
     public static GridGeometry2D createGridGeometry(
             CoordinateReferenceSystem crs, Coordinate llCoord,
@@ -131,7 +122,7 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
      * 
      * @param crs
      *            CoordinateReferenceSystem of the projection
-     * @param center
+     * @param centerLL
      *            lat/lon of center
      * @param width
      *            in projection units
@@ -139,8 +130,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
      *            in projection units
      * @return
      * @throws VizException
-     * @throws FactoryException
-     * @throws TransformException
      */
     public static GridGeometry2D createGridGeometry(
             CoordinateReferenceSystem crs, Coordinate centerLL, double width,
@@ -209,7 +198,7 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
 
     private static final NumberFormat LAT_LON_FORMATTER;
     static {
-        LAT_LON_FORMATTER = DecimalFormat.getInstance();
+        LAT_LON_FORMATTER = NumberFormat.getInstance();
         LAT_LON_FORMATTER.setMinimumFractionDigits(2);
         LAT_LON_FORMATTER.setMaximumFractionDigits(2);
     }
@@ -219,8 +208,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
      * 
      * This creates a default view of the entire world in Lat/Lon projection
      * 
-     * @param worldWidth
-     * @param worldHeight
      */
     public MapDescriptor() throws VizException {
         this(MapUtil.LATLON_PROJECTION, new Coordinate(-180, -90),
@@ -238,21 +225,12 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
      * 
      * @param gridGeometry
      *            the geometry and coverage of the map
-     * @param percentOfEarthCoverage
-     *            estimate of the percent of the total earth (used for zoom
-     *            level calculation)
      * 
      */
-    public MapDescriptor(GeneralGridGeometry gridGeometry) throws VizException {
+    public MapDescriptor(GeneralGridGeometry gridGeometry) {
         super(gridGeometry);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.AbstractDescriptor#setupTransforms()
-     */
     @Override
     protected void setupTransforms() throws Exception {
         super.setupTransforms();
@@ -289,28 +267,17 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
             gc.setDestinationPosition(d2);
 
             double distance = gc.getOrthodromicDistance();
-            // System.out.println("Azimuth: " + azimuth + ",
-            // Distance: "
-            // + distance);
             this.mapWidth = (int) distance
                     * gridGeometry.getGridRange().getHigh(0);
-
         } else {
             // TODO come up with a better way of calculating this for 3D
             this.mapWidth = 12700000;
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.map.IMapDescriptor#pixelToWorld(double[],
-     * org.opengis.referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public double[] pixelToWorld(final double[] pixel,
             CoordinateReferenceSystem crs) {
-
         if (MapUtil.LATLON_PROJECTION.equals(crs)) {
             return pixelToWorld(pixel);
         } else if (!crs.getName().equals(
@@ -328,12 +295,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return output2;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.map.IMapDescriptor#worldToPixel(double[],
-     * org.opengis.referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public double[] worldToPixel(double[] pixel, CoordinateReferenceSystem crs) {
         if (MapUtil.LATLON_PROJECTION.equals(crs)) {
@@ -353,13 +314,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return output2;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.map.IMapDescriptor#pixelToWorld(com.raytheon.viz
-     * .core.PixelExtent)
-     */
     @Override
     public Envelope pixelToWorld(IExtent extent) {
         double[] ul = pixelToWorld(new double[] { extent.getMinX(),
@@ -387,13 +341,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return lle;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.map.IMapDescriptor#pixelToWorld(com.raytheon.viz
-     * .core.IExtent, org.opengis.referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public Envelope pixelToWorld(IExtent extent, CoordinateReferenceSystem crs) {
         double[] ul = pixelToWorld(
@@ -421,13 +368,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return lle;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.map.IMapDescriptor#worldToPixel(com.vividsolutions
-     * .jts.geom.Envelope)
-     */
     @Override
     public PixelCoverage worldToPixel(Envelope extent) {
 
@@ -455,14 +395,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return pc;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.map.IMapDescriptor#worldToPixel(com.vividsolutions
-     * .jts.geom.Envelope,
-     * org.opengis.referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public PixelCoverage worldToPixel(Envelope extent,
             CoordinateReferenceSystem crs) {
@@ -487,15 +419,7 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         return pc;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.map.IMapDescriptor#setProjection(org.opengis
-     * .referencing.crs.CoordinateReferenceSystem,
-     * com.vividsolutions.jts.geom.Coordinate,
-     * com.vividsolutions.jts.geom.Coordinate)
-     */
+    @Override
     public void setProjection(CoordinateReferenceSystem crs, Coordinate ll,
             Coordinate ur) throws FactoryException, TransformException,
             VizException {
@@ -503,11 +427,6 @@ public class MapDescriptor extends AbstractDescriptor implements IMapDescriptor 
         setGridGeometry(gridGeometry);
     }
 
-    /**
-     * Get the current display width
-     * 
-     * @return the current display width in meters
-     */
     @Override
     public int getMapWidth() {
         return this.mapWidth;
