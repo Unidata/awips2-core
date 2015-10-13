@@ -64,6 +64,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                     getStaticLocalizationFile, and getStaticFile APIs
  * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
  * Aug 24, 2015 4393       njensen     Added field observer
+ * Oct 14, 2015 4410       bsteffen    listStaticFiles will now merge different types.
  * 
  * </pre>
  * 
@@ -459,8 +460,7 @@ public class PathManager implements IPathManager {
 
         Map<String, LocalizationFile> filterMap = new HashMap<String, LocalizationFile>();
         for (LocalizationFile file : files) {
-            String id = file.getContext().getLocalizationType()
-                    + file.getName();
+            String id = file.getName();
             id = id.replace("\\", "/"); // Win32
             if (filterMap.containsKey(id) == false) {
                 filterFiles.add(file);

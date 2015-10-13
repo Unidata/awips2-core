@@ -33,6 +33,8 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 3, 2010            mschenke     Initial creation
+ * Oct 13, 2015 4410      bsteffen     Allow localization perspective to mix
+ *                                     files for multiple Localization Types.
  * 
  * </pre>
  * 
@@ -42,15 +44,30 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 
 public class LocalizationFileEntryData extends FileTreeEntryData {
 
-    private LocalizationFile file;
+    private final LocalizationFile file;
+
+    /**
+     * Flag indicating if this particular file is also available under a
+     * different localization type. If this is true then extra information needs
+     * to be displayed to the user indicating which type this file is for. This
+     * should not happen under normal circumstances but when it does happen it
+     * is important to make it obvious to the user what is going on.
+     */
+    private final boolean multipleTypes;
 
     /**
      * @param pathData
      * @param name
      */
-    public LocalizationFileEntryData(PathData pathData, LocalizationFile file) {
+    public LocalizationFileEntryData(PathData pathData, LocalizationFile file,
+            boolean multipleTypes) {
         super(pathData, file.getName());
         this.file = file;
+        this.multipleTypes = multipleTypes;
+    }
+
+    public boolean isMultipleTypes() {
+        return multipleTypes;
     }
 
     public LocalizationFile getFile() {
