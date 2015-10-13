@@ -32,20 +32,19 @@ import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Envelope;
 
 /**
- * 
- * Declares the interface for map descriptors
- * 
- * Map Descriptors contain a list of map resources and their attributes as well
- * as attributes and functions related to the map itself
+ * Declares the interface for map descriptors. Map Descriptors contain a list of
+ * map resources and their attributes as well as attributes and functions
+ * related to the map itself.
  * 
  * <pre>
  * 
- *     SOFTWARE HISTORY
+ * SOFTWARE HISTORY
  *    
- *     Date          Ticket#     Engineer    Description
- *     ------------	----------	-----------	--------------------------
- *     7/1/06                    chammack    Initial Creation.
- *     1/12/09                   randerso    added getMapManager
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * Jul 01, 2006             chammack    Initial Creation.
+ * Jan 12, 2009             randerso    added getMapManager
+ * Oct 12, 2015  4932       njensen     Cleaned up warnings
  * 
  * </pre>
  * 
@@ -60,8 +59,10 @@ public interface IMapDescriptor extends IDescriptor {
      * Convenience method to transform a set of world coordinates to pixel
      * coordinates
      * 
-     * @param worldPixel
+     * @param world
      *            an array of two of world coordinates (x, y)
+     * @param crs
+     *            a coordinate reference system the extent is in
      * 
      * @return the pixel coordinates (x, y)
      */
@@ -145,6 +146,6 @@ public interface IMapDescriptor extends IDescriptor {
      * 
      * @return the current map width in meters
      */
-    public abstract int getMapWidth();
+    public int getMapWidth();
 
 }
