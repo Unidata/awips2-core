@@ -216,12 +216,13 @@ public class ProcessUtil {
             sb.append(" (sec)");
             processEvent.setProcessingLatency(latencyMilliseconds);
         }
-        
+        /*
         if (dequeueTime != null && enqueueTime != null) {
         	// immediately remove the file
         	delete(fileName);
         	sb.append(" (removed)");
         }
+	*/
 
         // processing in less than 0 millis isn't trackable, usually due to an
         // error occurred and statement logged incorrectly
