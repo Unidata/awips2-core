@@ -52,10 +52,8 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 8, 2012            mschenke     Initial creation
- * May 24, 2015			  mjames@ucar  Added a buffer to extent to care for Mcidas 
- * 									   native projections
- * Oct 19, 2015			  mjames@ucar  Expand getIntersectingTiles() min/max from 
- * 									   1.0 to 2.0 degrees
+ * May 24, 2015			  mjames@ucar  Added a buffer to extent to care for Mcidas native projections
+ * Oct 19, 2015			  mjames@ucar  Expand getIntersectingTiles() min/max 
  * 
  * </pre>
  * 
