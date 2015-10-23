@@ -303,7 +303,7 @@
          id="org.slf4j"
          download-size="0"
          install-size="0"
-         version="1.7.5"/>
+         version="1.7.12"/>
 
    <plugin
          id="org.springframework"
