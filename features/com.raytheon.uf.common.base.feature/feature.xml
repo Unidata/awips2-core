@@ -231,7 +231,7 @@
          id="org.apache.commons.codec"
          download-size="0"
          install-size="0"
-         version="1.4.0"/>
+         version="1.10.0"/>
 
    <plugin
          id="org.apache.commons.collections"
