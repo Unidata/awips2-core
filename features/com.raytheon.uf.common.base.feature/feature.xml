@@ -279,7 +279,7 @@
          id="org.apache.commons.pool"
          download-size="0"
          install-size="0"
-         version="1.5.4"/>
+         version="1.6.0"/>
 
    <plugin
          id="org.javassist"
@@ -433,5 +433,11 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="org.apache.commons.pool2"
+         download-size="0"
+         install-size="0"
+         version="2.4.2"/>
 
 </feature>

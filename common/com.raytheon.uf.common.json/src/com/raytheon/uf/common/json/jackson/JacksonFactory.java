@@ -27,10 +27,13 @@
  */
 package com.raytheon.uf.common.json.jackson;
 
-import java.util.LinkedList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import org.apache.commons.pool.KeyedPoolableObjectFactory;
+import org.apache.commons.pool2.BaseKeyedPooledObjectFactory;
+import org.apache.commons.pool2.PooledObject;
+import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.AnnotationIntrospector;
 import org.codehaus.jackson.map.ObjectMapper;
@@ -48,106 +51,64 @@ import com.vividsolutions.jts.geom.Point;
 import com.vividsolutions.jts.geom.Polygon;
 
 /**
- * @author bclement
+ * A {@code KeyedPoolableObjectFactory} implementation for building ObjectMapper
+ * instances for serializing and deserializing {@code Geometry} objects to and
+ * from GeoJSON format.
  * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ *                         bclement     Initial creation
+ * Oct 23, 2015  #5004     dgilling     Update to use commons-pool2 API.
+ * 
+ * </pre>
+ * 
+ * @author bclement
  */
-public class JacksonFactory implements KeyedPoolableObjectFactory {
+public class JacksonFactory extends
+        BaseKeyedPooledObjectFactory<Long, ObjectMapper> {
 
-	protected static final List<Class<? extends Geometry>> supportedGeoms;
+    protected static final List<Class<? extends Geometry>> supportedGeoms = Collections
+            .unmodifiableList(Arrays.asList(Geometry.class, Polygon.class,
+                    MultiLineString.class, MultiPoint.class,
+                    MultiPolygon.class, LinearRing.class));
 
-	static {
-		supportedGeoms = new LinkedList<Class<? extends Geometry>>();
-		supportedGeoms.add(Geometry.class);
-		// supportedGeoms.add(Point.class);
-		supportedGeoms.add(Polygon.class);
-		supportedGeoms.add(MultiLineString.class);
-		supportedGeoms.add(MultiPoint.class);
-		supportedGeoms.add(MultiPolygon.class);
-		supportedGeoms.add(LinearRing.class);
-	}
+    @Override
+    public ObjectMapper create(Long arg0) throws Exception {
+        FlexibleModule m = new FlexibleModule("FlexibleModule", new Version(0,
+                0, 1, null));
+        m.addSerializer(new GeometrySerializer());
+        m.addDeserializers(supportedGeoms, new GeometryDeserializer());
+        m.addSerializer(new EnvelopeSerializer());
+        m.addDeserializer(Envelope.class, new EnvelopeDeserializer());
+        m.addSerializer(new PointGeomSerialization.Serializer());
+        m.addDeserializer(Point.class,
+                new PointGeomSerialization.Deserializer());
+        m.addSerializer(new CrsSerializer());
+        m.addDeserializer(CoordinateReferenceSystem.class,
+                new CrsDeserializer());
+        m.addSerializer(new RefEnvelopeSerialization.Serializer());
+        m.addDeserializer(ReferencedEnvelope.class,
+                new RefEnvelopeSerialization.Deserializer());
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.KeyedPoolableObjectFactory#activateObject(java
-	 * .lang.Object, java.lang.Object)
-	 */
-	@Override
-	public void activateObject(Object arg0, Object arg1) throws Exception {
+        ObjectMapper mapper = new ObjectMapper();
+        mapper.enableDefaultTyping();
+        AnnotationIntrospector introspector = new JaxbAnnotationIntrospector();
+        // make deserializer use JAXB annotations (only)
+        mapper.getDeserializationConfig().setAnnotationIntrospector(
+                introspector);
+        // make serializer use JAXB annotations (only)
+        mapper.getSerializationConfig().setAnnotationIntrospector(introspector);
+        mapper.registerModule(m);
+        return mapper;
+    }
 
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.KeyedPoolableObjectFactory#destroyObject(java
-	 * .lang.Object, java.lang.Object)
-	 */
-	@Override
-	public void destroyObject(Object arg0, Object arg1) throws Exception {
-
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.KeyedPoolableObjectFactory#makeObject(java.lang
-	 * .Object)
-	 */
-	@Override
-	public Object makeObject(Object arg0) throws Exception {
-		FlexibleModule m = new FlexibleModule("FlexibleModule", new Version(0,
-				0, 1, null));
-		m.addSerializer(new GeometrySerializer());
-		m.addDeserializers(supportedGeoms, new GeometryDeserializer());
-		m.addSerializer(new EnvelopeSerializer());
-		m.addDeserializer(Envelope.class, new EnvelopeDeserializer());
-		m.addSerializer(new PointGeomSerialization.Serializer());
-		m.addDeserializer(Point.class,
-				new PointGeomSerialization.Deserializer());
-		m.addSerializer(new CrsSerializer());
-		m.addDeserializer(CoordinateReferenceSystem.class,
-				new CrsDeserializer());
-		m.addSerializer(new RefEnvelopeSerialization.Serializer());
-		m.addDeserializer(ReferencedEnvelope.class,
-				new RefEnvelopeSerialization.Deserializer());
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.enableDefaultTyping();
-		AnnotationIntrospector introspector = new JaxbAnnotationIntrospector();
-		// make deserializer use JAXB annotations (only)
-		mapper.getDeserializationConfig().setAnnotationIntrospector(
-				introspector);
-		// make serializer use JAXB annotations (only)
-		mapper.getSerializationConfig().setAnnotationIntrospector(introspector);
-		mapper.registerModule(m);
-		return mapper;
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.KeyedPoolableObjectFactory#passivateObject(java
-	 * .lang.Object, java.lang.Object)
-	 */
-	@Override
-	public void passivateObject(Object arg0, Object arg1) throws Exception {
-
-	}
-
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.KeyedPoolableObjectFactory#validateObject(java
-	 * .lang.Object, java.lang.Object)
-	 */
-	@Override
-	public boolean validateObject(Object arg0, Object arg1) {
-		return true;
-	}
+    @Override
+    public PooledObject<ObjectMapper> wrap(ObjectMapper arg0) {
+        return new DefaultPooledObject<ObjectMapper>(arg0);
+    }
 
 }

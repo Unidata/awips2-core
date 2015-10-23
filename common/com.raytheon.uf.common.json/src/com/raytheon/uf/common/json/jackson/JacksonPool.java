@@ -27,69 +27,128 @@
  */
 package com.raytheon.uf.common.json.jackson;
 
+import java.util.NoSuchElementException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
-import org.apache.commons.pool.impl.GenericKeyedObjectPool;
+import org.apache.commons.pool2.KeyedObjectPool;
+import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
+import org.codehaus.jackson.map.ObjectMapper;
 
 /**
- * @author bclement
+ * Object pool of ObjectMapper instances for serializing and deserializing
+ * Geometry objects to and from GeoJSON format.
  * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ *                         bclement     Initial creation.
+ * Oct 22, 2015  #5004     dgilling     Use commons-pool2 API.
+ * 
+ * </pre>
+ * 
+ * @author bclement
  */
-public class JacksonPool extends GenericKeyedObjectPool {
+public class JacksonPool implements KeyedObjectPool<Long, ObjectMapper> {
 
-	private ConcurrentMap<Object, ClassLoader> classLoaderPool = new ConcurrentHashMap<Object, ClassLoader>();
+    private final ConcurrentMap<Long, ClassLoader> classLoaderPool;
 
-	protected boolean poolClassloaders = false;
+    private final boolean poolClassloaders;
 
-	public JacksonPool(JacksonFactory jFactory) {
-		super(jFactory);
-	}
+    private final GenericKeyedObjectPool<Long, ObjectMapper> objectPool;
 
-	public JacksonPool() {
-		super(new JacksonFactory());
-	}
+    public JacksonPool() {
+        this(new JacksonFactory(), false);
+    }
 
-	public JacksonPool(boolean poolClassloaders) {
-		super(new JacksonFactory());
-		this.poolClassloaders = poolClassloaders;
-	}
+    public JacksonPool(JacksonFactory jFactory) {
+        this(jFactory, false);
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.impl.GenericKeyedObjectPool#borrowObject(java
-	 * .lang.Object)
-	 */
-	@Override
-	public Object borrowObject(Object arg0) throws Exception {
-		if (poolClassloaders) {
-			classLoaderPool.put(arg0, Thread.currentThread()
-					.getContextClassLoader());
-		}
-		return super.borrowObject(arg0);
-	}
+    public JacksonPool(boolean poolClassloaders) {
+        this(new JacksonFactory(), poolClassloaders);
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.apache.commons.pool.impl.GenericKeyedObjectPool#returnObject(java
-	 * .lang.Object, java.lang.Object)
-	 */
-	@Override
-	public void returnObject(Object arg0, Object arg1) throws Exception {
-		if (poolClassloaders) {
-			ClassLoader classLoader = classLoaderPool.get(arg0);
-			if (classLoader == null) {
-				throw new Exception("Unable to find previous class loader for "
-						+ arg0);
-			}
-			Thread.currentThread().setContextClassLoader(classLoader);
-		}
-		super.returnObject(arg0, arg1);
-	}
+    private JacksonPool(JacksonFactory jFactory, boolean poolClassloaders) {
+        this.objectPool = new GenericKeyedObjectPool<>(jFactory);
+        this.poolClassloaders = poolClassloaders;
+        this.classLoaderPool = new ConcurrentHashMap<>();
+    }
 
+    @Override
+    public void addObject(Long arg0) throws Exception, IllegalStateException,
+            UnsupportedOperationException {
+        objectPool.addObject(arg0);
+    }
 
+    @Override
+    public ObjectMapper borrowObject(Long arg0) throws Exception,
+            NoSuchElementException, IllegalStateException {
+        ObjectMapper retVal = objectPool.borrowObject(arg0);
+
+        if (poolClassloaders) {
+            classLoaderPool.put(arg0, Thread.currentThread()
+                    .getContextClassLoader());
+        }
+
+        return retVal;
+    }
+
+    @Override
+    public void clear() throws Exception, UnsupportedOperationException {
+        objectPool.clear();
+    }
+
+    @Override
+    public void clear(Long arg0) throws Exception,
+            UnsupportedOperationException {
+        objectPool.clear(arg0);
+    }
+
+    @Override
+    public void close() {
+        objectPool.close();
+    }
+
+    @Override
+    public int getNumActive() {
+        return objectPool.getNumActive();
+    }
+
+    @Override
+    public int getNumActive(Long arg0) {
+        return objectPool.getNumActive(arg0);
+    }
+
+    @Override
+    public int getNumIdle() {
+        return objectPool.getNumIdle();
+    }
+
+    @Override
+    public int getNumIdle(Long arg0) {
+        return objectPool.getNumIdle(arg0);
+    }
+
+    @Override
+    public void invalidateObject(Long arg0, ObjectMapper arg1) throws Exception {
+        objectPool.invalidateObject(arg0, arg1);
+    }
+
+    @Override
+    public void returnObject(Long arg0, ObjectMapper arg1) throws Exception {
+        if (poolClassloaders) {
+            ClassLoader classLoader = classLoaderPool.get(arg0);
+            if (classLoader == null) {
+                throw new Exception("Unable to find previous class loader for "
+                        + arg0);
+            }
+            Thread.currentThread().setContextClassLoader(classLoader);
+        }
+
+        objectPool.returnObject(arg0, arg1);
+    }
 }
