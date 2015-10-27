@@ -49,6 +49,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Nov 15, 2014 3757      dhladky      Initial Implementation.
  * May 08, 2015 4435      dhladky      Updated logging of cert validation.
+ * Oct 22. 2015 5031      dhladky      Added some more informative logging when using external CA's.
  * 
  * 
  * </pre>
@@ -64,6 +65,11 @@ public class LocalTrustStrategy implements TrustStrategy {
 
     private KeyStore truststore = null;
     
+    /** Keeps track of whether the isTrusted call has been made or not.
+     *  Setup to prevent log spamming as every HTTPS connections attempted 
+     *  will print the same information needlessly. **/
+    private static boolean isTrustedChecked = false;
+    
     public LocalTrustStrategy(KeyStore truststore) {
          this.truststore = truststore;
     }
@@ -72,26 +78,36 @@ public class LocalTrustStrategy implements TrustStrategy {
     public boolean isTrusted(X509Certificate[] chain,
             String authType) throws CertificateException {
         /**
-         * Compare with the loaded truststore certificates first.
-         * Even if this returns false, it will still compare with
-         * the default java loaded CA certificates for validation.
+         * Compare with the loaded truststore certificates first. Even if this
+         * returns false, it will still compare with the default java loaded CA
+         * certificates for validation.
          */
         boolean isTrust = false;
 
         /**
-         * Automatically direct to compare with default java CA's
-         * if no truststore is loaded. Cave will use this path
-         * checking CA's like Verisign, Google, Go Daddy, Thawt,
-         * etc.
+         * Automatically direct to compare with default java CA's if no
+         * truststore is loaded. Cave will use this path checking CA's like
+         * Verisign, Google, Go Daddy, Thawt, DoD, anything we have loaded into
+         * the Java CA.
          */
         if (truststore == null) {
-            statusHandler
-            .handle(Priority.INFO, "Truststore is NULL! ");
+            if (!isTrustedChecked) {
+                statusHandler
+                        .handle(Priority.INFO,
+                                "No local Truststore configured.  Redirecting to external Certificate Authority for validation. "
+                                        + "Not having a locally configured Truststore is not an error.  The external validation CA's can be found in your JAVA CA configuration. ");
+            }
+
+            isTrustedChecked = true;
+
             return false;
         }
-        
-        statusHandler.handle(Priority.INFO, "TrustStore loaded, ready to validate aliases.");
-        
+
+        if (!isTrustedChecked) {
+            statusHandler.handle(Priority.INFO,
+                    "TrustStore loaded, ready to validate aliases.");
+        }
+
         try {
             // loop over the different aliases for this authority
             Enumeration<String> aliases = truststore.aliases();
@@ -125,7 +141,7 @@ public class LocalTrustStrategy implements TrustStrategy {
                                         + "\n CA cert: " + caCert.getPublicKey());
                     } catch (NoSuchAlgorithmException e) {
                         statusHandler.handle(Priority.WARN,
-                                "No such algorithim: cert: " + cert.getSigAlgName()
+                                "No such algorithm: cert: " + cert.getSigAlgName()
                                         + "\n CA cert: " + caCert.getSigAlgName());
                     } catch (NoSuchProviderException e) {
                         statusHandler.handle(Priority.WARN,
@@ -149,6 +165,8 @@ public class LocalTrustStrategy implements TrustStrategy {
                     "Key(trust) store loaded is invalid, "
                             + truststore.toString(), e);
         }
+        
+        isTrustedChecked = true;
 
         return isTrust;
     }
