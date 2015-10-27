@@ -22,9 +22,6 @@
  * 402.291.0100
  *
  **********************************************************************/
-/**
- * 
- */
 package com.raytheon.uf.common.json.impl;
 
 import java.io.ByteArrayOutputStream;
@@ -43,158 +40,136 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
 /**
- * @author bclement
+ * JsonService implementation with pooled ObjectMappers
  * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug  9, 2011            bclement    Initial creation
+ * Oct 27, 2015  4767      bclement    upgraded jackson to 1.9
+ * 
+ * </pre>
+ * 
+ * @author bclement
  */
 public class JsonSrvImpl implements JsonService {
 
-	private JacksonPool pool;
+    private JacksonPool pool;
 
     private IUFStatusHandler log = UFStatus.getHandler(this.getClass());
 
-	public JsonSrvImpl() {
-		pool = new JacksonPool();
-	}
+    public JsonSrvImpl() {
+        pool = new JacksonPool();
+    }
 
-	public JsonSrvImpl(boolean poolClassloaders) {
-		pool = new JacksonPool(poolClassloaders);
-	}
+    public JsonSrvImpl(boolean poolClassloaders) {
+        pool = new JacksonPool(poolClassloaders);
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.raytheon.uf.common.json.JsonService#serialize(java.lang.Object)
-	 */
-	@Override
-	public String serialize(Object obj, boolean pretty) throws JsonException {
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
-		serialize(obj, baos, pretty);
-		return baos.toString();
-	}
+    @Override
+    public String serialize(Object obj, boolean pretty) throws JsonException {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        serialize(obj, baos, pretty);
+        return baos.toString();
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.raytheon.uf.common.json.JsonService#serialize(java.lang.Object,
-	 * java.io.OutputStream)
-	 */
-	@Override
-	public void serialize(Object obj, OutputStream out, boolean pretty)
-			throws JsonException {
-		long id = Thread.currentThread().getId();
-		ObjectMapper mapper = null;
-		try {
-			mapper = (ObjectMapper) pool.borrowObject(id);
-			getWriter(mapper, pretty).writeValue(out, obj);
-		} catch (Exception e) {
-			throw new JsonException("Problem serializing object to JSON", e);
-		} finally {
-			returnObject(id, mapper);
-		}
-	}
+    @Override
+    public void serialize(Object obj, OutputStream out, boolean pretty)
+            throws JsonException {
+        long id = Thread.currentThread().getId();
+        ObjectMapper mapper = null;
+        try {
+            mapper = (ObjectMapper) pool.borrowObject(id);
+            getWriter(mapper, pretty).writeValue(out, obj);
+        } catch (Exception e) {
+            throw new JsonException("Problem serializing object to JSON", e);
+        } finally {
+            returnObject(id, mapper);
+        }
+    }
 
-	protected ObjectWriter getWriter(ObjectMapper mapper, boolean pretty) {
-		return pretty ? mapper.defaultPrettyPrintingWriter() : mapper.writer();
-	}
+    protected ObjectWriter getWriter(ObjectMapper mapper, boolean pretty) {
+        return pretty ? mapper.writerWithDefaultPrettyPrinter() : mapper
+                .writer();
+    }
 
-	protected void returnObject(long key, ObjectMapper mapper) {
-		if (mapper != null) {
-			try {
-				pool.returnObject(key, mapper);
-			} catch (Exception e) {
-				log.error("Unable to return mapper with key: " + key, e);
-			}
-		}
-	}
+    protected void returnObject(long key, ObjectMapper mapper) {
+        if (mapper != null) {
+            try {
+                pool.returnObject(key, mapper);
+            } catch (Exception e) {
+                log.error("Unable to return mapper with key: " + key, e);
+            }
+        }
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.common.json.JsonService#deserialize(java.lang.String,
-	 * java.lang.Class)
-	 */
-	@Override
-	public Object deserialize(String json, Class<?> c) throws JsonException {
-		long id = Thread.currentThread().getId();
-		Object rval;
-		ObjectMapper mapper = null;
-		try {
-			mapper = (ObjectMapper) pool.borrowObject(id);
-			rval = mapper.readValue(json, c);
-		} catch (Exception e) {
-			throw new JsonException("Problem deserializing object to JSON", e);
-		} finally {
-			returnObject(id, mapper);
-		}
-		return rval;
-	}
+    @Override
+    public Object deserialize(String json, Class<?> c) throws JsonException {
+        long id = Thread.currentThread().getId();
+        Object rval;
+        ObjectMapper mapper = null;
+        try {
+            mapper = (ObjectMapper) pool.borrowObject(id);
+            rval = mapper.readValue(json, c);
+        } catch (Exception e) {
+            throw new JsonException("Problem deserializing object to JSON", e);
+        } finally {
+            returnObject(id, mapper);
+        }
+        return rval;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.common.json.JsonService#deserialize(java.io.InputStream,
-	 * java.lang.Class)
-	 */
-	@Override
-	public Object deserialize(InputStream in, Class<?> c) throws JsonException {
-		long id = Thread.currentThread().getId();
-		Object rval;
-		ObjectMapper mapper = null;
-		try {
-			mapper = (ObjectMapper) pool.borrowObject(id);
-			rval = mapper.readValue(in, c);
-		} catch (Exception e) {
-			throw new JsonException("Problem deserializing object to JSON", e);
-		} finally {
-			returnObject(id, mapper);
-		}
-		return rval;
-	}
+    @Override
+    public Object deserialize(InputStream in, Class<?> c) throws JsonException {
+        long id = Thread.currentThread().getId();
+        Object rval;
+        ObjectMapper mapper = null;
+        try {
+            mapper = (ObjectMapper) pool.borrowObject(id);
+            rval = mapper.readValue(in, c);
+        } catch (Exception e) {
+            throw new JsonException("Problem deserializing object to JSON", e);
+        } finally {
+            returnObject(id, mapper);
+        }
+        return rval;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.raytheon.uf.common.json.JsonService#extract(java.lang.Object)
-	 */
-	@SuppressWarnings("unchecked")
-	@Override
-	public Map<String, Object> extract(Object obj) throws JsonException {
-		long id = Thread.currentThread().getId();
-		Map<String, Object> rval;
-		ObjectMapper mapper = null;
-		try {
-			mapper = (ObjectMapper) pool.borrowObject(id);
-			rval = mapper.convertValue(obj, TreeMap.class);
-		} catch (Exception e) {
-			throw new JsonException("Problem extracting object to map", e);
-		} finally {
-			returnObject(id, mapper);
-		}
-		return rval;
-	}
+    @SuppressWarnings("unchecked")
+    @Override
+    public Map<String, Object> extract(Object obj) throws JsonException {
+        long id = Thread.currentThread().getId();
+        Map<String, Object> rval;
+        ObjectMapper mapper = null;
+        try {
+            mapper = (ObjectMapper) pool.borrowObject(id);
+            rval = mapper.convertValue(obj, TreeMap.class);
+        } catch (Exception e) {
+            throw new JsonException("Problem extracting object to map", e);
+        } finally {
+            returnObject(id, mapper);
+        }
+        return rval;
+    }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see com.raytheon.uf.common.json.JsonService#populate(java.util.Map)
-	 */
-	@Override
-	public Object populate(Map<String, Object> map, Class<?> c)
-			throws JsonException {
-		long id = Thread.currentThread().getId();
-		Object rval;
-		ObjectMapper mapper = null;
-		try {
-			mapper = (ObjectMapper) pool.borrowObject(id);
-			rval = mapper.convertValue(map, c);
-		} catch (Exception e) {
-			throw new JsonException("Problem extracting object to map", e);
-		} finally {
-			returnObject(id, mapper);
-		}
-		return rval;
-	}
+    @Override
+    public Object populate(Map<String, Object> map, Class<?> c)
+            throws JsonException {
+        long id = Thread.currentThread().getId();
+        Object rval;
+        ObjectMapper mapper = null;
+        try {
+            mapper = (ObjectMapper) pool.borrowObject(id);
+            rval = mapper.convertValue(map, c);
+        } catch (Exception e) {
+            throw new JsonException("Problem extracting object to map", e);
+        } finally {
+            returnObject(id, mapper);
+        }
+        return rval;
+    }
 
 }

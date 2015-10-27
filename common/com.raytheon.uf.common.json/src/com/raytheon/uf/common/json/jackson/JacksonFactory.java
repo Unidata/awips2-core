@@ -36,7 +36,9 @@ import org.apache.commons.pool2.PooledObject;
 import org.apache.commons.pool2.impl.DefaultPooledObject;
 import org.codehaus.jackson.Version;
 import org.codehaus.jackson.map.AnnotationIntrospector;
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
+import org.codehaus.jackson.map.SerializationConfig;
 import org.codehaus.jackson.xc.JaxbAnnotationIntrospector;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -63,6 +65,7 @@ import com.vividsolutions.jts.geom.Polygon;
  * ------------ ---------- ----------- --------------------------
  *                         bclement     Initial creation
  * Oct 23, 2015  #5004     dgilling     Update to use commons-pool2 API.
+ * Oct 27, 2015  4767      bclement     upgraded jackson to 1.9
  * 
  * </pre>
  * 
@@ -97,11 +100,19 @@ public class JacksonFactory extends
         ObjectMapper mapper = new ObjectMapper();
         mapper.enableDefaultTyping();
         AnnotationIntrospector introspector = new JaxbAnnotationIntrospector();
+
         // make deserializer use JAXB annotations (only)
-        mapper.getDeserializationConfig().setAnnotationIntrospector(
-                introspector);
+        DeserializationConfig deserializationConfig = mapper
+                .getDeserializationConfig();
+        deserializationConfig = deserializationConfig
+                .withAnnotationIntrospector(introspector);
+        mapper.setDeserializationConfig(deserializationConfig);
         // make serializer use JAXB annotations (only)
-        mapper.getSerializationConfig().setAnnotationIntrospector(introspector);
+        SerializationConfig serializationConfig = mapper
+                .getSerializationConfig();
+        serializationConfig = serializationConfig
+                .withAnnotationIntrospector(introspector);
+        mapper.setSerializationConfig(serializationConfig);
         mapper.registerModule(m);
         return mapper;
     }
