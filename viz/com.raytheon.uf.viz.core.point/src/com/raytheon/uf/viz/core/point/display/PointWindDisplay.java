@@ -19,22 +19,15 @@
  **/
 package com.raytheon.uf.viz.core.point.display;
 
-import java.awt.Graphics2D;
-import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
-import java.awt.image.IndexColorModel;
 
-import org.apache.batik.bridge.BridgeContext;
-import org.apache.batik.bridge.GVTBuilder;
-import org.apache.batik.bridge.UserAgentAdapter;
-import org.apache.batik.dom.svg.SVGDOMImplementation;
-import org.apache.batik.dom.svg.SVGOMDocument;
-import org.apache.batik.dom.svg.SVGOMPathElement;
-import org.apache.batik.gvt.GraphicsNode;
+import org.apache.batik.anim.dom.SVGDOMImplementation;
 import org.eclipse.swt.graphics.RGB;
 import org.w3c.dom.DOMImplementation;
 import org.w3c.dom.Document;
-import org.w3c.dom.svg.SVGSVGElement;
+import org.w3c.dom.Element;
+
+import com.raytheon.uf.viz.core.point.svg.SVGImageFactory;
 
 /**
  * The PointWindDisplay class takes a wind spd and direction or wind-u and
@@ -44,11 +37,13 @@ import org.w3c.dom.svg.SVGSVGElement;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 10/16/2007              brockwoo    Initial creation	
- * 06/04/2008              chammack    Added option for barb/arrow creation
- * May 14, 2015  4079      bsteffen    Move to core.point
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------
+ * Oct 16, 2007           brockwoo  Initial creation
+ * Jun 04, 2008           chammack  Added option for barb/arrow creation
+ * May 14, 2015  4079     bsteffen  Move to core.point
+ * Oct 27, 2015  4798     bsteffen  Use SVGImageFactory
  * 
  * </pre>
  * 
@@ -59,17 +54,15 @@ public class PointWindDisplay {
 
     public static enum DisplayType {
         BARB, ARROW, DUALARROW, STREAMLINE
-    };
+    }
 
-    private int x, y, red, green, blue;
+    private int x, y;
 
-    private Document document;
+    private RGB color;
 
-    private SVGOMPathElement pathElement;
-
-    private GVTBuilder builder;
-
-    private BridgeContext bridgeContext;
+    private SVGImageFactory imageFactory;
+    
+    private Element pathElement;
 
     private final double length;
 
@@ -174,8 +167,8 @@ public class PointWindDisplay {
     }
 
     public void setLineWidth(int lineWidth) {
-        this.setImageParameters(this.x, this.y, this.red, this.green,
-                this.blue, lineWidth);
+        this.setImageParameters(this.x, this.y, color.red, color.green,
+                color.blue, lineWidth);
     }
 
     /**
@@ -205,19 +198,16 @@ public class PointWindDisplay {
         this.pathRelative = true;
         DOMImplementation impl = SVGDOMImplementation.getDOMImplementation();
 
-        document = impl.createDocument(SVGDOMImplementation.SVG_NAMESPACE_URI,
+        Document document = impl.createDocument(SVGDOMImplementation.SVG_NAMESPACE_URI,
                 "svg", null);
-
-        SVGSVGElement svgRoot = ((SVGOMDocument) document).getRootElement();
+        Element svgRoot = document.getDocumentElement();
         svgRoot.setAttributeNS(null, "viewBox", "0 0 " + Integer.toString(x)
                 + " " + Integer.toString(y));
         svgRoot.setAttributeNS(null, "width", String.valueOf(x));
         svgRoot.setAttributeNS(null, "height", String.valueOf(y));
 
-        this.red = red;
-        this.green = green;
-        this.blue = blue;
-        pathElement = (SVGOMPathElement) document.createElementNS(
+        this.color = new RGB(red, green, blue);
+        pathElement = document.createElementNS(
                 SVGDOMImplementation.SVG_NAMESPACE_URI, "path");
         pathElement.setAttributeNS(null, "x", String.valueOf(this.ix));
         pathElement.setAttributeNS(null, "y", String.valueOf(this.jy));
@@ -228,9 +218,7 @@ public class PointWindDisplay {
         // TODO: add support for dashed lines
         // pathElement.setAttributeNS(null, "stroke-dasharray", "4,4");
         svgRoot.appendChild(pathElement);
-        UserAgentAdapter userAgentAdapter = new UserAgentAdapter();
-        this.bridgeContext = new BridgeContext(userAgentAdapter);
-        this.builder = new GVTBuilder();
+        this.imageFactory = new SVGImageFactory(document);
     }
 
     /**
@@ -308,7 +296,7 @@ public class PointWindDisplay {
             ix2 = Math.round(this.ix - saa);
             jy2 = this.pathRelative ? Math.round(this.jy + saa) : Math
                     .round(this.jy - saa);
-            ;
+
             barbPath.append("L" + ix2 + " " + jy2);
             ix1 = Math.round(this.ix - aa);
             jy1 = Math.round(this.jy);
@@ -316,17 +304,17 @@ public class PointWindDisplay {
             ix2 = Math.round(this.ix - saa);
             jy2 = this.pathRelative ? Math.round(this.jy - saa) : Math
                     .round(this.jy + saa);
-            ;
+
             barbPath.append("L" + ix2 + " " + jy2);
             ix1 = Math.round(this.ix);
             jy1 = this.pathRelative ? Math.round(this.jy - aa) : Math
                     .round(this.jy + aa);
-            ;
+
             barbPath.append("L" + ix1 + " " + jy1);
             ix2 = Math.round(this.ix + saa);
             jy2 = this.pathRelative ? Math.round(this.jy - saa) : Math
                     .round(this.jy + saa);
-            ;
+
             barbPath.append("L" + ix2 + " " + jy2);
             ix1 = Math.round(this.ix + aa);
             jy1 = Math.round(this.jy);
@@ -572,55 +560,7 @@ public class PointWindDisplay {
             throw new IllegalArgumentException("Unhandled type: " + type);
         }
 
-        GraphicsNode theGraphicsNode = this.builder.build(this.bridgeContext,
-                this.document);
-
-        // System.out.println(this.document.getTextContent());
-
-        byte[] red = { 0, (byte) this.red };
-        byte[] blue = { 0, (byte) this.green };
-        byte[] green = { 0, (byte) this.blue };
-
-        IndexColorModel tm = new IndexColorModel(8, 2, red, blue, green, 0);
-
-        BufferedImage bufferedImage = new BufferedImage(this.x, this.y,
-                BufferedImage.TYPE_BYTE_INDEXED, tm);
-
-        Graphics2D g2d = bufferedImage.createGraphics();
-        if (antiAlias) {
-            g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
-                    RenderingHints.VALUE_ANTIALIAS_ON);
-            g2d.setRenderingHint(RenderingHints.KEY_INTERPOLATION,
-                    RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        }
-        // Element elt = ((SVGDocument) document).getRootElement();
-        // SVGDocument myDocument = (SVGDocument) document;
-        theGraphicsNode.paint(g2d);
-        // Cleanup and return image
-        g2d.dispose();
-        return bufferedImage;
-    }
-
-    public static void main(String[] args) {
-        PointWindDisplay windBarbGen = new PointWindDisplay(25.0, -25.0, 5.0,
-                6.0);
-        // windBarbGen.setImageParameters(256, 256, 0, 255, 0, 1.0);
-        try {
-            for (double i = 355.0; i >= 0.0; i -= 5.0) {
-                int speed = (int) i;
-                // FileOutputStream output = new FileOutputStream(new
-                // File("/home/brockwoo/" + spd + ".png"));
-                windBarbGen.setWind(i, 25.0, true);
-                System.out.println("<glyph unicode=\"" + speed
-                        + "\" horiz-adv-x=\"1500\" d=\""
-                        + windBarbGen.getArrowPath(0.2) + "\"/>");
-                // ImageIO.write(windBarbGen.getWindImage(true), "png", output);
-                // output.close();
-            }
-        } catch (Exception e) {
-            System.out.println(e.getMessage());
-        }
-
+        return imageFactory.createSingleColorImage(color, this.x, this.y);
     }
 
 }

@@ -19,31 +19,18 @@
  **/
 package com.raytheon.uf.viz.core.point.display;
 
-import java.awt.Graphics2D;
-import java.awt.image.BufferedImage;
-import java.awt.image.IndexColorModel;
 import java.awt.image.RenderedImage;
-import java.io.IOException;
-import java.net.MalformedURLException;
 import java.util.HashMap;
 
-import org.apache.batik.bridge.BridgeContext;
-import org.apache.batik.bridge.GVTBuilder;
-import org.apache.batik.bridge.UserAgentAdapter;
-import org.apache.batik.dom.svg.SAXSVGDocumentFactory;
-import org.apache.batik.gvt.GraphicsNode;
-import org.apache.batik.util.XMLResourceDescriptor;
 import org.eclipse.swt.graphics.RGB;
-import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Text;
 
-import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
 import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.exception.VizException;
+import com.raytheon.uf.viz.core.point.svg.SVGImageFactory;
 
 /**
  * Loads symbols from svg into IImage
@@ -51,21 +38,23 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 25, 2009 3099       bsteffen     Initial creation
- * Oct 20, 2010 6853       bgonzale     Migrated common symbol loading code.
- * Aug 09, 2013  2033      mschenke    Switched File.separator to IPathManager.SEPARATOR
- * Aug 11, 2014  3504      mapeters    Replaced deprecated IODataPreparer
- *                                     instances with IRenderedImageCallback.
- * May 14, 2015  4079      bsteffen    Move to core.point
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Sep 25, 2009  3099     bsteffen  Initial creation
+ * Oct 20, 2010  6853     bgonzale  Migrated common symbol loading code.
+ * Aug 09, 2013  2033     mschenke  Switched File.separator to IPathManager.SEPARATOR
+ * Aug 11, 2014  3504     mapeters  Replaced deprecated IODataPreparer
+ *                                  instances with IRenderedImageCallback.
+ * May 14, 2015  4079     bsteffen  Move to core.point
+ * Oct 27, 2015  4798     bsteffen  Extend SVGImageFactory
+ * 
  * 
  * </pre>
  * 
  * @author bsteffen
  * @version 1.0
  */
-public class SymbolLoader {
+public class SymbolLoader extends SVGImageFactory {
 
     private IGraphicsTarget target;
 
@@ -73,38 +62,8 @@ public class SymbolLoader {
 
     private HashMap<Character, IImage> images = new HashMap<Character, IImage>();
 
-    private Document document;
-
-    private Element textNode;
-
-    private Text textText;
-
-    private final GVTBuilder builder;
-
-    private final BridgeContext bridgeContext;
-
     public SymbolLoader() throws VizException {
-        String parser = XMLResourceDescriptor.getXMLParserClassName();
-        SAXSVGDocumentFactory f = new SAXSVGDocumentFactory(parser);
-        try {
-            document = f.createDocument(PathManagerFactory
-                    .getPathManager()
-                    .getStaticFile(
-                            "plotModels" + IPathManager.SEPARATOR
-                                    + "WxSymbolText.svg").toURI().toString());
-        } catch (MalformedURLException e) {
-            throw new VizException(
-                    "Error loading symbol file: WxSymbolText.svg", e);
-        } catch (IOException e) {
-            throw new VizException(
-                    "Error loading symbol file: WxSymbolText.svg", e);
-        }
-        textNode = document.getElementById("theText");
-        textText = (Text) textNode.getFirstChild();
-
-        UserAgentAdapter userAgentAdapter = new UserAgentAdapter();
-        this.bridgeContext = new BridgeContext(userAgentAdapter);
-        this.builder = new GVTBuilder();
+        super(plotModelFile("WxSymbolText.svg"));
     }
 
     public IImage getImage(IGraphicsTarget target, RGB color, char c) {
@@ -115,34 +74,36 @@ public class SymbolLoader {
             this.color = color;
         }
 
-        if (!images.containsKey(c)) {
+        IImage image = images.get(c);
 
-            byte[] red = { 0, (byte) color.red };
-            byte[] green = { 0, (byte) color.green };
-            byte[] blue = { 0, (byte) color.blue };
-            IndexColorModel colorModel = new IndexColorModel(8, 2, red, green,
-                    blue, 0);
-            final BufferedImage bImage = new BufferedImage(12, 12,
-                    BufferedImage.TYPE_BYTE_INDEXED, colorModel);
-            Graphics2D g2d = bImage.createGraphics();
-
-            textText.setNodeValue(Integer.toString((int) (c)));
-
-            GraphicsNode gn = builder.build(this.bridgeContext, this.document);
-            gn.paint(g2d);
-
-            IImage iImage = target
-                    .initializeRaster(new IRenderedImageCallback() {
-                        @Override
-                        public RenderedImage getImage() throws VizException {
-                            return bImage;
-                        }
-                    });
-
-            images.put(c, iImage);
-
-            g2d.dispose();
+        if (image == null) {
+            image = target.initializeRaster(new ImageCallback(color, c));
+            images.put(c, image);
         }
         return images.get(c);
+    }
+
+    private final class ImageCallback implements IRenderedImageCallback {
+
+        private final RGB color;
+
+        private final char c;
+
+        public ImageCallback(RGB color, char c) {
+            this.color = color;
+            this.c = c;
+        }
+
+        @Override
+        public RenderedImage getImage() throws VizException {
+            synchronized (document) {
+                Element textNode = document.getElementById("theText");
+                Text textText = (Text) textNode.getFirstChild();
+                textText.setNodeValue(Integer.toString(c));
+
+                return createSingleColorImage(color, 12, 12);
+            }
+        }
+
     }
 }
