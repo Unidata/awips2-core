@@ -35,7 +35,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -472,8 +472,7 @@ public abstract class AbstractRequestableResourceData extends
             statusHandler.handle(
                     Priority.VERBOSE,
                     "Resource contains unexpected null time: "
-                            + this.getClass(),
-                    new NullPointerException());
+                            + this.getClass(), new NullPointerException());
         }
 
         Set<DataTime> loadSet = new HashSet<DataTime>(Arrays.asList(desired));

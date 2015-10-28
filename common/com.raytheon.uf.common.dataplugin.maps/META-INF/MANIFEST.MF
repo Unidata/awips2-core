@@ -2,10 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common Maps Dataplugin
 Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.maps
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.apache.commons.lang;bundle-version="2.3.0",
+Require-Bundle: org.apache.commons.lang3;bundle-version="3.4.0",
  com.raytheon.uf.common.dataplugin,
  org.geotools;bundle-version="2.6.4",
  com.raytheon.uf.common.dataaccess,

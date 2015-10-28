@@ -19,22 +19,22 @@
  **/
 package com.raytheon.viz.ui.presenter.components;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Base class for the widget configuration classes.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 26, 2012   223      mpduff     Initial creation
- *
+ * 
  * </pre>
- *
+ * 
  * @author mpduff
  * @version 1.0
  */

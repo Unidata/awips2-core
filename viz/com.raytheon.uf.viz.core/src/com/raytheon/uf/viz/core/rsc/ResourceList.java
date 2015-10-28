@@ -34,7 +34,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -106,7 +106,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         }
 
     };
-    
+
     private final transient Set<AddListener> preAddListeners;
 
     private final transient Set<AddListener> postAddListeners;
@@ -1057,6 +1057,5 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         }
         return resources;
     }
-
 
 }

@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -55,7 +55,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  *    Jul 05, 2013 1869        bsteffen    Fix goes sounding updates.
  *    Sep  9, 2013 2277        mschenke    Got rid of LayerProperty references
  *    May 21, 2015 4495        njensen     Deprecated
- *    
+ * 
  * </pre>
  * 
  * @author chammack
