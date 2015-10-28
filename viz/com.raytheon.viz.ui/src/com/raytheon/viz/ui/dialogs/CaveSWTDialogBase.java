@@ -52,7 +52,9 @@ import org.eclipse.swt.widgets.Shell;
  * Nov 2, 2010             mschenke    Initial creation
  * Sep 12, 2012 #1165      lvenable    Update for the initial process
  *                                     of removing the dialog blocking capability.
- * Oct 11, 2012  1229      jkorman     Factored out "mustCreate" method from subclasses.                                    
+ * Oct 11, 2012  1229      jkorman     Factored out "mustCreate" method from subclasses.
+ * Oct 28, 2015  5054      randerso    Moved fields that were only used by a subclass
+ *                                     from this class to the subclass.
  * 
  * </pre>
  * 
@@ -122,12 +124,6 @@ public abstract class CaveSWTDialogBase extends Dialog {
 
     /** Display reference. */
     private Display display;
-
-    /** Dialog last location on the screen. */
-    protected Point lastLocation;
-
-    /** Flag indicating of the dialog was visible. */
-    protected boolean wasVisible = true;
 
     /** Return value. */
     private Object returnValue;
@@ -241,6 +237,19 @@ public abstract class CaveSWTDialogBase extends Dialog {
             shell.addListener(lp.eventType, lp.listener);
         }
         listenersToAdd.clear();
+
+        if (hasAttribute(CAVE.INDEPENDENT_SHELL)) {
+            // center dialog on parent
+
+            Point dlgSize = shell.getSize();
+            Point parentSize = parent.getSize();
+            Point parentLoc = parent.getLocation();
+
+            int x = parentLoc.x + (parentSize.x - dlgSize.x) / 2;
+            int y = parentLoc.y + (parentSize.y - dlgSize.y) / 2;
+
+            shell.setLocation(x, y);
+        }
 
         preOpened();
 
@@ -363,15 +372,6 @@ public abstract class CaveSWTDialogBase extends Dialog {
     }
 
     /**
-     * Get the last location of the shell.
-     * 
-     * @return The last location as a point (X/Y coordinate).
-     */
-    public final Point getLastLocation() {
-        return lastLocation;
-    }
-
-    /**
      * Set the return value, should be used by subclasses only
      * 
      * @param returnValue
@@ -383,7 +383,7 @@ public abstract class CaveSWTDialogBase extends Dialog {
     /**
      * Get the return value to return from open()
      * 
-     * @return
+     * @return the return value
      */
     public final Object getReturnValue() {
         return returnValue;
@@ -403,7 +403,7 @@ public abstract class CaveSWTDialogBase extends Dialog {
     /**
      * Returns whether the dialog has been opened yet or not
      * 
-     * @return
+     * @return true if dialog is open
      */
     public final boolean isOpen() {
         return (shell != null && !shell.isDisposed());
@@ -455,7 +455,7 @@ public abstract class CaveSWTDialogBase extends Dialog {
     /**
      * Add a listener to the dialog's shell for the specified event type
      * 
-     * @param type
+     * @param eventType
      * @param listener
      */
     public void addListener(int eventType, Listener listener) {
@@ -519,5 +519,4 @@ public abstract class CaveSWTDialogBase extends Dialog {
         return (dialog == null) || (dialog.getShell() == null)
                 || (dialog.isDisposed());
     }
-    
 }
