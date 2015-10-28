@@ -22,6 +22,7 @@ package com.raytheon.viz.ui.dialogs;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
@@ -39,7 +40,11 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * SOFTWARE HISTORY
  * Date       	Ticket#		Engineer	Description
  * ----------	----------	-----------	--------------------------
- * 12/20/07     561         Dan Fitch    Initial Creation.
+ * 12/20/07     561         Dan Fitch   Initial Creation.
+ * 10/28/2015   5054        randerso    Moved fields that were only used by this subclass
+ *                                      from the base class to this subclass.
+ *                                      Fixed location of dialogs with CAVE.INDEPENDENT_SHELL 
+ *                                      attribute to still be centered on the parent shell.
  * </pre>
  * 
  * @author Dan Fitch
@@ -48,7 +53,13 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 public abstract class CaveSWTDialog extends CaveSWTDialogBase implements
         IPerspectiveSpecificDialog {
 
-    protected AbstractVizPerspectiveManager perspectiveManager;
+    private AbstractVizPerspectiveManager perspectiveManager;
+
+    /** Dialog last location on the screen. */
+    private Point lastLocation;
+
+    /** Flag indicating of the dialog was visible. */
+    private boolean wasVisible = true;
 
     /**
      * Construct default cave dialog
@@ -129,7 +140,7 @@ public abstract class CaveSWTDialog extends CaveSWTDialogBase implements
         }
     }
 
-    public AbstractVizPerspectiveManager getPerspectiveManager() {
+    protected AbstractVizPerspectiveManager getPerspectiveManager() {
         return perspectiveManager;
     }
 }
