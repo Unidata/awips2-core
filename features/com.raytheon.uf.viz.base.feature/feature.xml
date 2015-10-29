@@ -38,7 +38,7 @@
          id="org.apache.activemq"
          download-size="0"
          install-size="0"
-         version="5.9.1"/>
+         version="5.12.1"/>
 
    <plugin
          id="org.apache.batik"
