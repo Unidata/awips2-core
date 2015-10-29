@@ -25,7 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.commons.collections.map.LRUMap;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridCoverage2D;
@@ -588,7 +588,6 @@ public class MapUtil {
         return constructLambertConformal(majorAxis, minorAxis, stdParallel1,
                 stdParallel2, lonOfOrigin, stdParallel1);
     }
-
 
     /**
      * Construct a lambert conformal crs

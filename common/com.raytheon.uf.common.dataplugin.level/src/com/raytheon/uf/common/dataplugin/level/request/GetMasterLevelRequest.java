@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.dataplugin.level.request;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -88,7 +88,7 @@ public class GetMasterLevelRequest implements IServerRequest {
     @Override
     public String toString() {
         return new ToStringBuilder(this)
-                .append("masterLevel", getMasterLevel()).append("create",
-                        isCreate()).toString();
+                .append("masterLevel", getMasterLevel())
+                .append("create", isCreate()).toString();
     }
 }

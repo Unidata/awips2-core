@@ -19,22 +19,22 @@
  **/
 package com.raytheon.viz.ui.presenter.components;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * GUI implementation independent representation of a button.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 24, 2012    223     mpduff      Initial creation.
- *
+ * 
  * </pre>
- *
+ * 
  * @author mpduff
  * @version 1.0
  */
@@ -52,7 +52,7 @@ public class ButtonConf extends LabeledWidgetConf {
 
     /**
      * Constructor.
-     *
+     * 
      * @param enabled
      * @param displayText
      * @param toolTipText

@@ -24,7 +24,7 @@ import java.util.Date;
 import java.util.Set;
 import java.util.TreeSet;
 
-import org.apache.commons.lang.time.StopWatch;
+import org.apache.commons.lang3.time.StopWatch;
 
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
@@ -74,7 +74,7 @@ public class PurgeSrv {
 
     /** The purge cron message */
     public static final String PURGE_CRON = "PURGE_CRON";
-    
+
     private PurgeManager purgeManager;
 
     /**

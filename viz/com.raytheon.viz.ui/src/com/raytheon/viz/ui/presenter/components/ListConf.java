@@ -19,22 +19,22 @@
  **/
 package com.raytheon.viz.ui.presenter.components;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * Configuration object for org.eclipse.swt.widgets.List objects.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 12, 2012   223      mpduff      Initial creation
- *
+ * 
  * </pre>
- *
+ * 
  * @author mpduff
  * @version 1.0
  */
@@ -48,7 +48,8 @@ public class ListConf extends WidgetConf {
 
     private final int height;
 
-    public ListConf(String toolTipText, String[] items, boolean singleSelect, int width, int height) {
+    public ListConf(String toolTipText, String[] items, boolean singleSelect,
+            int width, int height) {
         super(toolTipText);
 
         this.items = items;
@@ -58,7 +59,8 @@ public class ListConf extends WidgetConf {
     }
 
     /**
-     * @param items the items to set
+     * @param items
+     *            the items to set
      */
     public void setItems(String[] items) {
         this.items = items;
@@ -72,7 +74,8 @@ public class ListConf extends WidgetConf {
     }
 
     /**
-     * @param singleSelect the singleSelect to set
+     * @param singleSelect
+     *            the singleSelect to set
      */
     public void setSingleSelect(boolean singleSelect) {
         this.singleSelect = singleSelect;
