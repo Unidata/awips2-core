@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,11 +27,11 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.component.http.DefaultHttpBinding;
+import org.apache.camel.http.common.DefaultHttpBinding;
 import org.apache.camel.util.IOHelper;
 
 /**
- * TODO Add Description
+ * Http Binding that adds support for non-chunked byte[].
  * 
  * <pre>
  * 
@@ -40,6 +40,7 @@ import org.apache.camel.util.IOHelper;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 2, 2011            rjpeter     Initial creation
+ * Oct 22, 2015 4999       nabowle     Camel 2.16.0 compatibility
  * 
  * </pre>
  * 
@@ -49,7 +50,8 @@ import org.apache.camel.util.IOHelper;
 
 public class BinaryHttpBinding extends DefaultHttpBinding {
     /**
-     * Pure copy of DefaultHttpBinding, with added support for non chunked byte[], 99% of edex sends this way.
+     * Pure copy of DefaultHttpBinding, with added support for non chunked
+     * byte[], 99% of edex sends this way.
      */
     @Override
     protected void doWriteDirectResponse(Message message,
@@ -97,7 +99,7 @@ public class BinaryHttpBinding extends DefaultHttpBinding {
                 }
             } else {
                 String data = message.getBody(String.class);
-                if (data != null) {
+                if (data != null && !data.equals("")) {
                     // set content length before we write data
                     response.setContentLength(data.length());
                     response.getWriter().print(data);
