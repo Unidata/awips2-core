@@ -152,6 +152,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Aug 18, 2014  3512     bclement    fixed NPE when GLStats called without canvas
  * Aug 21, 2014  3459     randerso    Throw exception if attempt to draw non-GL wireframeshape
  * Jan 26, 2015  3974     njensen     Always tesselate shaded shapes so concave shapes draw correctly
+ * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
  * 
  * </pre>
  * 
@@ -167,6 +168,23 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     protected static String DEFAULT_FONT = "Monospace";
 
     protected static final int TICK_SIZE = 3;
+
+    /**
+     * Font scaling basis, based on original 19" monitor
+     * 
+     * 80% of width in pixels / dots per inch (dpi)
+     */
+    protected static final double FONT_SCALING_BASIS = 0.8 * 1280 / 85;
+
+    /**
+     * Minimum font scaling limit
+     */
+    protected static final double MIN_FONT_SCALING = 0.6;
+
+    /**
+     * Maximum font scaling limit
+     */
+    protected static final double MAX_FONT_SCALING = 1.0;
 
     protected static final int maxColorMapCacheSize = com.raytheon.viz.core.gl.Activator
             .getDefault().getPreferenceStore().getInt("colorMapCacheSize");
@@ -260,8 +278,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
     protected FontFactory fontFactory;
 
-    protected Rectangle monitorBounds;
-
     protected IExtent clippingPane;
 
     /**
@@ -314,8 +330,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         };
         this.theCanvas.addListener(SWT.Resize, this.canvasResizeListener);
-        monitorBounds = this.theCanvas.getDisplay().getPrimaryMonitor()
-                .getBounds();
 
         extensionManager = new GraphicsExtensionManager(this);
     }
@@ -856,25 +870,21 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             font = this.getDefaultFont();
         }
 
-        double ratio = 1.0f;
+        double ratio = 1.0;
         if (font.isScaleFont()) {
-            /*
-             * The Canvas Width Can Never Be The Same Size As The Monitor Width
-             * Due To The Smaller Panes And The Window Borders. But, An 80/20
-             * Split Seems Reasonable.
-             */
-            double windowWidth = monitorBounds.width * 0.80;
-            ratio = (paneWidth / windowWidth);
+            int dpi = theCanvas.getDisplay().getDPI().x;
+            double basis = FONT_SCALING_BASIS * dpi;
+            ratio = (paneWidth / basis);
         }
 
         /*
-         * Only Degrade 60% Of The Font Size. and never go more than 100% of the
-         * size
+         * Scale font between MIN and MAX_FONT_SCALING based on ratio of
+         * paneWidth to FONT_SCALING_THRESHOLD
          */
-        double fontRatio = 0.6;
 
-        return Math.min((fontRatio + (ratio * (1 - fontRatio)))
-                * textMagnification, 1.0)
+        return Math
+                .min((MIN_FONT_SCALING + (ratio * (MAX_FONT_SCALING - MIN_FONT_SCALING)))
+                        * textMagnification, 1.0)
                 * font.getMagnification();
     }
 
