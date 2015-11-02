@@ -31,7 +31,7 @@ package com.raytheon.uf.viz.core.rsc.interrogation;
  * Interrogatable and the code performing interrogation must have access to the
  * exact same InterrogationKey instance in order to successfully share
  * information. The {@link #equals(Object)} method only uses
- * {@link Object#equals(Object)} so it is equivelent to ==.
+ * {@link Object#equals(Object)} so it is equivalent to ==.
  * 
  * When this class is subclassed, the keys can provide a more flexible contract
  * for interrogation because the Interrogatable and the calling code can
@@ -46,9 +46,10 @@ package com.raytheon.uf.viz.core.rsc.interrogation;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 15, 2014  2820     bsteffen    Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 15, 2014  2820     bsteffen  Initial creation
+ * Oct 27, 2015  5018     bsteffen  Remove unnecessary hashCode/equals
  * 
  * </pre>
  * 
@@ -66,16 +67,5 @@ public class InterrogationKey<T> {
     public InterrogationKey() {
         super();
     }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object obj) {
-        return super.equals(obj);
-    }
-
 
 }
