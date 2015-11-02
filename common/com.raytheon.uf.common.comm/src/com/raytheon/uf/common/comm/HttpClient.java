@@ -64,7 +64,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
-import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStream;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 
 /**
  * 
@@ -101,6 +101,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
  *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
  *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
+ *    Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -623,7 +624,7 @@ public class HttpClient {
 
         HttpPost put = new HttpPost(address);
         if (gzipRequests) {
-            ByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+            PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
                     .getInstance().getStream(message.length);
             GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream);
             gzipStream.write(message);
@@ -907,7 +908,7 @@ public class HttpClient {
 
         @Override
         public void handleStream(InputStream is) throws CommunicationException {
-            ByteArrayOutputStream baos = ByteArrayOutputStreamPool
+            PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
                     .getInstance().getStream();
             try {
                 byte[] underlyingArray = baos.getUnderlyingArray();
