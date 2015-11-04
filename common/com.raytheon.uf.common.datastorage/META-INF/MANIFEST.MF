@@ -2,11 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Datastorage Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.datastorage
-Bundle-Version: 1.15.1.qualifier
+Bundle-Version: 1.15.2.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.datastorage.records
 Require-Bundle: com.raytheon.uf.common.serialization,
- org.apache.commons.lang;bundle-version="2.3.0"
+ org.apache.commons.lang3;bundle-version="3.4.0"
 Import-Package: com.raytheon.uf.common.status

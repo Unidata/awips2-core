@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.geospatial.adapter;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 
 import com.raytheon.uf.common.serialization.IDeserializationContext;
@@ -27,6 +26,7 @@ import com.raytheon.uf.common.serialization.ISerializationContext;
 import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.OutputStreamOutStream;
 import com.vividsolutions.jts.io.ParseException;
@@ -43,6 +43,7 @@ import com.vividsolutions.jts.io.WKBWriter;
  * Aug 11, 2008             chammack    Initial creation
  * Aug 08, 2014  3503       bclement    moved from common.serialization to common.geospatial
  * Jun 17, 2015  4561       njensen     Use ByteArrayOutputStreamPool for efficiency
+ * Oct 30, 2015  4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -87,7 +88,7 @@ public class GeometryTypeAdapter implements ISerializationTypeAdapter<Geometry> 
              * WKBWriter is to inefficiently start with a byte[32] and then grow
              * it repeatedly as needed.
              */
-            try (ByteArrayOutputStream baos = ByteArrayOutputStreamPool
+            try (PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
                     .getInstance().getStream()) {
                 // seriously JTS, you couldn't use java.io.OutputStream?
                 OutputStreamOutStream out = new OutputStreamOutStream(baos);

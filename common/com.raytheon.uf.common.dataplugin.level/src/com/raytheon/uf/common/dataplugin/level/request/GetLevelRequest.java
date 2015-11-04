@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.dataplugin.level.request;
 
-import org.apache.commons.lang.builder.ToStringBuilder;
+import org.apache.commons.lang3.builder.ToStringBuilder;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;

@@ -29,7 +29,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
@@ -474,8 +474,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
                 LocalizationLevel.CONFIGURED, LocalizationLevel.SITE };
 
         if (RegionLookup.getWfoRegion(getSiteName()) == null) {
-            levels = (LocalizationLevel[]) ArrayUtils.removeElement(levels,
-                    LocalizationLevel.REGION);
+            levels = ArrayUtils.removeElement(levels, LocalizationLevel.REGION);
         }
 
         return levels;

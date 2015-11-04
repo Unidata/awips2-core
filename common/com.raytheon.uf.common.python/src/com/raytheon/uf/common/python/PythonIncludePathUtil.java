@@ -40,6 +40,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * ------------ ---------- ----------- --------------------------
  * Feb 27, 2013            dgilling     Initial creation
  * May 20, 2015  4509      njensen      Added getCommonPythonIncludePath(String...)
+ * Oct 22, 2015  5003      dgilling     Added getEdexPythonIncludePath.
  * 
  * </pre>
  * 
@@ -54,6 +55,9 @@ public class PythonIncludePathUtil {
 
     protected static final LocalizationContext COMMON_STATIC_BASE = PATH_MANAGER
             .getContext(LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
+
+    protected static final LocalizationContext EDEX_STATIC_BASE = PATH_MANAGER
+            .getContext(LocalizationType.EDEX_STATIC, LocalizationLevel.BASE);
 
     private static Map<LocalizationContext, Map<String, String>> pathMap = new HashMap<LocalizationContext, Map<String, String>>();
 
@@ -82,6 +86,15 @@ public class PythonIncludePathUtil {
      */
     public static String getCommonPythonIncludePath() {
         return getPath(COMMON_STATIC_BASE, PYTHON);
+    }
+
+    /**
+     * Gets the path for the common_static/base/python directory
+     * 
+     * @return the path to that python directory
+     */
+    public static String getEdexPythonIncludePath() {
+        return getPath(EDEX_STATIC_BASE, PYTHON);
     }
 
     /**

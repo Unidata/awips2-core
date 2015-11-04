@@ -28,6 +28,7 @@ import java.util.TreeMap;
 
 import org.codehaus.jackson.JsonGenerator;
 import org.codehaus.jackson.map.AnnotationIntrospector;
+import org.codehaus.jackson.map.DeserializationConfig;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.codehaus.jackson.map.ObjectWriter;
 import org.codehaus.jackson.map.SerializationConfig;
@@ -41,12 +42,13 @@ import com.raytheon.uf.common.json.JsonService;
  * 
  * <pre>
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            bclement    Initial creation
  * Aug 18, 2015  3806      njensen     Disable jackson closing Closeables
- *
+ * Oct 27, 2015  4767      bclement    upgraded jackson to 1.9
+ * 
  * </pre>
  * 
  * @author bclement
@@ -59,14 +61,23 @@ public class BasicJsonService implements JsonService {
     public BasicJsonService() {
         mapper = new ObjectMapper();
         AnnotationIntrospector introspector = new JaxbAnnotationIntrospector();
+
         // make deserializer use JAXB annotations (only)
-        mapper.getDeserializationConfig().setAnnotationIntrospector(
-                introspector);
+        DeserializationConfig deserializationConfig = mapper
+                .getDeserializationConfig();
+        deserializationConfig = deserializationConfig
+                .withAnnotationIntrospector(introspector);
+        mapper.setDeserializationConfig(deserializationConfig);
 
         // make serializer use JAXB annotations (only)
-        mapper.getSerializationConfig().setAnnotationIntrospector(introspector);
-        mapper.getSerializationConfig().set(
-                SerializationConfig.Feature.CLOSE_CLOSEABLE, false);
+        SerializationConfig serializationConfig = mapper
+                .getSerializationConfig();
+        serializationConfig = serializationConfig
+                .withAnnotationIntrospector(introspector);
+        serializationConfig = serializationConfig
+                .without(SerializationConfig.Feature.CLOSE_CLOSEABLE);
+        mapper.setSerializationConfig(serializationConfig);
+
         mapper.getJsonFactory().configure(
                 JsonGenerator.Feature.AUTO_CLOSE_TARGET, false);
     }
@@ -102,8 +113,8 @@ public class BasicJsonService implements JsonService {
     public void serialize(Object obj, OutputStream out, boolean pretty)
             throws JsonException {
         try {
-            ObjectWriter writer = pretty ? mapper.defaultPrettyPrintingWriter()
-                    : mapper.writer();
+            ObjectWriter writer = pretty ? mapper
+                    .writerWithDefaultPrettyPrinter() : mapper.writer();
             writer.writeValue(out, obj);
         } catch (Exception e) {
             throw new JsonException("Problem serializing object to JSON", e);

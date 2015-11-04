@@ -47,6 +47,7 @@ import com.raytheon.uf.viz.core.RecordFactory;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
+import com.raytheon.uf.viz.core.exception.NoPluginException;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
 import com.raytheon.uf.viz.core.procedures.Bundle;
@@ -82,6 +83,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Aug 13, 2015  4717     mapeters  Update order when its preference store value changes
  * Sep 03, 2015  4717     mapeters  Get preference store order value using 
  *                                  ProductBrowserPreferenceConstants.getOrder()
+ * Nov 03, 2015  5030     mapeters  Quietly handle CAVE & EDEX plugins being out of sync
  * 
  * </pre>
  * 
@@ -131,6 +133,12 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
                 DbQueryResponse response = (DbQueryResponse) ThriftClient
                         .sendRequest(request);
                 parameters = response.getEntityObjects(Object.class);
+            } catch (NoPluginException e) {
+                String msg = "Unable to display "
+                        + displayName
+                        + " data in Product Browser because the server does not support the "
+                        + productName + " plugin";
+                statusHandler.debug(msg);
             } catch (VizException e) {
                 statusHandler.handle(Priority.ERROR,
                         "Unable to populate initial product tree", e);

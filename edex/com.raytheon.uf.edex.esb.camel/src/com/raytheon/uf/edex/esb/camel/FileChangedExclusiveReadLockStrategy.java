@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -51,6 +51,7 @@ import org.apache.camel.component.file.GenericFileOperations;
  * May 9, 2013  1989       njensen     Camel 2.11 compatibility
  * May 6, 2014  3115       bclement    Camel 2.12.3 compatibility
  * Jan 5, 2015  3800       bclement    Camel 2.14.1 compatibility
+ * Oct 22, 2015 4999       nabowle     Camel 2.16.0 compatibility
  * 
  * </pre>
  * 
@@ -62,15 +63,6 @@ public class FileChangedExclusiveReadLockStrategy implements
         GenericFileExclusiveReadLockStrategy<File> {
     private Map<String, Long> modifyTimeMap = new HashMap<String, Long>();
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * acquireExclusiveReadLock
-     * (org.apache.camel.component.file.GenericFileOperations,
-     * org.apache.camel.component.file.GenericFile, org.apache.camel.Exchange)
-     */
     @Override
     public boolean acquireExclusiveReadLock(
             GenericFileOperations<File> operations, GenericFile<File> file,
@@ -102,41 +94,11 @@ public class FileChangedExclusiveReadLockStrategy implements
         return rval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * prepareOnStartup(org.apache.camel.component.file.GenericFileOperations,
-     * org.apache.camel.component.file.GenericFileEndpoint)
-     */
     @Override
     public void prepareOnStartup(GenericFileOperations<File> operations,
             GenericFileEndpoint<File> endpoint) throws Exception {
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * releaseExclusiveReadLock
-     * (org.apache.camel.component.file.GenericFileOperations,
-     * org.apache.camel.component.file.GenericFile, org.apache.camel.Exchange)
-     */
-    @Override
-    public void releaseExclusiveReadLock(
-            GenericFileOperations<File> operations, GenericFile<File> file,
-            Exchange exchange) throws Exception {
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * setTimeout(long)
-     */
     @Override
     public void setTimeout(long timeout) {
     }
@@ -145,27 +107,39 @@ public class FileChangedExclusiveReadLockStrategy implements
     public void setCheckInterval(long checkInterval) {
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * setReadLockLoggingLevel(org.apache.camel.LoggingLevel)
-     */
     @Override
     public void setReadLockLoggingLevel(LoggingLevel level) {
         // new in camel 2.12.3
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy#
-     * setMarkerFiler(boolean)
-     */
     @Override
     public void setMarkerFiler(boolean arg0) {
         // new in camel 2.14.1
+    }
+
+    @Override
+    public void releaseExclusiveReadLockOnAbort(
+            GenericFileOperations<File> operation, GenericFile<File> file,
+            Exchange exchange) throws Exception {
+        // new in 2.16.0
+    }
+
+    @Override
+    public void releaseExclusiveReadLockOnCommit(
+            GenericFileOperations<File> operation, GenericFile<File> file,
+            Exchange exchange) throws Exception {
+        // new in 2.16.0
+    }
+
+    @Override
+    public void releaseExclusiveReadLockOnRollback(
+            GenericFileOperations<File> operation, GenericFile<File> file,
+            Exchange exchange) throws Exception {
+        // new in 2.16.0
+    }
+
+    @Override
+    public void setDeleteOrphanLockFiles(boolean arg0) {
+        // new in 2.16.0
     }
 }

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import javax.jws.WebService;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.auth.req.AbstractPrivilegedRequest;
 import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
