@@ -32,9 +32,10 @@ import java.util.Collection;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 15, 2014  2820     bsteffen    Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * May 15, 2014  2820     bsteffen  Initial creation
+ * Oct 27, 2015  5018     bsteffen  Do not use super in hashCode.
  * 
  * </pre>
  * 
@@ -107,7 +108,7 @@ public class ClassInterrogationKey<T> extends InterrogationKey<T> {
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = super.hashCode();
+        int result = 1;
         result = prime * result
                 + ((keyClass == null) ? 0 : keyClass.hashCode());
         return result;

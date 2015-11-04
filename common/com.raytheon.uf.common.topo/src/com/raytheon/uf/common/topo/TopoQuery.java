@@ -64,6 +64,7 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.Pair;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
@@ -94,6 +95,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                     GridGeometry2D since GeoTools now changes the supplied
  *                                     math transform when creating GridGeometry2D
  * Oct 27, 2014 3795       randerso    Changed to allow topoLimit to be overridden by system property
+ * Nov 04, 2015 4961       randerso    Fix topoQueryMap to cache both the file and level
  * 
  * </pre>
  * 
@@ -106,7 +108,7 @@ public class TopoQuery {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(TopoQuery.class);
 
-    private static Map<Integer, TopoQuery> topoQueryMap;
+    private static Map<Pair<File, Integer>, TopoQuery> topoQueryMap;
 
     /**
      * @return Initialized TopoQuery instance
@@ -118,6 +120,8 @@ public class TopoQuery {
     }
 
     /**
+     * @param topoLevel
+     *            the interpolation level to be used
      * @return Initialized TopoQuery instance
      * @throws TopoException
      */
@@ -126,15 +130,24 @@ public class TopoQuery {
         return getInstance(TopoUtils.getDefaultTopoFile(), topoLevel);
     }
 
+    /**
+     * @param hdf5File
+     *            the hdf5 file to be used
+     * @param topoLevel
+     *            the interpolation level to be used
+     * @return Initialized TopoQuery instance
+     * @throws TopoException
+     */
     public static synchronized TopoQuery getInstance(File hdf5File,
             int topoLevel) throws TopoException {
         if (topoQueryMap == null) {
-            topoQueryMap = new Hashtable<Integer, TopoQuery>();
+            topoQueryMap = new Hashtable<Pair<File, Integer>, TopoQuery>();
         }
         TopoQuery query = topoQueryMap.get(topoLevel);
         if (query == null) {
             query = new TopoQuery(hdf5File, topoLevel);
-            topoQueryMap.put(topoLevel, query);
+            topoQueryMap.put(new Pair<File, Integer>(hdf5File, topoLevel),
+                    query);
         }
         return query;
     }
