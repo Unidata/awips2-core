@@ -83,29 +83,29 @@ import com.raytheon.uf.common.time.DataTime;
  * - Add an "@Sequence" annotation
  * "@SequenceGenerator(name = PluginDataObject.ID_GEN)"
  * 
- * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Jul 24, 2007 353         bphillip    Initial creation
- * Nov 29, 2007 472         jkorman     Added getDecoderGettable().
- * Feb 06, 2009 1990        bphillip    Added database index on dataURI
- * Mar 18, 2009 2105        jsanchez    Added getter for id.  Removed unused
- *                                      getIdentfier().
- * Mar 29, 2013 1638        mschenke    Added methods for loading from data map
- *                                      and creating data map from  dataURI
- *                                      fields
- * Apr 12, 2013 1857        bgonzale    Changed to MappedSuperclass, named
- *                                      generator,  GenerationType SEQUENCE,
- *                                      moved Indexes to getter  methods.
- * Apr 15, 2013 1868        bsteffen    Improved performance of createDataURIMap
- * May 02, 2013 1970        bgonzale    Moved Index annotation from getters to
- *                                      attributes.
- * May 07, 2013 1869        bsteffen    Remove dataURI column from
- *                                      PluginDataObject.
- * May 16, 2013 1869        bsteffen    Rewrite dataURI property mappings.
- * Aug 30, 2013 2298        rjpeter     Make getPluginName abstract
- * Apr 15, 2014 1869        bsteffen    Remove unused transient record field.
- * Jun 17, 2014 3165        bsteffen    Delete IDecoderGettable
+ * SOFTWARE HISTORY 
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 24, 2007  353      bphillip  Initial creation
+ * Nov 29, 2007  472      jkorman   Added getDecoderGettable().
+ * Feb 06, 2009  1990     bphillip  Added database index on dataURI
+ * Mar 18, 2009  2105     jsanchez  Added getter for id.  Removed unused
+ *                                  getIdentfier().
+ * Mar 29, 2013  1638     mschenke  Added methods for loading from data map and
+ *                                  creating data map from  dataURI fields
+ * Apr 12, 2013  1857     bgonzale  Changed to MappedSuperclass, named
+ *                                  generator,  GenerationType SEQUENCE, moved
+ *                                  Indexes to getter  methods.
+ * Apr 15, 2013  1868     bsteffen  Improved performance of createDataURIMap
+ * May 02, 2013  1970     bgonzale  Moved Index annotation from getters to
+ *                                  attributes.
+ * May 07, 2013  1869     bsteffen  Remove dataURI column from PluginDataObject.
+ * May 16, 2013  1869     bsteffen  Rewrite dataURI property mappings.
+ * Aug 30, 2013  2298     rjpeter   Make getPluginName abstract
+ * Apr 15, 2014  1869     bsteffen  Remove unused transient record field.
+ * Jun 17, 2014  3165     bsteffen  Delete IDecoderGettable
+ * Nov 05, 2015  5090     bsteffen  Add constants for datatime component ids.
  * 
  * </pre>
  * 
@@ -121,17 +121,14 @@ public abstract class PluginDataObject extends PersistableDataObject implements
             .getHandler(PluginDataObject.class);
 
     public static final class DataTimeURIConverter implements
-            DataURIFieldConverter {
+            DataURIFieldConverter<DataTime> {
         @Override
-        public String toString(Object field) {
-            if (field instanceof DataTime) {
-                return ((DataTime) field).getURIString();
-            }
-            return null;
+        public String toString(DataTime field) {
+            return field.getURIString();
         }
 
         @Override
-        public Object fromString(String string) {
+        public DataTime fromString(String string) {
             return new DataTime(string);
         }
     }
@@ -141,6 +138,12 @@ public abstract class PluginDataObject extends PersistableDataObject implements
     public static final String PLUGIN_NAME_ID = "pluginName";
 
     public static final String DATATIME_ID = "dataTime";
+
+    public static final String REFTIME_ID = "dataTime.refTime";
+
+    public static final String STARTTIME_ID = "dataTime.validPeriod.start";
+
+    public static final String ENDTIME_ID = "dataTime.validPeriod.end";
 
     public static final String DATAURI_ID = "dataURI";
 
@@ -172,10 +175,6 @@ public abstract class PluginDataObject extends PersistableDataObject implements
     @Transient
     protected transient String dataURI;
 
-    /** Internal variable used for creating an object from a dataURI */
-    @Transient
-    private transient int uriIndex = 2;
-
     /**
      * Default Constructor
      */
@@ -194,8 +193,8 @@ public abstract class PluginDataObject extends PersistableDataObject implements
     }
 
     /**
-     * Deprecated: getDataURI will generate the datauri on demand, no need to
-     * construct it.
+     * @deprecated getDataURI will generate the datauri on demand, no need to
+     *             construct it.
      */
     @Deprecated
     public void constructDataURI() throws PluginException {
@@ -220,6 +219,12 @@ public abstract class PluginDataObject extends PersistableDataObject implements
         return this.dataURI;
     }
 
+    /**
+     * @deprecated the JAXB context used by this method is not guaranteed to
+     *             work for all subclasses, JAXB should be used directly instead
+     *             of using this method.
+     */
+    @Deprecated
     public String toXML() throws JAXBException {
         return SerializationUtil.marshalToXml(this);
     }
