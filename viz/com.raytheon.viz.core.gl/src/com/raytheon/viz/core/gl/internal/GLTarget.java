@@ -40,6 +40,7 @@ import javax.media.opengl.glu.GLU;
 import javax.media.opengl.glu.GLUquadric;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.opengl.GLCanvas;
@@ -153,6 +154,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Aug 21, 2014  3459     randerso    Throw exception if attempt to draw non-GL wireframeshape
  * Jan 26, 2015  3974     njensen     Always tesselate shaded shapes so concave shapes draw correctly
  * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
+ * Nov 04, 2015  5070     randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -194,6 +196,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
     /** The eclipse GL canvas, not used if drawing offscreen */
     protected final GLCanvas theCanvas;
+
+    /** The dpi of the device on which the canvas resides */
+    protected final Point dpi;
 
     /** the GLContext */
     protected final GLContextBridge theContext;
@@ -303,6 +308,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theCanvas = (GLCanvas) canvas;
         theCanvas.setCurrent();
+
+        dpi = theCanvas.getDisplay().getDPI();
+
         theContext = new GLContextBridge(theCanvas);
 
         theContext.makeContextCurrent();
@@ -345,6 +353,15 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     public GLTarget(float width, float height) throws VizException {
         theCanvas = null;
+
+        /*
+         * Initialize dpi to 72 for off screen targets.
+         * 
+         * This is what is assumed by AWT font rendering and yields a 1
+         * pixel/point scaling
+         */
+        dpi = new Point(72, 72);
+
         canvasSize = new Rectangle(0, 0, (int) width, (int) height);
         theContext = new GLContextBridge((int) width, (int) height);
 
@@ -872,8 +889,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         double ratio = 1.0;
         if (font.isScaleFont()) {
-            int dpi = theCanvas.getDisplay().getDPI().x;
-            double basis = FONT_SCALING_BASIS * dpi;
+            double basis = FONT_SCALING_BASIS * dpi.x;
             ratio = (paneWidth / basis);
         }
 
@@ -1045,17 +1061,18 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         gl.glLoadIdentity();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-        this.colorbarFont = new UnmodifiableGLFont(new GLFont(DEFAULT_FONT,
-                (10 * textMagnification), null));
+        this.colorbarFont = new UnmodifiableGLFont(new GLFont(theCanvas
+                .getDisplay().getDPI(), DEFAULT_FONT,
+                Math.round(10 * textMagnification), null));
 
         if (PlatformUI.isWorkbenchRunning()) {
             fontFactory = FontFactory.getInstance();
-            this.defaultFont = new UnmodifiableGLFont(
-                    fontFactory.getFont(FontFactory.DEFAULT_FONT_ID));
+            this.defaultFont = new UnmodifiableGLFont(fontFactory.getFont(
+                    this.dpi, FontFactory.DEFAULT_FONT_ID));
         } else {
-            this.defaultFont = new UnmodifiableGLFont(
-                    new GLFont(java.awt.Font.MONOSPACED, 14.0f,
-                            new Style[] { Style.BOLD }));
+            this.defaultFont = new UnmodifiableGLFont(new GLFont(theCanvas
+                    .getDisplay().getDPI(), java.awt.Font.MONOSPACED, 14,
+                    new Style[] { Style.BOLD }));
         }
 
         // Set swap interval to 1 refresh
@@ -1081,7 +1098,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public IFont initializeFont(File fontFile, FontType type, float size,
             Style[] styles) {
-        return new GLFont(fontFile, type, size, styles);
+        return new GLFont(this.dpi, fontFile, type, size, styles);
     }
 
     /*
@@ -1093,7 +1110,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public IFont initializeFont(String fontName, float size, Style[] styles) {
-        return new GLFont(fontName, size, styles);
+        return new GLFont(this.dpi, fontName, Math.round(size), styles);
     }
 
     /*
@@ -1105,7 +1122,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public IFont initializeFont(String font) {
         if ((fontFactory != null) && fontFactory.hasId(font)) {
-            return fontFactory.getFont(font);
+            return fontFactory.getFont(this.dpi, font);
         }
         return defaultFont.deriveWithSize(defaultFont.getFontSize());
     }

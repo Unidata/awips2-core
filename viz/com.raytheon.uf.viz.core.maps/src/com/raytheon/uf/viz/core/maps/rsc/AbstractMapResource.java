@@ -53,6 +53,8 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * ------------ ---------- ----------- --------------------------
  * May 10, 2010            randerso    Initial creation
  * Aug 21, 2014  #3459     randerso    Restructured Map resource class hierarchy
+ * Nov 04, 2015  #5070     randerso    Change map resources to use a preference based font
+ *                                     Move management of font magnification into AbstractMapResource
  * 
  * </pre>
  * 
@@ -62,6 +64,8 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 public abstract class AbstractMapResource<T extends AbstractResourceData, D extends IMapDescriptor>
         extends AbstractVizResource<T, D> implements IResourceDataChanged {
+
+    protected static final String LABEL_FONT_ID = "com.raytheon.uf.viz.core.mapLabelFont";
 
     protected static final double EXPANSION_FACTOR = 0.25;
 
@@ -111,6 +115,19 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         // do nothing base method
     }
 
+    protected IFont determineFont(IGraphicsTarget target) {
+        if (font == null) {
+            IFont font = target.initializeFont(LABEL_FONT_ID);
+            double magnification = getCapability(MagnificationCapability.class)
+                    .getMagnification();
+            font.setMagnification((float) magnification);
+            font.setSmoothing(false);
+
+            this.font = font;
+        }
+        return font;
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -122,6 +139,7 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         if (type == ChangeType.CAPABILITY) {
+
             if (object instanceof MagnificationCapability) {
                 if (font != null) {
                     font.dispose();
@@ -248,6 +266,10 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         // long t1 = System.currentTimeMillis();
         // System.out.println("buildBoundingGeometry took: " + (t1 - t0));
         return g;
+    }
+
+    protected IFont getFont(IGraphicsTarget target) {
+        return determineFont(target);
     }
 
 }

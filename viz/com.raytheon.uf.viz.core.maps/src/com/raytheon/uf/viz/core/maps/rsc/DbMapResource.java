@@ -106,6 +106,8 @@ import com.vividsolutions.jts.io.WKBReader;
  * Aug 11, 2014 3459       randerso    Cleaned up MapQueryJob implementation
  * Aug 13, 2014 3492       mapeters    Updated deprecated createWireframeShape() calls.
  * Oct 23, 2014 3685       randerso    Fix nullPointer if shadingField contains a null
+ * Nov 04, 2015 5070       randerso    Change map resources to use a preference based font
+ *                                     Move management of font magnification into AbstractMapResource
  * 
  * </pre>
  * 
@@ -425,7 +427,8 @@ public class DbMapResource extends
                             Point point = poly.getInteriorPoint();
                             if (point.getCoordinate() != null) {
                                 LabelNode node = new LabelNode(label, point,
-                                        req.getTarget(), req.getResource().font);
+                                        req.getTarget(), req.getResource()
+                                                .getFont(req.getTarget()));
                                 newLabels.add(node);
                             }
                         } catch (TopologyException e) {
@@ -534,7 +537,7 @@ public class DbMapResource extends
     }
 
     @Override
-    protected void paintInternal(IGraphicsTarget aTarget,
+    protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
         PixelExtent screenExtent = (PixelExtent) paintProps.getView()
                 .getExtent();
@@ -560,12 +563,6 @@ public class DbMapResource extends
         double labelMagnification = getCapability(MagnificationCapability.class)
                 .getMagnification();
 
-        if (font == null) {
-            font = aTarget.initializeFont(aTarget.getDefaultFont()
-                    .getFontName(), (float) (10 * labelMagnification), null);
-            font.setSmoothing(false);
-        }
-
         if ((simpLev < lastSimpLev)
                 || (isLabeled && !labelField.equals(lastLabelField))
                 || (isShaded && !shadingField.equals(lastShadingField))
@@ -577,7 +574,7 @@ public class DbMapResource extends
                 Geometry boundingGeom = buildBoundingGeometry(expandedExtent,
                         worldToScreenRatio, kmPerPixel);
 
-                queryJob.queueRequest(new Request(aTarget, descriptor, this,
+                queryJob.queueRequest(new Request(target, descriptor, this,
                         boundingGeom, getGeomField(simpLev), labelField,
                         shadingField, colorMap));
                 lastExtent = expandedExtent;
@@ -615,12 +612,12 @@ public class DbMapResource extends
         if ((shadedShape != null) && shadedShape.isDrawable() && isShaded) {
             float opacity = getCapability(ShadeableCapability.class)
                     .getOpacity();
-            aTarget.drawShadedShape(shadedShape, alpha * opacity);
+            target.drawShadedShape(shadedShape, alpha * opacity);
         }
 
         if ((outlineShape != null) && outlineShape.isDrawable()
                 && getCapability(OutlineCapability.class).isOutlineOn()) {
-            aTarget.drawWireframeShape(outlineShape,
+            target.drawWireframeShape(outlineShape,
                     getCapability(ColorableCapability.class).getColor(),
                     getCapability(OutlineCapability.class).getOutlineWidth(),
                     getCapability(OutlineCapability.class).getLineStyle(),
@@ -666,7 +663,7 @@ public class DbMapResource extends
                 DrawableString string = new DrawableString(node.label, color);
                 string.setCoordinates(node.location[0] + offsetX,
                         node.location[1] - offsetY);
-                string.font = font;
+                string.font = getFont(target);
                 string.horizontalAlignment = HorizontalAlignment.CENTER;
                 string.verticallAlignment = VerticalAlignment.MIDDLE;
                 boolean add = true;
@@ -698,7 +695,7 @@ public class DbMapResource extends
                 }
             }
 
-            aTarget.drawStrings(strings);
+            target.drawStrings(strings);
         }
     }
 

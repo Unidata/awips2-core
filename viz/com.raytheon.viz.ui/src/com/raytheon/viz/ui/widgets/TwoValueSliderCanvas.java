@@ -49,6 +49,7 @@ import org.eclipse.swt.widgets.Display;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 27, 2013   2430     mpduff      Initial version.
+ * Nov 04, 2015   5070     randerso    Use standardized font name
  * 
  * </pre>
  */
@@ -258,7 +259,7 @@ public class TwoValueSliderCanvas {
         upperLblRect = new Rectangle(0, 0, 0, 0);
         lowerLblRect = new Rectangle(0, 0, 0, 0);
 
-        labelFont = new Font(display, "Monospaced", 10, SWT.BOLD);
+        labelFont = new Font(display, "Monospace", 10, SWT.BOLD);
         mousePt = new Point(0, 0);
         upperRegion = new Region(display);
         lowerRegion = new Region(display);

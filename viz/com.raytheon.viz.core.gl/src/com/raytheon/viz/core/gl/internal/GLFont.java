@@ -22,7 +22,9 @@ package com.raytheon.viz.core.gl.internal;
 
 import java.io.File;
 
-import com.raytheon.uf.viz.core.drawables.AbstractAWTFont;
+import org.eclipse.swt.graphics.Point;
+
+import com.raytheon.uf.viz.core.drawables.AbstractAWTDeviceFont;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
 import com.sun.opengl.util.j2d.TextRenderer;
@@ -37,6 +39,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * ------------ ---------- ----------- --------------------------
  * May 7, 2007             chammack    Initial Creation.
  * Jul 24, 2013       2189 mschenke    Refactored to share common awt font code
+ * Nov 04, 2015       5070 randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -44,7 +47,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * @version 1.0
  */
 
-public class GLFont extends AbstractAWTFont implements IGLFont {
+public class GLFont extends AbstractAWTDeviceFont implements IGLFont {
 
     private boolean disposed = false;
 
@@ -60,65 +63,57 @@ public class GLFont extends AbstractAWTFont implements IGLFont {
 
     private float magnification = 1.0f;
 
-    public GLFont(File font, FontType type, float fontSize, Style[] styles) {
-        super(font, type, fontSize, styles);
+    public GLFont(Point dpi, File font, FontType type, float fontSize,
+            Style[] styles) {
+        super(dpi, font, type, fontSize, styles);
         this.fontFile = font;
         this.fontType = type;
         this.currentFontSize = this.fontSize = fontSize;
         this.textRenderer = TextRendererCache.getRenderer(this.font);
     }
 
-    public GLFont(String fontName, float fontSize, Style[] styles) {
-        super(fontName, fontSize, styles);
+    public GLFont(Point dpi, String fontName, float fontSize, Style[] styles) {
+        super(dpi, fontName, fontSize, styles);
         this.currentFontSize = this.fontSize = fontSize;
         this.textRenderer = TextRendererCache.getRenderer(this.font);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IFont#dispose()
-     */
+    @Override
     public void dispose() {
         disposeInternal();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IFont#getFontSize()
-     */
+    @Override
+    public Point getDPI() {
+        return this.dpi;
+    }
+
+    @Override
     public float getFontSize() {
         return currentFontSize;
     }
 
+    @Override
     public TextRenderer getTextRenderer() {
         return textRenderer;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IFont#deriveWithSize(float)
-     */
     @Override
     public IFont deriveWithSize(float size) {
+        // TODO: move this to IGraphicsTarget intead of IFont
         GLFont newFont = null;
         if (this.fontFile != null) {
             // File based construction
-            newFont = new GLFont(this.fontFile, fontType, size, getStyle());
+            newFont = new GLFont(this.dpi, this.fontFile, fontType, size,
+                    getStyle());
         } else {
-            newFont = new GLFont(getFontName(), size, getStyle());
+            newFont = new GLFont(this.dpi, getFontName(), Math.round(size),
+                    getStyle());
         }
 
         return newFont;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IFont#setMagnification(float)
-     */
     @Override
     public void setMagnification(float magnification) {
         setMagnification(magnification, true);
@@ -153,11 +148,6 @@ public class GLFont extends AbstractAWTFont implements IGLFont {
         return magnification;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IGLFont#disposeInternal()
-     */
     @Override
     public void disposeInternal() {
         if (!disposed) {
