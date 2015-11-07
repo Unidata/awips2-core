@@ -179,7 +179,7 @@ public class MapScalesManager {
                     return ProcedureXmlManager.getInstance().unmarshal(
                             Bundle.class, bundleXml);
                 } finally {
-                    System.out.println("Time to create Bundle: "
+                    System.out.println("Time to create " + getDisplayName() + ": "
                             + (System.currentTimeMillis() - t0) + "ms");
                 }
             } else {

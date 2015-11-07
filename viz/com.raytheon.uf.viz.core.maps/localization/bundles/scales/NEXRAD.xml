@@ -20,7 +20,7 @@
     -->
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" scale="NEXRCOMP/CONUS" density="1.0" magnification="1.0" mapCenter="-96.61919913018738 38.55175593198454 0.0" zoomLevel="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="d2DMapRenderableDisplay" scale="NEXRCOMP" density="1.0" magnification="1.0" mapCenter="-96.61919913018738 38.55175593198454 0.0" zoomLevel="1" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
