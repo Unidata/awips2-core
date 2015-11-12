@@ -109,11 +109,13 @@ public class DrawCoordinatedPane {
             }
 
             boolean hasMultipleFrames = false;
-            if (container.getDisplayPanes() != null) {
-                for (IDisplayPane pane : container.getDisplayPanes()) {
+            IDisplayPane[] displayPanes = container.getDisplayPanes();
+            if (displayPanes != null) {
+                for (IDisplayPane pane : displayPanes) {
+                    IDescriptor descriptor = pane.getDescriptor();
                     if (pane != null
-                            && pane.getDescriptor() != null
-                            && pane.getDescriptor().getFramesInfo()
+                            && descriptor != null
+                            && descriptor.getFramesInfo()
                                     .getFrameCount() > 1) {
                         hasMultipleFrames = true;
                         break;
