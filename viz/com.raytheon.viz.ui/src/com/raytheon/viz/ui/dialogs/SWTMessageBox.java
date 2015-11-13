@@ -20,6 +20,7 @@
 package com.raytheon.viz.ui.dialogs;
 
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -42,6 +43,7 @@ import org.eclipse.swt.widgets.Shell;
  * ------------ ---------- ----------- --------------------------
  * Apr 7, 2011            lvenable     Initial creation
  * Oct 18, 2012 1229       rferrel     Made dialog non-blocking.
+ * Nov 13, 2015 4946       mapeters    Use scrollable StyledText for long messages.
  * 
  * </pre>
  * 
@@ -49,15 +51,6 @@ import org.eclipse.swt.widgets.Shell;
  * @version 1.0
  */
 public class SWTMessageBox extends CaveSWTDialogBase {
-    /**
-     * Label displaying the icon.
-     */
-    private Label iconLbl;
-
-    /**
-     * Label displaying the message.
-     */
-    private Label messageLbl;
 
     /**
      * The SWT icon to be displayed.
@@ -70,16 +63,13 @@ public class SWTMessageBox extends CaveSWTDialogBase {
     private int swtMessageBoxStyle = 0;
 
     /**
-     * Number of buttons to be displayed.
-     */
-    private int btnCount = 0;
-
-    /**
      * Message to be displayed.
      */
     private String message = "";
 
     private boolean centerMessage = false;
+
+    private boolean longMessage = false;
 
     /**
      * Constructor.
@@ -101,10 +91,18 @@ public class SWTMessageBox extends CaveSWTDialogBase {
 
     public SWTMessageBox(Shell parent, String title, String message,
             int swtMessageBoxStyle, int modalSetting, boolean centerMessage) {
+        this(parent, title, message, swtMessageBoxStyle, modalSetting,
+                centerMessage, false);
+    }
+
+    public SWTMessageBox(Shell parent, String title, String message,
+            int swtMessageBoxStyle, int modalSetting, boolean centerMessage,
+            boolean longMessage) {
         super(parent, SWT.DIALOG_TRIM | modalSetting, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
         this.centerMessage = centerMessage;
+        this.longMessage = longMessage;
         setText(title);
     }
 
@@ -131,35 +129,49 @@ public class SWTMessageBox extends CaveSWTDialogBase {
     @Override
     protected void initializeComponents(Shell shell) {
         determineLabelIcon();
-        createIconAndLabel();
+        createIconAndMessage();
         createBottomButtons();
     }
 
     /**
-     * Create the icon label (in needed) and the message label.
+     * Create the icon label (if needed) and the message field.
      */
-    private void createIconAndLabel() {
+    private void createIconAndMessage() {
         int numberOfGridCells = 1;
-        int labelStyle = SWT.NONE;
+        int messageStyle = SWT.NONE;
         if (swtIcon != 0) {
             numberOfGridCells = 2;
         }
         if (centerMessage) {
-            labelStyle = SWT.CENTER;
+            messageStyle = SWT.CENTER;
         }
-        Composite iconLabelComp = new Composite(shell, SWT.NONE);
+        Composite iconMessageComp = new Composite(shell, SWT.NONE);
         GridLayout gl = new GridLayout(numberOfGridCells, false);
         gl.horizontalSpacing = 20;
-        iconLabelComp.setLayout(gl);
+        iconMessageComp.setLayout(gl);
         if (swtIcon != 0) {
-            iconLbl = new Label(iconLabelComp, SWT.NONE);
+            Label iconLbl = new Label(iconMessageComp, SWT.NONE);
             iconLbl.setImage(getDisplay().getSystemImage(swtIcon));
         }
         GridData gd = new GridData(SWT.FILL, SWT.CENTER, false, true);
         gd.widthHint = 300;
-        messageLbl = new Label(iconLabelComp, SWT.WRAP | labelStyle);
-        messageLbl.setText(message);
-        messageLbl.setLayoutData(gd);
+        if (!longMessage) {
+            Label messageLbl = new Label(iconMessageComp, SWT.WRAP
+                    | messageStyle);
+            messageLbl.setText(message);
+            messageLbl.setLayoutData(gd);
+        } else {
+            /*
+             * Use StyledText if the message may be long since it supports
+             * scroll bars
+             */
+            StyledText styledText = new StyledText(iconMessageComp,
+                    SWT.READ_ONLY | SWT.V_SCROLL | SWT.WRAP | SWT.BORDER
+                            | messageStyle);
+            styledText.setText(message);
+            gd.heightHint = 150;
+            styledText.setLayoutData(gd);
+        }
     }
 
     /**
@@ -250,7 +262,7 @@ public class SWTMessageBox extends CaveSWTDialogBase {
      * @return
      */
     private int getButtonCount() {
-        btnCount = 2;
+        int btnCount;
         if (hasStyleAttributes(SWT.OK | SWT.CANCEL)) {
             btnCount = 2;
         } else if (hasStyleAttributes(SWT.YES | SWT.NO)) {
