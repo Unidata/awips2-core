@@ -68,7 +68,8 @@ import com.raytheon.uf.common.util.GridUtil;
  *                                    adaptive building
  * Feb 28, 2014  2791     bsteffen    Add a build method that takes min/max
  *                                    data values.
- * Aug 31, 2014  4709     bsteffen    Fix incremental labeling.
+ * Aug 31, 2015  4709     bsteffen    Fix incremental labeling.
+ * Oct 22, 2015  4914     bsteffen    Expose an additional build method.
  * 
  * </pre>
  * 
@@ -136,7 +137,7 @@ public class ColorMapParameterFactory {
         return build(data, parameterUnits, match);
     }
 
-    protected static ColorMapParameters build(StyleRule sr, Object data,
+    public static ColorMapParameters build(StyleRule sr, Object data,
             SingleLevel level, Unit<?> parameterUnits) {
 
         ColorMapParameters params = new ColorMapParameters();
@@ -317,7 +318,7 @@ public class ColorMapParameterFactory {
             }
 
             if (dataScaleType == Type.LINEAR) {
-                if (scale != null && scale.isMirror()) {
+                if (scale.isMirror()) {
                     if (-displayMin > displayMax)
                         displayMax = -displayMin;
                     else
@@ -330,7 +331,7 @@ public class ColorMapParameterFactory {
                     displayMin = t;
                 }
 
-                if (scale != null && scale.isMirror()
+                if (scale.isMirror()
                         && -displayMin > displayMax)
                     displayMax = -displayMin;
                 if (displayMin < displayMax / 1e4)

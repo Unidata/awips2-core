@@ -73,6 +73,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
+ * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
  * 
  * 
  * </pre>
@@ -393,14 +394,25 @@ public class ConnectivityPreferenceDialog extends Dialog {
         });
 
         gd = new GridData(80, SWT.DEFAULT);
-        Button cancelBtn = new Button(centeredComp, SWT.NONE);
-        cancelBtn.setText("Quit");
-        cancelBtn.setLayoutData(gd);
-        cancelBtn.addSelectionListener(new SelectionAdapter() {
+        Button quitBtn = new Button(centeredComp, SWT.NONE);
+        quitBtn.setText("Quit");
+        quitBtn.setLayoutData(gd);
+        quitBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                canceled = true;
-                dispose();
+                quitAction();
+            }
+        });
+
+        /*
+         * Treat the escape key like pressing the Quit button.
+         */
+        shell.addListener(SWT.Traverse, new Listener() {
+            public void handleEvent(Event e) {
+                if (e.detail == SWT.TRAVERSE_ESCAPE) {
+                    e.doit = false;
+                    quitAction();
+                }
             }
         });
 
@@ -410,6 +422,14 @@ public class ConnectivityPreferenceDialog extends Dialog {
                 event.doit = validateAndClose();
             }
         });
+    }
+
+    /**
+     * Action taken when quitting out of the dialog.
+     */
+    private void quitAction() {
+        canceled = true;
+        dispose();
     }
 
     private boolean validateAndClose() {
