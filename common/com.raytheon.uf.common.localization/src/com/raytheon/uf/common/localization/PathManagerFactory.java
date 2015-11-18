@@ -19,8 +19,13 @@
  **/
 package com.raytheon.uf.common.localization;
 
+import java.lang.ref.WeakReference;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * Handles {@link IPathManager} object creation depending on the context.
@@ -33,6 +38,7 @@ import java.util.Observer;
  * May 7, 2008              chammack    Initial creation
  * Jul 14, 2008 1250        jelkins     EDEX LocalizationAdapter additions.
  * Aug 25, 2014 3356        njensen     Inject adapter through spring
+ * Nov 12, 2015 4834        njensen     Added getActivePathManagers()
  * 
  * </pre>
  * 
@@ -42,9 +48,11 @@ import java.util.Observer;
 
 public class PathManagerFactory {
 
-    private static IPathManager pathManager;
+    private static IPathManager currentPathMgr;
 
     private static ILocalizationAdapter adapter;
+
+    private final static List<WeakReference<PathManager>> activePathMgrs = new CopyOnWriteArrayList<>();
 
     private static Observable internalObservable = new Observable() {
         @Override
@@ -56,7 +64,7 @@ public class PathManagerFactory {
     };
 
     private PathManagerFactory() {
-
+        // don't allow instantiation
     }
 
     /**
@@ -65,11 +73,15 @@ public class PathManagerFactory {
      * @return the appropriate {@link IPathManager} object for the context.
      */
     public static synchronized IPathManager getPathManager() {
-        if (pathManager == null) {
+        if (currentPathMgr == null) {
             if (adapter != null) {
-                pathManager = new PathManager(adapter);
-                // notify observers that the path manager adapter has been
-                // initialized.
+                PathManager newPathMgr = new PathManager(adapter);
+                activePathMgrs.add(new WeakReference<PathManager>(newPathMgr));
+                currentPathMgr = newPathMgr;
+                /*
+                 * notify observers that the path manager adapter has been
+                 * initialized.
+                 */
                 internalObservable.notifyObservers();
             } else {
                 throw new RuntimeException(
@@ -77,7 +89,7 @@ public class PathManagerFactory {
             }
         }
 
-        return pathManager;
+        return currentPathMgr;
     }
 
     /**
@@ -98,12 +110,37 @@ public class PathManagerFactory {
      * @return the path manager with the specified adapter
      */
     public static IPathManager getPathManager(ILocalizationAdapter locAdapter) {
-        return new PathManager(locAdapter);
+        PathManager pathMgr = new PathManager(locAdapter);
+        activePathMgrs.add(new WeakReference<PathManager>(pathMgr));
+        return pathMgr;
     }
 
     public static ILocalizationAdapter setAdapter(ILocalizationAdapter adapter) {
         PathManagerFactory.adapter = adapter;
-        pathManager = null;
+        currentPathMgr = null;
         return adapter;
+    }
+
+    /**
+     * Do not use this method. This should only be called by the singleton
+     * ILocalizationNotificationObserver. Gets a copy of the active path
+     * managers.
+     * 
+     * @return
+     */
+    public static List<PathManager> getActivePathManagers() {
+        List<PathManager> result = new ArrayList<PathManager>(
+                activePathMgrs.size());
+        Iterator<WeakReference<PathManager>> itr = activePathMgrs.iterator();
+        while (itr.hasNext()) {
+            WeakReference<PathManager> wr = itr.next();
+            PathManager pm = wr.get();
+            if (pm != null) {
+                result.add(pm);
+            } else {
+                itr.remove();
+            }
+        }
+        return result;
     }
 }

@@ -30,10 +30,9 @@ import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.common.jms.notification.NotificationException;
 import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.ILocalizationNotificationObserver;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
+import com.raytheon.uf.common.localization.PathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 
@@ -48,6 +47,7 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
  * Sep 3, 2008  1448        chammack    Support refactored interface
  * Oct 07, 2014 2768        bclement    Added white list to filter unwanted localization types
  * Aug 24, 2015 4393        njensen     Updates for observer changes
+ * Nov 16, 2015 4834        njensen     Fire listeners on PathManagers
  * 
  * </pre>
  * 
@@ -58,6 +58,8 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 public class CAVELocalizationNotificationObserver implements
         INotificationObserver {
 
+    private static final String LOCALIZATION_TOPIC = "edex.alerts.utility";
+
     private static final Logger logger = LoggerFactory
             .getLogger(CAVELocalizationNotificationObserver.class);
 
@@ -67,26 +69,21 @@ public class CAVELocalizationNotificationObserver implements
 
     private static CAVELocalizationNotificationObserver instance = null;
 
-    private ILocalizationNotificationObserver observer;
-
     public static synchronized void register() {
         if (instance == null) {
             instance = new CAVELocalizationNotificationObserver();
         }
-        NotificationManagerJob.addObserver(
-                LocalizationNotificationObserver.LOCALIZATION_TOPIC, instance);
+        NotificationManagerJob.addObserver(LOCALIZATION_TOPIC, instance);
     }
 
     public static synchronized void unregister() {
         if (instance != null) {
-            NotificationManagerJob.removeObserver(
-                    LocalizationNotificationObserver.LOCALIZATION_TOPIC,
-                    instance);
+            NotificationManagerJob.removeObserver(LOCALIZATION_TOPIC, instance);
         }
     }
 
     private CAVELocalizationNotificationObserver() {
-        observer = PathManagerFactory.getPathManager().getObserver();
+
     }
 
     @Override
@@ -98,7 +95,10 @@ public class CAVELocalizationNotificationObserver implements
                 LocalizationContext context = fum.getContext();
                 LocalizationType type = context.getLocalizationType();
                 if (TYPE_WHITELIST.contains(type)) {
-                    observer.fileUpdateMessageReceived(fum);
+                    for (PathManager pm : PathManagerFactory
+                            .getActivePathManagers()) {
+                        pm.fireListeners(fum);
+                    }
                 }
             } catch (NotificationException e) {
                 logger.error("Error reading incoming notification", e);

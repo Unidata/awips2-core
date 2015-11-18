@@ -37,7 +37,6 @@ import com.raytheon.uf.common.colormap.ColorMap;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -79,7 +78,8 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
  * Jun 30, 2014  3165     njensen     Cleaned up save actions
- * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
+ * May 07, 2015  DCS17219 jgerth      Allow user to interpolate alpha only
+ * Nov 12, 2015  4834     njensen     Removed LocalizationOpFailedException
  * 
  * </pre>
  * 
@@ -90,6 +90,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         IVizEditorChangedListener, IRenderableDisplayChangedListener,
         RemoveListener, AddListener, IResourceDataChanged,
         ISelectedPanesChangedListener, IColorEditCompCallback {
+
     private final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ColorEditDialog.class);
 
@@ -412,8 +413,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                         .getColorData();
 
                 if (colorEditComp.isInterpolateAlphaOnly()) {
-                    colorEditComp.getColorBar().interpolateAlphaOnly(upperColorData,
-                            lowerColorData);
+                    colorEditComp.getColorBar().interpolateAlphaOnly(
+                            upperColorData, lowerColorData);
                 } else {
                     colorEditComp.getColorBar().interpolate(upperColorData,
                             lowerColorData,
@@ -834,7 +835,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
             try {
                 // only allow deletes of USER level
                 ColorUtil.deleteColorMap(shortName, LocalizationLevel.USER);
-            } catch (LocalizationOpFailedException e) {
+            } catch (LocalizationException e) {
                 String err = "Error performing delete of colormap";
                 statusHandler.handle(Priority.PROBLEM, err, e);
             }

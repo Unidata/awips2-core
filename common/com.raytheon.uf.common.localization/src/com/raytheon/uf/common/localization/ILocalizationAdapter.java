@@ -26,7 +26,7 @@ import java.util.Map;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizationFile;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 
 /**
@@ -35,11 +35,12 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * May 15, 2008	#878	    chammack	Initial creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * May 15, 2008 #878        chammack    Initial creation
  * Jul 24, 2014 3378        bclement    removed unneeded abstract modifiers
  *                                      added createCache()
+ * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile                                     
  * 
  * </pre>
  * 
@@ -88,10 +89,9 @@ public interface ILocalizationAdapter {
      * 
      * @param file
      *            the modifiable localization file
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
-    public boolean save(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException;
+    public boolean save(LocalizationFile file) throws LocalizationException;
 
     /**
      * List a directory given a set of contexts and a path.
@@ -154,8 +154,7 @@ public interface ILocalizationAdapter {
      *            the modifiable localization file
      * @throws LocalizationOpFailedException
      */
-    public boolean delete(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException;
+    public boolean delete(LocalizationFile file) throws LocalizationException;
 
     public String[] getContextList(LocalizationLevel level)
             throws LocalizationOpFailedException;

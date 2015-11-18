@@ -20,12 +20,8 @@
 
 package com.raytheon.edex.services;
 
-import java.io.BufferedReader;
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileFilter;
-import java.io.FileReader;
-import java.io.FileWriter;
 import java.util.ArrayList;
 import java.util.Date;
 
@@ -36,9 +32,11 @@ import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.localization.msgs.ListUtilityResponse;
@@ -59,6 +57,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * Jul 24, 2007            njensen     Updated putFile()
  * Jul 30, 2007            njensen     Added deleteFile()
  * May 19, 2007    #1127   randerso    Implemented error reporting
+ * Nov 17, 2015     4834   njensen     Extracted checksum code to ChecksumIO
  * 
  * 
  * </pre>
@@ -67,9 +66,8 @@ import com.raytheon.uf.edex.core.EdexException;
  * @version 1.0
  */
 public class UtilityManager {
-    private static final Log logger = LogFactory.getLog(UtilityManager.class);
 
-    private static final String CHECKSUM_FILE_EXTENSION = ".md5";
+    private static final Log logger = LogFactory.getLog(UtilityManager.class);
 
     public static final String NOTIFY_ID = "utilityNotify";
 
@@ -116,56 +114,6 @@ public class UtilityManager {
     }
 
     /**
-     * @param file
-     * @return
-     * @throws EdexException
-     */
-    private static String getFileChecksum(File file) throws EdexException {
-        // TODO: Fix FileLocker so it never times out in test driver
-        File checksumFile = getChecksumFile(file);
-        String chksum = null;
-        try {
-            if (checksumFile.exists()
-                    && checksumFile.lastModified() >= file.lastModified()) {
-
-                BufferedReader reader = new BufferedReader(new FileReader(
-                        checksumFile));
-                try {
-                    chksum = reader.readLine();
-                } finally {
-                    reader.close();
-                }
-            }
-
-            if (chksum == null) {
-                chksum = writeChecksum(file);
-            }
-        } catch (Exception e) {
-            // log, no checksum will be provided
-            logger.error("Error determing file checksum for: " + file, e);
-        }
-        return chksum;
-    }
-
-    private static File getChecksumFile(File utilityFile) {
-        return new File(utilityFile.getParentFile(), utilityFile.getName()
-                + CHECKSUM_FILE_EXTENSION);
-    }
-
-    public static String writeChecksum(File file) throws Exception {
-        String chksum = null;
-        File checksumFile = getChecksumFile(file);
-        BufferedWriter bw = new BufferedWriter(new FileWriter(checksumFile));
-        try {
-            chksum = Checksum.getMD5Checksum(file);
-            bw.write(chksum);
-        } finally {
-            bw.close();
-        }
-        return chksum;
-    }
-
-    /**
      * Deletes a file in a context
      * 
      * @param baseDir
@@ -178,6 +126,13 @@ public class UtilityManager {
      */
     public static DeleteUtilityResponse deleteFile(String baseDir,
             LocalizationContext context, String fileName) {
+
+        /*
+         * TODO verify checksum on filesystem matches checksum sent from delete
+         * request, otherwise throw
+         * LocalizationFileChangedOutFromUnderYouException.
+         */
+
         String msg = null;
         try {
             checkParameters(baseDir, context);
@@ -218,7 +173,8 @@ public class UtilityManager {
             EDEXUtil.getMessageProducer().sendAsync(
                     NOTIFY_ID,
                     new FileUpdatedMessage(context, fileName,
-                            FileChangeType.DELETED, timeStamp));
+                            FileChangeType.DELETED, timeStamp,
+                            ILocalizationFile.NON_EXISTENT_CHECKSUM));
         } catch (Exception e) {
             logger.error("Error sending file updated message", e);
         }
@@ -263,9 +219,9 @@ public class UtilityManager {
 
     private static void addEntry(String localizedSite,
             LocalizationContext context, String path, File file,
-            ArrayList<ListResponseEntry> entries) throws EdexException {
+            ArrayList<ListResponseEntry> entries) {
 
-        if (!path.endsWith(CHECKSUM_FILE_EXTENSION)) {
+        if (!path.endsWith(Checksum.CHECKSUM_FILE_EXTENSION)) {
             ListResponseEntry entry = new ListResponseEntry();
             entry.setContext(context);
             entry.setFileName(path);
@@ -274,12 +230,11 @@ public class UtilityManager {
                 entry.setDate(new Date(file.lastModified()));
                 if (file.isDirectory()) {
                     entry.setDirectory(true);
-                } else {
-                    entry.setChecksum(getFileChecksum(file));
                 }
             } else {
                 entry.setExistsOnServer(false);
             }
+            entry.setChecksum(ChecksumIO.getFileChecksum(file));
 
             LocalizationLevel protectedLevel = ProtectedFiles
                     .getProtectedLevel(localizedSite,
@@ -351,7 +306,7 @@ public class UtilityManager {
     }
 
     public static ListUtilityResponse listContexts(String path,
-            LocalizationLevel level) throws EdexException {
+            LocalizationLevel level) {
         ArrayList<ListResponseEntry> entries = new ArrayList<ListResponseEntry>();
         for (LocalizationType type : LocalizationType.values()) {
             if (type.name().equals("UNKNOWN")
@@ -364,6 +319,7 @@ public class UtilityManager {
 
             // We only want directories
             FileFilter fileFilter = new FileFilter() {
+                @Override
                 public boolean accept(File file) {
                     return file.isDirectory();
                 }

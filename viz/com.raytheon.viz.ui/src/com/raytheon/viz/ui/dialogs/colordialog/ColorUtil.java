@@ -39,7 +39,6 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 
 /**
  * Util methods for colormaps.
@@ -204,7 +203,7 @@ public class ColorUtil {
      *            the name of the colormap to delete
      */
     public static void deleteColorMap(String colormapName,
-            LocalizationLevel level) throws LocalizationOpFailedException {
+            LocalizationLevel level) throws LocalizationException {
         String filename = getColormapFilename(colormapName);
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationFile lfile = pm.getLocalizationFile(

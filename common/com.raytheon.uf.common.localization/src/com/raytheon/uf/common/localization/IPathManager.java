@@ -53,7 +53,8 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Apr 13, 2015 4383       dgilling    Added listStaticFiles, getStaticLocalizationFile
  *                                     and getStaticFile that searches based on
  *                                     LocalizationContexts.
- * Aug 24, 2015 4393       njensen     Added getObserver()                                    
+ * Aug 24, 2015 4393       njensen     Added getObserver()
+ * Nov 16, 2015 4834       njensen     Removed getObserver(), added add/removeFileChangeObserver()
  * 
  * </pre>
  * 
@@ -377,11 +378,35 @@ public interface IPathManager {
             SerializationException;
 
     /**
-     * Gets the observer for watching for changes to ILocalizationFiles that are
-     * returned by this IPathManager
+     * Adds an observer on the specified path, which may be a directory or a
+     * specific file. If the path is a directory, all changes to files within
+     * that directory (including sub directories) will trigger the event. Note
+     * that the LocalizationContext is irrelevant, all contexts will trigger the
+     * observer if the path matches.
      * 
-     * @return the observer
+     * @param path
+     * @param observer
      */
-    public ILocalizationNotificationObserver getObserver();
+    public void addLocalizationPathObserver(String path,
+            ILocalizationPathObserver observer);
+
+    /**
+     * Removes an observer from any paths that was previously added to this
+     * IPathManager instance.
+     * 
+     * @param observer
+     */
+    public void removeLocalizationPathObserver(
+            ILocalizationPathObserver observer);
+
+    /**
+     * Removes an observer from the specified path that was previously added to
+     * this IPathManager instance.
+     * 
+     * @param path
+     * @param observer
+     */
+    public void removeLocalizationPathObserver(String path,
+            ILocalizationPathObserver observer);
 
 }

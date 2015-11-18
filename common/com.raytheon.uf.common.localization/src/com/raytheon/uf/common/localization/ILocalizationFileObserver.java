@@ -24,13 +24,16 @@ package com.raytheon.uf.common.localization;
  * will be notified of changes to files with levels higher than the level of
  * file registered on. For example registering as an observer on a BASE file
  * will give update messages for files at all other LocalizationLevels since
- * BASE is the lowest
+ * BASE is the lowest.
+ * 
+ * @deprecated Use ILocalizationPathObserver. Register it on an IPathManager.
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * May 20, 2008				randerso	Initial creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * May 20, 2008             randerso    Initial creation
+ * Nov 12, 2015  4834       njensen     Deprecated
  * 
  * </pre>
  * 
@@ -38,7 +41,13 @@ package com.raytheon.uf.common.localization;
  * @version 1.0
  */
 
+@Deprecated
 public interface ILocalizationFileObserver {
+
+    /*
+     * TODO need to update all references to this to use
+     * ILocalizationPathObserver
+     */
 
     /**
      * LocalizationFile being listened on was updated. It is imported to check
