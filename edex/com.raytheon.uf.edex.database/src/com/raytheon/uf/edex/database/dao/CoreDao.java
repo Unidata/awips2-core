@@ -94,6 +94,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Aug 04, 2015 4500        rjpeter     Removed executeNativeSql.
  * Aug 18, 2015 4758        rjpeter     Update MAPPED_SQL_PATTERN to work with multiline sql queries.
  * Aug 19, 2015 4763        rjpeter     Update mappedSql to remove distinct and function definitions from name mapping.
+ * Nov 20, 2015 5140        bsteffen    Update mappedSql to ignore comma in function argument lists.
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -912,7 +914,37 @@ public class CoreDao {
         if (m.matches()) {
             String group = m.group(1);
             int colIndex = 0;
-            String[] columns = group.split(",");
+            /*
+             * Split the columns on commas, ignore commas in quotes and
+             * parenthesis
+             */
+            List<String> columns = new ArrayList<>();
+            int columnStart = 0;
+            int parenthesisDepth = 0;
+            boolean inQoutes = false;
+            boolean escape = false;
+            for (int i = 0; i < group.length(); i += 1) {
+                char c = group.charAt(i);
+                if (inQoutes) {
+                    if (escape == false && c == '\'') {
+                        inQoutes = false;
+                    } else if (escape == false && c == '\\') {
+                        escape = true;
+                    } else {
+                        escape = false;
+                    }
+                } else if (c == '\'') {
+                    inQoutes = true;
+                } else if (c == '(') {
+                    parenthesisDepth += 1;
+                } else if (c == ')') {
+                    parenthesisDepth -= 1;
+                } else if (parenthesisDepth == 0 && !inQoutes && c == ',') {
+                    columns.add(group.substring(columnStart, i));
+                    columnStart = i + 1;
+                }
+            }
+            columns.add(group.substring(columnStart));
             for (String col : columns) {
                 col = col.toLowerCase().trim();
 
