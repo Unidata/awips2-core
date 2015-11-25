@@ -64,7 +64,9 @@ import com.raytheon.uf.common.time.DataTime;
  * Apr 29, 2014  3081     bsteffen    Undo change for 2947 because it prevents
  *                                    multiple level derivation from happening
  *                                    simultaneously in the function adapter.
- * 
+ * Nov 01, 2015  DR14947  porricel    Modified getDataInternal to
+ *                                    use 0-30MB for *derived* boundary layer
+ *                                    
  * </pre>
  * 
  * @author rjpeter
@@ -376,6 +378,13 @@ public class DerivedLevelNode extends AbstractDerivedDataNode {
             if (record.getRequest().getBaseParams().size() == method
                     .getFields().size()) {
                 modifyRequest(record);
+                // Define derived BL as 0-30MB
+                if (record.getLevel().getMasterLevel().getName().equals("BL")
+                        && record.getLevel().getLevelOneValueAsString()
+                                .equals("0.0")
+                        && !record.getLevel().getLevelTwoValueAsString()
+                                .equals("30.0"))
+                    continue;
                 finalResponses.add(record);
             }
 
