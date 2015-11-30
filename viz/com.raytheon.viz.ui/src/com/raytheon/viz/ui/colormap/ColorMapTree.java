@@ -33,7 +33,6 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
 
 /**
  * ColorMapTree represents the directory structure of colormaps directory. The
@@ -50,7 +49,8 @@ import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
  * Sep 11, 2014  3516     rferrel     file updates now inform the factory.
  *                                      getName() no longer returns a null.
  *                                      FileChangeListener now only gets colormaps changes.
- * Aug 24, 2015  4393     njensen     Updates for observer changes                                     
+ * Aug 24, 2015  4393     njensen     Updates for observer changes
+ * Nov 18, 2015  4834     njensen     API updates due to removal of LocalizationNotificationObserver
  * 
  * </pre>
  * 
@@ -273,10 +273,7 @@ public class ColorMapTree {
         @Override
         public void fileUpdated(FileUpdatedMessage message) {
             ColorMapTree tree = treeRef.get();
-            if (tree == null) {
-                ((LocalizationNotificationObserver) pathManager.getObserver())
-                        .removeGlobalFileChangeObserver(this);
-            } else {
+            if (tree != null) {
                 tree.handleUpdate(message);
                 ColorMapTreeFactory factory = ColorMapTreeFactory.getInstance();
                 factory.optimizeTree(tree);

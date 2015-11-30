@@ -39,6 +39,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015  3806      njensen     Initial creation
+ * Nov 12, 2015  4834      njensen     Added NON_EXISTENT_CHECKSUM and DIRECTORY_CHECKSUM
  *
  * </pre>
  * 
@@ -47,6 +48,19 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  */
 
 public interface ILocalizationFile {
+
+    /**
+     * Checksum indicating a non-existent file. This is used primarily when
+     * creating a new file or deleting an existing file. On create of new file,
+     * the previous checksum should be the non-existent checksum. On delete of
+     * an existing file, the new checksum should be the non-existent checksum.
+     */
+    public static final String NON_EXISTENT_CHECKSUM = "NON_EXISTENT_CHECKSUM";
+
+    /**
+     * Checksum denoting a directory and not a file.
+     */
+    public static final String DIRECTORY_CHECKSUM = "DIRECTORY_CHECKSUM";
 
     /**
      * Checks if the file exists or not in the localization store
@@ -129,5 +143,12 @@ public interface ILocalizationFile {
      * @throws LocalizationException
      */
     public SaveableOutputStream openOutputStream() throws LocalizationException;
+
+    /*
+     * TODO add method signature delete() that resembles java.nio.file.Files in
+     * that it has a return type of void and throws a variety of exceptions for
+     * various possibilities such as NoSuchFileException,
+     * InsufficientPermissionsException, DirectoryNotEmptyException, etc...
+     */
 
 }

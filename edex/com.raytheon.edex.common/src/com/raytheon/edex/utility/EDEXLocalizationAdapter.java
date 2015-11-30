@@ -34,12 +34,14 @@ import org.apache.commons.lang3.ArrayUtils;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFileKey;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -82,6 +84,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Nov 13, 2014 4953        randerso    Changed delete() to also remove .md5 file
  * Feb 16, 2015 3978        njensen     listDirectory() no longer includes .md5 files
  * Feb 18, 2015 3978        njensen     no max size on cache map is safer
+ * Nov 17, 2015 4834        njensen     Remove ModifiableLocalizationFile
+ *                                       Set checksum on list response entries
  * 
  * </pre>
  * 
@@ -110,13 +114,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         this.contexts = new HashMap<LocalizationType, LocalizationContext[]>();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.utility.ILocalizationAdapter#getLocalSearchHierarchy
-     * (com.raytheon.edex.utility.LocalizationContext.LocalizationType)
-     */
     @Override
     public LocalizationContext[] getLocalSearchHierarchy(LocalizationType type) {
 
@@ -197,13 +194,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         return contents.toArray(new ListResponse[0]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.utility.ILocalizationAdapter#getPath(com.raytheon.edex
-     * .utility.LocalizationContext, java.lang.String)
-     */
     @Override
     public File getPath(LocalizationContext context, String fileName) {
 
@@ -224,11 +214,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         return new File(baseDir, fileName);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.utility.ILocalizationAdapter#getStaticContexts()
-     */
     @Override
     public LocalizationType[] getStaticContexts() {
         LocalizationType[] type = new LocalizationType[] {
@@ -281,19 +266,13 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         }
         entry.date = new Date(file.lastModified());
         entry.existsOnServer = file.exists();
+        entry.checkSum = ChecksumIO.getFileChecksum(file);
         entry.protectedLevel = ProtectedFiles.getProtectedLevel(null,
                 ctx.getLocalizationType(), entry.fileName);
 
         return entry;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.utility.ILocalizationAdapter#listDirectory(com.raytheon
-     * .edex.utility.LocalizationContext[], java.lang.String, boolean, boolean)
-     */
     @Override
     public ListResponse[] listDirectory(LocalizationContext[] context,
             String path, boolean recursive, boolean filesOnly)
@@ -327,54 +306,49 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     // --- CRUD Operations ---------------------------------------------------
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.localization.ILocalizationAdapter#save(
-     * com.raytheon.uf.common.localization.LocalizationFile.
-     * ModifiableLocalizationFile)
-     */
     @Override
-    public boolean save(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException {
+    public boolean save(LocalizationFile file) throws LocalizationException {
         LocalizationContext context = file.getContext();
         if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
             throw new UnsupportedOperationException(
                     "Saving to the BASE context is not supported.");
         }
+
+        /*
+         * TODO Verify file's pre-modification checksum is the non-existent file
+         * checksum or matches the server file's current checksum. If not, throw
+         * LocalizationFileChangedOutFromUnderYouException.
+         */
+
         FileChangeType changeType;
-        if (file.getLocalizationFile().isAvailableOnServer()) {
+        if (file.isAvailableOnServer()) {
             changeType = FileChangeType.UPDATED;
         } else {
             changeType = FileChangeType.ADDED;
         }
         long timeStamp = System.currentTimeMillis();
-        File localFile = file.getLocalFile();
-        file.setIsAvailableOnServer(localFile.exists());
-        file.setIsDirectory(localFile.isDirectory());
         // send notification
         try {
             EDEXUtil.getMessageProducer().sendAsync(
                     FILE_UPDATE_ENDPOINT,
-                    new FileUpdatedMessage(context, file.getFileName(),
-                            changeType, timeStamp));
+                    new FileUpdatedMessage(context, file.getName(), changeType,
+                            timeStamp, file.getCheckSum()));
         } catch (Exception e) {
             handler.error("Error sending file updated message", e);
         }
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.localization.ILocalizationAdapter#delete(
-     * com.raytheon.uf.common.localization.LocalizationFile.
-     * ModifiableLocalizationFile)
-     */
     @Override
-    public boolean delete(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException {
-        File localFile = file.getLocalFile();
+    public boolean delete(LocalizationFile file) throws LocalizationException {
+
+        /*
+         * TODO verify checksum on filesystem matches checksum sent from delete
+         * request, otherwise throw
+         * LocalizationFileChangedOutFromUnderYouException.
+         */
+
+        File localFile = file.getFile();
         boolean deleted = false;
         if (localFile.exists()) {
             deleted = localFile.delete();
@@ -390,16 +364,14 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
         if (deleted) {
             long timeStamp = System.currentTimeMillis();
-            file.setIsAvailableOnServer(false);
-            file.setFileChecksum(null);
-            file.setIsDirectory(false);
             LocalizationContext context = file.getContext();
             // send notification
             try {
                 EDEXUtil.getMessageProducer().sendAsync(
                         FILE_UPDATE_ENDPOINT,
-                        new FileUpdatedMessage(context, file.getFileName(),
-                                FileChangeType.DELETED, timeStamp));
+                        new FileUpdatedMessage(context, file.getName(),
+                                FileChangeType.DELETED, timeStamp,
+                                ILocalizationFile.NON_EXISTENT_CHECKSUM));
             } catch (Exception e) {
                 handler.error("Error sending file updated message", e);
             }
@@ -435,38 +407,17 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         return ctx;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getUserSiteList
-     * ()
-     */
     @Override
     public String[] getContextList(LocalizationLevel level) {
         return new String[0];
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#retrieve(com
-     * .raytheon.uf.common.localization.LocalizationFile)
-     */
     @Override
     public void retrieve(LocalizationFile file)
             throws LocalizationOpFailedException {
         // do nothing
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getAvailableLevels
-     * ()
-     */
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         LocalizationLevel[] levels = new LocalizationLevel[] {
@@ -480,24 +431,11 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         return levels;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#exists(com.raytheon
-     * .uf.common.localization.LocalizationFile)
-     */
     @Override
     public boolean exists(LocalizationFile file) {
         return file.getFile().exists();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#createCache()
-     */
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
         /*

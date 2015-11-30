@@ -20,7 +20,16 @@
 package com.raytheon.uf.common.localization;
 
 /**
- * Interface for listening to changes to ILocalizationFiles
+ * Observer to listen for changes on paths corresponding to ILocalizationFiles.
+ * These observers are registered on an IPathManager instance and will be
+ * triggered whenever a file with a matching path is changed.
+ * 
+ * Please note that the IPathManager will trigger the event regardless of
+ * LocalizationContext. It is the responsibility of implementations to determine
+ * if any action needs to be taken based on the context or other attributes of
+ * the ILocalizationFile. This is intentional to encourage support of concepts
+ * such as incremental overrides where multiple localization levels must be used
+ * together and watched.
  * 
  * <pre>
  *
@@ -28,7 +37,7 @@ package com.raytheon.uf.common.localization;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 25, 2015  4393      njensen     Initial creation
+ * Nov 12, 2015  4834      njensen     Initial creation
  *
  * </pre>
  * 
@@ -36,14 +45,8 @@ package com.raytheon.uf.common.localization;
  * @version 1.0
  */
 
-public interface ILocalizationNotificationObserver {
+public interface ILocalizationPathObserver {
 
-    /**
-     * Listener-style method that fires when a file updated message is received
-     * 
-     * @param fum
-     *            the message
-     */
-    public void fileUpdateMessageReceived(FileUpdatedMessage fum);
+    public void fileChanged(ILocalizationFile file);
 
 }

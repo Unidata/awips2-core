@@ -21,7 +21,7 @@ package com.raytheon.uf.common.localization;
 
 import java.io.IOException;
 
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 
 /**
  * A SaveableOutputStream combined with FileOutputStream for use when the
@@ -37,6 +37,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015  3806      njensen     Initial creation
+ * Nov 12, 2015  4834      njensen     Removed LocalizationOpFailedException
  *
  * </pre>
  * 
@@ -82,7 +83,7 @@ public class LocalizationSaveableFileOutputStream extends SaveableOutputStream {
     public void save() throws IOException {
         try {
             stream.closeAndSave();
-        } catch (LocalizationOpFailedException e) {
+        } catch (LocalizationException e) {
             throw new IOException("Error saving output stream", e);
         }
     }

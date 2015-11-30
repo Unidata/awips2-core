@@ -36,6 +36,7 @@ import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.stream.AbstractLocalizationStreamRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamGetRequest;
@@ -56,6 +57,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 14, 2014 3372       njensen      fileMap is ConcurrentHashMap for thread safety
  * Jul 16, 2014 3378       bclement     removed cache
  * Feb 17, 2015 4137       reblum       fixed timestamp on put requests
+ * Nov 16, 2015 4834       njensen      Send updated checksum on put
  * 
  * </pre>
  * 
@@ -67,13 +69,6 @@ public class LocalizationStreamHandler
         extends
         AbstractPrivilegedLocalizationRequestHandler<AbstractLocalizationStreamRequest> {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.comm.IRequestHandler#handleRequest
-     * (com.raytheon.uf.common.serialization.comm.IServerRequest)
-     */
     @Override
     public Object handleRequest(AbstractLocalizationStreamRequest request)
             throws Exception {
@@ -161,6 +156,13 @@ public class LocalizationStreamHandler
         if (file.getParentFile().exists() == false) {
             file.getParentFile().mkdirs();
         }
+
+        /*
+         * TODO Verify file's pre-modification checksum is the non-existent file
+         * checksum or matches the server file's current checksum. If not, throw
+         * LocalizationFileChangedOutFromUnderYouException.
+         */
+
         File tmpFile = new File(file.getParentFile(), "." + file.getName()
                 + "." + request.getId());
         if ((tmpFile.exists() == false) && (request.getOffset() != 0)) {
@@ -207,20 +209,16 @@ public class LocalizationStreamHandler
                 Files.move(tmpFile.toPath(), file.toPath(),
                         StandardCopyOption.REPLACE_EXISTING);
 
-
-                try {
-                    // attempt to generate checksum after change
-                    UtilityManager.writeChecksum(file);
-                } catch (Exception e) {
-                    // ignore, will be generated next time requested
-                }
-
+                // generate checksum after change
+                String checksum = ChecksumIO.writeChecksum(file);
                 long timeStamp = file.lastModified();
 
-                EDEXUtil.getMessageProducer().sendAsync(
-                        UtilityManager.NOTIFY_ID,
-                        new FileUpdatedMessage(request.getContext(), request
-                                .getFileName(), changeType, timeStamp));
+                EDEXUtil.getMessageProducer()
+                        .sendAsync(
+                                UtilityManager.NOTIFY_ID,
+                                new FileUpdatedMessage(request.getContext(),
+                                        request.getFileName(), changeType,
+                                        timeStamp, checksum));
                 return timeStamp;
             } finally {
                 FileLocker.unlock(this, file);
