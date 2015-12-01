@@ -42,7 +42,6 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -86,6 +85,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Feb 18, 2015 3978        njensen     no max size on cache map is safer
  * Nov 17, 2015 4834        njensen     Remove ModifiableLocalizationFile
  *                                       Set checksum on list response entries
+ * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * 
  * </pre>
  * 
@@ -180,7 +180,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public ListResponse[] getLocalizationMetadata(
             LocalizationContext[] context, String fileName)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
 
         List<ListResponse> contents = new ArrayList<ListResponse>(
                 context.length);
@@ -276,7 +276,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public ListResponse[] listDirectory(LocalizationContext[] context,
             String path, boolean recursive, boolean filesOnly)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
 
         // use the Set datatype to ensure no duplicate entries, use linked to
         // ensure order is deterministic when scanning multiple contexts
@@ -413,8 +413,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     }
 
     @Override
-    public void retrieve(LocalizationFile file)
-            throws LocalizationOpFailedException {
+    public void retrieve(LocalizationFile file) throws LocalizationException {
         // do nothing
     }
 

@@ -35,7 +35,6 @@ import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 
 /**
@@ -442,7 +441,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      *             out the contents to the stream.
      * 
      * 
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     @Deprecated
     public boolean save() throws LocalizationException {
@@ -451,7 +450,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
             String checksum = "";
             try {
                 checksum = Checksum.getMD5Checksum(file);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 // Ignore
             }
             // Check if file differs from server file
@@ -480,7 +479,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * Delete the localization file
      * 
      * @return true if file is deleted, false if file still exists
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     public boolean delete() throws LocalizationException {
         try {

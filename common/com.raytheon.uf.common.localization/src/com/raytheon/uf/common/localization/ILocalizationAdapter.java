@@ -27,7 +27,6 @@ import java.util.Map;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 
 /**
  * Provides a single, unified interface for localization interactions with the
@@ -41,6 +40,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationOpFailedExcepti
  * Jul 24, 2014 3378        bclement    removed unneeded abstract modifiers
  *                                      added createCache()
  * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile                                     
+ * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * 
  * </pre>
  * 
@@ -69,20 +69,19 @@ public interface ILocalizationAdapter {
      * @param fileName
      *            the file or directory
      * @return the metadata for the file or directoryOutput to a log
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     public ListResponse[] getLocalizationMetadata(
             LocalizationContext[] context, String fileName)
-            throws LocalizationOpFailedException;
+            throws LocalizationException;
 
     /**
      * Retrieve the localization file
      * 
      * @param file
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
-    public void retrieve(LocalizationFile file)
-            throws LocalizationOpFailedException;
+    public void retrieve(LocalizationFile file) throws LocalizationException;
 
     /**
      * Save a file a modifiable localization file
@@ -111,11 +110,11 @@ public interface ILocalizationAdapter {
      * @param filesOnly
      *            whether only files should be included in the response
      * @return the responses
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     public ListResponse[] listDirectory(LocalizationContext[] context,
             String path, boolean recursive, boolean filesOnly)
-            throws LocalizationOpFailedException;
+            throws LocalizationException;
 
     /**
      * Return the localization contexts that should be searched given a
@@ -152,12 +151,12 @@ public interface ILocalizationAdapter {
      * 
      * @param file
      *            the modifiable localization file
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     public boolean delete(LocalizationFile file) throws LocalizationException;
 
     public String[] getContextList(LocalizationLevel level)
-            throws LocalizationOpFailedException;
+            throws LocalizationException;
 
     public LocalizationLevel[] getAvailableLevels();
 
