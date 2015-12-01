@@ -20,51 +20,35 @@
 package com.raytheon.uf.common.localization.exception;
 
 /**
- * 
- * Signifies that a localization operation failed (for reasons other than
- * communication)
- * 
- * @deprecated Please use LocalizationException or any of its non-deprecated
- *             subclasses. This class only continues to exist for backwards
- *             compatibility and will be removed in the near future.
+ * An exception for when a localization file does not exist.
  * 
  * <pre>
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * May 15, 2008 #878        chammack    Initial creation
- * Nov 30, 2015  4834       njensen     Deprecated
- * 
+ *
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Dec 01, 2015 4834       njensen     Initial creation
+ *
  * </pre>
  * 
- * @author chammack
+ * @author njensen
  * @version 1.0
  */
 
-@Deprecated
-public class LocalizationOpFailedException extends LocalizationException {
+public class NoSuchLocalizationFileException extends LocalizationException {
 
     private static final long serialVersionUID = 1L;
 
-    /**
-     * @param message
-     */
-    public LocalizationOpFailedException(String message) {
+    public NoSuchLocalizationFileException(String message) {
         super(message);
     }
 
-    /**
-     * @param message
-     * @param t
-     */
-    public LocalizationOpFailedException(String message, Throwable t) {
+    public NoSuchLocalizationFileException(String message, Throwable t) {
         super(message, t);
     }
 
-    /**
-     * @param t
-     */
-    public LocalizationOpFailedException(Throwable t) {
+    public NoSuchLocalizationFileException(Throwable t) {
         super(t);
     }
 

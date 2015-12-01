@@ -52,7 +52,8 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.localization.exception.LocalizationIOException;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityCommand;
@@ -529,7 +530,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     protected List<ListResponseEntry[]> getListResponseEntry(
             LocalizationContext[] contexts, String fileName, boolean recursive,
-            boolean filesOnly) throws LocalizationOpFailedException {
+            boolean filesOnly) throws LocalizationException {
         ListUtilityCommand[] cmds = new ListUtilityCommand[contexts.length];
         for (int i = 0; i < contexts.length; i++) {
             cmds[i] = new ListUtilityCommand(contexts[i], fileName, recursive,
@@ -541,7 +542,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         AbstractUtilityResponse[] responseList = makeRequest(localizationRequest);
         if (responseList.length != contexts.length) {
-            throw new LocalizationOpFailedException(
+            throw new LocalizationException(
                     "Server returned more or less results than requested.  Requested "
                             + contexts.length + ", returned: "
                             + responseList.length);
@@ -554,9 +555,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
             if (!(response instanceof ListUtilityResponse)) {
-                throw new LocalizationOpFailedException(
-                        "Unexpected type returned"
-                                + response.getClass().getName());
+                throw new LocalizationException("Unexpected type returned"
+                        + response.getClass().getName());
             }
 
             ListUtilityResponse listResponse = (ListUtilityResponse) response;
@@ -574,10 +574,9 @@ public class LocalizationManager implements IPropertyChangeListener {
      * Locks on the file
      * 
      * @param file
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
-    protected void retrieve(LocalizationFile file)
-            throws LocalizationOpFailedException {
+    protected void retrieve(LocalizationFile file) throws LocalizationException {
         if (file.isDirectory()) {
             retrieveDir(file.getContext(), file.getName());
         } else {
@@ -605,10 +604,10 @@ public class LocalizationManager implements IPropertyChangeListener {
      * 
      * @param context
      * @param fileName
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     private void retrieveDir(LocalizationContext context, String fileName)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         List<ListResponseEntry[]> entriesList = getListResponseEntry(
                 new LocalizationContext[] { context }, fileName, true, false);
 
@@ -801,11 +800,10 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param in
      * @param streamLength
      * @return the new server time stamp
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     protected long upload(LocalizationContext context, String filename,
-            InputStream in, long streamLength)
-            throws LocalizationOpFailedException {
+            InputStream in, long streamLength) throws LocalizationException {
         if (context.getLocalizationLevel().isSystemLevel()) {
             throw new UnsupportedOperationException(
                     "Saving to the System Level, "
@@ -822,7 +820,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             request.setContext(context);
             request.setFileName(filename);
         } catch (VizException e) {
-            throw new LocalizationOpFailedException(
+            throw new LocalizationException(
                     "Could not construct privileged utility request", e);
         }
 
@@ -851,8 +849,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                 request.setBytes(bytes);
                 request.setEnd(offset == streamLength);
             } catch (IOException e) {
-                throw new LocalizationOpFailedException(
-                        "Could not save file, failed to read in contents", e);
+                throw new LocalizationIOException("Could not save file "
+                        + filename + ", failed to read in contents", e);
             }
 
             try {
@@ -862,7 +860,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                     serverModTime = modTime.longValue();
                 }
             } catch (VizException e) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationIOException(
                         "Error uploading file contents to localization server: "
                                 + e.getLocalizedMessage(), e);
             }
@@ -879,16 +877,16 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param filename
      *            the name of the file
      * @return modified time on server
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     protected long delete(LocalizationContext context, String filename)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         PrivilegedUtilityRequestMessage request;
         try {
             request = PrivilegedRequestFactory
                     .constructPrivilegedRequest(PrivilegedUtilityRequestMessage.class);
         } catch (VizException e) {
-            throw new LocalizationOpFailedException(
+            throw new LocalizationException(
                     "Could not construct privileged utility request", e);
         }
 
@@ -901,12 +899,12 @@ public class LocalizationManager implements IPropertyChangeListener {
             UtilityResponseMessage response = (UtilityResponseMessage) ThriftClient
                     .sendLocalizationRequest(request);
             if (response == null) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "No response received for delete command");
             }
             AbstractUtilityResponse[] responses = response.getResponses();
             if (responses == null || responses.length != commands.length) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + commands.length + " responses, received "
                                 + (responses != null ? responses.length : null));
@@ -915,22 +913,21 @@ public class LocalizationManager implements IPropertyChangeListener {
             if (rsp instanceof DeleteUtilityResponse) {
                 DeleteUtilityResponse dur = (DeleteUtilityResponse) rsp;
                 if (dur.getErrorText() != null) {
-                    throw new LocalizationOpFailedException(
+                    throw new LocalizationException(
                             "Error processing delete command: "
                                     + dur.getErrorText());
                 }
                 // Yay, successful execution!
                 return dur.getTimeStamp();
             } else {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + DeleteUtilityResponse.class + " received "
                                 + (rsp != null ? rsp.getClass() : null));
             }
         } catch (VizException e) {
-            throw new LocalizationOpFailedException(
-                    "Error processing delete command: "
-                            + e.getLocalizedMessage(), e);
+            throw new LocalizationException("Error processing delete command: "
+                    + e.getLocalizedMessage(), e);
         }
     }
 
@@ -940,10 +937,10 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param request
      *            the request to make
      * @return the responses from the request
-     * @throws VizException
+     * @throws LocalizationException
      */
     protected AbstractUtilityResponse[] makeRequest(
-            UtilityRequestMessage request) throws LocalizationOpFailedException {
+            UtilityRequestMessage request) throws LocalizationException {
 
         AbstractUtilityResponse[] responseList;
 
@@ -952,14 +949,14 @@ public class LocalizationManager implements IPropertyChangeListener {
             localizationResponse = (UtilityResponseMessage) ThriftClient
                     .sendLocalizationRequest(request);
         } catch (VizException e) {
-            throw new LocalizationOpFailedException("Localization error ", e);
+            throw new LocalizationException("Localization error ", e);
         }
 
         responseList = localizationResponse.getResponses();
 
         for (AbstractUtilityResponse response : responseList) {
             if (!response.successful()) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         response.getFormattedErrorMessage());
             }
         }
@@ -968,7 +965,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     public List<ListResponseEntry[]> getContextList(LocalizationLevel level)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         ListContextCommand cmd = new ListContextCommand();
         cmd.setRequestLevel(level);
 
@@ -982,9 +979,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
             if (!(response instanceof ListUtilityResponse)) {
-                throw new LocalizationOpFailedException(
-                        "Unexpected type returned"
-                                + response.getClass().getName());
+                throw new LocalizationException("Unexpected type returned"
+                        + response.getClass().getName());
             }
 
             ListUtilityResponse listResponse = (ListUtilityResponse) response;

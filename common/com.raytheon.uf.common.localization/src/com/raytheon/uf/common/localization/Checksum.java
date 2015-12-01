@@ -64,10 +64,10 @@ public class Checksum {
      * @param is
      *            the input stream to checksum
      * @return the md5 checksum
-     * @throws Exception
+     * @throws IOException
      *             if checksumming failed
      */
-    public static String getMD5Checksum(InputStream is) throws Exception {
+    public static String getMD5Checksum(InputStream is) throws IOException {
         String result;
         try {
             byte[] b = createChecksum(is);
@@ -76,8 +76,10 @@ public class Checksum {
                 result += Integer.toString((b[i] & 0xff) + 0x100, 16)
                         .substring(1);
             }
-        } catch (Exception e) {
-            throw new Exception("Error generating checksum: ", e);
+        } catch (IOException e) {
+            throw new IOException("Error generating checksum", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error generating checksum", e);
         }
         return result;
     }
@@ -88,10 +90,10 @@ public class Checksum {
      * @param file
      *            the input file to checksum
      * @return the md5 checksum
-     * @throws Exception
+     * @throws IOException
      *             if checksumming failed
      */
-    public static String getMD5Checksum(File file) throws Exception {
+    public static String getMD5Checksum(File file) throws IOException {
         if (file.exists()) {
             if (file.isDirectory()) {
                 return ILocalizationFile.DIRECTORY_CHECKSUM;
