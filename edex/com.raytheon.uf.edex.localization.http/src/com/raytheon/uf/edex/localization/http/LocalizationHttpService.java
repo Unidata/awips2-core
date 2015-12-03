@@ -20,10 +20,13 @@
 package com.raytheon.uf.edex.localization.http;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -39,14 +42,22 @@ import com.raytheon.uf.common.http.AcceptHeaderParser;
 import com.raytheon.uf.common.http.AcceptHeaderValue;
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
+import com.raytheon.uf.common.localization.FileLocker;
+import com.raytheon.uf.common.localization.FileLocker.Type;
+import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.localization.http.scheme.BasicScheme;
+import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
 import com.raytheon.uf.edex.localization.http.writer.HtmlDirectoryListingWriter;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
 import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
@@ -60,7 +71,8 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 12, 2015 3978       bclement     Initial creation
+ * Jan 12, 2015 3978       bclement    Initial creation
+ * Dec 02, 2015 4834       njensen     Added support for PUT requests
  * 
  * </pre>
  * 
@@ -68,6 +80,8 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
  * @version 1.0
  */
 public class LocalizationHttpService {
+
+    public static final String SERVER_ERROR = "Internal Server Error.";
 
     private static final String PARENT_PREFIX = "..";
 
@@ -86,6 +100,12 @@ public class LocalizationHttpService {
     private static final String CONTENT_MD5_HEADER = "content-md5";
 
     private static final String LAST_MODIFIED_HEADER = "last-modified";
+
+    private static final String IF_MATCH_HEADER = "if-match";
+
+    private static final String AUTHORIZATION_HEADER = "authorization";
+
+    private static final String BASIC_SCHEME = "basic";
 
     private static final IUFStatusHandler log = UFStatus
             .getHandler(LocalizationHttpService.class);
@@ -168,15 +188,211 @@ public class LocalizationHttpService {
         } catch (LocalizationHttpException e) {
             sendError(e, out);
         } catch (Throwable t) {
-            log.error("Problem handling localization request: " + fullPath, t);
-            sendError(new LocalizationHttpException(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Internal Server Error."), out);
+            log.error("Problem handling localization get request: " + fullPath,
+                    t);
+            sendError(
+                    new LocalizationHttpException(
+                            HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            SERVER_ERROR), out);
         } finally {
             out.flush();
             out.setAllowClose(true);
             out.close();
         }
+    }
+
+    /**
+     * Handle HTTP PUT requests for localization files
+     * 
+     * @param request
+     * @param response
+     * @throws IOException
+     */
+    public void handlePut(HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        String rawPath = request.getPathInfo();
+        Path fullPath = Paths.get(rawPath);
+
+        Path relative = basePath.relativize(fullPath);
+        if (!relative.toString().isEmpty()) {
+            relative = relative.normalize();
+        }
+
+        String acceptEncoding = request.getHeader(ACCEPT_ENC_HEADER);
+        ProtectiveHttpOutputStream out = new ProtectiveHttpOutputStream(
+                response, acceptEncoding, false);
+
+        try {
+            LocalizationFile lfile = validatePutRequest(request, relative);
+
+            /*
+             * Passed all the initial checks, acquire the lock and verify
+             * another process did not alter the file in the meantime. getFile()
+             * will also create parent directories as necessary.
+             */
+            File file = lfile.getFile();
+            try {
+                FileLocker.lock(this, file, Type.WRITE);
+
+                /*
+                 * The LocalizationFile instance may have come from an in-memory
+                 * cache, in which case we can't be 100% positive that the
+                 * checksum in memory is up-to-date. An outside process that
+                 * didn't go through normal routes may have modified the file,
+                 * so we need to get the checksum from the file on the
+                 * filesystem to be safe.
+                 */
+                String currentChecksum = ChecksumIO.getFileChecksum(file);
+                String preModChecksum = request.getHeader(IF_MATCH_HEADER);
+                if (!currentChecksum.equals(preModChecksum)) {
+                    StringBuilder sb = new StringBuilder(256);
+                    sb.append("The file ");
+                    sb.append(lfile.getPath());
+                    sb.append(" as version ");
+                    String newContentMd5 = request
+                            .getHeader(CONTENT_MD5_HEADER);
+                    if (newContentMd5 == null) {
+                        newContentMd5 = "**No Content-MD5 Header Supplied**";
+                    }
+                    sb.append(newContentMd5);
+                    sb.append(" has not been saved because it has been changed by another process. ");
+                    sb.append("The client modified the file based on version ");
+                    sb.append(preModChecksum);
+                    sb.append(" but the localization service's latest version is ");
+                    sb.append(currentChecksum);
+                    sb.append(". Please consider updating to the latest version of the ");
+                    sb.append("file and merging the changes.");
+                    throw new LocalizationHttpException(
+                            HttpServletResponse.SC_CONFLICT, sb.toString());
+                }
+
+                FileChangeType changeType = FileChangeType.UPDATED;
+                if (!file.exists()) {
+                    changeType = FileChangeType.ADDED;
+                }
+
+                /*
+                 * Proceed with the put by writing it to a temporary file and
+                 * then replacing the original file.
+                 */
+                Path parentPath = file.toPath().getParent();
+                Path tmpFile = null;
+                try {
+                    tmpFile = Files.createTempFile(parentPath, file.getName(),
+                            ".tmp");
+                    try (FileOutputStream fos = new FileOutputStream(
+                            tmpFile.toFile())) {
+                        try (InputStream is = request.getInputStream()) {
+                            byte[] buf = new byte[8192];
+                            int n = 0;
+                            while ((n = is.read(buf)) > 0) {
+                                fos.write(buf, 0, n);
+                            }
+                        }
+                    }
+                } catch (Throwable t) {
+                    if (tmpFile != null) {
+                        Files.deleteIfExists(tmpFile);
+                    }
+                    throw t;
+                }
+
+                Files.move(tmpFile, file.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+
+                // generate the new checksum after the change
+                String checksum = ChecksumIO.writeChecksum(file);
+                long timeStamp = file.lastModified();
+
+                // notify topic the file has changed
+                EDEXUtil.getMessageProducer().sendAsync(
+                        "utilityNotify",
+                        new FileUpdatedMessage(lfile.getContext(), lfile
+                                .getPath(), changeType, timeStamp, checksum));
+
+                response.setStatus(HttpServletResponse.SC_OK);
+                SimpleDateFormat format = TIME_HEADER_FORMAT.get();
+                response.setHeader(LAST_MODIFIED_HEADER,
+                        format.format(timeStamp));
+                response.setHeader(CONTENT_MD5_HEADER, checksum);
+            } finally {
+                FileLocker.unlock(this, file);
+            }
+        } catch (LocalizationHttpException e) {
+            sendError(e, out);
+        } catch (Throwable t) {
+            log.error("Problem handling localization put request: " + fullPath,
+                    t);
+            sendError(
+                    new LocalizationHttpException(
+                            HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
+                            SERVER_ERROR), out);
+        } finally {
+            out.flush();
+            out.setAllowClose(true);
+            out.close();
+        }
+    }
+
+    /**
+     * Validates a put request. Will throw an exception if something is not
+     * valid such as not authorized.
+     * 
+     * @param request
+     * @param relative
+     * @return the localization file to be saved (presuming no exceptions were
+     *         thrown)
+     * @throws LocalizationHttpException
+     */
+    private LocalizationFile validatePutRequest(HttpServletRequest request,
+            Path relative) throws LocalizationHttpException {
+        LocalizationFile lfile = LocalizationResolver.getFile(relative);
+        assertNonParent(relative);
+
+        String auth = request.getHeader(AUTHORIZATION_HEADER);
+        if (auth == null) {
+            throw new LocalizationHttpException(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Authorization header required for PUT requests");
+        }
+
+        int index = auth.indexOf(" ");
+        if (index < 1) {
+            throw new LocalizationHttpException(
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "Unrecognized authorization scheme");
+        }
+
+        // TODO support more schemes
+        String scheme = auth.substring(0, index);
+        String key = auth.substring(index + 1);
+        String username = null;
+        if (scheme.equalsIgnoreCase(BASIC_SCHEME)) {
+            username = BasicScheme.authenticate(key);
+        } else {
+            throw new LocalizationHttpException(
+                    HttpServletResponse.SC_UNAUTHORIZED,
+                    "Unsupported authorization scheme: " + scheme);
+        }
+
+        /*
+         * Got the username, validate that they have permissions to put against
+         * this localization context and path.
+         */
+        if (!LocalizationAuthorization.isPutAuthorized(username,
+                lfile.getContext(), lfile.getPath())) {
+            throw new LocalizationHttpException(
+                    HttpServletResponse.SC_FORBIDDEN,
+                    "Insufficient permissions to modify " + lfile);
+        }
+
+        if (lfile.isDirectory()) {
+            throw new LocalizationHttpException(
+                    HttpServletResponse.SC_METHOD_NOT_ALLOWED,
+                    "Put requests not allowed on directories");
+        }
+
+        return lfile;
     }
 
     /**
@@ -304,8 +520,7 @@ public class LocalizationHttpService {
             log.error("Unexpected resource path for context query: "
                     + resourcePath);
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                    "Internal Server Error.");
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR, SERVER_ERROR);
         }
         ResponsePair<IDirectoryListingWriter> responsePair = findListingWriter(responseTypes);
         IDirectoryListingWriter writer = responsePair.getWriter();

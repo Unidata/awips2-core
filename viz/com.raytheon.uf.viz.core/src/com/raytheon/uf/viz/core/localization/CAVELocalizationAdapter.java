@@ -73,7 +73,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Sep 29, 2014 2975        njensen     Fix bug in exists() with local-only files
  * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
- * 
+ * Dec 02, 2015 4834        njensen     Updated to use new LocalizationManager.upload()
  * 
  * </pre>
  * 
@@ -263,9 +263,7 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             InputStream in = null;
             try {
                 in = new LockingFileInputStream(localFile);
-                LocalizationManager.getInstance().upload(file.getContext(),
-                        file.getName(), in, localFile.length());
-                // Success! set potentially changed fields
+                LocalizationManager.getInstance().upload(file, localFile);
                 return true;
             } catch (FileNotFoundException e) {
                 throw new NoSuchLocalizationFileException(
@@ -324,13 +322,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getStaticContexts
-     * ()
-     */
     @Override
     public LocalizationType[] getStaticContexts() {
         return new LocalizationType[] { LocalizationType.CAVE_STATIC,
@@ -583,13 +574,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return fileList.toArray(new String[fileList.size()]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getAvailableLevels
-     * ()
-     */
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         LocalizationLevel[] levels = LocalizationLevel.values();

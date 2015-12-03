@@ -87,5 +87,6 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.viz.core.units
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.inventory.exception,
- com.raytheon.uf.viz.datacube
+ com.raytheon.uf.viz.datacube,
+ org.apache.commons.codec.binary
 Bundle-ClassPath: com.raytheon.uf.viz.core.jar,.

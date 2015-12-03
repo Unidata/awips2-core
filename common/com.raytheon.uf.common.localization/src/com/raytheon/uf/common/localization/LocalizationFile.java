@@ -90,6 +90,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Aug 26, 2015 4691        njensen     Safely skip file locking on most read operations                                                                            
  * Nov 12, 2015 4834        njensen     Remove ModifiableLocalizationFile
  *                                       Deprecated and changed add/removeFileUpdatedObserver()
+ * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes                                      
  * 
  * </pre>
  * 
@@ -110,7 +111,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     protected final File file;
 
     /** The file timestamp on the server, may be null if file doesn't exist yet */
-    private Date fileTimestamp;
+    private final Date fileTimestamp;
 
     /** Checksum of file on server, may be null if file doesn't exist yet */
     private final String fileCheckSum;
@@ -167,7 +168,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the file time stamp, may be null if file doesn't exist yet
      */
     @Override
-    public Date getTimeStamp() {
+    public final Date getTimeStamp() {
         return fileTimestamp;
     }
 
@@ -177,7 +178,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the file check sum, may be null if file doesn't exist yet
      */
     @Override
-    public String getCheckSum() {
+    public final String getCheckSum() {
         return fileCheckSum;
     }
 
@@ -390,7 +391,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the context
      */
     @Override
-    public LocalizationContext getContext() {
+    public final LocalizationContext getContext() {
         return context;
     }
 
@@ -411,7 +412,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return true if the file is actually a directory
      */
     @Override
-    public boolean isDirectory() {
+    public final boolean isDirectory() {
         return isDirectory;
     }
 
@@ -470,8 +471,12 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @return the file path
      */
+    public final String getName() {
+        return getPath();
+    }
+
     @Override
-    public String getName() {
+    public final String getPath() {
         return path;
     }
 
@@ -535,7 +540,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                     t = FileChangeType.UPDATED;
                 }
                 FileUpdatedMessage fum = new FileUpdatedMessage(
-                        file.getContext(), file.getName(), t, file
+                        file.getContext(), file.getPath(), t, file
                                 .getTimeStamp().getTime(), file.getCheckSum());
                 observer.fileUpdated(fum);
             }

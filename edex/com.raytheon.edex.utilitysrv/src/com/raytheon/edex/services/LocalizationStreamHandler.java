@@ -48,6 +48,9 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Base handler for localization streaming requests. Delegates work off to a
  * get/put handler
  * 
+ * @deprecated Continues to exist to support older clients. Newer clients should
+ *             use the Localization REST service.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
@@ -57,14 +60,15 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 14, 2014 3372       njensen      fileMap is ConcurrentHashMap for thread safety
  * Jul 16, 2014 3378       bclement     removed cache
  * Feb 17, 2015 4137       reblum       fixed timestamp on put requests
- * Nov 16, 2015 4834       njensen      Send updated checksum on put
+ * Nov 16, 2015 4834       njensen      Send updated checksum as part of notification after put
+ * Dec 03, 2015 4834       njensen      Deprecated
  * 
  * </pre>
  * 
  * @author mschenke
  * @version 1.0
  */
-
+@Deprecated
 public class LocalizationStreamHandler
         extends
         AbstractPrivilegedLocalizationRequestHandler<AbstractLocalizationStreamRequest> {

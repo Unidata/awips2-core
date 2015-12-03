@@ -89,7 +89,7 @@ public interface ILocalizationFile {
      * 
      * @return the relative path and name of the file
      */
-    public String getName();
+    public String getPath();
 
     /**
      * Gets the timestamp of the file in the localization store

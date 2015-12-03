@@ -23,7 +23,10 @@ import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+import org.apache.commons.codec.binary.Base64;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.FileEntity;
 
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpClient;
@@ -31,6 +34,9 @@ import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
+import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
@@ -45,6 +51,7 @@ import com.raytheon.uf.viz.core.VizApp;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 16, 2015  3978      njensen     Initial creation
+ * Dec 03, 2015  4834      njensen     Added PUT support
  * 
  * </pre>
  * 
@@ -61,6 +68,14 @@ public class LocalizationRestConnector {
     private static final String ACCEPT = "accept";
 
     private static final String DIR_FORMAT = "application/zip";
+
+    private static final String IF_MATCH = "if-match";
+
+    private static final String CONTENT_MD5 = "content-md5";
+
+    private static final String AUTHORIZATION = "authorization";
+
+    private static final String BASIC = "Basic";
 
     private final ILocalizationAdapter adapter;
 
@@ -192,6 +207,43 @@ public class LocalizationRestConnector {
                 outputFile);
         HttpClientResponse resp = HttpClient.getInstance().executeRequest(
                 request, streamHandler);
+        return resp;
+    }
+
+    /**
+     * Sends a PUT request to the localization REST service to upload a file.
+     * 
+     * @param file
+     * @param fileToUpload
+     * @return
+     * @throws CommunicationException
+     */
+    public HttpClientResponse restPutFile(LocalizationFile lfile,
+            File fileToUpload) throws CommunicationException {
+        String url = buildRestAddress(lfile.getContext(), lfile.getName(),
+                false);
+        HttpPut request = new HttpPut(url);
+        request.setEntity(new FileEntity(fileToUpload));
+
+        // add the checksum of the version we modified
+        request.addHeader(IF_MATCH, lfile.getCheckSum());
+
+        // add the checksum of the new contents
+        request.addHeader(CONTENT_MD5,
+                ChecksumIO.getFileChecksum(fileToUpload, false));
+
+        /*
+         * TODO real authentication support including a password, public key,
+         * something...
+         */
+        WsId id = VizApp.getWsId();
+        String credentials = id.getUserName() + ":" + id.getHostName();
+        String auth = BASIC + " "
+                + Base64.encodeBase64String(credentials.getBytes());
+        request.addHeader(AUTHORIZATION, auth);
+
+        HttpClientResponse resp = HttpClient.getInstance().executeRequest(
+                request);
         return resp;
     }
 

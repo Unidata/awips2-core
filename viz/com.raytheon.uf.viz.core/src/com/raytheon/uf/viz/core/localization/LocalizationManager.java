@@ -23,7 +23,6 @@ package com.raytheon.uf.viz.core.localization;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,6 +42,8 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
+import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
@@ -53,7 +54,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationIOException;
+import com.raytheon.uf.common.localization.exception.LocalizationFileVersionConflictException;
+import com.raytheon.uf.common.localization.exception.LocalizationPermissionDeniedException;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityCommand;
@@ -68,7 +70,6 @@ import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.common.localization.region.RegionLookup;
-import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -106,6 +107,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jan 12, 2015 3993       njensen     Added checkPreinstalled()
  * Feb 16, 2015 3978       njensen     Use REST service for efficient GET of files
  * Aug 26, 2015 4691       njensen     No longer using timestamp as part of needDownload()
+ * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
  * 
  * </pre>
  * 
@@ -792,81 +794,35 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     /**
-     * Uploads a stream as a file to EDEX through the UtilitySrv. It is the
-     * responsibility of the caller to close the stream
+     * Uploads a file to the localization service.
      * 
-     * @param context
-     * @param filename
-     * @param in
-     * @param streamLength
-     * @return the new server time stamp
+     * @param file
+     *            the localization file
+     * @param fileToUpload
+     *            the local file that backs the localization file
      * @throws LocalizationException
      */
-    protected long upload(LocalizationContext context, String filename,
-            InputStream in, long streamLength) throws LocalizationException {
-        if (context.getLocalizationLevel().isSystemLevel()) {
-            throw new UnsupportedOperationException(
-                    "Saving to the System Level, "
-                            + context.getLocalizationLevel()
-                            + ", is not supported.");
-        }
-
-        LocalizationStreamPutRequest request;
+    protected void upload(LocalizationFile file, File fileToUpload)
+            throws LocalizationException {
         try {
-            request = PrivilegedRequestFactory
-                    .constructPrivilegedRequest(LocalizationStreamPutRequest.class);
-            request.setMyContextName(LocalizationManager.getContextName(context
-                    .getLocalizationLevel()));
-            request.setContext(context);
-            request.setFileName(filename);
-        } catch (VizException e) {
-            throw new LocalizationException(
-                    "Could not construct privileged utility request", e);
+            HttpClientResponse resp = restConnect.restPutFile(file,
+                    fileToUpload);
+            if (resp.code != 200) {
+                String msg = new String(resp.data);
+                switch (resp.code) {
+                case 403:
+                    throw new LocalizationPermissionDeniedException(msg);
+                case 409:
+                    throw new LocalizationFileVersionConflictException(msg);
+                default:
+                    throw new LocalizationException("Error code " + resp.code
+                            + ": " + msg);
+                }
+            }
+        } catch (CommunicationException e) {
+            throw new LocalizationException("Error uploading file: " + file, e);
         }
 
-        long serverModTime = -1;
-        // Create byte[] buffer
-        byte[] bytes = new byte[512 * 1024];
-        // initial offset = 0
-        int offset = 0;
-        do {
-            // set current offset
-            request.setOffset(offset);
-            try {
-                // read in data from input stream
-                int read = in.read(bytes, 0, bytes.length);
-                if (read > 0) {
-                    // byte read, trim if necessary
-                    offset += read;
-                    if (read < bytes.length) {
-                        bytes = Arrays.copyOf(bytes, read);
-                    }
-                } else {
-                    bytes = new byte[0];
-                    // Should be case but paranoia takes over
-                    offset = (int) streamLength;
-                }
-                request.setBytes(bytes);
-                request.setEnd(offset == streamLength);
-            } catch (IOException e) {
-                throw new LocalizationIOException("Could not save file "
-                        + filename + ", failed to read in contents", e);
-            }
-
-            try {
-                Number modTime = (Number) ThriftClient
-                        .sendLocalizationRequest(request);
-                if (modTime != null) {
-                    serverModTime = modTime.longValue();
-                }
-            } catch (VizException e) {
-                throw new LocalizationIOException(
-                        "Error uploading file contents to localization server: "
-                                + e.getLocalizedMessage(), e);
-            }
-
-        } while (request.isEnd() == false);
-        return serverModTime;
     }
 
     /**
