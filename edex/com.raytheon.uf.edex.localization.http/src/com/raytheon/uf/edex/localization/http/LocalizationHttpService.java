@@ -33,7 +33,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -104,6 +107,8 @@ public class LocalizationHttpService {
     private static final String IF_MATCH_HEADER = "if-match";
 
     private static final String AUTHORIZATION_HEADER = "authorization";
+
+    private static final String WWW_AUTHENTICATE_HEADER = "www-authenticate";
 
     private static final String BASIC_SCHEME = "basic";
 
@@ -351,9 +356,13 @@ public class LocalizationHttpService {
 
         String auth = request.getHeader(AUTHORIZATION_HEADER);
         if (auth == null) {
+            // TODO support more schemes
+            Map<String, String> extraHeaders = new HashMap<>();
+            extraHeaders.put(WWW_AUTHENTICATE_HEADER, BASIC_SCHEME);
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_UNAUTHORIZED,
-                    "Authorization header required for PUT requests");
+                    "Authorization header required for PUT requests",
+                    extraHeaders);
         }
 
         int index = auth.indexOf(" ");
@@ -371,7 +380,7 @@ public class LocalizationHttpService {
             username = BasicScheme.authenticate(key);
         } else {
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_UNAUTHORIZED,
+                    HttpServletResponse.SC_FORBIDDEN,
                     "Unsupported authorization scheme: " + scheme);
         }
 
@@ -429,6 +438,11 @@ public class LocalizationHttpService {
             HttpServletResponse response = out.getResponse();
             response.setContentType(TEXT_CONTENT);
             response.setStatus(e.getErrorCode());
+            if (e.getHeaders() != null) {
+                for (Entry<String, String> entry : e.getHeaders().entrySet()) {
+                    response.addHeader(entry.getKey(), entry.getValue());
+                }
+            }
             out.write(e.getMessage().getBytes());
         } else {
             log.error("Unable to send error message to client"

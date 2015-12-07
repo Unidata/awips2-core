@@ -102,6 +102,7 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
  *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
  *    Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ *    Dec 04, 2015  4834        njensen     Support authorization on http requests too
  * 
  * </pre>
  * 
@@ -115,6 +116,9 @@ public class HttpClient {
 
         public final byte[] data;
 
+        /*
+         * TODO switch contentType to response headers which include contentType
+         */
         public final String contentType;
 
         /*
@@ -164,7 +168,7 @@ public class HttpClient {
     private boolean gzipRequests = false;
 
     /** number of requests currently in process by the application per host */
-    private final Map<String, AtomicInteger> currentRequestsCount = new ConcurrentHashMap<String, AtomicInteger>();
+    private final Map<String, AtomicInteger> currentRequestsCount = new ConcurrentHashMap<>();
 
     private volatile CloseableHttpClient sslClient;
 
@@ -173,13 +177,14 @@ public class HttpClient {
     private final HttpClientConfig config;
 
     /**
-     * The credentials provider is for https requests only and ensures that a
-     * user does not have to enter username/password authentication more than
-     * once per application startup.
+     * The credentials provider takes care of adding the Authorization header
+     * for the http/https requests as necessary. This is a map of hostname to
+     * CredentialsProvider, as different hosts may require different
+     * authorization schemes.
      */
-    private CredentialsProvider credentialsProvider;
+    private Map<String, CredentialsProvider> credentialsMap = new ConcurrentHashMap<>();
 
-    private final ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+    private final ThreadLocal<HttpClientContext> httpClientContext = new ThreadLocal<HttpClientContext>() {
         @Override
         protected HttpClientContext initialValue() {
             return HttpClientContext.create();
@@ -212,7 +217,7 @@ public class HttpClient {
         if (sslClient == null) {
             synchronized (this) {
                 if (sslClient == null) {
-                    if (config.getHttpsHandler() == null) {
+                    if (config.getHttpAuthHandler() == null) {
                         throw new ExceptionInInitializerError(
                                 "Https configuration required.");
                     }
@@ -351,59 +356,64 @@ public class HttpClient {
     private HttpResponse postRequest(HttpUriRequest put) throws IOException,
             CommunicationException {
         HttpResponse resp = null;
-        if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
-            IHttpsHandler handler = config.getHttpsHandler();
-            org.apache.http.client.HttpClient client = getHttpsInstance();
-            URI uri = put.getURI();
-            String host = uri.getHost();
-            int port = uri.getPort();
-            HttpClientContext context = getHttpsContext(host, port);
-            resp = client.execute(put, context);
 
-            // Check for not authorized, 401
-            while (resp.getStatusLine().getStatusCode() == 401) {
-                String authValue = null;
-                if (resp.containsHeader(WWW_AUTHENTICATE)) {
-                    authValue = resp.getFirstHeader(WWW_AUTHENTICATE)
-                            .getValue();
-                }
+        /*
+         * Get a thread-local context since an HttpClientContext is not
+         * thread-safe.
+         */
+        URI uri = put.getURI();
+        String host = uri.getHost();
+        int port = uri.getPort();
+        String protocol = put.getURI().getScheme();
+        HttpClientContext context = getHttpClientContext(protocol, host, port);
 
-                String[] credentials = null;
-                if (handler != null) {
-                    credentials = handler.getCredentials(host, port, authValue);
-                }
-                if (credentials == null) {
-                    return resp;
-                }
-                this.setupCredentials(host, port, credentials[0],
-                        credentials[1]);
-                context = getHttpsContext(host, port);
-                /*
-                 * The context auth state gets set to FAILED on a 401 which
-                 * causes any future requests to abort prematurely. Therefore we
-                 * set it to unchallenged so it will try again with new
-                 * credentials.
-                 */
-                AuthState targetAuthState = context.getTargetAuthState();
-                targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
-                try {
-                    resp = client.execute(put, context);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.ERROR,
-                            "Error retrying http request", e);
-                    return resp;
-                }
-
-                if (resp.getStatusLine().getStatusCode() == 401) {
-                    // obtained credentials and they failed!
-                    if (handler != null) {
-                        handler.credentialsFailed();
-                    }
-                }
-
-            }
+        org.apache.http.client.HttpClient clientToUse = null;
+        if (protocol.equalsIgnoreCase(HTTPS)) {
+            clientToUse = getHttpsInstance();
         } else {
-            resp = getHttpInstance().execute(put);
+            clientToUse = getHttpInstance();
+        }
+        resp = clientToUse.execute(put, context);
+
+        // Check for not authorized, 401
+        while (resp.getStatusLine().getStatusCode() == 401) {
+            String authValue = null;
+            if (resp.containsHeader(WWW_AUTHENTICATE)) {
+                authValue = resp.getFirstHeader(WWW_AUTHENTICATE).getValue();
+            }
+
+            String[] credentials = null;
+            HttpAuthHandler authHandler = null;
+            authHandler = config.getHttpAuthHandler();
+            if (authHandler != null) {
+                credentials = authHandler.getCredentials(uri, authValue);
+            }
+            if (credentials == null) {
+                return resp;
+            }
+            this.setupCredentials(host, port, credentials[0], credentials[1]);
+            context = getHttpClientContext(protocol, host, port);
+            /*
+             * The context auth state gets set to FAILED on a 401 which causes
+             * any future requests to abort prematurely. Therefore we set it to
+             * unchallenged so it will try again with new credentials.
+             */
+            AuthState targetAuthState = context.getTargetAuthState();
+            targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
+            try {
+                resp = clientToUse.execute(put, context);
+            } catch (Exception e) {
+                statusHandler.handle(Priority.ERROR,
+                        "Error retrying http request", e);
+                return resp;
+            }
+
+            if (resp.getStatusLine().getStatusCode() == 401) {
+                // obtained credentials and they failed!
+                if (authHandler != null) {
+                    authHandler.credentialsFailed();
+                }
+            }
         }
 
         if (previousConnectionFailed) {
@@ -558,23 +568,13 @@ public class HttpClient {
      */
     private void processResponse(HttpResponse resp,
             IStreamHandler handlerCallback) throws CommunicationException {
-        InputStream is = null;
         if ((resp != null) && (resp.getEntity() != null)) {
-            try {
-                is = resp.getEntity().getContent();
+            try (InputStream is = resp.getEntity().getContent()) {
                 handlerCallback.handleStream(is);
             } catch (IOException e) {
                 throw new CommunicationException(
                         "IO error processing http response", e);
             } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        // ignore
-                    }
-                }
-
                 // Closes the stream if it's still open
                 try {
                     EntityUtils.consume(resp.getEntity());
@@ -962,8 +962,10 @@ public class HttpClient {
      */
     public synchronized void setupCredentials(String host, int port,
             String username, String password) {
+        CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (credentialsProvider == null) {
             credentialsProvider = new BasicCredentialsProvider();
+            credentialsMap.put(host, credentialsProvider);
         }
         credentialsProvider.setCredentials(new AuthScope(host, port,
                 AuthScope.ANY_REALM, AuthSchemes.BASIC),
@@ -971,12 +973,22 @@ public class HttpClient {
     }
 
     /**
-     * Gets a thread local HttpContext to use for an https request.
+     * Gets a thread local HttpContext to use for an http or https request.
      * 
-     * @return a safe context containing https credential and auth info
+     * @param protocol
+     *            the protocol, either http or https
+     * @param host
+     *            the hostname
+     * @param port
+     *            the port
+     * 
+     * 
+     * @return a safe context containing http or https credential and auth info
      */
-    private HttpClientContext getHttpsContext(String host, int port) {
-        HttpClientContext context = httpsContext.get();
+    private HttpClientContext getHttpClientContext(String protocol,
+            String host, int port) {
+        HttpClientContext context = httpClientContext.get();
+        CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (context.getCredentialsProvider() != credentialsProvider) {
             context.setCredentialsProvider(credentialsProvider);
         }
@@ -991,7 +1003,7 @@ public class HttpClient {
             authCache = new BasicAuthCache();
             context.setAuthCache(authCache);
         }
-        HttpHost hostObj = new HttpHost(host, port, HTTPS);
+        HttpHost hostObj = new HttpHost(host, port, protocol);
         if (authCache.get(hostObj) == null) {
             authCache.put(hostObj, new BasicScheme());
         }
