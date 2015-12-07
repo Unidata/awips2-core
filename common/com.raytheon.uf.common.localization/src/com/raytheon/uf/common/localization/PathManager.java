@@ -689,6 +689,13 @@ public class PathManager implements IPathManager {
         String name = fum.getFileName();
         LocalizationFileKey key = new LocalizationFileKey(name,
                 fum.getContext());
+        LocalizationFile fileInCache = fileCache.get(key);
+        if (fileInCache != null
+                && fileInCache.getCheckSum().equals(fum.getCheckSum())) {
+            // already received this update, don't need to notify again
+            return;
+        }
+
         fileCache.remove(key);
         LocalizationFile newInstance = null;
         if (fum.getCheckSum() == null) {

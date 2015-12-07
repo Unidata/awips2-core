@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +35,6 @@ import java.util.zip.GZIPOutputStream;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthProtocolState;
@@ -72,37 +73,38 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
- *   
- *    Date          Ticket#     Engineer    Description
- *    ------------  ----------  ----------- --------------------------
- *    7/1/06        #1088       chammack    Initial Creation.
- *    5/17/10       #5901       njensen     Moved to common
- *    03/02/11      #8045       rferrel     Add connect reestablished message.
- *    07/17/12      #911        njensen     Refactored significantly
- *    08/09/12      15307       snaples     Added putEntitiy in postStreamingEntity.
- *    01/07/13      DR 15294    D. Friedman Added streaming requests.
- *    Jan 24, 2013  1526        njensen     Added postDynamicSerialize()
- *    Feb 20, 2013  1628        bsteffen    clean up Inflaters used by
- *                                           HttpClient.
- *    Mar 11, 2013  1786        mpduff      Add https capability.
- *    Jun 12, 2013  2102        njensen     Better error handling when using
- *                                           DynamicSerializeStreamHandler
- *    Feb 04, 2014  2704        njensen     Better error message with bad address
- *                                           Https authentication failures notify handler
- *    Feb 17, 2014  2756        bclement    added content type to response object
- *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
- *    6/18/2014     1712        bphillip    Updated Proxy configuration
- *    Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
- *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
- *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
- *    Nov 15, 2014  3757        dhladky     General HTTPS handler
- *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
- *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
- *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
- *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
- *    Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
- *    Dec 04, 2015  4834        njensen     Support authorization on http requests too
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#     Engineer    Description
+ * ------------  ----------  ----------- --------------------------
+ * 7/1/06        #1088       chammack    Initial Creation.
+ * 5/17/10       #5901       njensen     Moved to common
+ * 03/02/11      #8045       rferrel     Add connect reestablished message.
+ * 07/17/12      #911        njensen     Refactored significantly
+ * 08/09/12      15307       snaples     Added putEntitiy in postStreamingEntity.
+ * 01/07/13      DR 15294    D. Friedman Added streaming requests.
+ * Jan 24, 2013  1526        njensen     Added postDynamicSerialize()
+ * Feb 20, 2013  1628        bsteffen    clean up Inflaters used by
+ *                                        HttpClient.
+ * Mar 11, 2013  1786        mpduff      Add https capability.
+ * Jun 12, 2013  2102        njensen     Better error handling when using
+ *                                        DynamicSerializeStreamHandler
+ * Feb 04, 2014  2704        njensen     Better error message with bad address
+ *                                        Https authentication failures notify handler
+ * Feb 17, 2014  2756        bclement    added content type to response object
+ * Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
+ * 6/18/2014     1712        bphillip    Updated Proxy configuration
+ * Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
+ * Aug 20, 2014  3549        njensen     Removed cookie interceptors
+ * Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
+ * Nov 15, 2014  3757        dhladky     General HTTPS handler
+ * Jan 07, 2015  3952        bclement    reset auth state on authentication failure
+ * Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
+ * Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
+ * Apr 16, 2015  4239        njensen     Better error handling on response != 200
+ * Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ * Dec 04, 2015  4834        njensen     Support authorization on http requests too
+ * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse   
  * 
  * </pre>
  * 
@@ -116,19 +118,13 @@ public class HttpClient {
 
         public final byte[] data;
 
-        /*
-         * TODO switch contentType to response headers which include contentType
-         */
-        public final String contentType;
+        public final Map<String, String> headers;
 
-        /*
-         * TODO contemplate including headers in response object
-         */
-
-        private HttpClientResponse(int code, byte[] data, String contentType) {
+        private HttpClientResponse(int code, byte[] data,
+                Map<String, String> headers) {
             this.code = code;
             this.data = data != null ? data : new byte[0];
-            this.contentType = contentType;
+            this.headers = Collections.unmodifiableMap(headers);
         }
 
         /**
@@ -529,31 +525,18 @@ public class HttpClient {
                 throw new HttpServerException(new String(byteResult),
                         statusCode);
             }
-            return new HttpClientResponse(statusCode, byteResult,
-                    getContentType(resp));
+
+            Header[] headers = resp.getAllHeaders();
+            Map<String, String> headerMap = new HashMap<>(headers.length);
+            for (Header h : headers) {
+                headerMap.put(h.getName(), h.getValue());
+            }
+            return new HttpClientResponse(statusCode, byteResult, headerMap);
         } finally {
             if (ongoing != null) {
                 ongoing.decrementAndGet();
             }
         }
-    }
-
-    /**
-     * Get content type of response
-     * 
-     * @param response
-     * @return null if none found
-     */
-    private static String getContentType(HttpResponse response) {
-        String rval = null;
-        HttpEntity entity = response.getEntity();
-        if (entity != null) {
-            Header contentType = entity.getContentType();
-            if (contentType != null) {
-                rval = contentType.getValue();
-            }
-        }
-        return rval;
     }
 
     /**

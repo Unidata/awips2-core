@@ -94,23 +94,23 @@ public class LocalizationHttpService {
 
     private static final String DEFAULT_RESPONSE_TYPE = "application/binary";
 
-    private static final String ACCEPT_ENC_HEADER = "accept-encoding";
+    private static final String ACCEPT_ENC_HEADER = "Accept-Encoding";
 
-    private static final String ACCEPT_CONTENT_HEADER = "accept";
+    private static final String ACCEPT_CONTENT_HEADER = "Accept";
 
-    private static final String REDIRECT_HEADER = "location";
+    private static final String REDIRECT_HEADER = "Location";
 
-    private static final String CONTENT_MD5_HEADER = "content-md5";
+    private static final String CONTENT_MD5_HEADER = "Content-MD5";
 
-    private static final String LAST_MODIFIED_HEADER = "last-modified";
+    private static final String LAST_MODIFIED_HEADER = "Last-Modified";
 
-    private static final String IF_MATCH_HEADER = "if-match";
+    private static final String IF_MATCH_HEADER = "If-Match";
 
-    private static final String AUTHORIZATION_HEADER = "authorization";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
-    private static final String WWW_AUTHENTICATE_HEADER = "www-authenticate";
+    private static final String WWW_AUTHENTICATE_HEADER = "WWW-Authenticate";
 
-    private static final String BASIC_SCHEME = "basic";
+    private static final String BASIC_SCHEME = "Basic";
 
     private static final IUFStatusHandler log = UFStatus
             .getHandler(LocalizationHttpService.class);
