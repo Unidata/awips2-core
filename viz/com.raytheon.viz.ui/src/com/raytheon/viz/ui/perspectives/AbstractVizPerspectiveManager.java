@@ -43,12 +43,6 @@ import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.XMLMemento;
-import org.eclipse.ui.internal.EditorAreaHelper;
-import org.eclipse.ui.internal.EditorReference;
-import org.eclipse.ui.internal.EditorStack;
-import org.eclipse.ui.internal.LayoutPart;
-import org.eclipse.ui.internal.WorkbenchPage;
 
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -307,17 +301,19 @@ public abstract class AbstractVizPerspectiveManager implements
             backgroundColor = BackgroundColor
                     .getInstance(page.getPerspective());
             backgroundColor.addListener(BGColorMode.GLOBAL, this);
-            List<?> workbooks = ((WorkbenchPage) page).getEditorPresentation()
-                    .getWorkbooks();
-            if (workbooks.size() > 1) {
-                for (Object o : workbooks) {
-                    EditorStack stack = (EditorStack) o;
-                    if (stack.getEditors() == null
-                            || stack.getEditors().length == 0) {
-                        EditorAreaHelper.derefPart(stack);
-                    }
-                }
-            }
+            // TODO port to eclipse 4?
+            // List<?> workbooks = ((WorkbenchPage)
+            // page).getEditorPresentation()
+            // .getWorkbooks();
+            // if (workbooks.size() > 1) {
+            // for (Object o : workbooks) {
+            // EditorStack stack = (EditorStack) o;
+            // if (stack.getEditors() == null
+            // || stack.getEditors().length == 0) {
+            // EditorAreaHelper.derefPart(stack);
+            // }
+            // }
+            // }
             open();
             opened = true;
         } else {
@@ -351,20 +347,21 @@ public abstract class AbstractVizPerspectiveManager implements
 
     protected void activateInternal() {
         // Restore the editorArea state
-        EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                .getEditorPresentation();
-        if (storedState != null) {
-            editorArea.restoreState(storedState);
-        }
-        // Always remove first workbook as it was added by default when
-        // restoring state because editors were hidden, not closed
-        EditorAreaHelper.derefPart((LayoutPart) editorArea.getWorkbooks()
-                .get(0));
-
-        for (IEditorReference ref : perspectiveEditors) {
-            editorArea.addEditor((EditorReference) ref, layoutMap.get(ref),
-                    false);
-        }
+        // TODO port to eclipse 4?
+        // EditorAreaHelper editorArea = ((WorkbenchPage) page)
+        // .getEditorPresentation();
+        // if (storedState != null) {
+        // editorArea.restoreState(storedState);
+        // }
+        // // Always remove first workbook as it was added by default when
+        // // restoring state because editors were hidden, not closed
+        // EditorAreaHelper.derefPart((LayoutPart) editorArea.getWorkbooks()
+        // .get(0));
+        //
+        // for (IEditorReference ref : perspectiveEditors) {
+        // editorArea.addEditor((EditorReference) ref, layoutMap.get(ref),
+        // false);
+        // }
 
         if (activeEditor != null) {
             page.bringToTop(activeEditor.getPart(false));
@@ -382,10 +379,11 @@ public abstract class AbstractVizPerspectiveManager implements
      */
     public void deactivate() {
         // Save the editor area state
-        EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                .getEditorPresentation();
-        storedState = XMLMemento.createWriteRoot("perspectiveSwitch");
-        editorArea.saveState(storedState);
+        // TODO port to eclipse 4?
+        // EditorAreaHelper editorArea = ((WorkbenchPage) page)
+        // .getEditorPresentation();
+        // storedState = XMLMemento.createWriteRoot("perspectiveSwitch");
+        // editorArea.saveState(storedState);
 
         VizWorkbenchManager mgr = VizWorkbenchManager.getInstance();
         for (IEditorReference ref : page.getEditorReferences()) {
@@ -394,8 +392,9 @@ public abstract class AbstractVizPerspectiveManager implements
                             ref.getEditor(false))) {
                 activeEditor = ref;
             }
-            layoutMap.put(ref, ((EditorReference) ref).getPane().getStack()
-                    .getID());
+            // TODO port to eclipse 4?
+            // layoutMap.put(ref, ((EditorReference) ref).getPane().getStack()
+            // .getID());
 
             perspectiveEditors.add(ref);
             page.hideEditor(ref);
@@ -627,6 +626,7 @@ public abstract class AbstractVizPerspectiveManager implements
         final String msg = getLowMemoryMessage(availMemory);
         final boolean[] status = new boolean[1];
         VizApp.runSync(new Runnable() {
+            @Override
             public void run() {
                 Display display = Display.getDefault();
                 status[0] = MessageDialog.open(MessageDialog.WARNING,
