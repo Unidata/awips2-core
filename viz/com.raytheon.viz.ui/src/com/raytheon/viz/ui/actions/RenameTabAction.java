@@ -57,14 +57,15 @@ public class RenameTabAction extends ContributedEditorMenuAction {
         super("Rename Tab", IAction.AS_PUSH_BUTTON);
     }
 
-    @Override
+    // TODO port to Eclipse 4?
+    // @Override
     public boolean shouldBeVisible() {
         boolean visible = false;
         IWorkbenchPart wbPart = getWorkbenchPart();
         if (wbPart instanceof IRenameablePart) {
             String currentPersp = PlatformUI.getWorkbench()
-                    .getActiveWorkbenchWindow().getActivePage()
-                    .getPerspective().getId();
+                    .getActiveWorkbenchWindow().getActivePage().getPerspective()
+                    .getId();
             visible = currentPersp.equals(getPerspectiveId());
         }
         return visible;
@@ -76,9 +77,10 @@ public class RenameTabAction extends ContributedEditorMenuAction {
         if (wbPart instanceof IRenameablePart) {
             IRenameablePart partToRename = (IRenameablePart) wbPart;
             String currentName = partToRename.getPartName();
-            InputDialog userInput = new InputDialog(PlatformUI.getWorkbench()
-                    .getActiveWorkbenchWindow().getShell(), "Rename Tab", null,
-                    currentName, validator);
+            InputDialog userInput = new InputDialog(
+                    PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+                            .getShell(),
+                    "Rename Tab", null, currentName, validator);
             if (userInput.open() == Window.OK) {
                 String newName = userInput.getValue();
                 partToRename.setPartName(newName);

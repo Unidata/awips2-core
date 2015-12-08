@@ -22,10 +22,6 @@ package com.raytheon.viz.ui.actions;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.internal.PartPane;
-import org.eclipse.ui.internal.presentations.ISelfUpdatingAction;
-import org.eclipse.ui.internal.presentations.PresentablePart;
-import org.eclipse.ui.presentations.IPresentablePart;
 
 /**
  * Every type of user contributed action to the editor should extend this class
@@ -46,10 +42,11 @@ import org.eclipse.ui.presentations.IPresentablePart;
  */
 
 @SuppressWarnings("restriction")
-public class ContributedEditorMenuAction extends Action implements
-        ISelfUpdatingAction {
+public class ContributedEditorMenuAction extends Action {// implements
+    // ISelfUpdatingAction {
 
-    protected IPresentablePart part;
+    // protected IPresentablePart part;
+    // TODO port to Eclipse 4?
 
     protected String perspectiveId;
 
@@ -83,30 +80,31 @@ public class ContributedEditorMenuAction extends Action implements
         super(text);
     }
 
-    @Override
-    public void update() {
-        // do nothing to for this class
-    }
+    // TODO port to Eclipse 4?
+    // @Override
+    // public void update() {
+    // // do nothing to for this class
+    // }
+    //
+    // @Override
+    // public boolean shouldBeVisible() {
+    // return true;
+    // }
 
-    @Override
-    public boolean shouldBeVisible() {
-        return true;
-    }
-
-    /**
-     * @param part
-     *            the part to set
-     */
-    public void setPart(IPresentablePart part) {
-        this.part = part;
-    }
-
-    /**
-     * @return the part
-     */
-    public IPresentablePart getPart() {
-        return part;
-    }
+    // /**
+    // * @param part
+    // * the part to set
+    // */
+    // public void setPart(IPresentablePart part) {
+    // this.part = part;
+    // }
+    //
+    // /**
+    // * @return the part
+    // */
+    // public IPresentablePart getPart() {
+    // return part;
+    // }
 
     public String getPerspectiveId() {
         return perspectiveId;
@@ -118,12 +116,13 @@ public class ContributedEditorMenuAction extends Action implements
 
     protected IWorkbenchPart getWorkbenchPart() {
         IWorkbenchPart wbPart = null;
-        if (part instanceof PresentablePart) {
-            PartPane pane = ((PresentablePart) part).getPane();
-            if (pane != null) {
-                wbPart = pane.getPartReference().getPart(false);
-            }
-        }
+        // TODO port to Eclipse 4?
+        // if (part instanceof PresentablePart) {
+        // PartPane pane = ((PresentablePart) part).getPane();
+        // if (pane != null) {
+        // wbPart = pane.getPartReference().getPart(false);
+        // }
+        // }
         return wbPart;
     }
 
