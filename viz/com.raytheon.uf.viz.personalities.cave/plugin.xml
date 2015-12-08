@@ -239,14 +239,6 @@
 	    </handler>
    </extension>
    <extension
-         point="org.eclipse.ui.presentationFactories">
-      <factory
-            class="com.raytheon.uf.viz.personalities.cave.presentation.VizPresentationFactory"
-            id="com.raytheon.uf.viz.personalities.cave.presentation.VizPresentationFactory"
-            name="CAVE Presentation">
-      </factory>
-   </extension>
-   <extension
          point="org.eclipse.ui.bindings">
       <scheme
             id="com.raytheon.viz.ui.cave.scheme"

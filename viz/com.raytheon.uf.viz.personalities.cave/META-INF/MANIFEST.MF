@@ -18,7 +18,6 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.personalities.cave.component,
  com.raytheon.uf.viz.personalities.cave.menu,
- com.raytheon.uf.viz.personalities.cave.presentation,
  com.raytheon.uf.viz.personalities.cave.workbench
 Import-Package: com.raytheon.uf.common.message
 Bundle-ClassPath: com.raytheon.uf.viz.personalities.cave.jar
