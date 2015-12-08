@@ -19,31 +19,15 @@
  **/
 package com.raytheon.viz.ui.views;
 
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
-import org.eclipse.swt.events.ShellAdapter;
-import org.eclipse.swt.events.ShellEvent;
-import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Control;
 import org.eclipse.ui.IPageListener;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.ILayoutContainer;
-import org.eclipse.ui.internal.LayoutPart;
-import org.eclipse.ui.internal.PartPane;
-import org.eclipse.ui.internal.PartStack;
-import org.eclipse.ui.internal.ViewPane;
-import org.eclipse.ui.internal.ViewSite;
-import org.eclipse.ui.internal.WorkbenchPage;
 
 /**
  * The Eclipse WorkbenchPage has lots of nifty functions for dealing with views,
@@ -90,12 +74,14 @@ public class CaveWorkbenchPageManager {
 
     private final IWorkbenchPage workbenchPage;
 
-    private List<CaveDetachedWindow> detachedWindows = new ArrayList<CaveDetachedWindow>();
+    // TODO port to Eclipse 4?
+    // private List<CaveDetachedWindow> detachedWindows = new
+    // ArrayList<CaveDetachedWindow>();
 
     private CaveWorkbenchPageManager(IWorkbenchPage workbenchPage) {
         this.workbenchPage = workbenchPage;
-        workbenchPage.getWorkbenchWindow().addPageListener(
-                new PageListener(this));
+        workbenchPage.getWorkbenchWindow()
+                .addPageListener(new PageListener(this));
     }
 
     public IWorkbenchPage getWorkbenchPage() {
@@ -103,20 +89,21 @@ public class CaveWorkbenchPageManager {
     }
 
     public IViewReference[] getViewReferences() {
-        if (detachedWindows.isEmpty()) {
-            return workbenchPage.getViewReferences();
-        }
-        List<IViewReference> result = Arrays.asList(workbenchPage
-                .getViewReferences());
-        result = new ArrayList<IViewReference>(result);
-        for (CaveDetachedWindow window : detachedWindows) {
-            for (LayoutPart part : window.getChildren()) {
-                if (part instanceof ViewPane) {
-                    result.add(((ViewPane) part).getViewReference());
-                }
-            }
-        }
-        return result.toArray(new IViewReference[0]);
+        // TODO port to Eclipse 4?
+        // if (detachedWindows.isEmpty()) {
+        return workbenchPage.getViewReferences();
+        // }
+        // List<IViewReference> result = Arrays.asList(workbenchPage
+        // .getViewReferences());
+        // result = new ArrayList<IViewReference>(result);
+        // for (CaveDetachedWindow window : detachedWindows) {
+        // for (LayoutPart part : window.getChildren()) {
+        // if (part instanceof ViewPane) {
+        // result.add(((ViewPane) part).getViewReference());
+        // }
+        // }
+        // }
+        // return result.toArray(new IViewReference[0]);
     }
 
     public IViewPart showView(String viewID) throws PartInitException {
@@ -139,40 +126,42 @@ public class CaveWorkbenchPageManager {
     }
 
     public void activate(IViewPart view) {
-        for (CaveDetachedWindow window : detachedWindows) {
-            for (LayoutPart part : window.getChildren()) {
-                if (((ViewPane) part).getPartReference().getPart(false) == view) {
-                    window.getShell().forceActive();
-                    ILayoutContainer container = part.getContainer();
-                    if (container != null && container instanceof PartStack) {
-                        PartStack folder = (PartStack) container;
-                        if (folder.getSelection() != part) {
-                            folder.setSelection(part);
-                        }
-                    }
-                    return;
-                }
-            }
-        }
+        // TODO port to Eclipse 4?
+        // for (CaveDetachedWindow window : detachedWindows) {
+        // for (LayoutPart part : window.getChildren()) {
+        // if (((ViewPane) part).getPartReference().getPart(false) == view) {
+        // window.getShell().forceActive();
+        // ILayoutContainer container = part.getContainer();
+        // if (container != null && container instanceof PartStack) {
+        // PartStack folder = (PartStack) container;
+        // if (folder.getSelection() != part) {
+        // folder.setSelection(part);
+        // }
+        // }
+        // return;
+        // }
+        // }
+        // }
         workbenchPage.activate(view);
     }
 
     public void bringToTop(IViewPart view) {
-        for (CaveDetachedWindow window : detachedWindows) {
-            for (LayoutPart part : window.getChildren()) {
-                if (((ViewPane) part).getPartReference().getPart(false) == view) {
-                    window.getShell().moveAbove(null);
-                    ILayoutContainer container = part.getContainer();
-                    if (container != null && container instanceof PartStack) {
-                        PartStack folder = (PartStack) container;
-                        if (folder.getSelection() != part) {
-                            folder.setSelection(part);
-                        }
-                    }
-                    return;
-                }
-            }
-        }
+        // TODO port to Eclipse 4?
+        // for (CaveDetachedWindow window : detachedWindows) {
+        // for (LayoutPart part : window.getChildren()) {
+        // if (((ViewPane) part).getPartReference().getPart(false) == view) {
+        // window.getShell().moveAbove(null);
+        // ILayoutContainer container = part.getContainer();
+        // if (container != null && container instanceof PartStack) {
+        // PartStack folder = (PartStack) container;
+        // if (folder.getSelection() != part) {
+        // folder.setSelection(part);
+        // }
+        // }
+        // return;
+        // }
+        // }
+        // }
         workbenchPage.bringToTop(view);
     }
 
@@ -190,98 +179,104 @@ public class CaveWorkbenchPageManager {
 
     private IViewReference findDetachedViewReference(String viewId,
             String secondaryId) {
-        for (CaveDetachedWindow window : detachedWindows) {
-            for (LayoutPart part : window.getChildren()) {
-                if (part instanceof ViewPane) {
-                    IViewReference ref = ((ViewPane) part).getViewReference();
-                    if (ref.getId().equals(viewId)
-                            && ((secondaryId == null && ref.getSecondaryId() == null) || secondaryId
-                                    .equals(ref.getSecondaryId()))) {
-                        return ref;
-                    }
-                }
-            }
-        }
+        // TODO port to Eclipse 4?
+        // for (CaveDetachedWindow window : detachedWindows) {
+        // for (LayoutPart part : window.getChildren()) {
+        // if (part instanceof ViewPane) {
+        // IViewReference ref = ((ViewPane) part).getViewReference();
+        // if (ref.getId().equals(viewId)
+        // && ((secondaryId == null && ref.getSecondaryId() == null) ||
+        // secondaryId
+        // .equals(ref.getSecondaryId()))) {
+        // return ref;
+        // }
+        // }
+        // }
+        // }
         return null;
     }
 
     public void hideView(IViewReference view) {
-        for (CaveDetachedWindow window : detachedWindows) {
-            for (LayoutPart part : window.getChildren()) {
-                if (part instanceof ViewPane) {
-                    if (((ViewPane) part).getPartReference() == view) {
-                        WorkbenchPage page = (WorkbenchPage) workbenchPage;
-                        if (page.getActivePartReference() == view) {
-                            // You cannot hide the active part, normally the
-                            // page changes the active part but since we bypass
-                            // the page we need to choose a new active part
-                            for (IWorkbenchPartReference wbRef : page
-                                    .getSortedParts()) {
-                                if (wbRef != view) {
-                                    page.activate(wbRef.getPart(false));
-                                    break;
-                                }
-                            }
-                        }
-                        page.getActivePerspective().hideView(view);
-                        return;
-                    }
-                }
-            }
-        }
+        // TODO port to Eclipse 4?
+        // for (CaveDetachedWindow window : detachedWindows) {
+        // for (LayoutPart part : window.getChildren()) {
+        // if (part instanceof ViewPane) {
+        // if (((ViewPane) part).getPartReference() == view) {
+        // WorkbenchPage page = (WorkbenchPage) workbenchPage;
+        // if (page.getActivePartReference() == view) {
+        // // You cannot hide the active part, normally the
+        // // page changes the active part but since we bypass
+        // // the page we need to choose a new active part
+        // for (IWorkbenchPartReference wbRef : page
+        // .getSortedParts()) {
+        // if (wbRef != view) {
+        // page.activate(wbRef.getPart(false));
+        // break;
+        // }
+        // }
+        // }
+        // page.getActivePerspective().hideView(view);
+        // return;
+        // }
+        // }
+        // }
+        // }
         workbenchPage.hideView(view);
     }
 
     public void floatView(IViewPart part) {
-        ViewSite site = ((ViewSite) part.getViewSite());
-        WorkbenchPage page = (WorkbenchPage) site.getPage();
-        PartPane pane = site.getPane();
-        PartStack stack = pane.getStack();
-        Control control;
-        if (stack != null) {
-            control = stack.getControl();
-        } else {
-            control = pane.getControl();
-        }
-        Rectangle bounds = control.getBounds();
-        Point corner = control.getParent().toDisplay(bounds.x, bounds.y);
-        bounds.x = corner.x;
-        bounds.y = corner.y;
-        CaveDetachedWindow window = new CaveDetachedWindow(page);
-        window.setBounds(bounds);
-        window.create();
-        window.drop(pane);
-        window.getShell().setBounds(bounds);
-        window.getShell().addShellListener(new ShellListener(this, window));
-        window.open();
-        window.getShell().forceActive();
-        detachedWindows.add(window);
+        // TODO port to Eclipse 4?
+        // ViewSite site = ((ViewSite) part.getViewSite());
+        // WorkbenchPage page = (WorkbenchPage) site.getPage();
+        // PartPane pane = site.getPane();
+        // PartStack stack = pane.getStack();
+        // Control control;
+        // if (stack != null) {
+        // control = stack.getControl();
+        // } else {
+        // control = pane.getControl();
+        // }
+        // Rectangle bounds = control.getBounds();
+        // Point corner = control.getParent().toDisplay(bounds.x, bounds.y);
+        // bounds.x = corner.x;
+        // bounds.y = corner.y;
+        // CaveDetachedWindow window = new CaveDetachedWindow(page);
+        // window.setBounds(bounds);
+        // window.create();
+        // window.drop(pane);
+        // window.getShell().setBounds(bounds);
+        // window.getShell().addShellListener(new ShellListener(this, window));
+        // window.open();
+        // window.getShell().forceActive();
+        // detachedWindows.add(window);
     }
 
     public void dockView(IViewPart part) {
-        WorkbenchPage page = (WorkbenchPage) part.getSite().getPage();
-        IViewReference ref = (IViewReference) page.getReference(part);
-        page.attachView(ref);
+        // TODO port to Eclipse 4?
+        // WorkbenchPage page = (WorkbenchPage) part.getSite().getPage();
+        // IViewReference ref = (IViewReference) page.getReference(part);
+        // page.attachView(ref);
     }
 
-    private static class ShellListener extends ShellAdapter {
-
-        private final CaveWorkbenchPageManager manager;
-
-        private final CaveDetachedWindow window;
-
-        public ShellListener(CaveWorkbenchPageManager manager,
-                CaveDetachedWindow window) {
-            this.manager = manager;
-            this.window = window;
-        }
-
-        @Override
-        public void shellClosed(ShellEvent e) {
-            manager.detachedWindows.remove(window);
-        }
-
-    }
+    // TODO port to Eclipse 4?
+    // private static class ShellListener extends ShellAdapter {
+    //
+    // private final CaveWorkbenchPageManager manager;
+    //
+    // private final CaveDetachedWindow window;
+    //
+    // public ShellListener(CaveWorkbenchPageManager manager,
+    // CaveDetachedWindow window) {
+    // this.manager = manager;
+    // this.window = window;
+    // }
+    //
+    // @Override
+    // public void shellClosed(ShellEvent e) {
+    // manager.detachedWindows.remove(window);
+    // }
+    //
+    // }
 
     private static class PageListener implements IPageListener {
 

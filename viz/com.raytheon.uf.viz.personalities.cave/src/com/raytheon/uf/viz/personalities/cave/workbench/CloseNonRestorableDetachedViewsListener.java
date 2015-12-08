@@ -22,13 +22,10 @@ package com.raytheon.uf.viz.personalities.cave.workbench;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.ui.IPerspectiveDescriptor;
-import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.Perspective;
 import org.eclipse.ui.internal.WorkbenchPage;
-import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
 
 /**
@@ -69,17 +66,18 @@ public class CloseNonRestorableDetachedViewsListener implements Listener {
                         .getOpenPerspectives();
                 for (IPerspectiveDescriptor desc : perspectives) {
                     WorkbenchPage wPage = (WorkbenchPage) page;
-                    Perspective persp = wPage.findPerspective(desc);
-                    for (IViewReference ref : persp.getViewReferences()) {
-                        IViewDescriptor descr = reg.find(ref.getId());
-                        if (descr != null && descr.isRestorable() == false) {
-                            if (wPage.getActivePerspective() != persp) {
-                                persp.hideView(ref);
-                            } else {
-                                page.hideView(ref);
-                            }
-                        }
-                    }
+                    // TODO port to Eclipse 4?
+                    // Perspective persp = wPage.findPerspective(desc);
+                    // for (IViewReference ref : persp.getViewReferences()) {
+                    // IViewDescriptor descr = reg.find(ref.getId());
+                    // if (descr != null && descr.isRestorable() == false) {
+                    // if (wPage.getActivePerspective() != persp) {
+                    // persp.hideView(ref);
+                    // } else {
+                    // page.hideView(ref);
+                    // }
+                    // }
+                    // }
                 }
 
             }
