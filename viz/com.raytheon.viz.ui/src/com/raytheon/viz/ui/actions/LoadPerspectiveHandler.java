@@ -35,9 +35,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
-import org.eclipse.ui.internal.EditorAreaHelper;
-import org.eclipse.ui.internal.EditorReference;
-import org.eclipse.ui.internal.WorkbenchPage;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -273,9 +270,10 @@ public class LoadPerspectiveHandler extends
         }
 
         if (procedure.getLayout() != null) {
-            EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                    .getEditorPresentation();
-            editorArea.restoreState(procedure.getLayout());
+            // TODO port to Eclipse 4?
+            // EditorAreaHelper editorArea = ((WorkbenchPage) page)
+            // .getEditorPresentation();
+            // editorArea.restoreState(procedure.getLayout());
         }
 
         Bundle[] bundles = procedure.getBundles();
@@ -288,16 +286,17 @@ public class LoadPerspectiveHandler extends
                         b.getDisplays());
 
                 if (b.getLayoutId() != null) {
-                    EditorAreaHelper editArea = ((WorkbenchPage) page)
-                            .getEditorPresentation();
-                    for (IEditorReference ref : editArea.getEditors()) {
-                        if (ref.getEditor(false) == openedEditor) {
-                            page.hideEditor(ref);
-                            editArea.addEditor((EditorReference) ref,
-                                    b.getLayoutId(), false);
-                            page.activate(ref.getPart(false));
-                        }
-                    }
+                    // TODO port to Eclipse 4?
+                    // EditorAreaHelper editArea = ((WorkbenchPage) page)
+                    // .getEditorPresentation();
+                    // for (IEditorReference ref : editArea.getEditors()) {
+                    // if (ref.getEditor(false) == openedEditor) {
+                    // page.hideEditor(ref);
+                    // editArea.addEditor((EditorReference) ref,
+                    // b.getLayoutId(), false);
+                    // page.activate(ref.getPart(false));
+                    // }
+                    // }
                 }
 
                 BundleLoader.loadTo(openedEditor, b);

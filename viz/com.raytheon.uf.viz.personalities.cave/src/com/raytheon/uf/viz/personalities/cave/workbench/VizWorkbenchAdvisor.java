@@ -172,7 +172,8 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
                     ((org.eclipse.ui.internal.registry.PerspectiveRegistry) reg)
                             .removeExtension(ext, new Object[] { perspective });
                 } else {
-                    sync.deleteCustomDefinition();
+                    // TODO port to eclipse 4?
+                    // sync.deleteCustomDefinition();
                 }
             }
         }

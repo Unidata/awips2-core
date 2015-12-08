@@ -34,7 +34,6 @@ import org.eclipse.ui.IMemento;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
-import org.eclipse.ui.internal.WorkbenchPage;
 
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
@@ -156,7 +155,8 @@ public class SavePerspectiveHandler extends
 
         procedure.setPerspective(perspectiveId);
         IMemento layout = XMLMemento.createWriteRoot("perspectiveLayout");
-        ((WorkbenchPage) page).getEditorPresentation().saveState(layout);
+        // TODO port to Eclipse 4?
+        // ((WorkbenchPage) page).getEditorPresentation().saveState(layout);
         procedure.setLayout(layout);
 
         List<Bundle> bundleList = new ArrayList<Bundle>();

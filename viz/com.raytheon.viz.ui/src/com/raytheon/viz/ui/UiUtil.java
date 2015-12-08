@@ -39,7 +39,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.EditorReference;
 import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
 
@@ -133,8 +132,9 @@ public class UiUtil {
                             }
                             Container c = new Container();
                             c.displays = editorDisplays;
-                            c.layoutId = ((EditorReference) ref).getPane()
-                                    .getStack().getID();
+                            // TODO port to Eclipse 4?
+                            // c.layoutId = ((EditorReference) ref).getPane()
+                            // .getStack().getID();
                             cp.containers.add(c);
                         }
                     }
