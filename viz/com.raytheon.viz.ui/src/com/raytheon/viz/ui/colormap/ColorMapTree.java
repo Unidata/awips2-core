@@ -201,7 +201,7 @@ public class ColorMapTree {
      * Intended for use on non-UI thread.
      */
     public void optimizeIsEmpty() {
-        System.out.println(Thread.currentThread().getName() + "Optimizing "
+        System.out.println(Thread.currentThread().getName() + " Optimizing "
                 + getName());
         isEmpty();
 
