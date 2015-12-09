@@ -40,6 +40,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015  3806      njensen     Initial creation
  * Nov 12, 2015  4834      njensen     Added NON_EXISTENT_CHECKSUM and DIRECTORY_CHECKSUM
+ * Dec 09, 2015  4834      njensen     Added delete()
  *
  * </pre>
  * 
@@ -144,11 +145,11 @@ public interface ILocalizationFile {
      */
     public SaveableOutputStream openOutputStream() throws LocalizationException;
 
-    /*
-     * TODO add method signature delete() that resembles java.nio.file.Files in
-     * that it has a return type of void and throws a variety of exceptions for
-     * various possibilities such as NoSuchFileException,
-     * InsufficientPermissionsException, DirectoryNotEmptyException, etc...
+    /**
+     * Deletes the file from the localization store.
+     * 
+     * @throws LocalizationException
      */
+    public void delete() throws LocalizationException;
 
 }
