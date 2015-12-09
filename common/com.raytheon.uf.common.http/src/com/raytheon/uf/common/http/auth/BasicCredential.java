@@ -20,51 +20,33 @@
 package com.raytheon.uf.common.http.auth;
 
 /**
- * Credentials used in an authorization header
+ * Credentials for basic authorization header
  * 
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 25, 2014 2756       bclement    Initial creation
- * Dec 09, 2015 4834       njensen     Promoted userid to Credential
- * 
+ * Dec 09, 2015  4834      njensen     Initial creation
+ *
  * </pre>
  * 
- * @author bclement
+ * @author njensen
  * @version 1.0
  */
-public class SignedCredential extends Credential {
 
-    private final String signature;
+public class BasicCredential extends Credential {
 
-    private final String algorithm;
+    private final String password;
 
-    /**
-     * @param userid
-     * @param signature
-     * @param algorithm
-     */
-    public SignedCredential(String userid, String signature, String algorithm) {
+    protected BasicCredential(String userid, String password) {
         super(userid);
-        this.signature = signature;
-        this.algorithm = algorithm;
+        this.password = password;
     }
 
-    /**
-     * @return the signature
-     */
-    public String getSignature() {
-        return signature;
-    }
-
-    /**
-     * @return the algorithm
-     */
-    public String getAlgorithm() {
-        return algorithm;
+    public String getPassword() {
+        return password;
     }
 
 }
