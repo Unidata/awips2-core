@@ -45,6 +45,8 @@ import com.raytheon.uf.common.http.AcceptHeaderParser;
 import com.raytheon.uf.common.http.AcceptHeaderValue;
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
+import com.raytheon.uf.common.http.auth.BasicCredential;
+import com.raytheon.uf.common.http.auth.BasicScheme;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
@@ -59,7 +61,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.localization.http.scheme.BasicScheme;
 import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
 import com.raytheon.uf.edex.localization.http.writer.HtmlDirectoryListingWriter;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
@@ -108,9 +109,7 @@ public class LocalizationHttpService {
 
     private static final String AUTHORIZATION_HEADER = "Authorization";
 
-    private static final String WWW_AUTHENTICATE_HEADER = "WWW-Authenticate";
-
-    private static final String BASIC_SCHEME = "Basic";
+    // private static final String WWW_AUTHENTICATE_HEADER = "WWW-Authenticate";
 
     private static final IUFStatusHandler log = UFStatus
             .getHandler(LocalizationHttpService.class);
@@ -358,37 +357,37 @@ public class LocalizationHttpService {
         if (auth == null) {
             // TODO support more schemes
             Map<String, String> extraHeaders = new HashMap<>();
-            extraHeaders.put(WWW_AUTHENTICATE_HEADER, BASIC_SCHEME);
+            /*
+             * TODO Return the supported schemes? Adding the www-authenticate
+             * header causes the apache httpclient on the client side to spit
+             * out a warning if the authentication hasn't been set up yet (which
+             * it hasn't, hence returning the 401 here).
+             */
+            // extraHeaders.put(WWW_AUTHENTICATE_HEADER, BASIC_SCHEME);
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_UNAUTHORIZED,
                     "Authorization header required for PUT requests",
                     extraHeaders);
         }
 
-        int index = auth.indexOf(" ");
-        if (index < 1) {
+        // TODO support more schemes
+        BasicCredential cred = BasicScheme.parseAuthHeader(auth);
+        if (cred == null) {
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_BAD_REQUEST,
-                    "Unrecognized authorization scheme");
+                    "Unrecognized authorization: " + auth);
         }
 
-        // TODO support more schemes
-        String scheme = auth.substring(0, index);
-        String key = auth.substring(index + 1);
-        String username = null;
-        if (scheme.equalsIgnoreCase(BASIC_SCHEME)) {
-            username = BasicScheme.authenticate(key);
-        } else {
-            throw new LocalizationHttpException(
-                    HttpServletResponse.SC_FORBIDDEN,
-                    "Unsupported authorization scheme: " + scheme);
-        }
+        /*
+         * TODO actually authenticate and verify the user is who they claim to
+         * be
+         */
 
         /*
          * Got the username, validate that they have permissions to put against
          * this localization context and path.
          */
-        if (!LocalizationAuthorization.isPutAuthorized(username,
+        if (!LocalizationAuthorization.isPutAuthorized(cred.getUserid(),
                 lfile.getContext(), lfile.getPath())) {
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_FORBIDDEN,
