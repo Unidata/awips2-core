@@ -37,12 +37,19 @@ import org.eclipse.core.expressions.Expression;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
+import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.e4.ui.model.application.ui.menu.MMenuElement;
+import org.eclipse.e4.ui.workbench.UIEvents;
+import org.eclipse.e4.ui.workbench.renderers.swt.MenuManagerRenderer;
 import org.eclipse.jface.action.IContributionItem;
+import org.eclipse.jface.action.MenuManager;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.AbstractContributionFactory;
 import org.eclipse.ui.menus.IContributionRoot;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.services.IServiceLocator;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -79,6 +86,7 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  *                                      localized site.
  * Mar 20, 2013       1638 mschenke     Removed menu creation job use
  * May 04, 2015  4284      bsteffen     Copy subMenuId
+ * Dec 10, 2015  5193      bsteffen     Eclipse 4 Upgrade: Workaround 48143 
  * 
  * </pre>
  * 
@@ -105,6 +113,7 @@ public class DiscoverMenuContributions {
         }
 
         ran = true;
+        workaround48143();
         try {
 
             URL url = FileLocator.find(Activator.getDefault().getBundle(),
@@ -240,5 +249,57 @@ public class DiscoverMenuContributions {
 
             }
         }
+    }
+
+    /**
+     * Workaround to an eclipse bug: "visibleWhen has no effect for MenuManager
+     * added in AbstractContributionFactory"
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=484143
+     * 
+     * If this bug is fixed then this method should be removed. This method will
+     * add an EventHandler for UIElement changes and update the MenuManager
+     * visibility to match the MMenuElement visibility
+     */
+    private static void workaround48143() {
+        /* Code is based off of MenuManagerRenderer.toBeRenderedUpdater */
+        IEventBroker eventBroker = PlatformUI.getWorkbench()
+                .getService(IEventBroker.class);
+        eventBroker.subscribe(UIEvents.UIElement.TOPIC_ALL, new EventHandler() {
+
+            @Override
+            public void handleEvent(Event event) {
+                String attName = (String) event
+                        .getProperty(UIEvents.EventTags.ATTNAME);
+                if (UIEvents.UIElement.VISIBLE.equals(attName)) {
+                    Object element = event
+                            .getProperty(UIEvents.EventTags.ELEMENT);
+                    if (element instanceof MMenuElement) {
+                        MMenuElement menuModel = (MMenuElement) element;
+                        Object renderer = menuModel.getRenderer();
+                        if (renderer instanceof MenuManagerRenderer) {
+                            IContributionItem item = ((MenuManagerRenderer) renderer)
+                                    .getContribution(menuModel);
+                            if (item instanceof MenuManager) {
+                                MenuManager manager = (MenuManager) item;
+                                manager.setVisible(menuModel.isVisible());
+                                if (manager.getParent() != null) {
+                                    manager.getParent().markDirty();
+                                    /*
+                                     * When MenuManagerRenderer changes
+                                     * visibility normally then it schedules an
+                                     * update, this class does not have access
+                                     * to the scheduling method. Currently
+                                     * something else always ends up triggering
+                                     * an update so it's not a problem but if
+                                     * there are problems this would be a good
+                                     * place to look.
+                                     */
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        });
     }
 }
