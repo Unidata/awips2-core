@@ -19,20 +19,16 @@
  **/
 package com.raytheon.uf.common.python.concurrent;
 
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import jep.JepException;
+import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.TimeUnit;
 
 import com.raytheon.uf.common.python.PythonInterpreter;
 
 /**
- * Interface to get to the {@link ExecutorService}. Allows multiple thread pools
+ * Interface to get to an {@link ExecutorService}. Allows multiple thread pools
  * to be created in a single JVM, by passing in a different application name.
  * 
  * This class will be used in this way:
@@ -42,11 +38,11 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * 
  *       AbstractPythonScriptFactory<PythonInterpreter, Object> factory = new CAVEPythonFactory();
  *       PythonJobCoordinator coordinator = PythonJobCoordinator
- *               .newInstance(factory);
+ *               .newInstance(2, "CAVEPython", factory);
  *       IPythonExecutor<PythonInterpreter, Object> executor = new CAVEExecutor(
  *               args);
  *       try {
- *           coordinator.submitAsyncJob(executor, listener);
+ *           coordinator.submitJobWithCallback(executor, listener);
  *       } catch (Exception e) {
  *           e.printStackTrace();
  *       }
@@ -63,6 +59,7 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Mar 21, 2014 2868       njensen     Changed getInstance() from throwing
  *                                     RuntimeException to IllegalArgumentException
  *                                     Added refCount
+ * Dec 10, 2015 4816       dgilling    Remove static Map of pools from this class.
  * 
  * </pre>
  * 
@@ -71,150 +68,142 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  */
 public class PythonJobCoordinator<P extends PythonInterpreter> {
 
-    private ExecutorService execService = null;
-
-    private ThreadLocal<P> threadLocal = null;
+    private ExecutorService execService;
 
     /**
-     * Tracks the number of times newInstance() vs shutdown() is called for an
-     * instance of a PythonJobCoordinator
-     */
-    private AtomicInteger refCount;
-
-    private static Map<String, PythonJobCoordinator<? extends PythonInterpreter>> pools = new ConcurrentHashMap<String, PythonJobCoordinator<? extends PythonInterpreter>>();
-
-    private PythonJobCoordinator(final AbstractPythonScriptFactory<P> factory) {
-        threadLocal = new ThreadLocal<P>() {
-            @Override
-            protected P initialValue() {
-                try {
-                    return factory.createPythonScript();
-                } catch (JepException e) {
-                    throw new ScriptCreationException(e);
-                }
-            };
-        };
-        execService = Executors.newFixedThreadPool(factory.getMaxThreads(),
-                new PythonThreadFactory(threadLocal, factory.getName()));
-        refCount = new AtomicInteger();
-    }
-
-    /**
-     * Gets the instance by name, or throw a {@link IllegalArgumentException}.
+     * Creates a new thread pool instance with the specified number of threads.
+     * At any time, up to {@code numTheads} threads can be executing. If
+     * additional tasks are submitted when all threads are active, they will
+     * wait in the queue until a thread is available. If any thread terminates
+     * due to a failure during execution prior to shutdown, a new one will take
+     * its place if needed to execute subsequent tasks. The threads in the pool
+     * will exist until it is explicitly shutdown.
      * 
-     * @param name
-     * @return
-     */
-    public static <S extends PythonInterpreter> PythonJobCoordinator<S> getInstance(
-            String name) {
-        synchronized (pools) {
-            if (pools.containsKey(name)) {
-                return (PythonJobCoordinator<S>) pools.get(name);
-            } else {
-                throw new IllegalArgumentException(
-                        "Unable to find instance of PythonJobCoordinator named "
-                                + name
-                                + ", please call newInstance(AbstractPythonScriptFactory)");
-            }
-        }
-    }
-
-    /**
-     * Creates a new instance of this class for a new application. If the same
-     * name already exists, it assumes that it is the same application and
-     * returns the existing instance. Also increments the reference count of
-     * applications using this PythonJobCoordinator. For each time that
-     * newInstance() is called, a corresponding call to shutdown() will be
-     * needed if you truly want to shut the job coordinator down.
-     * 
-     * @param name
      * @param numThreads
-     * @return
+     *            Number of threads to allocate to this thread pool.
+     * @param name
+     *            Name to assign to this thread pool. Will be used as a name
+     *            prefix attached to each thread in the thread pool.
+     * @param scriptFactory
+     *            {@code AbstractPythonScriptFactory} instance to build
+     *            {@code PythonInterpreter} objects used to run jobs.
+     * @return The newly created thread pool
      */
-    public static <S extends PythonInterpreter> PythonJobCoordinator<S> newInstance(
-            AbstractPythonScriptFactory<S> factory) {
-        synchronized (pools) {
-            PythonJobCoordinator<S> pool = null;
-            if (pools.containsKey(factory.getName())) {
-                pool = (PythonJobCoordinator<S>) pools.get(factory.getName());
-            } else {
-                pool = new PythonJobCoordinator<S>(factory);
-                pools.put(factory.getName(), pool);
-            }
-            pool.refCount.getAndIncrement();
-            return pool;
-        }
+    public PythonJobCoordinator(int numThreads, String name,
+            final PythonInterpreterFactory<P> scriptFactory) {
+        this.execService = new PythonInterpreterThreadPoolExecutor<>(
+                numThreads, new PythonThreadFactory<>(scriptFactory, name));
+    }
+
+    /**
+     * Creates a new thread pool instance with the specified number of threads.
+     * At any time, up to {@code numTheads} threads can be executing. If
+     * additional tasks are submitted when all threads are active, they will
+     * wait in the queue until a thread is available. However, this queue can
+     * only hold up to {@code workQueueSize} tasks before rejecting any further
+     * submitted tasks. If any thread terminates due to a failure during
+     * execution prior to shutdown, a new one will take its place if needed to
+     * execute subsequent tasks. The threads in the pool will exist until it is
+     * explicitly shutdown.
+     * 
+     * @param numThreads
+     *            Number of threads to allocate to this thread pool.
+     * @param name
+     *            Name to assign to this thread pool. Will be used as a name
+     *            prefix attached to each thread in the thread pool.
+     * @param workQueueSize
+     *            the maximum size for the work queue of tasks to be executed
+     * @param scriptFactory
+     *            {@code AbstractPythonScriptFactory} instance to build
+     *            {@code PythonInterpreter} objects used to run jobs.
+     * @return The newly created thread pool
+     */
+    public PythonJobCoordinator(int numThreads, String name, int workQueueSize,
+            final PythonInterpreterFactory<P> scriptFactory) {
+        this.execService = new PythonInterpreterThreadPoolExecutor<>(
+                numThreads, workQueueSize, new PythonThreadFactory<>(
+                        scriptFactory, name));
     }
 
     /**
      * Submits a job to the {@link ExecutorService}. Fires a listener back after
      * it is done. This should be used for asynchronous operations.
      * 
-     * @param callable
-     * @return
-     * @throws Exception
+     * @param executor
+     *            {@code IPythonExecutor} instance to run.
+     * @param listener
+     *            {@code IPythonJobListener} instance to fire once job is run.
+     * @return A {@code Future} representing pending completion of the job.
+     * @throws IllegalArgumentException
+     *             If a null listener is supplied.
+     * @throws RejectedExecutionException
+     *             If the job cannot be scheduled for execution.
      */
-    public <R> void submitAsyncJob(IPythonExecutor<P, R> executor,
-            IPythonJobListener<R> listener) throws Exception {
+    public <R> Future<R> submitJobWithCallback(IPythonExecutor<P, R> executor,
+            IPythonJobListener<R> listener) {
         // fail if the listener is null, bad things happen then
         if (listener == null) {
             throw new IllegalArgumentException("Listener cannot be null");
         }
-        // submit job
-        PythonJob<P, R> job = new PythonJob<P, R>(executor, listener,
-                threadLocal);
-        execService.submit(job);
+        Callable<R> job = new PythonScriptPseudoCallable<>(executor, listener);
+        return execService.submit(job);
     }
 
     /**
-     * Submits a job to the {@link ExecutorService}. Waits on the result before
-     * returning back. This should be used for synchronous operations.
+     * Submits a job for execution and returns a Future representing the pending
+     * results of the job. The Future's <tt>get</tt> method will return the
+     * task's result upon successful completion.
+     * 
+     * <p>
+     * If you would like to immediately block waiting for a task, you can use
+     * constructions of the form
+     * <tt>result = exec.submitJob(aPyExecutor).get();</tt>
      * 
      * @param executor
-     * @return
-     * @throws InterruptedException
-     * @throws ExecutionException
+     *            {@code IPythonExecutor} instance to run.
+     * @return A {@code Future} representing pending completion of the job.
+     * @throws RejectedExecutionException
+     *             If the job cannot be scheduled for execution.
      */
-    public <R> R submitSyncJob(IPythonExecutor<P, R> executor)
-            throws InterruptedException, ExecutionException {
+    public <R> Future<R> submitJob(IPythonExecutor<P, R> executor) {
         // submit job
-        PythonJob<P, R> job = new PythonJob<P, R>(executor, threadLocal);
-        Future<R> future = execService.submit(job);
-        // wait for return object
-        return future.get();
+        Callable<R> job = new PythonScriptPseudoCallable<>(executor, null);
+        return execService.submit(job);
     }
 
     /**
-     * This function should take the {@link PythonInterpreter} on each thread in
-     * the thread pool and dispose of it and then shutdown the
-     * {@link ExecutorService}. This will reduce the reference count by 1, and
-     * will only shut down the underlying executor service and python
-     * interpreters if the refCount is less than 1.
+     * Initiates an orderly shutdown in which previously submitted tasks are
+     * executed, but no new tasks will be accepted. Invocation has no additional
+     * effect if already shut down.
      * 
-     * @param name
+     * <p>
+     * All threads in the pool will dispose its {@code PythonInterpreter}
+     * instance.
+     * 
+     * <p>
+     * This method does not block waiting for previously submitted tasks to
+     * complete execution. Use awaitTermination to do that.
      */
     public void shutdown() {
-        synchronized (pools) {
-            int count = refCount.decrementAndGet();
-            if (count < 1) {
-                pools.values().remove(this);
-                execService.shutdown();
-            }
-        }
+        execService.shutdown();
     }
 
     /**
-     * This function should cancel any listeners for a certain task and then
-     * remove those corresponding tasks off of the queue to be ran. It should
-     * NOT try to cancel any running python interpreters.
+     * Blocks until all tasks have completed execution after a shutdown request,
+     * or the timeout occurs, or the current thread is interrupted, whichever
+     * happens first.
      * 
-     * @param name
+     * @param timeout
+     *            the maximum time to wait
+     * @param unit
+     *            unit the time unit of the timeout argument
+     * @return {@code true} if this executor terminated and {@code false} if the
+     *         timeout elapsed before termination
+     * @throws InterruptedException
+     *             if interrupted while waiting
      */
-    public void shutdownTask(String name) {
-        /*
-         * TODO need to add for future functionality, arg should probably be an
-         * IPythonExecutor, not a String
-         */
+    public boolean awaitTermination(long timeout, TimeUnit unit)
+            throws InterruptedException {
+        return execService.awaitTermination(timeout, unit);
     }
-
 }
