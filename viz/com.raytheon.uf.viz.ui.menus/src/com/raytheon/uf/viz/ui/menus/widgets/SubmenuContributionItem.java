@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.ui.menus.xml.MenuXMLMap;
  * May 08, 2013  1978     bsteffen    Perform variable substitution on subMenu
  *                                    IDs.
  * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
+ * Dec 14, 2015  5194     bsteffen    Generate contribution items synchronously.
  * 
  * </pre>
  * 
@@ -112,7 +113,8 @@ public class SubmenuContributionItem extends MenuManager {
     public void fill(Menu parent, int index) {
         removeAll();
         super.fill(parent, index);
-        getContributionItemsJob.schedule(new GetContributionItemsRunnable());
+        // TODO this is intended to be async.
+        new GetContributionItemsRunnable().run();
     }
 
     protected synchronized IContributionItem[][] getContributionItems() {
