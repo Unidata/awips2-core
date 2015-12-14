@@ -40,7 +40,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
@@ -74,7 +73,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
- * 
+ * Dec 14, 2015  5195     njensen     Don't extend org.eclipse.swt.widgets.Dialog
  * 
  * </pre>
  * 
@@ -82,7 +81,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * @version 1.0
  */
 
-public class ConnectivityPreferenceDialog extends Dialog {
+public class ConnectivityPreferenceDialog {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ConnectivityPreferenceDialog.class, "CAVE");
@@ -164,12 +163,6 @@ public class ConnectivityPreferenceDialog extends Dialog {
     protected String details;
 
     public ConnectivityPreferenceDialog(boolean checkAlertViz, String title) {
-        this(new Shell(Display.getDefault()), checkAlertViz, title);
-    }
-
-    public ConnectivityPreferenceDialog(Shell parentShell,
-            boolean checkAlertViz, String title) {
-        super(parentShell);
         this.title = title;
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
@@ -195,9 +188,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
                         LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
         // Only open if current settings are not valid.
         if (prompt || !validate()) {
-            Shell parent = getParent();
-            display = parent.getDisplay();
-            shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE);
+            display = Display.getDefault();
+            shell = new Shell(display, SWT.DIALOG_TRIM | SWT.RESIZE);
             shell.setText(title);
 
             // Create the main layout for the shell.
@@ -408,6 +400,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
          * Treat the escape key like pressing the Quit button.
          */
         shell.addListener(SWT.Traverse, new Listener() {
+            @Override
             public void handleEvent(Event e) {
                 if (e.detail == SWT.TRAVERSE_ESCAPE) {
                     e.doit = false;
