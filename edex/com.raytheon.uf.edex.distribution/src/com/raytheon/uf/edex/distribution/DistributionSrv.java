@@ -28,8 +28,8 @@ import java.util.concurrent.ConcurrentMap;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
 import org.apache.camel.RecipientList;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * The purpose of this bean is to load a series of XML files from localization
@@ -52,6 +52,7 @@ import org.apache.commons.logging.LogFactory;
  * Aug 30, 2013 2163       bkowal      edexBridge to qpid 0.18 RHEL6 upgrade
  * Sep 06, 2013 2327       rjpeter     Updated to use DistributionPatterns.
  * May 09, 2014 3151       bclement    changed registration so only required plugins throw exception on error
+ * Dec 11, 2015 5166       kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author brockwoo
@@ -61,10 +62,11 @@ public class DistributionSrv {
     private static final String HEADER_QPID_SUBJECT = "qpid.subject";
 
     private static final String MESSAGE_HEADER = "header";
-    protected Log logger = LogFactory.getLog("Ingest");
 
+    protected Logger logger = LoggerFactory.getLogger("Ingest");
 
-    protected Log routeFailedLogger = LogFactory.getLog("RouteFailedLog");
+    protected Logger routeFailedLogger = LoggerFactory
+            .getLogger("RouteFailedLog");
 
     private final ConcurrentMap<String, String> pluginRoutes = new ConcurrentHashMap<String, String>();
 
