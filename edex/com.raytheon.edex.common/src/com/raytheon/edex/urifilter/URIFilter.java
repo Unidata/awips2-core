@@ -29,8 +29,8 @@ import java.util.Iterator;
 import java.util.TimeZone;
 import java.util.regex.Pattern;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
 import com.raytheon.uf.common.dataplugin.message.DataURINotificationMessage;
@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * 05/27/2009   2037       dhladky     Fixed concurrent mod 
  *                                     exception with URI maps on removal
  * Feb 15, 2013 1638       mschenke    Switched to use DataURI.SEPARATOR
+ * Dec 14, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -122,7 +123,8 @@ public abstract class URIFilter implements ISerializableObject {
     public static final String forecastTimeSepEnd = ")";
 
     /** The logger */
-    protected transient final Log logger = LogFactory.getLog(getClass());
+    protected transient final Logger logger = LoggerFactory
+            .getLogger(getClass());
 
     /** Pattern for dates in radar */
     public static String radarDatePattern = "yyyy-MM-dd_HH:mm:ss.S";
@@ -290,8 +292,8 @@ public abstract class URIFilter implements ISerializableObject {
             date = sdf.parse(dateString);
             cal.setTimeInMillis(date.getTime());
         } catch (ParseException pe) {
-            statusHandler.handle(Priority.ERROR, key
-                    + " can't parse time: " + pe);
+            statusHandler.handle(Priority.ERROR, key + " can't parse time: "
+                    + pe);
         }
 
         return date;
