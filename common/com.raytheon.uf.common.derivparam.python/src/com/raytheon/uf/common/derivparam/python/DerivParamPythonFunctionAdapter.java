@@ -51,6 +51,7 @@ import com.raytheon.uf.common.util.FileUtil;
  *                                     concurrent python for threading.
  * Jan 30, 2014  #2725     ekladstrup  Add name and extention get methods
  *                                     after removing RCP extention point
+ * Dec 14, 2015  #4816     dgilling    Support refactored PythonJobCoordinator API.
  * 
  * </pre>
  * 
@@ -67,6 +68,11 @@ public class DerivParamPythonFunctionAdapter implements
 
     private static final String TEMPLATE_FILE = DerivedParameterGenerator.DERIV_PARAM_DIR
             + File.separator + PYTHON + File.separator + "functionTemplate.txt";
+
+    private static final int MAX_THREADS = Integer.getInteger(
+            "com.raytheon.uf.viz.derivparam.python.threads", 3);
+
+    private static final String THREAD_POOL_NAME = "DerivedParameterPython";
 
     private PythonJobCoordinator<MasterDerivScript> coordinator;
 
@@ -126,8 +132,8 @@ public class DerivParamPythonFunctionAdapter implements
         if (coordinator != null) {
             coordinator.shutdown();
         }
-        coordinator = PythonJobCoordinator
-                .newInstance(new MasterDerivScriptFactory());
+        coordinator = new PythonJobCoordinator<>(MAX_THREADS, THREAD_POOL_NAME,
+                new MasterDerivScriptFactory());
     }
 
     /*
@@ -141,8 +147,8 @@ public class DerivParamPythonFunctionAdapter implements
     public List<IDataRecord> executeFunction(String name, List<Object> arguments)
             throws ExecutionException {
         try {
-            return coordinator.submitSyncJob(new MasterDerivScriptExecutor(
-                    name, arguments));
+            return coordinator.submitJob(
+                    new MasterDerivScriptExecutor(name, arguments)).get();
         } catch (InterruptedException e) {
             throw new ExecutionException(e);
         }
