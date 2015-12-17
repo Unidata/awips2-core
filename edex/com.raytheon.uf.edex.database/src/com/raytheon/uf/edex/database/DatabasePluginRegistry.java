@@ -22,8 +22,8 @@ package com.raytheon.uf.edex.database;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.IPluginRegistryChanged;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -40,8 +40,9 @@ import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 28, 2010 #5050      rjpeter     Initial creation
+ * Apr 28, 2010 5050       rjpeter     Initial creation
  * May 29, 2014 2726       rjpeter     Added initial listeners and properties for easier spring dependency management.
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author rjpeter
@@ -52,7 +53,7 @@ public class DatabasePluginRegistry extends
         GenericRegistry<String, DatabasePluginProperties> implements
         IPluginRegistryChanged {
     /** The logger */
-    protected transient Log logger = LogFactory.getLog(getClass());
+    protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
     private static DatabasePluginRegistry instance = new DatabasePluginRegistry();
 

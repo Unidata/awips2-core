@@ -21,10 +21,10 @@ package com.raytheon.uf.edex.esb.camel.cluster.quartz;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.component.quartz.QuartzEndpoint;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.quartz.JobExecutionContext;
 import org.quartz.JobExecutionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils.LockState;
@@ -41,6 +41,7 @@ import com.raytheon.uf.edex.database.cluster.ClusterTask;
  * Feb 19, 2010            njensen     Initial creation
  * Aug 21, 2013 DR 16521   D. Friedman Ensure endpoint URI is used for cluster entry
  * Aug 26, 2013 DR 2272    bkowal      Append an optional suffix to the cluster task details
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -52,8 +53,8 @@ public class ClusteredQuartzEndpoint extends QuartzEndpoint {
 
     private static final String TASK = "ClusteredQuartz";
 
-    protected transient Log logger = LogFactory
-            .getLog(ClusteredQuartzEndpoint.class);
+    protected transient Logger logger = LoggerFactory
+            .getLogger(ClusteredQuartzEndpoint.class);
 
     public ClusteredQuartzEndpoint(String uri,
             ClusteredQuartzComponent clusteredQuartzComponent) {

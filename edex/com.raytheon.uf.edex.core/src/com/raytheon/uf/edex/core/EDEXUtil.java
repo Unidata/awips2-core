@@ -26,8 +26,8 @@ import java.util.Date;
 import java.util.Map;
 import java.util.TimeZone;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -56,6 +56,7 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * 06/25/2014   3165        njensen     Remove dead code
  * Jul 16, 2014 2914        garmendariz Remove EnvProperties
  * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
+ * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author chammack
@@ -81,7 +82,7 @@ public class EDEXUtil implements ApplicationContextAware {
 
     private static final String EDEX_SHARE = EDEX_DATA + "share";
 
-    static Log logger = LogFactory.getLog(EDEXUtil.class);
+    private static Logger logger = LoggerFactory.getLogger(EDEXUtil.class);
 
     private static ApplicationContext CONTEXT;
 
