@@ -25,8 +25,8 @@ import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Date;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.localization.Checksum;
@@ -56,8 +56,9 @@ import com.raytheon.uf.edex.core.EdexException;
  * Apr 23, 2007            chammack    Initial Creation.
  * Jul 24, 2007            njensen     Updated putFile()
  * Jul 30, 2007            njensen     Added deleteFile()
- * May 19, 2007    #1127   randerso    Implemented error reporting
- * Nov 17, 2015     4834   njensen     Extracted checksum code to ChecksumIO
+ * May 19, 2007 1127       randerso    Implemented error reporting
+ * Nov 17, 2015 4834       njensen     Extracted checksum code to ChecksumIO
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
  * 
  * </pre>
@@ -67,7 +68,8 @@ import com.raytheon.uf.edex.core.EdexException;
  */
 public class UtilityManager {
 
-    private static final Log logger = LogFactory.getLog(UtilityManager.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(UtilityManager.class);
 
     public static final String NOTIFY_ID = "utilityNotify";
 

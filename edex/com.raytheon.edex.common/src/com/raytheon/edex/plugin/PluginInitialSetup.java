@@ -19,8 +19,8 @@
  **/
 package com.raytheon.edex.plugin;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.IPluginRegistryChanged;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -35,6 +35,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 20, 2009            njensen     Initial creation
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -45,7 +46,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
 public class PluginInitialSetup implements IPluginRegistryChanged {
 
     /** The logger */
-    protected transient Log logger = LogFactory.getLog(getClass());
+    protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
     /*
      * (non-Javadoc)
