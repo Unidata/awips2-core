@@ -23,8 +23,8 @@ import java.io.File;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.Processor;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Adds properties for instrumentation to ensure log messages contain all
@@ -36,8 +36,9 @@ import org.apache.commons.logging.LogFactory;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 1, 2008             chammack    Initial creation
- * 15Jul2010          6624 garmendariz Log error and interrupt if file missing
+ * Dec 01, 2008            chammack    Initial creation
+ * Jul 15, 2010 6624       garmendariz Log error and interrupt if file missing
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -47,7 +48,7 @@ import org.apache.commons.logging.LogFactory;
 
 public class SetIngestHeaderFields implements Processor {
 
-    protected transient Log logger = LogFactory.getLog(getClass());
+    protected transient Logger logger = LoggerFactory.getLogger(getClass());
 
     /*
      * (non-Javadoc)

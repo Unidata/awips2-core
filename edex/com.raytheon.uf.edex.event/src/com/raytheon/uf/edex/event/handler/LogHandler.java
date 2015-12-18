@@ -1,7 +1,9 @@
 package com.raytheon.uf.edex.event.handler;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.slf4j.Marker;
+import org.slf4j.MarkerFactory;
 
 import com.google.common.eventbus.AllowConcurrentEvents;
 import com.google.common.eventbus.Subscribe;
@@ -17,12 +19,13 @@ import com.raytheon.uf.common.event.Event;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 1, 2012            jsanchez     Initial creation
- * Nov 5, 2012  #1305     bgonzale     Added log level Event logging.
+ * Mar 01, 2012           jsanchez     Initial creation
+ * Nov 05, 2012 1305      bgonzale     Added log level Event logging.
  * Feb 05, 2013 1580      mpduff       EventBus refactor.
- * 3/13/2013              bphillip     Modified to make event bus registration a post construct operation
- * 3/27/2013    1802      bphillip     Moved event bus registration from a PostConstruct method to Spring static method
- * 
+ * Mar 13, 2013           bphillip     Modified to make event bus registration a post construct operation
+ * Mar 27, 2013 1802      bphillip     Moved event bus registration from a PostConstruct method to Spring static method
+ * Dec 17, 2015 5166      kbisanz      Update logging to use SLF4J, FATAL
+ *                                     level uses SLF4J error() with marker
  * </pre>
  * 
  * @author jsanchez
@@ -30,13 +33,15 @@ import com.raytheon.uf.common.event.Event;
  */
 public class LogHandler {
 
-    private final Log logger;
+    private final Logger logger;
+
+    private final Marker fatalMarker = MarkerFactory.getMarker("FATAL");
 
     /**
      * Creates a new object
      */
     public LogHandler() {
-        logger = LogFactory.getLog("Event");
+        logger = LoggerFactory.getLogger("Event");
     }
 
     /**
@@ -61,7 +66,10 @@ public class LogHandler {
             logger.error(event.toString());
             break;
         case FATAL:
-            logger.fatal(event.toString());
+            // SLF4J does not support a fatal log level. It does provide
+            // the ability to provide a marker, however only logback
+            // supports markers. See http://www.slf4j.org/faq.html#fatal
+            logger.error(fatalMarker, event.toString());
             break;
         case TRACE:
             logger.trace(event.toString());

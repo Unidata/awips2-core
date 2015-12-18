@@ -25,8 +25,8 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
@@ -49,9 +49,10 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 31, 2008            chammack    Initial creation
- * 02/06/09     1990       bphillip    Refactored to use plugin specific daos
+ * Feb 06, 2009 1990       bphillip    Refactored to use plugin specific daos
  * Nov 02, 2012 1302       djohnson    Remove unused method, fix formatting.
  * Mar 19, 2013 1785       bgonzale    Added performance status to persist.
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author chammack
@@ -59,7 +60,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  */
 public class PersistSrv {
 
-    private final Log logger = LogFactory.getLog(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final PersistSrv instance = new PersistSrv();
 
@@ -91,8 +92,7 @@ public class PersistSrv {
             StorageStatus ss = dao.persistToHDF5(pdo);
             timer.stop();
             perfLog.logDuration(pluginName + ": Persisted " + pdo.length
-                    + " record(s): Time to Persist",
-                    timer.getElapsedTime());
+                    + " record(s): Time to Persist", timer.getElapsedTime());
             StorageException[] se = ss.getExceptions();
             pdoList.addAll(Arrays.asList(pdo));
             if (se != null) {
