@@ -29,8 +29,8 @@ import org.eclipse.swt.accessibility.AccessibleControlEvent;
 import org.eclipse.swt.accessibility.AccessibleEvent;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.events.KeyAdapter;
-import org.eclipse.swt.events.KeyEvent;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.MouseMoveListener;
@@ -65,6 +65,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
  * Jun 11, 2015 4401       bkowal      Initial creation
  * Aug 26, 2015 4800       bkowal      Prevent NPE if all required properties are
  *                                     not set in time before the first filter.
+ * Dec 18, 2015 5216       dgilling    Use ModifyListener instead of KeyListener.
  * 
  * </pre>
  * 
@@ -136,9 +137,10 @@ public class FilterDelegate {
         text = new Text(comp, SWT.SINGLE | SWT.NONE);
         GridData data = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         text.setLayoutData(data);
-        text.addKeyListener(new KeyAdapter() {
+        text.addModifyListener(new ModifyListener() {
+
             @Override
-            public void keyReleased(KeyEvent e) {
+            public void modifyText(ModifyEvent e) {
                 filter();
             }
         });
