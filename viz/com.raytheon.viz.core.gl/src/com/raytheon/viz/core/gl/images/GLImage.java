@@ -53,6 +53,7 @@ import com.jogamp.opengl.util.texture.awt.AWTTextureIO;
  * Jul 01, 2006           chammack    Initial Creation.
  * May 27, 2014  3196     bsteffen    Remove jai.
  * May 10, 2015           mjames@ucar Refactor for jogl 2.3.2
+ * Dec 21, 2015			  mjames@ucar Mute theTexture.destroy
  * 
  * </pre>
  * 
@@ -116,7 +117,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
             if (getStatus() == Status.LOADED) {
                 if (theTexture != null) {
-                    theTexture.destroy(null);
+                    //theTexture.destroy(null);
                     theTexture = null;
                 }
                 if (theStagedData != null) {
