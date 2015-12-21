@@ -27,6 +27,7 @@ import java.util.Map;
 import org.apache.commons.lang3.Validate;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.ICoolBarManager;
 import org.eclipse.ui.IEditorDescriptor;
@@ -39,6 +40,7 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.WorkbenchPage;
 import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
 
@@ -68,6 +70,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * 12/05/2008              ebabin      Changed findView to not always assume
  *                                      view has a secondaryid.
  *                                     Added hideView method for quickly hiding views.
+ * Dec 21, 2015 5191       bsteffen    Updated layoutId for Eclipse 4.
  * 
  * </pre>
  * 
@@ -101,6 +104,7 @@ public class UiUtil {
      * 
      * @return the pane map
      */
+    @SuppressWarnings("restriction")
     public static List<ContainerPart> getActiveDisplayMap() {
         List<ContainerPart> parts = new ArrayList<ContainerPart>();
         Map<String, ContainerPart> partMap = new HashMap<String, ContainerPart>();
@@ -132,9 +136,12 @@ public class UiUtil {
                             }
                             Container c = new Container();
                             c.displays = editorDisplays;
-                            // TODO port to Eclipse 4?
-                            // c.layoutId = ((EditorReference) ref).getPane()
-                            // .getStack().getID();
+                            if (page instanceof WorkbenchPage) {
+                                MPart modelPart = ((WorkbenchPage) page)
+                                        .findPart(part);
+                                c.layoutId = modelPart.getParent()
+                                        .getElementId();
+                            }
                             cp.containers.add(c);
                         }
                     }
