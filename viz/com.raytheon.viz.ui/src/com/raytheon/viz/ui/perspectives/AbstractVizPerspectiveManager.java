@@ -28,6 +28,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
+import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
@@ -87,7 +88,6 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                      LoadPerspectiveHandler.
  * Dec 14, 2015 5193        bsteffen    Updates to handle changed eclipse 4
  *                                      listener calls.
-
  * 
  * </pre>
  * 
@@ -219,7 +219,7 @@ public abstract class AbstractVizPerspectiveManager implements
     protected List<MPartSashContainerElement> savedEditorAreaUI = new ArrayList<>();
 
     private IEditorPart activeEditor;
-    
+
     /** Has the perspective been opened */
     protected boolean opened = false;
 
@@ -271,14 +271,14 @@ public abstract class AbstractVizPerspectiveManager implements
     public void close() {
         if (opened) {
             // Cleanup hidden editors
-            IPresentationEngine presentation = perspectiveWindow.getService(IPresentationEngine.class);
-            for(MUIElement element : savedEditorAreaUI){
+            IPresentationEngine presentation = perspectiveWindow
+                    .getService(IPresentationEngine.class);
+            for (MUIElement element : savedEditorAreaUI) {
                 presentation.removeGui(element);
             }
-           
-            
+
             savedEditorAreaUI.clear();
-            
+
             opened = false;
 
             closeDialogs();
@@ -304,14 +304,29 @@ public abstract class AbstractVizPerspectiveManager implements
         page = perspectiveWindow.getActivePage();
         MWindow window = perspectiveWindow.getService(MWindow.class);
         EModelService model = perspectiveWindow.getService(EModelService.class);
-        List<MPlaceholder> editorPlaceholders = model.findElements(window,
+        MPerspective perspective = model.getActivePerspective(window);
+        List<MPlaceholder> editorPlaceholders = model.findElements(perspective,
                 IPageLayout.ID_EDITOR_AREA, MPlaceholder.class, null);
-        for (MPlaceholder editorPlaceholder : editorPlaceholders) {
+        if (editorPlaceholders.size() == 1) {
+            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
             MUIElement element = editorPlaceholder.getRef();
             if (element instanceof MArea) {
-                List<MPartSashContainerElement> children = ((MArea) element)
+                MArea editorArea = (MArea) element;
+                List<MPartSashContainerElement> children = editorArea
                         .getChildren();
-                if (savedEditorAreaUI.isEmpty() && children.isEmpty()) {
+                if (!children.isEmpty()) {
+                    /*
+                     * Necessary specifically for open, which can restore stacks
+                     * from last close with nothing in them.
+                     */
+                    IPresentationEngine presentationEngine = perspectiveWindow
+                            .getService(IPresentationEngine.class);
+                    for (MUIElement child : children) {
+                        presentationEngine.removeGui(child);
+                    }
+                    children.clear();
+                }
+                if (savedEditorAreaUI.isEmpty()) {
                     /*
                      * Create an editor stack for the compatibility layer, based
                      * off of code in
@@ -326,6 +341,7 @@ public abstract class AbstractVizPerspectiveManager implements
                     editorStack.getTags().add("EditorStack");
                     editorStack.setElementId("org.eclipse.e4.primaryDataStack");
                     children.add(editorStack);
+                    editorArea.setSelectedElement(editorStack);
                 } else {
                     for (MPartSashContainerElement element1 : savedEditorAreaUI) {
                         element1.setVisible(true);
@@ -333,7 +349,15 @@ public abstract class AbstractVizPerspectiveManager implements
                     children.addAll(savedEditorAreaUI);
                 }
                 savedEditorAreaUI.clear();
+            } else {
+                statusHandler.warn("Unable to find editor area.");
             }
+        } else if (editorPlaceholders.isEmpty()) {
+            statusHandler.warn(
+                    "Unable to find editor placeholder, cannot manage editor area.");
+        } else {
+            statusHandler.warn(
+                    "Too many editor placeholders found, cannot manage editor area.");
         }
         if (!opened) {
             backgroundColor = BackgroundColor
@@ -386,14 +410,14 @@ public abstract class AbstractVizPerspectiveManager implements
     public void deactivate() {
 
         activeEditor = page.getActiveEditor();
-        
+
         MWindow window = perspectiveWindow.getService(MWindow.class);
-
         EModelService model = perspectiveWindow.getService(EModelService.class);
-
-        List<MPlaceholder> editorPlaceholders = model.findElements(window,
+        MPerspective perspective = model.getActivePerspective(window);
+        List<MPlaceholder> editorPlaceholders = model.findElements(perspective,
                 IPageLayout.ID_EDITOR_AREA, MPlaceholder.class, null);
-        for (MPlaceholder editorPlaceholder : editorPlaceholders) {
+        if (editorPlaceholders.size() == 1) {
+            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
             MUIElement element = editorPlaceholder.getRef();
             if (element instanceof MArea) {
                 List<MPartSashContainerElement> children = ((MArea) element)
@@ -403,7 +427,16 @@ public abstract class AbstractVizPerspectiveManager implements
                     element1.setVisible(false);
                 }
                 children.clear();
+            } else {
+                statusHandler.warn(
+                        "Unable to find editor area, cannot deactivate editor area.");
             }
+        } else if (editorPlaceholders.isEmpty()) {
+            statusHandler.warn(
+                    "Unable to  find editor placeholder, cannot deactivate editor area.");
+        } else {
+            statusHandler.warn(
+                    "Too many editor placeholders found, cannot deactivate editor area.");
         }
 
         deactivateDialogs();
