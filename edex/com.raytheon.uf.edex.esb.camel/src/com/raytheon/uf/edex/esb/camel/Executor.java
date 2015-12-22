@@ -63,6 +63,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Dec 04, 2013  2566      bgonzale     refactored mode methods to a utility in edex.core.
  * Mar 19, 2014  2726      rjpeter      Added graceful shutdown.
  * May 21, 2014  3195      bclement     system now prints available modes and exits if runmode not specified
+ * Dec 22, 2015  4262      dgilling     Wait for async startup beans before starting routes.
  * </pre>
  * 
  * @author chammack
@@ -184,6 +185,12 @@ public class Executor {
                 .getBean("contextManager");
 
         shutdownContexts.set(true);
+
+        logger.info("Waiting for async startup dependencies to complete...");
+        while (!ctxMgr.readyToStartContexts()) {
+            Thread.sleep((long) (0.5 * TimeUtil.MILLIS_PER_SECOND));
+        }
+        logger.info("Async startup dependencies are complete...");
 
         // start final routes
         ctxMgr.startContexts();
