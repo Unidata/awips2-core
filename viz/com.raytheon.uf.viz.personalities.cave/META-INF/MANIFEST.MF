@@ -13,11 +13,18 @@ Require-Bundle: org.eclipse.core.runtime,
  javax.measure;bundle-version="1.0.0",
  com.raytheon.viz.alerts,
  com.raytheon.uf.common.pypies,
- com.raytheon.uf.viz.spring.dm
+ com.raytheon.uf.viz.spring.dm,
+ org.eclipse.e4.ui.workbench.renderers.swt,
+ org.eclipse.e4.ui.workbench.swt;bundle-version="0.13.0",
+ org.eclipse.e4.ui.model.workbench;bundle-version="1.1.100",
+ org.eclipse.e4.core.contexts;bundle-version="1.4.0",
+ org.eclipse.e4.ui.workbench,
+ org.eclipse.e4.core.services;bundle-version="2.0.0"
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.personalities.cave.component,
  com.raytheon.uf.viz.personalities.cave.menu,
+ com.raytheon.uf.viz.personalities.cave.presentation,
  com.raytheon.uf.viz.personalities.cave.workbench
 Import-Package: com.raytheon.uf.common.message
 Bundle-ClassPath: com.raytheon.uf.viz.personalities.cave.jar

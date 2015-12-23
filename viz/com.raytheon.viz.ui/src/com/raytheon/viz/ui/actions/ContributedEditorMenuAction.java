@@ -34,6 +34,7 @@ import org.eclipse.ui.IWorkbenchPart;
  * ------------ ---------- ----------- --------------------------
  * Mar 21, 2012            mnash       Initial creation
  * Mar 02, 2015  4204      njensen     Added perspectiveId and getWorkbenchPart()
+ * Dec 23, 2015  5189      bsteffen    Track the workbench part instead of the presentation part.
  * 
  * </pre>
  * 
@@ -41,12 +42,9 @@ import org.eclipse.ui.IWorkbenchPart;
  * @version 1.0
  */
 
-@SuppressWarnings("restriction")
-public class ContributedEditorMenuAction extends Action {// implements
-    // ISelfUpdatingAction {
+public class ContributedEditorMenuAction extends Action {
 
-    // protected IPresentablePart part;
-    // TODO port to Eclipse 4?
+    protected IWorkbenchPart part;
 
     protected String perspectiveId;
 
@@ -80,31 +78,24 @@ public class ContributedEditorMenuAction extends Action {// implements
         super(text);
     }
 
-    // TODO port to Eclipse 4?
-    // @Override
-    // public void update() {
-    // // do nothing to for this class
-    // }
-    //
-    // @Override
-    // public boolean shouldBeVisible() {
-    // return true;
-    // }
+    public boolean shouldBeVisible() {
+        return true;
+    }
 
-    // /**
-    // * @param part
-    // * the part to set
-    // */
-    // public void setPart(IPresentablePart part) {
-    // this.part = part;
-    // }
-    //
-    // /**
-    // * @return the part
-    // */
-    // public IPresentablePart getPart() {
-    // return part;
-    // }
+    /**
+     * @param part
+     *            the part to set
+     */
+    public void setPart(IWorkbenchPart part) {
+        this.part = part;
+    }
+
+    /**
+     * @return the part
+     */
+    public IWorkbenchPart getPart() {
+        return part;
+    }
 
     public String getPerspectiveId() {
         return perspectiveId;
@@ -113,17 +104,13 @@ public class ContributedEditorMenuAction extends Action {// implements
     public void setPerspectiveId(String perspectiveId) {
         this.perspectiveId = perspectiveId;
     }
-
-    protected IWorkbenchPart getWorkbenchPart() {
-        IWorkbenchPart wbPart = null;
-        // TODO port to Eclipse 4?
-        // if (part instanceof PresentablePart) {
-        // PartPane pane = ((PresentablePart) part).getPane();
-        // if (pane != null) {
-        // wbPart = pane.getPartReference().getPart(false);
-        // }
-        // }
-        return wbPart;
+    
+    /**
+     * @deprecated use {@link #getPart()} instead, this method is only available for backwords compatibility and will be removed in the future.
+     */
+    @Deprecated
+    public IWorkbenchPart getWorkbenchPart(){
+        return part;
     }
 
 }
