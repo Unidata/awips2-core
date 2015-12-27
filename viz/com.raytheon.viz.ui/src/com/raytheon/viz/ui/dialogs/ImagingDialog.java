@@ -210,8 +210,7 @@ public class ImagingDialog extends CaveSWTDialog implements
      * @param dialogTitle
      */
     public ImagingDialog(Shell parentShell, IDisplayPaneContainer initialEditor) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
-                | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
         setText("Imaging...");
         this.currentEditor = initialEditor;
 
@@ -222,8 +221,7 @@ public class ImagingDialog extends CaveSWTDialog implements
     }
 
     public ImagingDialog(Shell parentShell, AbstractVizResource<?, ?> rscToEdit) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
-                | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
         setText("Imaging...");
         this.rscToEdit = rscToEdit;
     }
