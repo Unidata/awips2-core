@@ -98,7 +98,7 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
 
     // order that you want the data to be in the tree, must correspond to
     // request constraints
-    protected String[] order = null;
+    public String[] order = null;
 
     /** Use {@link ProductBrowserPreferenceConstants#FORMAT_DATA} instead */
     @Deprecated

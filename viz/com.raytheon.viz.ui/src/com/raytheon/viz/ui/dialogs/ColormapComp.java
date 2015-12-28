@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.colormap.IRefreshColorMapTreeListener;
  * Sep 18, 2013  2421     bsteffen    Use ColorMapTree for asyncronous loading.
  * Aug 28, 2014  3616     rferrel     Display ColorMapTree status while creating off
  *                                      the UI thread; and added refresh item.
+ * Oct 14, 2015	 ----     mjames@ucar Only build for BASE level.
  * 
  * </pre>
  * 
@@ -304,48 +305,48 @@ public class ColormapComp {
             for (LocalizationFile file : files) {
                 addFile(file, index++);
             }
-
-            if (menu == cmapPopupMenu) {
-                new MenuItem(menu, SWT.SEPARATOR, index++);
-                final int startLevelIndex = index;
-
-                /*
-                 * Place holders for levels in order to display properly in the
-                 * color bar popup menu.
-                 */
-                for (LocalizationLevel level : ColorMapTreeFactory
-                        .getInstance().getTreesLevelLocalization()) {
-                    MenuItem mi = new MenuItem(menu, SWT.NONE, index++);
-                    mi.setText(level.name());
-                }
-
-                ColorMapTreeFactory.getInstance().updateLevelMapsCallack(
-                        new ILevelMapsCallback() {
-                            @Override
-                            public void treeCreated(
-                                    final LocalizationLevel level,
-                                    final ColorMapTree tree) {
-                                /*
-                                 * VizApp.runAsync does not update the menu item
-                                 * correctly when parent is a menu instead of a
-                                 * button.
-                                 */
-                                VizApp.runSync(new Runnable() {
-
-                                    @Override
-                                    public void run() {
-                                        updateMenu(startLevelIndex, level, tree);
-                                    }
-                                });
-                            }
-                        });
-            } else {
-                for (ColorMapTree subTree : getLevelTrees()) {
-                    if (!subTree.isEmpty()) {
-                        addSubTree(subTree, index++);
-                    }
-                }
-            }
+//            
+//            if (menu == cmapPopupMenu) {
+//                new MenuItem(menu, SWT.SEPARATOR, index++);
+//                final int startLevelIndex = index;
+//
+//                /*
+//                 * Place holders for levels in order to display properly in the
+//                 * color bar popup menu.
+//                 */
+//                for (LocalizationLevel level : ColorMapTreeFactory
+//                        .getInstance().getTreesLevelLocalization()) {
+//                    MenuItem mi = new MenuItem(menu, SWT.NONE, index++);
+//                    mi.setText(level.name());
+//                }
+//
+//                ColorMapTreeFactory.getInstance().updateLevelMapsCallack(
+//                        new ILevelMapsCallback() {
+//                            @Override
+//                            public void treeCreated(
+//                                    final LocalizationLevel level,
+//                                    final ColorMapTree tree) {
+//                                /*
+//                                 * VizApp.runAsync does not update the menu item
+//                                 * correctly when parent is a menu instead of a
+//                                 * button.
+//                                 */
+//                                VizApp.runSync(new Runnable() {
+//
+//                                    @Override
+//                                    public void run() {
+//                                        updateMenu(startLevelIndex, level, tree);
+//                                    }
+//                                });
+//                            }
+//                        });
+//            } else {
+//                for (ColorMapTree subTree : getLevelTrees()) {
+//                    if (!subTree.isEmpty()) {
+//                        addSubTree(subTree, index++);
+//                    }
+//                }
+//            }
             menu.removeMenuListener(this);
         }
 
