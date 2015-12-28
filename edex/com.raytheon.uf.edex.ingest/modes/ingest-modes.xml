@@ -28,6 +28,9 @@
                 <exclude>.*datadelivery.*</exclude>
 		<exclude>.*request.*</exclude>
 		<exclude>edex-security.xml</exclude>
+		<exclude>.*obs-ingest-metarshef.*</exclude>
 		<exclude>webservices.xml</exclude>
+		<exclude>rpgenvdata.*</exclude>
+		<exclude>nctaf.*</exclude>
 	</mode>
 </edexModes>

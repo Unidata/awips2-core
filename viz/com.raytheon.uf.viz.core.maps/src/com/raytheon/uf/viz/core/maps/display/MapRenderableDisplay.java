@@ -277,7 +277,7 @@ public class MapRenderableDisplay extends AbstractRenderableDisplay implements
         setZoomLevel(zoomLevel);
         super.zoom(zoomLevel);
     }
-
+    
     @Override
     public void scaleAndBias(double factor, double screenX, double screenY,
             IGraphicsTarget target) {

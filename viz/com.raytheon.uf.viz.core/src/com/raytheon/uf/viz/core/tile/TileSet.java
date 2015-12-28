@@ -52,6 +52,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 8, 2012            mschenke     Initial creation
+ * May 24, 2015			  mjames@ucar  Added a buffer to extent to care for Mcidas native projections
  * 
  * </pre>
  * 
@@ -186,9 +187,9 @@ public class TileSet {
         Geometry extentGeom = gf.createPolygon(
                 gf.createLinearRing(new Coordinate[] {
                         new Coordinate(extent.getMinX(), extent.getMinY()),
-                        new Coordinate(extent.getMaxX(), extent.getMinY()),
-                        new Coordinate(extent.getMaxX(), extent.getMaxY()),
-                        new Coordinate(extent.getMinX(), extent.getMaxY()),
+                        new Coordinate(extent.getMaxX()*1.0, extent.getMinY()),
+                        new Coordinate(extent.getMaxX()*1.0, extent.getMaxY()*1.0),
+                        new Coordinate(extent.getMinX(), extent.getMaxY()*1.0),
                         new Coordinate(extent.getMinX(), extent.getMinY()) }),
                 null);
         TileLevel tileLevel = getTileLevel(tileLevels.length - 1);
