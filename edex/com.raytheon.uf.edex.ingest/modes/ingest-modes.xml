@@ -29,5 +29,6 @@
 		<exclude>.*obs-ingest-metarshef.*</exclude>
 		<exclude>rpgenvdata.*</exclude>
 		<exclude>nctaf.*</exclude>
+		<exclude>nctext.*</exclude>
 	</mode>
 </edexModes>
