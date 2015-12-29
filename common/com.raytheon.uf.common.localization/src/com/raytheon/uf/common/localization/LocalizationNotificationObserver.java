@@ -51,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      deleting it.
  * Jul 25, 2014 3378       bclement    path manager added to global observers
  * Feb 18, 2015 4137       reblum      path manager removed from global observers
+ * Apr 10, 2015 4391       njensen     Backported above change
  * 
  * </pre>
  * 

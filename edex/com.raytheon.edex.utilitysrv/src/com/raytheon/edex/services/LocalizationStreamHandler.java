@@ -56,6 +56,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 14, 2014 3372       njensen      fileMap is ConcurrentHashMap for thread safety
  * Jul 16, 2014 3378       bclement     removed cache
  * Feb 17, 2015 4137       reblum       fixed timestamp on put requests
+ * Apr 10, 2015 4391       njensen      Backported above change
  * 
  * </pre>
  * 

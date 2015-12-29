@@ -55,10 +55,10 @@ public abstract class AbstractProductBrowserDataDefinition<T extends AbstractRes
     public String displayName;
 
     // the resource data to construct the resource
-    protected T resourceData;
+    public T resourceData;
 
     // the load properties to tell the resource how to load
-    protected LoadProperties loadProperties;
+    public LoadProperties loadProperties;
 
     // most will have default values of true, only a select few (beta) will have
     // a default value of false

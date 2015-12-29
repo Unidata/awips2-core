@@ -55,6 +55,7 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     on the UI thread.
  *                                    Converted to singleton.
  *                                    Added localized file observer.
+ * Oct 14, 2015	 ----     mjames@ucar Only build for BASE level.
  * 
  * </pre>
  * 
@@ -121,7 +122,7 @@ public class ColorMapTreeFactory {
     /**
      * Flag to kick off initTreeByLevel the first time the trees are needed.
      */
-    private boolean startInitTreeByLevel = true;
+    private boolean startInitTreeByLevel = false;
 
     /**
      * Singleton constructor.
@@ -177,7 +178,7 @@ public class ColorMapTreeFactory {
         synchronized (treesByLevel) {
             if (startInitTreeByLevel) {
                 startInitTreeByLevel = false;
-                initTreeByLevel();
+                //initTreeByLevel();
             }
 
             /*
@@ -255,18 +256,6 @@ public class ColorMapTreeFactory {
                         optimizeTree(tree);
 
                         synchronized (treesByLevel) {
-                            /*
-                             * Use for debugging. Simulates a long delay in
-                             * getting tree level's color map. Allows testing to
-                             * see if menu items for the tree levels are
-                             * properly handled.
-                             */
-                            // try {
-                            // treesByLevel.wait(3000L);
-                            // } catch (InterruptedException e) {
-                            // e.printStackTrace();
-                            // }
-
                             treesByLevel.put(level, tree);
                             for (ILevelMapsCallback listener : tlcListeners) {
                                 listener.treeCreated(level, tree);

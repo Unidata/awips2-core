@@ -50,6 +50,7 @@ import com.sun.opengl.util.texture.TextureIO;
  * ------------- -------- ---------- --------------------------
  * Jul 01, 2006           chammack    Initial Creation.
  * May 27, 2014  3196     bsteffen    Remove jai.
+ * May 10, 2015           mjames@ucar Refactor for jogl 2.3.2
  * 
  * </pre>
  * 
