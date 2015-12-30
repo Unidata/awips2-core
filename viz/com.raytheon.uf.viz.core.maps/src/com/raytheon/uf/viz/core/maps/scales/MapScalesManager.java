@@ -36,6 +36,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
@@ -161,6 +162,17 @@ public class MapScalesManager {
         }
 
         private void loadBundleXml() {
+        	//
+        	// 14.4.1
+        	//
+        	
+//        	try {
+//        		this.bundleXml = new String(scaleFile.getFile().read());
+//        	} catch (LocalizationException e) {
+        	
+        	//
+        	// 15.1.1
+        	//
             StringBuilder sb = new StringBuilder();
             char[] buffer = new char[1024];
             try (InputStream is = scaleFile.getFile().openInputStream()) {
