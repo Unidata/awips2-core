@@ -23,16 +23,17 @@ import com.raytheon.uf.common.colormap.image.ColorMapData;
 
 /**
  * 
- * GL Colormap data, includes a data buffer, data format and bounds
+ * GL Colormap data, includes data format and bounds
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 10, 2011            bsteffen    Initial creation
- * Oct 16, 2013       2333 mschenke    Removed Buffer from this object
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Aug 10, 2011  10189    bsteffen  Initial creation
+ * Oct 16, 2013  2333     mschenke  Removed Buffer from this object
+ * Dec 04, 2015  5146     bsteffen  Return 1 for size of undefined dimensions
  * 
  * </pre>
  * 
@@ -92,7 +93,7 @@ public class GLColorMapData {
 
     public int getDimensionSize(int index) {
         if (index < 0 || index >= dimensions.length) {
-            return 0;
+            return 1;
         }
         return dimensions[index];
     }
