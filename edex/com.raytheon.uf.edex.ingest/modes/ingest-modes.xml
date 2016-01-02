@@ -30,5 +30,6 @@
 		<exclude>rpgenvdata.*</exclude>
 		<exclude>nctaf.*</exclude>
 		<exclude>nctext.*</exclude>
+		<exclude>.*binlightning.*</exclude>
 	</mode>
 </edexModes>
