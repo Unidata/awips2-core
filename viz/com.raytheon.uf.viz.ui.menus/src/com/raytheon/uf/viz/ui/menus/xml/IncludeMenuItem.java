@@ -57,6 +57,7 @@ import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
  * Mar 12, 2009           chammack    Initial creation
  * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
  * May 04, 2015  4284     bsteffen    Use subMenuId
+ * Dec 21, 2015  5194     bsteffen    Match changes in SubmenuContributionItem.
  * 
  * </pre>
  * 
@@ -92,18 +93,19 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
                     subMenuName, null, removalsIn) {
 
                 @Override
-                protected synchronized IContributionItem[][] getContributionItems() {
-                    if (this.contributionItems == null) {
-                        try {
-                            this.contributionItems = new IContributionItem[][] { getAllContributionItems(
-                                    items, subs, removals) };
-                        } catch (VizException e) {
-                            statusHandler.handle(Priority.PROBLEM,
-                                    e.getLocalizedMessage(), e);
+                protected void addContributedItems() {
+                    try {
+                        IContributionItem[] all = getAllContributionItems(items,
+                                subs, removals);
+                        for (IContributionItem item : all) {
+                            add(item);
                         }
+                    } catch (VizException e) {
+                        statusHandler.handle(Priority.PROBLEM,
+                                e.getLocalizedMessage(), e);
                     }
-                    return this.contributionItems;
                 }
+
             };
             return new IContributionItem[] { submenuCont };
         }
