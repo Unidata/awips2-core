@@ -21,6 +21,8 @@
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.workbench.modeling.ISaveHandler;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
@@ -54,6 +56,8 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  *                                      computed instead of just maximized.
  *                                      Added command line parameters to allow window size
  *                                      and location to be specified.
+ * Dec 23, 2015   5189      bsteffen    Add custom save handler.
+
  * 
  * </pre>
  * 
@@ -127,6 +131,12 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
         if (perspective != null) {
             listener.perspectiveActivated(page, perspective);
         }
+        
+        IEclipseContext windowContext = window.getService(IEclipseContext.class);
+        ISaveHandler defaultSaveHandler = windowContext.get(ISaveHandler.class);
+        ISaveHandler localSaveHandler = new VizSaveHandler(defaultSaveHandler);
+        windowContext.set(ISaveHandler.class, localSaveHandler);
+
     }
 
     /*
