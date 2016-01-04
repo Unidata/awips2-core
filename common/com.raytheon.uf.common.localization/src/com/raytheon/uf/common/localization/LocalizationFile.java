@@ -469,8 +469,12 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Return the file path (not including the context directories)
      * 
+     * @deprecated Please use getPath() instead. It will return the exact same
+     *             String and is available on the ILocalizationFile interface.
+     * 
      * @return the file path
      */
+    @Deprecated
     public final String getName() {
         return getPath();
     }
@@ -483,21 +487,23 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Delete the localization file
      * 
-     * @return true if file is deleted, false if file still exists
      * @throws LocalizationException
      */
-    public boolean delete() throws LocalizationException {
+    @Override
+    public void delete() throws LocalizationException {
         try {
             FileLocker.lock(this, file, Type.WRITE);
             if (exists()) {
-                return adapter.delete(this);
+                adapter.delete(this);
             } else if (file.exists()) {
                 // Local file does actually exist, delete manually
-                return file.delete();
+                try {
+                    Files.delete(file.toPath());
+                } catch (IOException e) {
+                    throw new LocalizationException("Error deleting file "
+                            + file, e);
+                }
             }
-
-            // File doesn't exist, it is deleted, so technically success?
-            return true;
         } finally {
             FileLocker.unlock(this, file);
         }

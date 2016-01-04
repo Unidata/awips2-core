@@ -33,7 +33,10 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -42,6 +45,8 @@ import com.raytheon.uf.common.http.AcceptHeaderParser;
 import com.raytheon.uf.common.http.AcceptHeaderValue;
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.http.ProtectiveHttpOutputStream;
+import com.raytheon.uf.common.http.auth.BasicCredential;
+import com.raytheon.uf.common.http.auth.BasicScheme;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
@@ -56,7 +61,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
-import com.raytheon.uf.edex.localization.http.scheme.BasicScheme;
 import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
 import com.raytheon.uf.edex.localization.http.writer.HtmlDirectoryListingWriter;
 import com.raytheon.uf.edex.localization.http.writer.IDirectoryListingWriter;
@@ -91,21 +95,21 @@ public class LocalizationHttpService {
 
     private static final String DEFAULT_RESPONSE_TYPE = "application/binary";
 
-    private static final String ACCEPT_ENC_HEADER = "accept-encoding";
+    private static final String ACCEPT_ENC_HEADER = "Accept-Encoding";
 
-    private static final String ACCEPT_CONTENT_HEADER = "accept";
+    private static final String ACCEPT_CONTENT_HEADER = "Accept";
 
-    private static final String REDIRECT_HEADER = "location";
+    private static final String REDIRECT_HEADER = "Location";
 
-    private static final String CONTENT_MD5_HEADER = "content-md5";
+    private static final String CONTENT_MD5_HEADER = "Content-MD5";
 
-    private static final String LAST_MODIFIED_HEADER = "last-modified";
+    private static final String LAST_MODIFIED_HEADER = "Last-Modified";
 
-    private static final String IF_MATCH_HEADER = "if-match";
+    private static final String IF_MATCH_HEADER = "If-Match";
 
-    private static final String AUTHORIZATION_HEADER = "authorization";
+    private static final String AUTHORIZATION_HEADER = "Authorization";
 
-    private static final String BASIC_SCHEME = "basic";
+    // private static final String WWW_AUTHENTICATE_HEADER = "WWW-Authenticate";
 
     private static final IUFStatusHandler log = UFStatus
             .getHandler(LocalizationHttpService.class);
@@ -351,35 +355,39 @@ public class LocalizationHttpService {
 
         String auth = request.getHeader(AUTHORIZATION_HEADER);
         if (auth == null) {
+            // TODO support more schemes
+            Map<String, String> extraHeaders = new HashMap<>();
+            /*
+             * TODO Return the supported schemes? Adding the www-authenticate
+             * header causes the apache httpclient on the client side to spit
+             * out a warning if the authentication hasn't been set up yet (which
+             * it hasn't, hence returning the 401 here).
+             */
+            // extraHeaders.put(WWW_AUTHENTICATE_HEADER, BASIC_SCHEME);
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_UNAUTHORIZED,
-                    "Authorization header required for PUT requests");
-        }
-
-        int index = auth.indexOf(" ");
-        if (index < 1) {
-            throw new LocalizationHttpException(
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    "Unrecognized authorization scheme");
+                    "Authorization header required for PUT requests",
+                    extraHeaders);
         }
 
         // TODO support more schemes
-        String scheme = auth.substring(0, index);
-        String key = auth.substring(index + 1);
-        String username = null;
-        if (scheme.equalsIgnoreCase(BASIC_SCHEME)) {
-            username = BasicScheme.authenticate(key);
-        } else {
+        BasicCredential cred = BasicScheme.parseAuthHeader(auth);
+        if (cred == null) {
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_UNAUTHORIZED,
-                    "Unsupported authorization scheme: " + scheme);
+                    HttpServletResponse.SC_BAD_REQUEST,
+                    "Unrecognized authorization: " + auth);
         }
+
+        /*
+         * TODO actually authenticate and verify the user is who they claim to
+         * be
+         */
 
         /*
          * Got the username, validate that they have permissions to put against
          * this localization context and path.
          */
-        if (!LocalizationAuthorization.isPutAuthorized(username,
+        if (!LocalizationAuthorization.isPutAuthorized(cred.getUserid(),
                 lfile.getContext(), lfile.getPath())) {
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_FORBIDDEN,
@@ -429,6 +437,11 @@ public class LocalizationHttpService {
             HttpServletResponse response = out.getResponse();
             response.setContentType(TEXT_CONTENT);
             response.setStatus(e.getErrorCode());
+            if (e.getHeaders() != null) {
+                for (Entry<String, String> entry : e.getHeaders().entrySet()) {
+                    response.addHeader(entry.getKey(), entry.getValue());
+                }
+            }
             out.write(e.getMessage().getBytes());
         } else {
             log.error("Unable to send error message to client"

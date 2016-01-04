@@ -43,19 +43,19 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.raytheon.uf.common.comm.CommunicationException;
-import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
+import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.PathManager;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationFileVersionConflictException;
-import com.raytheon.uf.common.localization.exception.LocalizationPermissionDeniedException;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityCommand;
@@ -805,19 +805,12 @@ public class LocalizationManager implements IPropertyChangeListener {
     protected void upload(LocalizationFile file, File fileToUpload)
             throws LocalizationException {
         try {
-            HttpClientResponse resp = restConnect.restPutFile(file,
-                    fileToUpload);
-            if (resp.code != 200) {
-                String msg = new String(resp.data);
-                switch (resp.code) {
-                case 403:
-                    throw new LocalizationPermissionDeniedException(msg);
-                case 409:
-                    throw new LocalizationFileVersionConflictException(msg);
-                default:
-                    throw new LocalizationException("Error code " + resp.code
-                            + ": " + msg);
-                }
+            FileUpdatedMessage fum = restConnect
+                    .restPutFile(file, fileToUpload);
+
+            // notify our JVM of the update
+            for (PathManager pm : PathManagerFactory.getActivePathManagers()) {
+                pm.fireListeners(fum);
             }
         } catch (CommunicationException e) {
             throw new LocalizationException("Error uploading file: " + file, e);

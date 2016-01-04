@@ -17,18 +17,12 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.localization.http.scheme;
-
-import javax.servlet.http.HttpServletResponse;
+package com.raytheon.uf.common.http.auth;
 
 import org.apache.commons.codec.binary.Base64;
 
-import com.raytheon.uf.edex.localization.http.LocalizationHttpException;
-
 /**
- * Implementation of Basic authorization scheme.
- * 
- * FIXME: At present ignores the password/key and only uses the username.
+ * Abstract base class for http authorization schemes
  * 
  * <pre>
  *
@@ -36,7 +30,7 @@ import com.raytheon.uf.edex.localization.http.LocalizationHttpException;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 2, 2015   4834      njensen     Initial creation
+ * Dec 9, 2015   4834      njensen     Initial creation, extracted from SignatureAuthScheme
  *
  * </pre>
  * 
@@ -44,23 +38,27 @@ import com.raytheon.uf.edex.localization.http.LocalizationHttpException;
  * @version 1.0
  */
 
-public class BasicScheme {
+public abstract class AuthScheme {
 
-    public static String authenticate(String encoded)
-            throws LocalizationHttpException {
-        String decoded = new String(Base64.decodeBase64(encoded));
-        int index = decoded.indexOf(":");
-        if (index < 1) {
-            throw new LocalizationHttpException(
-                    HttpServletResponse.SC_BAD_REQUEST,
-                    "Bad authorization header");
-        }
-        String username = decoded.substring(0, index);
+    /**
+     * Create a non-chunked (no newlines) base64 string from bytes
+     * 
+     * @param bytes
+     * @return
+     */
+    public static final String base64Encode(byte[] bytes) {
+        bytes = Base64.encodeBase64(bytes, false);
+        return org.apache.commons.codec.binary.StringUtils.newStringUtf8(bytes);
+    }
 
-        // TODO actually authenticate someday
-        String password = decoded.substring(index + 1);
-
-        return username;
+    /**
+     * Decode a base64 encoded string
+     * 
+     * @param encString
+     * @return
+     */
+    public static final byte[] base64Decode(String encString) {
+        return Base64.decodeBase64(encString);
     }
 
 }

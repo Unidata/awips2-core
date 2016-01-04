@@ -21,10 +21,9 @@
 package com.raytheon.viz.ui.dialogs.colordialog;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
-import javax.xml.bind.JAXBException;
 
 import org.eclipse.swt.graphics.RGB;
 
@@ -38,10 +37,12 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
- * Util methods for colormaps.
+ * Utility methods for colormaps.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -54,7 +55,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Apr 08, 2014  2950     bsteffen    Allow buildColorData to take an IColorMap
  * Jun 30, 2014  3165     njensen     Major cleanup
- * 
+ * Dec 09, 2015  4834     njensen     Don't save colormaps twice
  * 
  * </pre>
  * 
@@ -69,7 +70,7 @@ public class ColorUtil {
     public static final float MAX_VALUE = 255.0f;
 
     /**
-     * Updates a ColorMap with the values in an ArrayList<ColorData>
+     * Updates a ColorMap with the values in a List<ColorData>
      * 
      * @param aData
      *            the data to update the colormap to
@@ -101,7 +102,7 @@ public class ColorUtil {
     }
 
     /**
-     * Builds a ColorMap from an ArrayList<ColorData>
+     * Builds a ColorMap from a List<ColorData>
      * 
      * @param aData
      *            the colors to build the colormap with
@@ -170,30 +171,25 @@ public class ColorUtil {
      * Saves a colormap to localization
      * 
      * @param colorMap
-     * @param filename
+     * @param colormapName
      * @param level
      * @throws LocalizationException
      */
     public static void saveColorMap(ColorMap colorMap, String colormapName,
             LocalizationLevel level) throws LocalizationException {
-        String xml;
-        try {
-            xml = ColorMap.JAXB.marshalToXml(colorMap);
-        } catch (JAXBException e) {
-            throw new LocalizationException("Unable to marshal colormap "
-                    + colorMap.getName(), e);
-        }
-
         String filename = getColormapFilename(colormapName);
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, level);
         LocalizationFile localizationFile = pathMgr.getLocalizationFile(
                 context, filename);
-        // getFile(false) will call mkdirs() on the parent dir
-        localizationFile.getFile(false);
-        localizationFile.write(xml.getBytes());
-        localizationFile.save();
+        try (SaveableOutputStream sos = localizationFile.openOutputStream()) {
+            ColorMap.JAXB.marshalToStream(colorMap, sos);
+            sos.save();
+        } catch (SerializationException | IOException e) {
+            throw new LocalizationException("Error saving colormap "
+                    + colormapName, e);
+        }
     }
 
     /**

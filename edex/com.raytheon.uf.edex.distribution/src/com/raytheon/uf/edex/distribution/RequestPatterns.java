@@ -30,8 +30,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 import javax.xml.bind.annotation.XmlRootElement;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A container of regular expressions, both original strings and the compiled
@@ -52,6 +52,7 @@ import org.apache.commons.logging.LogFactory;
  * Sep 10, 2013 2327       rjpeter      Sized ArrayList declarations.
  * Nov 21, 2013 2541       bgonzale     Exclusion patterns.
  * May 09, 2014 3151       bclement     added noPossibleMatch() removed ISerializableObject
+ * Dec 11, 2015 5166       kbisanz      Update logging to use SLF4J
  * </pre>
  * 
  * @author brockwoo
@@ -79,7 +80,8 @@ public class RequestPatterns {
 
     private List<Pattern> compiledExclusionPatterns = new ArrayList<Pattern>(0);
 
-    protected Log patternFailedLogger = LogFactory.getLog("PatternFailedLog");
+    protected Logger patternFailedLogger = LoggerFactory
+            .getLogger("PatternFailedLog");
 
     /**
      * Creates a new instance of the container.

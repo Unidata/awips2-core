@@ -21,8 +21,8 @@ package com.raytheon.edex.services;
 
 import java.util.Collections;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
@@ -38,13 +38,14 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 6, 2009            mschenke     Initial creation
+ * Aug 06, 2009           mschenke     Initial creation
  * Sep 12, 2012 1167      djohnson     Add datadelivery servers.
  * Jan 14, 2013 1469      bkowal       No longer includes the hdf5 data directory
  *                                     in the response.
  * May 28, 2013 1989      njensen      Uses env variables instead of system props
  * Aug 27, 2013 2295      bkowal       Return the entire jms connection url in
  *                                     the response.
+ * Dec 17, 2015 5166      kbisanz      Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -55,7 +56,8 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
 public class GetServersHandler extends GenericRegistry<String, String>
         implements IRequestHandler<GetServersRequest> {
 
-    private static final Log logger = LogFactory.getLog(UtilityManager.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(GetServersHandler.class);
 
     @Override
     public GetServersResponse handleRequest(GetServersRequest request)

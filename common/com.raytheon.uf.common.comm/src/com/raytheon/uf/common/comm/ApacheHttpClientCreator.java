@@ -72,6 +72,7 @@ import com.raytheon.uf.common.util.app.AppInfo;
  * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as trustMaterial.
  * Jul 01, 2015  4021      bsteffen     Set User Agent
  * Jul 06, 2015  4614      njensen      Disable gzip by default
+ * Dec 07, 2015  4834      njensen      Changes for rename of IHttpsHandler to HttpAuthHandler
  * 
  * </pre>
  * 
@@ -118,7 +119,7 @@ public class ApacheHttpClientCreator {
             UnrecoverableKeyException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
-        IHttpsHandler handler = config.getHttpsHandler();
+        HttpAuthHandler handler = config.getHttpAuthHandler();
 
         /**
          * If this returns false, Java will automatically, (According to
@@ -367,8 +368,7 @@ public class ApacheHttpClientCreator {
          * don't expose it so need to build it here
          */
         userAgent.append(" Apache-HttpClient/");
-        VersionInfo vi = VersionInfo.loadVersionInfo(
-                "org.apache.http.client",
+        VersionInfo vi = VersionInfo.loadVersionInfo("org.apache.http.client",
                 HttpClientBuilder.class.getClassLoader());
         String release = (vi != null) ? vi.getRelease()
                 : VersionInfo.UNAVAILABLE;
