@@ -20,9 +20,6 @@
 
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
-import java.util.HashSet;
-import java.util.Set;
-
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceNode;
@@ -41,7 +38,6 @@ import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.ui.menus.DiscoverMenuContributions;
 import com.raytheon.viz.ui.VizWorkbenchManager;
-import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
@@ -59,6 +55,8 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Oct 15, 2013 2361        njensen     Added startupTimer
  * Jan 27, 2014 2744        njensen     Add Local History pref back in
  * May 09, 2014 3153        njensen     Updates for pydev 3.4.1
+ * Jan 04, 2016 5192        njensen     Moved removal of extra perspectives and some prefs
+ *                                       to plugin.xml using activities
  * 
  * </pre>
  * 
@@ -103,7 +101,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
      */
     protected void customizeAppearance() {
         removeExtraMenus();
-        removeExtraPerspectives();
         removeExtraPreferences();
     }
 
@@ -154,47 +151,14 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     }
 
     /**
-     * Removes perspectives from the rcp perspectives menu that are not managed
-     * by an {@link AbstractVizPerspectiveManager}
-     */
-    @SuppressWarnings("restriction")
-    private void removeExtraPerspectives() {
-        IPerspectiveRegistry reg = PlatformUI.getWorkbench()
-                .getPerspectiveRegistry();
-        Set<String> managed = new HashSet<String>(
-                VizPerspectiveListener.getManagedPerspectives());
-        for (IPerspectiveDescriptor perspective : reg.getPerspectives()) {
-            if (managed.contains(perspective.getId()) == false) {
-                org.eclipse.ui.internal.registry.PerspectiveDescriptor sync = (org.eclipse.ui.internal.registry.PerspectiveDescriptor) perspective;
-                if (sync.getConfigElement() != null) {
-                    IExtension ext = sync.getConfigElement()
-                            .getDeclaringExtension();
-                    ((org.eclipse.ui.internal.registry.PerspectiveRegistry) reg)
-                            .removeExtension(ext, new Object[] { perspective });
-                } else {
-                    // TODO port to eclipse 4?
-                    // sync.deleteCustomDefinition();
-                }
-            }
-        }
-    }
-
-    /**
      * Removes options from the rcp preferences menu
      */
     private void removeExtraPreferences() {
         // remove top level preference pages
         PreferenceManager preferenceManager = PlatformUI.getWorkbench()
                 .getPreferenceManager();
-        preferenceManager.remove("org.eclipse.team.ui.TeamPreferences");
-        preferenceManager
-                .remove("org.eclipse.update.internal.ui.preferences.MainPreferencePage");
-        preferenceManager.remove("org.eclipse.debug.ui.DebugPreferencePage");
-        preferenceManager
-                .remove("org.eclipse.jdt.ui.preferences.JavaBasePreferencePage");
-        preferenceManager.remove("ValidationPreferencePage");
 
-        // remove subnode preference pages
+        // remove all Workspace preference pages except Local History
         IPreferenceNode[] topNodes = preferenceManager.getRootSubNodes();
         for (IPreferenceNode root : topNodes) {
             String rootId = root.getId();
@@ -209,20 +173,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
                     root.add(localHistoryNode);
                     root.remove("org.eclipse.ui.preferencePages.Workspace");
                 }
-                root.remove("org.eclipse.search.preferences.SearchPreferencePage");
-            } else if (rootId.equals("org.python.pydev.prefs")) {
-                IPreferenceNode node = root
-                        .findSubNode("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageGeneral");
-                if (node != null) {
-                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython");
-                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageIronpython");
-                }
-
-                root.remove("org.python.pydev.prefs.pylint");
-                root.remove("org.python.pydev.prefs.pyunitPage");
-                root.remove("org.python.pydev.jython.ui.JyScriptingPreferencesPage");
-            } else if (rootId.equals("org.eclipse.wst.xml.ui.preferences.xml")) {
-                root.remove("org.eclipse.wst.xml.core.ui.XMLCatalogPreferencePage");
             }
         }
 
@@ -338,7 +288,7 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     public void postStartup() {
         super.postStartup();
 
-        IContextService service = (IContextService) PlatformUI.getWorkbench()
+        IContextService service = PlatformUI.getWorkbench()
                 .getService(IContextService.class);
         service.activateContext("com.raytheon.uf.viz.application.cave");
 
