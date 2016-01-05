@@ -94,8 +94,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  * @author randerso
  * @version 1.0
  */
-public abstract class AbstractVizPerspectiveManager implements
-        IBackgroundColorChangedListener {
+public abstract class AbstractVizPerspectiveManager
+        implements IBackgroundColorChangedListener {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractVizPerspectiveManager.class);
 
@@ -178,13 +178,11 @@ public abstract class AbstractVizPerspectiveManager implements
                     && part instanceof IDisplayPaneContainer) {
                 AbstractVizPerspectiveManager mgr = VizPerspectiveListener
                         .getCurrentPerspectiveManager();
-                if (mgr != null
-                        && !mgr.opened
-                        && mgr.getToolManager().getSelectedModalTools()
-                                .isEmpty()) {
+                if (mgr != null && !mgr.opened && mgr.getToolManager()
+                        .getSelectedModalTools().isEmpty()) {
                     try {
-                        mgr.activateDefaultTool(((AbstractEditor) part)
-                                .getDefaultTool());
+                        mgr.activateDefaultTool(
+                                ((AbstractEditor) part).getDefaultTool());
                         if (mgr.getToolManager().getSelectedModalTools()
                                 .isEmpty()) {
                             // Hack due to tool activation not sending whether
@@ -192,8 +190,8 @@ public abstract class AbstractVizPerspectiveManager implements
                             // toggling instead. TODO: Make AbstractModalTool
                             // required command parameter for activate or
                             // deactivate
-                            mgr.activateDefaultTool(((AbstractEditor) part)
-                                    .getDefaultTool());
+                            mgr.activateDefaultTool(
+                                    ((AbstractEditor) part).getDefaultTool());
                         }
                     } catch (VizException e) {
                         statusHandler.handle(Priority.SIGNIFICANT,
@@ -326,6 +324,17 @@ public abstract class AbstractVizPerspectiveManager implements
                     }
                     children.clear();
                 }
+                if (!editorArea.isVisible()) {
+                    /*
+                     * The eclipse CleanupAddon will mark the MArea as invisible
+                     * when all its children are invisible which happens when a
+                     * perspective is deactivated. The eclipse renderer seems to
+                     * mostly ignore the visibility of areas but it affects
+                     * which events fire, causing problems in
+                     * VizWorkbenchManager leading to blank panes.
+                     */
+                    editorArea.setVisible(true);
+                }
                 if (savedEditorAreaUI.isEmpty()) {
                     /*
                      * Create an editor stack for the compatibility layer, based
@@ -399,7 +408,7 @@ public abstract class AbstractVizPerspectiveManager implements
             page.activate(activeEditor);
             activeEditor = null;
         }
-        
+
         // Activate any perspective dialogs
         activateDialogs();
     }
@@ -531,8 +540,8 @@ public abstract class AbstractVizPerspectiveManager implements
     }
 
     protected static void loadDefaultBundle(String filePath) {
-        File defaultBundle = PathManagerFactory.getPathManager().getStaticFile(
-                filePath);
+        File defaultBundle = PathManagerFactory.getPathManager()
+                .getStaticFile(filePath);
         try {
             Procedure proc = null;
             proc = (Procedure) LoadPerspectiveHandler

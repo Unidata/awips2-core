@@ -26,6 +26,9 @@ import org.eclipse.jface.preference.IPreferenceNode;
 import org.eclipse.jface.preference.PreferenceManager;
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IPerspectiveRegistry;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.IWorkbenchConfigurer;
 import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
@@ -57,6 +60,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * May 09, 2014 3153        njensen     Updates for pydev 3.4.1
  * Jan 04, 2016 5192        njensen     Moved removal of extra perspectives and some prefs
  *                                       to plugin.xml using activities
+ * Jan 05, 2016 5193        bsteffen    Activate viz perspective after startup.
  * 
  * </pre>
  * 
@@ -288,14 +292,21 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     public void postStartup() {
         super.postStartup();
 
-        IContextService service = PlatformUI.getWorkbench()
-                .getService(IContextService.class);
+        IWorkbench workbench = getWorkbenchConfigurer().getWorkbench();
+        IContextService service = workbench.getService(IContextService.class);
         service.activateContext("com.raytheon.uf.viz.application.cave");
 
         if (startupTimer != null) {
             startupTimer.stop();
             System.out.println("Workbench startup time: "
                     + startupTimer.getElapsedTime() + " ms");
+        }
+        IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+        IWorkbenchPage page = window.getActivePage();
+        IPerspectiveDescriptor perspective = page.getPerspective();
+        if (perspective != null) {
+            VizPerspectiveListener.getInstance(window)
+                    .perspectiveActivated(page, perspective);
         }
     }
 
