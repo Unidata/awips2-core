@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.maps.scales;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -54,6 +56,10 @@ import com.raytheon.uf.viz.core.rsc.ResourceProperties;
  * Oct 10, 2013  2104     mschenke    Switched to use MapScalesManager
  * Nov 20, 2013  2492     bsteffen    Recycle resources in clear.
  * Mar 05, 2014  2843     bsteffen    Catch recycle errors in clear.
+ * Jan 07, 2016  5202     tgurney     Make changeScale() remove only
+ *                                    non-system resources. Also
+ *                                    make clear() turn off sampling
+ *                                    and lat/lon readout.
  * 
  * 
  * </pre>
@@ -77,11 +83,6 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
         super(desc);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.maps.scales.IMapScaleDisplay#getScaleName()
-     */
     @Override
     @XmlAttribute(name = "scale")
     public String getScaleName() {
@@ -93,13 +94,6 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
         this.scaleName = scaleName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.maps.scales.IMapScaleDisplay#changeScale(java
-     * .lang.String)
-     */
     @Override
     public void changeScale(String scaleName) {
         ManagedMapScale currentScale = MapScalesManager.getInstance()
@@ -107,9 +101,18 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
         if (currentScale != null) {
             try {
                 Bundle bundle = currentScale.getScaleBundle();
-                for (AbstractRenderableDisplay display : bundle.getDisplays()) {
-                    descriptor.getResourceList().removeAll(
-                            display.getDescriptor().getResourceList());
+                for (AbstractRenderableDisplay bundleDisplay : bundle
+                        .getDisplays()) {
+                    // keep system resources
+                    List<ResourcePair> markedForDeletion = new ArrayList<ResourcePair>();
+                    ResourceList bundleRscList = bundleDisplay.getDescriptor()
+                            .getResourceList();
+                    for (ResourcePair rp : bundleRscList) {
+                        if (rp.getProperties().isSystemResource() == false) {
+                            markedForDeletion.add(rp);
+                        }
+                    }
+                    descriptor.getResourceList().removeAll(markedForDeletion);
                 }
             } catch (SerializationException e) {
                 statusHandler.handle(Priority.PROBLEM,
@@ -124,13 +127,7 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
         ManagedMapScale scale = MapScalesManager.getInstance().getScaleByName(
                 getScaleName());
         if (scale != null) {
-            ResourceList list = descriptor.getResourceList();
-            for (ResourcePair rp : list) {
-                if (rp.getProperties().isSystemResource() == false) {
-                    // Keep system resources
-                    list.remove(rp);
-                }
-            }
+            descriptor.getResourceList().clear();
             loadScale(scale);
         } else {
             // Map scale could not be found, default to remove all

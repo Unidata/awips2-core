@@ -43,6 +43,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 22, 2010            mschenke     Initial creation
+ * Jan 6, 2016  5202       tgurney      Add "enabled" property to turn output
+ *                                      on/off
  * 
  * </pre>
  * 
@@ -55,6 +57,8 @@ public class LatLonReadoutResource extends
 
     private NumberFormat formatter;
 
+    private boolean enabled = true;
+
     /**
      * @param resourceData
      * @param loadProperties
@@ -64,37 +68,17 @@ public class LatLonReadoutResource extends
         super(resourceData, loadProperties);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#disposeInternal()
-     */
     @Override
     protected void disposeInternal() {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#paintInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         formatter = DecimalFormat.getInstance();
@@ -116,25 +100,36 @@ public class LatLonReadoutResource extends
         return ResourceOrder.LOWEST;
     }
 
+    public boolean isEnabled() {
+        return enabled;
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+    }
+
     /**
-     * Format a lat lon for display
+     * Format a lat/lon for display. If this.isEnabled() is false, return an
+     * empty string.
      * 
      * @param coord
      *            the coordinate to format
-     * @return the formated string
+     * @return the formatted string
      */
     public String formatLatLon(Coordinate coord) {
-        Double dX = Double.valueOf(formatter.format(coord.x));
-        Double dY = Double.valueOf(formatter.format(coord.y));
-        String dz = "";
-        if (!Double.isNaN(coord.z)) {
-
-            dz = formatter.format(coord.z);
+        if (enabled) {
+            Double dX = Double.valueOf(formatter.format(coord.x));
+            Double dY = Double.valueOf(formatter.format(coord.y));
+            String dz = "";
+            if (!Double.isNaN(coord.z)) {
+                dz = formatter.format(coord.z);
+            }
+            String locX = dX > 0 ? "E" : "W";
+            String locY = dY > 0 ? "N" : "S";
+            return formatter.format(Math.abs(dY)) + locY + " "
+                    + formatter.format(Math.abs(dX)) + locX + " " + dz;
+        } else {
+            return "";
         }
-        String locX = dX > 0 ? "E" : "W";
-        String locY = dY > 0 ? "N" : "S";
-
-        return formatter.format(Math.abs(dY)) + locY + " "
-                + formatter.format(Math.abs(dX)) + locX + " " + dz;
     }
 }
