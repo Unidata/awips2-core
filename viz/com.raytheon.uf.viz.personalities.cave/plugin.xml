@@ -228,6 +228,21 @@
 		         </with>
 	 		</activeWhen>
 	    </handler>
+	    <handler
+             class="com.raytheon.uf.viz.personalities.cave.dialog.OpenPerspectiveHandler"
+             commandId="org.eclipse.ui.perspectives.showPerspective">
+             <activeWhen>
+                <with
+                       variable="activeContexts">
+                    <iterate
+                          operator="or">
+                       <equals
+                             value="com.raytheon.uf.viz.application.cave">
+                       </equals>
+                    </iterate>
+                 </with>
+            </activeWhen>
+        </handler>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">

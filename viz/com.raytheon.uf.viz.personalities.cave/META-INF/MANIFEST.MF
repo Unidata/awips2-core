@@ -24,6 +24,7 @@ Require-Bundle: org.eclipse.core.runtime,
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.personalities.cave.component,
+ com.raytheon.uf.viz.personalities.cave.dialog,
  com.raytheon.uf.viz.personalities.cave.menu,
  com.raytheon.uf.viz.personalities.cave.presentation,
  com.raytheon.uf.viz.personalities.cave.workbench
