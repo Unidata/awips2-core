@@ -90,7 +90,8 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Aug 26, 2015 4691        njensen     Safely skip file locking on most read operations                                                                            
  * Nov 12, 2015 4834        njensen     Remove ModifiableLocalizationFile
  *                                       Deprecated and changed add/removeFileUpdatedObserver()
- * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes                                      
+ * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes
+ * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver                                      
  * 
  * </pre>
  * 
@@ -529,6 +530,27 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
         ILocalizationPathObserver pathObs = new ILocalizationPathObserver() {
             @Override
             public void fileChanged(ILocalizationFile file) {
+                /*
+                 * Before the API changes, earlier in the notification routing
+                 * we would discard notifications from a lower ranking level
+                 * (e.g. if observing file at USER level, discard SITE
+                 * notifications) and from context names that were not your own
+                 * (e.g. if observing site OAX discard DMX notifications).
+                 */
+                LocalizationContext listenContext = LocalizationFile.this.context;
+                LocalizationContext notifyContext = file.getContext();
+                int compare = notifyContext.getLocalizationLevel().compareTo(
+                        listenContext.getLocalizationLevel());
+                if (compare < 0
+                        || (compare == 0 && !notifyContext.getContextName()
+                                .equals(listenContext.getContextName()))) {
+                    return;
+                }
+
+                /*
+                 * notification appears to be relevant, send it along to the
+                 * observer using the old API
+                 */
                 FileChangeType t = null;
                 if (ILocalizationFile.NON_EXISTENT_CHECKSUM
                         .equals(LocalizationFile.this.fileCheckSum)) {
