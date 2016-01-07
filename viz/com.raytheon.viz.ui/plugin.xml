@@ -612,4 +612,13 @@
           recursive="true">
        </path>
    </extension>
+   <extension
+         id="FloatingWindowProcessor"
+         point="org.eclipse.e4.workbench.model">
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="com.raytheon.viz.ui.views.FloatingWindowProcessor">
+      </processor>
+   </extension>
 </plugin>
