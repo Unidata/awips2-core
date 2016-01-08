@@ -89,6 +89,8 @@ import com.raytheon.uf.common.time.DataTime;
  *                                    derived parameters to common
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
  * Apr 06, 2015  17215    dfriedman   Use ReentrantLock instead of synchronize
+ * Nov 01, 2015  DR14947  porricel    Modified resolveField to
+ *                                    use middle of layer for BL
  * Nov 30, 2015  5072     bsteffen    Use LevelTypeMap to normalize field
  *                                    levels.
  * 
@@ -1073,8 +1075,16 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
             // masterlevel name
             if (level.getMasterLevel().getName().equals(fieldParamAbbrev)) {
 
-                FloatRequestableData data = new FloatRequestableData(
-                        (float) level.getLevelonevalue());
+                FloatRequestableData data;
+                if (level.isRangeLevel() && fieldParamAbbrev.equals("BL")) {
+                    // get midpoint of boundary layer
+                    data = new FloatRequestableData(
+                            (float) ((level.getLevelonevalue() + level
+                                    .getLeveltwovalue()) / 2));
+                } else {
+                    data = new FloatRequestableData(
+                            (float) level.getLevelonevalue());
+                }
                 data.setUnit(level.getMasterLevel().getUnit());
                 return data;
             }

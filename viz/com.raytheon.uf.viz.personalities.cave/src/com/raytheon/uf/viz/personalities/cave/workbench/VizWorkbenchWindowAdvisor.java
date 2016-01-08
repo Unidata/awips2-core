@@ -173,7 +173,7 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
         Integer width = args.getInteger("-width");
         if (width == null) {
             if (firstTime) {
-                width = Math.max(1200, (bounds.height * 5) / 4);
+                width = Math.min(bounds.width - 80, (bounds.height * 5) / 4);
             } else {
                 // use saved width unless greater than monitor width
                 width = Math.min(bounds.width, shell.getSize().x);

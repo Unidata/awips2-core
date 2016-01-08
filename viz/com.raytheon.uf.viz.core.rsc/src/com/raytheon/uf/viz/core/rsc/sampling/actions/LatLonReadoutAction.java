@@ -39,6 +39,8 @@ import com.raytheon.viz.ui.cmenu.AbstractRightClickAction;
  * ------------ ---------- ----------- --------------------------
  * Jun 1, 2007             chammack    Initial Creation.
  * Jan 28, 2013   14465    snaples     Updated run() method to set sampling false when disabling readout.
+ * Jan 6, 2016    5202     tgurney     Update run() and setContainer() to check enabled property
+ *                                     of LatLonReadoutResource to set checkbox status
  * 
  * </pre>
  * 
@@ -47,14 +49,7 @@ import com.raytheon.viz.ui.cmenu.AbstractRightClickAction;
  */
 public class LatLonReadoutAction extends AbstractRightClickAction {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.action.Action#run()
-     */
     private final String actionText;
-
-    private boolean sampled = false;
 
     private boolean hasLatLonReadout = false;
 
@@ -67,11 +62,6 @@ public class LatLonReadoutAction extends AbstractRightClickAction {
         this.actionText = actionText;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.actions.GenericAction#run()
-     */
     @Override
     public void run() {
         if (hasLatLonReadout) {
@@ -81,22 +71,12 @@ public class LatLonReadoutAction extends AbstractRightClickAction {
                         .getResourceList()
                         .getResourcesByTypeAsType(LatLonReadoutResource.class);
                 for (LatLonReadoutResource rsc : rscs) {
+                    rsc.setEnabled(false);
                     pane.getDescriptor().getResourceList().removeRsc(rsc);
-                }
-                List<ISamplingResource> samplers = pane.getDescriptor()
-                        .getResourceList()
-                        .getResourcesByTypeAsType(ISamplingResource.class);
-                for (ISamplingResource sampler : samplers) {
-                    if (sampled) {
-                        break;
-                    } else {
-                        sampler.setSampling(false);
-                    }
                 }
             }
         } else {
             // add resource
-            sampled = false;
             for (IDisplayPane pane : container.getDisplayPanes()) {
                 pane.getDescriptor()
                         .getResourceList()
@@ -105,12 +85,18 @@ public class LatLonReadoutAction extends AbstractRightClickAction {
                                         LatLonReadoutResource.class)));
                 pane.getDescriptor().getResourceList()
                         .instantiateResources(pane.getDescriptor(), true);
+                List<LatLonReadoutResource> rscs = pane.getDescriptor()
+                        .getResourceList()
+                        .getResourcesByTypeAsType(LatLonReadoutResource.class);
+                for (LatLonReadoutResource rsc : rscs) {
+                    rsc.setEnabled(true);
+                }
+                // turn on sampling
                 List<ISamplingResource> samplers = pane.getDescriptor()
                         .getResourceList()
                         .getResourcesByTypeAsType(ISamplingResource.class);
                 for (ISamplingResource sampler : samplers) {
                     if (sampler.isSampling()) {
-                        sampled = true;
                         break;
                     } else {
                         sampler.setSampling(true);
@@ -131,16 +117,20 @@ public class LatLonReadoutAction extends AbstractRightClickAction {
                         .getResourceList()
                         .getResourcesByTypeAsType(LatLonReadoutResource.class);
                 hasLatLonReadout = rscs.size() > 0;
+                for (LatLonReadoutResource rsc : rscs) {
+                    hasLatLonReadout &= rsc.isEnabled();
+                }
+                List<ISamplingResource> samplers = activePane.getDescriptor()
+                        .getResourceList()
+                        .getResourcesByTypeAsType(ISamplingResource.class);
+                for (ISamplingResource sampler : samplers) {
+                    hasLatLonReadout &= sampler.isSampling();
+                }
             }
         }
         setChecked(hasLatLonReadout);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.action.Action#getText()
-     */
     @Override
     public String getText() {
         return actionText;
