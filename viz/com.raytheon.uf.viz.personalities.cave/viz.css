@@ -1,4 +1,4 @@
-CTabFolder
+CTabItem.highlighted
 {
-    swt-tab-height: 17px;
+    font-weight: bold;
 }
