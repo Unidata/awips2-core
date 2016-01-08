@@ -40,6 +40,7 @@ import com.raytheon.viz.ui.UiPlugin;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 22, 2012            mnash     Initial creation
+ * Jan 07, 2016 5190       bsteffen     Use DetachPart.
  * 
  * </pre>
  * 
@@ -93,13 +94,9 @@ public abstract class CaveFloatingView extends ViewPart {
         @Override
         public void run() {
             if (isChecked()) {
-                CaveWorkbenchPageManager manager = CaveWorkbenchPageManager
-                        .getInstance(getSite().getPage());
-                manager.floatView(CaveFloatingView.this);
+                DetachPart.detach(CaveFloatingView.this);
             } else {
-                CaveWorkbenchPageManager manager = CaveWorkbenchPageManager
-                        .getInstance(getSite().getPage());
-                manager.dockView(CaveFloatingView.this);
+                DetachPart.attach(CaveFloatingView.this);
             }
         };
 
