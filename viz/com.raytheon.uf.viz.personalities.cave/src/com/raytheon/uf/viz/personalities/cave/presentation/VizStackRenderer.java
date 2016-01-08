@@ -54,10 +54,11 @@ import com.raytheon.viz.ui.IRenameablePart;
  * 'clean' and only marked dirty during initialization, also the actual Object
  * for the part is usually not set this early so it is impossible to tell if it
  * is renameable.</li>
- * <li>This class gets updates to the dirty flag of parts and if they are
- * renameable it will ignore these updates so that no '*' is added. During
- * initialization this doesn't work because the dirty flag can be set before the
- * Object is set so we have no way of knowing if it is renameable.</li>
+ * <li>This class gets updates to the dirty flag or label of parts. If they are
+ * renameable it will ignore dirty updates so that no '*' is added and it will
+ * remove the '*' after a rename. During initialization this doesn't work
+ * because the dirty flag can be set before the Object is set so we have no way
+ * of knowing if it is renameable.</li>
  * <li>This class listens for when the object is set on a part and if the object
  * is dirty and renameable then remove the '*', the object is usually set
  * towards the end of initialization so this handles the flaw left in the
@@ -155,7 +156,8 @@ public class VizStackRenderer extends StackRenderer {
     }
 
     /**
-     * Custom dirty rendering part 2: Ignore dirty events from renameable parts.
+     * Custom dirty rendering part 2: Ignore dirty events from renameable parts
+     * and remove '*' after label events.
      */
     @Override
     protected void updateTab(CTabItem cti, MPart part, String attName,
@@ -166,6 +168,15 @@ public class VizStackRenderer extends StackRenderer {
             }
         }
         super.updateTab(cti, part, attName, newValue);
+        if (UIEvents.UILabel.LABEL.equals(attName)
+                || UIEvents.UILabel.LOCALIZED_LABEL.equals(attName)) {
+            if (isDirty(part) && isRenameable(part)) {
+                CTabItem tabItem = findItemForPart(part);
+                if (tabItem != null) {
+                    tabItem.setText(tabItem.getText().substring(1));
+                }
+            }
+        }
     }
 
     private static boolean isDirty(MUIElement element) {
