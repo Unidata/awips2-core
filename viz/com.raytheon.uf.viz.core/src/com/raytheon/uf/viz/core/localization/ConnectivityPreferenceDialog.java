@@ -77,6 +77,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * Jun 25, 2015           mjames@ucar Always prompt user to connect, allow combo for multiple 
  * 									  default servers.
+ * Jan 08, 2016           mjames@ucar Show basic server name in client and handle http:// and :9581/services internally
  * 
  * 
  * </pre>
@@ -317,12 +318,12 @@ public class ConnectivityPreferenceDialog extends Dialog {
         
         // TODO: append instead of define
         String[] pastOptions =  { 
-        		"http://localhost:9581/services",
-        		"http://edex:9581/services",
-        		"http://edex-cloud.unidata.ucar.edu:9581/services"
-        		//"http://edex.unidata.ucar.edu:9581/services"
+        		"localhost",
+        		"edex",
+        		"edex-cloud.unidata.ucar.edu",
+        		"edex.unidata.ucar.edu"
         		};
-        
+        // fullServerName
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
@@ -497,7 +498,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         details = null;
         if (localizationSrv != null && !localizationSrv.widget.isDisposed()
                 && localizationSrv.widget.isEnabled()) {
-            String localization = localizationSrv.getText().trim();
+            String localization = fullServerName(localizationSrv.getText().trim());
             if (!localizationGood || !this.localization.equals(localization)) {
                 this.localization = localization;
                 validateLocalization();
@@ -734,8 +735,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
     }
 
     private String serverName(String localization) {
-		
 		return localization.replace("http://", "").replace(":9581/services","");
+	}
+    
+    private String fullServerName(String localization) {
+		return "http://" + localization + ":9581/services";
 	}
 
 	/**
