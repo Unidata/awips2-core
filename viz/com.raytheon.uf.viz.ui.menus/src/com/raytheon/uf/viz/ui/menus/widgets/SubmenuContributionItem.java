@@ -27,6 +27,7 @@ import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.menus.MenuUtil;
@@ -77,13 +78,13 @@ public class SubmenuContributionItem extends MenuManager {
     protected VariableSubstitution[] subs;
 
     protected Set<String> removals;
-    
+
     /*
      * Track if addContributedItems is done, the menu service should not be used
      * until after addContributedItems is done
      */
     protected volatile boolean doneAddingContribs;
-    
+
     /* Track if addMenuServiceItems has run, it should not be run twice. */
     protected volatile boolean doneAddingMenuService;
 
@@ -172,10 +173,12 @@ public class SubmenuContributionItem extends MenuManager {
      * submenu. This must be called on the main UI thread.
      */
     protected void addMenuServiceItems() {
-        IMenuService menuService = (IMenuService) PlatformUI.getWorkbench()
+        IWorkbenchWindow window = PlatformUI.getWorkbench()
+                .getActiveWorkbenchWindow();
+        String uri = MenuUtil.menuUri(getId());
+        IMenuService menuService = window
                 .getService(IMenuService.class);
-        menuService.populateContributionManager(this,
-                MenuUtil.menuUri(getId()));
+        menuService.populateContributionManager(this, uri);
     }
 
     @Override
