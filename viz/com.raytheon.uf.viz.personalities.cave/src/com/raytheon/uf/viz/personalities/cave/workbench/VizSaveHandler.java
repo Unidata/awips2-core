@@ -28,6 +28,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.ISaveablePart;
 import org.eclipse.ui.ISaveablePart2;
 import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.internal.e4.compatibility.CompatibilityEditor;
 
 import com.raytheon.viz.ui.editor.AbstractEditor;
 
@@ -71,14 +72,20 @@ public final class VizSaveHandler implements ISaveHandler {
     }
 
     @Override
+    @SuppressWarnings("restriction")
     public boolean saveParts(Collection<MPart> dirtyParts, boolean confirm) {
         if (confirm) {
             boolean allAbstract = true;
             for (MPart part : dirtyParts) {
-                if (!(part.getObject() instanceof AbstractEditor)) {
-                    allAbstract = false;
-                    break;
+                if (part.getObject() instanceof CompatibilityEditor) {
+                    CompatibilityEditor ed = (CompatibilityEditor) part
+                            .getObject();
+                    if (ed.getEditor() instanceof AbstractEditor) {
+                        continue;
+                    }
                 }
+                allAbstract = false;
+                break;
             }
             if (allAbstract) {
                 Shell shell = PlatformUI.getWorkbench()
