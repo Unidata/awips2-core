@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * 12/05/2008              ebabin      Changed findView to not always assume
  *                                      view has a secondaryid.
  *                                     Added hideView method for quickly hiding views.
+ * 01/08/2016   ASM #13900 D. Friedman Call makeCompatible in creatEditor.
  * 
  * </pre>
  * 
@@ -476,12 +477,13 @@ public class UiUtil {
             windowToLoadTo = getCurrentWindow();
         }
         AbstractEditor aEditor = null;
-        EditorInput cont = new EditorInput(displays);
+        EditorInput cont = new EditorInput(displays[0].createNewDisplay());
         try {
             IWorkbenchPage activePage = windowToLoadTo.getActivePage();
             if (activePage != null) {
                 aEditor = (AbstractEditor) activePage.openEditor(cont,
                         editorName);
+                makeCompatible(aEditor, displays);
             }
         } catch (PartInitException e) {
             UiPlugin.getDefault()
