@@ -1,0 +1,5 @@
+@import url("platform:/plugin/com.raytheon.uf.viz.personalities.cave/css/viz.css");
+
+* {
+    background-color: orange;    
+}
