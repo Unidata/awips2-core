@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
- com.raytheon.uf.common.status;bundle-version="1.12.1112"
-Import-Package: org.apache.camel,
- org.slf4j
+ com.raytheon.uf.common.status;bundle-version="1.12.1112",
+ org.slf4j;bundle-version="1.7.12"
+Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution
