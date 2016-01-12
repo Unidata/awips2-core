@@ -74,6 +74,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * Dec 02, 2015 4834        njensen     Updated to use new LocalizationManager.upload()
+ * Jan 11, 2016 5242        kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -451,12 +452,11 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean delete(LocalizationFile file) throws LocalizationException {
         long deleteTime = LocalizationManager.getInstance().delete(
-                file.getContext(), file.getName());
+                file.getContext(), file.getPath());
 
-        // Made it here! file on server succesfully deleted! Delete local file
-        // reference. If that fails, doesn't matter since file does not exist!
-        File localFile = file.getFile(false);
-        localFile.delete();
+        // Made it here! file on server successfully deleted! Delete local file
+        // reference.
+        file.delete();
 
         return true;
     }
