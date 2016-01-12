@@ -37,7 +37,6 @@ import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
 import org.eclipse.ui.application.WorkbenchWindowAdvisor;
 
 import com.raytheon.uf.viz.core.ProgramArguments;
-import com.raytheon.viz.ui.dialogs.ModeListener;
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
@@ -57,6 +56,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  *                                      and location to be specified.
  * Dec 23, 2015   5189      bsteffen    Add custom save handler.
  * Jan 05, 2016   5193      bsteffen    Move perspective listener activation to the workbench advisor.
+ * Jan 12, 2016   5232      njensen     Removed code that doesn't work in Eclipse 4
  * 
  * </pre>
  * 
@@ -222,22 +222,6 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
             getWindowConfigurer().getWorkbenchConfigurer().setSaveAndRestore(
                     false);
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.application.WorkbenchWindowAdvisor#createWindowContents
-     * (org.eclipse.swt.widgets.Shell)
-     */
-    @Override
-    public void createWindowContents(Shell shell) {
-        super.createWindowContents(shell);
-
-        // Gets the main shell and colors the shell if the mode is set to
-        // practice or training
-        new ModeListener(shell);
     }
 
     @Override
