@@ -35,6 +35,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * Nov 3, 2010            mschenke     Initial creation
  * Oct 13, 2015 4410      bsteffen     Allow localization perspective to mix
  *                                     files for multiple Localization Types.
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -61,7 +62,7 @@ public class LocalizationFileEntryData extends FileTreeEntryData {
      */
     public LocalizationFileEntryData(PathData pathData, LocalizationFile file,
             boolean multipleTypes) {
-        super(pathData, file.getName());
+        super(pathData, file.getPath());
         this.file = file;
         this.multipleTypes = multipleTypes;
     }

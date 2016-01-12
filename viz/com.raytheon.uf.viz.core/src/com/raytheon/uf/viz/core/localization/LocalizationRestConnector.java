@@ -39,7 +39,6 @@ import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationFileVersionConflictException;
@@ -60,6 +59,7 @@ import com.raytheon.uf.viz.core.VizApp;
  * ------------ ---------- ----------- --------------------------
  * Feb 16, 2015  3978      njensen     Initial creation
  * Dec 03, 2015  4834      njensen     Added PUT support
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -228,10 +228,10 @@ public class LocalizationRestConnector {
      * @return
      * @throws CommunicationException
      */
-    public FileUpdatedMessage restPutFile(LocalizationFile lfile,
+    public FileUpdatedMessage restPutFile(ILocalizationFile lfile,
             File fileToUpload) throws LocalizationException,
             CommunicationException {
-        String url = buildRestAddress(lfile.getContext(), lfile.getName(),
+        String url = buildRestAddress(lfile.getContext(), lfile.getPath(),
                 false);
         HttpPut request = new HttpPut(url);
         request.setEntity(new FileEntity(fileToUpload));
