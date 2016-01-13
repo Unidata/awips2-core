@@ -48,7 +48,8 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 12, 2009            randerso     Initial creation
+ * Jan 12, 2009            randerso    Initial creation
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -191,7 +192,7 @@ public class MapStore {
                             if (rp.getResourceData().getNameGenerator() != null) {
                                 String mapName = rp.getResourceData()
                                         .getNameGenerator().getName(null);
-                                maps.add(new MapNode(mapName, lf.getName()));
+                                maps.add(new MapNode(mapName, lf.getPath()));
                             }
                         }
                     }
@@ -202,8 +203,8 @@ public class MapStore {
                                     + file.getAbsolutePath(), e);
                 }
             } else if (file.isDirectory()) {
-                if (!path.equals(lf.getName())) {
-                    maps.add(loadMaps(file.getName(), lf.getName()));
+                if (!path.equals(lf.getPath())) {
+                    maps.add(loadMaps(file.getName(), lf.getPath()));
                 }
             }
         }

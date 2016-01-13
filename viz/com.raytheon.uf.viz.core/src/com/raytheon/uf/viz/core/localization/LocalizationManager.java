@@ -48,11 +48,11 @@ import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -108,6 +108,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Feb 16, 2015 3978       njensen     Use REST service for efficient GET of files
  * Aug 26, 2015 4691       njensen     No longer using timestamp as part of needDownload()
  * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -578,13 +579,14 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param file
      * @throws LocalizationException
      */
-    protected void retrieve(LocalizationFile file) throws LocalizationException {
+    protected void retrieve(ILocalizationFile file)
+            throws LocalizationException {
         if (file.isDirectory()) {
-            retrieveDir(file.getContext(), file.getName());
+            retrieveDir(file.getContext(), file.getPath());
         } else {
             File localFile = buildFileLocation(file.getContext(),
-                    file.getName(), false);
-            checkPreinstalled(file.getContext(), file.getName(), localFile);
+                    file.getPath(), false);
+            checkPreinstalled(file.getContext(), file.getPath(), localFile);
             /*
              * We don't have a READ lock for needDownload() so the checksum can
              * potentially be messed up if another process or thread modifies at
@@ -594,7 +596,7 @@ public class LocalizationManager implements IPropertyChangeListener {
              */
             if (needDownload(localFile, file.getCheckSum())) {
                 retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
-                        file.getContext(), file.getName()) },
+                        file.getContext(), file.getPath()) },
                         new Date[] { file.getTimeStamp() });
             }
         }
@@ -802,7 +804,7 @@ public class LocalizationManager implements IPropertyChangeListener {
      *            the local file that backs the localization file
      * @throws LocalizationException
      */
-    protected void upload(LocalizationFile file, File fileToUpload)
+    protected void upload(ILocalizationFile file, File fileToUpload)
             throws LocalizationException {
         try {
             FileUpdatedMessage fum = restConnect

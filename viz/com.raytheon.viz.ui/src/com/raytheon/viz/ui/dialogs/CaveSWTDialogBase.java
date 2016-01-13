@@ -55,6 +55,8 @@ import org.eclipse.swt.widgets.Shell;
  * Oct 11, 2012  1229      jkorman     Factored out "mustCreate" method from subclasses.
  * Oct 28, 2015  5054      randerso    Moved fields that were only used by a subclass
  *                                     from this class to the subclass.
+ * Jan 12, 2016  5055      randerso    Removed final from bringToTop method to allow 
+ *                                     it to be overridden
  * 
  * </pre>
  * 
@@ -272,7 +274,7 @@ public abstract class CaveSWTDialogBase extends Dialog {
     /**
      * Gives the dialog focus
      */
-    public final void bringToTop() {
+    public void bringToTop() {
         if (shell != null && shell.isDisposed() == false) {
             shell.setVisible(true);
             shell.forceFocus();
