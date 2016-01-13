@@ -19,8 +19,11 @@
  **/
 package com.raytheon.viz.ui.perspectives;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -53,7 +56,10 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -64,6 +70,7 @@ import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Procedure;
+import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 import com.raytheon.viz.ui.color.BackgroundColor;
 import com.raytheon.viz.ui.color.IBackgroundColorChangedListener;
@@ -300,74 +307,19 @@ public abstract class AbstractVizPerspectiveManager
         }
 
         page = perspectiveWindow.getActivePage();
-        MWindow window = perspectiveWindow.getService(MWindow.class);
-        EModelService model = perspectiveWindow.getService(EModelService.class);
-        MPerspective perspective = model.getActivePerspective(window);
-        List<MPlaceholder> editorPlaceholders = model.findElements(perspective,
-                IPageLayout.ID_EDITOR_AREA, MPlaceholder.class, null);
-        if (editorPlaceholders.size() == 1) {
-            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
-            MUIElement element = editorPlaceholder.getRef();
-            if (element instanceof MArea) {
-                MArea editorArea = (MArea) element;
-                List<MPartSashContainerElement> children = editorArea
-                        .getChildren();
-                if (!children.isEmpty()) {
-                    /*
-                     * Necessary specifically for open, which can restore stacks
-                     * from last close with nothing in them.
-                     */
-                    IPresentationEngine presentationEngine = perspectiveWindow
-                            .getService(IPresentationEngine.class);
-                    for (MUIElement child : children) {
-                        presentationEngine.removeGui(child);
-                    }
-                    children.clear();
-                }
-                if (!editorArea.isVisible()) {
-                    /*
-                     * The eclipse CleanupAddon will mark the MArea as invisible
-                     * when all its children are invisible which happens when a
-                     * perspective is deactivated. The eclipse renderer seems to
-                     * mostly ignore the visibility of areas but it affects
-                     * which events fire, causing problems in
-                     * VizWorkbenchManager leading to blank panes.
-                     */
-                    editorArea.setVisible(true);
-                }
-                if (savedEditorAreaUI.isEmpty()) {
-                    /*
-                     * Create an editor stack for the compatibility layer, based
-                     * off of code in
-                     * org.eclipse.e4.ui.internal.workbench.PlaceholderResolver
-                     * and org.eclipse.ui.internal.e4.compatibility.
-                     * ModeledPageLayout.
-                     */
-                    MPartStack editorStack = model
-                            .createModelElement(MPartStack.class);
-                    editorStack.getTags()
-                            .add("org.eclipse.e4.primaryDataStack");
-                    editorStack.getTags().add("EditorStack");
-                    editorStack.setElementId("org.eclipse.e4.primaryDataStack");
-                    children.add(editorStack);
-                    editorArea.setSelectedElement(editorStack);
-                } else {
-                    for (MPartSashContainerElement element1 : savedEditorAreaUI) {
-                        element1.setVisible(true);
-                    }
-                    children.addAll(savedEditorAreaUI);
-                }
-                savedEditorAreaUI.clear();
-            } else {
-                statusHandler.warn("Unable to find editor area.");
-            }
-        } else if (editorPlaceholders.isEmpty()) {
-            statusHandler.warn(
-                    "Unable to find editor placeholder, cannot manage editor area.");
-        } else {
-            statusHandler.warn(
-                    "Too many editor placeholders found, cannot manage editor area.");
+
+        if (savedEditorAreaUI.isEmpty()) {
+            savedEditorAreaUI.add(createDefaultEditorStack());
         }
+        List<MPartSashContainerElement> oldEditors = swapEditorArea(
+                savedEditorAreaUI);
+        IPresentationEngine presentationEngine = perspectiveWindow
+                .getService(IPresentationEngine.class);
+        for (MPartSashContainerElement element : oldEditors) {
+            presentationEngine.removeGui(element);
+        }
+        savedEditorAreaUI.clear();
+
         if (!opened) {
             backgroundColor = BackgroundColor
                     .getInstance(page.getPerspective());
@@ -381,6 +333,85 @@ public abstract class AbstractVizPerspectiveManager
         contributeToStatusLine();
 
         perspectiveWindow.getShell().setText(getTitle(title));
+    }
+
+    /**
+     * Create an editor stack for the compatibility layer, based off of code in
+     * org.eclipse.e4.ui.internal.workbench.PlaceholderResolver and
+     * org.eclipse.ui.internal.e4.compatibility.ModeledPageLayout.
+     */
+    private MPartStack createDefaultEditorStack() {
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPartStack editorStack = modelService
+                .createModelElement(MPartStack.class);
+        editorStack.getTags().add("org.eclipse.e4.primaryDataStack");
+        editorStack.getTags().add("EditorStack");
+        editorStack.setElementId("org.eclipse.e4.primaryDataStack");
+        return editorStack;
+    }
+
+    /**
+     * Remove the elements currently in the editor area and replace them with
+     * the provided elements. The old elements are returned and must be either
+     * saved off or removed from the UI by the caller.
+     * 
+     * @param newContents
+     *            the contents that should go in the editor area.
+     * @return the elements that were previously in the editor area.
+     */
+    private List<MPartSashContainerElement> swapEditorArea(
+            List<? extends MPartSashContainerElement> newContents) {
+
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = modelService.getActivePerspective(window);
+        List<MPlaceholder> editorPlaceholders = modelService.findElements(
+                perspective, IPageLayout.ID_EDITOR_AREA, MPlaceholder.class,
+                null);
+
+        if (editorPlaceholders.size() == 1) {
+            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
+            MUIElement editorElement = editorPlaceholder.getRef();
+            if (editorElement instanceof MArea) {
+                MArea editorArea = (MArea) editorElement;
+                List<MPartSashContainerElement> children = editorArea
+                        .getChildren();
+                /*
+                 * When the editor area contains no visible children then the
+                 * CleanupAddon sets the visibility to false, if that happens
+                 * there is no way to restore visibility(see
+                 * https://bugs.eclipse.org/bugs/show_bug.cgi?id=365902). Adding
+                 * HIDDEN_EXPLICITLY forces the CleanupAddon to ignore the
+                 * editorArea which avoids that mess.
+                 */
+                List<String> tags = editorArea.getTags();
+                tags.add(IPresentationEngine.HIDDEN_EXPLICITLY);
+                List<MPartSashContainerElement> oldContents = new ArrayList<MPartSashContainerElement>(
+                        children);
+                for (MPartSashContainerElement element : oldContents) {
+                    element.setVisible(false);
+                    children.remove(element);
+                }
+                for (MPartSashContainerElement element : newContents) {
+                    children.add(element);
+                    element.setVisible(true);
+                }
+                tags.remove(IPresentationEngine.HIDDEN_EXPLICITLY);
+                return oldContents;
+            } else {
+                statusHandler.warn(
+                        "Unable to find editor area, cannot swap editor area.");
+            }
+        } else if (editorPlaceholders.isEmpty()) {
+            statusHandler.warn(
+                    "Unable to find editor placeholder, cannot swap editor area.");
+        } else {
+            statusHandler.warn(
+                    "Too many editor placeholders found, cannot swap editor area.");
+        }
+        return Collections.emptyList();
     }
 
     /**
@@ -420,33 +451,8 @@ public abstract class AbstractVizPerspectiveManager
 
         activeEditor = page.getActiveEditor();
 
-        MWindow window = perspectiveWindow.getService(MWindow.class);
-        EModelService model = perspectiveWindow.getService(EModelService.class);
-        MPerspective perspective = model.getActivePerspective(window);
-        List<MPlaceholder> editorPlaceholders = model.findElements(perspective,
-                IPageLayout.ID_EDITOR_AREA, MPlaceholder.class, null);
-        if (editorPlaceholders.size() == 1) {
-            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
-            MUIElement element = editorPlaceholder.getRef();
-            if (element instanceof MArea) {
-                List<MPartSashContainerElement> children = ((MArea) element)
-                        .getChildren();
-                savedEditorAreaUI.addAll(children);
-                for (MPartSashContainerElement element1 : savedEditorAreaUI) {
-                    element1.setVisible(false);
-                }
-                children.clear();
-            } else {
-                statusHandler.warn(
-                        "Unable to find editor area, cannot deactivate editor area.");
-            }
-        } else if (editorPlaceholders.isEmpty()) {
-            statusHandler.warn(
-                    "Unable to  find editor placeholder, cannot deactivate editor area.");
-        } else {
-            statusHandler.warn(
-                    "Too many editor placeholders found, cannot deactivate editor area.");
-        }
+        savedEditorAreaUI.addAll(
+                swapEditorArea(Arrays.asList(createDefaultEditorStack())));
 
         deactivateDialogs();
         deactivateContexts();
@@ -540,14 +546,14 @@ public abstract class AbstractVizPerspectiveManager
     }
 
     protected static void loadDefaultBundle(String filePath) {
-        File defaultBundle = PathManagerFactory.getPathManager()
-                .getStaticFile(filePath);
-        try {
-            Procedure proc = null;
-            proc = (Procedure) LoadPerspectiveHandler
-                    .deserialize(defaultBundle);
+        LocalizationFile defaultBundle = PathManagerFactory.getPathManager()
+                .getStaticLocalizationFile(filePath);
+        try (InputStream is = defaultBundle.openInputStream()) {
+            Procedure proc = (Procedure) ProcedureXmlManager.getInstance()
+                    .unmarshal(is);
             LoadPerspectiveHandler.loadProcedureToScreen(proc, true);
-        } catch (VizException e) {
+        } catch (VizException | IOException | LocalizationException
+                | SerializationException e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Error activating perspective", e);
             return;
