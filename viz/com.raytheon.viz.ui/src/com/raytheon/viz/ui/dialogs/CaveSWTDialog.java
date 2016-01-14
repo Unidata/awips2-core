@@ -22,11 +22,9 @@ package com.raytheon.viz.ui.dialogs;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
-import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
-import com.raytheon.viz.ui.perspectives.IPerspectiveSpecificDialog;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
@@ -38,28 +36,23 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ----------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer    Description
+ * ----------   ----------  ----------- --------------------------
  * 12/20/07     561         Dan Fitch   Initial Creation.
  * 10/28/2015   5054        randerso    Moved fields that were only used by this subclass
  *                                      from the base class to this subclass.
  *                                      Fixed location of dialogs with CAVE.INDEPENDENT_SHELL 
  *                                      attribute to still be centered on the parent shell.
+ * 13/01/2016   5055        randerso    Moved hide and restore methods and associated fields
+ *                                      into CaveSWTDialogBase
  * </pre>
  * 
  * @author Dan Fitch
  * @version 1
  */
-public abstract class CaveSWTDialog extends CaveSWTDialogBase implements
-        IPerspectiveSpecificDialog {
+public abstract class CaveSWTDialog extends CaveSWTDialogBase {
 
     private AbstractVizPerspectiveManager perspectiveManager;
-
-    /** Dialog last location on the screen. */
-    private Point lastLocation;
-
-    /** Flag indicating of the dialog was visible. */
-    private boolean wasVisible = true;
 
     /**
      * Construct default cave dialog
@@ -112,31 +105,6 @@ public abstract class CaveSWTDialog extends CaveSWTDialogBase implements
                     }
                 }
             });
-        }
-    }
-
-    /**
-     * Show the dialog and set the location of the shell.
-     */
-    @Override
-    public final void restore() {
-        if (shell != null && shell.isDisposed() == false) {
-            shell.setLocation(lastLocation);
-            if (shell.isVisible() != wasVisible) {
-                shell.setVisible(wasVisible);
-            }
-        }
-    }
-
-    /**
-     * Hide the dialog and save the current location of the shell.
-     */
-    @Override
-    public final void hide() {
-        if (shell != null && shell.isDisposed() == false) {
-            wasVisible = shell.isVisible();
-            lastLocation = shell.getLocation();
-            shell.setVisible(false);
         }
     }
 

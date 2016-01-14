@@ -36,6 +36,8 @@ import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.viz.ui.perspectives.IPerspectiveSpecificDialog;
+
 /**
  * 
  * Base class for CaveSWTDialog, does not require the eclipse workbench to have
@@ -55,15 +57,16 @@ import org.eclipse.swt.widgets.Shell;
  * Oct 11, 2012  1229      jkorman     Factored out "mustCreate" method from subclasses.
  * Oct 28, 2015  5054      randerso    Moved fields that were only used by a subclass
  *                                     from this class to the subclass.
- * Jan 12, 2016  5055      randerso    Removed final from bringToTop method to allow 
- *                                     it to be overridden
+ * Jan 12, 2016  5055      randerso    Made independent dialogs preserve location relative to 
+ *                                     parent when hidden and restored.
  * 
  * </pre>
  * 
  * @author mschenke
  * @version 1.0
  */
-public abstract class CaveSWTDialogBase extends Dialog {
+public abstract class CaveSWTDialogBase extends Dialog implements
+        IPerspectiveSpecificDialog {
 
     /** Cave dialog attributes */
     public static class CAVE {
@@ -137,6 +140,12 @@ public abstract class CaveSWTDialogBase extends Dialog {
 
     /** Callback called when the dialog is disposed. */
     private ICloseCallback closeCallback = null;
+
+    /** Dialog last offset from parent window. */
+    private Point lastOffset;
+
+    /** Flag indicating of the dialog was visible. */
+    private boolean wasVisible = true;
 
     /**
      * Construct default cave dialog
@@ -274,9 +283,9 @@ public abstract class CaveSWTDialogBase extends Dialog {
     /**
      * Gives the dialog focus
      */
-    public void bringToTop() {
+    public final void bringToTop() {
         if (shell != null && shell.isDisposed() == false) {
-            shell.setVisible(true);
+            restore();
             shell.forceFocus();
             shell.forceActive();
         }
@@ -350,6 +359,7 @@ public abstract class CaveSWTDialogBase extends Dialog {
      * Closes the shell.
      * 
      */
+    @Override
     public final boolean close() {
         if (shell != null && shell.isDisposed() == false) {
             shell.dispose();
@@ -521,4 +531,43 @@ public abstract class CaveSWTDialogBase extends Dialog {
         return (dialog == null) || (dialog.getShell() == null)
                 || (dialog.isDisposed());
     }
+
+    /**
+     * Show the dialog and set the location of the shell.
+     */
+    @Override
+    public final void restore() {
+        if (shell != null && shell.isDisposed() == false) {
+            if (shell.isVisible() != wasVisible) {
+                if (lastOffset != null) {
+                    Point parentLocation = getParent().getLocation();
+                    shell.setLocation(parentLocation.x + lastOffset.x,
+                            parentLocation.y + lastOffset.y);
+                    lastOffset = null;
+                }
+                shell.setVisible(wasVisible);
+            }
+        }
+    }
+
+    /**
+     * Hide the dialog and save the current location of the shell.
+     */
+    @Override
+    public final void hide() {
+        if (shell != null && shell.isDisposed() == false) {
+            wasVisible = shell.isVisible();
+            if (wasVisible) {
+                if ((caveStyle & CAVE.INDEPENDENT_SHELL) != 0) {
+                    Point myLocation = shell.getLocation();
+                    Point parentLocation = getParent().getLocation();
+                    lastOffset = new Point(myLocation.x - parentLocation.x,
+                            myLocation.y - parentLocation.y);
+                }
+
+                shell.setVisible(false);
+            }
+        }
+    }
+
 }
