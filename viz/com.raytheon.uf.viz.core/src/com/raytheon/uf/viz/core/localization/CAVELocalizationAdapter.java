@@ -451,12 +451,19 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public boolean delete(LocalizationFile file) throws LocalizationException {
-        long deleteTime = LocalizationManager.getInstance().delete(
-                file.getContext(), file.getPath());
+        LocalizationManager.getInstance().delete(file.getContext(),
+                file.getPath());
 
         // Made it here! file on server successfully deleted! Delete local file
         // reference.
-        file.delete();
+        File localFile = file.getFile(false);
+        /*
+         * NOTE: Do not call file.delete() because LocalizationFile.delete() is
+         * implemented to call CAVELocalizationAdapater.delete() (this method),
+         * which would call LocalizationFile.delete() again, resulting in
+         * infinite recursion.
+         */
+        localFile.delete();
 
         return true;
     }
