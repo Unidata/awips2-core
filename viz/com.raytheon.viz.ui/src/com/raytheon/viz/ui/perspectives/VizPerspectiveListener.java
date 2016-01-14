@@ -224,8 +224,8 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
                     activeManager.deactivate();
                     activeManager = null;
                 }
-                manager.activate();
                 activeManager = manager;
+                manager.activate();                
             }
         }
     }
