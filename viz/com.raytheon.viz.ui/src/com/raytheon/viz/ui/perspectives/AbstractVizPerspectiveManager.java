@@ -276,12 +276,6 @@ public abstract class AbstractVizPerspectiveManager
     public void close() {
         if (opened) {
             // Cleanup hidden editors
-            IPresentationEngine presentation = perspectiveWindow
-                    .getService(IPresentationEngine.class);
-            for (MUIElement element : savedEditorAreaUI) {
-                presentation.removeGui(element);
-            }
-
             savedEditorAreaUI.clear();
 
             opened = false;
