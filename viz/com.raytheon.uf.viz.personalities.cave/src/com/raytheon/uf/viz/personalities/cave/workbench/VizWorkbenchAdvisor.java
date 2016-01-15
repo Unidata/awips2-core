@@ -350,12 +350,16 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
             for (String prefix : commandPrefixes) {
                 /*
                  * org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals
-                 * is necessary since it is an extension of
-                 * org.eclipse.ui.popupMenus and will check isVisible in the
-                 * localization perspective
+                 * and org.eclipse.debug.ui.actions.WatchCommand are necessary
+                 * because they are related to popup menus and Eclipse will
+                 * check if they are visible.  Eclipse will throw errors if they
+                 * don't exist even if we never allow them to be visible.
                  */
-                if (id.startsWith(prefix) && !id.equals(
-                        "org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals")) {
+                if (id.startsWith(prefix)
+                        && !id.equals(
+                                "org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals")
+                        && !id.equals(
+                                "org.eclipse.debug.ui.actions.WatchCommand")) {
                     c.undefine();
                     break;
                 }
