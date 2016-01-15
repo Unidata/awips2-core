@@ -92,6 +92,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  *                                       Deprecated and changed add/removeFileUpdatedObserver()
  * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes
  * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver                                      
+ * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
  * 
  * </pre>
  * 
@@ -527,29 +528,59 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      */
     @Deprecated
     public void addFileUpdatedObserver(final ILocalizationFileObserver observer) {
+        final IPathManager pathMgr = PathManagerFactory.getPathManager();
         ILocalizationPathObserver pathObs = new ILocalizationPathObserver() {
             @Override
             public void fileChanged(ILocalizationFile file) {
-                /*
-                 * Before the API changes, earlier in the notification routing
-                 * we would discard notifications from a lower ranking level
-                 * (e.g. if observing file at USER level, discard SITE
-                 * notifications) and from context names that were not your own
-                 * (e.g. if observing site OAX discard DMX notifications).
-                 */
                 LocalizationContext listenContext = LocalizationFile.this.context;
                 LocalizationContext notifyContext = file.getContext();
                 int compare = notifyContext.getLocalizationLevel().compareTo(
                         listenContext.getLocalizationLevel());
-                if (compare < 0
-                        || (compare == 0 && !notifyContext.getContextName()
-                                .equals(listenContext.getContextName()))) {
+
+                /*
+                 * Before the API changes, earlier in the notification routing
+                 * we would discard notifications in specific scenarios. The
+                 * checks below recreate that behavior by returning early if the
+                 * notification should be discarded.
+                 */
+                if (compare < 0) {
+                    /*
+                     * Notification was for a lower ranking level than the
+                     * observer was registered; e.g. observer was registered for
+                     * USER notifications and a SITE notification arrived.
+                     */
                     return;
+                } else if (compare == 0) {
+                    if (!notifyContext.getContextName().equals(
+                            listenContext.getContextName())) {
+                        /*
+                         * Notification level matches observer's level, but the
+                         * name doesn't match; e.g. observer was registered for
+                         * site OAX but a site DMX notification arrived.
+                         */
+                        return;
+                    }
+                } else {
+                    LocalizationContext activeContext = pathMgr.getContext(
+                            notifyContext.getLocalizationType(),
+                            notifyContext.getLocalizationLevel());
+                    if (!notifyContext.getContextName().equals(
+                            activeContext.getContextName())) {
+                        /*
+                         * Notification was for a higher ranking level than the
+                         * observer was registered, but the name doesn't match
+                         * the currently active localization for that level;
+                         * e.g. observer was registered for BASE and a site DMX
+                         * notification arrived but this JVM is running with
+                         * localization site=OAX.
+                         */
+                        return;
+                    }
                 }
 
                 /*
-                 * notification appears to be relevant, send it along to the
-                 * observer using the old API
+                 * Notification appears to be relevant, send it along to the
+                 * observer using the old API.
                  */
                 FileChangeType t = null;
                 if (ILocalizationFile.NON_EXISTENT_CHECKSUM
@@ -582,8 +613,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                 new Throwable().printStackTrace();
             }
         }
-        PathManagerFactory.getPathManager().addLocalizationPathObserver(
-                this.path, pathObs);
+        pathMgr.addLocalizationPathObserver(this.path, pathObs);
     }
 
     /**
