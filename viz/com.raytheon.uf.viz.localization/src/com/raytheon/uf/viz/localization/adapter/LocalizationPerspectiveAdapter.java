@@ -23,7 +23,7 @@ import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorRegistry;
 
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.viz.localization.filetreeview.FileTreeEntryData;
 
 /**
@@ -37,7 +37,9 @@ import com.raytheon.uf.viz.localization.filetreeview.FileTreeEntryData;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 27, 2010            mpduff     Initial creation
+ * Sep 27, 2010            mpduff      Initial creation
+ * Jan 15, 2016 5242       kbisanz     Replaced LocalizationFile with
+ *                                     ILocalizationFile
  * 
  * </pre>
  * 
@@ -66,7 +68,7 @@ public class LocalizationPerspectiveAdapter {
     }
 
     /**
-     * Get any editors that the LocalizationFile file can be loaded into.
+     * Get any editors that the ILocalizationFile file can be loaded into.
      * Editors should be looked up by id using
      * IEditorRegistry.findEditor(String), IEditorRegistry can be retrieved
      * through LocalziationPerspectiveUtils.getEditorRegistry(). Should not
@@ -78,7 +80,7 @@ public class LocalizationPerspectiveAdapter {
      * @return
      */
     public IEditorDescriptor[] getLoadableEditors(IEditorRegistry registry,
-            LocalizationFile file) {
+            ILocalizationFile file) {
         return new IEditorDescriptor[] {};
     }
 }
