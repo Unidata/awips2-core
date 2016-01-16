@@ -22,6 +22,7 @@ package com.raytheon.uf.viz.core.localization;
 
 import java.io.File;
 import java.io.FileFilter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.SimpleDateFormat;
@@ -67,6 +68,7 @@ import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.common.localization.region.RegionLookup;
+import com.raytheon.uf.common.localization.stream.LocalizationStreamGetRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -102,8 +104,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Feb 04, 2014 2704       njensen     Allow setting server without saving
  * Feb 06, 2014 2761       mnash       Add region localization level
  * Jun 19, 2014 3301       njensen     Acquire lock inside loop of retrieveFiles()
- * Jan 12, 2015 3993       njensen     Added checkPreinstalled()
- * Feb 16, 2015 3978       njensen     Use REST service for efficient GET of files
+ * Jan 12, 2014 3993       njensen     Added checkPreinstalled()
  * 
  * </pre>
  * 
@@ -152,8 +153,6 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     private boolean overrideSite;
 
-    private final LocalizationRestConnector restConnect;
-
     /** Was the alert server launched within cave? */
     public static boolean internalAlertServer = ProgramArguments.getInstance()
             .getBoolean("-alertviz");
@@ -197,8 +196,6 @@ public class LocalizationManager implements IPropertyChangeListener {
                         + " in regions.xml file.");
             }
         }
-
-        this.restConnect = new LocalizationRestConnector(this.adapter);
     }
 
     /**
@@ -506,17 +503,47 @@ public class LocalizationManager implements IPropertyChangeListener {
             try {
                 FileLocker.lock(this, file, Type.WRITE);
                 file.delete();
-                restConnect.restGetFile(command.getContext(),
-                        command.getFileName());
+                FileOutputStream fout = new FileOutputStream(file);
+                boolean finished = false;
+                LocalizationStreamGetRequest request = PrivilegedRequestFactory
+                        .constructPrivilegedRequest(LocalizationStreamGetRequest.class);
+                request.setContext(command.getContext());
+                request.setFileName(command.getFileName());
+                request.setOffset(0);
+                request.setNumBytes(512 * 1024);
 
-                if (fileStamps[i] != null) {
-                    file.setLastModified(fileStamps[i].getTime());
+                while (!finished) {
+                    try {
+                        LocalizationStreamPutRequest response = (LocalizationStreamPutRequest) ThriftClient
+                                .sendLocalizationRequest(request);
+
+                        fout.write(response.getBytes());
+                        request.setOffset(request.getOffset()
+                                + response.getBytes().length);
+                        if (response.isEnd()) {
+                            finished = true;
+                            fout.close();
+
+                            if (fileStamps[i] != null) {
+                                file.setLastModified(fileStamps[i].getTime());
+                            }
+
+                            // Mark as read only if the file is a system level
+                            if (command.getContext().getLocalizationLevel()
+                                    .isSystemLevel()) {
+                                file.setReadOnly();
+                            }
+                        }
+                    } catch (VizException e) {
+                        e.printStackTrace();
+                        statusHandler.handle(
+                                Priority.PROBLEM,
+                                "Error requesting file: "
+                                        + String.valueOf(file), e);
+                        finished = true;
+                    }
                 }
 
-                // Mark as read only if the file is a system level
-                if (command.getContext().getLocalizationLevel().isSystemLevel()) {
-                    file.setReadOnly();
-                }
             } catch (Exception e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error requesting file: " + String.valueOf(file), e);
@@ -649,9 +676,9 @@ public class LocalizationManager implements IPropertyChangeListener {
                     }
                 }
             }
-            if (!commands.isEmpty()) {
-                retrieveFiles(commands.toArray(new GetUtilityCommand[0]),
-                        dates.toArray(new Date[0]));
+            if (commands.size() > 0) {
+                retrieveFiles(commands.toArray(new GetUtilityCommand[commands
+                        .size()]), dates.toArray(new Date[dates.size()]));
             }
         }
 

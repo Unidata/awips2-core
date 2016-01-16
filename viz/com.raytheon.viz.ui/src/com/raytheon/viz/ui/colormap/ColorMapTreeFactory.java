@@ -56,6 +56,7 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                    Converted to singleton.
  *                                    Added localized file observer.
  * Oct 14, 2015	 ----     mjames@ucar Only build for BASE level.
+ * Jan 16, 2016	 ----     mjames@ucar Add USER level again.
  * 
  * </pre>
  * 
@@ -122,7 +123,7 @@ public class ColorMapTreeFactory {
     /**
      * Flag to kick off initTreeByLevel the first time the trees are needed.
      */
-    private boolean startInitTreeByLevel = false;
+    private boolean startInitTreeByLevel = true;
 
     /**
      * Singleton constructor.
@@ -131,7 +132,7 @@ public class ColorMapTreeFactory {
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationLevel[] allLevels = pm.getAvailableLevels();
         // Remove BASE
-        treesLevelLocalization = Arrays.copyOfRange(allLevels, 1,
+        treesLevelLocalization = Arrays.copyOfRange(allLevels, allLevels.length-1,
                 allLevels.length);
     }
 
@@ -178,7 +179,7 @@ public class ColorMapTreeFactory {
         synchronized (treesByLevel) {
             if (startInitTreeByLevel) {
                 startInitTreeByLevel = false;
-                //initTreeByLevel();
+                initTreeByLevel();
             }
 
             /*
