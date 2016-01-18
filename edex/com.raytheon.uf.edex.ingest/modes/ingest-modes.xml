@@ -28,9 +28,9 @@
 		<exclude>edex-security.xml</exclude>
 		<exclude>.*obs-ingest-metarshef.*</exclude>
 		<exclude>rpgenvdata.*</exclude>
-		<exclude>taf.*</exclude>
+		<exclude>shef.*</exclude>
 		<exclude>nctaf.*</exclude>
 		<exclude>nctext.*</exclude>
-		<exclude>.*binlightning.*</exclude>
+		<exclude>binlightning.*</exclude>
 	</mode>
 </edexModes>
