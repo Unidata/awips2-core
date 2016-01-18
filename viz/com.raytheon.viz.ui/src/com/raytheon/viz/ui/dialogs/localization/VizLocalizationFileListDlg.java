@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
@@ -535,7 +536,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected void createOkButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
         okBtn = new Button(buttonComp, SWT.PUSH);
-        okBtn.setText("Ok");
+        okBtn.setText(IDialogConstants.OK_LABEL);
         okBtn.setLayoutData(rd);
         enableBtnArray.add(okBtn);
         okBtn.addSelectionListener(new SelectionAdapter() {
@@ -549,7 +550,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected void createCancelButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
         cancelBtn = new Button(buttonComp, SWT.PUSH);
-        cancelBtn.setText("Cancel");
+        cancelBtn.setText(IDialogConstants.CANCEL_LABEL);
         cancelBtn.setLayoutData(rd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
