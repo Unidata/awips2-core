@@ -32,35 +32,37 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.SerializerProvider;
-
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.raytheon.uf.common.json.jackson.util.ArrayDecoder;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.Point;
 
 /**
+ * Serialization adapter for JTS Point objects
  * 
- * @author bclement
- * @version 1.0
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
  */
 public class PointGeomSerialization {
 
 	public static class Deserializer extends JsonDeserializer<Point> {
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see
-		 * org.codehaus.jackson.map.JsonDeserializer#deserialize(org.codehaus
-		 * .jackson.JsonParser, org.codehaus.jackson.map.DeserializationContext)
-		 */
 		@Override
 		public Point deserialize(JsonParser jp, DeserializationContext ctxt)
 				throws IOException, JsonProcessingException {
@@ -73,14 +75,6 @@ public class PointGeomSerialization {
 
 	public static class Serializer extends JsonSerializer<Point> {
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see
-		 * org.codehaus.jackson.map.JsonSerializer#serialize(java.lang.Object,
-		 * org.codehaus.jackson.JsonGenerator,
-		 * org.codehaus.jackson.map.SerializerProvider)
-		 */
 		@Override
 		public void serialize(Point value, JsonGenerator jgen,
 				SerializerProvider provider) throws IOException,

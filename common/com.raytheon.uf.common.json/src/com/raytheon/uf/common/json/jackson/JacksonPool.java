@@ -33,7 +33,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.apache.commons.pool2.KeyedObjectPool;
 import org.apache.commons.pool2.impl.GenericKeyedObjectPool;
-import org.codehaus.jackson.map.ObjectMapper;
+
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 /**
  * Object pool of ObjectMapper instances for serializing and deserializing
@@ -47,6 +48,7 @@ import org.codehaus.jackson.map.ObjectMapper;
  * ------------ ---------- ----------- --------------------------
  *                         bclement     Initial creation.
  * Oct 22, 2015  #5004     dgilling     Use commons-pool2 API.
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
  * 
  * </pre>
  * 

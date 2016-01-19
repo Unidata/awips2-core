@@ -32,41 +32,42 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.SerializerProvider;
 import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
 import com.raytheon.uf.common.json.jackson.util.ArrayDecoder;
 
-
 /**
- * TODO Add Description
- *
- * @author bclement
- * @version 1.0	
+ * Serialization adapter for ReferencedEnvelope objects
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
  */
 public class RefEnvelopeSerialization {
 
 	public static class Deserializer extends
 			JsonDeserializer<ReferencedEnvelope> {
 
-		/*
-		 * (non-Javadoc)
-		 * 
-		 * @see
-		 * org.codehaus.jackson.map.JsonDeserializer#deserialize(org.codehaus
-		 * .jackson.JsonParser, org.codehaus.jackson.map.DeserializationContext)
-		 */
 		@Override
 		public ReferencedEnvelope deserialize(JsonParser jp,
 				DeserializationContext ctxt) throws IOException,
@@ -115,9 +116,6 @@ public class RefEnvelopeSerialization {
 			return ReferencedEnvelope.class;
 		}
 
-		/* (non-Javadoc)
-		 * @see org.codehaus.jackson.map.JsonSerializer#serialize(java.lang.Object, org.codehaus.jackson.JsonGenerator, org.codehaus.jackson.map.SerializerProvider)
-		 */
 		@Override
 		public void serialize(ReferencedEnvelope value, JsonGenerator jgen,
 				SerializerProvider provider) throws IOException,

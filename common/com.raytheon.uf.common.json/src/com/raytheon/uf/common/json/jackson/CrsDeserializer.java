@@ -32,30 +32,34 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
 import org.geotools.referencing.CRS;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+
 /**
- *
- * @author bclement
- * @version 1.0	
+ * Deserialization adapter for CoordinateReferenceSystem objects
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
  */
 public class CrsDeserializer extends
-		JsonDeserializer<CoordinateReferenceSystem> {
+        JsonDeserializer<CoordinateReferenceSystem> {
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.codehaus.jackson.map.JsonDeserializer#deserialize(org.codehaus.jackson
-	 * .JsonParser, org.codehaus.jackson.map.DeserializationContext)
-	 */
 	@Override
 	public CoordinateReferenceSystem deserialize(JsonParser jp,
 			DeserializationContext ctxt) throws IOException,
