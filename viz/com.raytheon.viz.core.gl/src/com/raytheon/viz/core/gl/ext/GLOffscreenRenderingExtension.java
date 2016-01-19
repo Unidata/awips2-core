@@ -24,7 +24,7 @@ import java.awt.image.BufferedImage;
 import java.awt.image.RenderedImage;
 import java.util.Stack;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
@@ -165,7 +165,7 @@ public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
             // Set currentInfo to null since we are using screen/display info
             // and we don't want to cache old info
             currentInfo = null;
-            target.getGl().glBindFramebufferEXT(GL.GL_FRAMEBUFFER_EXT, 0);
+            target.getGl().glBindFramebuffer(GL2.GL_FRAMEBUFFER, 0);
         } else {
             bounds = new Rectangle(currentInfo.image.getWidth(),
                     currentInfo.image.getHeight());
@@ -281,12 +281,12 @@ public class GLOffscreenRenderingExtension extends GraphicsExtension<IGLTarget>
 
         @Override
         public int getTextureInternalFormat() {
-            return GL.GL_RGB8;
+            return GL2.GL_RGB8;
         }
 
         @Override
         public int getTextureFormat() {
-            return GL.GL_RGB;
+            return GL2.GL_RGB;
         }
 
         @Override

@@ -24,8 +24,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.measure.unit.Unit;
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.GLU;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
@@ -139,7 +139,7 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
      * .opengl.GL)
      */
     @Override
-    public synchronized boolean loadTexture(GL gl) throws VizException {
+    public synchronized boolean loadTexture(GL2 gl) throws VizException {
         if (super.loadTexture(gl)) {
             ImageCache.getInstance(CacheType.TEXTURE).put(this);
             return true;
@@ -226,16 +226,16 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         double value = Double.NaN;
         if (!isStaged() && isLoaded()) {
             GLContextBridge.makeMasterContextCurrent();
-            GL gl = GLU.getCurrentGL();
+            GL2 gl = GLU.getCurrentGL().getGL2();
             int textureStorageType = getTextureStorageType();
             int copybackTextureType = data.getCopyBackTextureType();
             Buffer copybackBuffer = data.getCopybackBuffer();
             gl.glEnable(textureStorageType);
-            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glActiveTexture(GL2.GL_TEXTURE0);
             tex.bind(gl, textureStorageType);
             gl.glGetTexImage(textureStorageType, 0, getTextureFormat(),
                     copybackTextureType, copybackBuffer.rewind());
-            gl.glActiveTexture(GL.GL_TEXTURE0);
+            gl.glActiveTexture(GL2.GL_TEXTURE0);
             gl.glBindTexture(textureStorageType, 0);
             gl.glDisable(textureStorageType);
 

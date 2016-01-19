@@ -19,10 +19,11 @@
  **/
 package com.raytheon.viz.core.gl;
 
-import javax.media.opengl.GLCapabilities;
-import javax.media.opengl.GLContext;
-import javax.media.opengl.GLDrawableFactory;
-import javax.media.opengl.GLPbuffer;
+import com.jogamp.opengl.GLCapabilities;
+import com.jogamp.opengl.GLContext;
+import com.jogamp.opengl.GLDrawableFactory;
+import com.jogamp.opengl.GLOffscreenAutoDrawable;
+import com.jogamp.opengl.GLProfile;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.opengl.GLCanvas;
@@ -76,24 +77,32 @@ public class GLContextBridge {
     private final GLContext context;
 
     public GLContextBridge(int width, int height) throws VizException {
-        GLCapabilities glCap = new GLCapabilities();
-        if (!GLDrawableFactory.getFactory().canCreateGLPbuffer()) {
+    	GLProfile glp = GLProfile.getDefault();
+        GLCapabilities glCap = new GLCapabilities(null);
+        if (!GLDrawableFactory.getFactory(glp)
+                .canCreateGLPbuffer(GLProfile.getDefaultDevice(), glp)) {
             throw new VizException(
                     "Graphics card does not support GLPbuffer and "
                             + "therefore does not support offscreen rendering.");
         }
+        /*
         GLPbuffer buf = GLDrawableFactory.getFactory().createGLPbuffer(glCap,
                 null, width, height, null);
-        this.context = buf.createContext(null);
+        */
+        GLOffscreenAutoDrawable drawable = GLDrawableFactory.getFactory(glp).
+        		createOffscreenAutoDrawable(GLProfile.getDefaultDevice(), 
+        		glCap, null, width, height);
+        this.context = drawable.createContext(null);
         this.canvas = null;
         activeContext = this;
         releaseContext();
     }
 
     public GLContextBridge(GLCanvas canvas) {
+    	GLProfile glp = GLProfile.getDefault();
         this.canvas = canvas;
         this.canvas.setCurrent();
-        this.context = GLDrawableFactory.getFactory().createExternalGLContext();
+        this.context = GLDrawableFactory.getFactory(glp).createExternalGLContext();
         activeContext = this;
         releaseContext();
     }
@@ -199,5 +208,4 @@ public class GLContextBridge {
             }
         }
     }
-
 }
