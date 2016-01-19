@@ -55,6 +55,7 @@ import com.raytheon.uf.edex.database.purge.PurgeLogger;
  * May 4, 2011           ekladstrup  Initial creation.
  * Feb 14, 2013 1638     mschenke    Moved class to purgesrv project from edex.logs.
  * Feb 26, 2015 4165     rjpeter     Make purge configurable.
+ * Jan 19, 2015 5222     rjpeter     Skip compressing files that can't be read.
  * </pre>
  * 
  * @author ekladstrup
@@ -167,7 +168,7 @@ public class PurgeLogs {
                 List<String> files = entry.getValue();
                 iter.remove();
 
-                if (files == null || files.isEmpty()) {
+                if ((files == null) || files.isEmpty()) {
                     // safety check
                     continue;
                 }
@@ -218,20 +219,20 @@ public class PurgeLogs {
      * @return
      */
     private int compressFiles(String zipName, List<String> files) {
-        int count = 0;
 
-        File zipFile = new File(logDirectory, zipName);
         if (files.contains(zipName)) {
             // zip file already exists, don't do anything
             return 0;
         }
 
+        File zipFile = new File(logDirectory, zipName);
+        int count = 0;
+
         try (ZipOutputStream zos = new ZipOutputStream(new FileOutputStream(
                 zipFile))) {
             for (String file : files) {
                 File tmpFile = new File(logDirectory, file);
-                if (tmpFile.exists()) {
-                    count++;
+                if (tmpFile.exists() && tmpFile.canRead()) {
                     try (InputStream in = new FileInputStream(tmpFile)) {
                         zos.putNextEntry(new ZipEntry(file));
 
@@ -242,6 +243,11 @@ public class PurgeLogs {
                         }
 
                         tmpFile.delete();
+                        count++;
+                    } catch (Exception e) {
+                        PurgeLogger.logError(
+                                "Error occurred compressing file: "
+                                        + tmpFile.getAbsolutePath(), plugin, e);
                     } finally {
                         zos.closeEntry();
                     }
@@ -253,13 +259,17 @@ public class PurgeLogs {
              * happen
              */
             PurgeLogger.logError("Unexpected exception caught", plugin, e);
-
         } catch (IOException e) {
             /*
              * This should not happen either, could be caused by attempting to
              * write in a folder where the user does not have proper permissions
              */
             PurgeLogger.logError("Unexpected excetion caught", plugin, e);
+        }
+
+        if ((count == 0) && zipFile.exists()) {
+            // no files saved, delete zip file
+            zipFile.delete();
         }
 
         return count;
