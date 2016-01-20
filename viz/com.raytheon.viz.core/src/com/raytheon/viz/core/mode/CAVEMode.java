@@ -35,9 +35,10 @@ import com.raytheon.uf.viz.core.ProgramArguments;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ----------	----------	-----------	--------------------------
- * 12/20/07     561         Dan Fitch    Initial Creation.
+ * Date        Ticket#   Engineer    Description
+ * ---------- ---------- ----------- --------------------------
+ * 12/20/07     561      Dan Fitch   Initial Creation.
+ * 01/15/2016   5054     randerso    Improve error message
  * </pre>
  * 
  * @author Dan Fitch
@@ -94,7 +95,7 @@ public enum CAVEMode {
             modeAtStartup = CAVEMode.valueOf(operatingMode.toUpperCase());
         } catch (Throwable e2) {
             MessageDialog.openError(new Shell(), "Error starting CAVE",
-                    "CAVE will not start in mode: " + operatingMode);
+                    "CAVE cannot start in unknown mode: " + operatingMode);
             System.exit(0);
         }
 

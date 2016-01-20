@@ -37,8 +37,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
-import com.raytheon.viz.ui.statusline.StatusMessage.Importance;
-
 /**
  * This is a popup dialog that displays urgent messages to the user. It is not
  * modal, so other controls can be used while it is visible, but it cannot be
@@ -48,9 +46,10 @@ import com.raytheon.viz.ui.statusline.StatusMessage.Importance;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 	May 19, 2008					Eric Babin Initial Creation
+ * May 19, 2008            Eric Babin  Initial Creation
  * 2008-12-09
- *  Apr 10, 2014  15769    ryu         Disposing and reparenting dialog shell.
+ * Apr 10, 2014  15769     ryu         Disposing and reparenting dialog shell.
+ * Jan 15, 2016 5054       randerso    Removed main method (only used for prototype testing)
  * 
  * </pre>
  * 
@@ -107,7 +106,7 @@ public class UrgentMessagesDialog extends Dialog {
     @Override
     public void create() {
         super.create();
-        
+
         getShell().addDisposeListener(new DisposeListener() {
 
             @Override
@@ -115,18 +114,19 @@ public class UrgentMessagesDialog extends Dialog {
                 urgentBuffer.clear();
                 close();
             }
-            
+
         });
     }
-    
+
     public void reparent(Shell parent) {
-        if (getParentShell() != null && !getParentShell().isDisposed())
+        if (getParentShell() != null && !getParentShell().isDisposed()) {
             return;
+        }
         if (parent != null) {
             setParentShell(parent);
         }
     }
-    
+
     @Override
     public boolean close() {
         if (urgentBuffer.size() > 0) {
@@ -250,23 +250,5 @@ public class UrgentMessagesDialog extends Dialog {
     private void acknowledgeAll() {
         urgentBuffer.clear();
         updateWindow();
-    }
-
-    public static void main(String[] args) {
-        UrgentMessagesDialog umd = new UrgentMessagesDialog(new Shell(),
-                "Urgent Messages", new RGB(255, 255, 255), new RGB(255, 0, 0));
-        umd.setBlockOnOpen(false);
-        umd.open();
-
-        umd.addMessage(new StatusMessage("This is a test.", Importance.URGENT));
-        umd.addMessage(new StatusMessage("This is a second test.",
-                Importance.URGENT));
-        umd.addMessage(new StatusMessage(
-                "I am the captain of the Pinafore (and a right good captain, too). I'm very, very good, and be it understood, I command a right good crew. (He's very, very good, and be it understood, he commands a right good crew.) ",
-                Importance.URGENT));
-        umd.addMessage(new StatusMessage("This is a third test.",
-                Importance.URGENT));
-        umd.setBlockOnOpen(true);
-        umd.open();
     }
 }
