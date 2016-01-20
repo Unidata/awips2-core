@@ -972,7 +972,8 @@ public class FrameCoordinator implements IFrameCoordinator {
         for (IDisplayPane displayPane : container.getDisplayPanes()) {
             IRenderableDisplay otherRenderableDisplay = displayPane
                     .getRenderableDisplay();
-            if (otherRenderableDisplay == renderableDisplay) {
+            if (otherRenderableDisplay == renderableDisplay
+                    || otherRenderableDisplay == null) {
                 continue;
             }
             IDescriptor otherDescriptor = otherRenderableDisplay
