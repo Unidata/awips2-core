@@ -46,6 +46,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.PointCapability;
  * ------------ ---------- ----------- --------------------------
  * ???                     ???         Initial Creation
  * Jun 17, 2014  2903      bclement    added PIPE to PointStyle
+ * Jan 20, 2016  5274      randerso    Increased size of POINT to 2x2 pixels
  * 
  * </pre>
  * 
@@ -168,13 +169,14 @@ public class ChangePointStyleAction extends AbstractRightClickAction implements
             }
             gc.fillRectangle(bounds);
 
-            int x = bounds.x + bounds.width / 2;
-            int y = bounds.y + bounds.height / 2;
+            int x = bounds.x + (bounds.width / 2);
+            int y = bounds.y + (bounds.height / 2);
             int xTick = 3;
             int yTick = 3;
             switch (style) {
             case POINT:
-                gc.drawLine(x, y, x + 1, y);
+                gc.setBackground(gc.getForeground());
+                gc.fillRectangle(x, y, 2, 2);
                 break;
 
             case CROSS:
@@ -200,12 +202,14 @@ public class ChangePointStyleAction extends AbstractRightClickAction implements
                 break;
 
             case CIRCLE:
-                gc.drawOval(x - xTick, y - yTick, xTick * 2 + 1, yTick * 2 + 1);
+                gc.drawOval(x - xTick, y - yTick, (xTick * 2) + 1,
+                        (yTick * 2) + 1);
                 break;
 
             case DISC:
                 gc.setBackground(gc.getForeground());
-                gc.fillOval(x - xTick, y - yTick, xTick * 2 + 1, yTick * 2 + 1);
+                gc.fillOval(x - xTick, y - yTick, (xTick * 2) + 1,
+                        (yTick * 2) + 1);
                 break;
 
             case PIPE:

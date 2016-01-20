@@ -42,8 +42,8 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.colormap.IRefreshColorMapTreeListener;
  * Sep 18, 2013  2421     bsteffen    Use ColorMapTree for asyncronous loading.
  * Aug 28, 2014  3616     rferrel     Display ColorMapTree status while creating off
  *                                      the UI thread; and added refresh item.
+ * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -85,7 +86,7 @@ public class ColormapComp {
         public void colormapChanged(String colorMap);
     }
 
-    private Set<IColormapCompChangeListener> listeners = new HashSet<IColormapCompChangeListener>();
+    private Set<IColormapCompChangeListener> listeners = new HashSet<>();
 
     private Button cmapButton;
 
@@ -291,17 +292,17 @@ public class ColormapComp {
                     addSubTree(subTree, index++);
                 }
             }
-            List<LocalizationFile> files = tree.getColorMapFiles();
-            Collections.sort(files, new Comparator<LocalizationFile>() {
+            List<ILocalizationFile> files = tree.getColorMapFiles();
+            Collections.sort(files, new Comparator<ILocalizationFile>() {
 
                 @Override
-                public int compare(LocalizationFile file1,
-                        LocalizationFile file2) {
-                    return file1.getName().compareToIgnoreCase(file2.getName());
+                public int compare(ILocalizationFile file1,
+                        ILocalizationFile file2) {
+                    return file1.getPath().compareToIgnoreCase(file2.getPath());
                 }
 
             });
-            for (LocalizationFile file : files) {
+            for (ILocalizationFile file : files) {
                 addFile(file, index++);
             }
 
@@ -400,7 +401,7 @@ public class ColormapComp {
          */
         private List<ColorMapTree> getLevelTrees() {
             if (menu == cmapPopupMenu) {
-                List<ColorMapTree> trees = new ArrayList<ColorMapTree>();
+                List<ColorMapTree> trees = new ArrayList<>();
                 ColorMapTreeFactory cmtf = ColorMapTreeFactory.getInstance();
                 LocalizationLevel[] levels = cmtf.getTreesLevelLocalization();
                 for (LocalizationLevel level : levels) {
@@ -422,7 +423,7 @@ public class ColormapComp {
             subMenu.addMenuListener(new MenuPopulator(subMenu, tree));
         }
 
-        private void addFile(LocalizationFile file, int index) {
+        private void addFile(ILocalizationFile file, int index) {
             MenuItem item = new MenuItem(menu, SWT.None, index);
             final String name = ColorMapLoader.shortenName(file);
             int start = name.lastIndexOf(PathManager.SEPARATOR);

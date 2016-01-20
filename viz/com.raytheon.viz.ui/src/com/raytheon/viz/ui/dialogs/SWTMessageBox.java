@@ -41,16 +41,17 @@ import org.eclipse.swt.widgets.Shell;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 7, 2011            lvenable     Initial creation
+ * Apr 7, 2011             lvenable    Initial creation
  * Oct 18, 2012 1229       rferrel     Made dialog non-blocking.
  * Nov 13, 2015 4946       mapeters    Use scrollable StyledText for long messages.
+ * Jan 15, 2016 5054       randerso    Change to subclass CaveSWTDialog
  * 
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
-public class SWTMessageBox extends CaveSWTDialogBase {
+public class SWTMessageBox extends CaveSWTDialog {
 
     /**
      * The SWT icon to be displayed.

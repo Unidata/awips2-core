@@ -48,8 +48,9 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 9, 2012            mpduff       Initial creation
- * Mar 24, 2014 #1426     lvenable     Removed unnecessary code, cleaned up code.
+ * Jan 9, 2012             mpduff      Initial creation
+ * Mar 24, 2014 #1426      lvenable    Removed unnecessary code, cleaned up code.
+ * Jan 15, 2016 #5054      randerso    Change to subclass CaveSWTDialog
  * 
  * </pre>
  * 
@@ -57,7 +58,7 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * @version 1.0
  */
 
-public class AwipsCalendar extends CaveSWTDialogBase {
+public class AwipsCalendar extends CaveSWTDialog {
 
     /** The date selection calendar widget */
     private DateTime calendar;
@@ -261,7 +262,7 @@ public class AwipsCalendar extends CaveSWTDialogBase {
      * @param args
      */
     public static void main(String[] args) {
-        AwipsCalendar ac = new AwipsCalendar(new Shell(), 1);
+        AwipsCalendar ac = new AwipsCalendar(new Shell(), 0);
         ac.setTimeZone(TimeZone.getDefault());
         Date date = (Date) ac.open();
         if (date == null) {

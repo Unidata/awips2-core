@@ -31,11 +31,11 @@ import com.raytheon.uf.common.colormap.Color;
 import com.raytheon.uf.common.colormap.ColorMap;
 import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.IColorMap;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -56,6 +56,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Apr 08, 2014  2950     bsteffen    Allow buildColorData to take an IColorMap
  * Jun 30, 2014  3165     njensen     Major cleanup
  * Dec 09, 2015  4834     njensen     Don't save colormaps twice
+ * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -136,7 +137,7 @@ public class ColorUtil {
      * @return
      */
     public static ArrayList<ColorData> buildColorData(IColorMap aColorMap) {
-        ArrayList<ColorData> colors = new ArrayList<ColorData>();
+        ArrayList<ColorData> colors = new ArrayList<>();
 
         if (aColorMap != null) {
             for (Color c : aColorMap.getColors()) {
@@ -181,7 +182,7 @@ public class ColorUtil {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationContext context = pathMgr.getContext(
                 LocalizationType.COMMON_STATIC, level);
-        LocalizationFile localizationFile = pathMgr.getLocalizationFile(
+        ILocalizationFile localizationFile = pathMgr.getLocalizationFile(
                 context, filename);
         try (SaveableOutputStream sos = localizationFile.openOutputStream()) {
             ColorMap.JAXB.marshalToStream(colorMap, sos);
@@ -202,7 +203,7 @@ public class ColorUtil {
             LocalizationLevel level) throws LocalizationException {
         String filename = getColormapFilename(colormapName);
         IPathManager pm = PathManagerFactory.getPathManager();
-        LocalizationFile lfile = pm.getLocalizationFile(
+        ILocalizationFile lfile = pm.getLocalizationFile(
                 pm.getContext(LocalizationType.COMMON_STATIC, level), filename);
         if (lfile.exists()) {
             lfile.delete();

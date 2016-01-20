@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
@@ -51,8 +52,9 @@ import org.eclipse.ui.services.IServiceLocator;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.MenuSerialization;
 import com.raytheon.uf.common.menus.xml.CommonIncludeMenuItem;
 import com.raytheon.uf.common.menus.xml.CommonMenuContributionFile;
@@ -81,12 +83,14 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack     Initial creation
- * Apr 27, 2012   #562     dgilling     Ensure call to MenuCreationJob
+ * Apr 27, 2012 562        dgilling     Ensure call to MenuCreationJob
  *                                      uses proper method to retrieve
  *                                      localized site.
- * Mar 20, 2013       1638 mschenke     Removed menu creation job use
- * May 04, 2015  4284      bsteffen     Copy subMenuId
+ * Mar 20, 2013 1638       mschenke     Removed menu creation job use
+ * May 04, 2015 4284       bsteffen     Copy subMenuId
  * Dec 10, 2015  5193      bsteffen     Eclipse 4 Upgrade: Workaround 48143 
+ * Jan 15, 2016 5242       kbisanz      Replaced LocalizationFile with
+ *                                      ILocalizationFile
  * 
  * </pre>
  * 
@@ -137,23 +141,23 @@ public class DiscoverMenuContributions {
                             e1);
         }
 
-        LocalizationFile[] file = null;
+        ILocalizationFile[] file = null;
 
         if (menuArray.length == 1) {
             file = PathManagerFactory.getPathManager().listStaticFiles(
                     menuArray[0], new String[] { "index.xml" }, true, true);
         } else {
-            List<LocalizationFile> fileList = new ArrayList<LocalizationFile>();
+            List<ILocalizationFile> fileList = new ArrayList<>();
 
             for (String menu : menuArray) {
-                LocalizationFile[] files = PathManagerFactory.getPathManager()
+                ILocalizationFile[] files = PathManagerFactory.getPathManager()
                         .listStaticFiles(menu, new String[] { "index.xml" },
                                 true, true);
-                for (LocalizationFile lf : files) {
+                for (ILocalizationFile lf : files) {
                     fileList.add(lf);
                 }
             }
-            file = new LocalizationFile[fileList.size()];
+            file = new ILocalizationFile[fileList.size()];
             fileList.toArray(file);
         }
 
@@ -168,10 +172,10 @@ public class DiscoverMenuContributions {
             return;
         }
 
-        for (LocalizationFile lf : file) {
-            try {
+        for (ILocalizationFile lf : file) {
+            try (InputStream is = lf.openInputStream()) {
                 final CommonMenuContributionFile mcf = (CommonMenuContributionFile) um
-                        .unmarshal(lf.getFile());
+                        .unmarshal(is);
                 if (mcf.contribution != null) {
                     IMenuService menuService = (IMenuService) PlatformUI
                             .getWorkbench().getService(IMenuService.class);
@@ -187,16 +191,6 @@ public class DiscoverMenuContributions {
                         imc.visibleOnActionSet = im.visibleOnActionSet;
                         AbstractContributionFactory viewMenuAddition = new AbstractContributionFactory(
                                 imc.installationLocation, Activator.PLUGIN_ID) {
-
-                            /*
-                             * (non-Javadoc)
-                             * 
-                             * @see
-                             * org.eclipse.ui.menus.AbstractContributionFactory#
-                             * createContributionItems
-                             * (org.eclipse.ui.services.IServiceLocator,
-                             * org.eclipse.ui.menus.IContributionRoot)
-                             */
                             @SuppressWarnings("restriction")
                             @Override
                             public void createContributionItems(
@@ -242,10 +236,9 @@ public class DiscoverMenuContributions {
                         menuService.addContributionFactory(viewMenuAddition);
                     }
                 }
-            } catch (JAXBException e) {
+            } catch (JAXBException | IOException | LocalizationException e) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "Error parsing menu file: "
-                                + lf.getFile().getAbsolutePath(), e);
+                        "Error parsing menu file: " + lf.getPath(), e);
 
             }
         }
