@@ -155,6 +155,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Jan 26, 2015  3974     njensen     Always tesselate shaded shapes so concave shapes draw correctly
  * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
  * Nov 04, 2015  5070     randerso    Added DPI font scaling
+ * Jan 20, 2016  5274     randerso    Increased size of POINT to 2x2 pixels
  * 
  * </pre>
  * 
@@ -176,7 +177,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * 
      * 80% of width in pixels / dots per inch (dpi)
      */
-    protected static final double FONT_SCALING_BASIS = 0.8 * 1280 / 85;
+    protected static final double FONT_SCALING_BASIS = (0.8 * 1280) / 85;
 
     /**
      * Minimum font scaling limit
@@ -1737,7 +1738,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             int geomType = GL.GL_LINES;
             switch (pointStyle) {
             case PIPE:
-            case POINT:
             case DASH: {
                 pointsPerLocation = 2;
                 break;
@@ -1751,6 +1751,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 geomType = GL.GL_LINE_STRIP;
                 pointsPerLocation = 5;
                 break;
+            case POINT:
             case SQUARE: {
                 geomType = GL.GL_QUADS;
                 pointsPerLocation = 4;
@@ -1781,8 +1782,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
             buf.rewind();
 
             float xScale = (float) getScaleX() * magnification;
+            float yScale = (float) getScaleY() * magnification;
             float xTick = TICK_SIZE * xScale;
-            float yTick = (float) (TICK_SIZE * getScaleY() * magnification);
+            float yTick = TICK_SIZE * yScale;
             for (double[] location : locations) {
                 int numPoints = pointsPerLocation;
                 float x = (float) location[0];
@@ -1790,7 +1792,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
                 switch (pointStyle) {
                 case POINT: {
-                    buf.put(new float[] { x, y, x + xScale, y });
+                    buf.put(new float[] { x - xScale, y + yScale, x + xScale,
+                            y + yScale, x + xScale, y - yScale, x - xScale,
+                            y - yScale });
                     break;
                 }
                 case CROSS: {
