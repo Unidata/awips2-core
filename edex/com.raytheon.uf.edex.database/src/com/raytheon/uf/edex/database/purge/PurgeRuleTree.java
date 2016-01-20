@@ -37,6 +37,7 @@ import java.util.Map;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 29, 2012            rjpeter     Initial creation
+ * Jan 20, 2016 5262       bkowal      Updated to use {@link PurgeKeyValue}.
  * 
  * </pre>
  * 
@@ -53,16 +54,16 @@ public class PurgeRuleTree {
         if (rules != null) {
             for (PurgeRule rule : rules) {
                 PurgeNode curNode = root;
-                List<String> values = rule.getKeyValues();
+                List<PurgeKeyValue> values = rule.getKeyValues();
                 if ((values != null) && !values.isEmpty()) {
                     // descend purge tree
-                    for (String val : values) {
-                        Map<String, PurgeNode> childNodes = curNode
+                    for (PurgeKeyValue pkv : values) {
+                        Map<PurgeKeyValue, PurgeNode> childNodes = curNode
                                 .getChildNodes();
-                        curNode = childNodes.get(val);
+                        curNode = childNodes.get(pkv);
                         if (curNode == null) {
                             curNode = new PurgeNode();
-                            childNodes.put(val, curNode);
+                            childNodes.put(pkv, curNode);
                         }
                     }
 
@@ -112,7 +113,7 @@ public class PurgeRuleTree {
         // most nodes only have 1 rule
         private List<PurgeRule> rules = null;
 
-        private final Map<String, PurgeNode> childNodes = new HashMap<String, PurgeNode>();
+        private final Map<PurgeKeyValue, PurgeNode> childNodes = new HashMap<>();
 
         public void addRule(PurgeRule rule) {
             if (rules == null) {
@@ -130,12 +131,20 @@ public class PurgeRuleTree {
             return rules;
         }
 
-        public Map<String, PurgeNode> getChildNodes() {
+        public Map<PurgeKeyValue, PurgeNode> getChildNodes() {
             return childNodes;
         }
 
         public PurgeNode getChildNode(String keyValue) {
-            return childNodes.get(keyValue);
+            for (PurgeKeyValue pkv : childNodes.keySet()) {
+                if ((pkv.getKeyValuePattern() != null && pkv
+                        .getKeyValuePattern().matcher(keyValue).matches())
+                        || pkv.getKeyValue().equals(keyValue)) {
+                    return childNodes.get(pkv);
+                }
+            }
+
+            return null;
         }
     }
 }
