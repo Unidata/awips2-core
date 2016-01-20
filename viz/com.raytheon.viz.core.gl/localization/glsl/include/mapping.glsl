@@ -67,7 +67,7 @@ float dataToTextureValue(DataTextureInfo info, float dataValue) {
 float lookupMappingValue(sampler1D mappingTex, int index,
 		int numMappingValues) {
 	/* The 0.5 ensures we map into the center of the pixel which is necessary if the texture is interpolated. */
-	return texture1D(mappingTex, (0.5 + index) / float(numMappingValues)).r;
+	return texture1D(mappingTex, (0.5 + float(index)) / float(numMappingValues)).r;
 }
 
 /**

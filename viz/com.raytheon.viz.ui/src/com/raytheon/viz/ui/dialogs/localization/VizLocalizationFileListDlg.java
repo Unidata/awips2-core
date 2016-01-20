@@ -87,6 +87,8 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * 22 Jun 2015  4401       bkowal      Do not access {@link #localizationTF} when opening
  *                                     a localization file.
  * 30 Jun 2015  4401       bkowal      Perspectives are now stored in common_static.
+ * 02 Nov 2015  5025       bkowal      Check for files at the specified localization location
+ *                                     instead of defaulting to cave_static.
  * 13 Jan 2016  5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
@@ -503,7 +505,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected VizLocalizationFileTree populateDataList() {
         VizLocalizationFileTree root = new VizLocalizationFileTree("root", null);
         IPathManager mgr = PathManagerFactory.getPathManager();
-        LocalizationContext ctx = mgr.getContext(LocalizationType.CAVE_STATIC,
+        LocalizationContext ctx = mgr.getContext(this.localizationType,
                 LocalizationLevel.USER);
         ILocalizationFile[] files = mgr.listFiles(ctx,
                 this.localizationDirectory, null, true, true);
