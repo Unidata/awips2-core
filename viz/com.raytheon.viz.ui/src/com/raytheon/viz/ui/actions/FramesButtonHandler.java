@@ -37,9 +37,11 @@ import com.raytheon.uf.viz.core.globals.IGlobalChangedListener;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2007            randerso    Initial Creation.
+ * Jan 21, 2016 5193       bsteffen    Update tooltip
  * 
- * &#064;author randerso
+ * </pre>
  * 
+ * @author randerso
  */
 public class FramesButtonHandler extends AbstractGlobalsButtonHandler implements
         IElementUpdater, IGlobalChangedListener {
@@ -52,7 +54,9 @@ public class FramesButtonHandler extends AbstractGlobalsButtonHandler implements
     protected void updateGlobalValue(IWorkbenchWindow changedWindow,
             UIElement element, Object value) {
         Integer frames = (Integer) value;
-        element.setText("Frames: " + frames);
+        String text = "Frames: " + frames;
+        element.setText(text);
+        element.setTooltip(text);
     }
 
 }
