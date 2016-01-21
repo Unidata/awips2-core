@@ -86,6 +86,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Nov 17, 2015 4834        njensen     Remove ModifiableLocalizationFile
  *                                       Set checksum on list response entries
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
+ * Jan 21, 2016 4834        njensen     Fixed checksum and timestamp notification on save()
  * 
  * </pre>
  * 
@@ -326,13 +327,18 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         } else {
             changeType = FileChangeType.ADDED;
         }
-        long timeStamp = System.currentTimeMillis();
+
         // send notification
         try {
+            // generate the new checksum after the change
+            File actualFile = getPath(file.getContext(), file.getPath());
+            String checksum = ChecksumIO.writeChecksum(actualFile);
+            long timeStamp = actualFile.lastModified();
+
             EDEXUtil.getMessageProducer().sendAsync(
                     FILE_UPDATE_ENDPOINT,
-                    new FileUpdatedMessage(context, file.getName(), changeType,
-                            timeStamp, file.getCheckSum()));
+                    new FileUpdatedMessage(context, file.getPath(), changeType,
+                            timeStamp, checksum));
         } catch (Exception e) {
             handler.error("Error sending file updated message", e);
         }
@@ -348,7 +354,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
          * LocalizationFileChangedOutFromUnderYouException.
          */
 
-        File localFile = file.getFile();
+        File localFile = getPath(file.getContext(), file.getPath());
         boolean deleted = false;
         if (localFile.exists()) {
             deleted = localFile.delete();
@@ -369,7 +375,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
             try {
                 EDEXUtil.getMessageProducer().sendAsync(
                         FILE_UPDATE_ENDPOINT,
-                        new FileUpdatedMessage(context, file.getName(),
+                        new FileUpdatedMessage(context, file.getPath(),
                                 FileChangeType.DELETED, timeStamp,
                                 ILocalizationFile.NON_EXISTENT_CHECKSUM));
             } catch (Exception e) {
@@ -432,7 +438,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public boolean exists(LocalizationFile file) {
-        return file.getFile().exists();
+        return getPath(file.getContext(), file.getPath()).exists();
     }
 
     @Override
