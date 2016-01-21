@@ -124,7 +124,11 @@ public abstract class PluginDataObject extends PersistableDataObject implements
             DataURIFieldConverter<DataTime> {
         @Override
         public String toString(DataTime field) {
-            return field.getURIString();
+            if (field == null) {
+                return null;
+            } else {
+                return field.getURIString();
+            }
         }
 
         @Override
