@@ -31,16 +31,30 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.JsonMappingException;
-
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.raytheon.uf.common.json.jackson.util.ArrayDecoder;
 import com.vividsolutions.jts.geom.Envelope;
 
+/**
+ * Deserialization adapter for JTS Envelope objects
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
+ */
 public class EnvelopeDeserializer extends JsonDeserializer<Envelope> {
 
 	@Override

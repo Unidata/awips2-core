@@ -29,30 +29,33 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonDeserializer;
-import org.codehaus.jackson.map.TypeDeserializer;
-
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonDeserializer;
+import com.fasterxml.jackson.databind.jsontype.TypeDeserializer;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKTReader;
 
 /**
- * @author bclement
+ * Deserialization adapter for JTS Geometry objects
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
  * 
  */
 public class GeometryDeserializer extends JsonDeserializer<Geometry> {
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.codehaus.jackson.map.JsonDeserializer#deserialize(org.codehaus.jackson
-	 * .JsonParser, org.codehaus.jackson.map.DeserializationContext)
-	 */
 	@Override
 	public Geometry deserialize(JsonParser jp, DeserializationContext ctxt)
 			throws IOException, JsonProcessingException {
@@ -67,14 +70,6 @@ public class GeometryDeserializer extends JsonDeserializer<Geometry> {
 		}
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * org.codehaus.jackson.map.JsonDeserializer#deserializeWithType(org.codehaus
-	 * .jackson.JsonParser, org.codehaus.jackson.map.DeserializationContext,
-	 * org.codehaus.jackson.map.TypeDeserializer)
-	 */
 	@Override
 	public Object deserializeWithType(JsonParser jp,
 			DeserializationContext ctxt, TypeDeserializer typeDeserializer)

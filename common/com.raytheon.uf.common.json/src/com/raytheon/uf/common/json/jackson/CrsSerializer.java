@@ -32,23 +32,30 @@ package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
 
-import org.codehaus.jackson.JsonGenerator;
-import org.codehaus.jackson.JsonProcessingException;
-import org.codehaus.jackson.map.JsonSerializer;
-import org.codehaus.jackson.map.SerializerProvider;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.fasterxml.jackson.core.JsonGenerator;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonSerializer;
+import com.fasterxml.jackson.databind.SerializerProvider;
+
 /**
- * TODO Add Description
- *
- * @author bclement
- * @version 1.0	
+ * Serialization adapter for CoordinateReferenceSystem objects
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
  */
 public class CrsSerializer extends JsonSerializer<CoordinateReferenceSystem> {
 
-	/* (non-Javadoc)
-	 * @see org.codehaus.jackson.map.JsonSerializer#serialize(java.lang.Object, org.codehaus.jackson.JsonGenerator, org.codehaus.jackson.map.SerializerProvider)
-	 */
 	@Override
 	public void serialize(CoordinateReferenceSystem value, JsonGenerator jgen,
 			SerializerProvider provider) throws IOException,
@@ -56,11 +63,6 @@ public class CrsSerializer extends JsonSerializer<CoordinateReferenceSystem> {
 		jgen.writeString(value.toWKT());
 	}
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see org.codehaus.jackson.map.JsonSerializer#handledType()
-	 */
 	@Override
 	public Class<CoordinateReferenceSystem> handledType() {
 		return CoordinateReferenceSystem.class;

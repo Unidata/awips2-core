@@ -30,9 +30,8 @@ import java.io.OutputStream;
 import java.util.Map;
 import java.util.TreeMap;
 
-import org.codehaus.jackson.map.ObjectMapper;
-import org.codehaus.jackson.map.ObjectWriter;
-
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.raytheon.uf.common.json.JsonException;
 import com.raytheon.uf.common.json.JsonService;
 import com.raytheon.uf.common.json.jackson.JacksonPool;

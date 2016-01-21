@@ -32,22 +32,41 @@ package com.raytheon.uf.common.json.jackson.util;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
-import org.codehaus.jackson.JsonParseException;
-import org.codehaus.jackson.JsonParser;
-import org.codehaus.jackson.JsonToken;
-import org.codehaus.jackson.map.DeserializationContext;
-import org.codehaus.jackson.map.JsonMappingException;
-
+import com.fasterxml.jackson.core.JsonParseException;
+import com.fasterxml.jackson.core.JsonParser;
+import com.fasterxml.jackson.core.JsonToken;
+import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.JsonMappingException;
 import com.vividsolutions.jts.geom.Envelope;
 
 /**
+ * JSON parsing utility for populating java arrays from JSON arrays
  * 
- * @author bclement
- * @version 1.0
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Aug 10, 2011            bclement    Initial creation
+ * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
+ * 
+ * </pre>
+ * 
  */
 public class ArrayDecoder {
 
+    /**
+     * Decode a two dimensional double array
+     * 
+     * @param jp
+     * @param ctxt
+     * @return
+     * @throws JsonParseException
+     * @throws IOException
+     */
 	public static double[][] decodeDbl2D(JsonParser jp,
 			DeserializationContext ctxt) throws JsonParseException, IOException {
 		ArrayList<double[]> rval = new ArrayList<double[]>();
@@ -62,6 +81,15 @@ public class ArrayDecoder {
 		return toPrimitive2D(rval);
 	}
 
+    /**
+     * Decode a one dimensional double array
+     * 
+     * @param jp
+     * @param ctxt
+     * @return
+     * @throws JsonParseException
+     * @throws IOException
+     */
 	public static double[] decodeDbl(JsonParser jp, DeserializationContext ctxt)
 			throws JsonParseException, IOException {
 		ArrayList<Double> rval = new ArrayList<Double>();
@@ -76,7 +104,13 @@ public class ArrayDecoder {
 		return toPrimitive(rval);
 	}
 
-	protected static double[] toPrimitive(ArrayList<Double> list) {
+    /**
+     * Convert list of Double objects to array of double primatives
+     * 
+     * @param list
+     * @return
+     */
+    protected static double[] toPrimitive(List<Double> list) {
 		double[] rval = new double[list.size()];
 		for (int i = 0; i < rval.length; ++i) {
 			rval[i] = list.get(i);
@@ -84,7 +118,14 @@ public class ArrayDecoder {
 		return rval;
 	}
 
-	protected static double[][] toPrimitive2D(ArrayList<double[]> list) {
+    /**
+     * Convert list of double arrays objects to two dimensional array of double
+     * primatives
+     * 
+     * @param list
+     * @return
+     */
+    protected static double[][] toPrimitive2D(List<double[]> list) {
 		double[][] rval = new double[list.size()][];
 		for (int i = 0; i < rval.length; ++i) {
 			rval[i] = list.get(i);
@@ -92,6 +133,13 @@ public class ArrayDecoder {
 		return rval;
 	}
 
+    /**
+     * Ensure that context is at the start of an array
+     * 
+     * @param tok
+     * @param ctxt
+     * @throws JsonMappingException
+     */
 	public static void checkArrayStart(JsonToken tok,
 			DeserializationContext ctxt) throws JsonMappingException {
 		if (tok != JsonToken.START_ARRAY) {
@@ -99,10 +147,18 @@ public class ArrayDecoder {
 		}
 	}
 
+    /**
+     * Ensure that context is at the end of an array
+     * 
+     * @param tok
+     * @param ctxt
+     * @throws JsonMappingException
+     */
 	public static void checkArrayEnd(JsonToken tok,
 			DeserializationContext ctxt) throws JsonMappingException {
 		if (tok != JsonToken.END_ARRAY) {
 			throw ctxt.mappingException(Envelope.class);
 		}
 	}
+
 }
