@@ -4,7 +4,7 @@ Bundle-Name: Common Maps Dataplugin
 Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.maps
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: org.apache.commons.lang;bundle-version="2.3.0",
  com.raytheon.uf.common.dataplugin,
  org.geotools;bundle-version="2.6.4",
