@@ -320,8 +320,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
         String[] pastOptions =  { 
         		"localhost",
         		"edex",
-        		"edex-cloud.unidata.ucar.edu",
-        		"edex.unidata.ucar.edu"
+        		"edex-cloud.unidata.ucar.edu"
+        		//,"edex.unidata.ucar.edu"
         		};
         // fullServerName
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
