@@ -26,6 +26,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
@@ -96,16 +97,31 @@ public class SWTMessageBox extends CaveSWTDialog {
      */
     public SWTMessageBox(Shell parent, String title, String message,
             int swtMessageBoxStyle) {
-        this(parent, title, message, swtMessageBoxStyle, SWT.PRIMARY_MODAL,
-                false);
-    }
-
-    public SWTMessageBox(Shell parent, String title, String message,
-            int swtMessageBoxStyle, int modalSetting, boolean centerMessage) {
-        super(parent, SWT.DIALOG_TRIM | modalSetting, CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM | SWT.PRIMARY_MODAL, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
-        this.centerMessage = centerMessage;
+        this.centerMessage = false;
+        setText(title);
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param display
+     * 
+     * @param title
+     *            Dialog title.
+     * @param message
+     *            Message.
+     * @param swtMessageBoxStyle
+     *            Style for icon and buttons.
+     */
+    public SWTMessageBox(Display display, String title, String message,
+            int swtMessageBoxStyle) {
+        super(display, SWT.DIALOG_TRIM | SWT.MODELESS, CAVE.DO_NOT_BLOCK);
+        this.swtMessageBoxStyle = swtMessageBoxStyle;
+        this.message = message;
+        this.centerMessage = true;
         setText(title);
     }
 
