@@ -20,6 +20,7 @@
 
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
+import org.eclipse.core.commands.Command;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceNode;
@@ -34,7 +35,9 @@ import org.eclipse.ui.application.IWorkbenchConfigurer;
 import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.application.WorkbenchWindowAdvisor;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.contexts.IContextService;
+
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
@@ -60,6 +63,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Jan 04, 2016 5192        njensen     Moved removal of extra perspectives and some prefs
  *                                       to plugin.xml using activities
  * Jan 05, 2016 5193        bsteffen    Activate viz perspective after startup.
+ * Jan 14, 2016 5192        njensen     Remove jdt, debug, and team commands
  * 
  * </pre>
  * 
@@ -308,6 +312,10 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
                     .perspectiveActivated(page, perspective);
         }
         
+        /*
+         * remove after starting up, as some commands may not have initialized yet
+         */
+        removeExtraCommands();
     }
 
     /**
@@ -321,6 +329,42 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     public void setStartupTimer(ITimer startupTimer) {
         this.startupTimer = startupTimer;
     }
+    
+    /**
+     * Undefines specific commands so that they aren't available in the system. This
+     * has the benefit of removing them from the ctrl-shift-L key binding
+     * window, removing them from Preferences -> General -> Keys GUI, and
+     * ensuring that they can't intercept key events for the keys that they're bound
+     * to.
+     */
+    private void removeExtraCommands() {
+        IWorkbench wb = getWorkbenchConfigurer().getWorkbench();
+        ICommandService service = wb.getService(ICommandService.class);
 
+        String[] commandPrefixes = new String[] { "org.eclipse.jdt",
+                "org.eclipse.debug", "org.eclipse.team" };
+
+        Command[] commands = service.getDefinedCommands();
+        for (Command c : commands) {
+            String id = c.getId();
+            for (String prefix : commandPrefixes) {
+                /*
+                 * org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals
+                 * and org.eclipse.debug.ui.actions.WatchCommand are necessary
+                 * because they are related to popup menus and Eclipse will
+                 * check if they are visible.  Eclipse will throw errors if they
+                 * don't exist even if we never allow them to be visible.
+                 */
+                if (id.startsWith(prefix)
+                        && !id.equals(
+                                "org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals")
+                        && !id.equals(
+                                "org.eclipse.debug.ui.actions.WatchCommand")) {
+                    c.undefine();
+                    break;
+                }
+            }
+        }
+    }
 
 }
