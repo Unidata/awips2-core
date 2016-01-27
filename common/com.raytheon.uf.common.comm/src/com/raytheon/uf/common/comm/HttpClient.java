@@ -104,7 +104,8 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * Apr 16, 2015  4239        njensen     Better error handling on response != 200
  * Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * Dec 04, 2015  4834        njensen     Support authorization on http requests too
- * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse   
+ * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse
+ * Jan 27, 2016  5070        tjensen     Added comment noting stats stored here but logged elsewhere
  * 
  * </pre>
  * 
@@ -159,6 +160,10 @@ public class HttpClient {
     private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
             HttpClient.class, "DEFAULT");
 
+    /**
+     * Stores networks statistics to be accessible by other plugins where stats
+     * logging is performed. No logging of stats is done by HttpClient directly.
+     */
     private final NetworkStatistics stats = new NetworkStatistics();
 
     private boolean gzipRequests = false;
@@ -656,6 +661,7 @@ public class HttpClient {
         DynamicSerializeStreamHandler handlerCallback = new DynamicSerializeStreamHandler();
         HttpClientResponse resp = this.process(put, handlerCallback);
         checkStatusCode(resp);
+
         return handlerCallback.getResponseObject();
     }
 
@@ -834,7 +840,9 @@ public class HttpClient {
     }
 
     /**
-     * Gets the network statistics for http traffic.
+     * Gets the network statistics for http traffic for other plugins where
+     * stats logging is performed. No logging of stats is done by HttpClient
+     * directly.
      * 
      * @return network stats
      */
