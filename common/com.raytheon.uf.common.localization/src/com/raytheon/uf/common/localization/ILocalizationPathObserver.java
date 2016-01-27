@@ -22,7 +22,7 @@ package com.raytheon.uf.common.localization;
 /**
  * Observer to listen for changes on paths corresponding to ILocalizationFiles.
  * These observers are registered on an IPathManager instance and will be
- * triggered whenever a file with a matching path is changed.
+ * triggered whenever an ILocalizationFile with a matching path is changed.
  * 
  * Please note that the IPathManager will trigger the event regardless of
  * LocalizationContext. It is the responsibility of implementations to determine
