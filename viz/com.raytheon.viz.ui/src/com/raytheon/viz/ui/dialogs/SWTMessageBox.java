@@ -27,6 +27,7 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
@@ -86,23 +87,50 @@ public class SWTMessageBox extends CaveSWTDialog {
      */
     public SWTMessageBox(Shell parent, String title, String message,
             int swtMessageBoxStyle) {
-        this(parent, title, message, swtMessageBoxStyle, SWT.PRIMARY_MODAL,
-                false);
+        this(parent, title, message, swtMessageBoxStyle, false);
     }
 
+    /**
+     * Constructor.
+     * 
+     * @param parent
+     *            Parent shell.
+     * @param title
+     *            Dialog title.
+     * @param message
+     *            Message.
+     * @param swtMessageBoxStyle
+     *            Style for icon and buttons.
+     * @param longMessage
+     *            True if message contains a large number of lines
+     *
+     */
     public SWTMessageBox(Shell parent, String title, String message,
-            int swtMessageBoxStyle, int modalSetting, boolean centerMessage) {
-        this(parent, title, message, swtMessageBoxStyle, modalSetting,
-                centerMessage, false);
-    }
-
-    public SWTMessageBox(Shell parent, String title, String message,
-            int swtMessageBoxStyle, int modalSetting, boolean centerMessage,
-            boolean longMessage) {
-        super(parent, SWT.DIALOG_TRIM | modalSetting, CAVE.DO_NOT_BLOCK);
+            int swtMessageBoxStyle, boolean longMessage) {
+        super(parent, SWT.DIALOG_TRIM | SWT.PRIMARY_MODAL, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
-        this.centerMessage = centerMessage;
+        this.centerMessage = false;
+        this.longMessage = longMessage;
+        setText(title);
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param title
+     *            Dialog title.
+     * @param message
+     *            Message.
+     * @param swtMessageBoxStyle
+     *            Style for icon and buttons.
+     */
+    public SWTMessageBox(Display display, String title, String message,
+            int swtMessageBoxStyle) {
+        super(display, SWT.DIALOG_TRIM | SWT.MODELESS, CAVE.DO_NOT_BLOCK);
+        this.swtMessageBoxStyle = swtMessageBoxStyle;
+        this.message = message;
+        this.centerMessage = true;
         this.longMessage = longMessage;
         setText(title);
     }
