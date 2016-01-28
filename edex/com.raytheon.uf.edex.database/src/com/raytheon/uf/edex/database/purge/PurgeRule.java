@@ -28,6 +28,7 @@ import java.util.regex.Pattern;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 
@@ -47,6 +48,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * 2/15/11      #2469       bphillip    Initial creation
+ * 1/20/216     #5262       bkowal      Added {@link #regex} and updated {@link #keyValues}
+ *                                      to be {@link PurgeKeyValue}.
  * 
  * </pre>
  * 
@@ -57,9 +60,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 public class PurgeRule {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PurgeRule.class);
-
-    /** The serial number */
-    private static final long serialVersionUID = 7121154611198571831L;
 
     /**
      * The pattern used for decoding time strings in the rule. Times are of the
@@ -76,12 +76,26 @@ public class PurgeRule {
             .compile(TIME_PATTERN_STRING);
 
     /**
+     * Indicates whether or not this rule utilizes regular expressions. Regular
+     * expressions are a new addition to the purge rules. So, we do not want to
+     * attempt to compile key values that were not written specifically to be
+     * pattern matched. This will prevent regex compilation failures due to the
+     * existence of regex-specific characters that were not used in a
+     * regex-compliant way because the original intention of including the key
+     * value in the pair was to be an exact match. This flag is applicable to
+     * the entire rule. The expectation is that all specified keyValues are
+     * expected to be valid regex.
+     */
+    @XmlAttribute(required = false)
+    private boolean regex = false;
+
+    /**
      * The keys this rule is to match. Should be equal to a value based on the
      * key fields of the record specified in the PurgeRuleSet. Special cases are
      * made for keyMatch of value default.
      */
-    @XmlElements({ @XmlElement(name = "keyValue", type = String.class) })
-    private List<String> keyValues;
+    @XmlElements({ @XmlElement(name = "keyValue", type = PurgeKeyValue.class) })
+    private List<PurgeKeyValue> keyValues;
 
     /** The number of versions to keep */
     @XmlElement
@@ -149,12 +163,27 @@ public class PurgeRule {
     }
 
     /**
+     * @return the regex
+     */
+    public boolean isRegex() {
+        return regex;
+    }
+
+    /**
+     * @param regex
+     *            the regex to set
+     */
+    public void setRegex(boolean regex) {
+        this.regex = regex;
+    }
+
+    /**
      * Gets the key values associated with the PurgeRuleSet keys.
      * 
      * @return
      */
-    public List<String> getKeyValues() {
-        return keyValues;
+    public List<PurgeKeyValue> getKeyValues() {
+        return this.keyValues;
     }
 
     /**
@@ -162,7 +191,7 @@ public class PurgeRule {
      * 
      * @param keyValues
      */
-    public void setKeyValues(List<String> keyValues) {
+    public void setKeyValues(List<PurgeKeyValue> keyValues) {
         this.keyValues = keyValues;
     }
 
@@ -332,13 +361,47 @@ public class PurgeRule {
         return new Date[] { refTime, timeToCompare };
     }
 
+    /**
+     * Determines if there is regex that needs to be compiled for this rule.
+     * This method returns true if the regex attribute is set on the word,
+     * itself, or on a key value within the rule.
+     * 
+     * @return true, if the rule should be evaluated as a regex rule; false,
+     *         otherwise.
+     */
+    public boolean declaredRegexRule() {
+        if (this.regex) {
+            return true;
+        }
+
+        /*
+         * The entire rule does not use regex. Determine if any individual key
+         * values use regex.
+         */
+        for (PurgeKeyValue pkv : keyValues) {
+            if (pkv.isRegex()) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    public void initRegex() throws Exception {
+        for (PurgeKeyValue pkv : keyValues) {
+            if (this.regex || pkv.isRegex()) {
+                pkv.initRegex();
+            }
+        }
+    }
+
     @Override
     public String toString() {
         StringBuilder builder = new StringBuilder();
         builder.append("[");
 
-        for (String kv : keyValues) {
-            builder.append("KeyValue: ").append(kv).append("  ");
+        for (PurgeKeyValue pkv : keyValues) {
+            builder.append("KeyValue: ").append(pkv.toString()).append("  ");
         }
 
         builder.append("VersionToKeep: ").append(this.versionsToKeep)
@@ -368,10 +431,11 @@ public class PurgeRule {
             } else {
                 builder.append("For data matching ");
                 Iterator<String> keyIter = keys.iterator();
-                Iterator<String> valueIter = keyValues.iterator();
+                Iterator<PurgeKeyValue> valueIter = keyValues.iterator();
                 while (keyIter.hasNext() && valueIter.hasNext()) {
                     builder.append(keyIter.next()).append("=")
-                            .append(valueIter.next()).append(", ");
+                            .append(valueIter.next().getKeyValue())
+                            .append(", ");
                 }
             }
 

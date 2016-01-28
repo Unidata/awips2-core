@@ -22,13 +22,16 @@ package com.raytheon.uf.viz.core.comm;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.PlatformUI;
@@ -42,17 +45,17 @@ import org.eclipse.ui.PlatformUI;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 06, 2013    1786     mpduff      Initial creation
- * Feb 10, 2014    2704     njensen     Allow message to expand size of dialog
+ * Mar 06, 2013    1786    mpduff      Initial creation
+ * Feb 10, 2014    2704    njensen     Allow message to expand size of dialog
+ * Jan 26, 2015    5054    randerso    Change dialog to be parented by display
+ *                                     Change to size correctly with font size
  * 
  * </pre>
  * 
  * @author mpduff
  * @version 1.0
  */
-public class HttpsLoginDlg extends Dialog {
-
-    private static final long serialVersionUID = 1L;
+public class HttpsLoginDlg {
 
     private Shell shell;
 
@@ -77,7 +80,6 @@ public class HttpsLoginDlg extends Dialog {
      *            Message from server
      */
     public HttpsLoginDlg(String message) {
-        super(new Shell(Display.getDefault(), SWT.TITLE));
         this.message = message.replace("\"", "");
     }
 
@@ -85,9 +87,8 @@ public class HttpsLoginDlg extends Dialog {
      * Open the dialog.
      */
     public void open() {
-        Shell parent = getParent();
-        display = parent.getDisplay();
-        shell = new Shell(parent, SWT.DIALOG_TRIM);
+        display = Display.getDefault();
+        shell = new Shell(display, SWT.DIALOG_TRIM);
         shell.setText("Log in");
 
         // Create the main layout for the shell.
@@ -97,6 +98,20 @@ public class HttpsLoginDlg extends Dialog {
         init();
 
         shell.pack();
+
+        // center on monitor containing cursor
+        Display display = shell.getDisplay();
+        Point cursorLoc = display.getCursorLocation();
+        for (Monitor monitor : display.getMonitors()) {
+            Rectangle bounds = monitor.getBounds();
+            if (bounds.contains(cursorLoc)) {
+                Point sz = shell.getSize();
+                int x = bounds.x + ((bounds.width - sz.x) / 2);
+                int y = bounds.y + ((bounds.height - sz.y) / 2);
+                shell.setLocation(x, y);
+                break;
+            }
+        }
 
         shell.open();
         while (!shell.isDisposed()) {
@@ -113,10 +128,7 @@ public class HttpsLoginDlg extends Dialog {
         Composite comp = new Composite(shell, SWT.NONE);
         comp.setLayout(new GridLayout(2, false));
 
-        GridData gd = new GridData(SWT.RIGHT, SWT.None, true, true);
-        if (message == null || message.length() < 50) {
-            gd.widthHint = 500;
-        }
+        GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, true);
         gd.horizontalSpan = 2;
 
         Label authMessage = new Label(comp, SWT.CENTER);
@@ -126,14 +138,20 @@ public class HttpsLoginDlg extends Dialog {
         Label userIdLbl = new Label(comp, SWT.LEFT);
         userIdLbl.setText("User Name: ");
 
+        GC gc = new GC(shell.getDisplay());
+        int width = gc.getFontMetrics().getAverageCharWidth() * 20;
+        gc.dispose();
+
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, true);
         userText = new Text(comp, SWT.BORDER);
+        gd.widthHint = userText.computeTrim(0, 0, width, SWT.DEFAULT).width;
         userText.setLayoutData(gd);
 
         Label passLbl = new Label(comp, SWT.LEFT);
         passLbl.setText("Password: ");
 
         gd = new GridData(SWT.FILL, SWT.DEFAULT, true, true);
+        gd.widthHint = width;
         passwdText = new Text(comp, SWT.BORDER);
         passwdText.setEchoChar('*');
         passwdText.setLayoutData(gd);

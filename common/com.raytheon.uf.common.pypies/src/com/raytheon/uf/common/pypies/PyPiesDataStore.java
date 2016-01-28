@@ -64,22 +64,23 @@ import com.raytheon.uf.common.util.FileUtil;
 /**
  * Data Store implementation that communicates with a PyPIES server over http.
  * The requests and responses are all DynamicSerialized.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 27, 2010            njensen     Initial creation
  * Oct 01, 2010            rjpeter     Added logging of requests over 300ms
  * Mon 07, 2013  DR 15294  D. Friedman Stream large requests
- * Feb 11, 2013      1526   njensen    use HttpClient.postDynamicSerialize() for memory efficiency
- * Feb 12, 2013     #1608  randerso    Added explicit deletes for groups and datasets
+ * Feb 11, 2013  1526      njensen     use HttpClient.postDynamicSerialize() for memory efficiency
+ * Feb 12, 2013  1608      randerso    Added explicit deletes for groups and datasets
  * Nov 14, 2013  2393      bclement    removed interpolation
  * Jul 30, 2015  1574      nabowle     Add #deleteOrphanData(Date[])
- *
+ * Jan 27, 2016  5170      tjensen     Added logging of stats to doSendRequests
+ * 
  * </pre>
- *
+ * 
  * @author njensen
  * @version 1.0
  */
@@ -104,14 +105,6 @@ public class PyPiesDataStore implements IDataStore {
         this.props = props;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#addDataRecord(com.raytheon
-     * .uf.common.datastorage.records.IDataRecord,
-     * com.raytheon.uf.common.datastorage.StorageProperties)
-     */
     @Override
     public void addDataRecord(final IDataRecord dataset,
             final StorageProperties properties) throws StorageException {
@@ -125,25 +118,12 @@ public class PyPiesDataStore implements IDataStore {
 
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#addDataRecord(com.raytheon
-     * .uf.common.datastorage.records.IDataRecord)
-     */
     @Override
     public void addDataRecord(final IDataRecord dataset)
             throws StorageException {
         addDataRecord(dataset, dataset.getProperties());
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#createLinks(java.util.Map)
-     */
     @Override
     public void createLinks(final Map<String, LinkLocation> links)
             throws StorageException, FileNotFoundException {
@@ -151,13 +131,6 @@ public class PyPiesDataStore implements IDataStore {
                 "pypies does not support this yet!");
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#deleteDatasets(java.lang
-     * .String[])
-     */
     @Override
     public void deleteDatasets(final String... datasets)
             throws StorageException, FileNotFoundException {
@@ -166,13 +139,6 @@ public class PyPiesDataStore implements IDataStore {
         sendRequest(delete);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#deleteGroups(java.lang.
-     * String[])
-     */
     @Override
     public void deleteGroups(final String... groups) throws StorageException,
             FileNotFoundException {
@@ -181,13 +147,6 @@ public class PyPiesDataStore implements IDataStore {
         sendRequest(delete);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#getDatasets(java.lang.String
-     * )
-     */
     @Override
     public String[] getDatasets(final String group) throws StorageException,
             FileNotFoundException {
@@ -197,12 +156,6 @@ public class PyPiesDataStore implements IDataStore {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#retrieve(java.lang.String)
-     */
     @Override
     public IDataRecord[] retrieve(final String group) throws StorageException,
             FileNotFoundException {
@@ -212,13 +165,6 @@ public class PyPiesDataStore implements IDataStore {
         return resp.getRecords();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#retrieve(java.lang.String,
-     * java.lang.String, com.raytheon.uf.common.datastorage.Request)
-     */
     @Override
     public IDataRecord retrieve(final String group, final String dataset,
             final Request request) throws StorageException,
@@ -231,13 +177,6 @@ public class PyPiesDataStore implements IDataStore {
         return resp.getRecords()[0];
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#retrieveDatasets(java.lang
-     * .String[], com.raytheon.uf.common.datastorage.Request)
-     */
     @Override
     public IDataRecord[] retrieveDatasets(final String[] datasetGroupPath,
             final Request request) throws StorageException,
@@ -249,13 +188,6 @@ public class PyPiesDataStore implements IDataStore {
         return result.getRecords();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#retrieveGroups(java.lang
-     * .String[], com.raytheon.uf.common.datastorage.Request)
-     */
     @Override
     public IDataRecord[] retrieveGroups(final String[] groups,
             final Request request) throws StorageException,
@@ -268,23 +200,11 @@ public class PyPiesDataStore implements IDataStore {
         return resp.getRecords();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.uf.common.datastorage.IDataStore#store()
-     */
     @Override
     public StorageStatus store() throws StorageException {
         return store(StoreOp.STORE_ONLY);
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.common.datastorage.IDataStore#store(com.raytheon.uf.common
-     * .datastorage.IDataStore.StoreOp)
-     */
     @Override
     public StorageStatus store(final StoreOp storeOp) throws StorageException {
         StoreRequest req = new StoreRequest();
@@ -406,8 +326,15 @@ public class PyPiesDataStore implements IDataStore {
             return SerializationUtil.transformFromThrift(Object.class, resp);
         } else {
             // can't stream to pypies due to WSGI spec not handling chunked http
-            return HttpClient.getInstance().postDynamicSerialize(address, obj,
-                    false);
+            Object response = HttpClient.getInstance().postDynamicSerialize(
+                    address, obj, false);
+            /**
+             * Log that we have a message. Size information in NOT logged here.
+             * Sending a '1' for sent to trigger request increment.
+             */
+            HttpClient.getInstance().getStats()
+                    .log(obj.getClass().getSimpleName(), 1, 0);
+            return response;
         }
     }
 
@@ -415,7 +342,7 @@ public class PyPiesDataStore implements IDataStore {
      * By default this method simply passes the request to
      * sendRequest(AbstractRequest). Method exists to be overridden for
      * implementations that cache data responses..
-     *
+     * 
      * @param obj
      * @return
      * @throws StorageException

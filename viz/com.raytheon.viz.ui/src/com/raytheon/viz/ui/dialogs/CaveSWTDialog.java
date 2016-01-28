@@ -27,13 +27,14 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
@@ -58,17 +59,19 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                     from this class to the subclass.
  * Jan 12, 2016  5055      randerso    Made independent dialogs preserve location relative to 
  *                                     parent when hidden and restored.
- * Jan 18, 2016  5045      randerso    Merged CaveSWTDialog and CaveSWTDialogBase to eliminate confusion
+ * Jan 18, 2016  5054      randerso    Merged CaveSWTDialog and CaveSWTDialogBase to eliminate confusion
  *                                     Fixed VizPersectiveListener to not NPE when running without 
  *                                     a workbench (like when prototyping dialogs).
+ * Jan 25, 2016  5054      randerso    CaveSWTDialog no longer extends SWT Dialog.
+ *                                     Added constructors with Display as parent for dialogs with
+ *                                     no parent shell.
  * 
  * </pre>
  * 
  * @author mschenke
  * @version 1.0
  */
-public abstract class CaveSWTDialog extends Dialog implements
-        IPerspectiveSpecificDialog {
+public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /** Cave dialog attributes */
     public static class CAVE {
@@ -126,14 +129,23 @@ public abstract class CaveSWTDialog extends Dialog implements
         }
     }
 
+    /** Style used for shell */
+    private int style = SWT.DIALOG_TRIM;
+
     /** Style used to determine how the dialog will function. */
     private int caveStyle = CAVE.NONE;
+
+    /** String displayed in title bar */
+    private String title;
 
     /** Display reference. */
     private Display display;
 
     /** Return value. */
     private Object returnValue;
+
+    /** parent shell, may be null if top level dialog */
+    private Shell parent;
 
     /** Shell reference. */
     protected Shell shell;
@@ -154,31 +166,83 @@ public abstract class CaveSWTDialog extends Dialog implements
     /**
      * Construct default cave dialog
      * 
-     * @param parentShell
+     * @param parent
      */
-    protected CaveSWTDialog(Shell parentShell) {
-        this(parentShell, SWT.DIALOG_TRIM, CAVE.NONE);
+    protected CaveSWTDialog(Shell parent) {
+        this(parent, SWT.DIALOG_TRIM, CAVE.NONE);
     }
 
     /**
      * Construct dialog with parent shell and specific swt style
      * 
-     * @param parentShell
+     * @param parent
      * @param swtStyle
      */
-    protected CaveSWTDialog(Shell parentShell, int swtStyle) {
-        this(parentShell, swtStyle, CAVE.NONE);
+    protected CaveSWTDialog(Shell parent, int swtStyle) {
+        this(parent, swtStyle, CAVE.NONE);
     }
 
     /**
      * Construct dialog with parent shell and swt style and cave style
      * 
-     * @param parentShell
+     * @param parent
      * @param style
      */
-    protected CaveSWTDialog(Shell parentShell, int style, int caveStyle) {
-        super(parentShell, style);
+    protected CaveSWTDialog(Shell parent, int style, int caveStyle) {
+        if (parent == null) {
+            SWT.error(SWT.ERROR_NULL_ARGUMENT);
+        }
+
+        if (parent.isDisposed()) {
+            SWT.error(SWT.ERROR_WIDGET_DISPOSED);
+        }
+
+        this.parent = parent;
+        this.display = parent.getDisplay();
+        this.style = style;
         this.caveStyle = caveStyle;
+        this.title = "";
+        listenersToAdd = new ArrayList<ListenerPair>();
+
+        if (!hasAttribute(CAVE.PERSPECTIVE_INDEPENDENT)) {
+            perspectiveManager = VizPerspectiveListener
+                    .getCurrentPerspectiveManager();
+            if (perspectiveManager != null) {
+                perspectiveManager.addPerspectiveDialog(this);
+            }
+        }
+    }
+
+    /**
+     * Construct top level cave dialog
+     * 
+     * @param display
+     */
+    protected CaveSWTDialog(Display display) {
+        this(display, SWT.DIALOG_TRIM, CAVE.INDEPENDENT_SHELL);
+    }
+
+    /**
+     * Construct top level dialog with specific swt style
+     * 
+     * @param display
+     * @param swtStyle
+     */
+    protected CaveSWTDialog(Display display, int swtStyle) {
+        this(display, swtStyle, CAVE.INDEPENDENT_SHELL);
+    }
+
+    /**
+     * Construct top level dialog with swt style and cave style
+     * 
+     * @param display
+     * @param style
+     */
+    protected CaveSWTDialog(Display display, int style, int caveStyle) {
+        this.display = display;
+        this.style = style;
+        this.caveStyle = caveStyle | CAVE.INDEPENDENT_SHELL;
+        this.title = "";
         listenersToAdd = new ArrayList<ListenerPair>();
 
         if (!hasAttribute(CAVE.PERSPECTIVE_INDEPENDENT)) {
@@ -203,34 +267,36 @@ public abstract class CaveSWTDialog extends Dialog implements
             return getReturnValue();
         }
 
-        if (shouldOpen() == false) {
+        if (!shouldOpen()) {
             return getReturnValue();
         }
 
-        Shell parent = getParent();
-        display = parent.getDisplay();
-        if (hasAttribute(CAVE.INDEPENDENT_SHELL)) {
-            shell = new Shell(display, getStyle());
-            final DisposeListener disposeListener = new DisposeListener() {
-                @Override
-                public void widgetDisposed(DisposeEvent e) {
-                    shell.dispose();
-                }
-            };
-            parent.addDisposeListener(disposeListener);
-            shell.addDisposeListener(new DisposeListener() {
+        if (parent != null) {
+            if (hasAttribute(CAVE.INDEPENDENT_SHELL)) {
+                shell = new Shell(display, style);
+                final DisposeListener disposeListener = new DisposeListener() {
+                    @Override
+                    public void widgetDisposed(DisposeEvent e) {
+                        shell.dispose();
+                    }
+                };
+                parent.addDisposeListener(disposeListener);
+                shell.addDisposeListener(new DisposeListener() {
 
-                @Override
-                public void widgetDisposed(DisposeEvent e) {
-                    getParent().removeDisposeListener(disposeListener);
+                    @Override
+                    public void widgetDisposed(DisposeEvent e) {
+                        parent.removeDisposeListener(disposeListener);
 
-                }
-            });
+                    }
+                });
+            } else {
+                shell = new Shell(parent, style);
+            }
         } else {
-            shell = new Shell(parent, getStyle());
+            shell = new Shell(display, style);
         }
 
-        shell.setText(getText());
+        shell.setText(title);
 
         if (doesNotHaveAttribute(CAVE.MODE_INDEPENDENT)) {
             new ModeListener(shell);
@@ -262,14 +328,28 @@ public abstract class CaveSWTDialog extends Dialog implements
         listenersToAdd.clear();
 
         if (hasAttribute(CAVE.INDEPENDENT_SHELL)) {
-            // center dialog on parent
+            Rectangle bounds;
+            if (parent != null) {
+                // center dialog on parent
+                bounds = parent.getBounds();
+            } else {
+                // center dialog on monitor containing cursor
+                Monitor[] monitors = display.getMonitors();
+                int monitor = 0;
 
-            Point dlgSize = shell.getSize();
-            Point parentSize = parent.getSize();
-            Point parentLoc = parent.getLocation();
+                Point cursor = display.getCursorLocation();
+                for (int i = 0; i < monitors.length; i++) {
+                    if (monitors[i].getBounds().contains(cursor)) {
+                        monitor = i;
+                        break;
+                    }
+                }
+                bounds = monitors[monitor].getBounds();
+            }
 
-            int x = parentLoc.x + (parentSize.x - dlgSize.x) / 2;
-            int y = parentLoc.y + (parentSize.y - dlgSize.y) / 2;
+            Point size = shell.getSize();
+            int x = bounds.x + ((bounds.width - size.x) / 2);
+            int y = bounds.y + ((bounds.height - size.y) / 2);
 
             shell.setLocation(x, y);
         }
@@ -309,7 +389,7 @@ public abstract class CaveSWTDialog extends Dialog implements
      * Gives the dialog focus
      */
     public final void bringToTop() {
-        if (shell != null && shell.isDisposed() == false) {
+        if ((shell != null) && (!shell.isDisposed())) {
             restore();
             shell.forceFocus();
             shell.forceActive();
@@ -386,10 +466,19 @@ public abstract class CaveSWTDialog extends Dialog implements
      */
     @Override
     public final boolean close() {
-        if (shell != null && shell.isDisposed() == false) {
+        if ((shell != null) && (!shell.isDisposed())) {
             shell.dispose();
         }
         return true;
+    }
+
+    /**
+     * Returns the parent shell or null if top level dialog
+     * 
+     * @return parent shell
+     */
+    public final Shell getParent() {
+        return parent;
     }
 
     /**
@@ -406,6 +495,31 @@ public abstract class CaveSWTDialog extends Dialog implements
      */
     public final Display getDisplay() {
         return display;
+    }
+
+    /**
+     * Returns the shell's style information.
+     * <p>
+     * Note that, the value which is returned by this method <em>may
+     * not match</em> the value which was provided to the constructor when the
+     * receiver was created.
+     * </p>
+     * 
+     * @return the style bits
+     */
+    public final int getStyle() {
+        return this.style;
+    }
+
+    /**
+     * Returns the shell's text, which is the string that the window manager
+     * will typically display as the shell's <em>title</em>. If the text has not
+     * previously been set, returns an empty string.
+     * 
+     * @return the text
+     */
+    public String getText() {
+        return title;
     }
 
     /**
@@ -433,9 +547,12 @@ public abstract class CaveSWTDialog extends Dialog implements
     /**
      * Set the dialog title.
      */
-    @Override
     public final void setText(String string) {
-        super.setText(string);
+        if (string == null) {
+            SWT.error((SWT.ERROR_NULL_ARGUMENT));
+        }
+
+        this.title = string;
         if (shell != null) {
             shell.setText(string);
         }
@@ -447,7 +564,7 @@ public abstract class CaveSWTDialog extends Dialog implements
      * @return true if dialog is open
      */
     public final boolean isOpen() {
-        return (shell != null && !shell.isDisposed());
+        return ((shell != null) && !shell.isDisposed());
     }
 
     /**
@@ -457,7 +574,7 @@ public abstract class CaveSWTDialog extends Dialog implements
      * @return boolean
      */
     public final boolean isDisposed() {
-        return (shell != null && shell.isDisposed());
+        return ((shell != null) && shell.isDisposed());
     }
 
     /**
@@ -566,10 +683,10 @@ public abstract class CaveSWTDialog extends Dialog implements
      */
     @Override
     public final void restore() {
-        if (shell != null && shell.isDisposed() == false) {
+        if ((shell != null) && (!shell.isDisposed())) {
             if (shell.isVisible() != wasVisible) {
-                if (lastOffset != null) {
-                    Point parentLocation = getParent().getLocation();
+                if ((parent != null) && (lastOffset != null)) {
+                    Point parentLocation = parent.getLocation();
                     shell.setLocation(parentLocation.x + lastOffset.x,
                             parentLocation.y + lastOffset.y);
                     lastOffset = null;
@@ -584,12 +701,13 @@ public abstract class CaveSWTDialog extends Dialog implements
      */
     @Override
     public final void hide() {
-        if (shell != null && shell.isDisposed() == false) {
+        if ((shell != null) && (!shell.isDisposed())) {
             wasVisible = shell.isVisible();
             if (wasVisible) {
-                if ((caveStyle & CAVE.INDEPENDENT_SHELL) != 0) {
+                if ((parent != null)
+                        && ((caveStyle & CAVE.INDEPENDENT_SHELL) != 0)) {
                     Point myLocation = shell.getLocation();
-                    Point parentLocation = getParent().getLocation();
+                    Point parentLocation = parent.getLocation();
                     lastOffset = new Point(myLocation.x - parentLocation.x,
                             myLocation.y - parentLocation.y);
                 }
