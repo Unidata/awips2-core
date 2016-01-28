@@ -2,3 +2,13 @@ CTabItem.highlighted
 {
     font-weight: bold;
 }
+
+CTabFolder
+{
+    swt-selected-tabs-background: #E5EDFC #99BAF3 100%;
+}
+
+#PerspectiveSwitcher  {
+    eclipse-perspective-keyline-color: #ECE9D8 #FFFFFF;
+}
+
