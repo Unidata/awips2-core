@@ -20,7 +20,6 @@
 package com.raytheon.viz.ui.dialogs;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.custom.StyledText;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.layout.GridData;
@@ -31,6 +30,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 /**
  * This is a message box that will only block the parent shell and not the
@@ -46,6 +46,7 @@ import org.eclipse.swt.widgets.Shell;
  * Oct 18, 2012 1229       rferrel     Made dialog non-blocking.
  * Nov 13, 2015 4946       mapeters    Use scrollable StyledText for long messages.
  * Jan 15, 2016 5054       randerso    Change to subclass CaveSWTDialog
+ * Jan 27, 2016 4946       randerso    Make text scrollable for long messages
  * 
  * </pre>
  * 
@@ -69,9 +70,7 @@ public class SWTMessageBox extends CaveSWTDialog {
      */
     private String message = "";
 
-    private boolean centerMessage = false;
-
-    private boolean longMessage = false;
+    private Text messageText;
 
     /**
      * Constructor.
@@ -84,39 +83,20 @@ public class SWTMessageBox extends CaveSWTDialog {
      *            Message.
      * @param swtMessageBoxStyle
      *            Style for icon and buttons.
+     * 
      */
     public SWTMessageBox(Shell parent, String title, String message,
             int swtMessageBoxStyle) {
-        this(parent, title, message, swtMessageBoxStyle, false);
-    }
-
-    /**
-     * Constructor.
-     * 
-     * @param parent
-     *            Parent shell.
-     * @param title
-     *            Dialog title.
-     * @param message
-     *            Message.
-     * @param swtMessageBoxStyle
-     *            Style for icon and buttons.
-     * @param longMessage
-     *            True if message contains a large number of lines
-     *
-     */
-    public SWTMessageBox(Shell parent, String title, String message,
-            int swtMessageBoxStyle, boolean longMessage) {
         super(parent, SWT.DIALOG_TRIM | SWT.PRIMARY_MODAL, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
-        this.centerMessage = false;
-        this.longMessage = longMessage;
         setText(title);
     }
 
     /**
      * Constructor.
+     * 
+     * @param display
      * 
      * @param title
      *            Dialog title.
@@ -130,8 +110,6 @@ public class SWTMessageBox extends CaveSWTDialog {
         super(display, SWT.DIALOG_TRIM | SWT.MODELESS, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
-        this.centerMessage = true;
-        this.longMessage = longMessage;
         setText(title);
     }
 
@@ -148,18 +126,28 @@ public class SWTMessageBox extends CaveSWTDialog {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * swtconfirmationdialog.CaveSWTDialogBase#initializeComponents(org.eclipse
-     * .swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         determineLabelIcon();
         createIconAndMessage();
         createBottomButtons();
+
+        shell.layout(true, true);
+        shell.pack(true);
+
+        int desiredHeight = messageText.getLineHeight() * 10;
+        int height = messageText.getClientArea().height;
+        if (height <= desiredHeight) {
+            messageText.getVerticalBar().setVisible(false);
+        } else {
+            GridData gd = (GridData) messageText.getLayoutData();
+            int heightHint = messageText.computeTrim(0, 0, gd.widthHint,
+                    desiredHeight).height;
+            gd.heightHint = heightHint;
+            messageText.setBackground(getDisplay().getSystemColor(
+                    SWT.COLOR_WHITE));
+        }
+
     }
 
     /**
@@ -167,12 +155,8 @@ public class SWTMessageBox extends CaveSWTDialog {
      */
     private void createIconAndMessage() {
         int numberOfGridCells = 1;
-        int messageStyle = SWT.NONE;
         if (swtIcon != 0) {
             numberOfGridCells = 2;
-        }
-        if (centerMessage) {
-            messageStyle = SWT.CENTER;
         }
         Composite iconMessageComp = new Composite(shell, SWT.NONE);
         GridLayout gl = new GridLayout(numberOfGridCells, false);
@@ -184,23 +168,13 @@ public class SWTMessageBox extends CaveSWTDialog {
         }
         GridData gd = new GridData(SWT.FILL, SWT.CENTER, false, true);
         gd.widthHint = 300;
-        if (!longMessage) {
-            Label messageLbl = new Label(iconMessageComp, SWT.WRAP
-                    | messageStyle);
-            messageLbl.setText(message);
-            messageLbl.setLayoutData(gd);
-        } else {
-            /*
-             * Use StyledText if the message may be long since it supports
-             * scroll bars
-             */
-            StyledText styledText = new StyledText(iconMessageComp,
-                    SWT.READ_ONLY | SWT.V_SCROLL | SWT.WRAP | SWT.BORDER
-                            | messageStyle);
-            styledText.setText(message);
-            gd.heightHint = 150;
-            styledText.setLayoutData(gd);
-        }
+
+        messageText = new Text(iconMessageComp, SWT.READ_ONLY | SWT.WRAP
+                | SWT.MULTI | SWT.V_SCROLL);
+        messageText.setText(message);
+        messageText.setLayoutData(gd);
+        messageText.setBackground(shell.getDisplay().getSystemColor(
+                SWT.COLOR_WIDGET_BACKGROUND));
     }
 
     /**
