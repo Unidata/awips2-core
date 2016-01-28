@@ -19,11 +19,15 @@
  **/
 package com.raytheon.uf.common.menus.xml;
 
+import java.text.ParseException;
 import java.util.HashMap;
+import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
+
+import com.raytheon.uf.common.util.VariableSubstitutor;
 
 /**
  * 
@@ -32,10 +36,12 @@ import javax.xml.bind.annotation.XmlAttribute;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 12, 2009            chammack    Initial creation
- * Jun 09, 2014 3266       njensen     Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Mar 12, 2009  2214     chammack  Initial creation
+ * Jun 09, 2014  3266     njensen   Remove ISerializableObject
+ * Jan 28, 2016  5294     bsteffen  add substituteAndCombine
  * 
  * </pre>
  * 
@@ -51,6 +57,15 @@ public class VariableSubstitution {
     @XmlAttribute(required = true)
     public String value;
 
+    public VariableSubstitution() {
+
+    }
+
+    public VariableSubstitution(String key, String value) {
+        this.key = key;
+        this.value = value;
+    }
+
     public static VariableSubstitution[] combine(VariableSubstitution[] grp1,
             VariableSubstitution[] grp2) {
         if (grp1 == null)
@@ -64,6 +79,38 @@ public class VariableSubstitution {
         System.arraycopy(grp2, 0, aggArr, grp1.length, grp2.length);
 
         return aggArr;
+    }
+
+    /**
+     * Use the variable substitutions in the first group to replace any
+     * variables that are in values in the second group, then return the
+     * combined set of substitutions. This supports scenarios a variable
+     * substitution in the second group may contain a value that is a variable
+     * from the first group.
+     */
+    public static VariableSubstitution[] substituteAndCombine(
+            VariableSubstitution[] grp1, VariableSubstitution[] grp2)
+            throws ParseException {
+        if (grp1 == null) {
+            return grp2;
+        }
+        if (grp2 == null) {
+            return grp1;
+        }
+        Map<String, String> map = toMap(grp1);
+        VariableSubstitution[] newGroup2 = new VariableSubstitution[grp2.length];
+        for (int i = 0; i < grp2.length; i += 1) {
+            String oldValue = grp2[i].value;
+            String newValue = VariableSubstitutor.processVariables(oldValue,
+                    map);
+            if (oldValue.equals(newValue)) {
+                newGroup2[i] = grp2[i];
+            } else {
+                newGroup2[i] = new VariableSubstitution(grp2[i].key, newValue);
+            }
+        }
+        grp2 = newGroup2;
+        return combine(grp1, grp2);
     }
 
     public static HashMap<String, String> toMap(VariableSubstitution[] arr) {
