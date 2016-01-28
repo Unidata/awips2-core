@@ -195,14 +195,15 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
         }
 
         shell.setSize(width, height);
+        super.getWindowConfigurer().setInitialSize(new Point(width, height));
 
         Integer x = args.getInteger("-x");
         Integer y = args.getInteger("-y");
-        if (x != null && y != null) {
+        if ((x != null) && (y != null)) {
             save = false;
             shell.setLocation(x + bounds.x, y + bounds.y);
         } else if (firstTime) {
-            shell.setLocation(bounds.x + bounds.width - width, bounds.y);
+            shell.setLocation((bounds.x + bounds.width) - width, bounds.y);
         } else {
             // scale saved location to selected monitor size
             Point loc = shell.getLocation();

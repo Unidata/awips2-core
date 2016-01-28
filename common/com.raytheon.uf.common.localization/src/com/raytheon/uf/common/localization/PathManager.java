@@ -632,6 +632,10 @@ public class PathManager implements IPathManager {
             throw new IllegalArgumentException(
                     "Cannot watch for changes on a null path!");
         }
+        if (observer == null) {
+            throw new IllegalArgumentException(
+                    "Cannot watch for changes with a null observer!");
+        }
 
         // globally watching for all file changes
         if (path.isEmpty()) {

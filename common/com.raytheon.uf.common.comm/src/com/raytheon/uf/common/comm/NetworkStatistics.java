@@ -32,7 +32,9 @@ import java.util.Map;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 1, 2011            mschenke     Initial creation
+ * Nov 1, 2011             mschenke    Initial creation
+ * Jan 27, 2016 5170       tjensen     Improve network statistic to track messages,
+ *                                      byte tracking only performed when configured
  * 
  * </pre>
  * 
@@ -52,6 +54,18 @@ public class NetworkStatistics {
 
         private long requestCount;
 
+        /**
+         * Stores the value of the System Property used to configure if
+         * statistics for the number of bytes sent and received should be
+         * tracked.
+         * 
+         * Note: Byte sizes are unavailable for requests/responses that are
+         * compressed due to 'content-length' not being available, which may
+         * adversely effect the tracking of these stats.
+         */
+        private static final boolean doByteStats = Boolean
+                .getBoolean("logging.byteStats");
+
         private NetworkTraffic(String identifier) {
             this.identifier = identifier;
         }
@@ -66,6 +80,10 @@ public class NetworkStatistics {
 
         private void incrementRequestCount() {
             requestCount += 1;
+        }
+
+        public boolean isDoByteStats() {
+            return doByteStats;
         }
 
         public long getBytesSent() {
@@ -84,11 +102,6 @@ public class NetworkStatistics {
             return identifier;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#clone()
-         */
         @Override
         public NetworkTraffic clone() {
             NetworkTraffic newTraffic = new NetworkTraffic(identifier);
@@ -96,24 +109,22 @@ public class NetworkStatistics {
             newTraffic.bytesReceived = bytesReceived;
             newTraffic.bytesSent = bytesSent;
             newTraffic.requestCount = requestCount;
+
             return newTraffic;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#toString()
-         */
         @Override
         public String toString() {
             String sentString = NetworkStatistics.toString(bytesSent), receivedString = NetworkStatistics
-                    .toString(bytesReceived);
+                    .toString(bytesReceived), bytesStatsMsg = "";
+            if (doByteStats) {
+                bytesStatsMsg = ", sent " + sentString + ", received "
+                        + receivedString;
+            }
 
             return "Network Traffic Stats for '" + identifier + "' : "
-                    + requestCount + " messages, sent " + sentString
-                    + ", received " + receivedString;
+                    + requestCount + " messages" + bytesStatsMsg;
         }
-
     }
 
     private NetworkTraffic totalTraffic = new NetworkTraffic(null);
@@ -135,8 +146,22 @@ public class NetworkStatistics {
      */
     void log(long bytesSent, long bytesReceived) {
         synchronized (totalTraffic) {
-            totalTraffic.addBytesSent(bytesSent);
-            totalTraffic.addBytesReceived(bytesReceived);
+            /**
+             * Only log bytes if byte stats are enabled and if the number
+             * sent/received is greater than 1. Byte counts for compressed
+             * messages or messages of unknown length may return -1. Requests
+             * known to be compressed may also pass a bytes size of '1' to
+             * trigger the incrementing of the request count. Any sizes greater
+             * than 1 can be assumed to be 'real' sizes.
+             */
+            if (NetworkTraffic.doByteStats) {
+                if (bytesSent > 1) {
+                    totalTraffic.addBytesSent(bytesSent);
+                }
+                if (bytesReceived > 1) {
+                    totalTraffic.addBytesReceived(bytesReceived);
+                }
+            }
             if (bytesSent > 0) {
                 totalTraffic.incrementRequestCount();
             }
@@ -158,9 +183,26 @@ public class NetworkStatistics {
             traffic = new NetworkTraffic(typeIdentifier);
             mappedTraffic.put(typeIdentifier, traffic);
         }
-        traffic.addBytesSent(bytesSent);
-        traffic.addBytesReceived(bytesReceived);
-        traffic.incrementRequestCount();
+
+        /**
+         * Only log bytes if byte stats are enabled and if the number
+         * sent/received is greater than 1. Byte counts for compressed messages
+         * or messages of unknown length may return -1. Requests known to be
+         * compressed may also pass a bytes size of '1' to trigger the
+         * incrementing of the request count. Any sizes greater than 1 can be
+         * assumed to be 'real' sizes.
+         */
+        if (NetworkTraffic.doByteStats) {
+            if (bytesSent > 1) {
+                traffic.addBytesSent(bytesSent);
+            }
+            if (bytesReceived > 1) {
+                traffic.addBytesReceived(bytesReceived);
+            }
+        }
+        if (bytesSent > 0) {
+            traffic.incrementRequestCount();
+        }
         this.log(bytesSent, bytesReceived);
     }
 

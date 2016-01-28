@@ -21,6 +21,7 @@
 package com.raytheon.uf.edex.database.plugin;
 
 import java.io.File;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,10 +64,9 @@ import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EdexException;
@@ -120,6 +120,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Feb 19, 2015  4123     bsteffen    Log foreign key constraint violations.
  * Jul 27, 2015 17011     kshrestha   Changed to call deleteGroups
  * Aug 06, 2015  1574     nabowle     Add purgeOrphanedData
+ * Jan 20, 2016  5262     bkowal      Updated to retrieve and validate {@link PurgeKeyValue}.
+ *                                    Replaced deprecated method usage.
  * </pre>
  * 
  * @author bphillip
@@ -161,7 +163,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Constructs a new PluginDao for the given plugin
-     *
+     * 
      * @param pluginName
      *            The name of the plugin to create the data access object for
      * @throws PluginException
@@ -184,7 +186,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Defines the behavior for storing data to the HDF5 data store
-     *
+     * 
      * @param dataStore
      *            The datastore to save the data to
      * @param obj
@@ -198,7 +200,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Persists a group of records to the data stores
-     *
+     * 
      * @param records
      *            The records to persist
      * @throws PluginException
@@ -430,7 +432,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Persists the HDF5 component of the records to the HDF5 repository
-     *
+     * 
      * @param records
      *            The records to persist
      * @return The status of the storage operation
@@ -537,7 +539,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves metadata from the database according to the provided query
-     *
+     * 
      * @param query
      *            The query
      * @return The query results
@@ -558,7 +560,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Retrieves the complete set of metadata from the database for the record
      * with the provided dataURI
-     *
+     * 
      * @param dataURI
      *            The dataURI of the record for which to retrieve metadata
      * @return The record populated with a complete set of metadata
@@ -582,7 +584,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves the HDF5 component of the records provided
-     *
+     * 
      * @param objects
      *            The objects to retrieve the HDF5 component for
      * @param tileSet
@@ -631,7 +633,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves the HDF5 component of the record provided
-     *
+     * 
      * @param object
      *            The objects to retrieve the HDF5 component for
      * @param tileSet
@@ -649,7 +651,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Retrieves the fully populated object from the data stores according to
      * the provided query
-     *
+     * 
      * @param query
      *            The query to execute
      * @param tileSet
@@ -678,7 +680,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purges all data associated with the owning plugin based on criteria
      * specified by the owning plugin
-     *
+     * 
      * @throws PluginException
      *             If problems occur while interacting with the data stores
      */
@@ -688,7 +690,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges all data associated with the productKeys and owning plugin
-     *
+     * 
      * @throws PluginException
      *             If problems occur while interacting with the data stores
      */
@@ -751,7 +753,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges data according to purge criteria specified by the owning plugin
-     *
+     * 
      * @throws PluginException
      *             If problems occur while interacting with data stores
      */
@@ -761,7 +763,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges data according to purge criteria specified by the owning plugin
-     *
+     * 
      * @throws PluginException
      *             If problems occur while interacting with data stores
      */
@@ -816,7 +818,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Takes the purgeKeys, looks up the associated purge rule, and applies it
      * to the data matched by purgeKeys.
-     *
+     * 
      * @param ruleSet
      * @param purgeKeys
      * @return Summary of purge for keys
@@ -1151,8 +1153,7 @@ public abstract class PluginDao extends CoreDao {
                         if (uris == null) {
                             ds.deleteFiles(null);
                         } else {
-                            ds.deleteGroups(uris.toArray(new String[uris
-                                    .size()]));
+                            ds.deleteGroups(uris.toArray(new String[uris.size()]));
                         }
                     } catch (Exception e) {
                         PurgeLogger.logError("Error occurred purging file: "
@@ -1220,7 +1221,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purges orphaned datastore data that does not have associated database
      * records.
-     *
+     * 
      * @throws PluginException
      *             if purging fails
      */
@@ -1228,7 +1229,8 @@ public abstract class PluginDao extends CoreDao {
         if (this.daoClass == null) {
             return;
         }
-        IDataStore ds = DataStoreFactory.getDataStore(new File(this.pluginName));
+        IDataStore ds = DataStoreFactory
+                .getDataStore(new File(this.pluginName));
 
         Date oldestDate;
         try {
@@ -1250,10 +1252,9 @@ public abstract class PluginDao extends CoreDao {
         }
     }
 
-
     /**
      * Gets the data store for the given object
-     *
+     * 
      * @param obj
      *            The object for which to get the data store
      * @return The data store
@@ -1273,7 +1274,7 @@ public abstract class PluginDao extends CoreDao {
      * Takes a list of IPersistable objects and return a map of IDataStore
      * objects and a list of IPersistable objects that are stored in that data
      * store.
-     *
+     * 
      * @param objs
      *            A list of IPersistable objects to get their respsective data
      *            stores.
@@ -1313,7 +1314,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets a list of the distinct product key values for this plugin.
-     *
+     * 
      * @param the
      *            keys to look up values for.
      * @return 2 dimensional array of distinct values for the given keys. First
@@ -1374,7 +1375,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets all distinct reference times for this plugin
-     *
+     * 
      * @param productKey
      *            The product key to get the list of reference times for
      * @return A list of distinct reference times for the given productKey
@@ -1391,7 +1392,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets all distinct reference times for the given productKey
-     *
+     * 
      * @param productKeys
      *            The product key/values to get the list of reference times for.
      *            Should be in key value pairs.
@@ -1421,7 +1422,7 @@ public abstract class PluginDao extends CoreDao {
      * data associated with the productKeys. Hdf5 must be purged separately as
      * most hdf5 files can't be purged with a single reference time. Use the
      * passed map to track what needs to be done with hdf5.
-     *
+     * 
      * @param refTime
      *            The reftime to delete data for. A null will purge all data for
      *            the productKeys.
@@ -1488,7 +1489,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purge HDF5 data for a list of PDOs. Extracted as is from
      * {@link #purgeDataByRefTime} so it can be reused.
-     *
+     * 
      * @param trackToUri
      *            If true will track each URI that needs to be deleted from
      *            HDF5, if false will only track the hdf5 files that need to be
@@ -1540,7 +1541,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges the HDF5 data according to the provided time and key.
-     *
+     * 
      * @param refTime
      *            The time to delete
      * @param productKey
@@ -1562,7 +1563,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the maximum reference time contained in the database for the given
      * key. The key corresponds to the productKey field in the data object.
-     *
+     * 
      * @param productKeys
      *            The product keys to get the maximum reference time for. Should
      *            be in key value pairs.
@@ -1595,7 +1596,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the maximum insert time contained in the database for the given key.
      * The key corresponds to the productKey field in the data object.
-     *
+     * 
      * @param productKey
      *            The key for which to get the maximum insert time
      * @return Null if this key was not found, else the maximum insert time
@@ -1628,7 +1629,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the minimum insert time contained in the database for the given
      * keys. The keys corresponds to the productKey fields in the data object.
-     *
+     * 
      * @param productKeys
      *            The product keys to get the minimum insert time for. Should be
      *            in key value pairs.
@@ -1663,7 +1664,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the minimum reference time contained in the database for the given
      * key. The key corresponds to the productKey field in the data object.
-     *
+     * 
      * @param productKeys
      *            The product keys to get the minimum reference times for.
      *            Should be in key value pairs.
@@ -1695,7 +1696,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Breaks the product key into key value pairs.
-     *
+     * 
      * @param productKey
      *            The product key to break apart into pairs
      * @return The product key/value pairs
@@ -1718,7 +1719,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets the path to the HDF5 file based on the provided product key
-     *
+     * 
      * @param productKey
      *            The product key for which to generate the path to the hdf5
      *            file
@@ -1741,7 +1742,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Deletes an object from the database
-     *
+     * 
      * @param obj
      *            The object to delete
      */
@@ -1754,30 +1755,30 @@ public abstract class PluginDao extends CoreDao {
         Pattern auxFileNameMatcher = Pattern.compile(IPathManager.SEPARATOR
                 + pluginName + "PurgeRules\\w+\\.xml$");
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/",
+        ILocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/",
                 new String[] { ".xml" }, true, true);
-        LocalizationFile purgeRulesFile = null;
-        List<LocalizationFile> auxRuleFiles = new ArrayList<LocalizationFile>();
+        ILocalizationFile purgeRulesFile = null;
+        List<ILocalizationFile> auxRuleFiles = new ArrayList<>();
         /*
          * Find master purge rules and any auxillary purge rules. Since the
          * auxillary rules can have an arbitrary suffix before the extension we
          * have to check all the files.
          */
-        for (LocalizationFile file : allFiles) {
+        for (ILocalizationFile file : allFiles) {
             if (file.exists()) {
-                if (auxFileNameMatcher.matcher(file.getName()).find()) {
+                if (auxFileNameMatcher.matcher(file.getPath()).find()) {
                     auxRuleFiles.add(file);
-                } else if (file.getName().equals(masterFileName)) {
+                } else if (file.getPath().equals(masterFileName)) {
                     purgeRulesFile = file;
                 }
             }
         }
         PurgeRuleSet purgeRules = null;
         if (purgeRulesFile != null) {
-            try {
-                purgeRules = purgeRulesFile.jaxbUnmarshal(PurgeRuleSet.class,
-                        PurgeRuleSet.jaxbManager);
-            } catch (LocalizationException e) {
+            try (InputStream is = purgeRulesFile.openInputStream()) {
+                purgeRules = PurgeRuleSet.jaxbManager
+                        .unmarshalFromInputStream(is);
+            } catch (Exception e) {
                 PurgeLogger
                         .logError(
                                 "Error deserializing purge rules! Data will not be purged. Please define rules.",
@@ -1796,20 +1797,20 @@ public abstract class PluginDao extends CoreDao {
         } else {
             return null;
         }
-        /* Sorting guarantees multiple auxiliary files behave deterministicly. */
-        Collections.sort(auxRuleFiles, new Comparator<LocalizationFile>() {
+        /* Sorting guarantees multiple auxiliary files behave deterministically. */
+        Collections.sort(auxRuleFiles, new Comparator<ILocalizationFile>() {
             @Override
-            public int compare(LocalizationFile o1, LocalizationFile o2) {
-                return o1.getName().compareTo(o2.getName());
+            public int compare(ILocalizationFile o1, ILocalizationFile o2) {
+                return o1.getPath().compareTo(o2.getPath());
             }
         });
 
-        for (LocalizationFile file : auxRuleFiles) {
+        for (ILocalizationFile file : auxRuleFiles) {
             PurgeRuleSet auxRules = null;
-            try {
-                auxRules = file.jaxbUnmarshal(PurgeRuleSet.class,
-                        PurgeRuleSet.jaxbManager);
-            } catch (LocalizationException e) {
+            try (InputStream is = file.openInputStream()) {
+                auxRules = PurgeRuleSet.jaxbManager
+                        .unmarshalFromInputStream(is);
+            } catch (Exception e) {
                 PurgeLogger.logError(
                         "Error deserializing auxiliary purge rules! Rules from "
                                 + file.toString() + " will be ignored",
@@ -1841,12 +1842,37 @@ public abstract class PluginDao extends CoreDao {
                                         + masterFileName, pluginName);
             }
         }
+
+        /*
+         * Immediately discard and log an error for rules that were setup as
+         * regex rules that cannot be compiled into a valid {@link Pattern}.
+         */
+        Iterator<PurgeRule> rulesIterator = purgeRules.getRules().iterator();
+        while (rulesIterator.hasNext()) {
+            PurgeRule validateRule = rulesIterator.next();
+            if (validateRule.declaredRegexRule()) {
+                try {
+                    validateRule.initRegex();
+                    PurgeLogger
+                            .logInfo(
+                                    "Successfully initialized regex-based purge rule: "
+                                            + validateRule.toString() + ".",
+                                    pluginName);
+                } catch (Exception e) {
+                    PurgeLogger.logError(
+                            "Ignoring purge rule: " + validateRule.toString()
+                                    + " due to invalid regex.", pluginName, e);
+                    rulesIterator.remove();
+                }
+            }
+        }
+
         return purgeRules;
 
     }
 
     public static List<PurgeRule> loadDefaultPurgeRules() {
-        LocalizationFile defaultRule = PathManagerFactory.getPathManager()
+        ILocalizationFile defaultRule = PathManagerFactory.getPathManager()
                 .getStaticLocalizationFile("purge/defaultPurgeRules.xml");
         if ((defaultRule == null) || (defaultRule.exists() == false)) {
             PurgeLogger
@@ -1856,11 +1882,11 @@ public abstract class PluginDao extends CoreDao {
             return null;
         }
 
-        try {
-            PurgeRuleSet purgeRules = defaultRule.jaxbUnmarshal(
-                    PurgeRuleSet.class, PurgeRuleSet.jaxbManager);
+        try (InputStream is = defaultRule.openInputStream()) {
+            PurgeRuleSet purgeRules = PurgeRuleSet.jaxbManager
+                    .unmarshalFromInputStream(is);
             return purgeRules.getDefaultRules();
-        } catch (LocalizationException e) {
+        } catch (Exception e) {
             PurgeLogger.logError("Error deserializing default purge rule!",
                     "DEFAULT", e);
         }
@@ -1879,6 +1905,10 @@ public abstract class PluginDao extends CoreDao {
         dbQuery.addOrder("insertTime", true);
         dbQuery.addOrder("dataTime.refTime", true);
 
+        /*
+         * TODO: the next person to work on archiving. Fix the two warnings
+         * remaining in this method. The only two warnings left in this file.
+         */
         return this.processByCriteria(dbQuery, processor);
     }
 
