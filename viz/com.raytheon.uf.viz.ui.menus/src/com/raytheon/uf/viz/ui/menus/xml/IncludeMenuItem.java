@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.ui.menus.xml;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -38,7 +39,6 @@ import com.raytheon.uf.common.menus.xml.CommonAbstractMenuContribution;
 import com.raytheon.uf.common.menus.xml.CommonIncludeMenuItem;
 import com.raytheon.uf.common.menus.xml.MenuTemplateFile;
 import com.raytheon.uf.common.menus.xml.VariableSubstitution;
-import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -52,11 +52,13 @@ import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Mar 12, 2009           chammack    Initial creation
- * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
- * May 04, 2015  4284     bsteffen    Use subMenuId
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Mar 12, 2009  2214     chammack  Initial creation
+ * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
+ * May 04, 2015  4284     bsteffen  Use subMenuId
+ * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * 
  * </pre>
  * 
@@ -65,7 +67,7 @@ import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
  */
 
 public class IncludeMenuItem extends CommonIncludeMenuItem implements
-        IContribItemProvider, ISerializableObject {
+        IContribItemProvider {
     static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(IncludeMenuItem.class);
 
@@ -131,8 +133,8 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
             final MenuTemplateFile mtf = (MenuTemplateFile) um.unmarshal(file);
 
             // Create aggregated list of subs
-            VariableSubstitution[] combinedSub = VariableSubstitution.combine(
-                    incomingSubs, substitutions);
+            VariableSubstitution[] combinedSub = VariableSubstitution
+                    .substituteAndCombine(incomingSubs, substitutions);
 
             Set<String> removalsSet = new HashSet<String>();
             if (removals != null) {
@@ -162,7 +164,9 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
             IContributionItem[] ciArray = contribList
                     .toArray(new IContributionItem[contribList.size()]);
             return ciArray;
-
+        } catch (ParseException e) {
+            throw new VizException("Unable to process menu substitutions: "
+                    + fileName, e);
         } catch (JAXBException e) {
             throw new VizException("Unable to unmarshal sub-xml file: "
                     + fileName, e);
