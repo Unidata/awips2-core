@@ -12,3 +12,7 @@ CTabFolder
     eclipse-perspective-keyline-color: #ECE9D8 #FFFFFF;
 }
 
+.MTrimmedWindow {
+        margin-left: 2px;
+        margin-right: 2px;
+}
