@@ -31,7 +31,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import com.raytheon.uf.common.localization.FileLocker.Type;
-import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -93,6 +92,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes
  * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver                                      
  * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
+ * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
  * 
  * </pre>
  * 
@@ -528,82 +528,8 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      */
     @Deprecated
     public void addFileUpdatedObserver(final ILocalizationFileObserver observer) {
-        final IPathManager pathMgr = PathManagerFactory.getPathManager();
-        ILocalizationPathObserver pathObs = new ILocalizationPathObserver() {
-            @Override
-            public void fileChanged(ILocalizationFile file) {
-                LocalizationContext listenContext = LocalizationFile.this.context;
-                LocalizationContext notifyContext = file.getContext();
-                int compare = notifyContext.getLocalizationLevel().compareTo(
-                        listenContext.getLocalizationLevel());
-
-                /*
-                 * Before the API changes, earlier in the notification routing
-                 * we would discard notifications in specific scenarios. The
-                 * checks below recreate that behavior by returning early if the
-                 * notification should be discarded.
-                 */
-                if (compare < 0) {
-                    /*
-                     * Notification was for a lower ranking level than the
-                     * observer was registered; e.g. observer was registered for
-                     * USER notifications and a SITE notification arrived.
-                     */
-                    return;
-                } else if (compare == 0) {
-                    if (!notifyContext.getContextName().equals(
-                            listenContext.getContextName())) {
-                        /*
-                         * Notification level matches observer's level, but the
-                         * name doesn't match; e.g. observer was registered for
-                         * site OAX but a site DMX notification arrived.
-                         */
-                        return;
-                    }
-                } else {
-                    LocalizationContext activeContext = pathMgr.getContext(
-                            notifyContext.getLocalizationType(),
-                            notifyContext.getLocalizationLevel());
-                    if (!notifyContext.getContextName().equals(
-                            activeContext.getContextName())) {
-                        /*
-                         * Notification was for a higher ranking level than the
-                         * observer was registered, but the name doesn't match
-                         * the currently active localization for that level;
-                         * e.g. observer was registered for BASE and a site DMX
-                         * notification arrived but this JVM is running with
-                         * localization site=OAX.
-                         */
-                        return;
-                    }
-                }
-
-                /*
-                 * Notification appears to be relevant, send it along to the
-                 * observer using the old API.
-                 */
-                FileChangeType t = null;
-                if (ILocalizationFile.NON_EXISTENT_CHECKSUM
-                        .equals(LocalizationFile.this.fileCheckSum)) {
-                    t = FileChangeType.ADDED;
-                } else if (file.getCheckSum().equals(
-                        ILocalizationFile.NON_EXISTENT_CHECKSUM)) {
-                    t = FileChangeType.DELETED;
-                } else {
-                    if (file.getCheckSum().equals(
-                            LocalizationFile.this.fileCheckSum)) {
-                        // TODO remove println after more testing
-                        System.err
-                                .println("Developer error: Received a changed file message that matches the existing file");
-                    }
-                    t = FileChangeType.UPDATED;
-                }
-                FileUpdatedMessage fum = new FileUpdatedMessage(
-                        file.getContext(), file.getPath(), t, file
-                                .getTimeStamp().getTime(), file.getCheckSum());
-                observer.fileUpdated(fum);
-            }
-        };
+        ILocalizationPathObserver pathObs = new LocalizationFileIntermediateObserver(
+                this, observer);
 
         synchronized (observers) {
             ILocalizationPathObserver old = observers.put(observer, pathObs);
@@ -613,7 +539,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                 new Throwable().printStackTrace();
             }
         }
-        pathMgr.addLocalizationPathObserver(this.path, pathObs);
+
+        PathManagerFactory.getPathManager().addLocalizationPathObserver(
+                this.path, pathObs);
     }
 
     /**

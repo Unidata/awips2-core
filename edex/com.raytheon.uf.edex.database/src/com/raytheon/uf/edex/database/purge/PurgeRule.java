@@ -32,6 +32,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElements;
 
+import org.springframework.util.CollectionUtils;
+
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -50,6 +52,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 2/15/11      #2469       bphillip    Initial creation
  * 1/20/216     #5262       bkowal      Added {@link #regex} and updated {@link #keyValues}
  *                                      to be {@link PurgeKeyValue}.
+ * 01/28/2016   #5262       bkowal      Handle empty key/value pairs in rules non-default
+ *                                      rules.
  * 
  * </pre>
  * 
@@ -378,6 +382,9 @@ public class PurgeRule {
          * The entire rule does not use regex. Determine if any individual key
          * values use regex.
          */
+        if (CollectionUtils.isEmpty(keyValues)) {
+            return false;
+        }
         for (PurgeKeyValue pkv : keyValues) {
             if (pkv.isRegex()) {
                 return true;
@@ -388,6 +395,9 @@ public class PurgeRule {
     }
 
     public void initRegex() throws Exception {
+        if (CollectionUtils.isEmpty(keyValues)) {
+            return;
+        }
         for (PurgeKeyValue pkv : keyValues) {
             if (this.regex || pkv.isRegex()) {
                 pkv.initRegex();
@@ -400,8 +410,11 @@ public class PurgeRule {
         StringBuilder builder = new StringBuilder();
         builder.append("[");
 
-        for (PurgeKeyValue pkv : keyValues) {
-            builder.append("KeyValue: ").append(pkv.toString()).append("  ");
+        if (!CollectionUtils.isEmpty(keyValues)) {
+            for (PurgeKeyValue pkv : keyValues) {
+                builder.append("KeyValue: ").append(pkv.toString())
+                        .append("  ");
+            }
         }
 
         builder.append("VersionToKeep: ").append(this.versionsToKeep)
