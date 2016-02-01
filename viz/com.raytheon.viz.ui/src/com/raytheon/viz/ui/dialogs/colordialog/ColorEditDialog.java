@@ -85,6 +85,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * May 07, 2015  DCS17219 jgerth      Allow user to interpolate alpha only
  * Nov 12, 2015  4834     njensen     Removed LocalizationOpFailedException
  * Dec 09, 2015  4834     njensen     getCurrentColormapName() detects LocalizationContext in name
+ * Feb 01, 2016  4834     njensen     Handle null colormap name
  * 
  * </pre>
  * 
@@ -208,24 +209,29 @@ public class ColorEditDialog extends CaveSWTDialog implements
         String cname = null;
         if (cap != null) {
             cname = cap.getColorMapParameters().getColorMapName();
-            int slashIndex = cname.indexOf(IPathManager.SEPARATOR);
-            if (slashIndex > -1) {
-                String dirname = cname.substring(0, slashIndex);
-                LocalizationContext[] contexts = PathManagerFactory
-                        .getPathManager().getLocalSearchHierarchy(
-                                LocalizationType.COMMON_STATIC);
-                boolean isLocalizationDir = false;
-                for (LocalizationContext ctx : contexts) {
-                    if (ctx.getLocalizationLevel().toString().equals(dirname)) {
-                        isLocalizationDir = true;
-                        break;
+            if (cname != null) {
+                int slashIndex = cname.indexOf(IPathManager.SEPARATOR);
+                if (slashIndex > -1) {
+                    String dirname = cname.substring(0, slashIndex);
+                    LocalizationContext[] contexts = PathManagerFactory
+                            .getPathManager().getLocalSearchHierarchy(
+                                    LocalizationType.COMMON_STATIC);
+                    boolean isLocalizationDir = false;
+                    for (LocalizationContext ctx : contexts) {
+                        if (ctx.getLocalizationLevel().toString()
+                                .equals(dirname)) {
+                            isLocalizationDir = true;
+                            break;
+                        }
+                    }
+                    if (isLocalizationDir) {
+                        slashIndex = cname.lastIndexOf(IPathManager.SEPARATOR);
+                        cname = cname.substring(slashIndex + 1);
                     }
                 }
-                if (isLocalizationDir) {
-                    slashIndex = cname.lastIndexOf(IPathManager.SEPARATOR);
-                    cname = cname.substring(slashIndex + 1);
-                }
             }
+        } else {
+            cname = "Untitled Colormap";
         }
         return cname;
     }
