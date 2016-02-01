@@ -46,6 +46,7 @@ import org.eclipse.swt.widgets.Shell;
  * ------------ ---------- ----------- --------------------------
  * Apr 09, 2014   2864     mpduff      Initial creation
  * Apr 22, 2014   3053     lvenable    Updated to be more configurable.
+ * Feb 01, 2016   5289     tgurney     Add missing close button in trim
  * 
  * </pre>
  * 
@@ -163,7 +164,8 @@ public class ListSelectionDlg extends CaveSWTDialog {
             boolean singleSelect, ReturnArray returnAs,
             String actionButtonText, String title, String listMsg,
             int minWidth, int minHeight) {
-        super(parent, SWT.TITLE | SWT.RESIZE | SWT.APPLICATION_MODAL,
+        super(parent,
+                SWT.TITLE | SWT.RESIZE | SWT.CLOSE | SWT.APPLICATION_MODAL,
                 CAVE.DO_NOT_BLOCK);
 
         this.textChoices = textChoices;
