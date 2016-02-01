@@ -29,8 +29,8 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
+import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
 
 import com.raytheon.uf.common.dataaccess.DataAccessLayer;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
@@ -39,6 +39,7 @@ import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.impl.AbstractDataPluginFactory;
 import com.raytheon.uf.common.dataaccess.impl.DefaultGeometryData;
+import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
 import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
@@ -73,6 +74,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Sep 10, 2014  3615     nabowle     Add support for null count and level parameters.
  * Feb 19, 2015  4147     mapeters    Override getAvailableParameters().
  * Feb 27, 2015  4179     mapeters    Use super's getAvailableValues().
+ * Jan 28, 2016  5275     bsteffen    Avoid creating clutter in level database.
  * 
  * </pre>
  * 
@@ -392,15 +394,20 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
         List<IGeometryData> result = new ArrayList<IGeometryData>(count);
 
-        String levelUnit;
+        Unit<?> levelUnit;
         Number[] levelValues;
         if (p2d.levelParameter == null) {
             levelUnit = null;
             levelValues = new Number[0];
         } else {
-            levelUnit = UnitFormat.getUCUMInstance().format(
-                    pdv.getUnit(p2d.levelParameter));
+            levelUnit = pdv.getUnit(p2d.levelParameter);
             levelValues = pdv.getNumberAllLevels(p2d.levelParameter);
+        }
+        MasterLevel masterLevel = lf.getMasterLevel(p2d.levelType);
+        Unit<?> masterUnit = masterLevel.getUnit();
+        UnitConverter levelUnitConverter = UnitConverter.IDENTITY;
+        if ((levelUnit != null && masterUnit != null)) {
+            levelUnitConverter = levelUnit.getConverterTo(masterUnit);
         }
 
         String[] stringValues;
@@ -410,8 +417,17 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
             DefaultGeometryData leveldata = createNewGeometryData(pdv);
 
             if (j < levelValues.length) {
-                leveldata.setLevel(lf.getLevel(p2d.levelType,
-                        levelValues[j].doubleValue(), levelUnit));
+                /*
+                 * Do not create a level from the level factory. For observed
+                 * data this leads to a cluttered level database and there is no
+                 * need have this level backed by the database.
+                 */
+                Level level = new Level();
+                double levelValue = levelUnitConverter.convert(levelValues[j]
+                        .doubleValue());
+                level.setMasterLevel(masterLevel);
+                level.setLevelonevalue(levelValue);
+                leveldata.setLevel(level);
             }
 
             for (String parameter : p2d.parameters) {

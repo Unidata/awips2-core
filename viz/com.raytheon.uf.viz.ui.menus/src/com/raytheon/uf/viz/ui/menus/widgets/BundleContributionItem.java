@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets;
 
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.HashMap;
@@ -80,16 +81,17 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Mar 12, 2009           chammack    Initial creation
- * Jan 14, 2013  1442     rferrel     Add Simulated Time Change Listener.
- * Aug 30, 2013  2310     bsteffen    Move loading of bundle to
- *                                    LoadBundleHandler.
- * Mar 25, 2014  2857     mpduff      In the case of missing menu text throw exception
- *                                      stating the id of the missing text.
- * Jun 09, 2014  3266     njensen     Removed useless code
  * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 12, 2009  2214     chammack  Initial creation
+ * Jan 14, 2013  1442     rferrel   Add Simulated Time Change Listener.
+ * Aug 30, 2013  2310     bsteffen  Move loading of bundle to LoadBundleHandler.
+ * Mar 25, 2014  2857     mpduff    In the case of missing menu text throw
+ *                                  exception stating the id of the missing
+ *                                  text.
+ * Jun 09, 2014  3266     njensen   Removed useless code
+ * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * 
  * </pre>
  * 
@@ -141,9 +143,52 @@ public class BundleContributionItem extends ContributionItem {
 
     public BundleContributionItem(CommonBundleMenuContribution contribution,
             VariableSubstitution[] includeSubstitutions) throws VizException {
+        /*
+         * Combine the substitutions and pass the result off to the private
+         * constructor.
+         */
+        this(contribution, getSubstitutions(contribution, includeSubstitutions));
+    }
+
+    /**
+     * Method for creating a combined substitution map during construction. This
+     * cannot be inlined because
+     * {@link VariableSubstitution#substituteAndCombine(VariableSubstitution[], VariableSubstitution[])}
+     * throws a ParseException but the Constructor must throw a VizException
+     */
+    private static Map<String, String> getSubstitutions(
+            CommonBundleMenuContribution contribution,
+            VariableSubstitution[] includeSubstitutions) throws VizException {
+        try {
+            return VariableSubstitution.toMap(VariableSubstitution
+                    .substituteAndCombine(includeSubstitutions,
+                            contribution.substitutions));
+        } catch (ParseException e) {
+            throw new VizException(
+                    "Error processing substitutions for menu item "
+                            + contribution.id, e);
+        }
+    }
+
+    /**
+     * This private constructor is necessary because the combined variable
+     * substitution needs to be applied to the id before calling super and also
+     * needs to be saved. The only way to do this is to combine the
+     * substitutions before calling this constructor so that they are available
+     * as a local variable for both the substitution in the id and for saving in
+     * a field.
+     * 
+     * @param contribution
+     *            the deserialized contribution information
+     * @param substitutions
+     *            The combination of substitutions that were passed into the
+     *            constructor and the substitutions from the contribution.
+     * @throws VizException
+     */
+    private BundleContributionItem(CommonBundleMenuContribution contribution,
+            Map<String, String> substitutions) throws VizException {
         super(VariableSubstitutionUtil.processVariables(contribution.id,
-                VariableSubstitution.toMap(VariableSubstitution.combine(
-                        contribution.substitutions, includeSubstitutions))));
+                substitutions));
         this.performQuery = contribution.timeQuery;
         this.menuContribution = new BundleMenuContribution();
         this.menuContribution.xml = contribution;
@@ -153,15 +198,7 @@ public class BundleContributionItem extends ContributionItem {
         // Build the substitutions:
         // Everything defaults to the include value
         // Fill in contribution substitutions from include and possible override
-        this.substitutions = VariableSubstitution.toMap(includeSubstitutions);
-        if (contribution.substitutions != null) {
-            HashMap<String, String> includeSubstitutionsMap = VariableSubstitution
-                    .toMap(includeSubstitutions);
-            for (VariableSubstitution vs : contribution.substitutions) {
-                this.substitutions.put(vs.key, VariableSubstitutionUtil
-                        .processVariables(vs.value, includeSubstitutionsMap));
-            }
-        }
+        this.substitutions = substitutions;
         if (contribution.suppressErrors != null) {
             contribution.suppressErrors = String.valueOf(this.substitutions
                     .get(contribution.suppressErrors.substring(2,

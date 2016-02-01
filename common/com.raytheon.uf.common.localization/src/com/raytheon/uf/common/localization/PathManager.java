@@ -69,7 +69,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
  * Aug 24, 2015 4393       njensen     Added field observer
  * Oct 14, 2015 4410       bsteffen    listStaticFiles will now merge different types.
- * Nov 12, 2015  4834      njensen     PathManager takeover of watching for localization file changes
+ * Nov 12, 2015 4834       njensen     PathManager takeover of watching for localization file changes
+ * Jan 28, 2016 4834       njensen     Pass along FileChangeType to old style observers
  * 
  * </pre>
  * 
@@ -736,7 +737,12 @@ public class PathManager implements IPathManager {
                     .get(path);
             if (listeners != null && !listeners.isEmpty()) {
                 for (ILocalizationPathObserver observer : listeners) {
-                    observer.fileChanged(newInstance);
+                    if (observer instanceof LocalizationFileIntermediateObserver) {
+                        ((LocalizationFileIntermediateObserver) observer)
+                                .fileChanged(newInstance, fum.getChangeType());
+                    } else {
+                        observer.fileChanged(newInstance);
+                    }
                 }
             }
         }

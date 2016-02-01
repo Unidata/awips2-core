@@ -20,6 +20,8 @@
 package com.raytheon.viz.ui.editor;
 
 import java.awt.image.BufferedImage;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
@@ -36,11 +38,13 @@ import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.EditorPart;
 
+import com.raytheon.uf.viz.core.AbstractTimeMatcher;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener.DisplayChangeType;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
+import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
@@ -66,6 +70,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Oct 10, 2006           chammack    Initial Creation.
  * Jun 12, 2014  3264     bsteffen    Make listeners thread safe.
  * Mar 02, 2015  4204     njensen     Deprecated setTabTitle and overrode setPartName
+ * Jan 13, 2016  DR 18480 D. Friedman Synchronize time matching before initializing displays.
  * 
  * </pre>
  * 
@@ -230,11 +235,7 @@ public abstract class AbstractEditor extends EditorPart implements
         setSite(site);
         setInput(input);
 
-        for (IRenderableDisplay display : displaysToLoad) {
-            if (display != null) {
-                initDisplay(display);
-            }
-        }
+        initDisplays();
 
         PaneManager paneManager = editorInput.getPaneManager();
         if (paneManager == null) {
@@ -242,6 +243,41 @@ public abstract class AbstractEditor extends EditorPart implements
         }
 
         addCustomHandlers(getMouseManager());
+    }
+
+    protected void initDisplays() {
+        AbstractTimeMatcher timeMatcher = null;
+        List<AbstractRenderableDisplay> displayList = null;
+        if (displaysToLoad.length > 1) {
+            for (IRenderableDisplay display : displaysToLoad) {
+                if (display != null) {
+                    timeMatcher = display.getDescriptor().getTimeMatcher();
+                    if (timeMatcher != null)
+                        break;
+                }
+            }
+            if (timeMatcher != null) {
+                displayList = new ArrayList<AbstractRenderableDisplay>(displaysToLoad.length);
+                for (IRenderableDisplay display : displaysToLoad) {
+                    if (display instanceof AbstractRenderableDisplay) {
+                        displayList.add((AbstractRenderableDisplay) display);
+                    }
+                }
+            }
+        }
+        if (timeMatcher != null && displayList != null) {
+            List<AbstractRenderableDisplay> orderedDisplays = timeMatcher.getDisplayLoadOrder(displayList);
+            for (AbstractRenderableDisplay display : orderedDisplays) {
+                display.getDescriptor().synchronizeTimeMatching(orderedDisplays.get(0).getDescriptor());
+                initDisplay(display);
+            }
+        } else {
+            for (IRenderableDisplay display : displaysToLoad) {
+                if (display != null) {
+                    initDisplay(display);
+                }
+            }
+        }
     }
 
     /*
