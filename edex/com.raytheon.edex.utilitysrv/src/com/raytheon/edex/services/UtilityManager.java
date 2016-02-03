@@ -37,6 +37,7 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
+import com.raytheon.uf.common.localization.checksum.DirectoryChecksums;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.localization.msgs.ListUtilityResponse;
@@ -51,15 +52,16 @@ import com.raytheon.uf.edex.core.EdexException;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 23, 2007            chammack    Initial Creation.
- * Jul 24, 2007            njensen     Updated putFile()
- * Jul 30, 2007            njensen     Added deleteFile()
- * May 19, 2007 1127       randerso    Implemented error reporting
- * Nov 17, 2015 4834       njensen     Extracted checksum code to ChecksumIO
- * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Apr 23, 2007           chammack  Initial Creation.
+ * Jul 24, 2007           njensen   Updated putFile()
+ * Jul 30, 2007           njensen   Added deleteFile()
+ * May 19, 2007  1127     randerso  Implemented error reporting
+ * Nov 17, 2015  4834     njensen   Extracted checksum code to ChecksumIO
+ * Dec 17, 2015  5166     kbisanz   Update logging to use SLF4J
+ * Feb 03, 2016  4754     bsteffen  Use DirectoryChecksums on large directories
  * 
  * </pre>
  * 
@@ -222,6 +224,12 @@ public class UtilityManager {
     private static void addEntry(String localizedSite,
             LocalizationContext context, String path, File file,
             ArrayList<ListResponseEntry> entries) {
+        addEntry(localizedSite, context, path, file, entries, null);
+    }
+
+    private static void addEntry(String localizedSite,
+            LocalizationContext context, String path, File file,
+            ArrayList<ListResponseEntry> entries, DirectoryChecksums checksums) {
 
         if (!path.endsWith(Checksum.CHECKSUM_FILE_EXTENSION)) {
             ListResponseEntry entry = new ListResponseEntry();
@@ -236,7 +244,12 @@ public class UtilityManager {
             } else {
                 entry.setExistsOnServer(false);
             }
-            entry.setChecksum(ChecksumIO.getFileChecksum(file));
+            if (checksums != null) {
+                entry.setChecksum(checksums.getFileChecksum(file));
+            } else {
+                entry.setChecksum(ChecksumIO.getFileChecksum(file));
+
+            }
 
             LocalizationLevel protectedLevel = ProtectedFiles
                     .getProtectedLevel(localizedSite,
@@ -286,13 +299,18 @@ public class UtilityManager {
         }
 
         if (file.isDirectory()) {
+            File[] files = file.listFiles();
+            DirectoryChecksums checksums = null;
+            if (files.length > 10) {
+                checksums = new DirectoryChecksums(file);
+            }
             for (File f : file.listFiles()) {
                 if (!f.canRead() || f.isHidden()) {
                     continue;
                 }
                 if (f.isFile()) {
                     addEntry(localizedSite, context,
-                            prependToPath + f.getName(), f, entries);
+                            prependToPath + f.getName(), f, entries, checksums);
                 } else if (f.isDirectory()) {
                     if (recursive) {
                         recursiveFileBuild(localizedSite, context, dir,
@@ -303,6 +321,9 @@ public class UtilityManager {
                                 prependToPath + f.getName(), f, entries);
                     }
                 }
+            }
+            if (checksums != null) {
+                checksums.save();
             }
         }
     }
