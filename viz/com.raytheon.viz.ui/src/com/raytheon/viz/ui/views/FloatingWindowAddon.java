@@ -95,6 +95,17 @@ public class FloatingWindowAddon {
                     MPart.class, null);
             boolean allFloating = true;
             for (MPart part : parts) {
+                if (part.getWidget() == null) {
+                    /*
+                     * This method is specifically trying to detect the case
+                     * where an existing view was reparented into a new window.
+                     * If there is no widget then the view is being restored
+                     * from the model in which case we don't need to do
+                     * anything.
+                     */
+                    allFloating = false;
+                    break;
+                }
                 IViewPart view = page.findView(part.getElementId());
                 if (!(view instanceof CaveFloatingView)) {
                     allFloating = false;
