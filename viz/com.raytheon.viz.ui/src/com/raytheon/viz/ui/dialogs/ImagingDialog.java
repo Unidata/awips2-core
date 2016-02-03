@@ -93,6 +93,8 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Apr 16, 2014  3037     lvenable    Add dispose check in runAsync call.
  * Sep 10, 2014  3604     bsteffen    Check for colormap before setting interpolation state.
  * Jan 25, 2016  5054     randerso    Fix dialog parenting, code cleanup
+ * Feb 03, 2016  5301     tgurney     Check for combined image before opening
+ *                                    color dialog
  * 
  * </pre>
  * 
@@ -275,8 +277,13 @@ public class ImagingDialog extends CaveSWTDialog implements
             @Override
             public void widgetSelected(SelectionEvent e) {
                 if (topResource != null) {
-                    ColorEditDialog.openDialog(getShell(), currentEditor,
-                            rscToEdit, false, true);
+                    if (blended) {
+                        ColorEditDialog.openDialog(getShell(), currentEditor,
+                                topResource, false, true);
+                    } else {
+                        ColorEditDialog.openDialog(getShell(), currentEditor,
+                                rscToEdit, false, true);
+                    }
                     // refresh to update color map name ( in case it was edited
                     // but not saved )
                     refreshComponents();
@@ -333,12 +340,6 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         blendAlphaScale.addSelectionListener(new SelectionAdapter() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -434,12 +435,6 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         brightnessScale.addSelectionListener(new SelectionAdapter() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -456,12 +451,7 @@ public class ImagingDialog extends CaveSWTDialog implements
         });
 
         contrastScale.addSelectionListener(new SelectionAdapter() {
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
+
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -595,12 +585,7 @@ public class ImagingDialog extends CaveSWTDialog implements
         alphaScale.setPageIncrement(5);
 
         alphaScale.addSelectionListener(new SelectionAdapter() {
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
+
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -993,13 +978,6 @@ public class ImagingDialog extends CaveSWTDialog implements
         });
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IVizEditorChangedListener#editorChanged(com.
-     * raytheon.uf.viz.core.IDisplayPaneContainer)
-     */
     @Override
     public void editorChanged(IDisplayPaneContainer container) {
         IDisplayPaneContainer oldEditor = currentEditor;
@@ -1035,13 +1013,6 @@ public class ImagingDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IRenderableDisplayChangedListener#
-     * renderableDisplayChanged(com.raytheon.uf.viz.core.IDisplayPane,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay)
-     */
     @Override
     public void renderableDisplayChanged(IDisplayPane pane,
             IRenderableDisplay display, DisplayChangeType type) {
@@ -1093,40 +1064,18 @@ public class ImagingDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.AddListener#notifyAdd(com.raytheon
-     * .uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyAdd(ResourcePair rp) throws VizException {
         addListeners(rp.getResource());
         refreshComponentsUpdate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener#notifyRemove
-     * (com.raytheon.uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyRemove(ResourcePair rp) throws VizException {
         removeListeners(rp.getResource());
         refreshComponentsUpdate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public synchronized void resourceChanged(ChangeType type, Object object) {
         if ((type == ChangeType.CAPABILITY)
