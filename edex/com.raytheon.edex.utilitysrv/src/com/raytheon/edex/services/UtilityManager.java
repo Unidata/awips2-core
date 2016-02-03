@@ -36,8 +36,8 @@ import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
-import com.raytheon.uf.common.localization.checksum.DirectoryChecksums;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.localization.msgs.ListUtilityResponse;
@@ -54,14 +54,14 @@ import com.raytheon.uf.edex.core.EdexException;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
+ * ------------- -------- --------- --------------------------------------
  * Apr 23, 2007           chammack  Initial Creation.
  * Jul 24, 2007           njensen   Updated putFile()
  * Jul 30, 2007           njensen   Added deleteFile()
  * May 19, 2007  1127     randerso  Implemented error reporting
  * Nov 17, 2015  4834     njensen   Extracted checksum code to ChecksumIO
  * Dec 17, 2015  5166     kbisanz   Update logging to use SLF4J
- * Feb 03, 2016  4754     bsteffen  Use DirectoryChecksums on large directories
+ * Feb 05, 2016  4754     bsteffen  Use PathManager for checksums
  * 
  * </pre>
  * 
@@ -224,12 +224,6 @@ public class UtilityManager {
     private static void addEntry(String localizedSite,
             LocalizationContext context, String path, File file,
             ArrayList<ListResponseEntry> entries) {
-        addEntry(localizedSite, context, path, file, entries, null);
-    }
-
-    private static void addEntry(String localizedSite,
-            LocalizationContext context, String path, File file,
-            ArrayList<ListResponseEntry> entries, DirectoryChecksums checksums) {
 
         if (!path.endsWith(Checksum.CHECKSUM_FILE_EXTENSION)) {
             ListResponseEntry entry = new ListResponseEntry();
@@ -237,19 +231,28 @@ public class UtilityManager {
             entry.setFileName(path);
             if (file.exists()) {
                 entry.setExistsOnServer(true);
-                entry.setDate(new Date(file.lastModified()));
+                Date modTime = new Date(file.lastModified());
+                entry.setDate(modTime);
                 if (file.isDirectory()) {
                     entry.setDirectory(true);
                 }
+                /* Use the checksum already in memory if possible */
+                ILocalizationFile localizationFile = PathManagerFactory
+                        .getPathManager().getLocalizationFile(context, path);
+                if (modTime.equals(localizationFile.getTimeStamp())) {
+                    entry.setChecksum(localizationFile.getCheckSum());
+                } else {
+                    /*
+                     * The PathManager does not necessarily update if a file
+                     * changes so must get it from the file directly.
+                     */
+                    entry.setChecksum(ChecksumIO.getFileChecksum(file));
+                }
             } else {
                 entry.setExistsOnServer(false);
+                entry.setChecksum(ILocalizationFile.NON_EXISTENT_CHECKSUM);
             }
-            if (checksums != null) {
-                entry.setChecksum(checksums.getFileChecksum(file));
-            } else {
-                entry.setChecksum(ChecksumIO.getFileChecksum(file));
 
-            }
 
             LocalizationLevel protectedLevel = ProtectedFiles
                     .getProtectedLevel(localizedSite,
@@ -299,18 +302,13 @@ public class UtilityManager {
         }
 
         if (file.isDirectory()) {
-            File[] files = file.listFiles();
-            DirectoryChecksums checksums = null;
-            if (files.length > 10) {
-                checksums = new DirectoryChecksums(file);
-            }
             for (File f : file.listFiles()) {
                 if (!f.canRead() || f.isHidden()) {
                     continue;
                 }
                 if (f.isFile()) {
                     addEntry(localizedSite, context,
-                            prependToPath + f.getName(), f, entries, checksums);
+                            prependToPath + f.getName(), f, entries);
                 } else if (f.isDirectory()) {
                     if (recursive) {
                         recursiveFileBuild(localizedSite, context, dir,
@@ -321,9 +319,6 @@ public class UtilityManager {
                                 prependToPath + f.getName(), f, entries);
                     }
                 }
-            }
-            if (checksums != null) {
-                checksums.save();
             }
         }
     }
