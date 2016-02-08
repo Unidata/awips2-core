@@ -620,5 +620,10 @@
             beforefragment="false"
             class="com.raytheon.viz.ui.views.FloatingWindowProcessor">
       </processor>
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="com.raytheon.viz.ui.actions.ToolbarToolTipProcessor">
+      </processor>
    </extension>
 </plugin>
