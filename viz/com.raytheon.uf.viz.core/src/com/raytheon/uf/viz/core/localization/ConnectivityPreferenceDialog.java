@@ -74,6 +74,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
+ * Feb 08, 2016  5281     tjensen     Added method getServerOptions
  * 
  * 
  * </pre>
@@ -122,7 +123,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
      */
     protected Display display;
 
-    private Label localizationLabel;
+    protected Label localizationLabel;
 
     protected TextOrCombo localizationSrv;
 
@@ -299,9 +300,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
-        String[] pastOptions = ServerRemembrance.getServerOptions(
-                LocalizationManager.getInstance().getLocalizationStore(),
-                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+        String[] pastOptions = getServerOptions();
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
@@ -362,6 +361,17 @@ public class ConnectivityPreferenceDialog extends Dialog {
             alertVizText.setText(alertVizServer);
             alertVizText.setBackground(getTextColor(alertVizGood));
         }
+    }
+
+    /**
+     * Get the stored server options for the localization server
+     * 
+     * @return server options
+     */
+    protected String[] getServerOptions() {
+        return ServerRemembrance.getServerOptions(LocalizationManager
+                .getInstance().getLocalizationStore(),
+                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
     }
 
     private void createBottomButtons() {
