@@ -29,6 +29,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.e4.core.services.events.IEventBroker;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
@@ -37,6 +38,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
+import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
@@ -55,6 +57,8 @@ import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -249,6 +253,47 @@ public abstract class AbstractVizPerspectiveManager
 
     private String title;
 
+    /**
+     * Clean up savedEditorAreaUI when a perspective is closing. The saved
+     * editor area is not disposed correctly by E4 because the saved elements
+     * have been removed from the model. The saved area must be disposed before
+     * the perspective context is disposed because the perspective context will
+     * dispose of the editor context without disposing of the model elements.
+     * The {@link #close()} method is called after the perspective context is
+     * disposed so it is too late. This handler triggers when the "PerspClosing"
+     * tag is added to the perspective which happens before the context is
+     * disposed.
+     */
+    private final EventHandler closeHandler = new EventHandler() {
+
+        @Override
+        public void handleEvent(Event event) {
+            if (!UIEvents.isADD(event)) {
+                return;
+            }
+            if (savedEditorAreaUI.isEmpty()) {
+                return;
+            }
+            Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+            if (!(element instanceof MPerspective)) {
+                return;
+            }
+            MPerspective perspective = (MPerspective) element;
+            if (!perspective.getElementId().equals(perspectiveId)) {
+                return;
+            }
+            if (!perspective.getTags().contains("PerspClosing")) {
+                return;
+            }
+            IPresentationEngine presentation = perspectiveWindow
+                    .getService(IPresentationEngine.class);
+            for (MUIElement saved : savedEditorAreaUI) {
+                presentation.removeGui(saved);
+            }
+            savedEditorAreaUI.clear();
+        }
+    };
+
     public AbstractVizPerspectiveManager() {
         // new up a tool manager for the perspective
         toolManager = new ModalToolManager();
@@ -275,9 +320,6 @@ public abstract class AbstractVizPerspectiveManager
 
     public void close() {
         if (opened) {
-            // Cleanup hidden editors
-            savedEditorAreaUI.clear();
-
             opened = false;
 
             closeDialogs();
@@ -287,6 +329,8 @@ public abstract class AbstractVizPerspectiveManager
             if (backgroundColor != null) {
                 backgroundColor.removeListener(BGColorMode.GLOBAL, this);
             }
+            perspectiveWindow.getService(IEventBroker.class)
+                    .unsubscribe(closeHandler);
         }
     }
 
@@ -319,6 +363,8 @@ public abstract class AbstractVizPerspectiveManager
                     .getInstance(page.getPerspective());
             backgroundColor.addListener(BGColorMode.GLOBAL, this);
             open();
+            perspectiveWindow.getService(IEventBroker.class).subscribe(
+                    UIEvents.ApplicationElement.TOPIC_TAGS, closeHandler);
             opened = true;
         } else {
             activateInternal();
