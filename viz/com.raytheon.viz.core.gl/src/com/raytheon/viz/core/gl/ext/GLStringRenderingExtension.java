@@ -55,6 +55,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * ------------- -------- ----------- --------------------------
  * May 12, 2014  3074     bsteffen    Initial creation
  * Jul 30, 2014  3476     bsteffen    Flush text renderer before rotating strings.
+ * Sep 08, 2015  4824     bsteffen    Fix underline, overline, strikethrough.
  * 
  * </pre>
  * 
@@ -422,7 +423,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         boolean underline = string.hasTextStyle(TextStyle.UNDERLINE);
         boolean overline = string.hasTextStyle(TextStyle.OVERLINE);
         boolean strikethrough = string.hasTextStyle(TextStyle.STRIKETHROUGH);
-        if (!underline || !overline || !strikethrough) {
+        if (!underline && !overline && !strikethrough) {
             return;
         }
         double yPos = string.basics.y;

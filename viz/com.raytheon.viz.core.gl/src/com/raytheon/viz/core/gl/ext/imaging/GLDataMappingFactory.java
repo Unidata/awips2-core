@@ -42,10 +42,12 @@ import com.raytheon.viz.core.gl.images.GLCMTextureData;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 24, 2013 2492       mschenke    Initial creation
- * Aug 29, 2014 3543       bsteffen    Fixes for NaN unit conversions
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 24, 2013  2492     mschenke  Initial creation
+ * Aug 29, 2014  3543     bsteffen  Fixes for NaN unit conversions
+ * Nov 05, 2015  5094     bsteffen  Map values between colors instead of on
+ *                                  colors
  * 
  * </pre>
  * 
@@ -212,7 +214,7 @@ public class GLDataMappingFactory {
             refCount += 1;
         }
 
-        private synchronized void initialize(GL gl) {
+        private synchronized void initialize() {
             if (initialized) {
                 return;
             }
@@ -225,8 +227,13 @@ public class GLDataMappingFactory {
             if (dataUnit != null && colorMapUnit != null
                     && dataUnit.equals(colorMapUnit) == false
                     && dataUnit.isCompatible(colorMapUnit)) {
-                // Worst case scenario, one mapping per color
-                double[] colorMapping = new double[colorMapSize];
+                /*
+                 * Worst case scenario, one more mapping than the number of
+                 * colors. This makes it so that the value directly between each
+                 * pair of colors is calculated so that every color maps to a
+                 * single range.
+                 */
+                double[] colorMapping = new double[colorMapSize + 1];
                 Arrays.fill(colorMapping, Float.NaN);
                 double[] dataMapping = new double[colorMapping.length];
                 Arrays.fill(dataMapping, Float.NaN);
@@ -287,7 +294,7 @@ public class GLDataMappingFactory {
                 float[] condensedDataMapping = new float[numMappings];
 
                 int index = 0;
-                for (int i = 0; i < colorMapSize && index < numMappings; ++i) {
+                for (int i = 0; i < colorMapping.length && index < numMappings; ++i) {
                     double colorMapVal = colorMapping[i];
                     double dataMapVal = dataMapping[i];
                     if (Double.isNaN(colorMapVal) == false
@@ -346,7 +353,7 @@ public class GLDataMappingFactory {
                 mapping.use();
             }
         }
-        mapping.initialize(gl);
+        mapping.initialize();
         return mapping;
     }
 
