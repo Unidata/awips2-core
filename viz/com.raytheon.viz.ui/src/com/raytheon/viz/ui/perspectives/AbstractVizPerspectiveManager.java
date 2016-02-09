@@ -34,8 +34,10 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.UIEvents;
@@ -54,6 +56,7 @@ import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPageListener;
 import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -99,6 +102,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                      LoadPerspectiveHandler.
  * Dec 14, 2015 5193        bsteffen    Updates to handle changed eclipse 4
  *                                      listener calls.
+ * Feb 09, 2016 5267        bsteffen    Workaround eclipse 4 poor support for
+ *                                      non restorable views.
  * 
  * </pre>
  * 
@@ -365,6 +370,7 @@ public abstract class AbstractVizPerspectiveManager
             open();
             perspectiveWindow.getService(IEventBroker.class).subscribe(
                     UIEvents.ApplicationElement.TOPIC_TAGS, closeHandler);
+            closeNonRestorableViews();
             opened = true;
         } else {
             activateInternal();
@@ -373,6 +379,56 @@ public abstract class AbstractVizPerspectiveManager
         contributeToStatusLine();
 
         perspectiveWindow.getShell().setText(getTitle(title));
+    }
+
+    /**
+     * Call during perspective open to workaround
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=486073
+     */
+    private void closeNonRestorableViews() {
+        /*
+         * First, if Viz crashed then need to remove non-restorable views before
+         * they can get restored.
+         */
+        for (IViewReference ref : page.getViewReferences()) {
+            if (!perspectiveWindow.getWorkbench().getViewRegistry()
+                    .find(ref.getId()).isRestorable()) {
+                page.hideView(ref);
+            }
+        }
+        /*
+         * Second, if Viz closed normally then the view will be closed and if
+         * the parent is empty then the parent will be closed but even if the
+         * grandparent is empty it will still be visible. This is because the
+         * CleanupAddon asynchronously closes the grandparents and the async
+         * task runs after the model file is written. Although it is
+         * theoretically possible for any container to be a grandparent this
+         * code searches specifically for MTrimmedWindows and MPartSashContainer
+         * because those seem to be the only naturally occurring grandparents.
+         */
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = (MPerspective) modelService
+                .find(perspectiveId, window);
+        List<MTrimmedWindow> windows = modelService.findElements(perspective,
+                null,
+                MTrimmedWindow.class, null);
+        List<MPartSashContainer> sashs = modelService.findElements(perspective,
+                null,
+                MPartSashContainer.class, null);
+        List<MUIElement> containers = new ArrayList<>();
+        containers.addAll(windows);
+        containers.addAll(sashs);
+        for (MUIElement container : containers) {
+            if (container.isToBeRendered()) {
+                int toBeRendered = modelService
+                        .countRenderableChildren(container);
+                if (toBeRendered == 0) {
+                    container.setToBeRendered(false);
+                }
+            }
+        }
     }
 
     /**
