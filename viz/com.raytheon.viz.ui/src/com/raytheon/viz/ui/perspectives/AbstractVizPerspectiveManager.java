@@ -104,6 +104,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                      listener calls.
  * Feb 09, 2016 5267        bsteffen    Workaround eclipse 4 poor support for
  *                                      non restorable views.
+ * Feb 10, 2016 5329        bsteffen    Close saved editors when deactivating
+ *                                      while closing.
  * 
  * </pre>
  * 
@@ -549,6 +551,20 @@ public abstract class AbstractVizPerspectiveManager
 
         savedEditorAreaUI.addAll(
                 swapEditorArea(Arrays.asList(createDefaultEditorStack())));
+
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = (MPerspective) modelService
+                .find(perspectiveId, window);
+        if (perspective.getTags().contains("PerspClosing")) {
+            IPresentationEngine presentation = perspectiveWindow
+                    .getService(IPresentationEngine.class);
+            for (MUIElement saved : savedEditorAreaUI) {
+                presentation.removeGui(saved);
+            }
+            savedEditorAreaUI.clear();
+        }
 
         deactivateDialogs();
         deactivateContexts();
