@@ -24,11 +24,13 @@ import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.pointdata.requests.NewAdaptivePlotRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.util.VariableSubstitutor;
@@ -45,6 +47,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * ------------ ---------- ----------- --------------------------
  * Aug 03, 2011            mschenke     Initial creation
  * Feb 24, 2015  3978      njensen      Use openInputStream() to read template
+ * Feb 10, 2016  5237      tgurney      Remove calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -68,13 +71,6 @@ public class NewAdaptivePlotHandler implements
 
     private String template;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.comm.IRequestHandler#handleRequest
-     * (com.raytheon.uf.common.serialization.comm.IServerRequest)
-     */
     @Override
     public Object handleRequest(NewAdaptivePlotRequest request)
             throws Exception {
@@ -109,20 +105,25 @@ public class NewAdaptivePlotHandler implements
         variables.put("description", request.getDescription());
 
         // Save the contents of the data file
-        LocalizationFile dataFile = pm.getLocalizationFile(pm.getContext(
+        ILocalizationFile dataFile = pm.getLocalizationFile(pm.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.CONFIGURED),
                 DATA_DIR + request.getFileName());
-        dataFile.write(request.getFileContents().getBytes());
-        dataFile.save();
+        try (SaveableOutputStream dataFileStream = dataFile.openOutputStream()) {
+            dataFileStream.write(request.getFileContents().getBytes());
+            dataFileStream.save();
+        }
 
         // Create the bundle file that points to the data file
         String bundleXml = VariableSubstitutor.processVariables(template,
                 variables);
-        LocalizationFile bundleFile = pm.getLocalizationFile(
+        ILocalizationFile bundleFile = pm.getLocalizationFile(
                 dataFile.getContext(), BUNDLE_DIR + request.getBundleName()
                         + ".xml");
-        bundleFile.write(bundleXml.getBytes());
-        bundleFile.save();
+        try (SaveableOutputStream bundleFileStream = bundleFile
+                .openOutputStream()) {
+            bundleFileStream.write(bundleXml.getBytes());
+            bundleFileStream.save();
+        }
         return null;
     }
 }
