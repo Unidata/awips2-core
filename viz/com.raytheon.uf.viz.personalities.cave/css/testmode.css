@@ -7,3 +7,8 @@
 Label, Text, CLabel, ToolBar {
     color: white;
 }
+
+.MArea
+{
+    swt-selected-tabs-background: black black 100%;
+}

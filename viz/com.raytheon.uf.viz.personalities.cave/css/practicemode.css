@@ -3,3 +3,8 @@
 * {
     background-color: orange;    
 }
+
+.MArea
+{
+    swt-selected-tabs-background: orange orange 100%;
+}
