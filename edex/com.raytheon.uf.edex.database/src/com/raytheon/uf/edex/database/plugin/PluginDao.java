@@ -74,6 +74,7 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 import com.raytheon.uf.edex.database.processor.IDatabaseProcessor;
+import com.raytheon.uf.edex.database.purge.PurgeKeyValue;
 import com.raytheon.uf.edex.database.purge.PurgeLogger;
 import com.raytheon.uf.edex.database.purge.PurgeRule;
 import com.raytheon.uf.edex.database.purge.PurgeRuleSet;
@@ -122,6 +123,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Aug 06, 2015  1574     nabowle     Add purgeOrphanedData
  * Jan 20, 2016  5262     bkowal      Updated to retrieve and validate {@link PurgeKeyValue}.
  *                                    Replaced deprecated method usage.
+ * Feb 11, 2016  4630     rjpeter     Fix Archiver NPE.
  * </pre>
  * 
  * @author bphillip
@@ -1657,7 +1659,13 @@ public abstract class PluginDao extends CoreDao {
         if ((result == null) || result.isEmpty()) {
             return null;
         } else {
-            return result.get(0).getTime();
+            Calendar row = result.get(0);
+            if (row != null) {
+                return row.getTime();
+            } else {
+                throw new DataAccessLayerException(
+                        "Unable to determine minInsertTime.  Null insertTime records found.");
+            }
         }
     }
 
