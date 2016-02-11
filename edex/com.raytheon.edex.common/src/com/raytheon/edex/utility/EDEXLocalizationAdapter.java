@@ -318,7 +318,13 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         /*
          * TODO Verify file's pre-modification checksum is the non-existent file
          * checksum or matches the server file's current checksum. If not, throw
-         * LocalizationFileChangedOutFromUnderYouException.
+         * LocalizationFileVersionConflictException.
+         * 
+         * Note there is some risk to implementing this todo, as any code that
+         * keeps a reference to an ILocalizationFile and calls save() on it
+         * repeatedly will then trigger the conflict exception on each
+         * subsequent save. That code would need to be updated to make use of
+         * the ILocalizationFile instance with the new checksum after each save.
          */
 
         FileChangeType changeType;
@@ -349,9 +355,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     public boolean delete(LocalizationFile file) throws LocalizationException {
 
         /*
-         * TODO verify checksum on filesystem matches checksum sent from delete
-         * request, otherwise throw
-         * LocalizationFileChangedOutFromUnderYouException.
+         * TODO Verify checksum on filesystem matches checksum sent from delete
+         * request, otherwise throw LocalizationFileVersionConflictException.
          */
 
         File localFile = getPath(file.getContext(), file.getPath());
