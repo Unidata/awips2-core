@@ -89,6 +89,7 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Jun 10, 2015  4401     bkowal      It is now possible to optionally upload a local file system file
  *                                    to localization when loading it.
  * Dec 21, 2015  5191     bsteffen    Updated layout handling for Eclipse 4.
+ * Feb 11, 2016  5242     dgilling    Remove calls to deprecated Localization APIs.
  * 
  * </pre>
  * 
@@ -135,7 +136,7 @@ public class LoadPerspectiveHandler
 
     private void loadFromLocalization(LocalizationFile localizationFile) {
         statusHandler.info("Loading perspective file: "
-                + localizationFile.getName());
+                + localizationFile.getPath());
 
         Object obj = null;
         try (InputStream is = localizationFile.openInputStream()) {
@@ -143,10 +144,10 @@ public class LoadPerspectiveHandler
         } catch (Exception e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to deserialize perspective localization file: "
-                            + localizationFile.getName() + ".", e);
+                            + localizationFile.getPath() + ".", e);
             return;
         }
-        this.load(obj, localizationFile.getName());
+        this.load(obj, localizationFile.getPath());
     }
 
     private void importIntoLocalization(Path filePath,

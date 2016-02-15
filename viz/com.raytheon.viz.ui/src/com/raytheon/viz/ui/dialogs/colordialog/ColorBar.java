@@ -70,6 +70,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  *                                     for color editor's color bar for radar correlation coefficient.
  * Apr 11, 2014 DR 15811   Qinglu Lin  Added decimalPlaceMap and logic to have 4 decimal places
  * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
+ * Feb 04, 2016 5301       tgurney     Fix undoColorBar and redoColorBar return values
  * 
  * </pre>
  * 
@@ -157,9 +158,11 @@ public class ColorBar extends Composite implements MouseListener,
     private final Map<String, String> decimalPlaceMap = new HashMap<String, String>() {
         private static final long serialVersionUID = 1L;
         {
-            // keys are the last portion of the title in the color table editor for
-            // a specific radar product, in lower case and value is the decimals expected
-            // to be displayed in color bar.
+            /*
+             * keys are the last portion of the title in the color table editor
+             * for a specific radar product, in lower case and value is the
+             * decimals expected to be displayed in color bar.
+             */
             put("correlation coeff", "0000");
         }
     };
@@ -199,9 +202,10 @@ public class ColorBar extends Composite implements MouseListener,
         this.enabledColorMask = enableColorMask;
         this.cmapParams = cmapParams;
 
-        for (String s: decimalPlaceMap.keySet()) {
+        for (String s : decimalPlaceMap.keySet()) {
             if (parent.getShell().getText().toLowerCase().contains(s)) {
-                numberFormat = new DecimalFormat("###,###,##0." + decimalPlaceMap.get(s));
+                numberFormat = new DecimalFormat("###,###,##0."
+                        + decimalPlaceMap.get(s));
                 break;
             }
         }
@@ -446,7 +450,6 @@ public class ColorBar extends Composite implements MouseListener,
             gc.setAlpha(255);
             gc.drawPolygon(topArrowPolygon);
             currentColor.dispose();
-
 
             /* Draw text that is displayed next to the top slider arrow. */
             gc.setForeground(white);
@@ -721,7 +724,7 @@ public class ColorBar extends Composite implements MouseListener,
             topSliderIndex = reIndex(oldCount, newCount, topSliderIndex);
             bottomSliderIndex = reIndex(oldCount, newCount, bottomSliderIndex);
             repaintColorbars();
-            return true;
+            return canUndo();
         }
     }
 
@@ -741,7 +744,7 @@ public class ColorBar extends Composite implements MouseListener,
             topSliderIndex = reIndex(oldCount, newCount, topSliderIndex);
             bottomSliderIndex = reIndex(oldCount, newCount, bottomSliderIndex);
             repaintColorbars();
-            return true;
+            return canRedo();
         }
     }
 
@@ -862,7 +865,8 @@ public class ColorBar extends Composite implements MouseListener,
      * @param endColorData
      *            Ending color.
      */
-    public void interpolateAlphaOnly(ColorData startColorData, ColorData endColorData) {
+    public void interpolateAlphaOnly(ColorData startColorData,
+            ColorData endColorData) {
         float numOfCells = bottomSliderIndex - topSliderIndex;
         // Create a new color array using the current set of colors.
         List<ColorData> newColors = getCurrentColorsCopy();
@@ -954,8 +958,8 @@ public class ColorBar extends Composite implements MouseListener,
                 return dmLabel;
             }
         }
-        NumberFormat format = numberFormat != null ?
-                numberFormat : new DecimalFormat("0.0##");
+        NumberFormat format = numberFormat != null ? numberFormat
+                : new DecimalFormat("0.0##");
         return format.format(value);
     }
 

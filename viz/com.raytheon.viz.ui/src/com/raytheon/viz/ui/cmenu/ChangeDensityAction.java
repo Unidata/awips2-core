@@ -29,7 +29,7 @@ import org.eclipse.swt.widgets.Menu;
 import com.raytheon.uf.viz.core.rsc.capabilities.DensityCapability;
 
 /**
- * TODO Add Description
+ * ChangeDensityAction
  * 
  * <pre>
  * 
@@ -37,6 +37,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.DensityCapability;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 26, 2010            bsteffen     Initial creation
+ * Feb 11, 2016 #5348      randerso     Fix setting of selected density in menu
  * 
  * </pre>
  * 
@@ -131,8 +132,9 @@ public class ChangeDensityAction extends AbstractRightClickAction implements
         public SetDensityInternalAction(double density) {
             super("" + density, Action.AS_RADIO_BUTTON);
             this.density = density;
-            this.setChecked(density == getTopMostSelectedResource()
-                    .getCapability(DensityCapability.class).getDensity());
+            this.setChecked(getText().equals(
+                    getTopMostSelectedResource().getCapability(
+                            DensityCapability.class).getDensityString()));
         }
 
         /*
