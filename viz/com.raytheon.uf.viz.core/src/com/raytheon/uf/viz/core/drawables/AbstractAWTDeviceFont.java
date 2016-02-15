@@ -40,6 +40,8 @@ import org.eclipse.swt.graphics.Point;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 04, 2015   #5070    randerso    Initial creation
+ * Feb 08, 2016   #5318    randerso    Translate generic font aliases to 
+ *                                     AWT font families
  * 
  * </pre>
  * 
@@ -166,9 +168,30 @@ public abstract class AbstractAWTDeviceFont implements IFont {
      */
     private static Font createFont(Point dpi, String fontName, int awtStyle,
             float fontSize) {
-        Font font = new Font(fontName, Font.PLAIN, 1);
+        Font font = new Font(toAwtFontName(fontName), Font.PLAIN, 1);
 
         return deriveFont(font, fontSize, awtStyle, dpi);
+    }
+
+    /**
+     * Translate generic font aliases to AWT font family names
+     * 
+     * @param fontName
+     * @return
+     */
+    protected static String toAwtFontName(String fontName) {
+        if (fontName.equals("Monospace")) {
+            return "Monospaced";
+        } else if (fontName.equals("Sans")) {
+            return "SansSerif";
+        }
+
+        /*
+         * The generic font alias "Serif" is the same as the AWT font family
+         * name "Serif" so needs no translation
+         */
+
+        return fontName;
     }
 
     protected static int toAwtFontType(FontType type) {
@@ -183,7 +206,7 @@ public abstract class AbstractAWTDeviceFont implements IFont {
 
     protected static int toAwtStyle(Style[] styles) {
         int styleInt = Font.PLAIN;
-        if (styles == null || styles.length == 0) {
+        if ((styles == null) || (styles.length == 0)) {
             return styleInt;
         }
         for (Style style : styles) {

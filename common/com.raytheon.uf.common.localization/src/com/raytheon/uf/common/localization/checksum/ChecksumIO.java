@@ -34,15 +34,16 @@ import com.raytheon.uf.common.status.UFStatus;
  * Utilities to support checkums
  * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 17, 2015  4834      njensen     Initial creation
  *                                      Extracted from UtilityManager
  *                                      Refactored getFileChecksum(File)
- *
+ * Feb 03, 2016  4754      bsteffen    Fix concurrency issue
+ * 
  * </pre>
  * 
  * @author njensen
@@ -82,27 +83,33 @@ public class ChecksumIO {
         File checksumFile = getChecksumFile(file);
         String chksum = null;
         try {
-            if (checksumFile.exists()
-                    && checksumFile.lastModified() >= file.lastModified()) {
-                try (BufferedReader reader = new BufferedReader(new FileReader(
-                        checksumFile))) {
-                    chksum = reader.readLine();
+            if (file.exists()) {
+                if (file.isDirectory()) {
+                    chksum = ILocalizationFile.DIRECTORY_CHECKSUM;
+                } else if (checksumFile.exists()
+                        && checksumFile.lastModified() >= file.lastModified()) {
+                    try (BufferedReader reader = new BufferedReader(
+                            new FileReader(checksumFile))) {
+                        /*
+                         * This will return null if another thread is in
+                         * writeChecksum, make sure to recalculate if this
+                         * returns null
+                         */
+                        chksum = reader.readLine();
+                    }
+                }
+
+                if (chksum == null) {
+                    if (write) {
+                        chksum = writeChecksum(file);
+                    } else {
+                        chksum = Checksum.getMD5Checksum(file);
+                    }
                 }
             } else {
-                if (file.exists()) {
-                    if (file.isDirectory()) {
-                        chksum = ILocalizationFile.DIRECTORY_CHECKSUM;
-                    } else {
-                        if (write) {
-                            chksum = writeChecksum(file);
-                        } else {
-                            chksum = Checksum.getMD5Checksum(file);
-                        }
-                    }
-                } else {
-                    chksum = ILocalizationFile.NON_EXISTENT_CHECKSUM;
-                }
+                chksum = ILocalizationFile.NON_EXISTENT_CHECKSUM;
             }
+
         } catch (Exception e) {
             // log, no checksum will be provided
             logger.error("Error determing file checksum for: " + file, e);
@@ -124,14 +131,11 @@ public class ChecksumIO {
      * @throws Exception
      */
     public static String writeChecksum(File file) throws Exception {
-        String chksum = null;
+        String chksum = Checksum.getMD5Checksum(file);
         File checksumFile = getChecksumFile(file);
-        BufferedWriter bw = new BufferedWriter(new FileWriter(checksumFile));
-        try {
-            chksum = Checksum.getMD5Checksum(file);
+        try (BufferedWriter bw = new BufferedWriter(
+                new FileWriter(checksumFile))) {
             bw.write(chksum);
-        } finally {
-            bw.close();
         }
         return chksum;
     }
