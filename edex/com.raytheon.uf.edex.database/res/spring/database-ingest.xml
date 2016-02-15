@@ -1,0 +1,102 @@
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+    http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd
+    http://www.springframework.org/schema/util  http://www.springframework.org/schema/util/spring-util-3.1.xsd">
+
+    <bean id="dbMonitorRegistry" class="com.raytheon.uf.edex.database.health.DatabaseMonitorRegistry"
+        factory-method="getInstance">
+    </bean>
+
+    <!-- Warning Thresholds: First arg is size of table/index in MB,
+         second is percent of table that is bloat -->
+    <util:list id="warningThresholds">
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="1000" />
+            <constructor-arg value="25" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="500" />
+            <constructor-arg value="30" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="100" />
+            <constructor-arg value="40" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="10" />
+            <constructor-arg value="50" />
+        </bean>
+    </util:list>
+
+    <!-- Critical Thresholds: First arg is size of table/index in MB,
+         second is percent of table that is bloat -->
+    <util:list id="criticalThresholds">
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="1000" />
+            <constructor-arg value="30" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="500" />
+            <constructor-arg value="40" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="100" />
+            <constructor-arg value="50" />
+        </bean>
+        <bean class="com.raytheon.uf.edex.database.health.Threshold">
+            <constructor-arg value="10" />
+            <constructor-arg value="60" />
+        </bean>
+    </util:list>
+
+    <bean id="metadataBloatMonitor" class="com.raytheon.uf.edex.database.health.DatabaseBloatMonitor">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.database.health.PostgresBloatDao">
+                <constructor-arg value="metadata"/>
+            </bean>
+        </constructor-arg>
+        <constructor-arg ref="warningThresholds"/>
+        <constructor-arg ref="criticalThresholds"/>
+    </bean>
+
+    <bean id="mapsBloatMonitor" class="com.raytheon.uf.edex.database.health.DatabaseBloatMonitor">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.database.health.PostgresBloatDao">
+                <constructor-arg value="maps"/>
+            </bean>
+        </constructor-arg>
+        <constructor-arg ref="warningThresholds"/>
+        <constructor-arg ref="criticalThresholds"/>
+    </bean>
+
+    <bean factory-bean="dbMonitorRegistry" factory-method="registerMonitor">
+        <constructor-arg value="metadataBloatMonitor" />
+        <constructor-arg ref="metadataBloatMonitor" />
+    </bean>
+
+    <bean factory-bean="dbMonitorRegistry" factory-method="registerMonitor">
+        <constructor-arg value="mapsBloatMonitor" />
+        <constructor-arg ref="mapsBloatMonitor" />
+    </bean>
+
+    <camelContext id="clusteredDatabaseMonitor" xmlns="http://camel.apache.org/schema/spring"
+        errorHandlerRef="errorHandler">
+        <!-- Route to periodically check the health of the database -->
+        <route id="jmsPooledResourceChecker">
+            <from
+                uri="timer://databaseMonitor?period=2h&amp;delay=30m&amp;fixedRate=true" />
+            <doTry>
+                <bean ref="dbMonitorRegistry" method="runMonitors" />
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to uri="log:databaseMonitor?level=ERROR" />
+                </doCatch>
+            </doTry>
+        </route>
+    </camelContext>
+
+    <bean factory-bean="contextManager" factory-method="registerClusteredContext">
+        <constructor-arg ref="clusteredDatabaseMonitor" />
+    </bean>
+</beans>
