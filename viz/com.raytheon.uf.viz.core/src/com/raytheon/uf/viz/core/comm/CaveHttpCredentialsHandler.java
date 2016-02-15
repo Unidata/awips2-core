@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Nov 15, 2014    3757    dhladky     Added flag for certificate validation checks
  * May 10, 2015    4435    dhladky     Updated interface to allow for loading keyStores.
  * Dec 04, 2015    4834    njensen     Added support for credentials for local edex
+ * Feb 15, 2016    5281    tjensen     Added check for null credentials in getCredentials
  * 
  * </pre>
  * 
@@ -95,11 +96,12 @@ public class CaveHttpCredentialsHandler implements HttpAuthHandler {
             HttpsLoginDlg login = new HttpsLoginDlg(message);
             login.open();
             String[] credentials = login.getCredentials();
-
-            // Save off the user's username in the UserController
-            UserController.updateUserData(credentials[0]);
-            LocalizationManager.registerContextName(LocalizationLevel.USER,
-                    credentials[0]);
+            if (credentials != null) {
+                // Save off the user's username in the UserController
+                UserController.updateUserData(credentials[0]);
+                LocalizationManager.registerContextName(LocalizationLevel.USER,
+                        credentials[0]);
+            }
             return credentials;
         }
     }

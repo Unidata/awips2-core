@@ -34,7 +34,6 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
-import org.eclipse.ui.PlatformUI;
 
 /**
  * CAVE Login Dialog.
@@ -47,8 +46,9 @@ import org.eclipse.ui.PlatformUI;
  * ------------ ---------- ----------- --------------------------
  * Mar 06, 2013    1786    mpduff      Initial creation
  * Feb 10, 2014    2704    njensen     Allow message to expand size of dialog
- * Jan 26, 2015    5054    randerso    Change dialog to be parented by display
+ * Jan 26, 2016    5054    randerso    Change dialog to be parented by display
  *                                     Change to size correctly with font size
+ * Feb 15, 2016    5281    tjensen     Fix issues with Log In dialog
  * 
  * </pre>
  * 
@@ -88,7 +88,7 @@ public class HttpsLoginDlg {
      */
     public void open() {
         display = Display.getDefault();
-        shell = new Shell(display, SWT.DIALOG_TRIM);
+        shell = new Shell(display, SWT.DIALOG_TRIM | SWT.APPLICATION_MODAL);
         shell.setText("Log in");
 
         // Create the main layout for the shell.
@@ -221,10 +221,6 @@ public class HttpsLoginDlg {
      * Cancel action
      */
     private void cancel() {
-        // Check if CAVE is running and exit if it is not
-        if (!PlatformUI.isWorkbenchRunning()) {
-            System.exit(0);
-        }
         shell.dispose();
     }
 
