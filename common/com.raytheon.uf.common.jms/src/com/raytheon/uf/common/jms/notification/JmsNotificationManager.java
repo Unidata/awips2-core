@@ -71,6 +71,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jul 21, 2014  3390      bsteffen   Extracted logic from the NotificationManagerJob
  * Oct 23, 2014  3390      bsteffen   Fix concurrency of disconnect and name threads.
  * Apr 06, 2015  3343      rjpeter    Fix deadlock and reconnect.
+ * Feb 11, 2016  4630      rjpeter    Fix memory leak.
  * </pre>
  * 
  * @author randerso
@@ -343,7 +344,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             }
         }
 
-        if (newListener != null && connected) {
+        if ((newListener != null) && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
@@ -384,7 +385,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             }
         }
 
-        if (newListener != null && connected) {
+        if ((newListener != null) && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
@@ -606,6 +607,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         public void removeObserver(INotificationObserver obs) {
             synchronized (observers) {
                 observers.remove(obs);
+                jobWrappers.remove(obs);
             }
         }
 
@@ -696,7 +698,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                     lastErrorPrintTime = System.currentTimeMillis();
                 }
             }
-            if (lastRun == null || lastRun.isDone()) {
+            if ((lastRun == null) || lastRun.isDone()) {
                 lastRun = executorService.submit(this);
             }
         }
