@@ -36,6 +36,8 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -44,6 +46,7 @@ import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
@@ -75,7 +78,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
  * Feb 08, 2016  5281     tjensen     Added method getServerOptions. Don't extend 
  *                                    org.eclipse.swt.widgets.Dialog
- * 
+ * Feb 17, 2016  5281     tjensen     Fix Dialog centering
  * 
  * </pre>
  * 
@@ -203,6 +206,25 @@ public class ConnectivityPreferenceDialog {
             shell.pack();
             shell.setMinimumSize(shell.getBounds().width,
                     shell.getBounds().height);
+
+            // center dialog on monitor containing cursor
+            Monitor[] monitors = display.getMonitors();
+            int monitor = 0;
+
+            Point cursor = display.getCursorLocation();
+            for (int i = 0; i < monitors.length; i++) {
+                if (monitors[i].getBounds().contains(cursor)) {
+                    monitor = i;
+                    break;
+                }
+            }
+            Rectangle bounds = monitors[monitor].getBounds();
+
+            Point size = shell.getSize();
+            int x = bounds.x + ((bounds.width - size.x) / 2);
+            int y = bounds.y + ((bounds.height - size.y) / 2);
+
+            shell.setLocation(x, y);
             updateStatus(false, status, details);
 
             shell.open();
