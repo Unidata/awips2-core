@@ -87,6 +87,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Dec 09, 2015  4834     njensen     getCurrentColormapName() detects LocalizationContext in name
  * Feb 01, 2016  4834     njensen     Handle null colormap name
  * Feb 04, 2016  5301     tgurney     Fix undo, redo and revert behavior, plus general cleanup
+ * Feb 17, 2016  5331     tgurney     Make undo() restore original colormap name when appropriate
  * 
  * </pre>
  * 
@@ -104,6 +105,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
     private final String NO_COLOR_TABLE = "No color table is being edited";
 
     private String currentColormapName;
+
+    private String savedColormapName;
 
     private ColorMapCapability cap;
 
@@ -198,6 +201,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         this.singleResourceToEdit = singleRscToEdit;
         cap = getCapabilityToEdit();
         currentColormapName = getCurrentColormapName(cap);
+        savedColormapName = currentColormapName;
 
         if (container != null) {
             // Editor switching (who is the active editor!?)
@@ -209,7 +213,9 @@ public class ColorEditDialog extends CaveSWTDialog implements
     private String getCurrentColormapName(ColorMapCapability cap) {
         String cname = null;
         if (cap != null) {
-            cname = cap.getColorMapParameters().getColorMapName();
+            if (cap.getColorMapParameters() != null) {
+                cname = cap.getColorMapParameters().getColorMapName();
+            }
             if (cname != null) {
                 int slashIndex = cname.indexOf(IPathManager.SEPARATOR);
                 if (slashIndex > -1) {
@@ -564,8 +570,13 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     private void undo() {
-        undoBtn.setEnabled(colorEditComp.getColorBar().undoColorBar());
-        colorEditComp.updateColorMap();
+        boolean canUndoAgain = colorEditComp.getColorBar().undoColorBar();
+        String newColormapName = null;
+        if (!canUndoAgain) {
+            newColormapName = savedColormapName;
+        }
+        colorEditComp.updateColorMap(newColormapName);
+        undoBtn.setEnabled(canUndoAgain);
         redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
         updateTitleText();
     }
@@ -820,10 +831,11 @@ public class ColorEditDialog extends CaveSWTDialog implements
         colorEditComp.getColorBar().revertColorBar();
         undoBtn.setEnabled(false);
         redoBtn.setEnabled(false);
-        cap.getColorMapParameters().setColorMapName(currentColormapName);
         saveBtn.setEnabled(true);
         deleteBtn.setEnabled(true);
+        cap.getColorMapParameters().setColorMapName(currentColormapName);
         cap.getColorMapParameters().setDirty(false);
+        savedColormapName = currentColormapName;
         updateTitleText();
         applyToAll(cap);
     }
@@ -912,9 +924,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     private void revert() {
         colorEditComp.getColorBar().revertColorBar();
-        colorEditComp.updateColorMap();
-        // must set name again as updateColorMap resets it to null
-        cap.getColorMapParameters().setColorMapName(currentColormapName);
+        colorEditComp.updateColorMap(currentColormapName);
         undoBtn.setEnabled(false);
         redoBtn.setEnabled(false);
         cap.getColorMapParameters().setDirty(false);
@@ -977,7 +987,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     private void updateTitleText() {
         String newColormapName = currentColormapName != null ? currentColormapName
                 : "Untitled Colormap";
-        if (cap != null) {
+        if (cap != null && cap.getColorMapParameters() != null) {
             if (cap.getColorMapParameters().getColorMapName() == null
                     || colorEditComp != null
                     && colorEditComp.getColorBar().canUndo()) {
