@@ -174,7 +174,7 @@
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="9.0.7.v20131107"/>
+         version="9.2.14.v20151106"/>
 
    <plugin
          id="com.raytheon.uf.common.json"
@@ -193,7 +193,7 @@
          id="javax.servlet"
          download-size="0"
          install-size="0"
-         version="3.0.0"/>
+         version="3.1.0"/>
 
    <plugin
          id="com.raytheon.uf.edex.requestsrv"
