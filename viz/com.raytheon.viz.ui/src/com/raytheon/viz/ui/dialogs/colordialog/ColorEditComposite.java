@@ -48,6 +48,8 @@ import com.raytheon.uf.common.colormap.ColorMap;
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
  * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
+ * Feb 17, 2016  5331     tgurney     Overload updateColorMap() to allow specifying
+ *                                    non-null colormap name.
  * 
  * </pre>
  * 
@@ -86,7 +88,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      */
     private Button hsbRdo;
 
-    /** Color count combo*/
+    /** Color count combo */
     private Combo colorCount;
 
     /**
@@ -244,7 +246,8 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
         groupRowLayout.marginRight = 10;
         groupRowLayout.spacing = 10;
         discreteGroup.setLayout(groupRowLayout);
-        discreteGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        discreteGroup
+                .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         // Create the discrete check button.
         gfeDiscreteCheck = new Button(discreteGroup, SWT.CHECK);
@@ -285,11 +288,12 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
     /**
      * Fill the area between the sliders in the color bar using the color data
      * provided.
-     *
+     * 
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
      */
+    @Override
     public void fillColor(ColorData colorData) {
         colorBar.fillColorBarColor(colorData);
         updateColorMap();
@@ -300,13 +304,14 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * Set the color where the top or bottom slider is pointing. The color wheel
      * title is used to determine if the color is from the upper color wheel or
      * the lower color wheel.
-     *
+     * 
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
      * @param colorWheelTitle
      *            The title of the color wheel that is calling the method.
      */
+    @Override
     public void setColor(ColorData colorData, String colorWheelTitle) {
         if (colorWheelTitle.compareTo(upperWheelTitle) == 0) {
             colorBar.setColorBarColor(colorData, true);
@@ -321,7 +326,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * A callback method used by the ColorBar class. This method is called to
      * update the upper or lower color wheel when the mouse is clicked in the
      * color bar and moved around.
-     *
+     * 
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
@@ -329,6 +334,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      *            A flag indicating if the upper or lower color wheel is to be
      *            updated.
      */
+    @Override
     public void updateColor(ColorData colorData, boolean upperFlag) {
         if (upperFlag) {
             upperColorWheel.setColor(colorData);
@@ -339,9 +345,13 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
 
     /**
      * Updates the color map currently displayed
+     * 
+     * @param newName
+     *            New name for the color map (null = no name)
      */
-    public void updateColorMap() {
-        colorMap = ColorUtil.buildColorMap(colorBar.getCurrentColors(), null);
+    public void updateColorMap(String newName) {
+        colorMap = ColorUtil
+                .buildColorMap(colorBar.getCurrentColors(), newName);
         if (isGFEDiscrete()) {
             colorMap.removeDuplicates();
         }
@@ -349,6 +359,9 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
         updateColorCount();
     }
 
+    public void updateColorMap() {
+        updateColorMap(null);
+    }
 
     public void updateColorCount() {
         int newCount = colorBar.getColorCount();
