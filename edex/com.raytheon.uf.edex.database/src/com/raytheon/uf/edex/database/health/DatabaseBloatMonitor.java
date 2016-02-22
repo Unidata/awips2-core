@@ -96,7 +96,7 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
 
         for (TableBloat info : criticalLevel) {
             if (EDEXUtil.isRunning()) {
-                logger.error(String
+                logger.warn(String
                         .format("Database [%s] Table [%s] has reached bloat CRITICAL threshold.  Table Size [%s], Bloat amount [%s], Bloat Percentage [%.2f].  Full vacuum recommended!",
                                 getDatabase(),
                                 info.getTableName(),
@@ -132,7 +132,7 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
 
         for (IndexBloat info : criticalLevel) {
             if (EDEXUtil.isRunning()) {
-                logger.error(String
+                logger.warn(String
                         .format("Database [%s] Index [%s] on Table [%s] has reached bloat CRITICAL threshold.  Index Size [%s], Bloat amount [%s], Bloat Percentage [%.2f].  Reindexing...",
                                 getDatabase(),
                                 info.getIndexName(),
@@ -141,7 +141,11 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
                                 SizeUtil.prettyByteSize(info.getBloatBytes()),
                                 info.getBloatPercent()));
                 try {
+                    long start = System.currentTimeMillis();
                     dao.reindex(info);
+                    logger.info("REINDEX took: "
+                            + (System.currentTimeMillis() - start)
+                            + " ms. Bloat is now zero.");
                 } catch (Exception e) {
                     logger.error(
                             "Error occurred reindexing " + info.getIndexName(),

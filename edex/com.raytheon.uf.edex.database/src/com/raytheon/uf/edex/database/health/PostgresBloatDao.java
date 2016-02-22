@@ -334,7 +334,6 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
 
     @Override
     public void reindex(final IndexBloat info) {
-        long start = System.currentTimeMillis();
         txTemplate.execute(new TransactionCallback<Integer>() {
             @Override
             public Integer doInTransaction(TransactionStatus status) {
@@ -357,9 +356,8 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
 
                 if ((rows != null) && (rows.size() > 0)) {
                     String cmd = "REINDEX INDEX " + fqnIndexName;
-                    logger.info(
-                            "INDEX supports a constraint, REINDEX in place. Running cmd: {}",
-                            cmd);
+                    logger.info("INDEX supports a constraint, REINDEX in place. Running cmd: "
+                            + cmd);
                     return executeSQLUpdate(cmd);
                 }
 
@@ -414,24 +412,22 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                 String cmd = "COMMIT; " + matcher.group(1)
                         + " INDEX CONCURRENTLY \"" + tmpName + "\" "
                         + matcher.group(2);
-                logger.info("Creating new index concurrently. Running cmd: {}",
-                        cmd);
+                logger.info("Creating new index concurrently. Running cmd: "
+                        + cmd);
                 sess.createSQLQuery(cmd).executeUpdate();
 
                 cmd = "DROP INDEX IF EXISTS " + fqnIndexName;
-                logger.info("Dropping old index: {}", cmd);
+                logger.info("Dropping old index: " + cmd);
                 /* delete old index */
                 sess.createSQLQuery(cmd).executeUpdate();
 
                 /* rename tmp index */
                 cmd = "ALTER INDEX " + fqnTmpName + " RENAME TO " + "\""
                         + indexName + "\"";
-                logger.info("Renaming tmp index: {}", cmd);
+                logger.info("Renaming tmp index: " + cmd);
                 return sess.createSQLQuery(cmd).executeUpdate();
             }
         });
 
-        logger.info("REINDEX took: " + (System.currentTimeMillis() - start)
-                + " ms");
     }
 }
