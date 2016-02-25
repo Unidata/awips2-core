@@ -50,6 +50,7 @@ import org.hibernate.criterion.Projections;
 import org.hibernate.criterion.Restrictions;
 import org.hibernate.exception.ConstraintViolationException;
 
+import com.raytheon.uf.common.dataplugin.HDF5Util;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
@@ -86,7 +87,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Plugins wishing to store data in the HDF5 repository may extend this class
  * directly. If HDF5 persistance is not necessary, plugins may use or extend
  * DefaultPluginDao
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
@@ -124,8 +125,9 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Jan 20, 2016  5262     bkowal      Updated to retrieve and validate {@link PurgeKeyValue}.
  *                                    Replaced deprecated method usage.
  * Feb 11, 2016  4630     rjpeter     Fix Archiver NPE.
+ * Feb 24, 2016  5389     nabowle     Purge orphans based on purgeKeys and pathKeys.
  * </pre>
- * 
+ *
  * @author bphillip
  * @version 1.0
  */
@@ -165,7 +167,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Constructs a new PluginDao for the given plugin
-     * 
+     *
      * @param pluginName
      *            The name of the plugin to create the data access object for
      * @throws PluginException
@@ -188,7 +190,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Defines the behavior for storing data to the HDF5 data store
-     * 
+     *
      * @param dataStore
      *            The datastore to save the data to
      * @param obj
@@ -202,7 +204,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Persists a group of records to the data stores
-     * 
+     *
      * @param records
      *            The records to persist
      * @throws PluginException
@@ -434,7 +436,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Persists the HDF5 component of the records to the HDF5 repository
-     * 
+     *
      * @param records
      *            The records to persist
      * @return The status of the storage operation
@@ -541,7 +543,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves metadata from the database according to the provided query
-     * 
+     *
      * @param query
      *            The query
      * @return The query results
@@ -562,7 +564,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Retrieves the complete set of metadata from the database for the record
      * with the provided dataURI
-     * 
+     *
      * @param dataURI
      *            The dataURI of the record for which to retrieve metadata
      * @return The record populated with a complete set of metadata
@@ -586,7 +588,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves the HDF5 component of the records provided
-     * 
+     *
      * @param objects
      *            The objects to retrieve the HDF5 component for
      * @param tileSet
@@ -635,7 +637,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Retrieves the HDF5 component of the record provided
-     * 
+     *
      * @param object
      *            The objects to retrieve the HDF5 component for
      * @param tileSet
@@ -653,7 +655,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Retrieves the fully populated object from the data stores according to
      * the provided query
-     * 
+     *
      * @param query
      *            The query to execute
      * @param tileSet
@@ -663,7 +665,7 @@ public abstract class PluginDao extends CoreDao {
      *             If problems occur while interacting with the metadata
      *             database
      * @throws StorageException
-     *             If probolems occur while interacting with the metadata
+     *             If problems occur while interacting with the metadata
      *             database
      */
     public PluginDataObject[] getFullRecord(DatabaseQuery query, int tile)
@@ -682,7 +684,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purges all data associated with the owning plugin based on criteria
      * specified by the owning plugin
-     * 
+     *
      * @throws PluginException
      *             If problems occur while interacting with the data stores
      */
@@ -692,7 +694,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges all data associated with the productKeys and owning plugin
-     * 
+     *
      * @throws PluginException
      *             If problems occur while interacting with the data stores
      */
@@ -755,7 +757,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges data according to purge criteria specified by the owning plugin
-     * 
+     *
      * @throws PluginException
      *             If problems occur while interacting with data stores
      */
@@ -765,7 +767,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges data according to purge criteria specified by the owning plugin
-     * 
+     *
      * @throws PluginException
      *             If problems occur while interacting with data stores
      */
@@ -820,7 +822,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Takes the purgeKeys, looks up the associated purge rule, and applies it
      * to the data matched by purgeKeys.
-     * 
+     *
      * @param ruleSet
      * @param purgeKeys
      * @return Summary of purge for keys
@@ -1223,7 +1225,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purges orphaned datastore data that does not have associated database
      * records.
-     * 
+     *
      * @throws PluginException
      *             if purging fails
      */
@@ -1231,12 +1233,77 @@ public abstract class PluginDao extends CoreDao {
         if (this.daoClass == null) {
             return;
         }
-        IDataStore ds = DataStoreFactory
-                .getDataStore(new File(this.pluginName));
+        PurgeRuleSet ruleSet = getPurgeRulesForPlugin(pluginName);
 
+        List<String> purgeKeys;
+        if (ruleSet == null || (purgeKeys = ruleSet.getKeys()) == null) {
+            purgeKeys = Collections.emptyList();
+        }
+
+        List<String> pathKeys = this.pathProvider.getKeyNames(pluginName);
+        if (pathKeys == null) {
+            pathKeys = Collections.emptyList();
+        }
+
+        /*
+         * Trim purgeKeys to the intersection with pathKeys. Since we will only
+         * be able to identify different subsets of orphaned data by their
+         * paths, purgeKeys must only contain values that are found in pathKeys.
+         * 
+         * If purgeKeys is empty, we'll use a single minRefTime for the whole
+         * plugin. Otherwise, different paths with have individual minRefTimes.
+         */
+        Iterator<String> iter = purgeKeys.iterator();
+        while (iter.hasNext()) {
+            if (!pathKeys.contains(iter.next())) {
+                iter.remove();
+            }
+        }
+
+        try {
+            String[][] distinctKeys = getDistinctProductKeyValues(purgeKeys);
+
+            Date bufferDate;
+            Map<String, Date> dateMap = new HashMap<>();
+            if (distinctKeys == null || distinctKeys.length == 0) {
+                bufferDate = getOrphanPurgeDate(null);
+                dateMap.put(pluginName, bufferDate);
+            } else {
+                Map<String, String> productKeys = new HashMap<>();
+                for (String[] vals : distinctKeys) {
+                    String pathRegex = HDF5Util.buildPathRegex(purgeKeys,
+                            pathKeys, vals, pluginName);
+                    for (int i = 0; i < purgeKeys.size(); i++) {
+                        productKeys.put(purgeKeys.get(i), vals[i]);
+                    }
+                    bufferDate = getOrphanPurgeDate(productKeys);
+                    dateMap.put(pathRegex, bufferDate);
+                    productKeys.clear();
+                }
+            }
+            IDataStore ds = DataStoreFactory.getDataStore(new File(
+                    this.pluginName));
+            ds.deleteOrphanData(dateMap);
+        } catch (StorageException | DataAccessLayerException e) {
+            throw new PluginException("Error occurred purging orphans. ", e);
+        }
+    }
+
+    /**
+     * Gets the oldest date for which to keep data when purging orphan data.
+     * This is the oldest known date (or current date if unknown) minus the
+     * configured buffer.
+     *
+     * @param productKeys
+     *            A map of product keys for the plugin. May be null.
+     * @return The date which any data older than should be purged.
+     * @throws PluginException
+     */
+    protected Date getOrphanPurgeDate(Map<String, String> productKeys)
+            throws PluginException {
         Date oldestDate;
         try {
-            oldestDate = this.getMinRefTime(null);
+            oldestDate = this.getMinRefTime(productKeys);
         } catch (DataAccessLayerException e) {
             throw new PluginException("Error retrieving known dates.", e);
         }
@@ -1246,17 +1313,12 @@ public abstract class PluginDao extends CoreDao {
         }
         cal.add(Calendar.DAY_OF_YEAR, -PURGE_ORPHAN_BUFFER_DAYS);
         Date bufferDate = cal.getTime();
-
-        try {
-            ds.deleteOrphanData(bufferDate);
-        } catch (StorageException e) {
-            throw new PluginException("Error occurred purging orphans. ", e);
-        }
+        return bufferDate;
     }
 
     /**
      * Gets the data store for the given object
-     * 
+     *
      * @param obj
      *            The object for which to get the data store
      * @return The data store
@@ -1276,9 +1338,9 @@ public abstract class PluginDao extends CoreDao {
      * Takes a list of IPersistable objects and return a map of IDataStore
      * objects and a list of IPersistable objects that are stored in that data
      * store.
-     * 
+     *
      * @param objs
-     *            A list of IPersistable objects to get their respsective data
+     *            A list of IPersistable objects to get their respective data
      *            stores.
      * @return
      */
@@ -1316,7 +1378,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets a list of the distinct product key values for this plugin.
-     * 
+     *
      * @param the
      *            keys to look up values for.
      * @return 2 dimensional array of distinct values for the given keys. First
@@ -1377,7 +1439,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets all distinct reference times for this plugin
-     * 
+     *
      * @param productKey
      *            The product key to get the list of reference times for
      * @return A list of distinct reference times for the given productKey
@@ -1394,7 +1456,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets all distinct reference times for the given productKey
-     * 
+     *
      * @param productKeys
      *            The product key/values to get the list of reference times for.
      *            Should be in key value pairs.
@@ -1424,7 +1486,7 @@ public abstract class PluginDao extends CoreDao {
      * data associated with the productKeys. Hdf5 must be purged separately as
      * most hdf5 files can't be purged with a single reference time. Use the
      * passed map to track what needs to be done with hdf5.
-     * 
+     *
      * @param refTime
      *            The reftime to delete data for. A null will purge all data for
      *            the productKeys.
@@ -1491,7 +1553,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Purge HDF5 data for a list of PDOs. Extracted as is from
      * {@link #purgeDataByRefTime} so it can be reused.
-     * 
+     *
      * @param trackToUri
      *            If true will track each URI that needs to be deleted from
      *            HDF5, if false will only track the hdf5 files that need to be
@@ -1543,7 +1605,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Purges the HDF5 data according to the provided time and key.
-     * 
+     *
      * @param refTime
      *            The time to delete
      * @param productKey
@@ -1565,7 +1627,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the maximum reference time contained in the database for the given
      * key. The key corresponds to the productKey field in the data object.
-     * 
+     *
      * @param productKeys
      *            The product keys to get the maximum reference time for. Should
      *            be in key value pairs.
@@ -1598,7 +1660,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the maximum insert time contained in the database for the given key.
      * The key corresponds to the productKey field in the data object.
-     * 
+     *
      * @param productKey
      *            The key for which to get the maximum insert time
      * @return Null if this key was not found, else the maximum insert time
@@ -1631,7 +1693,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the minimum insert time contained in the database for the given
      * keys. The keys corresponds to the productKey fields in the data object.
-     * 
+     *
      * @param productKeys
      *            The product keys to get the minimum insert time for. Should be
      *            in key value pairs.
@@ -1672,7 +1734,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Gets the minimum reference time contained in the database for the given
      * key. The key corresponds to the productKey field in the data object.
-     * 
+     *
      * @param productKeys
      *            The product keys to get the minimum reference times for.
      *            Should be in key value pairs.
@@ -1704,7 +1766,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Breaks the product key into key value pairs.
-     * 
+     *
      * @param productKey
      *            The product key to break apart into pairs
      * @return The product key/value pairs
@@ -1727,7 +1789,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Gets the path to the HDF5 file based on the provided product key
-     * 
+     *
      * @param productKey
      *            The product key for which to generate the path to the hdf5
      *            file
@@ -1750,7 +1812,7 @@ public abstract class PluginDao extends CoreDao {
 
     /**
      * Deletes an object from the database
-     * 
+     *
      * @param obj
      *            The object to delete
      */

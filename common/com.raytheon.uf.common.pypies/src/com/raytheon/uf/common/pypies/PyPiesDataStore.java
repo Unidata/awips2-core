@@ -78,6 +78,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Nov 14, 2013  2393      bclement    removed interpolation
  * Jul 30, 2015  1574      nabowle     Add #deleteOrphanData(Date[])
  * Jan 27, 2016  5170      tjensen     Added logging of stats to doSendRequests
+ * Feb 24, 2016  5389      nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
  * 
  * </pre>
  * 
@@ -342,7 +343,7 @@ public class PyPiesDataStore implements IDataStore {
      * By default this method simply passes the request to
      * sendRequest(AbstractRequest). Method exists to be overridden for
      * implementations that cache data responses..
-     * 
+     *
      * @param obj
      * @return
      * @throws StorageException
@@ -451,13 +452,14 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public void deleteOrphanData(Date oldestDate) throws StorageException {
-        if (oldestDate == null) {
+    public void deleteOrphanData(Map<String, Date> oldestDateMap)
+            throws StorageException {
+        if (oldestDateMap == null || oldestDateMap.isEmpty()) {
             return;
         }
 
         DeleteOrphansRequest req = new DeleteOrphansRequest(filename,
-                oldestDate);
+                oldestDateMap);
         FileActionResponse resp = (FileActionResponse) sendRequest(req);
 
         String[] failed = resp.getFailedFiles();

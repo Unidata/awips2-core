@@ -29,7 +29,7 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
 
 /**
  * Defines the interface for operating against a hierarchical datastore
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
@@ -44,9 +44,10 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  * Nov 14, 2013  2393     bclement    removed interpolation
  * Nov 20, 2014  3853     njensen     Deprecated OVERWRITE StoreOp
  * Jul 30, 2015  1574     nabowle     Add #deleteOrphanData(Date)
- * 
+ * Feb 24, 2016  5389     nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
+ *
  * </pre>
- * 
+ *
  * @author chammack
  * @version 1.0
  */
@@ -295,12 +296,21 @@ public interface IDataStore {
 
     /**
      * Deletes orphaned data.
+     * 
+     * @param dateMap
+     *            A map of the oldest dates which should be kept for distinct
+     *            subsets of the plugin's data identified by the keys of this
+     *            map.
      *
-     * @param oldestDate
-     *            The oldest date which should be kept. Anything older than this
-     *            date will be deleted.
+     *            For each entry in this map, any data that matches the key will
+     *            be deleted if it is older than the mapped Date .
+     *
+     *            The plugin name should be used to specify a single date for
+     *            the plugin's entire set of data if specific dates do not
+     *            apply.
      * @throws StorageException
      *             if any orphan data failed to be deleted.
      */
-    public void deleteOrphanData(Date oldestDate) throws StorageException;
+    public void deleteOrphanData(Map<String, Date> dateMap)
+            throws StorageException;
 }
