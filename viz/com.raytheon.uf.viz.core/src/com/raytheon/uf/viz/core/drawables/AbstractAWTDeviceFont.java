@@ -41,7 +41,7 @@ import org.eclipse.swt.graphics.Point;
  * ------------ ---------- ----------- --------------------------
  * Nov 04, 2015   #5070    randerso    Initial creation
  * Feb 08, 2016   #5318    randerso    Translate generic font aliases to 
- *                                     AWT font families
+ *                                     AWT font families, code cleanup
  * 
  * </pre>
  * 
@@ -115,13 +115,13 @@ public abstract class AbstractAWTDeviceFont implements IFont {
      *            device dpi in dots/inch
      * @return
      */
-    private static Font deriveFont(Font font, float size, int style, Point dpi) {
+    private Font deriveFont(Font font, float size, int style, Point dpi) {
         /*
          * By default AWT assumes 1 point per pixel or 72 dpi so we need to
          * scale to the actual device dpi
          */
-        double sx = (dpi.x) / 72.0;
-        double sy = (dpi.y) / 72.0;
+        double sx = dpi.x / 72.0;
+        double sy = dpi.y / 72.0;
         AffineTransform transform = AffineTransform.getScaleInstance(sx, sy);
 
         return font.deriveFont(size).deriveFont(style, transform);
@@ -142,8 +142,8 @@ public abstract class AbstractAWTDeviceFont implements IFont {
      *            array of font styles
      * @return
      */
-    protected static Font createFont(Point dpi, File fontFile,
-            FontType fontType, float fontSize, Style[] styles) {
+    protected Font createFont(Point dpi, File fontFile, FontType fontType,
+            float fontSize, Style[] styles) {
         try {
             Font font = Font.createFont(toAwtFontType(fontType), fontFile);
 
@@ -166,7 +166,7 @@ public abstract class AbstractAWTDeviceFont implements IFont {
      *            font size in points (72 points/inch)
      * @return
      */
-    private static Font createFont(Point dpi, String fontName, int awtStyle,
+    private Font createFont(Point dpi, String fontName, int awtStyle,
             float fontSize) {
         Font font = new Font(toAwtFontName(fontName), Font.PLAIN, 1);
 
@@ -179,10 +179,10 @@ public abstract class AbstractAWTDeviceFont implements IFont {
      * @param fontName
      * @return
      */
-    protected static String toAwtFontName(String fontName) {
-        if (fontName.equals("Monospace")) {
+    protected String toAwtFontName(String fontName) {
+        if ("Monospace".equals(fontName)) {
             return "Monospaced";
-        } else if (fontName.equals("Sans")) {
+        } else if ("Sans".equals(fontName)) {
             return "SansSerif";
         }
 
@@ -194,7 +194,7 @@ public abstract class AbstractAWTDeviceFont implements IFont {
         return fontName;
     }
 
-    protected static int toAwtFontType(FontType type) {
+    protected int toAwtFontType(FontType type) {
         switch (type) {
         case TYPE1:
             return Font.TYPE1_FONT;
@@ -204,9 +204,9 @@ public abstract class AbstractAWTDeviceFont implements IFont {
         }
     }
 
-    protected static int toAwtStyle(Style[] styles) {
+    protected int toAwtStyle(Style[] styles) {
         int styleInt = Font.PLAIN;
-        if ((styles == null) || (styles.length == 0)) {
+        if (styles == null || styles.length == 0) {
             return styleInt;
         }
         for (Style style : styles) {
@@ -219,7 +219,7 @@ public abstract class AbstractAWTDeviceFont implements IFont {
         return styleInt;
     }
 
-    protected static Style[] toVizStyles(int style) {
+    protected Style[] toVizStyles(int style) {
         List<Style> styles = new ArrayList<Style>();
         if ((style & Font.BOLD) != 0) {
             styles.add(Style.BOLD);
