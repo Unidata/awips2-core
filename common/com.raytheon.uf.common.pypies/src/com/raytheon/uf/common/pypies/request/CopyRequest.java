@@ -24,7 +24,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * TODO Add Description
+ * Request to copy an hdf5 file to another location. Useful for archive / back
+ * up scenarios. Can optionally repack the file as part of the copy.
  * 
  * <pre>
  * 
@@ -33,6 +34,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 17, 2012            rjpeter     Initial creation
+ * Feb 29, 2016 5420       tgurney     Remove timestampCheck field
  * 
  * </pre>
  * 
@@ -50,9 +52,6 @@ public class CopyRequest extends AbstractRequest {
 
     @DynamicSerializeElement
     private String outputDir;
-
-    @DynamicSerializeElement
-    private String timestampCheck;
 
     @DynamicSerializeElement
     private int minMillisSinceLastChange;
@@ -103,21 +102,6 @@ public class CopyRequest extends AbstractRequest {
      */
     public void setOutputDir(String outputDir) {
         this.outputDir = outputDir;
-    }
-
-    /**
-     * @return the timestampCheck
-     */
-    public String getTimestampCheck() {
-        return timestampCheck;
-    }
-
-    /**
-     * @param timestampCheck
-     *            the timestampCheck to set
-     */
-    public void setTimestampCheck(String timestampCheck) {
-        this.timestampCheck = timestampCheck;
     }
 
     /**
