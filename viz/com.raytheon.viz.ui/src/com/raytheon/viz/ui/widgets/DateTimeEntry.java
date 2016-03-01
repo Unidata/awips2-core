@@ -40,7 +40,7 @@ import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.viz.ui.UiPlugin;
-import com.raytheon.viz.ui.dialogs.AwipsCalendar;
+import com.raytheon.viz.ui.dialogs.CalendarDialog;
 
 /**
  * Date/Time entry widget with read-only text and button to pop up and editable
@@ -53,7 +53,8 @@ import com.raytheon.viz.ui.dialogs.AwipsCalendar;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 6, 2012             randerso    Initial creation
- * Apr 9, 2013      #1860  randerso    Fix image disposed issued on Windows
+ * Apr 9, 2013  1860       randerso    Fix image disposed issued on Windows
+ * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
  * 
  * </pre>
  * 
@@ -127,7 +128,7 @@ public class DateTimeEntry extends Composite {
             @Override
             public void widgetSelected(SelectionEvent e) {
                 int fieldCount = getFieldCount();
-                AwipsCalendar dlg = new AwipsCalendar(getShell(), date,
+                CalendarDialog dlg = new CalendarDialog(getShell(), date,
                         fieldCount);
                 dlg.setTimeZone(sdf.getTimeZone());
                 Date selectedDate = (Date) dlg.open();
@@ -208,11 +209,6 @@ public class DateTimeEntry extends Composite {
         return this.date;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.swt.widgets.Control#setEnabled(boolean)
-     */
     @Override
     public void setEnabled(boolean enabled) {
         super.setEnabled(enabled);

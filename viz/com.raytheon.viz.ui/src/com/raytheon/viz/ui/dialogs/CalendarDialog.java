@@ -51,6 +51,7 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * Jan 9, 2012             mpduff      Initial creation
  * Mar 24, 2014 #1426      lvenable    Removed unnecessary code, cleaned up code.
  * Jan 15, 2016 #5054      randerso    Change to subclass CaveSWTDialog
+ * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
  * 
  * </pre>
  * 
@@ -58,7 +59,7 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * @version 1.0
  */
 
-public class AwipsCalendar extends CaveSWTDialog {
+public class CalendarDialog extends CaveSWTDialog {
 
     /** The date selection calendar widget */
     private DateTime calendar;
@@ -77,7 +78,7 @@ public class AwipsCalendar extends CaveSWTDialog {
      * 
      * @param parentShell
      */
-    public AwipsCalendar(Shell parentShell) {
+    public CalendarDialog(Shell parentShell) {
         this(parentShell, null, 0);
     }
 
@@ -95,7 +96,7 @@ public class AwipsCalendar extends CaveSWTDialog {
      *   3 - display hours, minutes, and seconds
      * </pre>
      */
-    public AwipsCalendar(Shell parentShell, int timeFieldCount) {
+    public CalendarDialog(Shell parentShell, int timeFieldCount) {
         this(parentShell, null, timeFieldCount);
     }
 
@@ -115,7 +116,7 @@ public class AwipsCalendar extends CaveSWTDialog {
      *   3 - display hours, minutes, and seconds
      * </pre>
      */
-    public AwipsCalendar(Shell parentShell, Date d, int timeFieldCount) {
+    public CalendarDialog(Shell parentShell, Date d, int timeFieldCount) {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Calendar");
         this.date = d;
@@ -146,13 +147,6 @@ public class AwipsCalendar extends CaveSWTDialog {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveSWTDialogBase#initializeComponents(org
-     * .eclipse.swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
 
@@ -262,7 +256,7 @@ public class AwipsCalendar extends CaveSWTDialog {
      * @param args
      */
     public static void main(String[] args) {
-        AwipsCalendar ac = new AwipsCalendar(new Shell(), 0);
+        CalendarDialog ac = new CalendarDialog(new Shell(), 0);
         ac.setTimeZone(TimeZone.getDefault());
         Date date = (Date) ac.open();
         if (date == null) {
