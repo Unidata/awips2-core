@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common Plug-in
 Bundle-SymbolicName: com.raytheon.edex.common
-Bundle-Version: 1.15.1.qualifier
+Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
 Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.db.dao,
@@ -13,7 +13,6 @@ Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.msg,
  com.raytheon.edex.plugin,
  com.raytheon.edex.site,
- com.raytheon.edex.subscription,
  com.raytheon.edex.urifilter,
  com.raytheon.edex.util,
  com.raytheon.edex.utility

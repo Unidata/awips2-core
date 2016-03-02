@@ -20,7 +20,9 @@
 
 package com.raytheon.uf.common.util;
 
-import java.io.ByteArrayOutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
@@ -36,7 +38,6 @@ import java.util.List;
 import java.util.regex.Pattern;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 
 /**
  * Contains common file utilities. Methods are generally static to use without a
@@ -66,6 +67,7 @@ import java.util.zip.GZIPOutputStream;
  *                                     to improve memory utilization
  * Aug 07, 2014 3502       bclement    added copy(), deprecated getFileModifiedWatcher()
  * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ * Mar 02, 2016 5432       bkowal      Deprecated methods now implemented by the JDK.
  * 
  * </pre>
  * 
@@ -133,7 +135,7 @@ public class FileUtil {
     public static List<File> listFiles(File directory, FilenameFilter filter,
             boolean recurse) {
         // List of files / directories
-        ArrayList<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
 
         // Get files / directories in the directory
         File[] entries = directory.listFiles();
@@ -174,7 +176,7 @@ public class FileUtil {
     public static List<File> listDirFiles(File directory, FileFilter filter,
             boolean recurse) {
         // List of files / directories
-        List<File> files = new ArrayList<File>();
+        List<File> files = new ArrayList<>();
 
         // Get files / directories in the directory accepted by the filter.
         File[] entries = directory.listFiles(filter);
@@ -256,7 +258,8 @@ public class FileUtil {
                         file));
             }
         } else {
-            copyFile(source, destination);
+            Files.copy(Paths.get(source.getAbsolutePath()),
+                    Paths.get(destination.getAbsolutePath()));
         }
     }
 
@@ -370,6 +373,10 @@ public class FileUtil {
      *            file to be read
      * @return string containing the file contents
      * @throws IOException
+     * @deprecated use
+     *             {@link Files#readAllLines(Path, java.nio.charset.Charset)}
+     *             and it will no longer be necessary to split the contents by
+     *             newline. This method is currently only used in one place.
      */
     public static String file2String(File file) throws IOException {
         return new String(file2bytes(file));
@@ -382,57 +389,15 @@ public class FileUtil {
      *            The file data to convert
      * @return An array of bytes that represent the file data
      * @throws IOException
+     * @deprecated use {@link Files#readAllBytes(java.nio.file.Path)}.
      */
+    @Deprecated
     public static byte[] file2bytes(File file) throws IOException {
-        InputStream is = null;
-        byte[] bytes = null;
-
-        try {
-            is = new FileInputStream(file);
-
-            // Get the size of the file
-            long length = file.length();
-
-            // You cannot create an array using a long type.
-            // It needs to be an int type.
-            // Before converting to an int type, check
-            // to ensure that file is not larger than Integer.MAX_VALUE.
-            if (length > Integer.MAX_VALUE) {
-                // File is too large
-            }
-
-            // Create the byte array to hold the data
-            bytes = new byte[(int) length];
-
-            // Read in the bytes
-            int offset = 0;
-            int numRead = 0;
-            while ((offset < bytes.length)
-                    && ((numRead = is
-                            .read(bytes, offset, bytes.length - offset)) >= 0)) {
-                offset += numRead;
-            }
-
-            // Ensure all the bytes have been read in
-            if (offset < bytes.length) {
-                throw new IOException("Could not completely read file "
-                        + file.getName());
-            }
-        } finally {
-            if (is != null) {
-                try {
-                    is.close();
-                } catch (IOException e1) {
-                    // ignore
-                }
-            }
-        }
-
-        return bytes;
+        return Files.readAllBytes(Paths.get(file.getAbsolutePath()));
     }
 
     /**
-     * Converts the contents of a file to a byte array
+     * Converts the contents of a compressed file to a byte array
      * 
      * @param file
      *            The file data to convert
@@ -441,7 +406,7 @@ public class FileUtil {
      * @return An array of bytes that represent the file data
      * @throws IOException
      */
-    public static byte[] file2bytes(File file, boolean compressed)
+    public static byte[] readCompressedFileAsBytes(File file)
             throws IOException {
         InputStream is = null;
         byte[] bytes = null;
@@ -459,50 +424,30 @@ public class FileUtil {
             }
 
             is = new FileInputStream(file);
-            if (compressed) {
-                int bufferSize = 8 * 1024;
-                if (bufferSize < length) {
-                    bufferSize = (int) length;
-                }
+            int bufferSize = 8 * 1024;
+            if (bufferSize < length) {
+                bufferSize = (int) length;
+            }
 
-                // set GZIP input stream to size of file on disk.
-                is = new GZIPInputStream(is, (int) length);
-                PooledByteArrayOutputStream baos = null;
-                try {
-                    baos = ByteArrayOutputStreamPool.getInstance().getStream();
-                    bytes = new byte[bufferSize];
-                    int numRead = 0;
-                    while ((numRead = is.read(bytes)) >= 0) {
-                        baos.write(bytes, 0, numRead);
-                    }
-
-                    bytes = baos.toByteArray();
-                } finally {
-                    if (baos != null) {
-                        try {
-                            baos.close();
-                        } catch (Exception e) {
-                            // ignore
-                        }
-                    }
-                }
-            } else {
-                // Create the byte array to hold the data
-                bytes = new byte[(int) length];
-
-                // Read in the bytes
-                int offset = 0;
+            // set GZIP input stream to size of file on disk.
+            is = new GZIPInputStream(is, (int) length);
+            PooledByteArrayOutputStream baos = null;
+            try {
+                baos = ByteArrayOutputStreamPool.getInstance().getStream();
+                bytes = new byte[bufferSize];
                 int numRead = 0;
-                while ((offset < bytes.length)
-                        && ((numRead = is.read(bytes, offset, bytes.length
-                                - offset)) >= 0)) {
-                    offset += numRead;
+                while ((numRead = is.read(bytes)) >= 0) {
+                    baos.write(bytes, 0, numRead);
                 }
 
-                // Ensure all the bytes have been read in
-                if (offset < bytes.length) {
-                    throw new IOException("Could not completely read file "
-                            + file.getName());
+                bytes = baos.toByteArray();
+            } finally {
+                if (baos != null) {
+                    try {
+                        baos.close();
+                    } catch (Exception e) {
+                        // ignore
+                    }
                 }
             }
         } finally {
@@ -526,7 +471,11 @@ public class FileUtil {
      * @param outFile
      *            The file to write this data
      * @throws IOException
+     * @deprecated use
+     *             {@link Files#write(java.nio.file.Path, byte[], java.nio.file.OpenOption...)}
+     *             .
      */
+    @Deprecated
     public static void bytes2File(byte[] outBytes, File outFile)
             throws IOException {
         bytes2File(outBytes, outFile, false);
@@ -660,24 +609,6 @@ public class FileUtil {
     }
 
     /**
-     * Write the contents of an input stream to a file.
-     * 
-     * @param is
-     *            the input stream to read from
-     * @param file
-     *            the file to write to
-     * @throws IOException
-     */
-    public static void write(InputStream is, File file) throws IOException {
-        ByteArrayOutputStream os = new ByteArrayOutputStream();
-
-        int read = 0;
-        while ((read = is.read()) != -1) {
-            os.write(read);
-        }
-    }
-
-    /**
      * Copy a file to another file.
      * 
      * @param source
@@ -689,7 +620,11 @@ public class FileUtil {
      *             An error occurred while copying the data.
      * @throws IllegalArgumentException
      *             Either the source or target file references are null.
+     * @deprecated use
+     *             {@link Files#copy(java.nio.file.Path, java.nio.file.Path, java.nio.file.CopyOption...)}
+     *             .
      */
+    @Deprecated
     public static void copyFile(File source, File destination)
             throws IOException {
 
