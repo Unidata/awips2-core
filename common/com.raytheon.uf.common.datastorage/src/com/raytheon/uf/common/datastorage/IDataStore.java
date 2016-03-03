@@ -45,6 +45,7 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  * Nov 20, 2014  3853     njensen     Deprecated OVERWRITE StoreOp
  * Jul 30, 2015  1574     nabowle     Add #deleteOrphanData(Date)
  * Feb 24, 2016  5389     nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
+ * Feb 29, 2016  5420     tgurney     Remove timestampCheck arg from copy()
  *
  * </pre>
  *
@@ -271,14 +272,6 @@ public interface IDataStore {
      * @param compression
      *            If specified will repack the output file with a given
      *            compression
-     * @param timestampCheck
-     *            if not null, the attribute to check on the file for a
-     *            timestamp of the last time this particular action was run.
-     *            e.g. "lastRepacked" or "lastArchived". if set, this attribute
-     *            will be set on the file when the request is made, and then
-     *            future requests for the same file will check this attribute
-     *            and if the file has not been modified since last run, the file
-     *            will be skipped.
      * @param minMillisSinceLastChange
      *            if greater than 0, the last modified time on the file cannot
      *            be within minMillisSinceLastChange from current time. This is
@@ -291,8 +284,8 @@ public interface IDataStore {
      *            threshold.
      */
     public void copy(String outputDir, Compression compression,
-            String timestampCheck, int minMillisSinceLastChange,
-            int maxMillisSinceLastChange) throws StorageException;
+            int minMillisSinceLastChange, int maxMillisSinceLastChange)
+            throws StorageException;
 
     /**
      * Deletes orphaned data.

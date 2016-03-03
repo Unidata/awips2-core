@@ -79,6 +79,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Jul 30, 2015  1574      nabowle     Add #deleteOrphanData(Date[])
  * Jan 27, 2016  5170      tjensen     Added logging of stats to doSendRequests
  * Feb 24, 2016  5389      nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
+ * Feb 29, 2016  5420      tgurney     Remove timestampCheck arg from copy()
  * 
  * </pre>
  * 
@@ -421,7 +422,7 @@ public class PyPiesDataStore implements IDataStore {
 
     @Override
     public void copy(final String outputDir, final Compression compression,
-            final String timestampCheck, final int minMillisSinceLastChange,
+            final int minMillisSinceLastChange,
             final int maxMillisSinceLastChange) throws StorageException {
         CopyRequest req = new CopyRequest();
         req.setFilename(this.filename);
@@ -432,7 +433,6 @@ public class PyPiesDataStore implements IDataStore {
             req.setRepack(false);
         }
         req.setOutputDir(outputDir);
-        req.setTimestampCheck(timestampCheck);
         req.setMinMillisSinceLastChange(minMillisSinceLastChange);
         FileActionResponse resp = (FileActionResponse) sendRequest(req);
 
