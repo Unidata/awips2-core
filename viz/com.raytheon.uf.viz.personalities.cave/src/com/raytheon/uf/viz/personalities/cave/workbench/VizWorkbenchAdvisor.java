@@ -64,6 +64,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                       to plugin.xml using activities
  * Jan 05, 2016 5193        bsteffen    Activate viz perspective after startup.
  * Jan 14, 2016 5192        njensen     Remove jdt, debug, and team commands
+ * Mar 04, 2016 5267        bsteffen    Let eclipse close nonrestorable views.
  * 
  * </pre>
  * 
@@ -72,14 +73,12 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  */
 public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
 
-    protected CloseNonRestorableDetachedViewsListener detachedViewsListener;
-
     private boolean createdMenus = false;
 
     protected ITimer startupTimer;
 
     public VizWorkbenchAdvisor() {
-        detachedViewsListener = new CloseNonRestorableDetachedViewsListener();
+
     }
 
     /*
@@ -283,9 +282,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         if (bResult) {
             System.out
                     .println("VizWorkbenchAdvisor: User exiting CAVE, shutdown initiated");
-
-            // close all non-restorable detached views
-            detachedViewsListener.handleEvent(null);
         }
 
         return bResult;
