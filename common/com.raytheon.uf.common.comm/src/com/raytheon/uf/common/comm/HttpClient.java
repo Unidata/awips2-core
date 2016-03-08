@@ -106,6 +106,7 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * Dec 04, 2015  4834        njensen     Support authorization on http requests too
  * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse
  * Jan 27, 2016  5070        tjensen     Added comment noting stats stored here but logged elsewhere
+ * Feb 22, 2016  5306        njensen     Get new HttpClientContext if host or port change
  * 
  * </pre>
  * 
@@ -979,6 +980,18 @@ public class HttpClient {
     private HttpClientContext getHttpClientContext(String protocol,
             String host, int port) {
         HttpClientContext context = httpClientContext.get();
+        HttpHost targetHost = context.getTargetHost();
+        if (targetHost == null || !host.equals(targetHost.getHostName())
+                || port != targetHost.getPort()) {
+            /*
+             * the host name or port changed, this can lead to strange
+             * assumptions on the part of the apache httpclient, just get a new
+             * context to try and avoid that mess
+             */
+            context = HttpClientContext.create();
+            httpsContext.set(context);
+        }
+        
         CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (context.getCredentialsProvider() != credentialsProvider) {
             context.setCredentialsProvider(credentialsProvider);
