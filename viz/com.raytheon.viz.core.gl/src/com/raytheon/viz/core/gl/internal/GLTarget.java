@@ -155,6 +155,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Jan 26, 2015  3974     njensen     Always tesselate shaded shapes so concave shapes draw correctly
  * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
  * Nov 04, 2015  5070     randerso    Added DPI font scaling
+ * Mar 08, 2016  5318     randerso    Removed unnecssary rounding of font size
  * 
  * </pre>
  * 
@@ -176,7 +177,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * 
      * 80% of width in pixels / dots per inch (dpi)
      */
-    protected static final double FONT_SCALING_BASIS = 0.8 * 1280 / 85;
+    protected static final double FONT_SCALING_BASIS = (0.8 * 1280) / 85;
 
     /**
      * Minimum font scaling limit
@@ -890,7 +891,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         double ratio = 1.0;
         if (font.isScaleFont()) {
             double basis = FONT_SCALING_BASIS * dpi.x;
-            ratio = (paneWidth / basis);
+            ratio = paneWidth / basis;
         }
 
         /*
@@ -1110,7 +1111,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public IFont initializeFont(String fontName, float size, Style[] styles) {
-        return new GLFont(this.dpi, fontName, Math.round(size), styles);
+        return new GLFont(this.dpi, fontName, size, styles);
     }
 
     /*
@@ -1613,7 +1614,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                     endAzm += 360.0;
                 }
 
-                double totalAzimuth = (endAzm - startAzm);
+                double totalAzimuth = endAzm - startAzm;
                 boolean includeSides = circle.includeSides && !fill
                         && (totalAzimuth < 360.0);
 
