@@ -48,6 +48,7 @@ import org.opengis.referencing.operation.TransformException;
  *                                    for mercator projections
  * Feb 27, 2014  2791     bsteffen    Remove Unnecessary catch
  * May 14, 2015  4079     bsteffen    Move to core.grid
+ * Jan 04, 2016  5220     bsteffen    Reset points when exceptions occur.
  * 
  * </pre>
  * 
@@ -153,11 +154,17 @@ public class GridCellLocationCache {
                 try {
                     grid2grid.transform(result, 0, result, 0, xDim * yDim);
                 } catch (TransformException e1) {
-                    // Set values to NaN when fail transform
                     for (int i = 0; i < result.length; i += 2) {
+                        /*
+                         * The bulk transform may have changed some values
+                         * before failing so reset each point before conversion.
+                         */
+                        result[i] = (i / 2) / yDim;
+                        result[i + 1] = (i / 2) % yDim;
                         try {
                             grid2grid.transform(result, i, result, i, 1);
                         } catch (TransformException e2) {
+                            /* Set values to NaN when fail transform */
                             result[i] = Float.NaN;
                             result[i + 1] = Float.NaN;
                         }
