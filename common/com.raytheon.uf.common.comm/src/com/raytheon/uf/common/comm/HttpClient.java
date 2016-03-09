@@ -989,7 +989,7 @@ public class HttpClient {
              * context to try and avoid that mess
              */
             context = HttpClientContext.create();
-            httpsContext.set(context);
+            httpClientContext.set(context);
         }
         
         CredentialsProvider credentialsProvider = credentialsMap.get(host);
