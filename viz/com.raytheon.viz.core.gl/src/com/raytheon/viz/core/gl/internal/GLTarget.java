@@ -156,6 +156,7 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
  * Nov 04, 2015  5070     randerso    Added DPI font scaling
  * Jan 20, 2016  5274     randerso    Increased size of POINT to 2x2 pixels
+ * Mar 08, 2016  5318     randerso    Removed unnecssary rounding of font size
  * 
  * </pre>
  * 
@@ -891,7 +892,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         double ratio = 1.0;
         if (font.isScaleFont()) {
             double basis = FONT_SCALING_BASIS * dpi.x;
-            ratio = (paneWidth / basis);
+            ratio = paneWidth / basis;
         }
 
         /*
@@ -1111,7 +1112,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public IFont initializeFont(String fontName, float size, Style[] styles) {
-        return new GLFont(this.dpi, fontName, Math.round(size), styles);
+        return new GLFont(this.dpi, fontName, size, styles);
     }
 
     /*
@@ -1614,7 +1615,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                     endAzm += 360.0;
                 }
 
-                double totalAzimuth = (endAzm - startAzm);
+                double totalAzimuth = endAzm - startAzm;
                 boolean includeSides = circle.includeSides && !fill
                         && (totalAzimuth < 360.0);
 

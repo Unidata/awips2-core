@@ -88,6 +88,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Feb 01, 2016  4834     njensen     Handle null colormap name
  * Feb 04, 2016  5301     tgurney     Fix undo, redo and revert behavior, plus general cleanup
  * Feb 17, 2016  5331     tgurney     Make undo() restore original colormap name when appropriate
+ * Mar 02, 2016  4834     bsteffen    Save sets the current name correctly.
  * 
  * </pre>
  * 
@@ -826,14 +827,24 @@ public class ColorEditDialog extends CaveSWTDialog implements
     /**
      * Resets the colorbar to an initial state with the newly saved data
      */
-    private void completeSave() {
+    private void completeSave(LocalizationLevel level) {
         colorEditComp.getColorBar().updateRevertToCurrent();
         colorEditComp.getColorBar().revertColorBar();
         undoBtn.setEnabled(false);
         redoBtn.setEnabled(false);
+        if (level == LocalizationLevel.BASE) {
+            cap.getColorMapParameters().setColorMapName(currentColormapName);
+        } else {
+            IPathManager pathManager = PathManagerFactory.getPathManager();
+            LocalizationContext context = pathManager.getContext(
+                    LocalizationType.COMMON_STATIC, level);
+            String fullName = level.toString() + IPathManager.SEPARATOR
+                    + context.getContextName() + IPathManager.SEPARATOR
+                    + currentColormapName;
+            cap.getColorMapParameters().setColorMapName(fullName);
+        }
         saveBtn.setEnabled(true);
         deleteBtn.setEnabled(true);
-        cap.getColorMapParameters().setColorMapName(currentColormapName);
         cap.getColorMapParameters().setDirty(false);
         savedColormapName = currentColormapName;
         updateTitleText();
@@ -878,7 +889,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof String) {
                         currentColormapName = (String) returnValue;
-                        completeSave();
+                        completeSave(LocalizationLevel.SITE);
 
                     }
                 }
@@ -900,7 +911,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof String) {
                         currentColormapName = (String) returnValue;
-                        completeSave();
+                        completeSave(LocalizationLevel.USER);
                     }
                 }
             });
@@ -919,7 +930,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
             statusHandler.error("Error saving colormap " + currentColormapName,
                     e);
         }
-        completeSave();
+        completeSave(LocalizationLevel.USER);
     }
 
     private void revert() {
