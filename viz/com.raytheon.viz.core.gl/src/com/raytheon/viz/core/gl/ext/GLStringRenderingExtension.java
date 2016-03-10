@@ -58,7 +58,6 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Sep 08, 2015  4824     bsteffen    Fix underline, overline, strikethrough.
  * Oct 16, 2015  4971     bsteffen    Preserve order of multiline strings when using BOTTOM alignment.
  * 
- * 
  * </pre>
  * 
  * @author bsteffen

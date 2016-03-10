@@ -78,19 +78,22 @@ import com.raytheon.uf.viz.datacube.DataCubeContainer;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Feb 10, 2009           chammack    Initial creation
- * Feb 26, 2009  2032     jsanchez    Added loadWithNoData condition.
- * Apr 06, 2011           njensen     Moved binning times to edex
- * Apr 13, 2011           njensen     Caching available times
- * Mar 29, 2013  1638     mschenke    Switched to create PDO from dataURI
- *                                    mapping instead of dataURI string
- * May 14, 2013  1869     bsteffen    Get dataURI map directly from PDO.
- * Sep  9, 2013  2277     mschenke    Got rid of ScriptCreator references
- * Jun 12, 2014  3265     bsteffen    Harden getLatestPluginDataObjects
- * Oct 24, 2014  3644     mapeters    Removed dataURI from constraint map
- *                                    in parseAlertMessage().
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 10, 2009  1959     chammack  Initial creation
+ * Feb 26, 2009  2032     jsanchez  Added loadWithNoData condition.
+ * Apr 06, 2011  8795     njensen   Moved binning times to edex
+ * Apr 13, 2011  8795     njensen   Caching available times
+ * Mar 29, 2013  1638     mschenke  Switched to create PDO from dataURI mapping
+ *                                  instead of dataURI string
+ * May 14, 2013  1869     bsteffen  Get dataURI map directly from PDO.
+ * Sep 09, 2013  2277     mschenke  Got rid of ScriptCreator references
+ * Jun 12, 2014  3265     bsteffen  Harden getLatestPluginDataObjects
+ * Oct 24, 2014  3644     mapeters  Removed dataURI from constraint map in
+ *                                  parseAlertMessage().
+ * Nov 04, 2015  5090     bsteffen  Make the time cache private and allow
+ *                                  override of the time query that is cached.
  * 
  * </pre>
  * 
@@ -108,7 +111,7 @@ public abstract class AbstractRequestableResourceData extends
     /**
      * if too many datatimes are used when requesting data Hibernate will throw
      * a stack overflow exception because of deep recursion. This value is used
-     * to break requests into more manageble chunks for Hibernate.
+     * to break requests into more manageable chunks for Hibernate.
      */
     private static int ENTRYTIMES_SLICE_SIZE = 500;
 
@@ -120,8 +123,7 @@ public abstract class AbstractRequestableResourceData extends
                 AbstractRequestableResourceData reqResourceData)
                 throws VizException {
             Object objectToSend = null;
-            Map<String, Object> attribs = new HashMap<String, Object>(
-                    message.decodedAlert);
+            Map<String, Object> attribs = new HashMap<>(message.decodedAlert);
 
             if (reqResourceData.isUpdatingOnMetadataOnly()) {
                 PluginDataObject record = RecordFactory.getInstance()
@@ -192,7 +194,7 @@ public abstract class AbstractRequestableResourceData extends
     @XmlElement
     protected AbstractAlertMessageParser alertParser = null;
 
-    protected List<DataTime> cachedAvailableTimes = new ArrayList<DataTime>();
+    private List<DataTime> cachedAvailableTimes = new ArrayList<>();
 
     private long cacheLastQueried = 0L;
 
@@ -204,14 +206,6 @@ public abstract class AbstractRequestableResourceData extends
         this.alertParser = alertParser;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#construct(com.raytheon
-     * .uf.viz.core.comm.LoadProperties,
-     * com.raytheon.uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public AbstractVizResource<?, ?> construct(LoadProperties loadProperties,
             IDescriptor descriptor) throws VizException {
@@ -285,13 +279,6 @@ public abstract class AbstractRequestableResourceData extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#update(java.lang.Object
-     * )
-     */
     @Override
     public void update(Object updateData) {
         Validate.isTrue(updateData instanceof Object[],
@@ -318,7 +305,7 @@ public abstract class AbstractRequestableResourceData extends
     }
 
     protected void update(AlertMessage... messages) {
-        List<Object> objectsToSend = new ArrayList<Object>(messages.length);
+        List<Object> objectsToSend = new ArrayList<>(messages.length);
         boolean consistentCache = true;
         for (AlertMessage message : messages) {
             try {
@@ -472,8 +459,7 @@ public abstract class AbstractRequestableResourceData extends
             statusHandler.handle(
                     Priority.VERBOSE,
                     "Resource contains unexpected null time: "
-                            + this.getClass(),
-                    new NullPointerException());
+                            + this.getClass(), new NullPointerException());
         }
 
         Set<DataTime> loadSet = new HashSet<DataTime>(Arrays.asList(desired));
@@ -514,13 +500,13 @@ public abstract class AbstractRequestableResourceData extends
 
         if (binOffset == null) {
             // Just ask for the data
-            selectedEntryTimes = new ArrayList<DataTime>(loadSet);
+            selectedEntryTimes = new ArrayList<>(loadSet);
         } else {
             // Find all the actual datatimes for the bins. TODO: Better way to
             // do this? Construct time range for each datatime in loadSet and
             // request data in that range?
             DataTime[] allDataTimes = getAvailableTimes(constraints, null);
-            List<DataTime> trueDataTimes = new ArrayList<DataTime>();
+            List<DataTime> trueDataTimes = new ArrayList<>();
 
             for (DataTime realDataTime : allDataTimes) {
                 if (loadSet.contains(binOffset.getNormalizedTime(realDataTime))) {
@@ -535,7 +521,7 @@ public abstract class AbstractRequestableResourceData extends
             selectedEntryTimes = trueDataTimes;
         }
 
-        ArrayList<PluginDataObject> responses = new ArrayList<PluginDataObject>(
+        ArrayList<PluginDataObject> responses = new ArrayList<>(
                 selectedEntryTimes.size());
 
         for (int i = 0; i < selectedEntryTimes.size(); i += ENTRYTIMES_SLICE_SIZE) {
@@ -580,7 +566,7 @@ public abstract class AbstractRequestableResourceData extends
      * @return
      */
     public DataTime[] filterTimes(DataTime[] times, DataTime filter) {
-        List<DataTime> validTimes = new ArrayList<DataTime>();
+        List<DataTime> validTimes = new ArrayList<>();
         for (DataTime time : times) {
             if (time.compareTo(filter) <= 0) {
                 validTimes.add(time);
@@ -601,7 +587,7 @@ public abstract class AbstractRequestableResourceData extends
      * @throws VizException
      *             if error occurs
      */
-    public static DataTime[] getAvailableTimes(
+    protected DataTime[] getAvailableTimes(
             Map<String, RequestConstraint> constraintMap, BinOffset binOffset)
             throws VizException {
         Validate.notNull(constraintMap);
@@ -676,11 +662,6 @@ public abstract class AbstractRequestableResourceData extends
         this.retrieveData = retrieveData;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -702,11 +683,6 @@ public abstract class AbstractRequestableResourceData extends
                 getAvailableTimes(), descriptor);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
 
