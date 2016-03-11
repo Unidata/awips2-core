@@ -39,11 +39,14 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.MathTransform;
 
 /**
- * Geostationary map projection. Earth as viewed from space. Based on
- * Coordination Group for Meteorological Satellites LRIT/HRIT Global
- * Specification
- * 
- * TODO Add support latitude of origin != 0.0
+ * Geostationary map projection. Earth as viewed from space. The canonical
+ * source for the equations is the GOES-R Product Definition
+ * Guide(http://www.goes-r.gov/products/docs/PUG-L2+-vol5.pdf). Support for
+ * sweep axis of 1.0 was created using equations based on Coordination Group for
+ * Meteorological Satellites LRIT/HRIT Global
+ * Specification(http://www.cgms-info.
+ * org/documents/cgms-lrit-hrit-global-specification
+ * -%28v2-8-of-30-oct-2013%29.pdf).
  * 
  * <pre>
  * 
@@ -55,6 +58,7 @@ import org.opengis.referencing.operation.MathTransform;
  * Oct 02, 2013  2333     mschenke    Converted from libproj to CGMS algorithm
  * Nov 18, 2013  2528     bsteffen    Add hashCode/equals.
  * Apr 14, 2015  4387     bsteffen    Fix the quadratic equation.
+ * Mar 15, 2016  5456     bsteffen    Fix swapped sweep axis.
  * 
  * </pre>
  * 
@@ -70,6 +74,13 @@ public class Geostationary extends MapProjection {
 
     public static final String ORBITAL_HEIGHT = "orbital_height";
 
+    /**
+     * This is commonly referred to as sweep_axis_angle in other geospatial
+     * libraries. A value of 0.0 is the default and indicates an x sweep angle
+     * axis as used by the GOES satellites. A value of 1.0 indicates a y sweep
+     * angle axis as used by the meteosat and himawari-8 satellites. All other
+     * values are undefined and will currently default to x.
+     */
     public static final String SWEEP_AXIS = "sweep_axis";
 
     static final double DEFAULT_PERSPECTIVE_HEIGHT = 35800000.0;
@@ -79,11 +90,11 @@ public class Geostationary extends MapProjection {
     private double perspectiveHeight;
 
     /**
-     * A discussion of the sweep axis can be found at
-     * http://trac.osgeo.org/proj/wiki/proj%3Dgeos This implementation has not
-     * been verified to work correctly when swapAxis is true.
+     * When this is false, sweep axis angle is x, when it is true sweep axis
+     * angle is y. A discussion of the sweep axis can be found at
+     * http://trac.osgeo.org/proj/wiki/proj%3Dgeos
      * */
-    private boolean swapAxis = false;
+    private boolean ySweepAxis = false;
 
     private double rEq, rEq2;
 
@@ -103,7 +114,7 @@ public class Geostationary extends MapProjection {
         this.orbitalHeight = Provider.getValue(Provider.ORBITAL_HEIGHT, values);
         this.perspectiveHeight = orbitalHeight + semiMajor;
         double sweepValue = Provider.getValue(Provider.SWEEP_AXIS, values);
-        this.swapAxis = sweepValue == 1.0;
+        this.ySweepAxis = sweepValue == 1.0;
 
         this.rEq = semiMajor;
         this.rEq2 = rEq * rEq;
@@ -114,12 +125,6 @@ public class Geostationary extends MapProjection {
         this.height_ratio = rEq / orbitalHeight;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.geotools.referencing.operation.projection.MapProjection#
-     * getParameterDescriptors()
-     */
     @Override
     public ParameterDescriptorGroup getParameterDescriptors() {
         return Provider.PARAMETERS;
@@ -131,16 +136,10 @@ public class Geostationary extends MapProjection {
         values.parameter(Provider.ORBITAL_HEIGHT.getName().getCode()).setValue(
                 orbitalHeight);
         values.parameter(Provider.SWEEP_AXIS.getName().getCode()).setValue(
-                swapAxis ? 1.0 : 0.0);
+                ySweepAxis ? 1.0 : 0.0);
         return values;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.geotools.referencing.operation.projection.MapProjection#
-     * inverseTransformNormalized(double, double, java.awt.geom.Point2D)
-     */
     @Override
     protected Point2D inverseTransformNormalized(double x, double y,
             Point2D ptDst) throws ProjectionException {
@@ -161,8 +160,17 @@ public class Geostationary extends MapProjection {
 
         double Vl = quadraticEquation(a, b, c);
         double Vx = Vl * cosX * cosY;
-        double Vy = Vl * sinX;
-        double Vz = Vl * sinY * cosX;
+
+        double Vy, Vz;
+        if (ySweepAxis) {
+            // HIMAWARI
+            Vy = Vl * sinX * cosY; 
+            Vz = Vl * sinY;
+        } else {
+            // GOESR
+            Vy = Vl * sinX; 
+            Vz = Vl * sinY * cosX; 
+        }
 
         double s1 = perspectiveHeight - Vx;
 
@@ -176,12 +184,6 @@ public class Geostationary extends MapProjection {
         return ptDst;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.geotools.referencing.operation.projection.MapProjection#
-     * transformNormalized(double, double, java.awt.geom.Point2D)
-     */
     @Override
     protected Point2D transformNormalized(double lam, double phi, Point2D ptDst)
             throws ProjectionException {
@@ -202,11 +204,12 @@ public class Geostationary extends MapProjection {
                 * Vz * Vz)) {
             x = y = Double.NaN;
         } else {
-            // Altered for x sweeping axis
-            if (swapAxis) {
+            if (ySweepAxis) {
+                // HIMAWARI
                 x = Math.atan(Vy / Vx);
                 y = Math.asin(Vz / Vn);
             } else {
+                // GOESR
                 x = Math.asin(Vy / Vn);
                 y = Math.atan(Vz / Vx);
             }
@@ -260,7 +263,7 @@ public class Geostationary extends MapProjection {
         long temp;
         temp = Double.doubleToLongBits(orbitalHeight);
         result = prime * result + (int) (temp ^ (temp >>> 32));
-        result = prime * result + (swapAxis ? 1231 : 1237);
+        result = prime * result + (ySweepAxis ? 1231 : 1237);
         return result;
     }
 
@@ -276,7 +279,7 @@ public class Geostationary extends MapProjection {
         if (Double.doubleToLongBits(orbitalHeight) != Double
                 .doubleToLongBits(other.orbitalHeight))
             return false;
-        if (swapAxis != other.swapAxis)
+        if (ySweepAxis != other.ySweepAxis)
             return false;
         return true;
     }
@@ -303,12 +306,6 @@ public class Geostationary extends MapProjection {
             super(PARAMETERS);
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see org.geotools.referencing.operation.MathTransformProvider#
-         * createMathTransform (org.opengis.parameter.ParameterValueGroup)
-         */
         @Override
         protected MathTransform createMathTransform(ParameterValueGroup values)
                 throws InvalidParameterNameException,
