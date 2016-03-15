@@ -31,6 +31,7 @@ package com.raytheon.uf.common.python;
  * ------------ ---------- ----------- --------------------------
  * Aug 22, 2013            mnash     Initial creation
  * Oct 30, 2013            mnash     Add method for searching for subclasses
+ * Mar 15, 2016 ASM #18621 D. Friedman Add getClassName method.
  * 
  * </pre>
  * 
@@ -46,5 +47,9 @@ public class PyJavaUtil {
 
     public static boolean isSubclass(Object obj, Class<?> clazz) {
         return clazz.isAssignableFrom(obj.getClass());
+    }
+
+    public static String getClassName(Object obj) {
+        return obj.getClass().getName();
     }
 }
