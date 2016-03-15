@@ -12,6 +12,10 @@ Label, Text, CTabFolder, CLabel, ToolBar, StatusLine {
     swt-selected-tabs-background: black black 100%;
 }
 
+.MPartSashContainer {
+    background-color: gray;
+}
+
 Slider {
     background-color: COLOR-WIDGET-BACKGROUND;
 }
