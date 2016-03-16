@@ -44,8 +44,9 @@ import org.eclipse.ui.services.IServiceLocator;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------
+ * ------------- -------- --------- -------------------------------
  * Jan 07, 2016  5190     bsteffen  Initial creation
+ * Mar 16, 2016  5190     bsteffen  Fix attaching the active part.
  *
  * </pre>
  *
@@ -115,11 +116,23 @@ public class DetachPart {
      */
     public static void attach(IWorkbenchPart workbenchPart) {
         IServiceLocator services = workbenchPart.getSite();
+        EPartService partService = services.getService(EPartService.class);
         MPart modelPart = services.getService(MPart.class);
+        if (partService.getActivePart() == modelPart) {
+            /*
+             * Moving the active part has problems because the call to showPart
+             * will not force the part to be visible if it is already active. To
+             * get around this force the partService to activate a different
+             * part by temporarily making the part invisible.
+             */
+            modelPart.setVisible(false);
+            partService.requestActivation();
+            modelPart.setVisible(true);
+        }
+
         MPlaceholder placeholder = modelPart.getCurSharedRef();
 
         placeholder.getParent().getChildren().remove(placeholder);
-        EPartService partService = services.getService(EPartService.class);
         partService.showPart(modelPart, PartState.ACTIVATE);
     }
 }
