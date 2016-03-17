@@ -27,6 +27,7 @@ import org.eclipse.e4.core.contexts.IEclipseContext;
 import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.di.UIEventTopic;
 import org.eclipse.e4.ui.model.application.ui.MContext;
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.MUILabel;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
@@ -54,6 +55,7 @@ import org.osgi.service.event.Event;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * Jan 07, 2016  5190     bsteffen  Initial creation
+ * Mar 17, 2016  5190     bsteffen  Fix toggle when entire stack is moved.
  *
  * </pre>
  *
@@ -133,10 +135,25 @@ public class FloatingWindowAddon {
     public void subscribeTopicSelected(
             @UIEventTopic(UIEvents.ElementContainer.TOPIC_SELECTEDELEMENT) Event event) {
         Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
-        if (!(element instanceof MPartStack)) {
+        MPartStack partStack = null;
+        /*
+         * Some drag events cause a single part to move to a new stack where
+         * other events cause an entire stack to move between a window and sash,
+         * try to detect both types of events.
+         */
+        if (element instanceof MPartStack) {
+            partStack = (MPartStack) element;
+        } else if (element instanceof MElementContainer) {
+            MElementContainer<?> container = (MElementContainer<?>) element;
+            element = container.getSelectedElement();
+            if (element instanceof MPartStack) {
+                partStack = (MPartStack) element;
+            } else {
+                return;
+            }
+        } else {
             return;
         }
-        MPartStack partStack = (MPartStack) element;
         MUIElement selected = partStack.getSelectedElement();
         if (selected instanceof MPlaceholder) {
             selected = ((MPlaceholder) selected).getRef();
