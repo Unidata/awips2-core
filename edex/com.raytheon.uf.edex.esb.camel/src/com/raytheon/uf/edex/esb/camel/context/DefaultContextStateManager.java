@@ -19,7 +19,11 @@
  **/
 package com.raytheon.uf.edex.esb.camel.context;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.List;
 import java.util.Set;
 
 import org.apache.camel.CamelContext;
@@ -40,6 +44,8 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
+ * Mar 21, 2016 3290       tgurney     Enforce startup order on manual route
+ *                                     startup
  * 
  * </pre>
  * 
@@ -58,12 +64,6 @@ public class DefaultContextStateManager implements IContextStateManager {
             ServiceStatus.Starting, ServiceStatus.Started,
             ServiceStatus.Suspending, ServiceStatus.Suspended);
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.esb.camel.context.IContextStateManager#
-     * isContextStartable(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean isContextStartable(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
@@ -71,13 +71,6 @@ public class DefaultContextStateManager implements IContextStateManager {
                 || (status.isStarted() && !context.isAutoStartup());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.IContextStateManager#startContext
-     * (org.apache.camel.CamelContext)
-     */
     @Override
     public boolean startContext(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
@@ -95,7 +88,6 @@ public class DefaultContextStateManager implements IContextStateManager {
             if (processor != null) {
                 processor.preStart();
             }
-
             context.start();
             rval = context.getStatus().isStarted();
 
@@ -105,7 +97,21 @@ public class DefaultContextStateManager implements IContextStateManager {
              * check for future proofing just in case.
              */
             if (!context.isAutoStartup()) {
-                for (Route route : context.getRoutes()) {
+                List<Route> routes = new ArrayList<>();
+                routes.addAll(context.getRoutes());
+
+                Collections.sort(routes, new Comparator<Route>() {
+                    @Override
+                    public int compare(Route r1, Route r2) {
+                        int order1 = r1.getRouteContext().getRoute()
+                                .getStartupOrder();
+                        int order2 = r2.getRouteContext().getRoute()
+                                .getStartupOrder();
+                        return order1 - order2;
+                    }
+                });
+
+                for (Route route : routes) {
                     rval &= startRoute(route);
                 }
 
@@ -124,13 +130,6 @@ public class DefaultContextStateManager implements IContextStateManager {
         return rval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.IContextStateManager#startRoute
-     * (org.apache.camel.Route)
-     */
     @Override
     public boolean startRoute(Route route) throws Exception {
         String routeId = route.getId();
@@ -144,12 +143,6 @@ public class DefaultContextStateManager implements IContextStateManager {
         return status.isStarted();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.esb.camel.context.IContextStateManager#
-     * isContextStoppable (org.apache.camel.CamelContext)
-     */
     @Override
     public boolean isContextStoppable(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
@@ -158,13 +151,6 @@ public class DefaultContextStateManager implements IContextStateManager {
                 || (!shuttingDown && SUSPENDABLE_STATES.contains(status));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.IContextStateManager#stopContext
-     * (org.apache.camel.CamelContext)
-     */
     @Override
     public boolean stopContext(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
@@ -192,13 +178,6 @@ public class DefaultContextStateManager implements IContextStateManager {
         return status.isStopped();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.IContextStateManager#stopRoute
-     * (org.apache.camel.Route)
-     */
     @Override
     public boolean stopRoute(Route route) throws Exception {
         String routeId = route.getId();
