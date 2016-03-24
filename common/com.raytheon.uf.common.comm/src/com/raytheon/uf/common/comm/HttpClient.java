@@ -101,6 +101,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
  *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
  *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
+ *    Feb 22, 2015  5306        njensen     Get new HttpClientContext if host or port change
  * 
  * </pre>
  * 
@@ -976,6 +977,19 @@ public class HttpClient {
      */
     private HttpClientContext getHttpsContext(String host, int port) {
         HttpClientContext context = httpsContext.get();
+
+        HttpHost targetHost = context.getTargetHost();
+        if (targetHost == null || !host.equals(targetHost.getHostName())
+                || port != targetHost.getPort()) {
+            /*
+             * the host name or port changed, this can lead to strange
+             * assumptions on the part of the apache httpclient, just get a new
+             * context to try and avoid that mess
+             */
+            context = HttpClientContext.create();
+            httpsContext.set(context);
+        }
+
         if (context.getCredentialsProvider() != credentialsProvider) {
             context.setCredentialsProvider(credentialsProvider);
         }
