@@ -78,6 +78,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jul 21, 2014  3373    bclement     JAXB manager API changes
  * Jul 22, 2015  4672    bsteffen     Create notification task to avoid
  *                                    notifying newly added listeners at startup.
+ * Mar 24, 2016  5439     bsteffen    Do not throw exceptions after logging
+ *                                    error that adapter is not registered
  * 
  * </pre>
  * 
@@ -174,6 +176,9 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
             statusHandler.handle(Priority.PROBLEM,
                     "Error creating derived parameter function type,"
                             + " derived paramters will not be available");
+            this.derParLibrary = new HashMap<>();
+            this.needsLibInit = false;
+            return;
         }
 
         this.adapter = functionTypes[0].getAdapter();
