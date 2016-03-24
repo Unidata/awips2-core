@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -52,14 +52,14 @@ import com.raytheon.viz.core.mode.CAVEMode;
 import com.raytheon.viz.ui.actions.ShowTimeDialog;
 
 /**
- * 
+ *
  * Contribution item added to the status bar which displays the current
  * workstation time. The TimeJob class is responsible for updating this display
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 30,2007  461        bphillip    Initial Creation
@@ -68,9 +68,10 @@ import com.raytheon.viz.ui.actions.ShowTimeDialog;
  * Nov 19, 2013 2439       rferrel     Adjust timer schedule to update when
  *                                     DRT rolls over to the next minute.
  * Sep 21, 2015 4858       dgilling    Change SimulatedTime mode background color to red.
- * 
+ * Mar 24, 2016 5232       njensen     Fix label coloring for test mode
+ *
  * </pre>
- * 
+ *
  * @author bphillip
  * @version 1
  */
@@ -93,7 +94,7 @@ public class TimeDisplay extends ContributionItem {
 
         /*
          * (non-Javadoc)
-         * 
+         *
          * @seeorg.eclipse.core.runtime.jobs.Job#run(org.eclipse.core.runtime.
          * IProgressMonitor)
          */
@@ -174,7 +175,7 @@ public class TimeDisplay extends ContributionItem {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see org.eclipse.jface.action.ContributionItem#dispose()
      */
     @Override
@@ -196,6 +197,7 @@ public class TimeDisplay extends ContributionItem {
 
         timeLabel = new Label(comp, SWT.NONE);
         timeLabel.setText("Time:");
+        timeLabel.setForeground(parent.getForeground());
 
         theTextArea = new Label(comp, SWT.BORDER);
         theTextArea
