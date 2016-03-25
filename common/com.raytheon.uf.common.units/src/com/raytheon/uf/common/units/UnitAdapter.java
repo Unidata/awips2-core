@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.units;
 
+import java.rmi.UnmarshalException;
 import java.text.ParseException;
 
 import javax.measure.unit.Unit;
@@ -35,15 +36,17 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * Aug 12, 2008				njensen	Initial creation
- * Aug 08, 2014  3503      bclement    moved from common.serialization to common.units
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 12, 2008  1446     njensen   Initial creation
+ * Aug 08, 2014  3503     bclement  moved from common.serialization to
+ *                                  common.units
+ * Mar 25, 2016  5439     bsteffen  Include unparseable unit in exception text.
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 public class UnitAdapter extends XmlAdapter<String, Unit<?>> implements
         ISerializationTypeAdapter<Unit<?>> {
@@ -63,8 +66,13 @@ public class UnitAdapter extends XmlAdapter<String, Unit<?>> implements
 
         if (unit != null) {
             if (!unit.equals("")) {
-                retVal = (Unit<?>) UnitFormat.getUCUMInstance().parseObject(
-                        unit);
+                try {
+                    retVal = (Unit<?>) UnitFormat.getUCUMInstance()
+                            .parseObject(unit);
+                } catch (ParseException e) {
+                    throw new UnmarshalException(
+                            "Error parsing unit from string " + unit, e);
+                }
             }
         }
         return retVal;
