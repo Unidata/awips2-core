@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.derivparam.library;
 
 import java.io.File;
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -39,12 +40,11 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.derivparam.DerivParamFunctionType;
 import com.raytheon.uf.common.derivparam.IDerivParamFunctionAdapter;
 import com.raytheon.uf.common.derivparam.library.DerivParamMethod.MethodType;
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.ILocalizationFileObserver;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -59,34 +59,35 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * <pre>
  * SOFTWARE HISTORY
+ * 
  * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jul 03, 2008           brockwoo    Initial creation
+ * ------------- -------- ----------- ------------------------------------------
+ * Jul 03, 2008  1076     brockwoo    Initial creation
  * Nov 16, 2009  3120     rjpeter     Removed use of LevelNameMappingFile.
- * Nov 20, 2009  3387     jelkins     Use derived script's variableId instead
- *                                    of filename
+ * Nov 20, 2009  3387     jelkins     Use derived script's variableId instead of
+ *                                    filename
  * Nov 21, 2009  3576     rjpeter     Refactored DerivParamDesc.
  * Jun 04, 2013  2041     bsteffen    Switch derived parameters to use
  *                                    concurrent python for threading.
  * Nov 19, 2013  2361     njensen     Only shutdown if initialized
  * Jan 14, 2014  2661     bsteffen    Shutdown using uf.viz.core.Activator
- * Jan 30, 2014  2725     ekladstrup  Refactor to remove dependencies on
- *                                    eclipse runtime and support some configuration
+ * Jan 30, 2014  2725     ekladstrup  Refactor to remove dependencies on eclipse
+ *                                    runtime and support some configuration
  *                                    through spring
- * Mar 27, 2014  2945    bsteffen     Recursively find definitions in
+ * Mar 27, 2014  2945     bsteffen    Recursively find definitions in
  *                                    subdirectories.
- * Jul 21, 2014  3373    bclement     JAXB manager API changes
- * Jul 22, 2015  4672    bsteffen     Create notification task to avoid
- *                                    notifying newly added listeners at startup.
+ * Jul 21, 2014  3373     bclement    JAXB manager API changes
+ * Jul 22, 2015  4672     bsteffen    Create notification task to avoid
+ *                                    notifying newly added listeners at
+ *                                    startup.
  * Mar 24, 2016  5439     bsteffen    Do not throw exceptions after logging
  *                                    error that adapter is not registered
  * 
  * </pre>
  * 
  * @author brockwoo
- * @version 1.0
  */
-public class DerivedParameterGenerator implements ILocalizationFileObserver {
+public class DerivedParameterGenerator implements ILocalizationPathObserver {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(DerivedParameterGenerator.class);
 
@@ -105,7 +106,7 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
     public static interface DerivParamUpdateListener {
         public void updateDerParLibrary(
                 Map<String, DerivParamDesc> derParLibrary);
-    };
+    }
 
     private static DerivedParameterGenerator instance;
 
@@ -113,7 +114,7 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
     // gsl/cuda/anything)
     private IDerivParamFunctionAdapter adapter;
 
-    private Set<DerivParamUpdateListener> listeners = new HashSet<DerivParamUpdateListener>();
+    private Set<DerivParamUpdateListener> listeners = new HashSet<>();
 
     private Map<String, DerivParamDesc> derParLibrary;
 
@@ -121,7 +122,7 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
 
     private String extension = null;
 
-    protected static List<DerivParamFunctionType> functionTypes = new ArrayList<DerivParamFunctionType>(
+    protected static List<DerivParamFunctionType> functionTypes = new ArrayList<>(
             1);
 
     protected ExecutorService execService = null;
@@ -166,8 +167,10 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
     }
 
     private DerivedParameterGenerator() {
-        // We shouldn't every be running more than one job at a time anyway, but
-        // use an executor service just in case we want to tweak things later.
+        /*
+         * We shouldn't ever be running more than one job at a time anyway, but
+         * use an executor service just in case we want to tweak things later.
+         */
         execService = Executors.newSingleThreadExecutor();
 
         DerivParamFunctionType[] functionTypes = getFunctionTypes();
@@ -183,11 +186,8 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
 
         this.adapter = functionTypes[0].getAdapter();
         this.extension = functionTypes[0].getExtension();
-        LocalizationFile dir = PathManagerFactory.getPathManager()
-                .getStaticLocalizationFile(DERIV_PARAM_DIR);
-        if (dir != null) {
-            dir.addFileUpdatedObserver(this);
-        }
+        PathManagerFactory.getPathManager().addLocalizationPathObserver(
+                DERIV_PARAM_DIR, this);
 
         initLibrary();
     }
@@ -208,18 +208,18 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
     private synchronized void initLibrary() {
         if (needsLibInit) {
             long start = System.currentTimeMillis();
-            Set<String> derivParamFiles = new HashSet<String>();
-            Map<String, DerivParamDesc> derParLibrary = new HashMap<String, DerivParamDesc>();
+            Set<String> derivParamFiles = new HashSet<>();
+            Map<String, DerivParamDesc> derParLibrary = new HashMap<>();
             IPathManager pm = PathManagerFactory.getPathManager();
 
-            // get all localization levels derived params and combine them
+            /* get all localization levels derived params and combine them */
             LocalizationContext[] contexts = pm
                     .getLocalSearchHierarchy(LocalizationType.COMMON_STATIC);
-            LocalizationFile[] xmlFiles = pm.listFiles(contexts, XML_DIR,
+            ILocalizationFile[] xmlFiles = pm.listFiles(contexts, XML_DIR,
                     new String[] { ".xml" }, true, true);
             SingleTypeJAXBManager<DerivParamDesc> jaxbMan;
             try {
-                jaxbMan = new SingleTypeJAXBManager<DerivParamDesc>(true,
+                jaxbMan = new SingleTypeJAXBManager<>(true,
                         DerivParamDesc.class);
             } catch (JAXBException e1) {
                 statusHandler
@@ -229,10 +229,9 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
                 return;
             }
 
-            for (LocalizationFile file : xmlFiles) {
-                try {
-                    DerivParamDesc desc = jaxbMan.unmarshalFromXmlFile(file
-                            .getFile());
+            for (ILocalizationFile file : xmlFiles) {
+                try (InputStream is = file.openInputStream()) {
+                    DerivParamDesc desc = jaxbMan.unmarshalFromInputStream(is);
                     if (derParLibrary.containsKey(desc.getAbbreviation())) {
                         DerivParamDesc oldDesc = derParLibrary.get(desc
                                 .getAbbreviation());
@@ -248,13 +247,18 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
                 }
             }
 
-            LocalizationFile[] functions = pm.listStaticFiles(FUNCTIONS_DIR,
+            ILocalizationFile[] functions = pm.listStaticFiles(FUNCTIONS_DIR,
                     new String[] { "." + extension }, false, true);
-            for (LocalizationFile file : functions) {
-                derivParamFiles.add("func:" + file.getFile().getName());
+            for (ILocalizationFile file : functions) {
+                String path = file.getPath();
+                int index = path.lastIndexOf(IPathManager.SEPARATOR);
+                if (index > 1) {
+                    path = path.substring(index + 1);
+                }
+                derivParamFiles.add("func:" + path);
             }
 
-            // Set the correct units on every field
+            // Set the correct units on every field */
             for (DerivParamDesc desc : derParLibrary.values()) {
                 if (desc.getMethods() == null) {
                     continue;
@@ -291,7 +295,7 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
             }
             execService.execute(notifyTask);
 
-            System.out.println("time to init derived parameters: "
+            System.out.println("Time to init derived parameters: "
                     + (System.currentTimeMillis() - start) + "ms");
             needsLibInit = false;
         }
@@ -302,15 +306,8 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
         return derParLibrary;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationFileObserver#fileUpdated
-     * (com.raytheon.uf.common.localization.FileUpdatedMessage)
-     */
     @Override
-    public void fileUpdated(FileUpdatedMessage message) {
+    public void fileChanged(ILocalizationFile file) {
         needsLibInit = true;
         initLibrary();
     }
@@ -338,7 +335,7 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
         public void run() {
             Collection<DerivParamUpdateListener> l = null;
             synchronized (listeners) {
-                l = new ArrayList<DerivParamUpdateListener>(listeners);
+                l = new ArrayList<>(listeners);
             }
             for (DerivParamUpdateListener listener : l) {
                 listener.updateDerParLibrary(derParLibrary);
