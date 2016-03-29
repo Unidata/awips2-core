@@ -20,22 +20,28 @@
 package com.raytheon.uf.common.util.cache;
 
 import java.io.File;
-import java.io.IOException;
 
-/* 
+/**
+ * 
+ * Disk-backed LRU cache.
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 8, 2009            mschenke     Initial creation
- *
+ * Jul 8, 2009             mschenke    Initial creation
+ * Mar 9, 2016       5461  tgurney     Add loadFrom() method and clean up
+ *                                     dead code
+ * 
  * </pre>
- *
+ * 
  * @author mschenke
+ * @version 1.0
  */
-/**
+
+/*
  * This class will manage files on the file system including total size and
  * creation and destruction. The users of this class do not have to use it to
  * create cache files, they can create and name their own files and have them
@@ -47,8 +53,6 @@ import java.io.IOException;
  * manage the caching of files, there is no requirement on it and you can create
  * and write to files all you want. There may be a time where we allow multiple
  * file cache objects but for now it is one
- * 
- * @version 1.0
  */
 public class LRUCacheFS {
 
@@ -60,11 +64,6 @@ public class LRUCacheFS {
             this.file = file;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see com.raytheon.uf.viz.core.cache.ICacheObject#getSize()
-         */
         @Override
         public int getSize() {
             return (int) file.length();
@@ -90,108 +89,19 @@ public class LRUCacheFS {
 
     }
 
-    /**
-     * cache directory specified in preferences
-     */
-    private static File cacheDir;
-
-    /**
-     * Instance for file system cache
-     */
+    /** Instance for file system cache */
     private static LRUCacheInternal fsCache;
 
-    /**
-     * Filesystem cache size
-     */
-    private static final int FILESYSTEM_CACHE_SIZE;
+    /** Maximum cache size in MB */
+    private static final int FILESYSTEM_CACHE_SIZE = 512;
 
-    /**
-     * Get preferences for directory and size of cache
-     */
+    /** Get preferences for directory and size of cache */
     static {
-        int sz = 0; // TODO allow configurable
-
-        /** default to 512MB */
-        if (sz == 0)
-            FILESYSTEM_CACHE_SIZE = 512;
-        else
-            FILESYSTEM_CACHE_SIZE = sz;
-
         fsCache = new LRUCacheInternal(FILESYSTEM_CACHE_SIZE * 1024 * 1024);
-
-        String cache = null; // TODO allow configurable
-
-        /** Default to java temp directory */
-        if (cache == null || "".equals(cache)) {
-            cache = System.getProperty("java.io.tmpdir");
-        }
-
-        String dirName = "vizCache";
-        String user = System.getProperty("user.name");
-        if (user != null) {
-            dirName = dirName + "." + user;
-        }
-
-        /** Set the directory */
-        cacheDir = new File(cache, dirName);
-        if (cacheDir.exists()) {
-            /** Register any files in the cache with the cache */
-            File[] files = cacheDir.listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    poll(file);
-                }
-            }
-        }
     }
 
     private LRUCacheFS() {
 
-    }
-
-    /**
-     * Convenience method for creating cache files in the cache directory
-     * specified in the preferences, not required, you can register any file in
-     * the cache
-     * 
-     * @return newly created file in cache directory
-     */
-    public static File createCacheFile() {
-        File file = null;
-        try {
-            file = File.createTempFile("cached", ".bin", getCacheDirectory());
-            file.setReadable(true, false);
-            file.setWritable(true, false);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-        return file;
-    }
-
-    /**
-     * Convenience method for creating cache files in the cache directory
-     * specified in the preferences with the given name. Not required, you can
-     * register any file in the cache
-     * 
-     * @return newly created file in cache directory
-     */
-    public static File createCacheFile(String name) {
-        File file = new File(getCacheDirectory(), name);
-        file.setReadable(true, false);
-        file.setWritable(true, false);
-        return file;
-    }
-
-    /**
-     * Get the cache directory
-     * 
-     * @return the cache directory
-     */
-    public static File getCacheDirectory() {
-        if (cacheDir.exists() == false) {
-            cacheDir.mkdir();
-        }
-        return cacheDir;
     }
 
     /**
@@ -209,12 +119,20 @@ public class LRUCacheFS {
     }
 
     /**
-     * Manually remove a file from the cache
+     * Register existing cache files with the cache
      * 
-     * @param file
+     * @param directory
+     *            directory containing cache files
      */
-    public static void remove(File file) {
-        fsCache.remove(file.getAbsolutePath());
+    public static void loadFrom(File directory) {
+        if (directory.exists()) {
+            File[] files = directory.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    poll(file);
+                }
+            }
+        }
     }
 
 }
