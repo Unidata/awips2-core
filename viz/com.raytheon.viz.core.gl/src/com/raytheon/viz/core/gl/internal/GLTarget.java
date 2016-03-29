@@ -156,7 +156,8 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Oct 28, 2015  5070     randerso    Fix font scaling on wide screen monitors
  * Nov 04, 2015  5070     randerso    Added DPI font scaling
  * Jan 20, 2016  5274     randerso    Increased size of POINT to 2x2 pixels
- * Mar 08, 2016  5318     randerso    Removed unnecssary rounding of font size
+ * Mar 08, 2016  5318     randerso    Removed unnecessary rounding of font size
+ * Mar 23, 2015  5506     randerso    Fix NPE when initializing offscreen targets
  * 
  * </pre>
  * 
@@ -178,7 +179,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * 
      * 80% of width in pixels / dots per inch (dpi)
      */
-    protected static final double FONT_SCALING_BASIS = (0.8 * 1280) / 85;
+    protected static final double FONT_SCALING_BASIS = 0.8 * 1280 / 85;
 
     /**
      * Minimum font scaling limit
@@ -252,7 +253,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
 
         private void handleRemove(GLTextureObject value) {
-            if ((value != null) && value.isValid()) {
+            if (value != null && value.isValid()) {
                 value.dispose();
             }
         }
@@ -412,7 +413,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void beginFrame(IView view, boolean clearBackground) {
 
-        if ((theCanvas != null) && theCanvas.isDisposed()) {
+        if (theCanvas != null && theCanvas.isDisposed()) {
             return;
         }
 
@@ -497,7 +498,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theContext.destroyContext();
 
-        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
+        if (theCanvas != null && theCanvas.isDisposed() == false) {
             theCanvas.removeListener(SWT.Resize, this.canvasResizeListener);
         }
         extensionManager.dispose();
@@ -618,7 +619,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 gl.glBlendColor(1.0f, 1.0f, 1.0f, blendAlpha);
                 gl.glColor4f(1.0f, 1.0f, 1.0f, blendAlpha);
             }
-            if (!capabilities.cardSupportsShaders && (logFactor > 0.0)) {
+            if (!capabilities.cardSupportsShaders && logFactor > 0.0) {
                 // Normally the colorbar is scaled in shader, but we can do the
                 // same thing with a mesh
 
@@ -634,7 +635,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 for (int c = 1; c < 10; c++) {
                     // linear value for index and x
                     float index = c / 10.0f;
-                    double x = x1 + (index * (x2 - x1));
+                    double x = x1 + index * (x2 - x1);
                     // Make index Log
                     double lg = Math.log(logFactor + index);
                     index = (float) ((lg - minLog) / (maxLog - minLog));
@@ -900,9 +901,9 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
          * paneWidth to FONT_SCALING_THRESHOLD
          */
 
-        return Math
-                .min((MIN_FONT_SCALING + (ratio * (MAX_FONT_SCALING - MIN_FONT_SCALING)))
-                        * textMagnification, 1.0)
+        return Math.min((MIN_FONT_SCALING + ratio
+                * (MAX_FONT_SCALING - MIN_FONT_SCALING))
+                * textMagnification, 1.0)
                 * font.getMagnification();
     }
 
@@ -949,14 +950,14 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         makeContextCurrent();
         gl.glFinish();
 
-        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
+        if (theCanvas != null && theCanvas.isDisposed() == false) {
             theCanvas.swapBuffers();
         }
         GLContextBridge.makeMasterContextCurrent();
 
         GLDisposalManager.performDispose(GLU.getCurrentGL());
 
-        if ((theCanvas != null) && (theCanvas.isDisposed() == false)) {
+        if (theCanvas != null && theCanvas.isDisposed() == false) {
             GLStats.printStats(gl, theCanvas.getShell());
         } else {
             GLStats.printStats(gl);
@@ -1007,8 +1008,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      *            the style of the line
      */
     protected void handleLineStyle(LineStyle lineStyle) {
-        if ((lineStyle != null) && (lineStyle != LineStyle.SOLID)
-                && (lineStyle != LineStyle.DEFAULT)) {
+        if (lineStyle != null && lineStyle != LineStyle.SOLID
+                && lineStyle != LineStyle.DEFAULT) {
             gl.glEnable(GL.GL_LINE_STIPPLE);
             gl.glLineStipple(lineStyle.getFactor(), lineStyle.getPattern());
         } else {
@@ -1063,18 +1064,16 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         gl.glLoadIdentity();
         gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
 
-        this.colorbarFont = new UnmodifiableGLFont(new GLFont(theCanvas
-                .getDisplay().getDPI(), DEFAULT_FONT,
-                Math.round(10 * textMagnification), null));
+        this.colorbarFont = new UnmodifiableGLFont(new GLFont(this.dpi,
+                DEFAULT_FONT, Math.round(10 * textMagnification), null));
 
         if (PlatformUI.isWorkbenchRunning()) {
             fontFactory = FontFactory.getInstance();
             this.defaultFont = new UnmodifiableGLFont(fontFactory.getFont(
                     this.dpi, FontFactory.DEFAULT_FONT_ID));
         } else {
-            this.defaultFont = new UnmodifiableGLFont(new GLFont(theCanvas
-                    .getDisplay().getDPI(), java.awt.Font.MONOSPACED, 14,
-                    new Style[] { Style.BOLD }));
+            this.defaultFont = new UnmodifiableGLFont(new GLFont(this.dpi,
+                    java.awt.Font.MONOSPACED, 14, new Style[] { Style.BOLD }));
         }
 
         // Set swap interval to 1 refresh
@@ -1123,7 +1122,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public IFont initializeFont(String font) {
-        if ((fontFactory != null) && fontFactory.hasId(font)) {
+        if (fontFactory != null && fontFactory.hasId(font)) {
             return fontFactory.getFont(this.dpi, font);
         }
         return defaultFont.deriveWithSize(defaultFont.getFontSize());
@@ -1278,7 +1277,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void setNeedsRefresh(boolean needsRefresh) {
         synchronized (this) {
-            if (needsRefresh && (refreshCount <= 1)) {
+            if (needsRefresh && refreshCount <= 1) {
                 refreshCount += 2;
             }
         }
@@ -1293,9 +1292,8 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public void setupClippingPlane(IExtent extent) {
-        if ((this.clippingPane == extent)
-                || ((this.clippingPane != null) && (extent != null) && this.clippingPane
-                        .equals(extent))) {
+        if (this.clippingPane == extent || this.clippingPane != null
+                && extent != null && this.clippingPane.equals(extent)) {
             // Clipping pane already set to this
             return;
         }
@@ -1426,7 +1424,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     public double[] unproject(double x, double y, double z) {
 
-        if ((z < 0) || (z > 1)) {
+        if (z < 0 || z > 1) {
             return null;
         }
 
@@ -1451,7 +1449,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public Rectangle getBounds() {
-        if ((theCanvas != null) && theCanvas.isDisposed()) {
+        if (theCanvas != null && theCanvas.isDisposed()) {
             return null;
         }
 
@@ -1519,7 +1517,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
 
         GLTextureObject i = loadedColorMaps.get(name);
-        if ((i == null) || cmap.isChanged()) {
+        if (i == null || cmap.isChanged()) {
             if (i != null) {
                 loadedColorMaps.remove(name);
             }
@@ -1617,7 +1615,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
                 double totalAzimuth = endAzm - startAzm;
                 boolean includeSides = circle.includeSides && !fill
-                        && (totalAzimuth < 360.0);
+                        && totalAzimuth < 360.0;
 
                 if (fill) {
                     gl.glBegin(GL.GL_TRIANGLE_FAN);
@@ -1639,7 +1637,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 }
                 double step = totalAzimuth / (points - 1);
                 for (int i = 0; i < points; ++i) {
-                    double azm = startAzm + (i * step);
+                    double azm = startAzm + i * step;
                     double[] pointOnCircle = getPointOnCircle(x, y, z, radius,
                             azm);
                     gl.glVertex3d(pointOnCircle[0], pointOnCircle[1],
@@ -1729,7 +1727,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void drawPoints(Collection<double[]> locations, RGB color,
             PointStyle pointStyle, float magnification) throws VizException {
-        if ((pointStyle == PointStyle.NONE) || (locations.size() == 0)) {
+        if (pointStyle == PointStyle.NONE || locations.size() == 0) {
             return;
         }
 
@@ -1808,10 +1806,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                     break;
                 }
                 case STAR: {
-                    buf.put(new float[] { x, y - (yTick * 1.5f), x,
-                            y + (yTick * 1.5f), x - xTick, y - yTick,
-                            x + xTick, y + yTick, x - xTick, y + yTick,
-                            x + xTick, y - yTick });
+                    buf.put(new float[] { x, y - yTick * 1.5f, x,
+                            y + yTick * 1.5f, x - xTick, y - yTick, x + xTick,
+                            y + yTick, x - xTick, y + yTick, x + xTick,
+                            y - yTick });
                     break;
                 }
                 case X: {

@@ -20,22 +20,21 @@
 package com.raytheon.viz.ui.widgets;
 
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
-import java.util.Date;
-import java.util.TimeZone;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.events.PaintEvent;
+import org.eclipse.swt.events.PaintListener;
 import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.widgets.Button;
+import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.DateTime;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
@@ -43,10 +42,7 @@ import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.progress.UIJob;
 
 /**
- * Time of day entry field. Heavily borrowed from {@link DateTime}.
- * 
- * Used because DateTime lacks several features including 24-hour time format
- * and continuous adjustment via spin buttons.
+ * Date/Time entry field with spinner controls
  * 
  * <pre>
  * 
@@ -54,14 +50,7 @@ import org.eclipse.ui.progress.UIJob;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 10, 2012            randerso    Initial creation
- * Mar 24, 2014  #1426     lvenable    Fixed arrow buttons so the arrows show up, cleaned up code.
- * Mar 02, 2016  3989      tgurney     Add time and date rollover
- * Mar 02, 2016  3989      tgurney     Make up/down buttons emulate spinner
- *                                     click-and-hold behavior
- * Mar 17, 2016  #5483     randerso    Removed this.setLayoutData(). 
- *                                     This should be done from outside the control
- *                                     since the parent may not have a GridLayout
+ * Mar 17, 2016  #5483     randerso     Initial creation
  * 
  * </pre>
  * 
@@ -69,27 +58,20 @@ import org.eclipse.ui.progress.UIJob;
  * @version 1.0
  */
 
-public class TimeEntry extends Composite {
+public class DateTimeSpinner extends Canvas implements PaintListener {
+    private static final Point[] fieldIndices = new Point[] { new Point(0, 4),
+            new Point(5, 7), new Point(8, 10), new Point(11, 13),
+            new Point(14, 16), new Point(17, 19) };
 
-    public static interface IDateChangeCallback {
-        /** Called when time rolls over past midnight into previous or next day. */
-        public void dateChange();
-    }
-
-    private static Point[] fieldIndices = new Point[] { new Point(0, 2),
-            new Point(3, 5), new Point(6, 8) };
-
-    private static int[] fieldNames = new int[] { Calendar.HOUR_OF_DAY,
+    private static final int[] fieldNames = new int[] { Calendar.YEAR,
+            Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY,
             Calendar.MINUTE, Calendar.SECOND };
 
-    private static String[] formatStrings = new String[] { "HH", "HH:mm",
-            "HH:mm:ss" };
+    private static final String[] formatStrings = new String[] { "yyyy",
+            "yyyy-MM", "yyyy-MM-dd", "yyyy-MM-dd HH", "yyyy-MM-dd HH:mm",
+            "yyyy-MM-dd HH:mm:ss" };
 
     private Text text;
-
-    private Button up;
-
-    private Button down;
 
     private int fieldCount;
 
@@ -101,12 +83,13 @@ public class TimeEntry extends Composite {
 
     private boolean ignoreVerify;
 
-    private IDateChangeCallback callback;
-
     private UIJob spinnerJob;
 
-    /** Set to true if up or down spin button is currently being pressed. */
-    private boolean spinButtonPressed = false;
+    /**
+     * Set to -1 if down button pressed, 1 if up button pressed, 0 if no button
+     * pressed
+     */
+    private int spinIncrement = 0;
 
     private final int SPIN_START_DELAY_MS = 300;
 
@@ -118,49 +101,50 @@ public class TimeEntry extends Composite {
      * Constructor
      * 
      * @param parent
+     *            parent composite
+     * @param calendar
+     *            Calendar instance containing initial date. This instance will
+     *            be updated as the widget is updated
      * @param fieldCount
-     *            1 = HH, 2 = HH:MM 3 = HH:MM:SS
-     * @param timeZone
-     * @param callback
-     *            Object that receives dateChanged() call when time rolls over
-     *            past midnight into previous/next day.
-     * 
+     *            <pre>
+     *            1 = yyyy
+     *            2 = yyyy-MM
+     *            3 = yyyy-MM-dd,
+     *            4 = yyyy-MM-dd HH
+     *            5 = yyyy-MM-dd HH:mm
+     *            6 = yyyy-MM-dd HH:mm:ss
+     * </pre>
      */
-    public TimeEntry(Composite parent, int fieldCount, TimeZone timeZone,
-            IDateChangeCallback callback) {
+    public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount) {
         super(parent, SWT.NONE);
-        if ((fieldCount < 1) || (fieldCount > 3)) {
-            throw new IllegalArgumentException("fieldCount must be 1, 2, or 3");
+
+        if ((fieldCount < 1) || (fieldCount > formatStrings.length)) {
+            throw new IllegalArgumentException(
+                    "fieldCount must be in the range 1-" + formatStrings.length);
         }
         this.fieldCount = fieldCount;
-        calendar = Calendar.getInstance(timeZone);
-        format = new SimpleDateFormat(formatStrings[fieldCount - 1]);
-        format.setTimeZone(timeZone);
-        this.callback = callback;
-        initializeControls();
-    }
 
-    /**
-     * Constructor
-     * 
-     * @param parent
-     * @param fieldCount
-     *            1 = HH, 2 = HH:MM 3 = HH:MM:SS
-     * @param timeZone
-     */
-    public TimeEntry(Composite parent, int fieldCount, TimeZone timeZone) {
-        this(parent, fieldCount, timeZone, null);
+        this.calendar = calendar;
+
+        format = new SimpleDateFormat(formatStrings[fieldCount - 1]);
+        format.setTimeZone(calendar.getTimeZone());
+
+        initializeControls();
     }
 
     private void initializeControls() {
         GridLayout gl = new GridLayout(2, false);
-        gl.marginWidth = 0;
-        gl.marginHeight = 0;
+        gl.marginWidth = 1;
+        gl.marginHeight = 1;
         gl.horizontalSpacing = 0;
         this.setLayout(gl);
+        this.addPaintListener(this);
 
-        text = new Text(this, SWT.SINGLE | SWT.BORDER);
-        Listener listener = new Listener() {
+        text = new Text(this, SWT.SINGLE);
+        GridData gd = new GridData(SWT.DEFAULT, SWT.CENTER, false, true);
+        text.setLayoutData(gd);
+
+        Listener textListener = new Listener() {
             @Override
             public void handleEvent(Event event) {
                 switch (event.type) {
@@ -169,9 +153,6 @@ public class TimeEntry extends Composite {
                     break;
                 case SWT.FocusIn:
                     onFocusIn(event);
-                    break;
-                case SWT.FocusOut:
-                    onFocusOut(event);
                     break;
                 case SWT.MouseDown:
                     onMouseClick(event);
@@ -186,101 +167,132 @@ public class TimeEntry extends Composite {
             }
         };
 
-        text.addListener(SWT.KeyDown, listener);
-        text.addListener(SWT.FocusIn, listener);
-        text.addListener(SWT.FocusOut, listener);
-        text.addListener(SWT.MouseDown, listener);
-        text.addListener(SWT.MouseUp, listener);
-        text.addListener(SWT.Verify, listener);
-
-        /* Create the up/down buttons and put them in their own composite. */
-        Composite buttonComp = new Composite(this, SWT.NONE);
-        gl = new GridLayout(1, false);
-        gl.marginWidth = 0;
-        gl.marginHeight = 0;
-        gl.verticalSpacing = 0;
-        buttonComp.setLayout(gl);
-
-        int buttonWidth = 22;
-        int buttonHeight = 20;
+        text.addListener(SWT.KeyDown, textListener);
+        text.addListener(SWT.FocusIn, textListener);
+        text.addListener(SWT.MouseDown, textListener);
+        text.addListener(SWT.MouseUp, textListener);
+        text.addListener(SWT.Verify, textListener);
 
         Listener spinButtonListener = new Listener() {
             @Override
             public void handleEvent(Event event) {
                 switch (event.type) {
                 case SWT.MouseDown:
-                    handleSpinButtonPressed((int) event.widget.getData());
-                    break;
-                case SWT.MouseUp:
-                    spinButtonPressed = false;
-                    if (spinnerJob != null) {
-                        spinnerJob.cancel();
-                        spinnerJob = null;
+                    spinIncrement = 1;
+                    if (event.y > (((Canvas) event.widget).getSize().y / 2)) {
+                        spinIncrement = -1;
                     }
+
+                    incrementField(spinIncrement);
+                    spinnerJob.schedule(SPIN_START_DELAY_MS);
+                    break;
+
+                case SWT.MouseUp:
+                    spinIncrement = 0;
                     text.setFocus();
+                    redraw();
                     break;
                 }
             }
         };
+        this.addListener(SWT.MouseDown, spinButtonListener);
+        this.addListener(SWT.MouseUp, spinButtonListener);
 
-        GridData gd = new GridData(buttonWidth, buttonHeight);
-        up = new Button(buttonComp, SWT.ARROW | SWT.UP);
-        up.setLayoutData(gd);
-        up.setData(1);
-        up.addListener(SWT.MouseDown, spinButtonListener);
-        up.addListener(SWT.MouseUp, spinButtonListener);
-
-        gd = new GridData(buttonWidth, buttonHeight);
-        down = new Button(buttonComp, SWT.ARROW | SWT.DOWN);
-        down.setLayoutData(gd);
-        down.setData(-1);
-        down.addListener(SWT.MouseDown, spinButtonListener);
-        down.addListener(SWT.MouseUp, spinButtonListener);
-
-        updateControl();
-    }
-
-    /**
-     * Called when spin button is pressed. Queues up a timer task that will
-     * continuously adjust the spinner value up or down until the button is
-     * released.
-     * 
-     * @param incrementAmount
-     *            How much to increment the spinner field by on each iteration.
-     *            (Typically 1 or -1)
-     */
-    private void handleSpinButtonPressed(final int incrementAmount) {
-        spinButtonPressed = true;
-        incrementField(incrementAmount);
         spinnerJob = new UIJob(Display.getDefault(),
                 "Handle Spin Button Pressed") {
             @Override
             public IStatus runInUIThread(IProgressMonitor monitor) {
-                if (spinButtonPressed && !text.isDisposed()) {
-                    incrementField(incrementAmount);
+                if ((spinIncrement != 0) && !text.isDisposed()) {
+                    incrementField(spinIncrement);
                     this.schedule(SPIN_INTERVAL_MS);
                 }
                 return Status.OK_STATUS;
             }
         };
-        spinnerJob.schedule(SPIN_START_DELAY_MS);
+
+        updateControl();
+    }
+
+    @Override
+    public Point computeSize(int wHint, int hHint, boolean changed) {
+        Point size = text.computeSize(SWT.DEFAULT, SWT.DEFAULT);
+        int y = size.y + 4;
+        y += 1 - (y % 2);
+
+        int x = size.x += (y * 0.65);
+        x += x % 2;
+
+        return new Point(x, y);
+    }
+
+    @Override
+    public void paintControl(PaintEvent e) {
+        Rectangle ca = getClientArea();
+        e.gc.setClipping(ca);
+        ca.width--;
+        ca.height--;
+
+        Rectangle tb = text.getBounds();
+
+        // Fill text area
+        e.gc.setBackground(getDisplay().getSystemColor(
+                SWT.COLOR_LIST_BACKGROUND));
+        e.gc.fillRectangle(tb.x, ca.y, tb.width, ca.height);
+
+        // Draw border
+        e.gc.setForeground(getDisplay().getSystemColor(
+                SWT.COLOR_WIDGET_NORMAL_SHADOW));
+        e.gc.drawRoundRectangle(ca.x, ca.y, ca.width, ca.height, 5, 5);
+
+        // Determine button dimensions
+        int buttonLeft = tb.x + tb.width;
+        int buttonRight = ca.x + ca.width;
+        int buttonCenter = (buttonRight + buttonLeft) / 2;
+        int buttonTop = ca.y;
+        int buttonBottom = ca.y + ca.height;
+        int buttonMiddle = (buttonTop + buttonBottom) / 2;
+
+        // Fill button if pressed
+        e.gc.setBackground(getDisplay().getSystemColor(
+                SWT.COLOR_WIDGET_NORMAL_SHADOW));
+        if (spinIncrement > 0) {
+            e.gc.fillRectangle(buttonLeft, buttonTop, buttonRight - buttonLeft,
+                    buttonMiddle - buttonTop);
+        } else if (spinIncrement < 0) {
+            e.gc.fillRectangle(buttonLeft, buttonMiddle, buttonRight
+                    - buttonLeft, buttonBottom - buttonMiddle);
+        }
+
+        // Draw button borders
+        e.gc.drawLine(buttonLeft, buttonTop, buttonLeft, buttonBottom);
+        e.gc.drawLine(buttonLeft, buttonMiddle, buttonRight, buttonMiddle);
+
+        // Draw upper arrow
+        int arrowLeft = buttonLeft + 4;
+        int arrowRight = buttonRight - 4;
+        int arrowTip = buttonTop + 4;
+        int arrowBase = buttonMiddle - 4;
+
+        e.gc.setForeground(getDisplay().getSystemColor(
+                SWT.COLOR_WIDGET_FOREGROUND));
+        e.gc.drawLine(arrowLeft, arrowBase, buttonCenter, arrowTip);
+        e.gc.drawLine(buttonCenter, arrowTip, arrowRight, arrowBase);
+
+        // Draw lower arrow
+        arrowTip = buttonBottom - 4;
+        arrowBase = buttonMiddle + 4;
+
+        e.gc.drawLine(arrowLeft, arrowBase, buttonCenter, arrowTip);
+        e.gc.drawLine(buttonCenter, arrowTip, arrowRight, arrowBase);
     }
 
     private void incrementField(int amount) {
         int currentFieldName = fieldNames[currentField];
-        int oldDate = calendar.get(Calendar.DAY_OF_MONTH);
         calendar.add(currentFieldName, amount);
         updateControl();
-        int newDate = calendar.get(Calendar.DAY_OF_MONTH);
-        if (callback != null && newDate != oldDate) {
-            callback.dateChange();
-        }
     }
 
     private void selectField(int index) {
-        if (index != currentField) {
-            commit();
-        }
         final int start = fieldIndices[index].x;
         final int end = fieldIndices[index].y;
         Point pt = text.getSelection();
@@ -310,24 +322,6 @@ public class TimeEntry extends Composite {
         updateControl();
     }
 
-    private void commit() {
-        Date parsed;
-        try {
-            parsed = format.parse(text.getText());
-        } catch (ParseException e) {
-            return;
-        }
-        Calendar temp = (Calendar) calendar.clone();
-        temp.setTime(parsed);
-        /*
-         * Set time fields individually rather than clobber the date portion by
-         * using calendar.setTime()
-         */
-        calendar.set(Calendar.HOUR_OF_DAY, temp.get(Calendar.HOUR_OF_DAY));
-        calendar.set(Calendar.MINUTE, temp.get(Calendar.MINUTE));
-        calendar.set(Calendar.SECOND, temp.get(Calendar.SECOND));
-    }
-
     private void onKeyDown(Event event) {
         int fieldName;
         switch (event.keyCode) {
@@ -344,13 +338,11 @@ public class TimeEntry extends Composite {
         case SWT.ARROW_UP:
         case SWT.KEYPAD_ADD:
             // set the value of the current field to value + 1, with wrapping
-            commit();
             incrementField(+1);
             break;
         case SWT.ARROW_DOWN:
         case SWT.KEYPAD_SUBTRACT:
             // set the value of the current field to value - 1, with wrapping
-            commit();
             incrementField(-1);
             break;
         case SWT.HOME:
@@ -381,10 +373,6 @@ public class TimeEntry extends Composite {
 
     private void onFocusIn(Event event) {
         selectField(currentField);
-    }
-
-    private void onFocusOut(Event event) {
-        commit();
     }
 
     private void onMouseClick(Event event) {
@@ -434,14 +422,19 @@ public class TimeEntry extends Composite {
             characterCount = 0;
             return;
         }
-        if (min <= newValue && newValue <= max) {
+        if ((min <= newValue) && (newValue <= max)) {
             setField(newValue);
         }
     }
 
-    public String getFormattedString() {
+    private String getFormattedString() {
         format.setTimeZone(calendar.getTimeZone());
         return format.format(calendar.getTime());
+    }
+
+    @Override
+    public void redraw() {
+        updateControl();
     }
 
     private void updateControl() {
@@ -452,23 +445,6 @@ public class TimeEntry extends Composite {
             ignoreVerify = false;
         }
         selectField(currentField);
-        redraw();
+        super.redraw();
     }
-
-    public void setTime(Date time) {
-        checkWidget();
-        calendar.setTime(time);
-        updateControl();
-    }
-
-    public Date getTime() {
-        checkWidget();
-        return calendar.getTime();
-    }
-
-    public void setTimeZone(TimeZone timeZone) {
-        calendar.setTimeZone(timeZone);
-        format.setTimeZone(timeZone);
-    }
-
 }

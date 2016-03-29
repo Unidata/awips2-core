@@ -54,6 +54,8 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * Jan 15, 2016 #5054      randerso    Change to subclass CaveSWTDialog
  * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
  * Mar 2, 2016  3989       tgurney     Add time and date rollover
+ * Mar 17, 2016 #5483      randerso    Added timeEntry.setLayoutData()
+
  * 
  * </pre>
  * 
@@ -122,7 +124,7 @@ public class CalendarDialog extends CaveSWTDialog implements
             int timeFieldCount) {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Calendar");
-        if (timeFieldCount < 0 || timeFieldCount > 3) {
+        if ((timeFieldCount < 0) || (timeFieldCount > 3)) {
             throw new IllegalArgumentException(
                     "timeFieldCount must be 0, 1, 2, or 3");
         }
@@ -183,6 +185,8 @@ public class CalendarDialog extends CaveSWTDialog implements
 
             timeEntryWidget = new TimeEntry(shell, timeFieldCount, tz, this);
             timeEntryWidget.setTime(cal.getTime());
+            timeEntry.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
+                    false));
         }
 
         calendarWidget = new DateTime(shell, SWT.CALENDAR | SWT.BORDER);
