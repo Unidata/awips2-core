@@ -185,7 +185,7 @@ public class CalendarDialog extends CaveSWTDialog implements
 
             timeEntryWidget = new TimeEntry(shell, timeFieldCount, tz, this);
             timeEntryWidget.setTime(cal.getTime());
-            timeEntry.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
+            timeEntryWidget.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
                     false));
         }
 
