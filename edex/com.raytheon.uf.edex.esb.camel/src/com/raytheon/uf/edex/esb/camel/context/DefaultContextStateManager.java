@@ -40,6 +40,7 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
+ * Mar 14, 2016 DR 18533   D. Friedman Resume instead of starting suspended contexts.
  * 
  * </pre>
  * 
@@ -96,7 +97,11 @@ public class DefaultContextStateManager implements IContextStateManager {
                 processor.preStart();
             }
 
-            context.start();
+            if (status == ServiceStatus.Suspended) {
+                context.resume();
+            } else {
+                context.start();
+            }
             rval = context.getStatus().isStarted();
 
             /*

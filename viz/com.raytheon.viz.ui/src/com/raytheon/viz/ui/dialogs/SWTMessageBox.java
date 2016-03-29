@@ -47,6 +47,7 @@ import org.eclipse.swt.widgets.Text;
  * Nov 13, 2015 4946       mapeters    Use scrollable StyledText for long messages.
  * Jan 15, 2016 5054       randerso    Change to subclass CaveSWTDialog
  * Jan 27, 2016 4946       randerso    Make text scrollable for long messages
+ * Mar 28, 2016 5482       randerso    Fix fixed size buttons
  * 
  * </pre>
  * 
@@ -181,13 +182,14 @@ public class SWTMessageBox extends CaveSWTDialog {
      * Create the bottom buttons.
      */
     private void createBottomButtons() {
-        int buttonWidth = 80;
+        int buttonWidth = shell.getDisplay().getDPI().x;
         GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         Composite mainButtonComp = new Composite(shell, SWT.NONE);
         mainButtonComp.setLayout(new GridLayout(getButtonCount(), false));
         mainButtonComp.setLayoutData(gd);
         if (hasStyleAttributes(SWT.OK)) {
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button okBtn = new Button(mainButtonComp, SWT.PUSH);
             okBtn.setText("OK");
             okBtn.setLayoutData(gd);
@@ -201,7 +203,8 @@ public class SWTMessageBox extends CaveSWTDialog {
 
             if (hasStyleAttributes(SWT.CANCEL)) {
                 setReturnValue(new Integer(SWT.CANCEL));
-                gd = new GridData(buttonWidth, SWT.DEFAULT);
+                gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+                gd.minimumWidth = buttonWidth;
                 Button cancelBtn = new Button(mainButtonComp, SWT.PUSH);
                 cancelBtn.setText("Cancel");
                 cancelBtn.setLayoutData(gd);
@@ -215,7 +218,8 @@ public class SWTMessageBox extends CaveSWTDialog {
             }
         } else if (hasStyleAttributes(SWT.YES | SWT.NO)) {
             setReturnValue(new Integer(SWT.NO));
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button yesBtn = new Button(mainButtonComp, SWT.PUSH);
             yesBtn.setText("Yes");
             yesBtn.setLayoutData(gd);
@@ -227,7 +231,8 @@ public class SWTMessageBox extends CaveSWTDialog {
                 }
             });
 
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button noBtn = new Button(mainButtonComp, SWT.PUSH);
             noBtn.setText("No");
             noBtn.setLayoutData(gd);
