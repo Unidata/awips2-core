@@ -17,10 +17,10 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.localization;
+package com.raytheon.uf.common.http.auth;
 
 /**
- * Interface for listening to changes to ILocalizationFiles
+ * Base class for http authorization credentials
  * 
  * <pre>
  *
@@ -28,7 +28,7 @@ package com.raytheon.uf.common.localization;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 25, 2015  4393      njensen     Initial creation
+ * Dec 9, 2015   4834      njensen     Initial creation
  *
  * </pre>
  * 
@@ -36,14 +36,24 @@ package com.raytheon.uf.common.localization;
  * @version 1.0
  */
 
-public interface ILocalizationNotificationObserver {
+public abstract class Credential {
+
+    protected final String userid;
 
     /**
-     * Listener-style method that fires when a file updated message is received
+     * Constructor
      * 
-     * @param fum
-     *            the message
+     * @param userid
      */
-    public void fileUpdateMessageReceived(FileUpdatedMessage fum);
+    protected Credential(String userid) {
+        this.userid = userid;
+    }
+
+    /**
+     * @return the userid
+     */
+    public String getUserid() {
+        return userid;
+    }
 
 }

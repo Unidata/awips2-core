@@ -60,6 +60,8 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Aug 11, 2014 3480       bclement    added log message in perspectiveOpened()
  * Oct 20, 2015 4749       dgilling    Fix bug in perspectiveClosed that caused
  *                                     unwanted GFE startup dialog to pop up.
+ * Jan 15, 2015 5054       randerso    Fix NullPointerException when called from outside
+ *                                     a CAVE environment (e.g. prototype, unit test)
  * 
  * </pre>
  * 
@@ -86,17 +88,19 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
 
     static {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
-        IExtensionPoint point = registry
-                .getExtensionPoint(PERSPECTIVE_MANAGER_EXTENSION);
-        if (point != null) {
-            IExtension[] extensions = point.getExtensions();
+        if (registry != null) {
+            IExtensionPoint point = registry
+                    .getExtensionPoint(PERSPECTIVE_MANAGER_EXTENSION);
+            if (point != null) {
+                IExtension[] extensions = point.getExtensions();
 
-            for (IExtension ext : extensions) {
-                for (IConfigurationElement element : ext
-                        .getConfigurationElements()) {
-                    configurationElements.add(element);
-                    managedPerspectives.add(element
-                            .getAttribute(PERSPECTIVE_ID));
+                for (IExtension ext : extensions) {
+                    for (IConfigurationElement element : ext
+                            .getConfigurationElements()) {
+                        configurationElements.add(element);
+                        managedPerspectives.add(element
+                                .getAttribute(PERSPECTIVE_ID));
+                    }
                 }
             }
         }

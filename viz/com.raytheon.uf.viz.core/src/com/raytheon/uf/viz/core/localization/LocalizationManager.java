@@ -23,7 +23,6 @@ package com.raytheon.uf.viz.core.localization;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
-import java.io.InputStream;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -43,16 +42,20 @@ import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
+import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
+import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.PathManager;
+import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityCommand;
@@ -67,7 +70,6 @@ import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.common.localization.region.RegionLookup;
-import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -105,6 +107,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jan 12, 2015 3993       njensen     Added checkPreinstalled()
  * Feb 16, 2015 3978       njensen     Use REST service for efficient GET of files
  * Aug 26, 2015 4691       njensen     No longer using timestamp as part of needDownload()
+ * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -529,7 +533,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     protected List<ListResponseEntry[]> getListResponseEntry(
             LocalizationContext[] contexts, String fileName, boolean recursive,
-            boolean filesOnly) throws LocalizationOpFailedException {
+            boolean filesOnly) throws LocalizationException {
         ListUtilityCommand[] cmds = new ListUtilityCommand[contexts.length];
         for (int i = 0; i < contexts.length; i++) {
             cmds[i] = new ListUtilityCommand(contexts[i], fileName, recursive,
@@ -541,7 +545,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         AbstractUtilityResponse[] responseList = makeRequest(localizationRequest);
         if (responseList.length != contexts.length) {
-            throw new LocalizationOpFailedException(
+            throw new LocalizationException(
                     "Server returned more or less results than requested.  Requested "
                             + contexts.length + ", returned: "
                             + responseList.length);
@@ -554,9 +558,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
             if (!(response instanceof ListUtilityResponse)) {
-                throw new LocalizationOpFailedException(
-                        "Unexpected type returned"
-                                + response.getClass().getName());
+                throw new LocalizationException("Unexpected type returned"
+                        + response.getClass().getName());
             }
 
             ListUtilityResponse listResponse = (ListUtilityResponse) response;
@@ -574,16 +577,16 @@ public class LocalizationManager implements IPropertyChangeListener {
      * Locks on the file
      * 
      * @param file
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
-    protected void retrieve(LocalizationFile file)
-            throws LocalizationOpFailedException {
+    protected void retrieve(ILocalizationFile file)
+            throws LocalizationException {
         if (file.isDirectory()) {
-            retrieveDir(file.getContext(), file.getName());
+            retrieveDir(file.getContext(), file.getPath());
         } else {
             File localFile = buildFileLocation(file.getContext(),
-                    file.getName(), false);
-            checkPreinstalled(file.getContext(), file.getName(), localFile);
+                    file.getPath(), false);
+            checkPreinstalled(file.getContext(), file.getPath(), localFile);
             /*
              * We don't have a READ lock for needDownload() so the checksum can
              * potentially be messed up if another process or thread modifies at
@@ -593,7 +596,7 @@ public class LocalizationManager implements IPropertyChangeListener {
              */
             if (needDownload(localFile, file.getCheckSum())) {
                 retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
-                        file.getContext(), file.getName()) },
+                        file.getContext(), file.getPath()) },
                         new Date[] { file.getTimeStamp() });
             }
         }
@@ -605,10 +608,10 @@ public class LocalizationManager implements IPropertyChangeListener {
      * 
      * @param context
      * @param fileName
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     private void retrieveDir(LocalizationContext context, String fileName)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         List<ListResponseEntry[]> entriesList = getListResponseEntry(
                 new LocalizationContext[] { context }, fileName, true, false);
 
@@ -793,82 +796,28 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     /**
-     * Uploads a stream as a file to EDEX through the UtilitySrv. It is the
-     * responsibility of the caller to close the stream
+     * Uploads a file to the localization service.
      * 
-     * @param context
-     * @param filename
-     * @param in
-     * @param streamLength
-     * @return the new server time stamp
-     * @throws LocalizationOpFailedException
+     * @param file
+     *            the localization file
+     * @param fileToUpload
+     *            the local file that backs the localization file
+     * @throws LocalizationException
      */
-    protected long upload(LocalizationContext context, String filename,
-            InputStream in, long streamLength)
-            throws LocalizationOpFailedException {
-        if (context.getLocalizationLevel().isSystemLevel()) {
-            throw new UnsupportedOperationException(
-                    "Saving to the System Level, "
-                            + context.getLocalizationLevel()
-                            + ", is not supported.");
-        }
-
-        LocalizationStreamPutRequest request;
+    protected void upload(ILocalizationFile file, File fileToUpload)
+            throws LocalizationException {
         try {
-            request = PrivilegedRequestFactory
-                    .constructPrivilegedRequest(LocalizationStreamPutRequest.class);
-            request.setMyContextName(LocalizationManager.getContextName(context
-                    .getLocalizationLevel()));
-            request.setContext(context);
-            request.setFileName(filename);
-        } catch (VizException e) {
-            throw new LocalizationOpFailedException(
-                    "Could not construct privileged utility request", e);
+            FileUpdatedMessage fum = restConnect
+                    .restPutFile(file, fileToUpload);
+
+            // notify our JVM of the update
+            for (PathManager pm : PathManagerFactory.getActivePathManagers()) {
+                pm.fireListeners(fum);
+            }
+        } catch (CommunicationException e) {
+            throw new LocalizationException("Error uploading file: " + file, e);
         }
 
-        long serverModTime = -1;
-        // Create byte[] buffer
-        byte[] bytes = new byte[512 * 1024];
-        // initial offset = 0
-        int offset = 0;
-        do {
-            // set current offset
-            request.setOffset(offset);
-            try {
-                // read in data from input stream
-                int read = in.read(bytes, 0, bytes.length);
-                if (read > 0) {
-                    // byte read, trim if necessary
-                    offset += read;
-                    if (read < bytes.length) {
-                        bytes = Arrays.copyOf(bytes, read);
-                    }
-                } else {
-                    bytes = new byte[0];
-                    // Should be case but paranoia takes over
-                    offset = (int) streamLength;
-                }
-                request.setBytes(bytes);
-                request.setEnd(offset == streamLength);
-            } catch (IOException e) {
-                throw new LocalizationOpFailedException(
-                        "Could not save file, failed to read in contents", e);
-            }
-
-            try {
-                Number modTime = (Number) ThriftClient
-                        .sendLocalizationRequest(request);
-                if (modTime != null) {
-                    serverModTime = modTime.longValue();
-                }
-            } catch (VizException e) {
-                throw new LocalizationOpFailedException(
-                        "Error uploading file contents to localization server: "
-                                + e.getLocalizedMessage(), e);
-            }
-
-        } while (request.isEnd() == false);
-        return serverModTime;
     }
 
     /**
@@ -879,16 +828,16 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param filename
      *            the name of the file
      * @return modified time on server
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     protected long delete(LocalizationContext context, String filename)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         PrivilegedUtilityRequestMessage request;
         try {
             request = PrivilegedRequestFactory
                     .constructPrivilegedRequest(PrivilegedUtilityRequestMessage.class);
         } catch (VizException e) {
-            throw new LocalizationOpFailedException(
+            throw new LocalizationException(
                     "Could not construct privileged utility request", e);
         }
 
@@ -901,12 +850,12 @@ public class LocalizationManager implements IPropertyChangeListener {
             UtilityResponseMessage response = (UtilityResponseMessage) ThriftClient
                     .sendLocalizationRequest(request);
             if (response == null) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "No response received for delete command");
             }
             AbstractUtilityResponse[] responses = response.getResponses();
             if (responses == null || responses.length != commands.length) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + commands.length + " responses, received "
                                 + (responses != null ? responses.length : null));
@@ -915,22 +864,21 @@ public class LocalizationManager implements IPropertyChangeListener {
             if (rsp instanceof DeleteUtilityResponse) {
                 DeleteUtilityResponse dur = (DeleteUtilityResponse) rsp;
                 if (dur.getErrorText() != null) {
-                    throw new LocalizationOpFailedException(
+                    throw new LocalizationException(
                             "Error processing delete command: "
                                     + dur.getErrorText());
                 }
                 // Yay, successful execution!
                 return dur.getTimeStamp();
             } else {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + DeleteUtilityResponse.class + " received "
                                 + (rsp != null ? rsp.getClass() : null));
             }
         } catch (VizException e) {
-            throw new LocalizationOpFailedException(
-                    "Error processing delete command: "
-                            + e.getLocalizedMessage(), e);
+            throw new LocalizationException("Error processing delete command: "
+                    + e.getLocalizedMessage(), e);
         }
     }
 
@@ -940,10 +888,10 @@ public class LocalizationManager implements IPropertyChangeListener {
      * @param request
      *            the request to make
      * @return the responses from the request
-     * @throws VizException
+     * @throws LocalizationException
      */
     protected AbstractUtilityResponse[] makeRequest(
-            UtilityRequestMessage request) throws LocalizationOpFailedException {
+            UtilityRequestMessage request) throws LocalizationException {
 
         AbstractUtilityResponse[] responseList;
 
@@ -952,14 +900,14 @@ public class LocalizationManager implements IPropertyChangeListener {
             localizationResponse = (UtilityResponseMessage) ThriftClient
                     .sendLocalizationRequest(request);
         } catch (VizException e) {
-            throw new LocalizationOpFailedException("Localization error ", e);
+            throw new LocalizationException("Localization error ", e);
         }
 
         responseList = localizationResponse.getResponses();
 
         for (AbstractUtilityResponse response : responseList) {
             if (!response.successful()) {
-                throw new LocalizationOpFailedException(
+                throw new LocalizationException(
                         response.getFormattedErrorMessage());
             }
         }
@@ -968,7 +916,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     public List<ListResponseEntry[]> getContextList(LocalizationLevel level)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         ListContextCommand cmd = new ListContextCommand();
         cmd.setRequestLevel(level);
 
@@ -982,9 +930,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
             if (!(response instanceof ListUtilityResponse)) {
-                throw new LocalizationOpFailedException(
-                        "Unexpected type returned"
-                                + response.getClass().getName());
+                throw new LocalizationException("Unexpected type returned"
+                        + response.getClass().getName());
             }
 
             ListUtilityResponse listResponse = (ListUtilityResponse) response;

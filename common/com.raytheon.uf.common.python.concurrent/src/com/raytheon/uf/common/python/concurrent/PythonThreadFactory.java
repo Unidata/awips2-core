@@ -22,6 +22,8 @@ package com.raytheon.uf.common.python.concurrent;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import jep.JepException;
+
 import com.raytheon.uf.common.python.PythonInterpreter;
 
 /**
@@ -37,6 +39,7 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Jan 31, 2013            mnash       Initial creation
  * Jun 04, 2013 2041       bsteffen    Improve exception handling for concurrent
  *                                     python.
+ * Dec 10, 2015 4816       dgilling    Make classes package private.
  * 
  * </pre>
  * 
@@ -44,27 +47,51 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * @version 1.0
  */
 
-public class PythonThreadFactory implements ThreadFactory {
+class PythonThreadFactory<P extends PythonInterpreter> implements ThreadFactory {
     private static final AtomicInteger poolNumber = new AtomicInteger(1);
 
     private final ThreadGroup group;
 
-    private final AtomicInteger threadNumber = new AtomicInteger(1);
+    private final AtomicInteger threadNumber;
 
     private final String namePrefix;
 
-    private final ThreadLocal<? extends PythonInterpreter> threadLocal;
+    private final ThreadLocal<P> threadLocal;
 
-    public PythonThreadFactory(
-            ThreadLocal<? extends PythonInterpreter> threadLocal, String name) {
-        this.threadLocal = threadLocal;
+    /**
+     * Default constructor.
+     * 
+     * @param scriptFactory
+     *            {@code  IPythonInterpreterFactory} instance used to build the
+     *            thread-specific {@code PythonInterpreter} instance for each
+     *            thread.
+     * @param name
+     *            The name prefix to attach to each thread in the pool. A number
+     *            suffix will be appended to ensure each thread is uniquely
+     *            named.
+     */
+    PythonThreadFactory(final PythonInterpreterFactory<P> scriptFactory,
+            String name) {
+        this.threadLocal = new ThreadLocal<P>() {
+            @Override
+            protected P initialValue() {
+                try {
+                    return scriptFactory.createPythonScript();
+                } catch (JepException e) {
+                    throw new ScriptCreationException(e);
+                }
+            };
+        };
+
         SecurityManager s = System.getSecurityManager();
-        group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
+        this.group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
                 .getThreadGroup();
-        namePrefix = name.toLowerCase() + "-pool-"
+        this.namePrefix = name.toLowerCase() + "-pool-"
                 + poolNumber.getAndIncrement() + "-thread-";
+        this.threadNumber = new AtomicInteger(1);
     }
 
+    @Override
     public Thread newThread(Runnable r) {
         Thread t = new PythonThread(group, r, namePrefix
                 + threadNumber.getAndIncrement(), 0);
@@ -77,9 +104,13 @@ public class PythonThreadFactory implements ThreadFactory {
         return t;
     }
 
+    public ThreadLocal<P> getThreadLocal() {
+        return threadLocal;
+    }
+
     private class PythonThread extends Thread {
 
-        public PythonThread(ThreadGroup group, Runnable target, String name,
+        PythonThread(ThreadGroup group, Runnable target, String name,
                 long stackSize) {
             super(group, target, name, stackSize);
         }
@@ -90,6 +121,7 @@ public class PythonThreadFactory implements ThreadFactory {
                 super.run();
             } finally {
                 threadLocal.get().dispose();
+                threadLocal.remove();
             }
         }
 

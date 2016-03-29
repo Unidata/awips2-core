@@ -23,7 +23,7 @@ import java.util.EventListener;
 
 /**
  * Subclasses can create their own instance of this class to specify what to do
- * when the {@link PythonJob} is finished
+ * when the {@link IPythonExecutor} is finished.
  * 
  * <pre>
  * 

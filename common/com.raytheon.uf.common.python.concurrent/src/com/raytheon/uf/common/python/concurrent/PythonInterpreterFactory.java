@@ -24,9 +24,9 @@ import jep.JepException;
 import com.raytheon.uf.common.python.PythonInterpreter;
 
 /**
- * Must be extended by all classes that want to run Python on different threads.
- * Defines the thread pool, gets the {@link PythonInterpreter}, and tells how to
- * execute.
+ * Interface for a factory class that the {@code PythonJobCoordinator} uses to
+ * build each {@code PythonInterpreter} instance for each thread in its thread
+ * pool.
  * 
  * <pre>
  * 
@@ -37,6 +37,8 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Feb 05, 2013            mnash       Initial creation
  * Jun 04, 2013 2041       bsteffen    Improve exception handling for concurrent
  *                                     python.
+ * Dec 10, 2015 4816       dgilling    Rewrite as interface, remove maxThreads
+ *                                     and name.
  * 
  * </pre>
  * 
@@ -44,36 +46,13 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * @version 1.0
  */
 
-public abstract class AbstractPythonScriptFactory<P extends PythonInterpreter> {
-
-    private final int maxThreads;
-
-    private final String name;
+public interface PythonInterpreterFactory<P extends PythonInterpreter> {
 
     /**
-     * This method will be called on the Python thread and will instantiate the
-     * PythonInterpreter that is going to be used.
+     * This method will be called on one of the pool's threads and will
+     * instantiate the {@code PythonInterpreter}.
      * 
-     * @return
+     * @return The {@code PythonInterpreter} instance.
      */
-    public abstract P createPythonScript() throws JepException;
-
-    public AbstractPythonScriptFactory(String name, int maxThreads) {
-        this.name = name;
-        this.maxThreads = maxThreads;
-    }
-
-    /**
-     * @return the maxThreads
-     */
-    public final int getMaxThreads() {
-        return maxThreads;
-    }
-
-    /**
-     * @return the name
-     */
-    public final String getName() {
-        return name;
-    }
+    P createPythonScript() throws JepException;
 }

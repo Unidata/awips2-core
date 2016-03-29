@@ -19,18 +19,25 @@
  **/
 package com.raytheon.uf.viz.core.comm;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.KeyStore;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Shell;
 
-import com.raytheon.uf.common.comm.IHttpsHandler;
+import com.raytheon.uf.common.comm.HttpAuthHandler;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
+import com.raytheon.uf.viz.core.localization.LocalizationManager;
 
 /**
- * Cave implementation of the IHttpsCredentialsHandler. Displays the Cave login
- * dialog to get the authorization credentials.
+ * Cave implementation of the HttpAuthHandler. If the address matches the
+ * address in VizApp.getHttpServer(), assumes a local edex and returns the
+ * username. Otherwise, assumes an outside server and displays a login dialog to
+ * get the authorization credentials.
  * 
  * <pre>
  * 
@@ -44,6 +51,8 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * Sep 03, 2014    3570    bclement    added host and port to getCredentials()
  * Nov 15, 2014    3757    dhladky     Added flag for certificate validation checks
  * May 10, 2015    4435    dhladky     Updated interface to allow for loading keyStores.
+ * Dec 04, 2015    4834    njensen     Added support for credentials for local edex
+ * Feb 15, 2016    5281    tjensen     Added check for null credentials in getCredentials
  * 
  * </pre>
  * 
@@ -51,25 +60,50 @@ import com.raytheon.uf.viz.core.auth.UserController;
  * @version 1.0
  */
 
-public class CaveHttpsCredentialsHandler implements IHttpsHandler {
+public class CaveHttpCredentialsHandler implements HttpAuthHandler {
 
     public static final String CERT_HANDLE_FLAG = "https.certificate.check";
-    
-    /**
-     * {@inheritDoc}
-     */
+
     @Override
-    public String[] getCredentials(String host, int port, String message) {
-        // If message contains an "=" split and take the value of the pair
-        if (message.contains("=")) {
-            message = message.split("=")[1];
+    public String[] getCredentials(URI uri, String message) {
+        String httpHost = null;
+        if (VizApp.getHttpServer() != null) {
+            try {
+                URI httpHostURI = new URI(VizApp.getHttpServer());
+                httpHost = httpHostURI.getHost();
+            } catch (URISyntaxException e) {
+                // TODO ignore, shouldn't be possible to get here
+                e.printStackTrace();
+            }
         }
-        HttpsLoginDlg login = new HttpsLoginDlg(message);
-        login.open();
-        String[] credentials = login.getCredentials();
-        // Save off the user's username in the UserController
-        UserController.updateUserData(credentials[0]);
-        return credentials;
+
+        if (uri.getHost().equals(httpHost)
+                && "http".equalsIgnoreCase(uri.getScheme())) {
+            // connecting to a "local" edex
+
+            /*
+             * TODO provide some real credentials for the password/key/signature
+             * instead of the hostname
+             */
+            return new String[] {
+                    LocalizationManager.getContextName(LocalizationLevel.USER),
+                    VizApp.getWsId().getHostName() };
+        } else {
+            // If message contains an "=" split and take the value of the pair
+            if (message.contains("=")) {
+                message = message.split("=")[1];
+            }
+            HttpsLoginDlg login = new HttpsLoginDlg(message);
+            login.open();
+            String[] credentials = login.getCredentials();
+            if (credentials != null) {
+                // Save off the user's username in the UserController
+                UserController.updateUserData(credentials[0]);
+                LocalizationManager.registerContextName(LocalizationLevel.USER,
+                        credentials[0]);
+            }
+            return credentials;
+        }
     }
 
     @Override
@@ -95,10 +129,10 @@ public class CaveHttpsCredentialsHandler implements IHttpsHandler {
 
     @Override
     public KeyStore getKeystore() {
-        /** 
-         * Load the keyStore you wish to submit keys for certificates from.
-         * If in the future CAVE needs to submit SSL cert keys to a server. This is
-         * Where they would come from. 
+        /**
+         * Load the keyStore you wish to submit keys for certificates from. If
+         * in the future CAVE needs to submit SSL cert keys to a server, this is
+         * where they would come from.
          */
         return null;
     }

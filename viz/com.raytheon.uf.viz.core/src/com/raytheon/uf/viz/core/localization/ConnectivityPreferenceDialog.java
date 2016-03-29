@@ -36,15 +36,17 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
-import org.eclipse.swt.widgets.Dialog;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 
@@ -74,7 +76,9 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
- * 
+ * Feb 08, 2016  5281     tjensen     Added method getServerOptions. Don't extend 
+ *                                    org.eclipse.swt.widgets.Dialog
+ * Feb 17, 2016  5281     tjensen     Fix Dialog centering
  * 
  * </pre>
  * 
@@ -82,7 +86,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * @version 1.0
  */
 
-public class ConnectivityPreferenceDialog extends Dialog {
+public class ConnectivityPreferenceDialog {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ConnectivityPreferenceDialog.class, "CAVE");
@@ -122,7 +126,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
      */
     protected Display display;
 
-    private Label localizationLabel;
+    protected Label localizationLabel;
 
     protected TextOrCombo localizationSrv;
 
@@ -164,12 +168,6 @@ public class ConnectivityPreferenceDialog extends Dialog {
     protected String details;
 
     public ConnectivityPreferenceDialog(boolean checkAlertViz, String title) {
-        this(new Shell(Display.getDefault()), checkAlertViz, title);
-    }
-
-    public ConnectivityPreferenceDialog(Shell parentShell,
-            boolean checkAlertViz, String title) {
-        super(parentShell);
         this.title = title;
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
@@ -195,9 +193,8 @@ public class ConnectivityPreferenceDialog extends Dialog {
                         LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
         // Only open if current settings are not valid.
         if (prompt || !validate()) {
-            Shell parent = getParent();
-            display = parent.getDisplay();
-            shell = new Shell(parent, SWT.DIALOG_TRIM | SWT.RESIZE);
+            display = Display.getDefault();
+            shell = new Shell(display, SWT.DIALOG_TRIM | SWT.RESIZE);
             shell.setText(title);
 
             // Create the main layout for the shell.
@@ -209,6 +206,25 @@ public class ConnectivityPreferenceDialog extends Dialog {
             shell.pack();
             shell.setMinimumSize(shell.getBounds().width,
                     shell.getBounds().height);
+
+            // center dialog on monitor containing cursor
+            Monitor[] monitors = display.getMonitors();
+            int monitor = 0;
+
+            Point cursor = display.getCursorLocation();
+            for (int i = 0; i < monitors.length; i++) {
+                if (monitors[i].getBounds().contains(cursor)) {
+                    monitor = i;
+                    break;
+                }
+            }
+            Rectangle bounds = monitors[monitor].getBounds();
+
+            Point size = shell.getSize();
+            int x = bounds.x + ((bounds.width - size.x) / 2);
+            int y = bounds.y + ((bounds.height - size.y) / 2);
+
+            shell.setLocation(x, y);
             updateStatus(false, status, details);
 
             shell.open();
@@ -299,9 +315,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
-        String[] pastOptions = ServerRemembrance.getServerOptions(
-                LocalizationManager.getInstance().getLocalizationStore(),
-                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+        String[] pastOptions = getServerOptions();
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
@@ -364,6 +378,17 @@ public class ConnectivityPreferenceDialog extends Dialog {
         }
     }
 
+    /**
+     * Get the stored server options for the localization server
+     * 
+     * @return server options
+     */
+    protected String[] getServerOptions() {
+        return ServerRemembrance.getServerOptions(LocalizationManager
+                .getInstance().getLocalizationStore(),
+                LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
+    }
+
     private void createBottomButtons() {
         Composite centeredComp = new Composite(shell, SWT.NONE);
         GridLayout gl = new GridLayout(3, false);
@@ -408,6 +433,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
          * Treat the escape key like pressing the Quit button.
          */
         shell.addListener(SWT.Traverse, new Listener() {
+            @Override
             public void handleEvent(Event e) {
                 if (e.detail == SWT.TRAVERSE_ESCAPE) {
                     e.doit = false;

@@ -26,6 +26,8 @@ import org.eclipse.core.runtime.jobs.Job;
 
 import com.raytheon.uf.common.comm.NetworkStatistics;
 import com.raytheon.uf.common.comm.NetworkStatistics.NetworkTraffic;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
 
 /**
  * Stats job for thin client. Logs network stats every minute to console
@@ -36,7 +38,8 @@ import com.raytheon.uf.common.comm.NetworkStatistics.NetworkTraffic;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 2, 2011            mschenke     Initial creation
+ * Nov 2, 2011             mschenke    Initial creation
+ * Jan 27, 2016 5170       tjensen     Changed to only display byte stats when configured
  * 
  * </pre>
  * 
@@ -45,6 +48,9 @@ import com.raytheon.uf.common.comm.NetworkStatistics.NetworkTraffic;
  */
 
 public class StatsJob extends Job {
+
+    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler("StatsJob:");
 
     private NetworkStatistics stats;
 
@@ -63,12 +69,6 @@ public class StatsJob extends Job {
         this.stats = stats;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.core.runtime.jobs.Job#run(org.eclipse.core.runtime.
-     * IProgressMonitor)
-     */
     @Override
     protected IStatus run(IProgressMonitor monitor) {
         runningThread = Thread.currentThread();
@@ -79,35 +79,43 @@ public class StatsJob extends Job {
             long receivedInLastMinute = total.getBytesReceived() - lastReceived;
             long requestCountInLastMinute = total.getRequestCount()
                     - lastRequestCount;
+            boolean doBytes = total.isDoByteStats();
 
             boolean printed = false;
             if (sentInLastMinute != 0.0 || receivedInLastMinute != 0.0
                     || requestCountInLastMinute != 0.0) {
                 printed = true;
-                System.out.println();
-                System.out.println("Last minute sent "
-                        + requestCountInLastMinute
-                        + " messages for a total of "
-                        + NetworkStatistics.toString(sentInLastMinute)
-                        + " sent and "
-                        + NetworkStatistics.toString(receivedInLastMinute)
-                        + " received");
+                String bytesMsg = "";
+                if (doBytes) {
+                    bytesMsg = " for a total of "
+                            + NetworkStatistics.toString(sentInLastMinute)
+                            + " sent and "
+                            + NetworkStatistics.toString(receivedInLastMinute)
+                            + " received";
+                }
+                perfLog.log("Last minute sent " + requestCountInLastMinute
+                        + " messages" + bytesMsg);
             }
-            lastSent = total.getBytesSent();
-            lastReceived = total.getBytesReceived();
+            if (doBytes) {
+                lastSent = total.getBytesSent();
+                lastReceived = total.getBytesReceived();
+            }
             lastRequestCount = total.getRequestCount();
             if (printed) {
-                System.out.println("Total sent " + total.getRequestCount()
-                        + " messages for a total of "
-                        + NetworkStatistics.toString(lastSent) + " sent and "
-                        + NetworkStatistics.toString(lastReceived)
-                        + " received");
+                String bytesTotalMsg = "";
+                if (doBytes) {
+                    bytesTotalMsg = " for a total of "
+                            + NetworkStatistics.toString(lastSent)
+                            + " sent and "
+                            + NetworkStatistics.toString(lastReceived)
+                            + " received";
+                }
+                perfLog.log("Total sent " + total.getRequestCount()
+                        + " messages" + bytesTotalMsg);
                 NetworkTraffic[] mapped = stats.getMappedTrafficStats();
                 for (NetworkTraffic nt : mapped) {
-                    System.out.println(nt);
+                    perfLog.log(nt.toString());
                 }
-
-                System.out.println();
             }
 
             try {

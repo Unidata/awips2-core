@@ -65,6 +65,7 @@ import java.util.zip.GZIPOutputStream;
  * Oct 18, 2013 2267       bgonzale    Add listPaths method.
  *                                     to improve memory utilization
  * Aug 07, 2014 3502       bclement    added copy(), deprecated getFileModifiedWatcher()
+ * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -466,7 +467,7 @@ public class FileUtil {
 
                 // set GZIP input stream to size of file on disk.
                 is = new GZIPInputStream(is, (int) length);
-                ByteArrayOutputStream baos = null;
+                PooledByteArrayOutputStream baos = null;
                 try {
                     baos = ByteArrayOutputStreamPool.getInstance().getStream();
                     bytes = new byte[bufferSize];

@@ -20,7 +20,6 @@
 
 package com.raytheon.uf.common.serialization;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -60,6 +59,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdap
 import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContext;
 import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContextBuilder;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl;
 
 /**
@@ -84,6 +84,7 @@ import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
  * Aug 15, 2014 3541        mschenke    Made getSerializationMetadata(String) static and renamed inspect to match\
  * Aug 27, 2014 3503        bclement    improved error message in registerAdapter()
  * Jun 16, 2015 4561        njensen     Deprecated EnclosureType
+ * Oct 30, 2015 4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -155,8 +156,8 @@ public class DynamicSerializationManager {
      */
     public byte[] serialize(Object obj) throws SerializationException {
 
-        ByteArrayOutputStream baos = ByteArrayOutputStreamPool.getInstance()
-                .getStream();
+        PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
+                .getInstance().getStream();
 
         try {
             ISerializationContext ctx = this.builder.buildSerializationContext(

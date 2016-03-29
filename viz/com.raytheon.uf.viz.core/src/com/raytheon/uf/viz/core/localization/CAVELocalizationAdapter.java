@@ -39,12 +39,12 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationFile.ModifiableLocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.LocalizationInternalFile;
 import com.raytheon.uf.common.localization.LockingFileInputStream;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
+import com.raytheon.uf.common.localization.exception.NoSuchLocalizationFileException;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
@@ -71,7 +71,10 @@ import com.raytheon.uf.common.util.FileUtil;
  *                                      name set
  * Jul 24, 2014 3378        bclement    added createCache()
  * Sep 29, 2014 2975        njensen     Fix bug in exists() with local-only files
- * 
+ * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile
+ * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
+ * Dec 02, 2015 4834        njensen     Updated to use new LocalizationManager.upload()
+ * Jan 11, 2016 5242        kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -128,13 +131,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getPath(com.
-     * raytheon.uf.common.localization.LocalizationContext, java.lang.String)
-     */
     @Override
     public File getPath(LocalizationContext context, String fileName) {
         LocalizationLevel level = context.getLocalizationLevel();
@@ -192,18 +188,10 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.common.localization.ILocalizationAdapter#
-     * getLocalizationMetadata
-     * (com.raytheon.uf.common.localization.LocalizationContext[],
-     * java.lang.String)
-     */
     @Override
     public ListResponse[] getLocalizationMetadata(
             LocalizationContext[] context, String fileName)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         List<LocalizationContext> serverContexts = new ArrayList<LocalizationContext>(
                 context.length);
         List<LocalizationContext> localContexts = new ArrayList<LocalizationContext>(
@@ -240,14 +228,14 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
 
         for (LocalizationContext caveConfigBase : localContexts) {
+            File file = getPath(caveConfigBase, fileName);
             ListResponse response = new ListResponse();
-            response.checkSum = null;
+            response.checkSum = ChecksumIO.getFileChecksum(file, false);
             response.context = caveConfigBase;
             response.date = null;
             response.existsOnServer = false;
             response.fileName = fileName;
             response.protectedLevel = null;
-            File file = getPath(caveConfigBase, fileName);
             response.isDirectory = file != null && file.isDirectory();
             responses.add(response);
         }
@@ -256,16 +244,8 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#retrieve(com
-     * .raytheon.uf.common.localization.LocalizationFile)
-     */
     @Override
-    public void retrieve(LocalizationFile file)
-            throws LocalizationOpFailedException {
+    public void retrieve(LocalizationFile file) throws LocalizationException {
         LocalizationContext context = file.getContext();
         // cave_static.base and cave_config.base is baselined locally, not on
         // the server
@@ -277,32 +257,18 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         LocalizationManager.getInstance().retrieve(file);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#save(com.raytheon
-     * .uf.common.localization.LocalizationFile. ModifiableLocalizationFile)
-     */
     @Override
-    public boolean save(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException {
-        File localFile = file.getLocalFile();
+    public boolean save(LocalizationFile file) throws LocalizationException {
+        File localFile = file.getFile(false);
         if (localFile.isDirectory() == false && localFile.exists()) {
             InputStream in = null;
             try {
                 in = new LockingFileInputStream(localFile);
-                long serverModTime = LocalizationManager.getInstance().upload(
-                        file.getContext(), file.getFileName(), in,
-                        localFile.length());
-                // Success! set potentially changed fields
-                file.setTimeStamp(new Date(serverModTime));
-                file.setIsAvailableOnServer(true);
-                file.setIsDirectory(false);
+                LocalizationManager.getInstance().upload(file, localFile);
                 return true;
             } catch (FileNotFoundException e) {
-                throw new LocalizationOpFailedException(
-                        "Error saving, file does not exist");
+                throw new NoSuchLocalizationFileException(
+                        "Error saving, file does not exist: " + file);
             } finally {
                 // Make sure to close input stream
                 if (in != null) {
@@ -317,14 +283,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.common.localization.ILocalizationAdapter#
-     * getLocalSearchHierarchy
-     * (com.raytheon.uf.common.localization.LocalizationContext
-     * .LocalizationType)
-     */
     @Override
     public LocalizationContext[] getLocalSearchHierarchy(LocalizationType type) {
         synchronized (contexts) {
@@ -365,31 +323,16 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getStaticContexts
-     * ()
-     */
     @Override
     public LocalizationType[] getStaticContexts() {
         return new LocalizationType[] { LocalizationType.CAVE_STATIC,
                 LocalizationType.COMMON_STATIC };
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#listDirectory
-     * (com.raytheon.uf.common.localization.LocalizationContext,
-     * java.lang.String)
-     */
     @Override
     public ListResponse[] listDirectory(LocalizationContext[] contexts,
             String path, boolean recursive, boolean filesOnly)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         Set<String> addedFiles = new HashSet<String>();
         Set<LocalizationContext> serverContexts = new LinkedHashSet<LocalizationContext>(
                 contexts.length);
@@ -465,6 +408,8 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
                     response.existsOnServer = false;
                     response.fileName = p;
                     response.date = new Date(configFile.lastModified());
+                    response.checkSum = ChecksumIO.getFileChecksum(configFile,
+                            false);
                     responses.add(response);
                 }
             }
@@ -488,6 +433,7 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
                 response.fileName = pfr.getPathName();
                 response.isDirectory = locFile.isDirectory();
                 response.protectedLevel = pfr.getProtectedLevel();
+                response.checkSum = ChecksumIO.getFileChecksum(locFile, false);
 
                 if (response.protectedLevel == null
                         || response.context.getLocalizationLevel().compareTo(
@@ -503,29 +449,21 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#delete(com.raytheon
-     * .uf.common.localization.LocalizationFile. ModifiableLocalizationFile)
-     */
     @Override
-    public boolean delete(ModifiableLocalizationFile file)
-            throws LocalizationOpFailedException {
-        long deleteTime = LocalizationManager.getInstance().delete(
-                file.getContext(), file.getFileName());
+    public boolean delete(LocalizationFile file) throws LocalizationException {
+        LocalizationManager.getInstance().delete(file.getContext(),
+                file.getPath());
 
-        // Made it here! file on server succesfully deleted! Delete local file
-        // reference. If that fails, doesn't matter since file does not exist!
-        File localFile = file.getLocalFile();
+        // Made it here! file on server successfully deleted! Delete local file
+        // reference.
+        File localFile = file.getFile(false);
+        /*
+         * NOTE: Do not call file.delete() because LocalizationFile.delete() is
+         * implemented to call CAVELocalizationAdapater.delete() (this method),
+         * which would call LocalizationFile.delete() again, resulting in
+         * infinite recursion.
+         */
         localFile.delete();
-
-        // Reset fields
-        file.setTimeStamp(new Date(deleteTime));
-        file.setIsAvailableOnServer(false);
-        file.setFileChecksum(null);
-        file.setIsDirectory(false);
 
         return true;
     }
@@ -628,16 +566,9 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return results;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getUserSiteList
-     * ()
-     */
     @Override
     public String[] getContextList(LocalizationLevel level)
-            throws LocalizationOpFailedException {
+            throws LocalizationException {
         List<ListResponseEntry[]> entriesList = LocalizationManager
                 .getInstance().getContextList(level);
         Set<String> fileList = new HashSet<String>();
@@ -650,13 +581,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return fileList.toArray(new String[fileList.size()]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#getAvailableLevels
-     * ()
-     */
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         LocalizationLevel[] levels = LocalizationLevel.values();
@@ -671,13 +595,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         return available.toArray(new LocalizationLevel[available.size()]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#exists(com.raytheon
-     * .uf.common.localization.LocalizationFile)
-     */
     @Override
     public boolean exists(LocalizationFile file) {
         if (file.isAvailableOnServer()) {
@@ -700,12 +617,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationAdapter#createCache()
-     */
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
         return new ConcurrentHashMap<LocalizationFileKey, LocalizationFile>();

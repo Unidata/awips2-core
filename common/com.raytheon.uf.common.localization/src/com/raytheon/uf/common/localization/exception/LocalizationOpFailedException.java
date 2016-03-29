@@ -24,11 +24,16 @@ package com.raytheon.uf.common.localization.exception;
  * Signifies that a localization operation failed (for reasons other than
  * communication)
  * 
+ * @deprecated Please use LocalizationException or any of its non-deprecated
+ *             subclasses. This class only continues to exist for backwards
+ *             compatibility and will be removed in the near future.
+ * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * May 15, 2008	#878	    chammack	Initial creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * May 15, 2008 #878        chammack    Initial creation
+ * Nov 30, 2015  4834       njensen     Deprecated
  * 
  * </pre>
  * 
@@ -36,6 +41,7 @@ package com.raytheon.uf.common.localization.exception;
  * @version 1.0
  */
 
+@Deprecated
 public class LocalizationOpFailedException extends LocalizationException {
 
     private static final long serialVersionUID = 1L;

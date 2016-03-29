@@ -24,6 +24,7 @@ import java.util.List;
 
 import org.eclipse.core.runtime.Status;
 import org.eclipse.core.runtime.jobs.Job;
+import org.eclipse.jface.dialogs.IDialogConstants;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
@@ -43,15 +44,14 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.swt.widgets.TreeItem;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.VizApp;
-
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.FilterDelegate;
 
@@ -89,6 +89,7 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * 30 Jun 2015  4401       bkowal      Perspectives are now stored in common_static.
  * 02 Nov 2015  5025       bkowal      Check for files at the specified localization location
  *                                     instead of defaulting to cave_static.
+ * 13 Jan 2016  5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -506,11 +507,11 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         IPathManager mgr = PathManagerFactory.getPathManager();
         LocalizationContext ctx = mgr.getContext(this.localizationType,
                 LocalizationLevel.USER);
-        LocalizationFile[] files = mgr.listFiles(ctx,
+        ILocalizationFile[] files = mgr.listFiles(ctx,
                 this.localizationDirectory, null, true, true);
         String[] strings = new String[files.length];
         for (int i = 0; i < strings.length; i++) {
-            strings[i] = LocalizationUtil.extractName(files[i].getName());
+            strings[i] = LocalizationUtil.extractName(files[i].getPath());
             root.addChild(strings[i], files[i]);
         }
         this.oneLevel = true;
@@ -537,7 +538,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected void createOkButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
         okBtn = new Button(buttonComp, SWT.PUSH);
-        okBtn.setText("Ok");
+        okBtn.setText(IDialogConstants.OK_LABEL);
         okBtn.setLayoutData(rd);
         enableBtnArray.add(okBtn);
         okBtn.addSelectionListener(new SelectionAdapter() {
@@ -551,7 +552,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     protected void createCancelButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
         cancelBtn = new Button(buttonComp, SWT.PUSH);
-        cancelBtn.setText("Cancel");
+        cancelBtn.setText(IDialogConstants.CANCEL_LABEL);
         cancelBtn.setLayoutData(rd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -673,7 +674,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             if (tmp != null) {
                 // it must be a localization file tree, that is what the content
                 // provider uses internally
-                LocalizationFile selectedFile = tmp.getFile();
+                ILocalizationFile selectedFile = tmp.getFile();
 
                 if (selectedFile == null) {
                     displayOpenErrorDialog();
@@ -703,7 +704,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                         // it must be a localization file tree, that is what the
                         // content
                         // provider uses internally
-                        LocalizationFile selectedFile = tmp.getFile();
+                        ILocalizationFile selectedFile = tmp.getFile();
                         setReturnValue(selectedFile);
                     }
                     close();

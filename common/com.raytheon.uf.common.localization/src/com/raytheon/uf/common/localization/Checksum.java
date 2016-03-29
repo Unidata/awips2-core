@@ -28,8 +28,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
 /**
- * 
- * MD5 Checksum Utility
+ * Checksum Utility
  * 
  * This class produces a checksum string from a file or input stream. The
  * checksum can be used to verify the validity of a file.
@@ -38,7 +37,9 @@ import java.security.NoSuchAlgorithmException;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 19, 2007            chammack    Initial Creation.	
+ * Apr 19, 2007            chammack    Initial Creation.
+ * Nov 17, 2015  4834      njensen     Moved CHECKSUM_FILE_EXTENSION here
+ *                                      Support returning non-existent and directory checksums
  * 
  * </pre>
  * 
@@ -47,6 +48,8 @@ import java.security.NoSuchAlgorithmException;
  */
 
 public class Checksum {
+
+    public static final String CHECKSUM_FILE_EXTENSION = ".md5";
 
     /**
      * Disallow instantiation
@@ -61,10 +64,10 @@ public class Checksum {
      * @param is
      *            the input stream to checksum
      * @return the md5 checksum
-     * @throws EdexException
+     * @throws IOException
      *             if checksumming failed
      */
-    public static String getMD5Checksum(InputStream is) throws Exception {
+    public static String getMD5Checksum(InputStream is) throws IOException {
         String result;
         try {
             byte[] b = createChecksum(is);
@@ -73,8 +76,10 @@ public class Checksum {
                 result += Integer.toString((b[i] & 0xff) + 0x100, 16)
                         .substring(1);
             }
-        } catch (Exception e) {
-            throw new Exception("Error generating checksum: ", e);
+        } catch (IOException e) {
+            throw new IOException("Error generating checksum", e);
+        } catch (NoSuchAlgorithmException e) {
+            throw new RuntimeException("Error generating checksum", e);
         }
         return result;
     }
@@ -85,25 +90,21 @@ public class Checksum {
      * @param file
      *            the input file to checksum
      * @return the md5 checksum
-     * @throws EdexException
+     * @throws IOException
      *             if checksumming failed
      */
-    public static String getMD5Checksum(File file) throws Exception {
-
-        FileInputStream fis = null;
-
-        try {
-            fis = new FileInputStream(file);
-            return getMD5Checksum(fis);
-        } finally {
-            if (fis != null)
-                try {
-                    fis.close();
-                } catch (IOException e) {
-                    // ignore
+    public static String getMD5Checksum(File file) throws IOException {
+        if (file.exists()) {
+            if (file.isDirectory()) {
+                return ILocalizationFile.DIRECTORY_CHECKSUM;
+            } else {
+                try (FileInputStream fis = new FileInputStream(file)) {
+                    return getMD5Checksum(fis);
                 }
+            }
+        } else {
+            return ILocalizationFile.NON_EXISTENT_CHECKSUM;
         }
-
     }
 
     private static byte[] createChecksum(InputStream is) throws IOException,

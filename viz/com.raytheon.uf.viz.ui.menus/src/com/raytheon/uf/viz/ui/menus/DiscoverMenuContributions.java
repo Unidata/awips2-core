@@ -19,8 +19,10 @@
  **/
 package com.raytheon.uf.viz.ui.menus;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.net.URL;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,8 +46,9 @@ import org.eclipse.ui.menus.IContributionRoot;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.services.IServiceLocator;
 
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.MenuSerialization;
 import com.raytheon.uf.common.menus.xml.CommonIncludeMenuItem;
 import com.raytheon.uf.common.menus.xml.CommonMenuContributionFile;
@@ -71,14 +74,17 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 12, 2009            chammack     Initial creation
- * Apr 27, 2012   #562     dgilling     Ensure call to MenuCreationJob
- *                                      uses proper method to retrieve
- *                                      localized site.
- * Mar 20, 2013       1638 mschenke     Removed menu creation job use
- * May 04, 2015  4284      bsteffen     Copy subMenuId
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 12, 2009  2214     chammack  Initial creation
+ * Apr 27, 2012  562      dgilling  Ensure call to MenuCreationJob uses proper
+ *                                  method to retrieve localized site.
+ * Mar 20, 2013  1638     mschenke  Removed menu creation job use
+ * May 04, 2015  4284     bsteffen  Copy subMenuId
+ * Jan 15, 2016  5242     kbisanz   Replaced LocalizationFile with
+ *                                  ILocalizationFile
+ * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * 
  * </pre>
  * 
@@ -128,23 +134,23 @@ public class DiscoverMenuContributions {
                             e1);
         }
 
-        LocalizationFile[] file = null;
+        ILocalizationFile[] file = null;
 
         if (menuArray.length == 1) {
             file = PathManagerFactory.getPathManager().listStaticFiles(
                     menuArray[0], new String[] { "index.xml" }, true, true);
         } else {
-            List<LocalizationFile> fileList = new ArrayList<LocalizationFile>();
+            List<ILocalizationFile> fileList = new ArrayList<>();
 
             for (String menu : menuArray) {
-                LocalizationFile[] files = PathManagerFactory.getPathManager()
+                ILocalizationFile[] files = PathManagerFactory.getPathManager()
                         .listStaticFiles(menu, new String[] { "index.xml" },
                                 true, true);
-                for (LocalizationFile lf : files) {
+                for (ILocalizationFile lf : files) {
                     fileList.add(lf);
                 }
             }
-            file = new LocalizationFile[fileList.size()];
+            file = new ILocalizationFile[fileList.size()];
             fileList.toArray(file);
         }
 
@@ -159,10 +165,10 @@ public class DiscoverMenuContributions {
             return;
         }
 
-        for (LocalizationFile lf : file) {
-            try {
+        for (ILocalizationFile lf : file) {
+            try (InputStream is = lf.openInputStream()) {
                 final CommonMenuContributionFile mcf = (CommonMenuContributionFile) um
-                        .unmarshal(lf.getFile());
+                        .unmarshal(is);
                 if (mcf.contribution != null) {
                     IMenuService menuService = (IMenuService) PlatformUI
                             .getWorkbench().getService(IMenuService.class);
@@ -173,21 +179,12 @@ public class DiscoverMenuContributions {
                         imc.removals = im.removals;
                         imc.subMenuName = im.subMenuName;
                         imc.subMenuId = im.subMenuId;
-                        imc.substitutions = VariableSubstitution.combine(
-                                mcf.substitutions, im.substitutions);
+                        imc.substitutions = VariableSubstitution
+                                .substituteAndCombine(mcf.substitutions,
+                                        im.substitutions);
                         imc.visibleOnActionSet = im.visibleOnActionSet;
                         AbstractContributionFactory viewMenuAddition = new AbstractContributionFactory(
                                 imc.installationLocation, Activator.PLUGIN_ID) {
-
-                            /*
-                             * (non-Javadoc)
-                             * 
-                             * @see
-                             * org.eclipse.ui.menus.AbstractContributionFactory#
-                             * createContributionItems
-                             * (org.eclipse.ui.services.IServiceLocator,
-                             * org.eclipse.ui.menus.IContributionRoot)
-                             */
                             @SuppressWarnings("restriction")
                             @Override
                             public void createContributionItems(
@@ -233,10 +230,10 @@ public class DiscoverMenuContributions {
                         menuService.addContributionFactory(viewMenuAddition);
                     }
                 }
-            } catch (JAXBException e) {
+            } catch (JAXBException | IOException | LocalizationException
+                    | ParseException e) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "Error parsing menu file: "
-                                + lf.getFile().getAbsolutePath(), e);
+                        "Error parsing menu file: " + lf.getPath(), e);
 
             }
         }

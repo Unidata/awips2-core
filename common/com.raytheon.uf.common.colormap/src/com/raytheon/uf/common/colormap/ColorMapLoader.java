@@ -20,21 +20,22 @@
 
 package com.raytheon.uf.common.colormap;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.ILocalizationFileObserver;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.PathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
@@ -55,6 +56,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *                                    ColorMapTree.
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Jun 30, 2014  3165     njensen     Moved to common colormap plugin
+ * Dec 10, 2015  4834     njensen     Simplified observing and caching
  * 
  * </pre>
  * 
@@ -70,54 +72,10 @@ public class ColorMapLoader {
 
     private static final Object sharedMutex = new Object();
 
-    /* This class is used to cache the color maps and update them upon changes */
-    private static class IColorMapObserver implements ILocalizationFileObserver {
-        public IColorMap colorMap;
-
-        private LocalizationFile file;
-
-        private String name;
-
-        public IColorMapObserver(String name, IColorMap colorMap,
-                LocalizationFile file) {
-            this.name = name;
-            this.colorMap = colorMap;
-            this.file = file;
-            this.file.addFileUpdatedObserver(this);
-        }
-
-        @Override
-        public void fileUpdated(FileUpdatedMessage message) {
-            synchronized (sharedMutex) {
-                switch (message.getChangeType()) {
-                case DELETED: {
-                    cachedMaps.remove(name);
-                    break;
-                }
-                case ADDED: {
-                    try {
-                        colorMap = loadColorMap(name, file);
-                    } catch (Exception e) {
-                        return;
-                    }
-                    cachedMaps.put(name, this);
-                    break;
-                }
-                case UPDATED: {
-                    try {
-                        colorMap = loadColorMap(name, file);
-                    } catch (Exception e) {
-                        cachedMaps.remove(name);
-                    }
-                    break;
-                }
-                }
-            }
-        }
-    }
-
     /** Map of cached color maps **/
-    private static Map<String, IColorMapObserver> cachedMaps = new HashMap<String, IColorMapObserver>();
+    private static Map<String, IColorMap> cachedMaps = new HashMap<String, IColorMap>();
+
+    private static ILocalizationPathObserver observer;
 
     /**
      * Load a colormap by name
@@ -125,18 +83,33 @@ public class ColorMapLoader {
      * @param name
      *            name of the colormap
      * @return the colormap representation
-     * @throws VizException
+     * @throws ColorMapException
      */
     public static IColorMap loadColorMap(String name) throws ColorMapException {
         IColorMap cm = null;
-        IColorMapObserver cmo = null;
+
         synchronized (sharedMutex) {
-            cmo = cachedMaps.get(name);
-            cm = (cmo == null) ? null : cmo.colorMap;
+            if (observer == null) {
+                observer = new ILocalizationPathObserver() {
+                    @Override
+                    public void fileChanged(ILocalizationFile file) {
+                        String cname = shortenName(file);
+                        synchronized (sharedMutex) {
+                            cachedMaps.remove(cname);
+                        }
+
+                    }
+                };
+                PathManagerFactory.getPathManager()
+                        .addLocalizationPathObserver(DIR_NAME, observer);
+            }
+            cm = cachedMaps.get(name);
         }
+
         if (cm == null) {
+            // not found in cache
             try {
-                LocalizationFile f = PathManagerFactory.getPathManager()
+                ILocalizationFile f = PathManagerFactory.getPathManager()
                         .getStaticLocalizationFile(
                                 DIR_NAME + IPathManager.SEPARATOR + name
                                         + EXTENSION);
@@ -162,8 +135,7 @@ public class ColorMapLoader {
                 }
                 cm = loadColorMap(name, f);
                 if (cm != null) {
-                    cmo = new IColorMapObserver(name, cm, f);
-                    cachedMaps.put(name, cmo);
+                    cachedMaps.put(name, cm);
                 } else {
                     throw new ColorMapException("Can't find colormap " + name);
                 }
@@ -183,7 +155,7 @@ public class ColorMapLoader {
      *            the directory to search recursively
      * @return the localization files of the colormaps that are found
      */
-    private static LocalizationFile[] internalListColorMapFiles(String dir) {
+    private static ILocalizationFile[] internalListColorMapFiles(String dir) {
 
         IPathManager pm = PathManagerFactory.getPathManager();
         Set<LocalizationContext> searchContexts = new HashSet<LocalizationContext>();
@@ -207,7 +179,7 @@ public class ColorMapLoader {
             }
         }
 
-        LocalizationFile[] files = pm.listFiles(searchContexts
+        ILocalizationFile[] files = pm.listFiles(searchContexts
                 .toArray(new LocalizationContext[searchContexts.size()]), dir,
                 new String[] { EXTENSION }, true, true);
         return files;
@@ -222,31 +194,38 @@ public class ColorMapLoader {
      *            the subdirectory of the colormaps dir to search
      * @return
      */
-    public static LocalizationFile[] listColorMapFiles(String subDirectory) {
+    public static ILocalizationFile[] listColorMapFiles(String subDirectory) {
         return internalListColorMapFiles(DIR_NAME + IPathManager.SEPARATOR
                 + subDirectory);
     }
 
     /**
-     * Gets the colormap file's name without the colormap extension and
-     * potentially including localization directories
+     * Gets the colormap file's name without the colormap dir and the colormap
+     * extension but potentially including localization directories
      * 
      * @param file
      *            the colormap file
      * @return
      */
-    public static String shortenName(LocalizationFile file) {
-        String name = file.getName()
-                .replace(DIR_NAME + IPathManager.SEPARATOR, "")
-                .replace(EXTENSION, "");
-        if (!file.getContext().getLocalizationLevel()
-                .equals(LocalizationLevel.BASE)) {
-            String level = file.getContext().getLocalizationLevel().name();
-            String context = file.getContext().getContextName();
-            name = level + PathManager.SEPARATOR + context
-                    + PathManager.SEPARATOR + name;
+    public static String shortenName(ILocalizationFile file) {
+        String path = file.getPath();
+        int startIndex = DIR_NAME.length();
+        int endIndex = path.indexOf(EXTENSION);
+        String cname = null;
+        if (startIndex > -1 && endIndex > -1) {
+            cname = path.substring(startIndex + 1, endIndex);
+            LocalizationContext ctx = file.getContext();
+            if (!ctx.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
+                // rebuild the weird name with the context in it
+                cname = ctx.getLocalizationLevel().toString()
+                        + IPathManager.SEPARATOR + ctx.getContextName()
+                        + IPathManager.SEPARATOR + cname;
+            }
+        } else {
+            // shouldn't be possible but just in case
+            cname = path;
         }
-        return name;
+        return cname;
     }
 
     /**
@@ -256,7 +235,7 @@ public class ColorMapLoader {
      * @return an array of all the colormap names
      */
     public static String[] listColorMaps() {
-        LocalizationFile[] files = internalListColorMapFiles(DIR_NAME);
+        ILocalizationFile[] files = internalListColorMapFiles(DIR_NAME);
         String[] cmaps = new String[files.length];
         for (int i = 0; i < files.length; i++) {
             cmaps[i] = shortenName(files[i]);
@@ -266,15 +245,19 @@ public class ColorMapLoader {
     }
 
     private static IColorMap loadColorMap(String name,
-            LocalizationFile colorMapFile) throws SerializationException {
+            ILocalizationFile colorMapFile) throws SerializationException {
         if (colorMapFile != null) {
-            ColorMap cm = ColorMap.JAXB.unmarshalFromXmlFile(colorMapFile
-                    .getFile().getAbsolutePath());
-            cm.setName(name);
-            cm.setChanged(false);
-            return cm;
-        } else {
-            return null;
+            try (InputStream is = colorMapFile.openInputStream()) {
+                ColorMap cm = ColorMap.JAXB.unmarshalFromInputStream(is);
+                cm.setName(name);
+                cm.setChanged(false);
+                return cm;
+            } catch (LocalizationException | IOException e) {
+                throw new SerializationException("Error loading colormap "
+                        + name + " from file " + colorMapFile);
+            }
         }
+
+        return null;
     }
 }

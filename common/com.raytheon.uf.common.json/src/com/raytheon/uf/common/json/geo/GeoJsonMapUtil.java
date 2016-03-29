@@ -78,6 +78,7 @@ import com.vividsolutions.jts.geom.Polygon;
  *                                     populateFeatureCollection.
  * Jul 07, 2015      #4375 dgilling    Set CRS on feature before adding default
  *                                     geometry.
+ * Oct 27, 2015  4767      bclement    removed warning
  * 
  * </pre>
  * 
@@ -326,7 +327,8 @@ public class GeoJsonMapUtil {
             throws JsonException {
         Object obj = jsonObj.get(FEATURES_KEY);
         if (obj == null
-                || (obj instanceof Collection && ((Collection) obj).isEmpty())
+                || (obj instanceof Collection && ((Collection<?>) obj)
+                        .isEmpty())
                 || (obj instanceof Object[] && ((Object[]) obj).length == 0)) {
             return new EmptyFeatureCollection(type);
         }

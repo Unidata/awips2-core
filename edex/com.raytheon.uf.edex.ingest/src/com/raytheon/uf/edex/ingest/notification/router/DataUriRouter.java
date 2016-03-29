@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.edex.ingest.notification.router;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.zip.GZIPOutputStream;
@@ -29,6 +28,7 @@ import com.raytheon.uf.common.dataplugin.message.DataURINotificationMessage;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig;
@@ -46,6 +46,7 @@ import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig.EndpointTyp
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 19, 2013 2170       rjpeter     Initial creation
+ * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -153,8 +154,8 @@ public class DataUriRouter implements INotificationRouter {
      */
     private byte[] encodeMessage(DataURINotificationMessage msg)
             throws EdexException {
-        ByteArrayOutputStream baos = ByteArrayOutputStreamPool.getInstance()
-                .getStream();
+        PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
+                .getInstance().getStream();
         GZIPOutputStream gzippedURIs = null;
 
         try {

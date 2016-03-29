@@ -19,10 +19,11 @@
  **/
 package com.raytheon.uf.common.comm;
 
+import java.net.URI;
 import java.security.KeyStore;
 
 /**
- * Interface for collecting https Credentials.
+ * Interface for collecting http/https credentials.
  * 
  * <pre>
  * 
@@ -35,7 +36,7 @@ import java.security.KeyStore;
  * Sep 3, 2014     3570     bclement    added host and port to getCredentials()
  * Nov 15, 2014    3757     dhladky     Consolidated the Credentials handler to be a general HTTPS handler.
  * May 10, 2015    4435     dhladky     KeyStore loading needed for presentation of keys to SSL servers.
- * 
+ * Dec 07, 2015    4834     njensen     Renamed to HttpAuthHandler, changed getCredentials() to take URI
  * 
  * </pre>
  * 
@@ -43,46 +44,48 @@ import java.security.KeyStore;
  * @version 1.0
  */
 
-public interface IHttpsHandler {
+public interface HttpAuthHandler {
 
     /**
      * Get the https credentials.
      * 
-     * @param host
-     * @param port
+     * @param uri
      * @param authValue
      *            The authorization message, typically returned from the server
      *            requesting authentication.
      * 
      * @return String Array, username and password
      */
-    String[] getCredentials(String host, int port, String authValue);
-        
+    public String[] getCredentials(URI uri, String authValue);
+
     /**
      * Credential Validation has failed
      */
-    void credentialsFailed();
-    
+    public void credentialsFailed();
+
     /**
      * Get the trustore used to validate certificates
+     * 
      * @return
      */
-    KeyStore getTruststore();
-    
+    public KeyStore getTruststore();
+
     /**
      * Get the keystore used to submit certificates
+     * 
      * @return
      */
-    KeyStore getKeystore();
-    
+    public KeyStore getKeystore();
+
     /**
      * Get the un-encrypted keystore password.
+     * 
      * @return
      */
-    char[] getKeystorePassword();
-    
+    public char[] getKeystorePassword();
+
     /**
      * Whether or not you care to validate certificates
      */
-    boolean isValidateCertificates();
+    public boolean isValidateCertificates();
 }

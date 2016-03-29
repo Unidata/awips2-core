@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
 
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.viz.ui.widgets.IFilterInput;
 
 /**
@@ -44,6 +44,7 @@ import com.raytheon.viz.ui.widgets.IFilterInput;
  * 10 Jun 2015  4401       bkowal      Update {@link #hasChildren()} to use
  *                                     {@link List#isEmpty()}.
  * 16 Jun 2015  4401       bkowal      Updated so that it could provide input to a filter.
+ * 13 Jan 2016  5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -56,14 +57,14 @@ public class VizLocalizationFileTree implements IFilterInput {
 
     private String text = null;
 
-    private LocalizationFile file = null;
+    private ILocalizationFile file = null;
 
-    public VizLocalizationFileTree(String text, LocalizationFile file) {
+    public VizLocalizationFileTree(String text, ILocalizationFile file) {
         this.setText(text);
         this.setFile(file);
     }
 
-    public VizLocalizationFileTree addChild(String text, LocalizationFile file) {
+    public VizLocalizationFileTree addChild(String text, ILocalizationFile file) {
         VizLocalizationFileTree child = new VizLocalizationFileTree(text, file);
         this.addChild(child);
         return child;
@@ -134,14 +135,14 @@ public class VizLocalizationFileTree implements IFilterInput {
      * @param file
      *            the file to set
      */
-    public void setFile(LocalizationFile file) {
+    public void setFile(ILocalizationFile file) {
         this.file = file;
     }
 
     /**
      * @return the file
      */
-    public LocalizationFile getFile() {
+    public ILocalizationFile getFile() {
         return file;
     }
 

@@ -25,6 +25,7 @@ import java.util.List;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.ui.PlatformUI;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -42,10 +43,11 @@ import com.raytheon.viz.core.gl.IGLFont;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 19, 2010            mschenke     Initial creation
- * Apr 27, 2011 #9250      bkowal       getStyle and getName are now used
- *                                      to get the style and name associated
- *                                      with a FontData object.
+ * Oct 19, 2010            mschenke    Initial creation
+ * Apr 27, 2011 #9250      bkowal      getStyle and getName are now used
+ *                                     to get the style and name associated
+ *                                     with a FontData object.
+ * Nov 04, 2015   5070     randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -80,13 +82,14 @@ public class FontFactory {
     }
 
     /**
-     * Given the fontId, intialize a font using the application preferences
+     * Given the fontId, initialize a font using the application preferences
      * 
+     * @param dpi
+     *            resolution of the display device (dots/inch)
      * @param fontId
-     * @param target
      * @return The font to use, never null
      */
-    public IGLFont getFont(String fontId) {
+    public IGLFont getFont(Point dpi, String fontId) {
         if (!registry.hasValueFor(fontId)) {
             statusHandler.handle(Priority.PROBLEM,
                     "No font registered with id: " + fontId);
@@ -109,7 +112,7 @@ public class FontFactory {
             styles.add(IFont.Style.ITALIC);
         }
 
-        IGLFont font = new GLFont(name, size,
+        IGLFont font = new GLFont(dpi, name, size,
                 styles.toArray(new IFont.Style[styles.size()]));
         if (fontId.equals(DEFAULT_FONT_ID)) {
             font = new UnmodifiableGLFont(font);

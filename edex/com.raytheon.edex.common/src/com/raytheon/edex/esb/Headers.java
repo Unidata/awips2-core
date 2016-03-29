@@ -1,42 +1,44 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.edex.esb;
 
 import java.io.Serializable;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * TODO Add Description
- * 
+ * A local copy of the Camel headers.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Mar 5, 2009            jkorman     Initial creation
- * 
+ * Mar 05, 2009            jkorman     Initial creation
+ * Oct 26, 2015 4999       nabowle     Switch headerMap to case insensitive
+ *                                     TreeMap for Camel 2.16.0 compatibility.
+ *
  * </pre>
- * 
+ *
  * @author jkorman
  * @version 1.0
  */
@@ -45,10 +47,12 @@ public class Headers implements Serializable, Iterable<String> {
 
     private static final long serialVersionUID = 1L;
 
-    private Map<String, Object> headerMap = new HashMap<String, Object>();
+
+    private Map<String, Object> headerMap = new TreeMap<>(
+            String.CASE_INSENSITIVE_ORDER);
 
     /**
-     * 
+     *
      * @param key
      * @return
      */
@@ -63,7 +67,7 @@ public class Headers implements Serializable, Iterable<String> {
     /**
      * Returns an Iterator to the header names contained in this Header. The
      * order of returned names is not specified.
-     * 
+     *
      * @return An Iterator to the Header names.
      */
     @Override

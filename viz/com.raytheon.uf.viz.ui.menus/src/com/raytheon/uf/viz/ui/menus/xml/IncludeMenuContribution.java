@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.ui.menus.xml;
 
 import java.io.File;
+import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -42,16 +43,17 @@ import com.raytheon.uf.viz.ui.menus.DiscoverMenuContributions;
 import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
 
 /**
- * Providex ability to include menus from other localization files.
+ * Provides ability to include menus from other localization files.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Apr 27, 2009           chammack    Initial creation
- * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
  * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------
+ * Apr 27, 2009  2214     chammack  Initial creation
+ * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
+ * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * 
  * </pre>
  * 
@@ -100,7 +102,8 @@ public class IncludeMenuContribution extends
 
             final MenuTemplateFile mtf = (MenuTemplateFile) um.unmarshal(file);
 
-            VariableSubstitution[] combinedSub = VariableSubstitution.combine(
+            VariableSubstitution[] combinedSub = VariableSubstitution
+                    .substituteAndCombine(
                     subs, item.substitutions);
 
             if (mtf.contributions != null) {
@@ -114,6 +117,9 @@ public class IncludeMenuContribution extends
                     }
                 }
             }
+        } catch (ParseException e) {
+            throw new VizException("Unable to process menu substitutions: "
+                    + item.fileName, e);
         } catch (JAXBException e) {
             throw new VizException("Unable to unmarshal sub-xml file: "
                     + item.fileName, e);

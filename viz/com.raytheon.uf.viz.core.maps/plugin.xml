@@ -142,4 +142,16 @@
            </dynamic>
          </menuContribution>
    </extension>
+   <extension
+         point="org.eclipse.ui.themes">
+      <fontDefinition
+            categoryId="com.raytheon.uf.viz.core.theme"
+            id="com.raytheon.uf.viz.core.mapLabelFont"
+            label="Map Label Font"
+            value="Monospace-regular-8">
+         <description>
+            The map label font for CAVE
+         </description>
+      </fontDefinition>
+   </extension>
 </plugin>

@@ -19,9 +19,6 @@
  **/
 package com.raytheon.viz.ui.editor;
 
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.viz.ui.panes.PaneManager;
@@ -35,8 +32,9 @@ import com.raytheon.viz.ui.panes.PaneManager;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 18, 2011            mschenke     Initial creation
- * Mar 02, 2015 4204       njensen      Only add "n Panel" to title if not already there
+ * Jan 18, 2011            mschenke    Initial creation
+ * Mar 02, 2015  4204      njensen     Only add "n Panel" to title if not already there
+ * Oct 21, 2015  5023      njensen     Smarter updateTitle() logic
  * 
  * </pre>
  * 
@@ -46,8 +44,6 @@ import com.raytheon.viz.ui.panes.PaneManager;
 
 public class VizMultiPaneEditor extends AbstractEditor implements
         IMultiPaneEditor {
-
-    private static final Pattern P = Pattern.compile("\\d* Panel");
 
     /**
      * Set the title of the tab
@@ -63,94 +59,47 @@ public class VizMultiPaneEditor extends AbstractEditor implements
      */
     protected void updateTitle() {
         // set the name on the tab
-        String name = getEditorName();
-        if (getNumberofPanes() > 1) {
-            Matcher m = P.matcher(name);
-            if (!m.find()) {
+        String name = getDefaultName();
+        String partName = getPartName();
+        if (partName.equals(name) || partName.matches("\\d+ Panel " + name)) {
+            if (getNumberofPanes() > 1) {
                 name = getNumberofPanes() + " Panel " + name;
             }
+            setPartName(name);
         }
-        setPartName(name);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#getNumberofPanes()
-     */
     @Override
     public int getNumberofPanes() {
         return editorInput.getPaneManager().getNumberofPanes();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#setSelectedPane(java.lang
-     * .String, com.raytheon.uf.viz.core.IDisplayPane)
-     */
     @Override
     public void setSelectedPane(String action, IDisplayPane pane) {
         editorInput.getPaneManager().setSelectedPane(action, pane);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#getSelectedPane(java.lang
-     * .String)
-     */
     @Override
     public IDisplayPane getSelectedPane(String action) {
         return editorInput.getPaneManager().getSelectedPane(action);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#getSelectedPanes(java.lang
-     * .String)
-     */
     @Override
     public IDisplayPane[] getSelectedPanes(String action) {
         return editorInput.getPaneManager().getSelectedPanes(action);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#isSelectedPane(java.lang.
-     * String, com.raytheon.uf.viz.core.IDisplayPane)
-     */
     @Override
     public boolean isSelectedPane(String action, IDisplayPane pane) {
         return editorInput.getPaneManager().isSelectedPane(action, pane);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#addSelectedPaneChangedListener
-     * (com.raytheon.viz.ui.editor.ISelectedPanesChangedListener)
-     */
     @Override
     public void addSelectedPaneChangedListener(
             ISelectedPanesChangedListener listener) {
         editorInput.getPaneManager().addSelectedPaneChangedListener(listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#removeSelectedPaneChangedListener
-     * (com.raytheon.viz.ui.editor.ISelectedPanesChangedListener)
-     */
     @Override
     public void removeSelectedPaneChangedListener(
             ISelectedPanesChangedListener listener) {
@@ -158,13 +107,6 @@ public class VizMultiPaneEditor extends AbstractEditor implements
                 .removeSelectedPaneChangedListener(listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#addPane(com.raytheon.uf.viz
-     * .core.drawables.IRenderableDisplay)
-     */
     @Override
     public IDisplayPane addPane(IRenderableDisplay renderableDisplay) {
         IDisplayPane pane = super.addPane(renderableDisplay);
@@ -172,73 +114,37 @@ public class VizMultiPaneEditor extends AbstractEditor implements
         return pane;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#removePane(com.raytheon.uf
-     * .viz.core.IDisplayPane)
-     */
     @Override
     public void removePane(IDisplayPane pane) {
         editorInput.getPaneManager().removePane(pane);
         updateTitle();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#hidePane(com.raytheon.uf.
-     * viz.core.IDisplayPane)
-     */
     @Override
     public void hidePane(IDisplayPane pane) {
         editorInput.getPaneManager().hidePane(pane);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#showPane(com.raytheon.uf.
-     * viz.core.IDisplayPane)
-     */
     @Override
     public void showPane(IDisplayPane pane) {
         editorInput.getPaneManager().showPane(pane);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#displayedPaneCount()
-     */
     @Override
     public int displayedPaneCount() {
         return editorInput.getPaneManager().displayedPaneCount();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#clear()
-     */
     @Override
     public void clear() {
         editorInput.getPaneManager().clear();
         updateTitle();
     }
 
-    protected String getEditorName() {
+    protected String getDefaultName() {
         return editorInput.getName();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.AbstractEditor#getNewPaneManager()
-     */
     @Override
     protected PaneManager getNewPaneManager() {
         return new PaneManager();

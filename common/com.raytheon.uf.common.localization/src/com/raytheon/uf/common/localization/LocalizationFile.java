@@ -26,22 +26,15 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.util.ArrayList;
 import java.util.Date;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Set;
+import java.util.HashMap;
+import java.util.Map;
 
 import com.raytheon.uf.common.localization.FileLocker.Type;
-import com.raytheon.uf.common.localization.ILocalizationAdapter.ListResponse;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.serialization.JAXBManager;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Represents a file in the localization service.<BR>
@@ -94,7 +87,12 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                       methods, extracted jaxb convenience logic
  * Aug 24, 2015 4393        njensen     Added IPathManager to constructor args
  * Aug 26, 2015 4691        njensen     Safely skip file locking on most read operations                                                                            
- * 
+ * Nov 12, 2015 4834        njensen     Remove ModifiableLocalizationFile
+ *                                       Deprecated and changed add/removeFileUpdatedObserver()
+ * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes
+ * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver                                      
+ * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
+ * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
  * 
  * </pre>
  * 
@@ -105,80 +103,26 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 public final class LocalizationFile implements Comparable<LocalizationFile>,
         ILocalizationFile {
 
-    private static transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(LocalizationFile.class);
-
     /**
      * the max file size of a localization file to attempt to read without
      * locking
      */
     private static final int EAGER_READ_MAXSIZE = 100 * 1024;
 
-    /**
-     * Class {@link LocalizationFile} exposes to the
-     * {@link ILocalizationAdapter} objects so they can modify the file if
-     * anything changes. Don't want to expose ability to modify
-     * {@link LocalizationFile} contents to everyone
-     * 
-     * @author mschenke
-     * @version 1.0
-     */
-    public class ModifiableLocalizationFile {
-
-        private ModifiableLocalizationFile() {
-            // Private constructor
-        }
-
-        public LocalizationFile getLocalizationFile() {
-            return LocalizationFile.this;
-        }
-
-        public void setTimeStamp(Date timeStamp) {
-            getLocalizationFile().fileTimestamp = timeStamp;
-        }
-
-        public void setFileChecksum(String checksum) {
-            getLocalizationFile().fileCheckSum = checksum;
-        }
-
-        public void setIsAvailableOnServer(boolean isAvailableOnServer) {
-            getLocalizationFile().isAvailableOnServer = isAvailableOnServer;
-        }
-
-        public void setIsDirectory(boolean isDirectory) {
-            getLocalizationFile().isDirectory = isDirectory;
-        }
-
-        public File getLocalFile() {
-            return getLocalizationFile().file;
-        }
-
-        public String getFileName() {
-            return getLocalizationFile().path;
-        }
-
-        public LocalizationContext getContext() {
-            return getLocalizationFile().context;
-        }
-    }
-
     /** Local file pointer to localization file, will never be null */
     protected final File file;
 
     /** The file timestamp on the server, may be null if file doesn't exist yet */
-    private Date fileTimestamp;
+    private final Date fileTimestamp;
 
     /** Checksum of file on server, may be null if file doesn't exist yet */
-    private String fileCheckSum;
+    private final String fileCheckSum;
 
     /** The context of the file, never null */
     private final LocalizationContext context;
 
     /** True if file points to a directory, false otherwise */
-    private boolean isDirectory;
-
-    /** Denotes whether the file exists on the server */
-    private boolean isAvailableOnServer;
+    private final boolean isDirectory;
 
     /** The localization adapter for the file */
     protected final ILocalizationAdapter adapter;
@@ -190,21 +134,10 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     private LocalizationLevel protectedLevel;
 
     /** File changed observers */
-    private final Set<ILocalizationFileObserver> observers = new HashSet<ILocalizationFileObserver>();
+    private final Map<ILocalizationFileObserver, ILocalizationPathObserver> observers = new HashMap<>();
 
     /** Flag to set if file has been requested */
     protected boolean fileRequested = false;
-
-    /**
-     * Construct a null localization file, used to keep track of files that
-     * cannot exist.
-     */
-    LocalizationFile() {
-        file = null;
-        path = null;
-        adapter = null;
-        context = null;
-    }
 
     /**
      * Check if a file is null type
@@ -218,45 +151,16 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
 
     LocalizationFile(IPathManager pathMgr, ILocalizationAdapter adapter,
             LocalizationContext context, File file, Date date, String path,
-            String checkSum, boolean isDirectory, boolean existsOnServer,
+            String checkSum, boolean isDirectory,
             LocalizationLevel protectedLevel) {
         this.adapter = adapter;
         this.context = context;
         this.file = file;
         this.fileCheckSum = checkSum;
         this.fileTimestamp = date;
-        this.isAvailableOnServer = existsOnServer;
         this.isDirectory = isDirectory;
         this.path = LocalizationUtil.getSplitUnique(path);
         this.protectedLevel = protectedLevel;
-        ((LocalizationNotificationObserver) pathMgr.getObserver())
-                .addObservedFile(this);
-    }
-
-    /**
-     * Update the localization file with new metadata
-     * 
-     * @param metadata
-     */
-    void update(ListResponse metadata) {
-        if (metadata != null) {
-            // Update new metadata
-            this.isAvailableOnServer = metadata.existsOnServer;
-            this.fileTimestamp = metadata.date;
-            this.fileCheckSum = metadata.checkSum;
-            this.isDirectory = metadata.isDirectory;
-            this.protectedLevel = metadata.protectedLevel;
-        }
-    }
-
-    /**
-     * Returns a modifiable version of the localization file. Meant to be used
-     * internally within localization only which is why package level
-     * 
-     * @return
-     */
-    ModifiableLocalizationFile getModifiableFile() {
-        return new ModifiableLocalizationFile();
     }
 
     /**
@@ -266,7 +170,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the file time stamp, may be null if file doesn't exist yet
      */
     @Override
-    public Date getTimeStamp() {
+    public final Date getTimeStamp() {
         return fileTimestamp;
     }
 
@@ -276,7 +180,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the file check sum, may be null if file doesn't exist yet
      */
     @Override
-    public String getCheckSum() {
+    public final String getCheckSum() {
         return fileCheckSum;
     }
 
@@ -320,7 +224,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
                      */
                 }
             }
-            if (isAvailableOnServer) {
+            if (isAvailableOnServer()) {
                 adapter.retrieve(this);
             }
         }
@@ -489,7 +393,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return the context
      */
     @Override
-    public LocalizationContext getContext() {
+    public final LocalizationContext getContext() {
         return context;
     }
 
@@ -499,7 +403,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return true if the file is available on the server
      */
     public boolean isAvailableOnServer() {
-        return isAvailableOnServer;
+        return fileCheckSum != null
+                && !ILocalizationFile.NON_EXISTENT_CHECKSUM
+                        .equals(fileCheckSum);
     }
 
     /**
@@ -508,7 +414,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return true if the file is actually a directory
      */
     @Override
-    public boolean isDirectory() {
+    public final boolean isDirectory() {
         return isDirectory;
     }
 
@@ -538,25 +444,21 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      *             out the contents to the stream.
      * 
      * 
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
     @Deprecated
-    public boolean save() throws LocalizationOpFailedException {
+    public boolean save() throws LocalizationException {
         try {
             FileLocker.lock(this, file, Type.WRITE);
             String checksum = "";
             try {
                 checksum = Checksum.getMD5Checksum(file);
-            } catch (Exception e) {
+            } catch (IOException e) {
                 // Ignore
             }
             // Check if file differs from server file
             if (!checksum.equals(fileCheckSum)) {
-                boolean rval = adapter.save(getModifiableFile());
-                if (rval) {
-                    fileCheckSum = checksum;
-                }
-                return rval;
+                return adapter.save(this);
             }
 
             // Local file matches server file, success technically
@@ -569,31 +471,41 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Return the file path (not including the context directories)
      * 
+     * @deprecated Please use getPath() instead. It will return the exact same
+     *             String and is available on the ILocalizationFile interface.
+     * 
      * @return the file path
      */
+    @Deprecated
+    public final String getName() {
+        return getPath();
+    }
+
     @Override
-    public String getName() {
+    public final String getPath() {
         return path;
     }
 
     /**
      * Delete the localization file
      * 
-     * @return true if file is deleted, false if file still exists
-     * @throws LocalizationOpFailedException
+     * @throws LocalizationException
      */
-    public boolean delete() throws LocalizationOpFailedException {
+    @Override
+    public void delete() throws LocalizationException {
         try {
             FileLocker.lock(this, file, Type.WRITE);
             if (exists()) {
-                return adapter.delete(getModifiableFile());
+                adapter.delete(this);
             } else if (file.exists()) {
                 // Local file does actually exist, delete manually
-                return file.delete();
+                try {
+                    Files.delete(file.toPath());
+                } catch (IOException e) {
+                    throw new LocalizationException("Error deleting file "
+                            + file, e);
+                }
             }
-
-            // File doesn't exist, it is deleted, so technically success?
-            return true;
         } finally {
             FileLocker.unlock(this, file);
         }
@@ -614,10 +526,22 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @param observer
      */
-    public void addFileUpdatedObserver(ILocalizationFileObserver observer) {
+    @Deprecated
+    public void addFileUpdatedObserver(final ILocalizationFileObserver observer) {
+        ILocalizationPathObserver pathObs = new LocalizationFileIntermediateObserver(
+                this, observer);
+
         synchronized (observers) {
-            observers.add(observer);
+            ILocalizationPathObserver old = observers.put(observer, pathObs);
+            if (old != null) {
+                System.err
+                        .println("Developer error: added the same observer to the same file twice");
+                new Throwable().printStackTrace();
+            }
         }
+
+        PathManagerFactory.getPathManager().addLocalizationPathObserver(
+                this.path, pathObs);
     }
 
     /**
@@ -625,32 +549,15 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @param observer
      */
+    @Deprecated
     public void removeFileUpdatedObserver(ILocalizationFileObserver observer) {
+        ILocalizationPathObserver pathObs = null;
         synchronized (observers) {
-            observers.remove(observer);
+            pathObs = observers.remove(observer);
         }
-    }
-
-    /**
-     * Notify the observers for the LocalizationFile of the change
-     * 
-     * @param message
-     *            update message
-     * @param metadata
-     *            updated metadata for the file based on the message
-     */
-    void notifyObservers(FileUpdatedMessage message) {
-        List<ILocalizationFileObserver> toNotify = new ArrayList<ILocalizationFileObserver>();
-        synchronized (observers) {
-            toNotify.addAll(observers);
-        }
-        for (Object observer : toNotify) {
-            try {
-                ((ILocalizationFileObserver) observer).fileUpdated(message);
-            } catch (Throwable t) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error notifying observer of file change", t);
-            }
+        if (pathObs != null) {
+            PathManagerFactory.getPathManager().removeLocalizationPathObserver(
+                    pathObs);
         }
     }
 

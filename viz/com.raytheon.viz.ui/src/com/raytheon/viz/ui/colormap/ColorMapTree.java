@@ -27,13 +27,13 @@ import java.util.List;
 
 import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
 
 /**
  * ColorMapTree represents the directory structure of colormaps directory. The
@@ -50,7 +50,9 @@ import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
  * Sep 11, 2014  3516     rferrel     file updates now inform the factory.
  *                                      getName() no longer returns a null.
  *                                      FileChangeListener now only gets colormaps changes.
- * Aug 24, 2015  4393     njensen     Updates for observer changes                                     
+ * Aug 24, 2015  4393     njensen     Updates for observer changes
+ * Nov 18, 2015  4834     njensen     API updates due to removal of LocalizationNotificationObserver
+ * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -69,7 +71,7 @@ public class ColorMapTree {
 
     private final Object filesLock = new Object();
 
-    private LocalizationFile[] files;
+    private ILocalizationFile[] files;
 
     private final Object subTreesLock = new Object();
 
@@ -136,7 +138,7 @@ public class ColorMapTree {
     public List<ColorMapTree> getSubTrees() {
         synchronized (subTreesLock) {
             if (subTrees == null) {
-                subTrees = new ArrayList<ColorMapTree>();
+                subTrees = new ArrayList<>();
                 if (context == null) {
                     for (String context : pathManager.getContextList(level)) {
                         LocalizationContext ctx = pathManager.getContext(
@@ -145,10 +147,10 @@ public class ColorMapTree {
                         subTrees.add(new ColorMapTree(pathManager, ctx, path));
                     }
                 } else {
-                    for (LocalizationFile file : requestFiles()) {
-                        if (file.isDirectory() && !path.equals(file.getName())) {
+                    for (ILocalizationFile file : requestFiles()) {
+                        if (file.isDirectory() && !path.equals(file.getPath())) {
                             subTrees.add(new ColorMapTree(pathManager, context,
-                                    file.getName()));
+                                    file.getPath()));
                         }
                     }
                 }
@@ -161,12 +163,12 @@ public class ColorMapTree {
      * 
      * @return all color map files within this level of the tree.
      */
-    public List<LocalizationFile> getColorMapFiles() {
+    public List<ILocalizationFile> getColorMapFiles() {
         if (context == null) {
             return Collections.emptyList();
         } else {
-            List<LocalizationFile> result = new ArrayList<LocalizationFile>();
-            for (LocalizationFile file : requestFiles()) {
+            List<ILocalizationFile> result = new ArrayList<>();
+            for (ILocalizationFile file : requestFiles()) {
                 if (!file.isDirectory()) {
                     result.add(file);
                 }
@@ -201,7 +203,7 @@ public class ColorMapTree {
      * Intended for use on non-UI thread.
      */
     public void optimizeIsEmpty() {
-        System.out.println(Thread.currentThread().getName() + "Optimizing "
+        System.out.println(Thread.currentThread().getName() + " Optimizing "
                 + getName());
         isEmpty();
 
@@ -245,7 +247,7 @@ public class ColorMapTree {
         }
     }
 
-    private LocalizationFile[] requestFiles() {
+    private ILocalizationFile[] requestFiles() {
         synchronized (filesLock) {
             if (files == null) {
                 files = pathManager
@@ -267,16 +269,13 @@ public class ColorMapTree {
         private final Reference<ColorMapTree> treeRef;
 
         private FileChangeListener(ColorMapTree tree) {
-            treeRef = new WeakReference<ColorMapTree>(tree);
+            treeRef = new WeakReference<>(tree);
         }
 
         @Override
         public void fileUpdated(FileUpdatedMessage message) {
             ColorMapTree tree = treeRef.get();
-            if (tree == null) {
-                ((LocalizationNotificationObserver) pathManager.getObserver())
-                        .removeGlobalFileChangeObserver(this);
-            } else {
+            if (tree != null) {
                 tree.handleUpdate(message);
                 ColorMapTreeFactory factory = ColorMapTreeFactory.getInstance();
                 factory.optimizeTree(tree);

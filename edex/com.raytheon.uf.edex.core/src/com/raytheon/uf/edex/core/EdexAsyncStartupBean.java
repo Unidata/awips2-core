@@ -17,26 +17,32 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+package com.raytheon.uf.edex.core;
+
 /**
- * Provides classes for managing files and paths based on localization settings 
- * 
- * <p>Classes provided in this package are used by both EDEX and CAVE.  The 
- * {@link com.raytheon.uf.common.localization.PathManagerFactory} obtains the correct 
- * {@link com.raytheon.uf.common.localization.IPathManager} object depending on if the 
- * code is executing from the EDEX server or CAVE client. 
+ * Interface that defines a bean required for EDEX startup that can be
+ * initialized off the main thread.
  * 
  * <pre>
+ * 
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Jul 27, 2007             njensen     Initial creation
- * Jul 11, 2008 1250        jelkins     Implement ILocalizationAdapter for EDEX
+ * 
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Dec 22, 2015  #4262     dgilling     Initial creation
  * 
  * </pre>
  * 
- * @author jelkins
+ * @author dgilling
  * @version 1.0
- * 
  */
-package com.raytheon.edex.utility;
 
+public interface EdexAsyncStartupBean {
+
+    /**
+     * Whether or not this bean has completed initialization.
+     * 
+     * @return {@code true} if it is initialized, {@code false} if it is not.
+     */
+    boolean isDone();
+}

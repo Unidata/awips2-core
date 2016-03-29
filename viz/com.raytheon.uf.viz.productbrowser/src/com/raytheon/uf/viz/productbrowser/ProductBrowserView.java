@@ -79,6 +79,7 @@ import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants
  *                                  expand/collapse on double click.
  * Sep 03, 2015  4717     mapeters  Added maxDepth limitation to refresh.
  * Sep 11, 2015  4717     mapeters  Don't need to copy/dispose tree items when updating them.
+ * Jan 07, 2016  5176     tgurney   Check for null on double-click of tree item.
  * 
  * </pre>
  * 
@@ -258,12 +259,14 @@ public class ProductBrowserView extends ViewPart {
             public void doubleClick(DoubleClickEvent event) {
                 TreeItem[] selection = productTree.getSelection();
                 TreeItem selectedTreeItem = selection[0];
-                if (!getLabel(selectedTreeItem).isProduct()) {
-                    selectedTreeItem.setExpanded(!selectedTreeItem
-                            .getExpanded());
-                    ProductBrowserQueryJob.startJob(selectedTreeItem);
-                } else {
-                    loadProductAction.run();
+                if (getLabel(selectedTreeItem) != null) {
+                    if (!getLabel(selectedTreeItem).isProduct()) {
+                        selectedTreeItem.setExpanded(!selectedTreeItem
+                                .getExpanded());
+                        ProductBrowserQueryJob.startJob(selectedTreeItem);
+                    } else {
+                        loadProductAction.run();
+                    }
                 }
             }
         });

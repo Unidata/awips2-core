@@ -67,13 +67,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  * <pre>
  * 
  * SOFTWARE HISTORY
- *      
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Jul 07, 2009            bgonzale    Initial Creation.
- * Jan 09, 2014  2647      bsteffen    Do not change active editor on focus
- *                                     because that causes problems when
- *                                     switching windows.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 07, 2009  830      bgonzale  Initial Creation.
+ * Jan 09, 2014  2647     bsteffen  Do not change active editor on focus because
+ *                                  that causes problems when switching windows.
+ * Feb 11, 2016  5351     bsteffen  Use only visible panes as active panes when
+ *                                  possible
+ * 
  * </pre>
  * 
  * @author bgonzale
@@ -194,6 +196,9 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                 setSelectedPane(IMultiPaneEditor.IMAGE_ACTION, null);
             }
             adjustPaneLayout(displayedPaneCount);
+            if (pane == activatedPane) {
+                activatedPane = null;
+            }
         }
         refresh();
     }
@@ -401,8 +406,15 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     @Override
     public IDisplayPane getActiveDisplayPane() {
         if (activatedPane == null) {
-            activatedPane = displayPanes.size() > 0 ? displayPanes.get(0)
-                    : null;
+            for (VizDisplayPane pane : displayPanes) {
+                if (pane.isVisible()) {
+                    activatedPane = pane;
+                    break;
+                }
+            }
+            if (activatedPane == null && !displayPanes.isEmpty()) {
+                activatedPane = displayPanes.get(0);
+            }
         }
         return activatedPane;
     }

@@ -39,6 +39,8 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015  3806      njensen     Initial creation
+ * Nov 12, 2015  4834      njensen     Added NON_EXISTENT_CHECKSUM and DIRECTORY_CHECKSUM
+ * Dec 09, 2015  4834      njensen     Added delete()
  *
  * </pre>
  * 
@@ -47,6 +49,19 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  */
 
 public interface ILocalizationFile {
+
+    /**
+     * Checksum indicating a non-existent file. This is used primarily when
+     * creating a new file or deleting an existing file. On create of new file,
+     * the previous checksum should be the non-existent checksum. On delete of
+     * an existing file, the new checksum should be the non-existent checksum.
+     */
+    public static final String NON_EXISTENT_CHECKSUM = "NON_EXISTENT_CHECKSUM";
+
+    /**
+     * Checksum denoting a directory and not a file.
+     */
+    public static final String DIRECTORY_CHECKSUM = "DIRECTORY_CHECKSUM";
 
     /**
      * Checks if the file exists or not in the localization store
@@ -75,7 +90,7 @@ public interface ILocalizationFile {
      * 
      * @return the relative path and name of the file
      */
-    public String getName();
+    public String getPath();
 
     /**
      * Gets the timestamp of the file in the localization store
@@ -129,5 +144,12 @@ public interface ILocalizationFile {
      * @throws LocalizationException
      */
     public SaveableOutputStream openOutputStream() throws LocalizationException;
+
+    /**
+     * Deletes the file from the localization store.
+     * 
+     * @throws LocalizationException
+     */
+    public void delete() throws LocalizationException;
 
 }

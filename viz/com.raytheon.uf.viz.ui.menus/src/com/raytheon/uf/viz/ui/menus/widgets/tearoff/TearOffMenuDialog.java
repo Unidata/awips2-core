@@ -57,10 +57,11 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Sep 14, 2011            mnash     Initial creation
+ * Sep 14, 2011            mnash       Initial creation
  * Jan 09, 2013 1442       rferrel     Add Simulated Time Change Listener.
  * Apr 10, 2013 DR 15185   D. Friedman Preserve tear-offs over perspective switches.
- * Aug 21, 2014 15664      snaples   Updated dispose method to fix issue when closing perspecitive with tear offs open.
+ * Aug 21, 2014 15664      snaples     Updated dispose method to fix issue when closing perspective with tear offs open.
+ * Oct 28, 2015 5054       randerso    Changed to use getter for perspective manager.
  * 
  * </pre>
  * 
@@ -179,7 +180,7 @@ public class TearOffMenuDialog extends CaveSWTDialog {
             @Override
             public void handleEvent(Event event) {
                 ContextManager.getInstance(locator).activateContexts(
-                        perspectiveManager);
+                        getPerspectiveManager());
             }
         };
         Listener deactivate = new Listener() {
@@ -187,7 +188,7 @@ public class TearOffMenuDialog extends CaveSWTDialog {
             public void handleEvent(Event event) {
                 if (Display.getCurrent().getActiveShell() == getShell()) {
                     ContextManager.getInstance(locator).deactivateContexts(
-                            perspectiveManager);
+                            getPerspectiveManager());
                 }
             }
         };

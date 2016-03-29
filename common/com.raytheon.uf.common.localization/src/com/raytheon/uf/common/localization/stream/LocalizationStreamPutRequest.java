@@ -27,18 +27,22 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 /**
  * Localization streaming put request
  * 
+ * @deprecated Use REST localization service instead
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 11, 2010            mschenke     Initial creation
+ * Aug 11, 2010            mschenke    Initial creation
+ * Dec 03, 2015  4834      njensen     Deprecated 
  * 
  * </pre>
  * 
  * @author mschenke
  * @version 1.0
  */
+@Deprecated
 @DynamicSerialize
 public class LocalizationStreamPutRequest extends
         AbstractLocalizationStreamRequest {

@@ -23,8 +23,8 @@ package com.raytheon.edex.db.dao;
 import java.io.File;
 import java.io.FileNotFoundException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.persist.DefaultPathProvider;
@@ -47,10 +47,11 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * 7/24/07      353         bphillip    Initial Check in    
- * 20070914            379  jkorman     Changed to use IPersistable populateDataStore
+ * 20070914     379         jkorman     Changed to use IPersistable populateDataStore
  *                                      and getPersistenceTime methods.
  * 01/14/13     1469        bkowal      No longer retrieves the hdf5 data directory from the
  *                                      environment.
+ * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author bphillip
@@ -62,7 +63,7 @@ public class HDF5Dao {
             .getInstance();
 
     /** The logger */
-    protected Log logger = LogFactory.getLog(getClass());
+    protected Logger logger = LoggerFactory.getLogger(getClass());
 
     private IHDFFilePathProvider pathProvider = null;
 

@@ -43,6 +43,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015 3806       njensen     Initial creation
+ * Dec 03, 2015 4834       njensen     Use getPath() instead of getName()
  *
  * </pre>
  * 
@@ -76,7 +77,7 @@ public class LocalizationXmlUtil {
         } catch (IOException | SerializationException e) {
             throw new LocalizationException(
                     "Unable to marshal the object to the file "
-                            + file.getName(), e);
+                            + file.getPath(), e);
         }
     }
 
@@ -100,7 +101,7 @@ public class LocalizationXmlUtil {
                 return object;
             } catch (Exception e) {
                 throw new LocalizationException("Could not unmarshal file "
-                        + file.getName(), e);
+                        + file.getPath(), e);
             }
         }
 

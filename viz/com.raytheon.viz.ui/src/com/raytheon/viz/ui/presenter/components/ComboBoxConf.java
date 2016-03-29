@@ -19,24 +19,24 @@
  **/
 package com.raytheon.viz.ui.presenter.components;
 
-import org.apache.commons.lang.builder.EqualsBuilder;
-import org.apache.commons.lang.builder.HashCodeBuilder;
+import org.apache.commons.lang3.builder.EqualsBuilder;
+import org.apache.commons.lang3.builder.HashCodeBuilder;
 
 /**
  * GUI implementation independent representation of a combo box.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 16, 2012 0743       djohnson     Initial creation
  * Aug 29, 2012 0223       mpduff       Extend WidgetConf.
  * Sep 07, 2012 1102       djohnson     Add missing getter for toolTipText.
- *
+ * 
  * </pre>
- *
+ * 
  * @author djohnson
  * @version 1.0
  */
@@ -52,7 +52,7 @@ public class ComboBoxConf extends WidgetConf {
 
     /**
      * Constructor setting up configuration.
-     *
+     * 
      * @param readOnly
      *            whether or not the combo box should be read only
      * @param toolTipText

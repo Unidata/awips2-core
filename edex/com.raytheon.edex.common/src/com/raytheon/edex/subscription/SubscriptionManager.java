@@ -27,8 +27,8 @@ import java.io.Serializable;
 import java.util.HashMap;
 import java.util.List;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
 import com.raytheon.edex.db.dao.SubscribeDAO;
@@ -41,15 +41,15 @@ import com.raytheon.uf.common.util.StringUtil;
  * This class manages the product subscription list. It is designed as a POJO
  * class using sychronized methods to manage the subscription list. The
  * subscription list is implemented using Java Object persistence within the
- * data access layer. Each
- * {@link com.raytheon.edex.subscription.Subscription Subscription} may contain
- * multiple &mu;Engine scripts that will operate on the same data. Methods are
- * implemented to {@link #subscribe(String, String, Object) subscribe},
+ * data access layer. Each {@link com.raytheon.edex.subscription.Subscription
+ * Subscription} may contain multiple &mu;Engine scripts that will operate on
+ * the same data. Methods are implemented to
+ * {@link #subscribe(String, String, Object) subscribe},
  * {@link #unsubscribe(String, String) unsubscribe},
  * {@link #isSubscribed(String) check a subscription},
- * {@link #updateSubscription(String, String, Object) update an existing subscription},
- * {@link #getModifiedScript(String, String, String) retrieve a script}, and
- * {@link #getSubscription(String) retrieve a subscription}.
+ * {@link #updateSubscription(String, String, Object) update an existing
+ * subscription}, {@link #getModifiedScript(String, String, String) retrieve a
+ * script}, and {@link #getSubscription(String) retrieve a subscription}.
  * <p>
  * 
  * <pre>
@@ -61,6 +61,7 @@ import com.raytheon.uf.common.util.StringUtil;
  * 01May2007    208         MW Fegan    Changed name and added interface.
  * 03Jul2007    #338        MW Fegan    Corrected matching of subscriptions.
  * 14Sep2010    3944        cjeanbap    Fixed a NullPointerException.
+ * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -68,8 +69,8 @@ import com.raytheon.uf.common.util.StringUtil;
  * @version 1
  */
 public final class SubscriptionManager implements ISubscriptionManager {
-    private static final Log logger = LogFactory
-            .getLog(SubscriptionManager.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(SubscriptionManager.class);
 
     /**
      * The data access layer.
@@ -114,22 +115,24 @@ public final class SubscriptionManager implements ISubscriptionManager {
      * Initializes the internal subscription list by retrieving it from the EDEX
      * DAL.
      */
-     private void initSubscriptions() {
-         try {
-             List<Subscription> list = subscriptionDao.getSubscriptions();
-             
-             for (Subscription obj : list) {
-                 this.subscriptions.put((String) obj.getIdentifier(), "");
-             }
-         } catch (Exception e) {
-             logger.warn("Unable to obtain subscription list.", e);
-         }
-     }
+    private void initSubscriptions() {
+        try {
+            List<Subscription> list = subscriptionDao.getSubscriptions();
+
+            for (Subscription obj : list) {
+                this.subscriptions.put((String) obj.getIdentifier(), "");
+            }
+        } catch (Exception e) {
+            logger.warn("Unable to obtain subscription list.", e);
+        }
+    }
+
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#subscribe(java.lang.String,
-     *      java.lang.String, java.lang.Object)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#subscribe(java.lang
+     * .String, java.lang.String, java.lang.Object)
      */
     public synchronized void subscribe(String dataURI, String scriptID,
             Object script) throws SubscriptionException {
@@ -173,8 +176,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#getModifiedScript(java.lang.String,
-     *      java.lang.String, java.lang.String)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#getModifiedScript
+     * (java.lang.String, java.lang.String, java.lang.String)
      */
     public synchronized Serializable getModifiedScript(String id,
             String scriptID, String dataURI) {
@@ -202,7 +206,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#getSubscriptionKey(java.lang.String)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#getSubscriptionKey
+     * (java.lang.String)
      */
     public synchronized String getSubscriptionKey(String dataURI) {
         String retVal = "";
@@ -219,7 +225,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#isSubscribed(java.lang.String)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#isSubscribed(java
+     * .lang.String)
      */
     public synchronized boolean isSubscribed(String dataURI) {
         logger.debug("isSubscribed() received subscription inquery, URI is "
@@ -252,8 +260,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#updateSubscription(java.lang.String,
-     *      java.lang.String, java.lang.Object)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#updateSubscription
+     * (java.lang.String, java.lang.String, java.lang.Object)
      */
     public synchronized void updateSubscription(String id, String scriptID,
             Object script) throws SubscriptionException {
@@ -282,7 +291,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#getSubscription(java.lang.String)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#getSubscription(java
+     * .lang.String)
      */
     public synchronized Subscription getSubscription(String dataURI) {
         Subscription subscription = null;
@@ -313,8 +324,9 @@ public final class SubscriptionManager implements ISubscriptionManager {
     /*
      * (non-Javadoc)
      * 
-     * @see com.raytheon.edex.subscription.ISubscriptionManager#unsubscribe(java.lang.String,
-     *      java.lang.String)
+     * @see
+     * com.raytheon.edex.subscription.ISubscriptionManager#unsubscribe(java.
+     * lang.String, java.lang.String)
      */
     public synchronized void unsubscribe(String dataURI, String scriptID)
             throws SubscriptionException {
