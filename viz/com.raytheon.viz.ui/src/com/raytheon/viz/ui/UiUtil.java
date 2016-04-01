@@ -30,6 +30,7 @@ import org.eclipse.core.runtime.Status;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.ICoolBarManager;
+import org.eclipse.jface.action.ToolBarContributionItem;
 import org.eclipse.ui.IEditorDescriptor;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
@@ -71,6 +72,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  *                                      view has a secondaryid.
  *                                     Added hideView method for quickly hiding views.
  * Dec 21, 2015 5191       bsteffen    Updated layoutId for Eclipse 4.
+ * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
  * 
  * </pre>
  * 
@@ -520,6 +522,13 @@ public class UiUtil {
         return new AbstractEditor[0];
     }
 
+    /**
+     * Force update the size and layout of all the coolbar items. This is
+     * necessary when a coolbar item changes size to prevent other items from
+     * being hidden.
+     * 
+     * @param window
+     */
     public static void updateWindowCoolBar(IWorkbenchWindow window) {
         try {
             VizActionBarAdvisor advisor = VizActionBarAdvisor
@@ -528,7 +537,18 @@ public class UiUtil {
                 ICoolBarManager cbm = advisor.getCoolBar();
                 IContributionItem[] items = cbm.getItems();
                 for (IContributionItem item : items) {
-                    item.update(ICoolBarManager.SIZE);
+                    if (item instanceof ToolBarContributionItem) {
+                        ((ToolBarContributionItem) item).getToolBarManager()
+                                .update(true);
+                    } else {
+                        /*
+                         * This does not work on all types of items, for example
+                         * it no longer works for ToolBarContributionItems.
+                         * Unfortunately it is the only available generic API
+                         * for requesting a resize so try anyway.
+                         */
+                        item.update(ICoolBarManager.SIZE);
+                    }
                 }
             }
         } catch (Throwable t) {
