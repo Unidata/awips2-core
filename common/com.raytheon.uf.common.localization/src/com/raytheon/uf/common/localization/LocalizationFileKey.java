@@ -30,6 +30,7 @@ package com.raytheon.uf.common.localization;
  * ------------ ---------- ----------- --------------------------
  * Sep 21, 2011            mschenke     Initial creation
  * Feb 18, 2015 4137       reblum       normalizing the path for the key
+ * Apr 10, 2015 4391       njensen      Backported above change
  * 
  * </pre>
  * 

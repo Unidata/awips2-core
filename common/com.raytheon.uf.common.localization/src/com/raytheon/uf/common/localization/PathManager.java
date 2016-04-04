@@ -63,6 +63,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Sep 08, 2014 3592       randerso    Added single type listStaticFiles, 
  *                                     getStaticLocalizationFile, and getStaticFile APIs
  * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
+ * Apr 10, 2015 4391       njensen     Backported above change
  * 
  * </pre>
  * 

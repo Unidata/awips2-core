@@ -20,7 +20,6 @@
 package com.raytheon.uf.common.localization;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
@@ -35,7 +34,6 @@ import javax.xml.bind.JAXBException;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.ILocalizationAdapter.ListResponse;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.serialization.JAXBManager;
@@ -44,39 +42,40 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
- * Represents a file in the localization service.<BR>
+ * Represents a file in the localization system. <BR>
  * <BR>
  * A LocalizationFile cannot be constructed directly, it must be obtained using
- * the PathManager. PathManager should ensure that only one reference to a
- * particular LocalizationFile exists in the JVM.<BR>
+ * the PathManager. <BR>
  * <BR>
  * A file is generally not realized until the getFile() method is called. At
  * that point, it becomes a real file on the local system. Prior to calling
  * getFile(), the LocalizationFile can be considered a pointer. Operations are
  * provided directly on this interface that allow the changes to be persisted
- * both to the local filesystem and to the localization service. <BR>
+ * both to the local filesystem, and also to the localization store. <BR>
  * <BR>
  * <HR>
  * <B>Common Use Cases:</B> <BR>
  * <UL>
- * <LI>Reading a file - A user should call openInputStream() to stream the file
- * contents into memory.
- * <LI>Writing to a file - Ideally use openOutputStream() to write to a file. A
- * user can also write to a file by obtaining the java.io.File object using the
- * getFile() method and then writing to it as if it was a regular file using
- * conventional file I/O methods. To save the file back to the localization
- * store, call save().
+ * <LI>Reading a file - A user should call getFile() and interact with the file
+ * as if it was a regular filesystem file.
+ * <LI>Writing to a file - A user can write to a file by obtaining the
+ * java.io.File object using the getFile() method and then writing to it as if
+ * it was a regular file using conventional file I/O methods. To save the file
+ * back to the localization store, call save().
+ * <LI>Renaming a file - Calling rename() will rename both any local file (if it
+ * exists) and the copy in the localization store.
  * <LI>Delete - Calling delete() will delete any local file (if it exists), and
  * delete the copy on the localization store.
  * </UL>
  * 
  * 
  * 
+ * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Mar 27, 2008             njensen     Initial creation
+ * Date			Ticket#		Engineer	Description
+ * ------------	----------	-----------	--------------------------
+ * Mar 27, 2008				njensen	    Initial creation
  * May 01, 2008             chammack    Added Localization synchronization information
  * May 15, 2008 #878        chammack    Refactor
  * Mar 24, 2010 #2866       randerso    Removed conditional around call to retrieve. 
@@ -88,9 +87,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
  * Sep 29, 2014 2975        njensen     Correct usage of mkDirs in getFile(boolean)
  * Feb 11, 2015 4108        randerso    Implemented hashCode()
- * Feb 24, 2015 3978        njensen     Changed openInputStream() return type to InputStream
- *                                       Removed read() method
- * 
+ * Apr 10, 2015 4391        njensen     Backported above change
  * 
  * </pre>
  * 
@@ -99,7 +96,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  */
 
 public final class LocalizationFile implements Comparable<LocalizationFile> {
-
     private static transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationFile.class);
 
@@ -324,43 +320,73 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
     }
 
     /**
-     * Creates an InputStream for the contents of the LocalizationFile. Calling
-     * code should close the stream after use, preferably with
-     * try(f.openInputStream()){...}.
-     * 
-     * This intentionally returns an InputStream so calling code does not have
-     * to worry about where the data is coming from. Please do not cast the
-     * InputStream; in the future the underlying type of the InputStream may
-     * change.
+     * Creates an InputStream for the LocalizationFile
      * 
      * @return the InputStream to be used for reading the file
      * @throws LocalizationException
      */
-    public InputStream openInputStream() throws LocalizationException {
+    public LocalizationFileInputStream openInputStream()
+            throws LocalizationException {
         try {
-            if (context.getLocalizationType() == LocalizationType.CAVE_STATIC
-                    && context.getLocalizationLevel() == LocalizationLevel.BASE) {
-                /*
-                 * Don't bother locking cave_static.base, the application
-                 * typically does not have permissions there to create the lock.
-                 * Also the application cannot change the file so if any process
-                 * does change the file it will likely be ignoring the lock
-                 * anyway.
-                 * 
-                 * TODO: if cave_static becomes OBE, this can be removed
-                 */
-                return new FileInputStream(getFile());
-            } else {
-                /*
-                 * LocalizationFileInputStream will ensure that the file is
-                 * locked before reading, with the lock released when the stream
-                 * is closed.
-                 */
-                return new LocalizationFileInputStream(this);
-            }
+            return new LocalizationFileInputStream(this);
         } catch (FileNotFoundException e) {
             throw new LocalizationException("Error opening input stream", e);
         }
+    }
+
+    /**
+     * Reads the file into memory utilizing correct locking resources.
+     * 
+     * @return
+     * @throws LocalizationException
+     */
+    public byte[] read() throws LocalizationException {
+        byte[] rval = null;
+        InputStream is = null;
+        File f = getFile();
+        try {
+            is = new LockingFileInputStream(f);
+
+            // Get the size of the file
+            long length = f.length();
+
+            // TODO
+            // You cannot create an array using a long type.
+            // It needs to be an int type.
+            // Before converting to an int type, check
+            // to ensure that file is not larger than Integer.MAX_VALUE.
+            // Create the byte array to hold the data
+            rval = new byte[(int) length];
+
+            // Read in the bytes
+            int offset = 0;
+            int numRead = 0;
+            while ((offset < rval.length)
+                    && ((numRead = is.read(rval, offset, rval.length - offset)) >= 0)) {
+                offset += numRead;
+            }
+
+            // Ensure all the bytes have been read in
+            if (offset < rval.length) {
+                throw new LocalizationException(
+                        "Could not completely read file " + f.getName());
+            }
+        } catch (IOException e) {
+            throw new LocalizationException("Could not read file "
+                    + f.getName(), e);
+        } finally {
+            if (is != null) {
+                try {
+                    is.close();
+                } catch (IOException e) {
+                    statusHandler
+                            .handle(Priority.WARN,
+                                    "Error occurred closing input stream for localization file",
+                                    e);
+                }
+            }
+        }
+        return rval;
     }
 
     /**
@@ -457,7 +483,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
     /**
      * Gets the level the file is protected at, null otherwise
      * 
-     * @return the level the file is protected at, or null
+     * @return
      */
     public LocalizationLevel getProtectedLevel() {
         return protectedLevel;
@@ -586,7 +612,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile> {
      * @param <T>
      * @param resultClass
      * @param manager
-     * @return the object representation umarshaled from this file
+     * @return
      * @throws LocalizationException
      */
     public <T> T jaxbUnmarshal(Class<T> resultClass, JAXBManager manager)

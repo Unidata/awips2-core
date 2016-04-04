@@ -60,12 +60,6 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * useless methods will no op.
  * </p>
  * 
- * TODO: This class is in serious need of rework. Either the UtilityManager
- * should make use of this class through the IPathManager, or this class should
- * make use of the UtilityManager. The two classes serve somewhat redundant
- * purposes while having entirely different APIs and in some cases, inconsistent
- * behavior.
- * 
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#     Engineer    Description
@@ -80,8 +74,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jul 24, 2014 3378        bclement    added createCache()
  * Jul 25, 2014 3378        bclement    removed uf prefix from system property
  * Nov 13, 2014 4953        randerso    Changed delete() to also remove .md5 file
- * Feb 16, 2015 3978        njensen     listDirectory() no longer includes .md5 files
- * Feb 18, 2015 3978        njensen     no max size on cache map is safer
+ * Apr 10, 2015 4391        njensen     Backported better cache
  * 
  * </pre>
  * 
@@ -96,8 +89,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     private static final IUFStatusHandler handler = UFStatus
             .getHandler(EDEXLocalizationAdapter.class);
-
-    private static final String CHECKSUM_FILE_EXTENSION = ".md5";
 
     private final Map<LocalizationType, LocalizationContext[]> contexts;
 
@@ -231,8 +222,10 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      */
     @Override
     public LocalizationType[] getStaticContexts() {
+
         LocalizationType[] type = new LocalizationType[] {
                 LocalizationType.EDEX_STATIC, LocalizationType.COMMON_STATIC };
+
         return type;
     }
 
@@ -242,6 +235,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      * @return the file reference to the utility directory
      */
     protected File getUtilityDir() {
+
         return new File(EDEXUtil.getEdexUtility());
     }
 
@@ -310,8 +304,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
             for (File file : fileList) {
 
-                if ((file.isDirectory() && filesOnly)
-                        || file.getName().endsWith(CHECKSUM_FILE_EXTENSION)) {
+                if (file.isDirectory() && filesOnly) {
                     // skip
                 } else {
                     ListResponse entry = createListResponse(ctx, path, file);
@@ -338,7 +331,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     public boolean save(ModifiableLocalizationFile file)
             throws LocalizationOpFailedException {
         LocalizationContext context = file.getContext();
-        if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
+        if (context.getLocalizationLevel()
+                .equals(LocalizationLevel.BASE)) {
             throw new UnsupportedOperationException(
                     "Saving to the BASE context is not supported.");
         }
@@ -380,8 +374,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
             deleted = localFile.delete();
         }
 
-        File md5File = new File(localFile.getAbsolutePath()
-                + CHECKSUM_FILE_EXTENSION);
+        File md5File = new File(localFile.getAbsolutePath() + ".md5");
         if (md5File.exists()) {
             if (!md5File.delete()) {
                 handler.error("Unable to delete: " + md5File.getAbsolutePath());
@@ -501,15 +494,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      */
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
-        /*
-         * Intentionally no max size on this cache, so eventually if you had
-         * 100% EDEX uptime and more and more localization files kept getting
-         * added to the system and then requested by clients, this could use up
-         * a significant amount of memory. However, the disconnect between
-         * LocalNotificationObserver's cache and PathManager's cache will cause
-         * issues if anything is ever evicted from the cache. Unless that is
-         * sorted out and simplified, no values should be evicted from this map.
-         */
         return new ConcurrentHashMap<>(CACHE_SIZE);
     }
 

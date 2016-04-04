@@ -24,10 +24,13 @@
 --> 
 <edexModes>
 	<mode name="ingest">
-                <exclude>ebxml.*\.xml</exclude>
-                <exclude>.*datadelivery.*</exclude>
 		<exclude>.*request.*</exclude>
 		<exclude>edex-security.xml</exclude>
-		<exclude>webservices.xml</exclude>
+		<exclude>.*obs-ingest-metarshef.*</exclude>
+		<exclude>rpgenvdata.*</exclude>
+		<exclude>shef.*</exclude>
+		<exclude>nctaf.*</exclude>
+		<exclude>nctext.*</exclude>
+		<exclude>binlightning.*</exclude>
 	</mode>
 </edexModes>

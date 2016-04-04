@@ -69,6 +69,8 @@ import com.raytheon.viz.ui.colormap.IRefreshColorMapTreeListener;
  * Sep 18, 2013  2421     bsteffen    Use ColorMapTree for asyncronous loading.
  * Aug 28, 2014  3616     rferrel     Display ColorMapTree status while creating off
  *                                      the UI thread; and added refresh item.
+ * Oct 14, 2015	 ----     mjames@ucar Only build for BASE level.
+ * Jan 16, 2016	 ----     mjames@ucar Add USER level again.
  * 
  * </pre>
  * 
@@ -304,7 +306,7 @@ public class ColormapComp {
             for (LocalizationFile file : files) {
                 addFile(file, index++);
             }
-
+            
             if (menu == cmapPopupMenu) {
                 new MenuItem(menu, SWT.SEPARATOR, index++);
                 final int startLevelIndex = index;
