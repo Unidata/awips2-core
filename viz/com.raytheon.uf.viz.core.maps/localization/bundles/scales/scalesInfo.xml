@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <!--
+	<!--
         This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
         pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
         
@@ -36,8 +36,10 @@
 	</mapScale>
 	<mapScale displayName="WFO" fileName="WFO.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="World" fileName="World.xml" areaScale="false">
+	<mapScale displayName="World" fileName="World2.xml" areaScale="false">
 	</mapScale>
+    	<mapScale displayName="The World" fileName="World.xml" areaScale="false">
+    	</mapScale>
 	<mapScale displayName="SAT/Arctic" fileName="Arctic.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="SAT/Antarctic" fileName="Antarctic.xml" areaScale="true">
@@ -65,5 +67,41 @@
 	<mapScale displayName="SAT/GOES-Sounder" fileName="SOUNDER.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="SAT/Mollweide" fileName="Mollweide.xml" areaScale="true">
+	</mapScale>
+	<mapScale displayName="Puerto Rico" fileName="Puerto_Rico.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Alaska" fileName="Alaska_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Hawaii" fileName="Hawaii_state.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Hawaii Regional" fileName="Hawaii_regional.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Pacific" fileName="Pacific.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Atlantic" fileName="Atlantic.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Euro-Africa" fileName="EuroAfrica.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="Asia-Pacific" fileName="AsiaPacific.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Northeast Reg" fileName="NorthEast_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Mid-Atlantic Reg" fileName="Mid-Atlantic_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Southeast Reg" fileName="SouthEast_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Gulf Coast Reg" fileName="GulfCoast_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Great Lakes Reg" fileName="GreatLakes_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Ozark-Tenn Valley Reg" fileName="OzarkTennV_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Northern Plains Reg" fileName="NrnPlains_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Southern Plains Reg" fileName="SrnPlains_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Northwest Reg" fileName="NorthWest_Reg.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="DSS/IMET Southwest Reg" fileName="SouthWest_Reg.xml" areaScale="false">
 	</mapScale>
 </mapScales>

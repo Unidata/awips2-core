@@ -245,32 +245,30 @@
                     loadMode="VALID_TIME_SEQ" deltaFilter="0"
                     forecastFilter="0" />
                 <numberOfFrames>12</numberOfFrames>
-
-                <gridGeometry rangeX="0 19999" rangeY="0 9999"
-                    envelopeMinX="-2.0E7" envelopeMaxX="2.0E7"
+                <gridGeometry rangeX="0 9999" rangeY="0 9999"
+                    envelopeMinX="-1.0E7" envelopeMaxX="1.0E7"
                     envelopeMinY="-1.0E7" envelopeMaxY="1.0E7">
-                    <CRS>PROJCS[&quot;Equidistant Cylindrical
-                        (Spherical)&quot;,
+                    <CRS>PROJCS[&quot;Lambert_Conformal_Conic_1SP&quot;,
                         GEOGCS[&quot;WGS84(DD)&quot;,
                         DATUM[&quot;WGS84&quot;,
-                        SPHEROID[&quot;WGS84&quot;, 6378137.0, 298.257223563]],
+                        SPHEROID[&quot;WGS84&quot;, 6378137.0,
+                        298.257223563]],
                         PRIMEM[&quot;Greenwich&quot;, 0.0],
                         UNIT[&quot;degree&quot;, 0.017453292519943295],
                         AXIS[&quot;Geodetic longitude&quot;, EAST],
                         AXIS[&quot;Geodetic latitude&quot;, NORTH]],
-                        PROJECTION[&quot;Equidistant Cylindrical (Spherical)&quot;],
+                        PROJECTION[&quot;Lambert_Conformal_Conic_1SP&quot;],
                         PARAMETER[&quot;semi_major&quot;, 6371229.0],
                         PARAMETER[&quot;semi_minor&quot;, 6371229.0],
-                        PARAMETER[&quot;central_meridian&quot;, -95.0],
-                        PARAMETER[&quot;latitude_of_origin&quot;, 0.0],
-                        PARAMETER[&quot;standard_parallel_1&quot;, 0.0],
+                        PARAMETER[&quot;central_meridian&quot;, -130.0],
+                        PARAMETER[&quot;latitude_of_origin&quot;, 10.0],
+                        PARAMETER[&quot;scale_factor&quot;, 1.0],
                         PARAMETER[&quot;false_easting&quot;, 0.0],
                         PARAMETER[&quot;false_northing&quot;, 0.0],
                         UNIT[&quot;m&quot;, 1.0],
                         AXIS[&quot;Easting&quot;, EAST],
                         AXIS[&quot;Northing&quot;, NORTH]]</CRS>
                 </gridGeometry>
-
             </descriptor>
         </displays>
     </displayList>
