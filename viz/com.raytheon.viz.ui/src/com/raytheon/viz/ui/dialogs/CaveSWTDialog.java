@@ -65,6 +65,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Jan 25, 2016  5054      randerso    CaveSWTDialog no longer extends SWT Dialog.
  *                                     Added constructors with Display as parent for dialogs with
  *                                     no parent shell.
+ * Mar 30, 2016  5513      randerso    Allowed hide/restore to work for non-independent dialogs
  * 
  * </pre>
  * 
@@ -704,8 +705,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
         if ((shell != null) && (!shell.isDisposed())) {
             wasVisible = shell.isVisible();
             if (wasVisible) {
-                if ((parent != null)
-                        && ((caveStyle & CAVE.INDEPENDENT_SHELL) != 0)) {
+                if ((parent != null)) {
                     Point myLocation = shell.getLocation();
                     Point parentLocation = parent.getLocation();
                     lastOffset = new Point(myLocation.x - parentLocation.x,

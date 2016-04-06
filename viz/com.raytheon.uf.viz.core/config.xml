@@ -22,7 +22,7 @@
 <jmsServerAddress>tcp://localhost:61616</jmsServerAddress>
 <httpServerAddress>http://localhost:9581/services</httpServerAddress>
 <dataDirectory>/awips2/edex/data/share</dataDirectory>
-<textureCardPreference>512</textureCardPreference>
+<textureCardPreference>1024</textureCardPreference>
 <tearoffmenus>true</tearoffmenus>
 <framesPerSecondPreference>25</framesPerSecondPreference>
 <tileBoundaries>false</tileBoundaries>
