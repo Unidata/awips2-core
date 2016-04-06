@@ -27,6 +27,7 @@ import javax.media.opengl.GL;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
+import org.opengis.coverage.grid.GridGeometry;
 import org.opengis.referencing.datum.PixelInCell;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
@@ -36,7 +37,7 @@ import com.raytheon.uf.common.geospatial.util.WorldWrapChecker;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
-import com.raytheon.uf.viz.core.IMesh;
+import com.raytheon.uf.viz.core.IGridMesh;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.PaintStatus;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -46,23 +47,40 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinateKey;
 import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinates;
 
 /**
- * Abstract GLMesh
+ * Base class for all GL meshes. This class maintains a set of vertex
+ * coordinates that contain reprojected points spaced out evenly over an image.
+ * These coordinates will be rendered using triangle strips to perform an image
+ * reprojection.
+ * 
+ * Each mesh will have unique vertex coordinates but since all mesh coordinates
+ * are evenly spaced the texture coordinates can be shared by any meshes that
+ * have the same number of points. This helps reduce memory usage especially for
+ * tilesets which tend to need the same size mesh for all tiles.
+ * 
+ * This class handles world wrap issues by breaking apart triangle strips that
+ * wrap the world. The missing sections of the strip are rebuilt using
+ * individual triangles on either side of the antimeridian.
+ * 
+ * This class handles most of the work of rendering a mesh, subclasses have to
+ * generate a mesh key and efficiently generate world coordinates. A mesh key
+ * specifies the size of the mesh, larger meshes require more space but are also
+ * more accurate, subclasses must determine a balance between space. accuracy.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jul 01, 2010           mschenke    Initial creation
- * Feb 21, 2014  2817     bsteffen    Remove Deprecated reproject.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------
+ * Jul 01, 2010           mschenke  Initial creation
+ * Feb 21, 2014  2817     bsteffen  Remove Deprecated reproject.
+ * Apr 05, 2016  5400     bsteffen  implement IGridMesh, javadoc.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
-public abstract class AbstractGLMesh implements IMesh {
+public abstract class AbstractGLMesh implements IGridMesh {
 
     private static final JobPool calculator = new JobPool("Mesh Calculator", 2,
             false);
@@ -249,7 +267,7 @@ public abstract class AbstractGLMesh implements IMesh {
             WorldWrapChecker wwc = new WorldWrapChecker(targetGeometry);
             for (int i = 0; i < worldCoordinates.length; ++i) {
                 double[][] strip = worldCoordinates[i];
-                List<double[]> vSegment = new ArrayList<double[]>();
+                List<double[]> vSegment = new ArrayList<>();
                 double[] prev1 = null, prev2 = null;
                 for (int j = 0; j < strip.length; ++j) {
                     double[] next = strip[j];
@@ -260,7 +278,7 @@ public abstract class AbstractGLMesh implements IMesh {
                                 || vSegment.size() > 1) {
                             vertexCoords.addSegment(vSegment
                                     .toArray(new double[vSegment.size()][]));
-                            vSegment = new ArrayList<double[]>();
+                            vSegment = new ArrayList<>();
                         }
                     }
                     vSegment.add(worldToPixel(next));
@@ -423,6 +441,16 @@ public abstract class AbstractGLMesh implements IMesh {
     @Override
     public boolean intersects(IExtent extent) {
         return false;
+    }
+
+    @Override
+    public GridGeometry getSourceGeometry() {
+        return imageGeometry;
+    }
+
+    @Override
+    public GridGeometry getTargetGeometry() {
+        return targetGeometry;
     }
 
     protected abstract SharedCoordinateKey generateKey(
