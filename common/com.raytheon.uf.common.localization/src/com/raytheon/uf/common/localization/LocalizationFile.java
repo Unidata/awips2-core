@@ -93,6 +93,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver                                      
  * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
  * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
+ * Apr 07, 2016 5540        njensen     Updated isAvailableOnServer() for compatibility with older servers
  * 
  * </pre>
  * 
@@ -403,9 +404,18 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * @return true if the file is available on the server
      */
     public boolean isAvailableOnServer() {
-        return fileCheckSum != null
-                && !ILocalizationFile.NON_EXISTENT_CHECKSUM
-                        .equals(fileCheckSum);
+        /*
+         * In theory we should never have a null fileChecksum. If connecting to
+         * an older server we can get null checksums for existing directories.
+         * (Actual files will have checksums as normal, and new servers will use
+         * the ILocalizationFile.DIRECTORY_CHECKSUM for directories).
+         * 
+         * TODO: Remove the fileChecksum == null && isDirectory() condition once
+         * older servers are no longer deployed.
+         */
+        return (fileCheckSum != null && !ILocalizationFile.NON_EXISTENT_CHECKSUM
+                .equals(fileCheckSum))
+                || (fileCheckSum == null && isDirectory());
     }
 
     /**
