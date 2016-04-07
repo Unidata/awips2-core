@@ -87,4 +87,5 @@
     <masterLevel name="TCY" type="" unitString="" description="Top Cloud Layer" />
     <masterLevel name="UNKNOWN" type="" unitString="" description="Unknown Level" />
     <masterLevel name="Dflt" type="" unitString="" description="Default Level" />
+    <masterLevel name="SCOORD" type="" unitString="" description="Vertical S-Coordinate" />
 </masterLevelContainer>
