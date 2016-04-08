@@ -69,6 +69,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jun 29, 2015  4585     dgilling    Stop validating parameters in
  *                                    getAvailableLocationNames.
  * Aug 05, 2015  4486     rjpeter     Changed Timestamp to Date.
+ * Apr 08, 2016  5553     bkowal      Ignore null identifiers in {@link #makeGeometries(List, String[], Map)}.
  * </pre>
  * 
  * @author bkowal
@@ -389,7 +390,10 @@ public abstract class AbstractGeometryDatabaseFactory extends
     protected IGeometryData[] makeGeometries(List<Object[]> serverResult,
             String[] paramNames, Map<String, Object> identifiers) {
         List<IGeometryData> resultList = new ArrayList<IGeometryData>();
-        Map<String, Object> attrs = Collections.unmodifiableMap(identifiers);
+        Map<String, Object> attrs = Collections.emptyMap();
+        if (identifiers != null) {
+            attrs = Collections.unmodifiableMap(identifiers);
+        }
 
         // loop over each db row
         for (Object[] row : serverResult) {
