@@ -20,7 +20,6 @@
 package com.raytheon.viz.ui.widgets;
 
 import java.text.DateFormat;
-import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Date;
@@ -62,6 +61,7 @@ import org.eclipse.ui.progress.UIJob;
  * Mar 17, 2016  #5483     randerso    Removed this.setLayoutData(). 
  *                                     This should be done from outside the control
  *                                     since the parent may not have a GridLayout
+ * Apr 08, 2016  3989      tgurney     Make text field behavior more intuitive
  * 
  * </pre>
  * 
@@ -170,9 +170,6 @@ public class TimeEntry extends Composite {
                 case SWT.FocusIn:
                     onFocusIn(event);
                     break;
-                case SWT.FocusOut:
-                    onFocusOut(event);
-                    break;
                 case SWT.MouseDown:
                     onMouseClick(event);
                     break;
@@ -278,9 +275,6 @@ public class TimeEntry extends Composite {
     }
 
     private void selectField(int index) {
-        if (index != currentField) {
-            commit();
-        }
         final int start = fieldIndices[index].x;
         final int end = fieldIndices[index].y;
         Point pt = text.getSelection();
@@ -310,30 +304,12 @@ public class TimeEntry extends Composite {
         updateControl();
     }
 
-    private void commit() {
-        Date parsed;
-        try {
-            parsed = format.parse(text.getText());
-        } catch (ParseException e) {
-            return;
-        }
-        Calendar temp = (Calendar) calendar.clone();
-        temp.setTime(parsed);
-        /*
-         * Set time fields individually rather than clobber the date portion by
-         * using calendar.setTime()
-         */
-        calendar.set(Calendar.HOUR_OF_DAY, temp.get(Calendar.HOUR_OF_DAY));
-        calendar.set(Calendar.MINUTE, temp.get(Calendar.MINUTE));
-        calendar.set(Calendar.SECOND, temp.get(Calendar.SECOND));
-    }
-
     private void onKeyDown(Event event) {
         int fieldName;
         switch (event.keyCode) {
         case SWT.ARROW_RIGHT:
             // a right arrow or a valid separator navigates to the field on the
-            // right, with wraping
+            // right, with wrapping
             selectField((currentField + 1) % fieldCount);
             break;
         case SWT.ARROW_LEFT:
@@ -344,13 +320,11 @@ public class TimeEntry extends Composite {
         case SWT.ARROW_UP:
         case SWT.KEYPAD_ADD:
             // set the value of the current field to value + 1, with wrapping
-            commit();
             incrementField(+1);
             break;
         case SWT.ARROW_DOWN:
         case SWT.KEYPAD_SUBTRACT:
             // set the value of the current field to value - 1, with wrapping
-            commit();
             incrementField(-1);
             break;
         case SWT.HOME:
@@ -383,10 +357,6 @@ public class TimeEntry extends Composite {
         selectField(currentField);
     }
 
-    private void onFocusOut(Event event) {
-        commit();
-    }
-
     private void onMouseClick(Event event) {
         if (event.button != 1) {
             return;
@@ -400,33 +370,25 @@ public class TimeEntry extends Composite {
         }
     }
 
-    private void onVerify(Event event) {
-        if (ignoreVerify) {
+    private void handleTextInput(String input) {
+        int currentFieldName = fieldNames[currentField];
+        String newText = input;
+        try {
+            Integer.parseInt(newText);
+        } catch (NumberFormatException ex) {
+            if (!input.equals("")) {
+                characterCount = 0;
+            }
+            setField(calendar.get(currentFieldName));
             return;
         }
-        event.doit = false;
-        int fieldName = fieldNames[currentField];
-        int start = fieldIndices[currentField].x;
-        int end = fieldIndices[currentField].y;
-        int length = end - start;
-        String newText = event.text;
-        if (characterCount > 0) {
-            try {
-                Integer.parseInt(newText);
-            } catch (NumberFormatException ex) {
-                return;
-            }
-            String value = text.getText(start, end - 1);
-            int s = value.lastIndexOf(' ');
-            if (s != -1) {
-                value = value.substring(s + 1);
-            }
-            newText = "" + value + newText;
+        if (!newText.equals("0") && characterCount == 0) {
+            characterCount += 1;
+        } else if (characterCount != 0) {
+            String oldText = String.valueOf(calendar.get(currentFieldName));
+            newText = String.valueOf(oldText + newText);
+            characterCount = 0;
         }
-        int newTextLength = newText.length();
-        characterCount = (newTextLength < length) ? newTextLength : 0;
-        int max = calendar.getActualMaximum(fieldName);
-        int min = calendar.getActualMinimum(fieldName);
         int newValue;
         try {
             newValue = Integer.parseInt(newText);
@@ -434,9 +396,24 @@ public class TimeEntry extends Composite {
             characterCount = 0;
             return;
         }
+        int max = calendar.getActualMaximum(currentFieldName);
+        int min = calendar.getActualMinimum(currentFieldName);
         if (min <= newValue && newValue <= max) {
             setField(newValue);
+        } else if (newText.length() > 1) {
+            String lastInputDigit = newText.substring(newText.length() - 1);
+            handleTextInput(lastInputDigit);
+        } else {
+            setField(calendar.get(fieldNames[currentField]));
         }
+    }
+
+    private void onVerify(Event event) {
+        if (ignoreVerify) {
+            return;
+        }
+        event.doit = false;
+        handleTextInput(event.text);
     }
 
     public String getFormattedString() {
