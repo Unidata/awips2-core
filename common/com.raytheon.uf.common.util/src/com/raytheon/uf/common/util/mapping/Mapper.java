@@ -56,6 +56,7 @@ import javax.xml.bind.Unmarshaller;
  * Apr 02, 2014 2906       bclement     changed to return empty set instead of null for lookup methods
  * Apr 02, 2014 2906       bclement     fixed not checking for empty set in lookupAliases()
  *                                      and in lookupAliasOrNull()
+ * Dec 15, 2015 18139      pwang        Merge alias when NameSpace is same
  * 
  * </pre>
  * 
@@ -74,7 +75,17 @@ public abstract class Mapper {
     private Map<String, AliasNamespace> namespaceMap = new HashMap<String, AliasNamespace>();
 
     protected void addAliasList(AliasList list) {
-        namespaceMap.put(list.getNamespace(), new AliasNamespace(list));
+        // If the NameSpace is existing 
+        // Merge new AliasList into the Mapper with same NameSpace
+        // This enable merge multiple alias files with same NameSpace
+
+        if(namespaceMap.containsKey(list.getNamespace())) {
+            AliasNamespace ans = namespaceMap.get(list.getNamespace());
+            ans.mergeAliasList(list);
+        }
+        else {
+            namespaceMap.put(list.getNamespace(), new AliasNamespace(list));
+        }
     }
 
     protected void addAliasList(File file) throws JAXBException {
