@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.dataaccess;
 
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
+import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
@@ -59,12 +60,11 @@ import com.raytheon.uf.common.time.TimeRange;
  * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
  * Jul 14, 2014  3184     njensen     Added new methods
  * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
+ * Apr 13, 2016  5379     tgurney     Add getIdentifierValues()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
- * @param <D>
  */
 
 public interface IDataFactory {
@@ -215,5 +215,22 @@ public interface IDataFactory {
      *         datatype
      */
     public String[] getOptionalIdentifiers();
+
+    /**
+     * Gets the allowed values for a particular identifier recognized by this
+     * datatype.
+     * 
+     * @param request
+     *            the datatype to get identifier values for
+     * @param identifierKey
+     *            the identifier to find all allowed values for
+     * @return the allowed values for the specified identifier recognized by
+     *         this datatype
+     * @throws InvalidIdentifiersException
+     *             if the specified identifier is not a recognized identifier
+     *             for this datatype
+     */
+    public String[] getIdentifierValues(IDataRequest request,
+            String identifierKey);
 
 }

@@ -60,11 +60,11 @@ import com.raytheon.uf.common.util.SizeUtil;
  * Jul 31, 2014 3184       njensen     Added validateParameters()
  * Jan 28, 2014 4009       mapeters    Added validateRequest() with boolean parameter
  * Feb 10, 2014 2866       nabowle     add MAX_RESPONSE_SIZE for limiting response sizes.
+ * Apr 13, 2016 5379       tgurney     Add default impl for getIdentifierValues()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public abstract class AbstractDataFactory implements IDataFactory {
@@ -143,7 +143,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null && !identifiers.isEmpty()) {
             if (required != null && required.length > 0) {
-                missing = new HashSet<String>(Arrays.asList(required));
+                missing = new HashSet<>(Arrays.asList(required));
                 missing.removeAll(identifiers.keySet());
             }
         } else if (required != null && required.length > 0) {
@@ -166,7 +166,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
             String[] required = getRequiredIdentifiers();
             if ((optional != null && optional.length > 0)
                     || (required != null && required.length > 0)) {
-                invalid = new HashSet<String>(identifiers.keySet());
+                invalid = new HashSet<>(identifiers.keySet());
                 if (optional != null) {
                     invalid.removeAll(Arrays.asList(optional));
                 }
@@ -252,4 +252,13 @@ public abstract class AbstractDataFactory implements IDataFactory {
                 + " data requests do not yet support getting available levels");
     }
 
+    /**
+     * Default implementation throws a {@link MethodNotSupportedYetException}
+     */
+    @Override
+    public String[] getIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        throw new MethodNotSupportedYetException(request.getDatatype()
+                + " data requests do not yet support getting identifier values");
+    }
 }

@@ -23,6 +23,7 @@ import java.util.Arrays;
 
 import com.raytheon.uf.common.dataaccess.exception.DataFactoryNotFoundException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
+import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
@@ -58,11 +59,11 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jul 14, 2014  3184     njensen     Added new methods
  * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
  * Mar 04, 2015  4217     mapeters    Sort available times.
+ * Apr 13, 2016  5379     tgurney     Add getIdentifierValues()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class DataAccessLayer {
@@ -292,4 +293,23 @@ public class DataAccessLayer {
                 .getOptionalIdentifiers();
     }
 
+    /**
+     * Gets the allowed values for a particular identifier recognized by a
+     * particular datatype
+     * 
+     * @param request
+     *            the request to find identifier values for
+     * @param identifierKey
+     *            the identifier to find all allowed values for
+     * @return the allowed values for the specified identifier recognized by
+     *         this datatype
+     * @throws InvalidIdentifiersException
+     *             if the specified identifier is not a recognized identifier
+     *             for this datatype
+     */
+    public static String[] getIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        return DataFactoryRegistry.getInstance().getFactory(request)
+                .getIdentifierValues(request, identifierKey);
+    }
 }
