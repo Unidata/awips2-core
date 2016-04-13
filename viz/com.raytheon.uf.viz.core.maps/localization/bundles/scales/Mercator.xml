@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="SOUNDER/GOES-Sounder" mapCenter="-105.87429088383496 30.87365060952971 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="World Mercator" mapCenter="-105.87429088383496 30.87365060952971 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
