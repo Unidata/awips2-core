@@ -1,26 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-    <!--
-        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
-        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
-        
-        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
-        This_software_product_contains_export-restricted_data_whose
-        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
-        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
-        an_export_license_or_other_authorization.
-        
-        Contractor_Name:________Raytheon_Company
-        Contractor_Address:_____6825_Pine_Street,_Suite_340
-        ________________________Mail_Stop_B8
-        ________________________Omaha,_NE_68106
-        ________________________402.291.0100
-        
-        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
-        further_licensing_information.
-    -->
 <bundle>
     <displayList>
-        <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="GOES-15(P)/Northern Hemisphere Composite" mapCenter="-104.88881311076099 35.24971451849759 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="SOUNDER/GOES-Sounder" mapCenter="-105.87429088383496 30.87365060952971 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
@@ -107,8 +88,8 @@
 
                 <timeMatcher xsi:type="d2DTimeMatcher" loadMode="VALID_TIME_SEQ" deltaFilter="0" forecastFilter="0"/>
                 <numberOfFrames>12</numberOfFrames>
-                <gridGeometry rangeX="0 1023" rangeY="0 511" envelopeMinX="-1.2288053686947575E7" envelopeMaxX="1.2287946313052425E7" envelopeMinY="-1.2288053686947577E7" envelopeMaxY="-53.68694757670164">
-                            <CRS>PROJCS["AWIPS Polar Stereographic (SP: 60.0, CM: -105.0)", 
+				<gridGeometry envelopeMaxY="1.2006791121134637E7" envelopeMinY="-1.0006791121134637E7" envelopeMaxX="2.001469423150376E7" envelopeMinX="-2.001469423150376E7" rangeY="0 9999" rangeX="0 20000">
+                            <CRS>PROJCS["Mercator (SP: 0.0, CM: 0.0)", 
   GEOGCS["WGS84(DD)", 
     DATUM["WGS84", 
       SPHEROID["WGS84", 6378137.0, 298.257223563]], 
@@ -116,18 +97,18 @@
     UNIT["degree", 0.017453292519943295], 
     AXIS["Geodetic longitude", EAST], 
     AXIS["Geodetic latitude", NORTH]], 
-  PROJECTION["Stereographic_North_Pole"], 
+  PROJECTION["Mercator_2SP"], 
   PARAMETER["semi_major", 6371229.0], 
   PARAMETER["semi_minor", 6371229.0], 
-  PARAMETER["central_meridian", -105.0], 
-  PARAMETER["Standard_Parallel_1", 60.0], 
-  PARAMETER["scale_factor", 1.0], 
+  PARAMETER["standard_parallel_1", 0.0], 
+  PARAMETER["latitude_of_origin", 0.0], 
+  PARAMETER["central_meridian", 0.0], 
   PARAMETER["false_easting", 0.0], 
   PARAMETER["false_northing", 0.0], 
   UNIT["m", 1.0], 
   AXIS["Easting", EAST], 
   AXIS["Northing", NORTH]]</CRS>
-                </gridGeometry>
+                        </gridGeometry>
             </descriptor>
         </displays>
     </displayList>
