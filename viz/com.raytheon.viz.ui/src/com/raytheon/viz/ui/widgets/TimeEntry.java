@@ -45,8 +45,11 @@ import org.eclipse.swt.widgets.Text;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 10, 2012            randerso     Initial creation
- * Mar 24, 2014  #1426     lvenable     Fixed arrow buttons so the arrows show up, cleaned up code.
+ * Dec 10, 2012            randerso    Initial creation
+ * Mar 24, 2014  #1426     lvenable    Fixed arrow buttons so the arrows show up, cleaned up code.
+ * Mar 17, 2016  #5483     randerso    Removed this.setLayoutData(). 
+ *                                     This should be done from outside the control
+ *                                     since the parent may not have a GridLayout
  * 
  * </pre>
  * 
@@ -91,7 +94,7 @@ public class TimeEntry extends Composite {
      */
     public TimeEntry(Composite parent, int fieldCount) {
         super(parent, SWT.NONE);
-        if (fieldCount < 1 || fieldCount > 3) {
+        if ((fieldCount < 1) || (fieldCount > 3)) {
             throw new IllegalArgumentException("fieldCount must be 1, 2, or 3");
         }
         this.fieldCount = fieldCount;
@@ -104,8 +107,8 @@ public class TimeEntry extends Composite {
         GridLayout gl = new GridLayout(2, false);
         gl.marginWidth = 0;
         gl.marginHeight = 0;
+        gl.horizontalSpacing = 0;
         this.setLayout(gl);
-        this.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         text = new Text(this, SWT.SINGLE | SWT.READ_ONLY | SWT.BORDER);
         Listener listener = new Listener() {
@@ -214,7 +217,7 @@ public class TimeEntry extends Composite {
         final int start = fieldIndices[index].x;
         final int end = fieldIndices[index].y;
         Point pt = text.getSelection();
-        if (index == currentField && start == pt.x && end == pt.y) {
+        if ((index == currentField) && (start == pt.x) && (end == pt.y)) {
             return;
         }
         currentField = index;
@@ -338,7 +341,7 @@ public class TimeEntry extends Composite {
         }
         Point sel = text.getSelection();
         for (int i = 0; i < fieldCount; i++) {
-            if (fieldIndices[i].x <= sel.x && sel.x <= fieldIndices[i].y) {
+            if ((fieldIndices[i].x <= sel.x) && (sel.x <= fieldIndices[i].y)) {
                 selectField(i);
                 break;
             }
@@ -378,17 +381,17 @@ public class TimeEntry extends Composite {
             characterCount = 0;
             return;
         }
-        if (first && newValue == 0 && length > 1) {
+        if (first && (newValue == 0) && (length > 1)) {
             setTextField(fieldName, newValue, false);
-        } else if (min <= newValue && newValue <= max) {
+        } else if ((min <= newValue) && (newValue <= max)) {
             setTextField(fieldName, newValue, characterCount == 0);
         } else {
             if (newTextLength >= length) {
-                newText = newText.substring(newTextLength - length + 1);
+                newText = newText.substring((newTextLength - length) + 1);
                 newValue = unformattedIntValue(fieldName, newText, max);
                 if (newValue != -1) {
                     characterCount = length - 1;
-                    if (min <= newValue && newValue <= max) {
+                    if ((min <= newValue) && (newValue <= max)) {
                         setTextField(fieldName, newValue, characterCount == 0);
                     }
                 }
@@ -399,7 +402,7 @@ public class TimeEntry extends Composite {
     private boolean isValidTime(int fieldName, int value) {
         int min = calendar.getActualMinimum(fieldName);
         int max = calendar.getActualMaximum(fieldName);
-        return value >= min && value <= max;
+        return (value >= min) && (value <= max);
     }
 
     public String getFormattedString() {
