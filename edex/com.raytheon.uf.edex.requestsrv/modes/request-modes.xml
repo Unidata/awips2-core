@@ -27,7 +27,5 @@
 		<include>.*request.*</include>
 		<include>.*common.*</include>
 		<exclude>nwsauth.*</exclude>
-		<exclude>archive.*</exclude>
-		<exclude>useradmin.*</exclude>
 	</mode>
 </edexModes>
