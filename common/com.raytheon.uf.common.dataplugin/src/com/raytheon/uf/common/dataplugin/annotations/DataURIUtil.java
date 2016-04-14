@@ -58,6 +58,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Sep 24, 2013 2081       mschenke    Removed special handling of spaces and only handle 
  *                                     {@link DataURI#SEPARATOR} specially
  * Oct  4, 2013 2081       mschenke    Refactored for custom uri field conversion
+ * Mar 11, 2016 5454       tgurney     Handle dataURI with trailing slash
  * 
  * </pre>
  * 
@@ -72,7 +73,6 @@ public class DataURIUtil {
 
     private static final Pattern FIELD_SEPARATOR_PATTERN = Pattern.compile("["
             + FIELD_SEPARATOR + "]");
-
 
     private static final String DATAURI_SEPARATOR_ENCODED = "%2F";
 
@@ -333,10 +333,11 @@ public class DataURIUtil {
     }
 
     /*
-     * Split a URI on the seperator and remove empty first element.
+     * Split a URI on the separator and remove empty first element.
      */
     private static String[] tokenizeURI(String dataURI) {
-        String[] tokens = DATAURI_SEPARATOR_PATTERN.split(dataURI);
+        // Limit of -1 keeps trailing empty string(s)
+        String[] tokens = DATAURI_SEPARATOR_PATTERN.split(dataURI, -1);
         for (int i = 0; i < tokens.length; ++i) {
             // Replace %2F with '/'
             tokens[i] = DATAURI_SEPARATOR_ENCODED_PATTERN.matcher(tokens[i])
