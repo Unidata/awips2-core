@@ -32,6 +32,8 @@ import java.util.concurrent.ConcurrentMap;
 
 import javax.xml.bind.JAXBException;
 
+import org.apache.commons.lang3.ArrayUtils;
+
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
@@ -51,7 +53,8 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------ ---------- ----------- --------------------------
  * Sep 6, 2013  2327      rjpeter     Initial creation
  * May 09, 2014 3151      bclement    added checkForPluginsMissingPatterns()
- * Jul 21, 2014  3373     bclement    uses its own jaxb manager during refresh
+ * Jul 21, 2014 3373      bclement    uses its own jaxb manager during refresh
+ * Apr 14, 2016 5565      skorolev    extended getDistributionFiles() to common_static
  * 
  * </pre>
  * 
@@ -68,12 +71,12 @@ public class DistributionPatterns {
      * Used to track file modified time to determine if a pattern set needs to
      * be reloaded.
      */
-    private final ConcurrentMap<String, Long> modifiedTimes = new ConcurrentHashMap<String, Long>();
+    private final ConcurrentMap<String, Long> modifiedTimes = new ConcurrentHashMap<>();
 
     /**
      * Patterns for the various plugins.
      */
-    private final ConcurrentMap<String, RequestPatterns> patterns = new ConcurrentHashMap<String, RequestPatterns>();
+    private final ConcurrentMap<String, RequestPatterns> patterns = new ConcurrentHashMap<>();
 
     private final Set<String> pluginsMissingPatterns = Collections
             .newSetFromMap(new ConcurrentHashMap<String, Boolean>());
@@ -122,14 +125,23 @@ public class DistributionPatterns {
      */
     private Collection<File> getDistributionFiles() {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-
-        LocalizationFile[] files = pathMgr.listFiles(
+        // files from edex_static
+        LocalizationFile[] edex_files = pathMgr.listFiles(
                 pathMgr.getLocalSearchHierarchy(LocalizationType.EDEX_STATIC),
-                "distribution", new String[] { ".xml" }, true, true);
-        Map<String, File> distFiles = new HashMap<String, File>();
+                "distribution", new String[] { ".xml" }, true, false);
+        // files from common_static
+        LocalizationFile[] common_files = pathMgr
+                .listFiles(
+                        pathMgr.getLocalSearchHierarchy(LocalizationType.COMMON_STATIC),
+                        "distribution", new String[] { ".xml" }, true, false);
+        // join both arrays of files
+        LocalizationFile[] files = (LocalizationFile[]) ArrayUtils.addAll(
+                common_files, edex_files);
+
+        Map<String, File> distFiles = new HashMap<>();
         for (LocalizationFile file : files) {
-            if (distFiles.containsKey(file.getName()) == false) {
-                distFiles.put(file.getName(), file.getFile());
+            if (!distFiles.containsKey(file.getPath())) {
+                distFiles.put(file.getPath(), file.getFile());
             }
         }
 
@@ -186,12 +198,11 @@ public class DistributionPatterns {
     private SingleTypeJAXBManager<RequestPatterns> createJaxbManager()
             throws DistributionException {
         try {
-            return new SingleTypeJAXBManager<RequestPatterns>(true,
-                    RequestPatterns.class);
+            return new SingleTypeJAXBManager<>(true, RequestPatterns.class);
         } catch (JAXBException e) {
             throw new DistributionException(
                     "Unable to refresh distribution patterns, "
-                    + "cannot create JAXB manager", e);
+                            + "cannot create JAXB manager", e);
         }
     }
 
@@ -202,7 +213,7 @@ public class DistributionPatterns {
      * @return
      */
     public List<String> getMatchingPlugins(String header) {
-        List<String> plugins = new LinkedList<String>();
+        List<String> plugins = new LinkedList<>();
 
         for (Map.Entry<String, RequestPatterns> entry : patterns.entrySet()) {
             if (entry.getValue().isDesiredHeader(header)) {
@@ -222,7 +233,7 @@ public class DistributionPatterns {
      */
     public List<String> getMatchingPlugins(String header,
             Collection<String> pluginsToCheck) {
-        List<String> plugins = new LinkedList<String>();
+        List<String> plugins = new LinkedList<>();
 
         for (String plugin : pluginsToCheck) {
             RequestPatterns pattern = patterns.get(plugin);
