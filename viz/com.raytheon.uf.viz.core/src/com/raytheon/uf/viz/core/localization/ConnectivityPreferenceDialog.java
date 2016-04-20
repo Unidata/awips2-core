@@ -148,7 +148,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
     private boolean siteGood = true;
 
-    private String site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+    private String site = "";
 
     protected Text siteText;
 
@@ -183,8 +183,11 @@ public class ConnectivityPreferenceDialog extends Dialog {
         this.title = title;
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
-        LocalizationManager.getInstance().setCurrentSite(site);
         site = LocalizationManager.getInstance().getSite();
+        if (site == "") {
+        	site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+            LocalizationManager.getInstance().setCurrentSite(site);
+        }
         if (checkAlertViz) {
             alertVizServer = LocalizationManager.getInstance()
                     .getLocalizationStore()
@@ -224,11 +227,17 @@ public class ConnectivityPreferenceDialog extends Dialog {
 
             shell.open();
             
+            /*
             this.site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
             validateSite();
             boolean everythingGood = siteGood && localizationGood && alertVizGood;
             updateStatus(everythingGood, status, details);
+            */
             
+            if (prompt) {
+            	validate();
+            }
+
             while (!shell.isDisposed()) {
                 if (!display.readAndDispatch()) {
                     display.sleep();
@@ -599,7 +608,7 @@ public class ConnectivityPreferenceDialog extends Dialog {
     }
 
     public void setSite(String site) {
-        //this.site = site;
+        this.site = site;
     }
 
     public boolean isSiteGood() {
