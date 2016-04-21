@@ -21,12 +21,10 @@ package com.raytheon.uf.viz.core.maps.actions;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
-import org.eclipse.core.commands.IHandler;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 
 import com.raytheon.uf.viz.core.maps.dialogs.CreateProjectionDialog;
-import com.raytheon.viz.ui.tools.AbstractTool;
 
 /**
  * Handler class for controlling the Create Projection dialog.
@@ -35,30 +33,22 @@ import com.raytheon.viz.ui.tools.AbstractTool;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- *                                     Initial creation
- * Oct 16, 2012 1229       rferrel     Made dialog non-blocking.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 16, 2012  1229     rferrel   Made dialog non-blocking.
+ * Apr 25, 2016  5579     bsteffen  Extend AbstractMapHandler to enable only
+ *                                  when a map is active.
  * 
  * </pre>
  * 
  * @author rferrel
- * @version 1.0
  */
-public class CreateProjectionHandler extends AbstractTool implements IHandler {
+public class CreateProjectionHandler extends AbstractMapHandler {
+
     private CreateProjectionDialog dlg;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.tools.AbstractTool#execute(org.eclipse.core.commands
-     * .ExecutionEvent)
-     */
     @Override
     public Object execute(ExecutionEvent arg0) throws ExecutionException {
-        super.execute(arg0);
-
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
 

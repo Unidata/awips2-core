@@ -46,8 +46,11 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.swt.widgets.Text;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.parameter.Parameter;
+import org.geotools.referencing.CRS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.geotools.referencing.operation.projection.MapProjection;
+import org.opengis.coverage.grid.GridEnvelope;
+import org.opengis.geometry.Envelope;
 import org.opengis.parameter.InvalidParameterValueException;
 import org.opengis.parameter.ParameterDescriptor;
 import org.opengis.parameter.ParameterValueGroup;
@@ -63,6 +66,8 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.IExtent;
+import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
@@ -78,20 +83,29 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 16, 2008 783        randerso    Initial Creation
- * Jan 29, 2013 15567      snaples     Remove Orthographic projection from list temporarily
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 16, 2008  783      randerso  Initial Creation
+ * Jan 29, 2013  15567    snaples   Remove Orthographic projection from list
+ *                                  temporarily
+ * Apr 21, 2016  5579     bsteffen  Default to match current display. Add Import
+ *                                  Extent From Display. Add tooltips.
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
-
 public class CreateProjectionDialog extends CaveJFACEDialog {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(CreateProjectionDialog.class);
+
+    /**
+     * Map from parameter name to a short description of the parameter. The
+     * parameter names are all lower case. Not all parameters are included, only
+     * the most common parameters are defined.
+     */
+    private final Map<String, String> parameterHelpText;
 
     private DefaultMathTransformFactory factory;
 
@@ -112,7 +126,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         }
     }
 
-    private final Map<Parameter<?>, ParamUI> paramMap = new HashMap<Parameter<?>, ParamUI>();
+    private final Map<Parameter<?>, ParamUI> paramMap = new HashMap<>();
 
     // private Composite paramComp;
     private Group paramGroup;
@@ -126,6 +140,8 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
     private Button cornersBtn;
 
     private Button centerBtn;
+
+    private Button importExtentButton;
 
     private Text llLatText;
 
@@ -160,28 +176,45 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
      */
     public CreateProjectionDialog(Shell parentShell) {
         super(parentShell);
+        parameterHelpText = createPrameterHelpText();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.window.Window#configureShell(org.eclipse.swt.widgets
-     * .Shell)
-     */
+    private static Map<String, String> createPrameterHelpText() {
+        /*
+         * Based on the ESRI GIS Dictionary
+         * (http://support.esri.com/en/knowledgebase/Gisdictionary)
+         */
+        Map<String, String> parameterHelpText = new HashMap<>();
+        parameterHelpText.put("semi_major",
+                "The equatorial radius of a spheroid.");
+        parameterHelpText.put("semi_minor", "The polar radius of a spheroid.");
+        parameterHelpText
+                .put("central_meridian",
+                        "The line of longitude that defines the center and often the x-origin of a projected coordinate system.");
+        parameterHelpText
+                .put("latitude_of_origin",
+                        "The latitude value that defines the origin of the y-coordinate values for a projection.");
+        parameterHelpText
+                .put("scale_factor",
+                        "A value (usually less than one) that converts a tangent projection to a secant projection.");
+        parameterHelpText
+                .put("false_easting",
+                        "The linear value added to all x-coordinates of a map projection so that none of the values in the geographic region being mapped are negative.");
+        parameterHelpText
+                .put("false_northing",
+                        "The linear value added to all y-coordinates of a map projection so that none of the values in the geographic region being mapped are negative.");
+        parameterHelpText
+                .put("standard_parallel_1",
+                        "The line of latitude in a conic or cylindrical projection in normal aspect where the projection surface touches the globe.");
+        return parameterHelpText;
+    }
+
     @Override
     protected void configureShell(Shell newShell) {
         super.configureShell(newShell);
         newShell.setText("Create Projection");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveJFACEDialog#createDialogArea(org.eclipse
-     * .swt.widgets.Composite)
-     */
     @Override
     protected Control createDialogArea(Composite parent) {
         dlgComp = (Composite) super.createDialogArea(parent);
@@ -196,7 +229,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         // String[] projections = new String[methods.size()];
 
         // int i = 0;
-        List<Object> prjj = new ArrayList<Object>();
+        List<Object> prjj = new ArrayList<>();
         for (Object obj : methods) {
             if (obj instanceof MapProjection.AbstractProvider) {
                 MapProjection.AbstractProvider prj = (MapProjection.AbstractProvider) obj;
@@ -257,6 +290,17 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
         centerBtn = new Button(defineByGroup, SWT.RADIO);
         centerBtn.setText("Center");
+
+        importExtentButton = new Button(dlgComp, SWT.PUSH);
+        importExtentButton.setText("Import Extent From Display");
+        importExtentButton.addSelectionListener(new SelectionAdapter() {
+
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                importViewExtent();
+            }
+
+        });
 
         cornersGroup = new Group(dlgComp, SWT.BORDER);
         cornersGroup.setText("Extent");
@@ -366,54 +410,21 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         return dlgComp;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.CaveJFACEDialog#createContents(org.eclipse
-     * .swt.widgets.Composite)
-     */
     @Override
     protected Control createContents(Composite parent) {
         Control contents = super.createContents(parent);
-        handleProjectionSelection();
+        if (!loadCurrentProjection()) {
+            handleProjectionSelection();
+            importExtentButton.setEnabled(false);
+        }
         return contents;
     }
 
-    /**
-     * 
-     */
     private void handleProjectionSelection() {
         try {
-            for (ParamUI pui : paramMap.values()) {
-                pui.label.dispose();
-                pui.text.dispose();
-            }
-            paramMap.clear();
-
             parameters = factory.getDefaultParameters(projList.getText());
 
-            for (Object obj : parameters.values()) {
-                Parameter<?> param = (Parameter<?>) obj;
-                String paramName = param.getDescriptor().getName().getCode();
-
-                Label label = new Label(paramGroup, SWT.NONE);
-                label.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
-                        | GridData.GRAB_HORIZONTAL));
-                label.setText(paramName + " (" + param.getUnit() + ")");
-
-                if (("semi_major".equals(paramName) || "semi_minor"
-                        .equals(paramName)) && (param.getValue() == null)) {
-                    param.setValue(MapUtil.AWIPS_EARTH_RADIUS);
-                }
-
-                Text text = new Text(paramGroup, SWT.BORDER);
-                text.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
-                        | GridData.GRAB_HORIZONTAL));
-                paramMap.put(param, new ParamUI(label, text));
-
-                text.setText("" + param.getValue());
-            }
+            populateParamGroup();
 
             setProjectionNameText(projList.getText());
 
@@ -424,7 +435,6 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                     + e.getLocalizedMessage());
         }
 
-        paramGroup.layout();
         getShell().pack(true);
     }
 
@@ -612,11 +622,150 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.dialogs.Dialog#okPressed()
+    /**
+     * Import the extent from the currently active display. This is specifically
+     * the currently visible extent, not the entire valid area.
      */
+    private void importViewExtent() {
+        IDisplayPaneContainer container = EditorUtil.getActiveVizContainer();
+        if (container == null) {
+            return;
+        }
+        for (IDisplayPane pane : container.getDisplayPanes()) {
+            IRenderableDisplay display = pane.getRenderableDisplay();
+            IDescriptor descriptor = display.getDescriptor();
+            if (descriptor instanceof IMapDescriptor) {
+                IMapDescriptor mapDescriptor = (IMapDescriptor) descriptor;
+                IExtent extent = display.getExtent();
+                if (cornersBtn.getSelection()) {
+                    double[] ll = { extent.getMinX(), extent.getMinY() };
+                    ll = mapDescriptor.pixelToWorld(ll);
+                    double[] ur = { extent.getMaxX(), extent.getMaxY() };
+                    ur = mapDescriptor.pixelToWorld(ur);
+                    llLonText.setText(Double.toString(ll[0]));
+                    llLatText.setText(Double.toString(ll[1]));
+                    urLonText.setText(Double.toString(ur[0]));
+                    urLatText.setText(Double.toString(ur[1]));
+                } else if (centerBtn.getSelection()) {
+                    GridEnvelope gridRange = mapDescriptor.getGridGeometry()
+                            .getGridRange();
+                    Envelope envelope = mapDescriptor.getGridGeometry()
+                            .getEnvelope();
+                    double[] center = extent.getCenter();
+                    center = mapDescriptor.pixelToWorld(center);
+                    centerLonText.setText(Double.toString(center[0]));
+                    centerLatText.setText(Double.toString(center[1]));
+                    double width = extent.getWidth() / gridRange.getSpan(0)
+                            * envelope.getSpan(0);
+                    double height = extent.getHeight() / gridRange.getSpan(1)
+                            * envelope.getSpan(1);
+
+                    widthText.setText(Double.toString(width));
+                    heightText.setText(Double.toString(height));
+                }
+                validateParameters();
+                return;
+            }
+        }
+    }
+
+    /**
+     * Copy the parameters from the currently displayed map into the dialog.
+     * 
+     * @return true if a useable display was found and populated. False
+     *         indicates that no currently active map display was found and the
+     *         UI was not initialized.
+     */
+    private boolean loadCurrentProjection() {
+        IDisplayPaneContainer container = EditorUtil.getActiveVizContainer();
+        if (container == null) {
+            return false;
+        }
+        for (IDisplayPane pane : container.getDisplayPanes()) {
+            IRenderableDisplay display = pane.getRenderableDisplay();
+            IDescriptor descriptor = display.getDescriptor();
+            if (descriptor instanceof IMapDescriptor) {
+                IMapDescriptor mapDescriptor = (IMapDescriptor) descriptor;
+                if (display instanceof IMapScaleDisplay) {
+                    projNameText.setText(((IMapScaleDisplay) display)
+                            .getScaleName());
+                }
+                MapProjection worldProjection = CRS
+                        .getMapProjection(mapDescriptor.getCRS());
+
+                projList.select(projList.indexOf(worldProjection.getName()));
+
+                parameters = worldProjection.getParameterValues();
+
+                populateParamGroup();
+
+                GeneralGridGeometry gridGeometry = mapDescriptor
+                        .getGridGeometry();
+                GridEnvelope gridRange = gridGeometry.getGridRange();
+                Envelope envelope = gridGeometry.getEnvelope();
+                double[] ll = { gridRange.getLow(0), gridRange.getLow(1) };
+                double[] ur = { gridRange.getHigh(0), gridRange.getHigh(1) };
+                double[] center = {
+                        (gridRange.getHigh(0) - gridRange.getLow(0)) / 2,
+                        (gridRange.getHigh(1) - gridRange.getLow(1)) / 2 };
+                center = mapDescriptor.pixelToWorld(center);
+
+                ll = mapDescriptor.pixelToWorld(ll);
+                ur = mapDescriptor.pixelToWorld(ur);
+                llLonText.setText(Double.toString(ll[0]));
+                llLatText.setText(Double.toString(ll[1]));
+                urLonText.setText(Double.toString(ur[0]));
+                urLatText.setText(Double.toString(ur[1]));
+                centerLonText.setText(Double.toString(center[0]));
+                centerLatText.setText(Double.toString(center[1]));
+                widthText.setText(Double.toString(envelope.getSpan(0)));
+                heightText.setText(Double.toString(envelope.getSpan(1)));
+
+                getShell().pack(true);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Create widgets for modifying the {@link #parameters}. The parameters
+     * field must be set before calling this method.
+     */
+    private void populateParamGroup() {
+        for (ParamUI pui : paramMap.values()) {
+            pui.label.dispose();
+            pui.text.dispose();
+        }
+        paramMap.clear();
+
+        for (Object obj : parameters.values()) {
+            Parameter<?> param = (Parameter<?>) obj;
+            String paramName = param.getDescriptor().getName().getCode();
+
+            Label label = new Label(paramGroup, SWT.NONE);
+            label.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
+                    | GridData.GRAB_HORIZONTAL));
+            label.setText(paramName + " (" + param.getUnit() + ")");
+
+            if (("semi_major".equals(paramName) || "semi_minor"
+                    .equals(paramName)) && (param.getValue() == null)) {
+                param.setValue(MapUtil.AWIPS_EARTH_RADIUS);
+            }
+
+            Text text = new Text(paramGroup, SWT.BORDER);
+            text.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
+                    | GridData.GRAB_HORIZONTAL));
+            String helpText = parameterHelpText.get(paramName.toLowerCase());
+            text.setToolTipText(helpText);
+            label.setToolTipText(helpText);
+            paramMap.put(param, new ParamUI(label, text));
+
+            text.setText("" + param.getValue());
+        }
+        paramGroup.layout();
+    }
+
     @Override
     protected void okPressed() {
         validateParameters();
@@ -628,8 +777,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         IDisplayPaneContainer container = EditorUtil.getActiveVizContainer();
         if (container == null) {
             try {
-                container = (IDisplayPaneContainer) new NewMapEditor()
-                        .execute(null);
+                container = new NewMapEditor().execute(null);
             } catch (ExecutionException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error opening new editor", e);
