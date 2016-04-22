@@ -70,6 +70,8 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                    getAvailableLocationNames.
  * Aug 05, 2015  4486     rjpeter     Changed Timestamp to Date.
  * Apr 08, 2016  5553     bkowal      Ignore null identifiers in {@link #makeGeometries(List, String[], Map)}.
+ * Apr 22, 2016  5596     tgurney     Fix getAvailableParameters() with
+ *                                    unqualified table name
  * </pre>
  * 
  * @author bkowal
@@ -88,6 +90,8 @@ public abstract class AbstractGeometryDatabaseFactory extends
     private static final QUERY_MODE queryMode = QUERY_MODE.MODE_SQLQUERY;
 
     protected static final String COL_NAME_OPTION = "**column name(s) of the table being queried";
+
+    protected static final String DEFAULT_SCHEMA = "public";
 
     private final String databaseName;
 
@@ -114,13 +118,6 @@ public abstract class AbstractGeometryDatabaseFactory extends
         this.optionalIdentifiers = optionalIdentifiers;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.IDataFactory#getAvailableTimes(com.
-     * raytheon.uf.common.dataaccess.IDataRequest)
-     */
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
             boolean refTimeOnly) throws TimeAgnosticDataException {
@@ -129,27 +126,12 @@ public abstract class AbstractGeometryDatabaseFactory extends
                 this.assembleGetTimes(request, refTimeOnly), request);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.IDataFactory#getAvailableTimes(com.
-     * raytheon.uf.common.dataaccess.IDataRequest,
-     * com.raytheon.uf.common.time.BinOffset)
-     */
     @Override
     public DataTime[] getAvailableTimes(IDataRequest request,
             BinOffset binOffset) throws TimeAgnosticDataException {
         return FactoryUtil.getAvailableTimes(this, request, binOffset);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.IDataFactory#getData(com.raytheon.uf
-     * .common.dataaccess.IDataRequest, com.raytheon.uf.common.time.DataTime[])
-     */
     @Override
     public IGeometryData[] getGeometryData(IDataRequest request,
             DataTime... times) {
@@ -158,13 +140,6 @@ public abstract class AbstractGeometryDatabaseFactory extends
                 request);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.IDataFactory#getData(com.raytheon.uf
-     * .common.dataaccess.IDataRequest, com.raytheon.uf.common.time.TimeRange)
-     */
     @Override
     public IGeometryData[] getGeometryData(IDataRequest request,
             TimeRange timeRange) {
@@ -185,7 +160,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
     protected final DataTime[] executeTimeQuery(String query,
             IDataRequest request) {
         List<Object[]> results = this.executeQuery(query, request);
-        List<DataTime> dataTimes = new ArrayList<DataTime>();
+        List<DataTime> dataTimes = new ArrayList<>();
         for (Object[] objects : results) {
             DataTime dataTime = buildDataTimeFromQueryResults(objects);
             if (dataTime != null) {
@@ -241,19 +216,12 @@ public abstract class AbstractGeometryDatabaseFactory extends
                 this.databaseName, request.getDatatype());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.dataaccess.geom.IGeometryDataFactory#
-     * getAvailableLocationNames
-     * (com.raytheon.uf.common.dataaccess.geom.IDataRequest)
-     */
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
         this.validateRequest(request, false);
         List<Object[]> results = this.executeQuery(
                 this.assembleGetAvailableLocationNames(request), request);
-        List<String> locations = new ArrayList<String>();
+        List<String> locations = new ArrayList<>();
         for (Object[] objects : results) {
             locations.add((String) objects[0]);
         }
@@ -262,18 +230,12 @@ public abstract class AbstractGeometryDatabaseFactory extends
         return locations.toArray(new String[0]);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.dataaccess.impl.AbstractDataFactory#
-     * getAvailableParameters(com.raytheon.uf.common.dataaccess.IDataRequest)
-     */
     @Override
     public String[] getAvailableParameters(IDataRequest request) {
         this.validateRequest(request, false);
         List<Object[]> results = this.executeQuery(
                 this.assembleGetAvailableParameters(request), request);
-        List<String> parameters = new ArrayList<String>();
+        List<String> parameters = new ArrayList<>();
         for (Object[] objects : results) {
             parameters.add((String) objects[0]);
         }
@@ -286,12 +248,6 @@ public abstract class AbstractGeometryDatabaseFactory extends
                 + " data does not support the concept of levels");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.dataaccess.impl.AbstractDataFactory#
-     * getRequiredIdentifiers()
-     */
     @Override
     public String[] getRequiredIdentifiers() {
         return this.requiredIdentifiers;
@@ -362,17 +318,31 @@ public abstract class AbstractGeometryDatabaseFactory extends
 
     /**
      * Builds a postgres-specific SQL query used to retrieve available
-     * parameters (columns) of the requested table from the database
+     * parameters (columns) of the requested table from the database.
      * 
      * @param request
      *            the request that we are processing
      * @return the query
      */
     protected String assembleGetAvailableParameters(IDataRequest request) {
-        String[] table = ((String) (request.getIdentifiers().get("table")))
-                .split("\\.");
-        return "select column_name from information_schema.columns where table_schema = '"
-                + table[0] + "' and table_name = '" + table[1] + "';";
+        String tableFullyQualified = (String) request.getIdentifiers().get(
+                "table");
+        String[] table = tableFullyQualified.split("\\.");
+        String schema = DEFAULT_SCHEMA;
+        String tableName;
+        if (table.length == 1) {
+            tableName = table[0];
+        } else if (table.length == 2) {
+            schema = table[0];
+            tableName = table[1];
+        } else {
+            throw new IncompatibleRequestException(tableFullyQualified
+                    + " is not a valid table");
+        }
+        return String.format("select column_name "
+                + "from information_schema.columns "
+                + "where table_schema = '%s' and table_name = '%s';", schema,
+                tableName);
     }
 
     /**
@@ -389,7 +359,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
      */
     protected IGeometryData[] makeGeometries(List<Object[]> serverResult,
             String[] paramNames, Map<String, Object> identifiers) {
-        List<IGeometryData> resultList = new ArrayList<IGeometryData>();
+        List<IGeometryData> resultList = new ArrayList<>();
         Map<String, Object> attrs = Collections.emptyMap();
         if (identifiers != null) {
             attrs = Collections.unmodifiableMap(identifiers);
