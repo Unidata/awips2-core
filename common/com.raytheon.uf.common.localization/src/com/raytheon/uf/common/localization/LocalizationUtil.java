@@ -22,10 +22,12 @@ package com.raytheon.uf.common.localization;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.apache.commons.lang.StringUtils;
+
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 
 /**
- * TODO Add Description
+ * Utility functions for Localization
  * 
  * <pre>
  * 
@@ -34,6 +36,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 13, 2011            njensen     Initial creation
+ * Apr 25, 2016  #5605     randerso    Added join()
  * 
  * </pre>
  * 
@@ -64,7 +67,7 @@ public class LocalizationUtil {
      * @return
      */
     public static String[] splitUnique(String filePath) {
-        List<String> parts = new ArrayList<String>();
+        List<String> parts = new ArrayList<>();
         String[] split = filePath.split("[/\\\\]"); // Win32
         for (String s : split) {
             if ("".equals(s.trim()) == false) {
@@ -104,5 +107,9 @@ public class LocalizationUtil {
         char[] chars = level.name().toLowerCase().toCharArray();
         chars[0] = Character.toUpperCase(chars[0]);
         return new String(chars);
+    }
+
+    public static String join(String... parts) {
+        return StringUtils.join(parts, IPathManager.SEPARATOR);
     }
 }
