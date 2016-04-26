@@ -50,6 +50,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * Feb 03, 2015 4009       mapeters    Moved getAvailableLevels() override to super
  * Aug 13, 2015 4705       bkowal      Make parameters optional. Fixed implementation of optional
  *                                     location field.
+ * Apr 26, 2016 5587       tgurney     Support getIdentifierValues()
  * 
  * </pre>
  * 
@@ -89,13 +90,6 @@ public class MapsGeometryFactory extends
         // Do Nothing.
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.impl.AbstractGeometryDatabaseFactory
-     * #makeGeometry(java.lang.Object[], java.lang.String[], java.util.Map)
-     */
     @Override
     protected IGeometryData makeGeometry(Object[] data, String[] paramNames,
             Map<String, Object> attrs) {
@@ -128,28 +122,43 @@ public class MapsGeometryFactory extends
                 dataIndex, data, paramNames);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.dataaccess.impl.
-     * AbstractGeometryTimeAgnosticDatabaseFactory
-     * #assembleGetData(com.raytheon.uf.common.dataaccess.geom.IDataRequest)
-     */
     @Override
     protected String assembleGetData(IDataRequest request) {
         return MapsQueryAssembler.assembleGetData(request);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.impl.AbstractGeometryDatabaseFactory
-     * #assembleGetAvailableLocationNames
-     * (com.raytheon.uf.common.dataaccess.geom.IDataRequest)
-     */
     @Override
     protected String assembleGetAvailableLocationNames(IDataRequest request) {
         return MapsQueryAssembler.assembleGetAvailableLocationNames(request);
+    }
+
+    @Override
+    protected String assembleGetIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        String query;
+        String table = MapsQueryAssembler.REQUIRED_IDENTIFIERS.IDENTIFIER_TABLE;
+        String geomField = MapsQueryAssembler.REQUIRED_IDENTIFIERS.IDENTIFIER_GEOM_FIELD;
+        if (identifierKey.equals(table)) {
+            query = assembleGetTableNames();
+        } else if (identifierKey.equals(geomField)) {
+            query = assembleGetGeomFieldNames(request);
+        } else {
+            query = assembleGetColumnValues(extractTableName(request),
+                    identifierKey);
+        }
+        return query;
+    }
+
+    private String assembleGetGeomFieldNames(IDataRequest request) {
+        String[] tableParsed = splitTableName(request);
+        String schema = tableParsed[0];
+        String tableName = tableParsed[1];
+        return String.format(
+                "select distinct column_name "
+                        + "from information_schema.columns "
+                        + "where table_name = '%s' "
+                        + "and table_schema = '%s'"
+                        + "and column_name like 'the_geom%%' "
+                        + "order by column_name", tableName, schema);
     }
 }
