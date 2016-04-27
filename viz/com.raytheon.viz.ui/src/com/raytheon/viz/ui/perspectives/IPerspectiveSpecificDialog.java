@@ -28,6 +28,8 @@ package com.raytheon.viz.ui.perspectives;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 27, 2010            mschenke     Initial creation
+ * Apr 20, 2015 5541       dgilling     Add additional hide/restore methods 
+ *                                      so we can detect perspective switching.
  * 
  * </pre>
  * 
@@ -43,9 +45,25 @@ public interface IPerspectiveSpecificDialog {
     public void hide();
 
     /**
+     * Hide the dialog
+     * 
+     * @param isPerspectiveSwitch
+     *            restore was triggered by a perspective switch event or not
+     */
+    public void hide(boolean isPerspectiveSwitch);
+
+    /**
      * Restore dialog to location
      */
     public void restore();
+
+    /**
+     * Restore dialog to location
+     * 
+     * @param isPerspectiveSwitch
+     *            restore was triggered by a perspective switch event or not
+     */
+    public void restore(boolean isPerspectiveSwitch);
 
     /**
      * Close the dialog, called when perspective is closed
