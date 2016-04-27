@@ -21,13 +21,14 @@
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.workbench.modeling.ISaveHandler;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IMemento;
-import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.application.ActionBarAdvisor;
@@ -36,7 +37,6 @@ import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
 import org.eclipse.ui.application.WorkbenchWindowAdvisor;
 
 import com.raytheon.uf.viz.core.ProgramArguments;
-import com.raytheon.viz.ui.dialogs.ModeListener;
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
@@ -54,6 +54,9 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  *                                      computed instead of just maximized.
  *                                      Added command line parameters to allow window size
  *                                      and location to be specified.
+ * Dec 23, 2015   5189      bsteffen    Add custom save handler.
+ * Jan 05, 2016   5193      bsteffen    Move perspective listener activation to the workbench advisor.
+ * Jan 12, 2016   5232      njensen     Removed code that doesn't work in Eclipse 4
  * 
  * </pre>
  * 
@@ -61,8 +64,6 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * @version 1
  */
 public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
-
-    private VizPerspectiveListener listener;
 
     private boolean firstTime = true;
 
@@ -116,17 +117,18 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
 
         final IWorkbenchWindow window = super.getWindowConfigurer().getWindow();
 
-        listener = new VizPerspectiveListener(window, VizActionBarAdvisor
-                .getInstance(window).getStatusLine());
+        VizPerspectiveListener listener = new VizPerspectiveListener(window,
+                VizActionBarAdvisor.getInstance(window).getStatusLine());
         window.addPerspectiveListener(listener);
         window.addPageListener(AbstractVizPerspectiveManager.pageListener);
         IWorkbenchPage page = window.getActivePage();
         page.addPartListener(AbstractVizPerspectiveManager.partListener);
+        
+        IEclipseContext windowContext = window.getService(IEclipseContext.class);
+        ISaveHandler defaultSaveHandler = windowContext.get(ISaveHandler.class);
+        ISaveHandler localSaveHandler = new VizSaveHandler(defaultSaveHandler);
+        windowContext.set(ISaveHandler.class, localSaveHandler);
 
-        IPerspectiveDescriptor perspective = page.getPerspective();
-        if (perspective != null) {
-            listener.perspectiveActivated(page, perspective);
-        }
     }
 
     /*
@@ -221,22 +223,6 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
             getWindowConfigurer().getWorkbenchConfigurer().setSaveAndRestore(
                     false);
         }
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.application.WorkbenchWindowAdvisor#createWindowContents
-     * (org.eclipse.swt.widgets.Shell)
-     */
-    @Override
-    public void createWindowContents(Shell shell) {
-        super.createWindowContents(shell);
-
-        // Gets the main shell and colors the shell if the mode is set to
-        // practice or training
-        new ModeListener(shell);
     }
 
     @Override

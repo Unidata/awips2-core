@@ -228,14 +228,21 @@
 		         </with>
 	 		</activeWhen>
 	    </handler>
-   </extension>
-   <extension
-         point="org.eclipse.ui.presentationFactories">
-      <factory
-            class="com.raytheon.uf.viz.personalities.cave.presentation.VizPresentationFactory"
-            id="com.raytheon.uf.viz.personalities.cave.presentation.VizPresentationFactory"
-            name="CAVE Presentation">
-      </factory>
+	    <handler
+             class="com.raytheon.uf.viz.personalities.cave.dialog.OpenPerspectiveHandler"
+             commandId="org.eclipse.ui.perspectives.showPerspective">
+             <activeWhen>
+                <with
+                       variable="activeContexts">
+                    <iterate
+                          operator="or">
+                       <equals
+                             value="com.raytheon.uf.viz.application.cave">
+                       </equals>
+                    </iterate>
+                 </with>
+            </activeWhen>
+        </handler>
    </extension>
    <extension
          point="org.eclipse.ui.bindings">
@@ -475,5 +482,51 @@
             handlerId="com.raytheon.viz.notification.statusHandler"
             productId="com.raytheon.uf.viz.cave.product.CAVE">
       </statusHandlerProductBinding>
+   </extension>
+   
+   <!-- Hide extra perspectives, preferences, etc contributed by Eclipse plugins -->
+   <extension
+         point="org.eclipse.ui.activities">
+         
+      <!-- activities seem to be disabled by default, hence no logic to enable these -->
+      <activity
+            id="com.raytheon.uf.viz.personalities.cave.eclipse.hide"            
+            name="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            description="Hides Eclipse-contributed perspectives, preferences, etc">
+      </activity>
+      
+      
+      <!-- Hide the General -> Perspectives pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            isEqualityPattern="true"
+            pattern="org.eclipse.ui.ide/org.eclipse.ui.preferencePages.Perspectives">
+      </activityPatternBinding>
+      
+      <!-- Hide the General -> Search pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            isEqualityPattern="true"
+            pattern="org.eclipse.search/org.eclipse.search.preferences.SearchPreferencePage">
+      </activityPatternBinding>     
+
+      <!-- Hide the Java perspective, prefs, etc -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            pattern="org.eclipse.jdt.ui.*">
+      </activityPatternBinding>
+
+      <!-- Hide the Debug perspective, prefs, etc -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            pattern="org.eclipse.debug.ui.*">
+      </activityPatternBinding>
+
+      <!-- Hide the Team Synchronizing perspective, prefs, etc -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide"
+            pattern="org.eclipse.team.ui.*">
+      </activityPatternBinding>     
+      
    </extension>
 </plugin>

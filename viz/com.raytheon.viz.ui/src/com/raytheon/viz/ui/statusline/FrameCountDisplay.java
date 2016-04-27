@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,19 +34,19 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 
 /**
  * Status line display to show frame count
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 23, 2010            mschenke     Initial creation
- * 
+ * Dec 23, 2010            mschenke    Initial creation
+ * Mar 24, 2016  5232      njensen     Fix label coloring for test mode
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class FrameCountDisplay extends ContributionItem implements
@@ -75,14 +75,13 @@ public class FrameCountDisplay extends ContributionItem implements
 
         Label label = new Label(layout, SWT.NONE);
         label.setText("Frames:");
+        label.setForeground(parent.getForeground());
 
         frameCountLabel = new Label(layout, SWT.BORDER);
         frameCountLabel.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
                 true));
-        frameCountLabel.setForeground(Display.getDefault().getSystemColor(
-                SWT.COLOR_BLACK));
-        frameCountLabel.setBackground(Display.getDefault().getSystemColor(
-                SWT.COLOR_WIDGET_BACKGROUND));
+        frameCountLabel.setForeground(parent.getForeground());
+        frameCountLabel.setBackground(parent.getBackground());
         update();
     }
 
@@ -115,13 +114,6 @@ public class FrameCountDisplay extends ContributionItem implements
         VizGlobalsManager.removeListener(VizConstants.FRAME_COUNT_ID, this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.globals.IGlobalChangedListener#updateValue(org
-     * .eclipse.ui.IWorkbenchWindow, java.lang.Object)
-     */
     @Override
     public void updateValue(IWorkbenchWindow changedWindow, Object value) {
         if (changedWindow == window) {

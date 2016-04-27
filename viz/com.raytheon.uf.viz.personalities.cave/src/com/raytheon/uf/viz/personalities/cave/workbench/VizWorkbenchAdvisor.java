@@ -20,20 +20,22 @@
 
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
-import java.util.HashSet;
-import java.util.Set;
-
+import org.eclipse.core.commands.Command;
 import org.eclipse.core.runtime.IExtension;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPreferenceNode;
 import org.eclipse.jface.preference.PreferenceManager;
 import org.eclipse.ui.IPerspectiveDescriptor;
 import org.eclipse.ui.IPerspectiveRegistry;
+import org.eclipse.ui.IWorkbench;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.IWorkbenchConfigurer;
 import org.eclipse.ui.application.IWorkbenchWindowConfigurer;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.application.WorkbenchWindowAdvisor;
+import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.contexts.IContextService;
 
 import com.raytheon.uf.common.time.util.ITimer;
@@ -41,7 +43,6 @@ import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.ui.menus.DiscoverMenuContributions;
 import com.raytheon.viz.ui.VizWorkbenchManager;
-import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
@@ -59,6 +60,11 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Oct 15, 2013 2361        njensen     Added startupTimer
  * Jan 27, 2014 2744        njensen     Add Local History pref back in
  * May 09, 2014 3153        njensen     Updates for pydev 3.4.1
+ * Jan 04, 2016 5192        njensen     Moved removal of extra perspectives and some prefs
+ *                                       to plugin.xml using activities
+ * Jan 05, 2016 5193        bsteffen    Activate viz perspective after startup.
+ * Jan 14, 2016 5192        njensen     Remove jdt, debug, and team commands
+ * Mar 04, 2016 5267        bsteffen    Let eclipse close nonrestorable views.
  * 
  * </pre>
  * 
@@ -67,14 +73,12 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  */
 public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
 
-    protected CloseNonRestorableDetachedViewsListener detachedViewsListener;
-
     private boolean createdMenus = false;
 
     protected ITimer startupTimer;
 
     public VizWorkbenchAdvisor() {
-        detachedViewsListener = new CloseNonRestorableDetachedViewsListener();
+
     }
 
     /*
@@ -103,7 +107,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
      */
     protected void customizeAppearance() {
         removeExtraMenus();
-        removeExtraPerspectives();
         removeExtraPreferences();
     }
 
@@ -154,46 +157,14 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     }
 
     /**
-     * Removes perspectives from the rcp perspectives menu that are not managed
-     * by an {@link AbstractVizPerspectiveManager}
-     */
-    @SuppressWarnings("restriction")
-    private void removeExtraPerspectives() {
-        IPerspectiveRegistry reg = PlatformUI.getWorkbench()
-                .getPerspectiveRegistry();
-        Set<String> managed = new HashSet<String>(
-                VizPerspectiveListener.getManagedPerspectives());
-        for (IPerspectiveDescriptor perspective : reg.getPerspectives()) {
-            if (managed.contains(perspective.getId()) == false) {
-                org.eclipse.ui.internal.registry.PerspectiveDescriptor sync = (org.eclipse.ui.internal.registry.PerspectiveDescriptor) perspective;
-                if (sync.getConfigElement() != null) {
-                    IExtension ext = sync.getConfigElement()
-                            .getDeclaringExtension();
-                    ((org.eclipse.ui.internal.registry.PerspectiveRegistry) reg)
-                            .removeExtension(ext, new Object[] { perspective });
-                } else {
-                    sync.deleteCustomDefinition();
-                }
-            }
-        }
-    }
-
-    /**
      * Removes options from the rcp preferences menu
      */
     private void removeExtraPreferences() {
         // remove top level preference pages
         PreferenceManager preferenceManager = PlatformUI.getWorkbench()
                 .getPreferenceManager();
-        preferenceManager.remove("org.eclipse.team.ui.TeamPreferences");
-        preferenceManager
-                .remove("org.eclipse.update.internal.ui.preferences.MainPreferencePage");
-        preferenceManager.remove("org.eclipse.debug.ui.DebugPreferencePage");
-        preferenceManager
-                .remove("org.eclipse.jdt.ui.preferences.JavaBasePreferencePage");
-        preferenceManager.remove("ValidationPreferencePage");
 
-        // remove subnode preference pages
+        // remove all Workspace preference pages except Local History
         IPreferenceNode[] topNodes = preferenceManager.getRootSubNodes();
         for (IPreferenceNode root : topNodes) {
             String rootId = root.getId();
@@ -208,20 +179,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
                     root.add(localHistoryNode);
                     root.remove("org.eclipse.ui.preferencePages.Workspace");
                 }
-                root.remove("org.eclipse.search.preferences.SearchPreferencePage");
-            } else if (rootId.equals("org.python.pydev.prefs")) {
-                IPreferenceNode node = root
-                        .findSubNode("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageGeneral");
-                if (node != null) {
-                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython");
-                    node.remove("org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageIronpython");
-                }
-
-                root.remove("org.python.pydev.prefs.pylint");
-                root.remove("org.python.pydev.prefs.pyunitPage");
-                root.remove("org.python.pydev.jython.ui.JyScriptingPreferencesPage");
-            } else if (rootId.equals("org.eclipse.wst.xml.ui.preferences.xml")) {
-                root.remove("org.eclipse.wst.xml.core.ui.XMLCatalogPreferencePage");
             }
         }
 
@@ -325,9 +282,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         if (bResult) {
             System.out
                     .println("VizWorkbenchAdvisor: User exiting CAVE, shutdown initiated");
-
-            // close all non-restorable detached views
-            detachedViewsListener.handleEvent(null);
         }
 
         return bResult;
@@ -337,8 +291,8 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
     public void postStartup() {
         super.postStartup();
 
-        IContextService service = (IContextService) PlatformUI.getWorkbench()
-                .getService(IContextService.class);
+        IWorkbench workbench = getWorkbenchConfigurer().getWorkbench();
+        IContextService service = workbench.getService(IContextService.class);
         service.activateContext("com.raytheon.uf.viz.application.cave");
 
         if (startupTimer != null) {
@@ -346,6 +300,18 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
             System.out.println("Workbench startup time: "
                     + startupTimer.getElapsedTime() + " ms");
         }
+        IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
+        IWorkbenchPage page = window.getActivePage();
+        IPerspectiveDescriptor perspective = page.getPerspective();
+        if (perspective != null) {
+            VizPerspectiveListener.getInstance(window)
+                    .perspectiveActivated(page, perspective);
+        }
+        
+        /*
+         * remove after starting up, as some commands may not have initialized yet
+         */
+        removeExtraCommands();
     }
 
     /**
@@ -358,6 +324,43 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
 
     public void setStartupTimer(ITimer startupTimer) {
         this.startupTimer = startupTimer;
+    }
+    
+    /**
+     * Undefines specific commands so that they aren't available in the system. This
+     * has the benefit of removing them from the ctrl-shift-L key binding
+     * window, removing them from Preferences -> General -> Keys GUI, and
+     * ensuring that they can't intercept key events for the keys that they're bound
+     * to.
+     */
+    private void removeExtraCommands() {
+        IWorkbench wb = getWorkbenchConfigurer().getWorkbench();
+        ICommandService service = wb.getService(ICommandService.class);
+
+        String[] commandPrefixes = new String[] { "org.eclipse.jdt",
+                "org.eclipse.debug", "org.eclipse.team" };
+
+        Command[] commands = service.getDefinedCommands();
+        for (Command c : commands) {
+            String id = c.getId();
+            for (String prefix : commandPrefixes) {
+                /*
+                 * org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals
+                 * and org.eclipse.debug.ui.actions.WatchCommand are necessary
+                 * because they are related to popup menus and Eclipse will
+                 * check if they are visible.  Eclipse will throw errors if they
+                 * don't exist even if we never allow them to be visible.
+                 */
+                if (id.startsWith(prefix)
+                        && !id.equals(
+                                "org.eclipse.jdt.ui.edit.text.java.correction.assist.proposals")
+                        && !id.equals(
+                                "org.eclipse.debug.ui.actions.WatchCommand")) {
+                    c.undefine();
+                    break;
+                }
+            }
+        }
     }
 
 }

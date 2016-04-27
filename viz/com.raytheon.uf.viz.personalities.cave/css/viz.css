@@ -1,0 +1,20 @@
+CTabItem.highlighted {
+    font-weight: bold;
+}
+
+.MPartStack {
+    swt-selected-tabs-background: #E5EDFC #99BAF3 100%;
+}
+
+.MArea {
+    swt-selected-tabs-background: COLOR-WIDGET-BACKGROUND COLOR-WIDGET-BACKGROUND 100%;    
+}
+
+#PerspectiveSwitcher {
+    eclipse-perspective-keyline-color: #ECE9D8 #FFFFFF;
+}
+
+.MTrimmedWindow {
+        margin-left: 2px;
+        margin-right: 2px;
+}

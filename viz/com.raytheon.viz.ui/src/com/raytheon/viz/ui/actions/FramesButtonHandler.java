@@ -22,6 +22,7 @@
  */
 package com.raytheon.viz.ui.actions;
 
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.IElementUpdater;
 import org.eclipse.ui.menus.UIElement;
@@ -37,12 +38,18 @@ import com.raytheon.uf.viz.core.globals.IGlobalChangedListener;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2007            randerso    Initial Creation.
+ * Jan 21, 2016 5193       bsteffen    Update tooltip
+ * Mar 31, 2016 5519       bsteffen    Keep toolbar text constant width.
  * 
- * &#064;author randerso
  * 
+ * </pre>
+ * 
+ * @author randerso
  */
 public class FramesButtonHandler extends AbstractGlobalsButtonHandler implements
         IElementUpdater, IGlobalChangedListener {
+
+    private static final String PREFIX = "Frames: ";
 
     public FramesButtonHandler() {
         super(VizConstants.FRAMES_ID);
@@ -52,7 +59,13 @@ public class FramesButtonHandler extends AbstractGlobalsButtonHandler implements
     protected void updateGlobalValue(IWorkbenchWindow changedWindow,
             UIElement element, Object value) {
         Integer frames = (Integer) value;
-        element.setText("Frames: " + frames);
+        String text = PREFIX + frames;
+        HandlerTextSizer sizer = new HandlerTextSizer(Display.getCurrent());
+        sizer.setMinIfWider(PREFIX + "999");
+        text = sizer.createAdjustedText(text);
+        sizer.dispose();
+        element.setText(text);
+        element.setTooltip(text);
     }
 
 }

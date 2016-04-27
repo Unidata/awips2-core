@@ -22,7 +22,6 @@ package com.raytheon.viz.ui.perspectives;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -60,6 +59,8 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Aug 11, 2014 3480       bclement    added log message in perspectiveOpened()
  * Oct 20, 2015 4749       dgilling    Fix bug in perspectiveClosed that caused
  *                                     unwanted GFE startup dialog to pop up.
+ * Dec 14, 2015 5193       bsteffen    Eclipse 4: update editor hide/restore on
+ *                                     perspective switch.
  * Jan 15, 2015 5054       randerso    Fix NullPointerException when called from outside
  *                                     a CAVE environment (e.g. prototype, unit test)
  * 
@@ -108,46 +109,31 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
 
     /** The perspective map */
     private Map<String, AbstractVizPerspectiveManager> managerMap = null;
-
-    private Map<AbstractVizPerspectiveManager, Set<String>> referenceCount = null;
-
-    private IWorkbenchWindow window;
-
-    private Map<String, String> perspectiveChangeId;
-
+    
+    private AbstractVizPerspectiveManager activeManager;
+    
     private static Map<IWorkbenchWindow, VizPerspectiveListener> instanceMap = new HashMap<IWorkbenchWindow, VizPerspectiveListener>();
 
     public VizPerspectiveListener(IWorkbenchWindow window,
             IStatusLineManager statusLine) {
-        referenceCount = new HashMap<AbstractVizPerspectiveManager, Set<String>>();
         managerMap = new HashMap<String, AbstractVizPerspectiveManager>();
-        Map<String, AbstractVizPerspectiveManager> referenceMap = new HashMap<String, AbstractVizPerspectiveManager>();
         for (IConfigurationElement cfg : configurationElements) {
             try {
                 String name = cfg.getAttribute(NAME_ID);
-                String clazz = cfg.getAttribute(CLASS_ID);
                 String perspective = cfg.getAttribute(PERSPECTIVE_ID);
-                String refKey = clazz + ":" + name;
-
-                if (referenceMap.containsKey(refKey)) {
-                    managerMap.put(perspective, referenceMap.get(refKey));
-                } else {
-                    AbstractVizPerspectiveManager mgr = (AbstractVizPerspectiveManager) cfg
-                            .createExecutableExtension(CLASS_ID);
-                    mgr.setPerspectiveWindow(window);
-                    mgr.setStatusLineManager(statusLine);
-                    mgr.setPerspectiveId(perspective);
-                    managerMap.put(perspective, mgr);
-                    referenceMap.put(refKey, mgr);
-                }
+                AbstractVizPerspectiveManager mgr = (AbstractVizPerspectiveManager) cfg
+                        .createExecutableExtension(CLASS_ID);
+                mgr.setPerspectiveWindow(window);
+                mgr.setStatusLineManager(statusLine);
+                mgr.setPerspectiveId(perspective);
+                managerMap.put(perspective, mgr);
             } catch (CoreException e) {
                 throw new RuntimeException(
                         "Error loading perspective managers for "
-                                + cfg.getAttribute("class"), e);
+                                + cfg.getAttribute("class"),
+                        e);
             }
         }
-        this.window = window;
-        this.perspectiveChangeId = new HashMap<String, String>();
         instanceMap.put(window, this);
     }
 
@@ -199,14 +185,7 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
      * @return the manager or null if none exists
      */
     public AbstractVizPerspectiveManager getActivePerspectiveManager() {
-        IWorkbenchPage page = window.getActivePage();
-        if (page != null) {
-            IPerspectiveDescriptor perspective = page.getPerspective();
-            if (perspective != null) {
-                return getPerspectiveManager(perspective.getId());
-            }
-        }
-        return null;
+        return activeManager;
     }
 
     /**
@@ -226,23 +205,10 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
         String pid = perspective.getId();
         AbstractVizPerspectiveManager manager = managerMap.get(pid);
         if (manager != null) {
-            Set<String> activePerspectives = referenceCount.get(manager);
-            if (activePerspectives != null) {
-                activePerspectives.remove(pid);
-                if (activePerspectives.size() == 0) {
-                    manager.close();
-                }
+            if(manager == activeManager){
+                activeManager = null;
             }
-        }
-    }
-
-    @Override
-    public void perspectivePreDeactivate(IWorkbenchPage page,
-            IPerspectiveDescriptor perspective) {
-        AbstractVizPerspectiveManager manager = managerMap.get(perspective
-                .getId());
-        if (manager != null) {
-            manager.deactivate();
+            manager.close();
         }
     }
 
@@ -252,28 +218,51 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
         String pid = perspective.getId();
         AbstractVizPerspectiveManager manager = managerMap.get(pid);
         if (manager != null) {
-            Set<String> activePerspectives = referenceCount.get(manager);
-            if (activePerspectives == null) {
-                activePerspectives = new HashSet<String>();
-                referenceCount.put(manager, activePerspectives);
+            if (activeManager != manager) {
+                if (activeManager != null) {
+                    /*
+                     * Eclipse 4 does not consistently call
+                     * perspectiveDeactivated so always deactivate before
+                     * activating.
+                     */
+                    activeManager.deactivate();
+                    activeManager = null;
+                }
+                activeManager = manager;
+                manager.activate();                
             }
-            activePerspectives.add(pid);
-            manager.activate();
         }
-    }
-
-    // Noop functions
-
-    @Override
-    public void perspectiveOpened(IWorkbenchPage page,
-            IPerspectiveDescriptor perspective) {
-        log.info("Opened perspective: " + perspective.getId());
     }
 
     @Override
     public void perspectiveDeactivated(IWorkbenchPage page,
             IPerspectiveDescriptor perspective) {
+        AbstractVizPerspectiveManager manager = managerMap
+                .get(perspective.getId());
+        if (manager != null) {
+            if(activeManager == manager){
+                activeManager = null;
+            }
+            manager.deactivate();
+        }
+    }
 
+    
+    // Noop functions
+    
+    @Override
+    public void perspectiveOpened(IWorkbenchPage page,
+            IPerspectiveDescriptor perspective) {
+        log.info("Opened perspective: " + perspective.getId());
+    }
+    
+    @Override
+    public void perspectivePreDeactivate(IWorkbenchPage page,
+            IPerspectiveDescriptor perspective) {
+        /*
+         * As of eclipse 4.5.1 this method is never
+         * called(https://bugs.eclipse.org/bugs/show_bug.cgi?id=408309).
+         */
     }
 
     @Override
@@ -292,10 +281,6 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
     @Override
     public void perspectiveChanged(IWorkbenchPage page,
             IPerspectiveDescriptor perspective, String changeId) {
-        perspectiveChangeId.put(perspective.getId(), changeId);
     }
 
-    public String getPerspectiveChangeId(String perspective) {
-        return perspectiveChangeId.get(perspective);
-    }
 }

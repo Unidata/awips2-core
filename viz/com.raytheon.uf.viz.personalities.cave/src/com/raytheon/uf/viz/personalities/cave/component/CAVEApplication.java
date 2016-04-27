@@ -19,15 +19,24 @@
  **/
 package com.raytheon.uf.viz.personalities.cave.component;
 
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
 
+import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.ILogListener;
+import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.IStatus;
+import org.eclipse.core.runtime.Path;
 import org.eclipse.core.runtime.Platform;
+import org.eclipse.e4.ui.css.core.engine.CSSEngine;
+import org.eclipse.e4.ui.css.swt.dom.WidgetElement;
+import org.eclipse.e4.ui.css.swt.engine.CSSSWTEngineImpl;
 import org.eclipse.equinox.app.IApplication;
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.widgets.Display;
@@ -35,6 +44,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.internal.WorkbenchPlugin;
+import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
@@ -79,6 +89,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Sep 10, 2014 3612       mschenke    Refactored, mirgrated logic from awips
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
+ * Jan 11, 2016 5232       njensen     Apply css style at startup
  * 
  * </pre>
  * 
@@ -122,6 +133,7 @@ public class CAVEApplication implements IStandaloneComponent {
 
         // Get the display
         this.applicationDisplay = createDisplay();
+        applyCssStyle(this.applicationDisplay);
 
         // verify Spring successfully initialized, otherwise stop CAVE
         if (!com.raytheon.uf.viz.spring.dm.Activator.getDefault()
@@ -376,5 +388,29 @@ public class CAVEApplication implements IStandaloneComponent {
      */
     protected WorkbenchAdvisor getWorkbenchAdvisor() {
         return new VizWorkbenchAdvisor();
+    }
+    
+    @SuppressWarnings("restriction")
+    protected void applyCssStyle(Display display) throws IOException {
+        CAVEMode mode = CAVEMode.getMode();
+        CSSEngine cssEngine = new CSSSWTEngineImpl(this.applicationDisplay);
+        String cssFile = "css" + File.separator;
+        switch (mode) {
+        case PRACTICE:
+            cssFile += "practicemode.css";
+            break;
+        case TEST:
+            cssFile += "testmode.css";
+            break;
+        default:
+            cssFile += "viz.css";
+            break;
+        }
+        Bundle b = FrameworkUtil.getBundle(CAVEApplication.class);
+        IPath path = new Path(cssFile);
+        try (InputStream is = FileLocator.openStream(b, path, false)) {
+            cssEngine.parseStyleSheet(is);
+            WidgetElement.setEngine(this.applicationDisplay, cssEngine);
+        }
     }
 }

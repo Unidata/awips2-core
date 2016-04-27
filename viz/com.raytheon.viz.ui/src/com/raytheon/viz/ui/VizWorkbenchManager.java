@@ -39,8 +39,6 @@ import com.raytheon.uf.viz.core.ContextManager;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IVizEditorChangedListener;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
-import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
-import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
  * Class that manages the current editor/window using listeners. Use this to
@@ -54,6 +52,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * ------------ ---------- ----------- --------------------------
  * Oct 30, 2009            mschenke     Initial creation
  * Oct 01, 2015  4926      njensen      partBroughtToTop() calls partActivated()
+ * Jan 13, 2016  5231      njensen      Don't mess with contexts on window activated/deactivated
  * 
  * </pre>
  * 
@@ -217,17 +216,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
     @Override
     public synchronized void windowActivated(IWorkbenchWindow window) {
         this.currentWindow = window;
-
-        VizPerspectiveListener listener = VizPerspectiveListener
-                .getInstance(window);
-        if (listener != null) {
-            AbstractVizPerspectiveManager mgr = listener
-                    .getActivePerspectiveManager();
-            if (mgr != null) {
-                mgr.activateContexts();
-            }
-        }
-
         updateUI(window);
     }
 
@@ -246,15 +234,7 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
 
     @Override
     public synchronized void windowDeactivated(IWorkbenchWindow window) {
-        VizPerspectiveListener listener = VizPerspectiveListener
-                .getInstance(window);
-        if (listener != null) {
-            AbstractVizPerspectiveManager mgr = listener
-                    .getActivePerspectiveManager();
-            if (mgr != null) {
-                mgr.deactivateContexts();
-            }
-        }
+        // no-op
     }
 
     @Override

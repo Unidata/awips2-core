@@ -22,10 +22,6 @@ package com.raytheon.viz.ui.actions;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.ui.IWorkbenchPart;
-import org.eclipse.ui.internal.PartPane;
-import org.eclipse.ui.internal.presentations.ISelfUpdatingAction;
-import org.eclipse.ui.internal.presentations.PresentablePart;
-import org.eclipse.ui.presentations.IPresentablePart;
 
 /**
  * Every type of user contributed action to the editor should extend this class
@@ -38,6 +34,7 @@ import org.eclipse.ui.presentations.IPresentablePart;
  * ------------ ---------- ----------- --------------------------
  * Mar 21, 2012            mnash       Initial creation
  * Mar 02, 2015  4204      njensen     Added perspectiveId and getWorkbenchPart()
+ * Dec 23, 2015  5189      bsteffen    Track the workbench part instead of the presentation part.
  * 
  * </pre>
  * 
@@ -45,11 +42,9 @@ import org.eclipse.ui.presentations.IPresentablePart;
  * @version 1.0
  */
 
-@SuppressWarnings("restriction")
-public class ContributedEditorMenuAction extends Action implements
-        ISelfUpdatingAction {
+public class ContributedEditorMenuAction extends Action {
 
-    protected IPresentablePart part;
+    protected IWorkbenchPart part;
 
     protected String perspectiveId;
 
@@ -83,12 +78,6 @@ public class ContributedEditorMenuAction extends Action implements
         super(text);
     }
 
-    @Override
-    public void update() {
-        // do nothing to for this class
-    }
-
-    @Override
     public boolean shouldBeVisible() {
         return true;
     }
@@ -97,14 +86,14 @@ public class ContributedEditorMenuAction extends Action implements
      * @param part
      *            the part to set
      */
-    public void setPart(IPresentablePart part) {
+    public void setPart(IWorkbenchPart part) {
         this.part = part;
     }
 
     /**
      * @return the part
      */
-    public IPresentablePart getPart() {
+    public IWorkbenchPart getPart() {
         return part;
     }
 
@@ -115,16 +104,13 @@ public class ContributedEditorMenuAction extends Action implements
     public void setPerspectiveId(String perspectiveId) {
         this.perspectiveId = perspectiveId;
     }
-
-    protected IWorkbenchPart getWorkbenchPart() {
-        IWorkbenchPart wbPart = null;
-        if (part instanceof PresentablePart) {
-            PartPane pane = ((PresentablePart) part).getPane();
-            if (pane != null) {
-                wbPart = pane.getPartReference().getPart(false);
-            }
-        }
-        return wbPart;
+    
+    /**
+     * @deprecated use {@link #getPart()} instead, this method is only available for backwords compatibility and will be removed in the future.
+     */
+    @Deprecated
+    public IWorkbenchPart getWorkbenchPart(){
+        return part;
     }
 
 }

@@ -19,13 +19,29 @@
  **/
 package com.raytheon.viz.ui.perspectives;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
+import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
+import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MTrimmedWindow;
+import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
+import org.eclipse.e4.ui.workbench.UIEvents;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
@@ -37,20 +53,20 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
-import org.eclipse.ui.IMemento;
+import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IPageListener;
 import org.eclipse.ui.IPartListener;
+import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
-import org.eclipse.ui.XMLMemento;
-import org.eclipse.ui.internal.EditorAreaHelper;
-import org.eclipse.ui.internal.EditorReference;
-import org.eclipse.ui.internal.EditorStack;
-import org.eclipse.ui.internal.LayoutPart;
-import org.eclipse.ui.internal.WorkbenchPage;
+import org.osgi.service.event.Event;
+import org.osgi.service.event.EventHandler;
 
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -61,7 +77,7 @@ import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Procedure;
-import com.raytheon.viz.ui.VizWorkbenchManager;
+import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 import com.raytheon.viz.ui.color.BackgroundColor;
 import com.raytheon.viz.ui.color.IBackgroundColorChangedListener;
@@ -84,14 +100,20 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  * Jan 14, 2014 2594        bclement    added low memory notification
  * Jun 05, 2015 4401        bkowal      Renamed LoadSerializedXml to
  *                                      LoadPerspectiveHandler.
+ * Dec 14, 2015 5193        bsteffen    Updates to handle changed eclipse 4
+ *                                      listener calls.
+ * Feb 09, 2016 5267        bsteffen    Workaround eclipse 4 poor support for
+ *                                      non restorable views.
+ * Feb 10, 2016 5329        bsteffen    Close saved editors when deactivating
+ *                                      while closing.
  * 
  * </pre>
  * 
  * @author randerso
  * @version 1.0
  */
-public abstract class AbstractVizPerspectiveManager implements
-        IBackgroundColorChangedListener {
+public abstract class AbstractVizPerspectiveManager
+        implements IBackgroundColorChangedListener {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractVizPerspectiveManager.class);
 
@@ -174,13 +196,11 @@ public abstract class AbstractVizPerspectiveManager implements
                     && part instanceof IDisplayPaneContainer) {
                 AbstractVizPerspectiveManager mgr = VizPerspectiveListener
                         .getCurrentPerspectiveManager();
-                if (mgr != null
-                        && !mgr.opened
-                        && mgr.getToolManager().getSelectedModalTools()
-                                .isEmpty()) {
+                if (mgr != null && !mgr.opened && mgr.getToolManager()
+                        .getSelectedModalTools().isEmpty()) {
                     try {
-                        mgr.activateDefaultTool(((AbstractEditor) part)
-                                .getDefaultTool());
+                        mgr.activateDefaultTool(
+                                ((AbstractEditor) part).getDefaultTool());
                         if (mgr.getToolManager().getSelectedModalTools()
                                 .isEmpty()) {
                             // Hack due to tool activation not sending whether
@@ -188,8 +208,8 @@ public abstract class AbstractVizPerspectiveManager implements
                             // toggling instead. TODO: Make AbstractModalTool
                             // required command parameter for activate or
                             // deactivate
-                            mgr.activateDefaultTool(((AbstractEditor) part)
-                                    .getDefaultTool());
+                            mgr.activateDefaultTool(
+                                    ((AbstractEditor) part).getDefaultTool());
                         }
                     } catch (VizException e) {
                         statusHandler.handle(Priority.SIGNIFICANT,
@@ -212,9 +232,9 @@ public abstract class AbstractVizPerspectiveManager implements
     protected Map<IEditorReference, String> layoutMap = new HashMap<IEditorReference, String>();
 
     /** Saved editors for the perspective */
-    protected List<IEditorReference> perspectiveEditors = new ArrayList<IEditorReference>();
+    protected List<MPartSashContainerElement> savedEditorAreaUI = new ArrayList<>();
 
-    private IEditorReference activeEditor;
+    private IEditorPart activeEditor;
 
     /** Has the perspective been opened */
     protected boolean opened = false;
@@ -236,11 +256,50 @@ public abstract class AbstractVizPerspectiveManager implements
 
     private List<IContributionItem> items = new ArrayList<IContributionItem>();
 
-    private IMemento storedState;
-
     private BackgroundColor backgroundColor;
 
     private String title;
+
+    /**
+     * Clean up savedEditorAreaUI when a perspective is closing. The saved
+     * editor area is not disposed correctly by E4 because the saved elements
+     * have been removed from the model. The saved area must be disposed before
+     * the perspective context is disposed because the perspective context will
+     * dispose of the editor context without disposing of the model elements.
+     * The {@link #close()} method is called after the perspective context is
+     * disposed so it is too late. This handler triggers when the "PerspClosing"
+     * tag is added to the perspective which happens before the context is
+     * disposed.
+     */
+    private final EventHandler closeHandler = new EventHandler() {
+
+        @Override
+        public void handleEvent(Event event) {
+            if (!UIEvents.isADD(event)) {
+                return;
+            }
+            if (savedEditorAreaUI.isEmpty()) {
+                return;
+            }
+            Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
+            if (!(element instanceof MPerspective)) {
+                return;
+            }
+            MPerspective perspective = (MPerspective) element;
+            if (!perspective.getElementId().equals(perspectiveId)) {
+                return;
+            }
+            if (!perspective.getTags().contains("PerspClosing")) {
+                return;
+            }
+            IPresentationEngine presentation = perspectiveWindow
+                    .getService(IPresentationEngine.class);
+            for (MUIElement saved : savedEditorAreaUI) {
+                presentation.removeGui(saved);
+            }
+            savedEditorAreaUI.clear();
+        }
+    };
 
     public AbstractVizPerspectiveManager() {
         // new up a tool manager for the perspective
@@ -268,17 +327,6 @@ public abstract class AbstractVizPerspectiveManager implements
 
     public void close() {
         if (opened) {
-            // Cleanup hidden editors
-            if (perspectiveEditors.size() > 0) {
-                page.closeEditors(
-                        perspectiveEditors
-                                .toArray(new IEditorReference[perspectiveEditors
-                                        .size()]), false);
-            }
-
-            perspectiveEditors.clear();
-            layoutMap.clear();
-
             opened = false;
 
             closeDialogs();
@@ -288,6 +336,8 @@ public abstract class AbstractVizPerspectiveManager implements
             if (backgroundColor != null) {
                 backgroundColor.removeListener(BGColorMode.GLOBAL, this);
             }
+            perspectiveWindow.getService(IEventBroker.class)
+                    .unsubscribe(closeHandler);
         }
     }
 
@@ -303,22 +353,26 @@ public abstract class AbstractVizPerspectiveManager implements
 
         page = perspectiveWindow.getActivePage();
 
+        if (savedEditorAreaUI.isEmpty()) {
+            savedEditorAreaUI.add(createDefaultEditorStack());
+        }
+        List<MPartSashContainerElement> oldEditors = swapEditorArea(
+                savedEditorAreaUI);
+        IPresentationEngine presentationEngine = perspectiveWindow
+                .getService(IPresentationEngine.class);
+        for (MPartSashContainerElement element : oldEditors) {
+            presentationEngine.removeGui(element);
+        }
+        savedEditorAreaUI.clear();
+
         if (!opened) {
             backgroundColor = BackgroundColor
                     .getInstance(page.getPerspective());
             backgroundColor.addListener(BGColorMode.GLOBAL, this);
-            List<?> workbooks = ((WorkbenchPage) page).getEditorPresentation()
-                    .getWorkbooks();
-            if (workbooks.size() > 1) {
-                for (Object o : workbooks) {
-                    EditorStack stack = (EditorStack) o;
-                    if (stack.getEditors() == null
-                            || stack.getEditors().length == 0) {
-                        EditorAreaHelper.derefPart(stack);
-                    }
-                }
-            }
             open();
+            perspectiveWindow.getService(IEventBroker.class).subscribe(
+                    UIEvents.ApplicationElement.TOPIC_TAGS, closeHandler);
+            closeNonRestorableViews();
             opened = true;
         } else {
             activateInternal();
@@ -327,6 +381,135 @@ public abstract class AbstractVizPerspectiveManager implements
         contributeToStatusLine();
 
         perspectiveWindow.getShell().setText(getTitle(title));
+    }
+
+    /**
+     * Call during perspective open to workaround
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=486073
+     */
+    private void closeNonRestorableViews() {
+        /*
+         * First, if Viz crashed then need to remove non-restorable views before
+         * they can get restored.
+         */
+        for (IViewReference ref : page.getViewReferences()) {
+            if (!perspectiveWindow.getWorkbench().getViewRegistry()
+                    .find(ref.getId()).isRestorable()) {
+                page.hideView(ref);
+            }
+        }
+        /*
+         * Second, if Viz closed normally then the view will be closed and if
+         * the parent is empty then the parent will be closed but even if the
+         * grandparent is empty it will still be visible. This is because the
+         * CleanupAddon asynchronously closes the grandparents and the async
+         * task runs after the model file is written. Although it is
+         * theoretically possible for any container to be a grandparent this
+         * code searches specifically for MTrimmedWindows and MPartSashContainer
+         * because those seem to be the only naturally occurring grandparents.
+         */
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = (MPerspective) modelService
+                .find(perspectiveId, window);
+        List<MTrimmedWindow> windows = modelService.findElements(perspective,
+                null,
+                MTrimmedWindow.class, null);
+        List<MPartSashContainer> sashs = modelService.findElements(perspective,
+                null,
+                MPartSashContainer.class, null);
+        List<MUIElement> containers = new ArrayList<>();
+        containers.addAll(windows);
+        containers.addAll(sashs);
+        for (MUIElement container : containers) {
+            if (container.isToBeRendered()) {
+                int toBeRendered = modelService
+                        .countRenderableChildren(container);
+                if (toBeRendered == 0) {
+                    container.setToBeRendered(false);
+                }
+            }
+        }
+    }
+
+    /**
+     * Create an editor stack for the compatibility layer, based off of code in
+     * org.eclipse.e4.ui.internal.workbench.PlaceholderResolver and
+     * org.eclipse.ui.internal.e4.compatibility.ModeledPageLayout.
+     */
+    private MPartStack createDefaultEditorStack() {
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPartStack editorStack = modelService
+                .createModelElement(MPartStack.class);
+        editorStack.getTags().add("org.eclipse.e4.primaryDataStack");
+        editorStack.getTags().add("EditorStack");
+        editorStack.setElementId("org.eclipse.e4.primaryDataStack");
+        return editorStack;
+    }
+
+    /**
+     * Remove the elements currently in the editor area and replace them with
+     * the provided elements. The old elements are returned and must be either
+     * saved off or removed from the UI by the caller.
+     * 
+     * @param newContents
+     *            the contents that should go in the editor area.
+     * @return the elements that were previously in the editor area.
+     */
+    private List<MPartSashContainerElement> swapEditorArea(
+            List<? extends MPartSashContainerElement> newContents) {
+
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = modelService.getActivePerspective(window);
+        List<MPlaceholder> editorPlaceholders = modelService.findElements(
+                perspective, IPageLayout.ID_EDITOR_AREA, MPlaceholder.class,
+                null);
+
+        if (editorPlaceholders.size() == 1) {
+            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
+            MUIElement editorElement = editorPlaceholder.getRef();
+            if (editorElement instanceof MArea) {
+                MArea editorArea = (MArea) editorElement;
+                List<MPartSashContainerElement> children = editorArea
+                        .getChildren();
+                /*
+                 * When the editor area contains no visible children then the
+                 * CleanupAddon sets the visibility to false, if that happens
+                 * there is no way to restore visibility(see
+                 * https://bugs.eclipse.org/bugs/show_bug.cgi?id=365902). Adding
+                 * HIDDEN_EXPLICITLY forces the CleanupAddon to ignore the
+                 * editorArea which avoids that mess.
+                 */
+                List<String> tags = editorArea.getTags();
+                tags.add(IPresentationEngine.HIDDEN_EXPLICITLY);
+                List<MPartSashContainerElement> oldContents = new ArrayList<MPartSashContainerElement>(
+                        children);
+                for (MPartSashContainerElement element : oldContents) {
+                    element.setVisible(false);
+                    children.remove(element);
+                }
+                for (MPartSashContainerElement element : newContents) {
+                    children.add(element);
+                    element.setVisible(true);
+                }
+                tags.remove(IPresentationEngine.HIDDEN_EXPLICITLY);
+                return oldContents;
+            } else {
+                statusHandler.warn(
+                        "Unable to find editor area, cannot swap editor area.");
+            }
+        } else if (editorPlaceholders.isEmpty()) {
+            statusHandler.warn(
+                    "Unable to find editor placeholder, cannot swap editor area.");
+        } else {
+            statusHandler.warn(
+                    "Too many editor placeholders found, cannot swap editor area.");
+        }
+        return Collections.emptyList();
     }
 
     /**
@@ -350,55 +533,37 @@ public abstract class AbstractVizPerspectiveManager implements
     }
 
     protected void activateInternal() {
-        // Restore the editorArea state
-        EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                .getEditorPresentation();
-        if (storedState != null) {
-            editorArea.restoreState(storedState);
-        }
-        // Always remove first workbook as it was added by default when
-        // restoring state because editors were hidden, not closed
-        EditorAreaHelper.derefPart((LayoutPart) editorArea.getWorkbooks()
-                .get(0));
-
-        for (IEditorReference ref : perspectiveEditors) {
-            editorArea.addEditor((EditorReference) ref, layoutMap.get(ref),
-                    false);
-        }
-
         if (activeEditor != null) {
-            page.bringToTop(activeEditor.getPart(false));
+            page.activate(activeEditor);
             activeEditor = null;
         }
 
         // Activate any perspective dialogs
         activateDialogs();
-
-        perspectiveEditors.clear();
     }
 
     /**
      * Deactivate the perspective, stores editors to be opened again
      */
     public void deactivate() {
-        // Save the editor area state
-        EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                .getEditorPresentation();
-        storedState = XMLMemento.createWriteRoot("perspectiveSwitch");
-        editorArea.saveState(storedState);
 
-        VizWorkbenchManager mgr = VizWorkbenchManager.getInstance();
-        for (IEditorReference ref : page.getEditorReferences()) {
-            if (activeEditor == null
-                    && mgr.isVisibleEditor(page.getWorkbenchWindow(),
-                            ref.getEditor(false))) {
-                activeEditor = ref;
+        activeEditor = page.getActiveEditor();
+
+        savedEditorAreaUI.addAll(
+                swapEditorArea(Arrays.asList(createDefaultEditorStack())));
+
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = (MPerspective) modelService
+                .find(perspectiveId, window);
+        if (perspective.getTags().contains("PerspClosing")) {
+            IPresentationEngine presentation = perspectiveWindow
+                    .getService(IPresentationEngine.class);
+            for (MUIElement saved : savedEditorAreaUI) {
+                presentation.removeGui(saved);
             }
-            layoutMap.put(ref, ((EditorReference) ref).getPane().getStack()
-                    .getID());
-
-            perspectiveEditors.add(ref);
-            page.hideEditor(ref);
+            savedEditorAreaUI.clear();
         }
 
         deactivateDialogs();
@@ -493,14 +658,14 @@ public abstract class AbstractVizPerspectiveManager implements
     }
 
     protected static void loadDefaultBundle(String filePath) {
-        File defaultBundle = PathManagerFactory.getPathManager().getStaticFile(
-                filePath);
-        try {
-            Procedure proc = null;
-            proc = (Procedure) LoadPerspectiveHandler
-                    .deserialize(defaultBundle);
+        LocalizationFile defaultBundle = PathManagerFactory.getPathManager()
+                .getStaticLocalizationFile(filePath);
+        try (InputStream is = defaultBundle.openInputStream()) {
+            Procedure proc = (Procedure) ProcedureXmlManager.getInstance()
+                    .unmarshal(is);
             LoadPerspectiveHandler.loadProcedureToScreen(proc, true);
-        } catch (VizException e) {
+        } catch (VizException | IOException | LocalizationException
+                | SerializationException e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Error activating perspective", e);
             return;
@@ -606,11 +771,8 @@ public abstract class AbstractVizPerspectiveManager implements
 
     @Override
     public void setColor(BGColorMode mode, RGB newColor) {
-        for (IEditorReference editorRef : perspectiveEditors) {
-            IEditorPart part = editorRef.getEditor(false);
-            if (part instanceof AbstractEditor) {
-                ((AbstractEditor) part).setColor(mode, newColor);
-            }
+        for (AbstractEditor editor : getPerspectiveEditors()) {
+            editor.setColor(mode, newColor);
         }
     }
 
@@ -627,6 +789,7 @@ public abstract class AbstractVizPerspectiveManager implements
         final String msg = getLowMemoryMessage(availMemory);
         final boolean[] status = new boolean[1];
         VizApp.runSync(new Runnable() {
+            @Override
             public void run() {
                 Display display = Display.getDefault();
                 status[0] = MessageDialog.open(MessageDialog.WARNING,

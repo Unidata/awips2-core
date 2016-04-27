@@ -1,0 +1,32 @@
+@import url("platform:/plugin/com.raytheon.uf.viz.personalities.cave/css/viz.css");
+
+* {
+    background-color: orange;    
+}
+
+.MArea {
+    swt-selected-tabs-background: orange orange 100%;
+}
+
+Slider {
+    background-color: COLOR-WIDGET-BACKGROUND;
+}
+
+Tree {
+    background-color: white;
+}
+
+/* styled text will appear incorrect on anything but a white background */
+StyledText {
+    background-color: white;
+}
+
+/* this setting alters the tiny vertical line on the left side of text editors */
+AnnotationRulerColumn-5 {
+    background-color: white;
+}
+
+/* this setting alters the editor from PyDev */
+StyledTextWithoutVerticalBar {
+    background-color: white;
+}

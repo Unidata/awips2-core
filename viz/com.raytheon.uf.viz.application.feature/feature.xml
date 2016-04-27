@@ -21,6 +21,10 @@
          id="org.eclipse.rcp"
          version="0.0.0"/>
 
+   <includes
+         id="org.eclipse.emf.ecore"
+         version="0.0.0"/>
+
    <plugin
          id="com.raytheon.uf.viz.application"
          download-size="0"
@@ -177,6 +181,13 @@
 
    <plugin
          id="org.sat4j.pb"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.tukaani.xz"
          download-size="0"
          install-size="0"
          version="0.0.0"

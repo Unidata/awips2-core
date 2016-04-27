@@ -8,7 +8,7 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.status,
- org.apache.commons.lang3
-Import-Package: org.apache.camel,
- org.slf4j
+ org.apache.commons.lang3,
+ slf4j;bundle-version="1.7.12"
+Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution

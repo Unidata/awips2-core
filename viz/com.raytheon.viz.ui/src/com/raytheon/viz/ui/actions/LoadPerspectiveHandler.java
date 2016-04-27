@@ -24,20 +24,34 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
+import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
+import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
+import org.eclipse.e4.ui.model.application.ui.basic.MStackElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
+import org.eclipse.e4.ui.workbench.IPresentationEngine;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
+import org.eclipse.ui.IMemento;
+import org.eclipse.ui.IPageLayout;
 import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
-import org.eclipse.ui.internal.EditorAreaHelper;
-import org.eclipse.ui.internal.EditorReference;
-import org.eclipse.ui.internal.WorkbenchPage;
+import org.eclipse.ui.internal.IWorkbenchConstants;
+import org.eclipse.ui.services.IServiceLocator;
 
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -74,6 +88,7 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  *                                    localization. Renamed class; originally LoadSerializedXml.
  * Jun 10, 2015  4401     bkowal      It is now possible to optionally upload a local file system file
  *                                    to localization when loading it.
+ * Dec 21, 2015  5191     bsteffen    Updated layout handling for Eclipse 4.
  * Feb 11, 2016  5242     dgilling    Remove calls to deprecated Localization APIs.
  * 
  * </pre>
@@ -81,16 +96,10 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * @author mschenke
  * @version 1.0
  */
+public class LoadPerspectiveHandler
+        extends AbstractVizPerspectiveLocalizationHandler {
 
-@SuppressWarnings("restriction")
-public class LoadPerspectiveHandler extends
-        AbstractVizPerspectiveLocalizationHandler {
-
-    /**
-     * TODO: Remove this {@link IUFStatusHandler} when the
-     * {@link #deserialize(File)} method is removed.
-     */
-    private static final IUFStatusHandler deprecatedStatusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LoadPerspectiveHandler.class);
 
     private OpenPerspectiveFileListDlg dialog;
@@ -209,8 +218,7 @@ public class LoadPerspectiveHandler extends
 
     /**
      * @deprecated Use {@link ProcedureXmlManager#unmarshal(Class, String)}
-     *             directly instead. TODO: Remove the deprecatedStatusHandler
-     *             when this method is completely eliminated and removed.
+     *             directly instead.
      */
     @Deprecated
     public static Object deserialize(File fileName) {
@@ -220,7 +228,7 @@ public class LoadPerspectiveHandler extends
                     fileName);
         } catch (Exception e) {
             String errMsg = "Error occurred during xml deserialization";
-            deprecatedStatusHandler.handle(Priority.CRITICAL, errMsg, e);
+            statusHandler.handle(Priority.CRITICAL, errMsg, e);
         }
         return obj;
     }
@@ -274,9 +282,7 @@ public class LoadPerspectiveHandler extends
         }
 
         if (procedure.getLayout() != null) {
-            EditorAreaHelper editorArea = ((WorkbenchPage) page)
-                    .getEditorPresentation();
-            editorArea.restoreState(procedure.getLayout());
+            loadLayout(window, procedure.getLayout());
         }
 
         Bundle[] bundles = procedure.getBundles();
@@ -289,16 +295,7 @@ public class LoadPerspectiveHandler extends
                         b.getDisplays());
 
                 if (b.getLayoutId() != null) {
-                    EditorAreaHelper editArea = ((WorkbenchPage) page)
-                            .getEditorPresentation();
-                    for (IEditorReference ref : editArea.getEditors()) {
-                        if (ref.getEditor(false) == openedEditor) {
-                            page.hideEditor(ref);
-                            editArea.addEditor((EditorReference) ref,
-                                    b.getLayoutId(), false);
-                            page.activate(ref.getPart(false));
-                        }
-                    }
+                    handleLayoutId(window, page, openedEditor, b.getLayoutId());
                 }
 
                 BundleLoader.loadTo(openedEditor, b);
@@ -311,6 +308,109 @@ public class LoadPerspectiveHandler extends
                 }
             }
 
+        }
+    }
+
+    @SuppressWarnings("restriction")
+    private static void loadLayout(IServiceLocator services,
+            IMemento layoutMemento) {
+        EModelService modelService = services.getService(EModelService.class);
+        MWindow windowModel = services.getService(MWindow.class);
+        MPerspective perspective = modelService
+                .getActivePerspective(windowModel);
+
+        List<MArea> areas = modelService.findElements(perspective,
+                IPageLayout.ID_EDITOR_AREA, MArea.class, null);
+        if (areas.isEmpty()) {
+            statusHandler
+                    .warn("Unable to restore layout because of missing area with id of: "
+                            + IPageLayout.ID_EDITOR_AREA);
+            return;
+        }
+        MArea editorArea = areas.get(0);
+        IPresentationEngine presentationEngine = services
+                .getService(IPresentationEngine.class);
+        for (MUIElement element : editorArea.getChildren()) {
+            presentationEngine.removeGui(element);
+        }
+        editorArea.getChildren().clear();
+        IMemento[] infos = layoutMemento
+                .getChildren(IWorkbenchConstants.TAG_INFO);
+        for (IMemento info : infos) {
+            String id = info.getString(IWorkbenchConstants.TAG_PART);
+            MPartStack stack = modelService
+                    .createModelElement(MPartStack.class);
+            stack.setElementId(id);
+            String relative = info.getString(IWorkbenchConstants.TAG_RELATIVE);
+            if (relative == null) {
+                editorArea.getChildren().add(stack);
+                continue;
+            } else {
+                Integer relationship = info
+                        .getInteger(IWorkbenchConstants.TAG_RELATIONSHIP);
+                String ratioLeft = info
+                        .getString(IWorkbenchConstants.TAG_RATIO_LEFT);
+                String ratioRight = info
+                        .getString(IWorkbenchConstants.TAG_RATIO_RIGHT);
+
+                MUIElement modelRelative = modelService.find(relative,
+                        editorArea);
+                MElementContainer<MUIElement> parent = modelRelative
+                        .getParent();
+                /*
+                 * Create a new container that will replace the relative and
+                 * split the area between relative and the new stack.
+                 */
+                MPartSashContainer newContainer = modelService
+                        .createModelElement(MPartSashContainer.class);
+                newContainer.setContainerData(modelRelative.getContainerData());
+                newContainer.setHorizontal(relationship == IPageLayout.LEFT
+                        || relationship == IPageLayout.RIGHT);
+                int index = parent.getChildren().indexOf(modelRelative);
+                parent.getChildren().remove(modelRelative);
+                /*
+                 * left vs. right and top vs. bottom is controlled by order of
+                 * children.
+                 */
+                if (relationship == IPageLayout.RIGHT
+                        || relationship == IPageLayout.BOTTOM) {
+                    modelRelative.setContainerData(ratioLeft);
+                    stack.setContainerData(ratioRight);
+                    newContainer.getChildren()
+                            .add((MPartSashContainerElement) modelRelative);
+                    newContainer.getChildren().add(stack);
+                } else {
+                    modelRelative.setContainerData(ratioRight);
+                    stack.setContainerData(ratioLeft);
+                    newContainer.getChildren().add(stack);
+                    newContainer.getChildren()
+                            .add((MPartSashContainerElement) modelRelative);
+                }
+                parent.getChildren().add(index, newContainer);
+            }
+        }
+    }
+
+    @SuppressWarnings("restriction")
+    private static void handleLayoutId(IServiceLocator services,
+            IWorkbenchPage page, IEditorPart editor, String layoutId) {
+        EModelService modelService = services.getService(EModelService.class);
+        MWindow windowModel = services.getService(MWindow.class);
+        MPerspective perspective = modelService
+                .getActivePerspective(windowModel);
+
+        MUIElement parent = modelService.find(layoutId, perspective);
+        if (parent instanceof MPartStack) {
+            MPartStack stack = (MPartStack) parent;
+            MPart part = ((org.eclipse.ui.internal.WorkbenchPage) page)
+                    .findPart(editor);
+            MStackElement e2 = stack.getSelectedElement();
+            stack.getChildren().add(part);
+            if (e2 == null) {
+                stack.setSelectedElement(part);
+            } else {
+                stack.setSelectedElement(e2);
+            }
         }
     }
 

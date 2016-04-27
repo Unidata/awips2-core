@@ -1,0 +1,40 @@
+@import url("platform:/plugin/com.raytheon.uf.viz.personalities.cave/css/viz.css");
+
+* {
+    background-color: black;
+}
+
+Label, Text, CTabFolder, CLabel, ToolBar, StatusLine {
+    color: white;
+}
+
+.MArea {
+    swt-selected-tabs-background: black black 100%;
+}
+
+.MPartSashContainer {
+    background-color: gray;
+}
+
+Slider {
+    background-color: COLOR-WIDGET-BACKGROUND;
+}
+
+Tree {
+    background-color: white;
+}
+
+/* styled text will appear incorrect on anything but a white background */
+StyledText {
+    background-color: white;
+}
+
+/* this setting alters the tiny vertical line on the left side of text editors */
+AnnotationRulerColumn-5 {
+    background-color: white;
+}
+
+/* this setting alters the editor from PyDev */
+StyledTextWithoutVerticalBar {
+    background-color: white;
+}

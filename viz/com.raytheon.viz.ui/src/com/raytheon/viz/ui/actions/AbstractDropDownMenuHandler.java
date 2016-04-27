@@ -22,6 +22,7 @@ package com.raytheon.viz.ui.actions;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.MenuManager;
@@ -30,7 +31,6 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.ToolItem;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.IMenuService;
 
 /**
@@ -44,6 +44,7 @@ import org.eclipse.ui.menus.IMenuService;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 3, 2012            bsteffen     Initial creation
+ * Jan 14, 2016 5193       bsteffen    Update for eclipse 4
  * 
  * </pre>
  * 
@@ -60,10 +61,9 @@ public abstract class AbstractDropDownMenuHandler extends AbstractHandler {
             Event e = (Event) event.getTrigger();
             if (e.widget instanceof ToolItem) {
                 ToolItem ti = (ToolItem) e.widget;
-                if (ti.getData() instanceof CommandContributionItem) {
-                    CommandContributionItem cci = (CommandContributionItem) ti
-                            .getData();
-                    final String id = cci.getId();
+                if (ti.getData() instanceof ContributionItem) {
+                    ContributionItem ci = (ContributionItem) ti.getData();
+                    final String id = ci.getId();
                     final MenuManager menuManager = new MenuManager();
 
                     Menu menu = menuManager.createContextMenu(ti.getParent());
@@ -71,8 +71,8 @@ public abstract class AbstractDropDownMenuHandler extends AbstractHandler {
                         public void menuAboutToShow(IMenuManager manager) {
                             ((IMenuService) PlatformUI.getWorkbench()
                                     .getService(IMenuService.class))
-                                    .populateContributionManager(menuManager,
-                                            "menu:" + id);
+                                            .populateContributionManager(
+                                                    menuManager, "menu:" + id);
                         }
                     });
 
