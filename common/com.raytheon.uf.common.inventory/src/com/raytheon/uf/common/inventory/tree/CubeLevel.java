@@ -20,21 +20,22 @@
 package com.raytheon.uf.common.inventory.tree;
 
 /**
- * A pair set of items for a cube.  Always represented as a parameter and a pressure.
+ * A pair set of items for a cube. Always represented as a parameter and a
+ * pressure.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 8, 2010            rjpeter     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------
+ * Apr 08, 2010  4473     rjpeter   Initial creation
+ * Apr 29, 2016  5439     bsteffen  Implement hashCode and equals
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
-
 public class CubeLevel<K, V> {
     private K pressure;
 
@@ -62,6 +63,45 @@ public class CubeLevel<K, V> {
 
     public void setParam(V param) {
         this.param = param;
+    }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((param == null) ? 0 : param.hashCode());
+        result = prime * result
+                + ((pressure == null) ? 0 : pressure.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        CubeLevel other = (CubeLevel) obj;
+        if (param == null) {
+            if (other.param != null) {
+                return false;
+            }
+        } else if (!param.equals(other.param)) {
+            return false;
+        }
+        if (pressure == null) {
+            if (other.pressure != null) {
+                return false;
+            }
+        } else if (!pressure.equals(other.pressure)) {
+            return false;
+        }
+        return true;
     }
 
 }
