@@ -72,6 +72,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Apr 08, 2016  5553     bkowal      Ignore null identifiers in {@link #makeGeometries(List, String[], Map)}.
  * Apr 22, 2016  5596     tgurney     Fix getAvailableParameters() with
  *                                    unqualified table name
+ * Apr 26, 2016  5587     tgurney     Support getIdentifierValues()
  * </pre>
  * 
  * @author bkowal
@@ -146,6 +147,19 @@ public abstract class AbstractGeometryDatabaseFactory extends
         this.validateRequest(request);
         return this.executeDataQuery(this.assembleGetData(request, timeRange),
                 request);
+    }
+
+    @Override
+    public String[] getIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        List<Object[]> idValues = this.executeQuery(
+                this.assembleGetIdentifierValues(request, identifierKey),
+                request);
+        List<String> idValStrings = new ArrayList<>(idValues.size());
+        for (Object[] idValue : idValues) {
+            idValStrings.add(idValue[0].toString());
+        }
+        return idValStrings.toArray(new String[0]);
     }
 
     /**
@@ -317,6 +331,109 @@ public abstract class AbstractGeometryDatabaseFactory extends
             IDataRequest request);
 
     /**
+     * Builds a query used to retrieve all valid identifier values based on the
+     * provided request and identifier
+     * 
+     * @param request
+     *            the original request that we are processing
+     * @param identifierKey
+     *            the identifier to retrieve allowed values for
+     * @return the query
+     */
+    protected String assembleGetIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        String query;
+        if (identifierKey.equals("table")) {
+            query = assembleGetTableNames();
+        } else {
+            query = assembleGetColumnValues(extractTableName(request),
+                    identifierKey);
+        }
+        return query;
+    }
+
+    /**
+     * Builds a postgres-specific query used to retrieve the names of all tables
+     * in the current database, excluding information_schema and system
+     * catalogs. Each table name is qualified with the name of its schema, even
+     * if all are in schema 'public'.
+     * 
+     * @return the query
+     */
+    protected String assembleGetTableNames() {
+        StringBuilder query = new StringBuilder();
+        query.append("select table_schema || '.' || table_name t ")
+                .append("from information_schema.tables ")
+                .append("where table_schema <> 'information_schema' ")
+                .append("and table_schema not like 'pg_%' ")
+                .append("order by t;");
+        return query.toString();
+    }
+
+    /**
+     * Builds a query used to retrieve all values in a single column of a table.
+     * 
+     * @param tableName
+     *            name of the table
+     * @param columnName
+     *            name of the column
+     * @return the query
+     */
+    protected String assembleGetColumnValues(String tableName, String columnName) {
+        return String.format("select distinct %1$s from %2$s order by %1$s;",
+                columnName, tableName);
+    }
+
+    /**
+     * Extracts and returns value of "table" identifier from request. Never
+     * returns null; throws exception instead.
+     * 
+     * @param request
+     *            the original request that we are processing
+     * @return the table name
+     * @throws IncompatibleRequestException
+     *             if value for identifier "table" is null or empty
+     */
+    protected String extractTableName(IDataRequest request) {
+        String tableName = (String) request.getIdentifiers().get("table");
+        if (tableName == null || tableName.isEmpty()) {
+            throw new IncompatibleRequestException(
+                    "You must provide a non-null, non-empty value for "
+                            + "identifier 'table'");
+        }
+        return tableName;
+    }
+
+    /**
+     * Extracts value of "table" identifier from request. Returns array of two
+     * strings: schema name and table name. If the value of "table" in the
+     * request does not include the schema, the returned schema will be the
+     * default schema.
+     * 
+     * @param request
+     *            the original request that we are processing
+     * @return array containing schema name and table name
+     * @throws IncompatibleRequestException
+     *             if value for identifier "table" is null or empty
+     */
+    protected String[] splitTableName(IDataRequest request) {
+        String tableNameQualified = extractTableName(request);
+        String[] tableParsed = tableNameQualified.split("\\.");
+        String tableName = null;
+        String schema = DEFAULT_SCHEMA;
+        if (tableParsed.length == 1) {
+            tableName = tableParsed[0];
+        } else if (tableParsed.length == 2) {
+            schema = tableParsed[0];
+            tableName = tableParsed[1];
+        } else {
+            throw new IncompatibleRequestException(tableNameQualified
+                    + " is not a valid table");
+        }
+        return new String[] { schema, tableName };
+    }
+
+    /**
      * Builds a postgres-specific SQL query used to retrieve available
      * parameters (columns) of the requested table from the database.
      * 
@@ -325,20 +442,9 @@ public abstract class AbstractGeometryDatabaseFactory extends
      * @return the query
      */
     protected String assembleGetAvailableParameters(IDataRequest request) {
-        String tableFullyQualified = (String) request.getIdentifiers().get(
-                "table");
-        String[] table = tableFullyQualified.split("\\.");
-        String schema = DEFAULT_SCHEMA;
-        String tableName;
-        if (table.length == 1) {
-            tableName = table[0];
-        } else if (table.length == 2) {
-            schema = table[0];
-            tableName = table[1];
-        } else {
-            throw new IncompatibleRequestException(tableFullyQualified
-                    + " is not a valid table");
-        }
+        String[] table = splitTableName(request);
+        String schema = table[0];
+        String tableName = table[1];
         return String.format("select column_name "
                 + "from information_schema.columns "
                 + "where table_schema = '%s' and table_name = '%s';", schema,
