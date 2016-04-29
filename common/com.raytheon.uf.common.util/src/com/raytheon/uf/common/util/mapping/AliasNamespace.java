@@ -41,6 +41,7 @@ import java.util.Set;
  * ------------ ---------- ----------- --------------------------
  * Mar 22, 2012            bsteffen     Initial creation
  * Apr 02, 2014 2906       bclement     changed to return empty set instead of null for lookup methods
+ * Dec 15, 2015 18139      pwang        Added method mergeAliasList to enable merge alias
  * 
  * </pre>
  * 
@@ -66,6 +67,7 @@ public class AliasNamespace {
         int mapSize = (int) (aliasList.getAliasList().size() / 0.75) + 1;
         alias2base = new HashMap<String, Set<String>>(mapSize, 0.75f);
         base2alias = new HashMap<String, Set<String>>(mapSize, 0.75f);
+
         for (Alias def : aliasList.getAliasList()) {
             String alias = def.getAlias();
             if (!caseSensitive) {
@@ -86,6 +88,7 @@ public class AliasNamespace {
             aliasSet.add(alias);
         }
     }
+
 
     /**
      * @param alias
@@ -112,6 +115,32 @@ public class AliasNamespace {
             return Collections.emptySet();
         }
         return Collections.unmodifiableSet(alias);
+    }
+
+    /**
+     * Merge Alias List into existing maps
+     * @param aliasList
+     */
+    public void mergeAliasList(AliasList aliasList) {
+        for (Alias def : aliasList.getAliasList()) {
+            String alias = def.getAlias();
+            if (!caseSensitive) {
+                alias = alias.toLowerCase();
+            }
+            String base = def.getBase();
+            Set<String> baseSet = alias2base.get(alias);
+            if (baseSet == null) {
+                baseSet = new HashSet<String>();
+                alias2base.put(alias, baseSet);
+            }
+            baseSet.add(base);
+            Set<String> aliasSet = base2alias.get(base);
+            if (aliasSet == null) {
+                aliasSet = new HashSet<String>();
+                base2alias.put(base, aliasSet);
+            }
+            aliasSet.add(alias);
+        }
     }
 
 }
