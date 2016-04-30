@@ -344,7 +344,7 @@ public class SamplingResource extends
                     dString.font = hoverFont;
 
                     dString.addTextStyle(TextStyle.BLANKED);
-                    dString.verticallAlignment = verticalAlignment;
+                    dString.verticalAlignment = verticalAlignment;
                     if (horizontalAlignment == HorizontalAlignment.RIGHT) {
                         c.x -= (target.getStringsBounds(dString).getWidth() / ratioX);
 

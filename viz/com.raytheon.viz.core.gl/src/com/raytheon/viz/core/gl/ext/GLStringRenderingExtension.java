@@ -157,12 +157,12 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 throw new VizException("Font was not prepared using GLTarget");
             }
             /* Switch multi-line vertical middle to top and shift y. */
-            if (string.verticallAlignment == VerticalAlignment.MIDDLE
+            if (string.verticalAlignment == VerticalAlignment.MIDDLE
                     && string.getText().length > 1) {
                 Rectangle2D totalBounds = target.getStringsBounds(string);
                 double totalHeight = totalBounds.getHeight();
                 string.basics.y -= totalHeight * .5;
-                string.verticallAlignment = VerticalAlignment.TOP;
+                string.verticalAlignment = VerticalAlignment.TOP;
             }
             copy.add(string);
         }
@@ -229,7 +229,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 setGlColor(gl, blankColor, alpha);
                 gl.glRectd(bounds.getMinX(), bounds.getMaxY(),
                         bounds.getMaxX(), bounds.getMinY());
-                if (string.verticallAlignment == VerticalAlignment.TOP) {
+                if (string.verticalAlignment == VerticalAlignment.TOP) {
                     yPos += lineHeight;
                 } else {
                     yPos -= lineHeight;
@@ -256,7 +256,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
     protected void shiftRectangle(DrawableString string, Rectangle2D bounds,
             double yPos) {
         float[] xy = getUpdatedCoordinates(bounds, string.horizontalAlignment,
-                string.verticallAlignment, string.basics.x, yPos);
+                string.verticalAlignment, string.basics.x, yPos);
         double x = xy[0] - 1;
         double y = xy[1] - (bounds.getHeight() + bounds.getY()) - 1;
         double w = bounds.getWidth() + 2;
@@ -339,7 +339,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
 
                     float[] xy = getUpdatedCoordinates(textBounds,
                             string.horizontalAlignment,
-                            string.verticallAlignment, string.basics.x, yPos);
+                            string.verticalAlignment, string.basics.x, yPos);
 
                     if (color != lastColor) {
                         lastColor = color;
@@ -392,7 +392,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                         textRenderer.draw3D(str, xy[0], xy[1], 0.0f,
                                 fontPercentage);
                     }
-                    if (string.verticallAlignment == VerticalAlignment.TOP) {
+                    if (string.verticalAlignment == VerticalAlignment.TOP) {
                         yPos += textBounds.getHeight();
                     } else {
                         yPos -= textBounds.getHeight();
@@ -443,7 +443,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             Rectangle2D textBounds = target.getStringsBounds(string, str);
 
             float[] xy = getUpdatedCoordinates(textBounds,
-                    string.horizontalAlignment, string.verticallAlignment,
+                    string.horizontalAlignment, string.verticalAlignment,
                     string.basics.x, yPos);
 
             double width = textBounds.getWidth();
@@ -497,7 +497,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             }
             gl.glEnd();
 
-            if (string.verticallAlignment == VerticalAlignment.TOP) {
+            if (string.verticalAlignment == VerticalAlignment.TOP) {
                 yPos += textBounds.getHeight();
             } else {
                 yPos -= textBounds.getHeight();

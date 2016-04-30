@@ -217,7 +217,7 @@ public class ContourSupport {
                         string.font = labelFont;
                         string.setCoordinates(point[0], point[1], 1.0);
                         string.horizontalAlignment = HorizontalAlignment.CENTER;
-                        string.verticallAlignment = markVert;
+                        string.verticalAlignment = markVert;
                         strings.add(string);
                     }
                     if (isVal) {
@@ -226,7 +226,7 @@ public class ContourSupport {
                         string.font = labelFont;
                         string.setCoordinates(point[0], point[1], 1.0);
                         string.horizontalAlignment = HorizontalAlignment.CENTER;
-                        string.verticallAlignment = valVert;
+                        string.verticalAlignment = valVert;
                         strings.add(string);
                     }
                 }

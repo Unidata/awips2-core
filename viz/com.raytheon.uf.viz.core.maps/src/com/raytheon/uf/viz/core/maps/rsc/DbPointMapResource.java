@@ -446,7 +446,7 @@ public class DbPointMapResource extends
                                         color);
                                 str.setCoordinates(c.x + offsetX, c.y + offsetY);
                                 str.horizontalAlignment = horizAlign;
-                                str.verticallAlignment = VerticalAlignment.MIDDLE;
+                                str.verticalAlignment = VerticalAlignment.MIDDLE;
                                 str.font = font;
                                 strings.add(str);
                             }

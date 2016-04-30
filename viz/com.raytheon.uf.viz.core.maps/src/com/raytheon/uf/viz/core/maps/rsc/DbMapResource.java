@@ -668,7 +668,7 @@ public class DbMapResource extends
                         node.location[1] - offsetY);
                 string.font = font;
                 string.horizontalAlignment = HorizontalAlignment.CENTER;
-                string.verticallAlignment = VerticalAlignment.MIDDLE;
+                string.verticalAlignment = VerticalAlignment.MIDDLE;
                 boolean add = true;
 
                 IExtent strExtent = new PixelExtent(
