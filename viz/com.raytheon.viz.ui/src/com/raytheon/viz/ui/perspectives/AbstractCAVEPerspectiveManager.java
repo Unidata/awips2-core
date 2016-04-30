@@ -205,9 +205,8 @@ public abstract class AbstractCAVEPerspectiveManager extends
      */
     @Override
     protected String getTitle(String title) {
-        return title + ":"
-                + LocalizationManager.getContextName(LocalizationLevel.SITE)
-                + " - " + getLabel();
+        return title + " " + getLabel() + " - "
+                + LocalizationManager.getContextName(LocalizationLevel.SITE);
     }
 
     @Override
