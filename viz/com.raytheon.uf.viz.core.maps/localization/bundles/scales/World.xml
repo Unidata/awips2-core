@@ -77,7 +77,7 @@
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="1750000" minDisplayWidth="0"/>
+                                <pdProps maxDisplayWidth="750000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>County Boundaries</mapName>
@@ -93,10 +93,27 @@
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
                             <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="10000000" minDisplayWidth="0"/>
+                                <pdProps maxDisplayWidth="750000" minDisplayWidth="0"/>
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>State Boundaries Zoom</mapName>
+                                <table>mapdata.states</table>
+                                <geomField>the_geom</geomField>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties loadWithoutData="false">
+                                <capabilities>
+                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="2"/>
+                                    <capability xsi:type="colorableCapability" colorAsString="#cc5000"/>
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
+                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="750000"/>
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <mapName>State Boundaries</mapName>
                                 <table>mapdata.states</table>
                                 <geomField>the_geom</geomField>
                             </resourceData>

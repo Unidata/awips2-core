@@ -70,22 +70,6 @@
                         </resource>
                         <resource>
                             <loadProperties loadWithoutData="false">
-                                <capabilities>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
-                                </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
-                            </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="1750000" minDisplayWidth="0"/>
-                            </properties>
-                            <resourceData xsi:type="dbMapResourceData">
-                                <mapName>County Boundaries</mapName>
-                                <table>mapdata.county</table>
-                            </resourceData>
-                        </resource>
-                        <resource>
-                            <loadProperties loadWithoutData="false">
                             	<capabilities>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="2"/>
                                     <capability xsi:type="colorableCapability" colorAsString="#cc5000"/>

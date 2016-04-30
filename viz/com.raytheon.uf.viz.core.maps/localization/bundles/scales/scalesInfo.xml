@@ -42,7 +42,7 @@
 	</mapScale>
 	<mapScale displayName="Regional - Africa" fileName="Africa.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Alaska" fileName="Alaska-Regional.xml" areaScale="true">
+	<mapScale displayName="Regional - Alaska" fileName="Alaska.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="Regional - Antarctica" fileName="Antarctic.xml" areaScale="true">
 	</mapScale>
@@ -52,13 +52,13 @@
 	</mapScale>
 	<mapScale displayName="Regional - Europe" fileName="Europe.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Hawaii" fileName="Hawaii_regional.xml" areaScale="false">
+	<mapScale displayName="Regional - Hawaii" fileName="Hawaii.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="Regional - Japan" fileName="Japan.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Pacific Ocean" fileName="Hawaii-National.xml" areaScale="true">
+	<mapScale displayName="Regional - Pacific Ocean" fileName="Pacific.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Puerto Rico" fileName="Puerto-Rico-Regional.xml" areaScale="true">
+	<mapScale displayName="Regional - Puerto Rico" fileName="Puerto-Rico.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="Regional - South America" fileName="SouthAmerica.xml" areaScale="true">
 	</mapScale>
