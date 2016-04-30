@@ -189,6 +189,11 @@
          name="Editable"
          sortID="901"/>
       <contextualMenu
+            actionClass="com.raytheon.viz.ui.cmenu.InterpolateAction"
+            name="Interpolate"
+			capabilityClass="com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability"
+            sortID="997"/>
+      <contextualMenu
             actionClass="com.raytheon.viz.ui.cmenu.EnableDisableAction"
             name="Display Product"
             sortID="998"/>
