@@ -22,6 +22,7 @@ package com.raytheon.uf.common.python;
 import java.util.List;
 
 import jep.Jep;
+import jep.JepConfig;
 import jep.JepException;
 import jep.NamingConventionClassEnquirer;
 
@@ -37,11 +38,11 @@ import jep.NamingConventionClassEnquirer;
  * Sep 05, 2013  #2307     dgilling    Remove constructor without explicit
  *                                     ClassLoader.
  * Apr 27, 2015   4259     njensen     Update for new JEP API
+ * Apr 28, 2016   5236     njensen     Use Jep redirectOutput for python prints
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public abstract class PythonInterpreter implements AutoCloseable {
@@ -56,44 +57,44 @@ public abstract class PythonInterpreter implements AutoCloseable {
     /**
      * Constructor
      * 
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
      *            separated by :
-     * @param aClassLoader
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @throws JepException
      */
-    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader)
+    public PythonInterpreter(String includePath, ClassLoader classLoader)
             throws JepException {
-        this(null, anIncludePath, aClassLoader);
+        this(null, includePath, classLoader);
     }
 
     /**
      * Constructor
      * 
-     * @param aFilePath
+     * @param filePath
      *            the path to the python script
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
      *            separated by :
-     * @param aClassLoader
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @throws JepException
      */
-    public PythonInterpreter(String aFilePath, String anIncludePath,
-            ClassLoader aClassLoader) throws JepException {
-        this(aFilePath, anIncludePath, aClassLoader, null);
+    public PythonInterpreter(String filePath, String includePath,
+            ClassLoader classLoader) throws JepException {
+        this(filePath, includePath, classLoader, null);
     }
 
     /**
      * Constructor
      * 
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
      *            separated by :
-     * @param aClassLoader
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @param preEvals
@@ -102,20 +103,20 @@ public abstract class PythonInterpreter implements AutoCloseable {
      *            the python interpreter.
      * @throws JepException
      */
-    public PythonInterpreter(String anIncludePath, ClassLoader aClassLoader,
+    public PythonInterpreter(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
-        this(null, anIncludePath, aClassLoader, preEvals);
+        this(null, includePath, classLoader, preEvals);
     }
 
     /**
      * Constructor
      * 
-     * @param aFilePath
+     * @param filePath
      *            the path to the python script
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
      *            separated by :
-     * @param aClassLoader
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @param preEvals
@@ -124,12 +125,14 @@ public abstract class PythonInterpreter implements AutoCloseable {
      *            vars in the python interpreter.
      * @throws JepException
      */
-    public PythonInterpreter(String aFilePath, String anIncludePath,
-            ClassLoader aClassLoader, List<String> preEvals)
-            throws JepException {
-        jep = new Jep(false, anIncludePath, aClassLoader,
-                new NamingConventionClassEnquirer());
-        initializeJep(aFilePath, preEvals);
+    public PythonInterpreter(String filePath, String includePath,
+            ClassLoader classLoader, List<String> preEvals) throws JepException {
+        JepConfig config = new JepConfig().setInteractive(false)
+                .setIncludePath(includePath).setClassLoader(classLoader)
+                .setClassEnquirer(new NamingConventionClassEnquirer())
+                .setRedirectOutputStreams(true);
+        jep = new Jep(config);
+        initializeJep(filePath, preEvals);
     }
 
     /**
