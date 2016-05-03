@@ -19,7 +19,7 @@
         further_licensing_information.
     -->
 <DerivedParameter unit="%" name="Rel Humidity" abbreviation="RH" xmlns:ns2="group">
-    <Method models="GFS212,GFS213" levels="Surface" name="Alias">
+    <Method models="GFS40,GFS95" levels="Surface" name="Alias">
         <Field level="BLyr" abbreviation="RH"/>
     </Method>
     <Method levels="MaxT" name="Slice">
@@ -34,7 +34,7 @@
         <ConstantField value="1e35"/>
         <ConstantField value="-1"/>
     </Method>
-    <Method models="SREF212" name="RelHum">
+    <Method models="SREF40" name="RelHum">
         <Field abbreviation="Tmean"/>
         <Field abbreviation="DpTmean"/>
     </Method>
@@ -48,8 +48,8 @@
         <Field level="950MB" abbreviation="RH"/>
         <Field level="900MB" abbreviation="RH"/>
     </Method>
-    <Method models="mesoEta212" levels="2FHAG" name="Import">
-        <Field level="2FHAG" model="mesoEta215" abbreviation="RH"/>
+    <Method models="NAM40" levels="2FHAG" name="Import">
+        <Field level="2FHAG" model="NAM20" abbreviation="RH"/>
     </Method>
     <Method levels="S,TEMP,TILT" name="Slice">
         <Field level="3D" abbreviation="RH"/>

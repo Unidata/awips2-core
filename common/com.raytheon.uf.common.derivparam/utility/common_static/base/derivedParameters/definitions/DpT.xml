@@ -23,7 +23,7 @@
         <Field abbreviation="T"/>
         <Field abbreviation="RH"/>
     </Method>
-    <Method models="SREF212" name="Alias">
+    <Method models="SREF40" name="Alias">
         <Field abbreviation="DpTmean"/>
     </Method>
     <Method levels="Surface" name="Alias">
