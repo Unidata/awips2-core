@@ -19,7 +19,7 @@
         further_licensing_information.
     -->
 <DerivedParameter unit="hPa" name="MSL Pressure" abbreviation="msl-P" xmlns:ns2="group">
-    <Method models="SREF212" name="Alias">
+    <Method models="SREF40" name="Alias">
         <Field abbreviation="PMSLmean"/>
     </Method>
     <Method models="modelsounding" levels="Surface" name="Alias">
@@ -34,10 +34,10 @@
     <Method name="Alias" models="MSAS" levels="Surface" displayName="NWS MSLP">
         <Field abbreviation="MSLP" level="MSL"/>
     </Method>
-    <Method name="Alias" models="ETA mesoEta212 mesoEta215 ETA218 ETA242 ETA207" levels="Surface" displayName="ETA Model MSLP">
+    <Method name="Alias" models="ETA NAM40 NAM20 NAM12 AK-NAM11 AK-NAM95" levels="Surface" displayName="ETA Model MSLP">
         <Field abbreviation="EMSP" level="Surface"/>
     </Method>
-    <Method name="Alias" models="GFS215 GFS229" levels="Surface" displayName="MSLP (Eta Reduction)">
+    <Method name="Alias" models="GFS20 GFS229" levels="Surface" displayName="MSLP (Eta Reduction)">
         <Field abbreviation="EMSP" level="MSL"/>
     </Method>
     <Method name="Alias" models="HiResW-ARW-East HiResW-ARW-West HiResW-ARW-AK HiResW-ARW-PR HiResW-ARW-SJU" levels="Surface" displayName="ETA Model MSLP">
