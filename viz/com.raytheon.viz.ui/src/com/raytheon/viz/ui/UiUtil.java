@@ -20,7 +20,7 @@
 package com.raytheon.viz.ui;
 
 import java.util.ArrayList;
-import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -73,11 +73,11 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  *                                     Added hideView method for quickly hiding views.
  * Dec 21, 2015 5191       bsteffen    Updated layoutId for Eclipse 4.
  * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
+ * May 03, 2016 3292       bsteffen    Preserve editor order in getActiveDisplayMap.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class UiUtil {
 
@@ -109,7 +109,7 @@ public class UiUtil {
     @SuppressWarnings("restriction")
     public static List<ContainerPart> getActiveDisplayMap() {
         List<ContainerPart> parts = new ArrayList<ContainerPart>();
-        Map<String, ContainerPart> partMap = new HashMap<String, ContainerPart>();
+        Map<String, ContainerPart> partMap = new LinkedHashMap<String, ContainerPart>();
 
         IWorkbenchWindow window = VizWorkbenchManager.getInstance()
                 .getCurrentWindow();
