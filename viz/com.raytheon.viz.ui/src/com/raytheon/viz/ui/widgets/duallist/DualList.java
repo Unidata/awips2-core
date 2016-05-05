@@ -47,20 +47,22 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 13, 2012            mpduff      Initial creation
- * Feb 14, 2012            lvenable    Update code.
- * Aug 08, 2012    863     jpiatt      Added checks for selection changes.
- * Aug 10, 2012   1002     mpduff      Fixed sorting of numeric data on move left.
- * Sep 07, 2012    684     mpduff      Deselect selection prior to selecting new items.
- * Dec 17, 2012   1431     mpduff      Fix filter problem when deselecting items.
- * Jan 07, 2013   1456     bgonzale    Added setSelectedList(ArrayList<String>).
- * Aug 20, 2013   1733     mpduff      Search now uses SearchUtils.
- * Sep 27, 2013  #2419     lvenable    Removed the ability to get the dual config list
- *                                     and added some convenience methods to clear and add
- *                                     to the include list.
- * May 04, 2015   4419     rferrel     Handle sorting of lists
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 13, 2012           mpduff    Initial creation
+ * Feb 14, 2012           lvenable  Update code.
+ * Aug 08, 2012  863      jpiatt    Added checks for selection changes.
+ * Aug 10, 2012  1002     mpduff    Fixed sorting of numeric data on move left.
+ * Sep 07, 2012  684      mpduff    Deselect selection prior to selecting new
+ *                                  items.
+ * Dec 17, 2012  1431     mpduff    Fix filter problem when deselecting items.
+ * Jan 07, 2013  1456     bgonzale  Added setSelectedList(ArrayList<String>).
+ * Aug 20, 2013  1733     mpduff    Search now uses SearchUtils.
+ * Sep 27, 2013  2419     lvenable  Removed the ability to get the dual config
+ *                                  list and added some convenience methods to
+ *                                  clear and add to the include list.
+ * May 04, 2015  4419     rferrel   Handle sorting of lists
+ * May 05, 2016  5487     tjensen   Added additional sorting options
  * 
  * </pre>
  * 
@@ -723,10 +725,10 @@ public class DualList extends Composite {
     public void reloadAvailableList() {
 
         String[] selectedStrings = availableList.getSelection();
-        java.util.List<String> availableListNew = new ArrayList<String>();
+        java.util.List<String> availableListNew = new ArrayList<>();
 
         String[] selectedItemArray = selectedList.getItems();
-        ArrayList<String> selectedItemList = new ArrayList<String>();
+        ArrayList<String> selectedItemList = new ArrayList<>();
 
         for (String selectedItem : selectedItemArray) {
             selectedItemList.add(selectedItem);
@@ -819,19 +821,19 @@ public class DualList extends Composite {
 
     private java.util.List<String> sortAvailable(List oldAvailableList) {
 
-        ArrayList<String> availableListsorted = new ArrayList<String>();
+        ArrayList<String> availableListsorted = new ArrayList<>();
         String[] arr = oldAvailableList.getItems();
 
         // Put available list in order
         if (config.isNumericData()) {
             // If data are numeric then must sort on the numeric value
             try {
-                Map<Integer, String> map = new TreeMap<Integer, String>();
+                Map<Double, String> map = new TreeMap<>();
                 for (String a : arr) {
-                    map.put(Integer.parseInt(a), a);
+                    map.put(Double.parseDouble(a), a);
                 }
 
-                for (Integer i : map.keySet()) {
+                for (Double i : map.keySet()) {
                     availableListsorted.add(map.get(i));
                 }
             } catch (NumberFormatException e) {
@@ -850,6 +852,9 @@ public class DualList extends Composite {
                 Collections.sort(availableListsorted,
                         String.CASE_INSENSITIVE_ORDER);
             }
+        }
+        if (config.isReverseSort()) {
+            Collections.reverse(availableListsorted);
         }
 
         return availableListsorted;

@@ -30,14 +30,15 @@ import java.util.List;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 31, 2012            mpduff      Initial creation.
- * Aug 10, 2012  1002      mpduff      Added numeric flag for sorting.
- * Jan 07, 2013  1431      mpduff      Add case sensitive and exclude flags.
- * Aug 20, 2013  1733      mpduff      Add match flag.
- * Sep 27, 2013  #2419     lvenable    Updated include description.
- * May 04, 2015  4419      rferrel     Add {@link #sortList} flag.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------
+ * May 31, 2012           mpduff    Initial creation.
+ * Aug 10, 2012  1002     mpduff    Added numeric flag for sorting.
+ * Jan 07, 2013  1431     mpduff    Add case sensitive and exclude flags.
+ * Aug 20, 2013  1733     mpduff    Add match flag.
+ * Sep 27, 2013  2419     lvenable  Updated include description.
+ * May 04, 2015  4419     rferrel   Add {@link #sortList} flag.
+ * May 05, 2016  5487     tjensen   Added option for reverse sorting.
  * 
  * </pre>
  * 
@@ -75,18 +76,18 @@ public class DualListConfig {
     /**
      * List of items that should initially appear in the selected item list.
      */
-    private List<String> selectedList = new ArrayList<String>();
+    private List<String> selectedList = new ArrayList<>();
 
     /**
      * Full list of available items.
      */
-    private List<String> fullList = new ArrayList<String>();
+    private List<String> fullList = new ArrayList<>();
 
     /**
      * The include list is a set of items that will always be present the
      * selected list and cannot be removed from the selected list.
      */
-    private HashSet<String> includeList = new HashSet<String>();
+    private HashSet<String> includeList = new HashSet<>();
 
     /**
      * The search field.
@@ -104,6 +105,8 @@ public class DualListConfig {
     private boolean excludeFlag = false;
 
     private boolean sortList = false;
+
+    private boolean reverseSort = false;
 
     private IMenuData menuData;
 
@@ -262,7 +265,7 @@ public class DualListConfig {
      * @return The array of all available items.
      */
     public List<String> getFullList() {
-        return new ArrayList<String>(fullList);
+        return new ArrayList<>(fullList);
     }
 
     /**
@@ -382,5 +385,13 @@ public class DualListConfig {
      */
     public void setSortList(boolean sortList) {
         this.sortList = sortList;
+    }
+
+    public boolean isReverseSort() {
+        return reverseSort;
+    }
+
+    public void setReverseSort(boolean reverseSort) {
+        this.reverseSort = reverseSort;
     }
 }
