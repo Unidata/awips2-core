@@ -41,6 +41,8 @@ import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.progress.UIJob;
 
+import com.raytheon.uf.common.time.util.TimeUtil;
+
 /**
  * Date/Time entry field with spinner controls
  * 
@@ -51,6 +53,8 @@ import org.eclipse.ui.progress.UIJob;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 17, 2016  #5483     randerso     Initial creation
+ * May 04, 2016  #5602     bkowal       Added enable/disable, backing date get/set
+ *                                      capabilities.
  * 
  * </pre>
  * 
@@ -116,6 +120,32 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
      * </pre>
      */
     public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount) {
+        this(parent, calendar, fieldCount, false);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @param parent
+     *            parent composite
+     * @param calendar
+     *            Calendar instance containing initial date. This instance will
+     *            be updated as the widget is updated
+     * @param fieldCount
+     *            <pre>
+     *            1 = yyyy
+     *            2 = yyyy-MM
+     *            3 = yyyy-MM-dd,
+     *            4 = yyyy-MM-dd HH
+     *            5 = yyyy-MM-dd HH:mm
+     *            6 = yyyy-MM-dd HH:mm:ss
+     * </pre>
+     * @param clearNonEditable
+     *            triggers the execution of the {@link Calendar#clear(int)}
+     *            method on non-editable fields when set.
+     */
+    public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount,
+            boolean clearNonEditable) {
         super(parent, SWT.NONE);
 
         if ((fieldCount < 1) || (fieldCount > formatStrings.length)) {
@@ -124,7 +154,12 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         }
         this.fieldCount = fieldCount;
 
-        this.calendar = calendar;
+        this.calendar = TimeUtil.newCalendar(calendar);
+        if (clearNonEditable && fieldCount < formatStrings.length) {
+            for (int i = fieldCount; i < formatStrings.length; i++) {
+                this.calendar.clear(fieldNames[i]);
+            }
+        }
 
         format = new SimpleDateFormat(formatStrings[fieldCount - 1]);
         format.setTimeZone(calendar.getTimeZone());
@@ -286,6 +321,54 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         e.gc.drawLine(buttonCenter, arrowTip, arrowRight, arrowBase);
     }
 
+    @Override
+    public void setEnabled(boolean enabled) {
+        super.setEnabled(enabled);
+        text.setEnabled(enabled);
+        if (!enabled) {
+            text.clearSelection();
+        }
+    }
+
+    /**
+     * Returns the selected date/time as a {@link Calendar}
+     * 
+     * @return the selected date/time as a {@link Calendar}
+     */
+    public Calendar getSelection() {
+        return TimeUtil.newCalendar(calendar);
+    }
+
+    /**
+     * Sets the selected date/time based on the specified {@link Calendar}.
+     * 
+     * @param calendar
+     *            the specified {@link Calendar}
+     */
+    public void setSelection(Calendar calendar) {
+        setSelection(calendar, false);
+    }
+
+    /**
+     * Sets the selected date/time based on the specified {@link Calendar}.
+     * onlyEditable will determine whether all Calendar fields will be copied
+     * from the specified Calendar or if only the editable fields will be
+     * copied.
+     * 
+     * @param calendar
+     *            the specified {@link Calendar}
+     * @param onlyEditable
+     *            will only replace the editable fields in the backing Calendar
+     *            when set.
+     */
+    public void setSelection(Calendar calendar, boolean onlyEditable) {
+        int fieldCountToSet = (onlyEditable) ? fieldCount : fieldNames.length;
+        for (int i = 0; i < fieldCountToSet; i++) {
+            this.calendar.set(fieldNames[i], calendar.get(fieldNames[i]));
+        }
+        updateControl();
+    }
+
     private void incrementField(int amount) {
         int currentFieldName = fieldNames[currentField];
         calendar.add(currentFieldName, amount);
@@ -311,7 +394,9 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
                     } else {
                         s = start + s + 1;
                     }
-                    text.setSelection(s, end);
+                    if (text.isEnabled()) {
+                        text.setSelection(s, end);
+                    }
                 }
             }
         });
@@ -444,7 +529,9 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
             text.setText(string);
             ignoreVerify = false;
         }
-        selectField(currentField);
+        if (text.getEnabled()) {
+            selectField(currentField);
+        }
         super.redraw();
     }
 }
