@@ -58,7 +58,8 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * 09/27/12     1196        rferrel     Added bringToTop
  * 11/13/12     1298        rferrel     Override open to work in a similar manner
  *                                        to CaveSWTDialogBase's open.
- * Aug 31, 2015 4749        njensen     closeCallback now a List                                       
+ * Aug 31, 2015 4749        njensen     closeCallback now a List
+ * Apr 20, 2016 5541        dgilling    Fix issues with hide/restore and perspective switching.
  * 
  * </pre>
  * 
@@ -71,7 +72,7 @@ public class CaveJFACEDialog extends Dialog implements
     /** Dialog last location on the screen. */
     protected Point lastLocation;
 
-    /** Flag indicating of the dialog was visible. */
+    /** Flag indicating of the dialog was visible on perspective switch. */
     private boolean wasVisible = true;
 
     /** Callbacks called when the dialog is disposed. */
@@ -154,9 +155,14 @@ public class CaveJFACEDialog extends Dialog implements
 
     @Override
     public final void hide() {
+        hide(false);
+    }
+
+    @Override
+    public final void hide(boolean isPerspectiveSwitch) {
         Shell shell = getShell();
-        if (shell != null && shell.isDisposed() == false) {
-            wasVisible = shell.isVisible();
+        if ((shell != null) && (!shell.isDisposed())) {
+            wasVisible = shell.isVisible() && isPerspectiveSwitch;
             lastLocation = shell.getLocation();
             shell.setVisible(false);
         }
@@ -164,10 +170,17 @@ public class CaveJFACEDialog extends Dialog implements
 
     @Override
     public final void restore() {
+        restore(false);
+    }
+
+    @Override
+    public final void restore(boolean isPerspectiveSwitch) {
         Shell shell = getShell();
-        if (shell != null && shell.isDisposed() == false) {
-            shell.setVisible(wasVisible);
-            shell.setLocation(lastLocation);
+        if ((shell != null) && (!shell.isDisposed())) {
+            if ((isPerspectiveSwitch && wasVisible) || (!isPerspectiveSwitch)) {
+                shell.setVisible(true);
+                shell.setLocation(lastLocation);
+            }
         }
     }
 
