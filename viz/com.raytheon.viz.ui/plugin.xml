@@ -613,7 +613,7 @@
        </path>
    </extension>
    <extension
-         id="FloatingWindowProcessor"
+         id="VizUIModelProcessors"
          point="org.eclipse.e4.workbench.model">
       <processor
             apply="always"
@@ -624,6 +624,11 @@
             apply="always"
             beforefragment="false"
             class="com.raytheon.viz.ui.actions.ToolbarToolTipProcessor">
+      </processor>
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="com.raytheon.viz.ui.tools.HideEmptyToolBarProcessor">
       </processor>
    </extension>
 </plugin>
