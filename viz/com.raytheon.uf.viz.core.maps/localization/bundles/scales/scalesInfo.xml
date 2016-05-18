@@ -34,11 +34,11 @@
 	<mapScale displayName="WFO" fileName="WFO.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
 	</mapScale>
-	<mapScale displayName="World - Mercator" fileName="Mercator.xml" areaScale="false">
+	<mapScale displayName="World - Mercator" fileName="WorldMercator.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="World - Mollweide" fileName="Mollweide.xml" areaScale="true">
+	<mapScale displayName="World - Mollweide" fileName="WorldMollweide.xml" areaScale="true">
 	</mapScale>
 	<mapScale displayName="Regional - Africa" fileName="Africa.xml" areaScale="false">
 	</mapScale>

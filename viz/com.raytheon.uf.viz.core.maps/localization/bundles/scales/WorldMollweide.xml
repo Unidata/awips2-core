@@ -123,26 +123,22 @@
                 </resource>
                 <timeMatcher xsi:type="d2DTimeMatcher" loadMode="VALID_TIME_SEQ" deltaFilter="0" forecastFilter="0"/>
                 <numberOfFrames>12</numberOfFrames>
- <gridGeometry envelopeMaxY="1.0006791121134637E7" envelopeMinY="-1.0006791121134637E7" envelopeMaxX="2.001469423150376E7" envelopeMinX="-2.001469423150376E7" rangeY="0 9999" rangeX="0 20000">
-                    <CRS>PROJCS["Equidistant_Cylindrical", 
-  GEOGCS["WGS84(DD)", 
-    DATUM["WGS84", 
-      SPHEROID["WGS84", 6378137.0, 298.257223563]], 
-    PRIMEM["Greenwich", 0.0], 
-    UNIT["degree", 0.017453292519943295], 
-    AXIS["Geodetic longitude", EAST], 
-    AXIS["Geodetic latitude", NORTH]], 
-  PROJECTION["Equidistant_Cylindrical"], 
-  PARAMETER["semi_major", 6371229.0], 
-  PARAMETER["semi_minor", 6371229.0], 
-  PARAMETER["central_meridian", 0.0], 
-  PARAMETER["latitude_of_origin", 0.0], 
-  PARAMETER["standard_parallel_1", 0.0], 
-  PARAMETER["false_easting", 0.0], 
-  PARAMETER["false_northing", 0.0], 
-  UNIT["m", 1.0], 
-  AXIS["Easting", EAST], 
-  AXIS["Northing", NORTH]]</CRS>
+	 <gridGeometry envelopeMaxY="1.0006791121134637E7" envelopeMinY	="-1.0006791121134637E7" envelopeMaxX="2.001469423150376E7" envelopeMinX="-2.001469423150376E7" rangeY="0 9999" rangeX="0 20000">
+<CRS>PROJCS[&quot;Mollweide&quot;, 
+  GEOGCS[&quot;WGS84(DD)&quot;, 
+    DATUM[&quot;WGS84&quot;, 
+      SPHEROID[&quot;WGS84&quot;, 6378137.0, 298.257223563]], 
+    PRIMEM[&quot;Greenwich&quot;, 0.0], 
+    UNIT[&quot;degree&quot;, 0.017453292519943295], 
+    AXIS[&quot;Geodetic longitude&quot;, EAST], 
+    AXIS[&quot;Geodetic latitude&quot;, NORTH]], 
+  PROJECTION[&quot;Mollweide&quot;], 
+  PARAMETER[&quot;semi_major&quot;, 6371229.0], 
+  PARAMETER[&quot;semi_minor&quot;, 6371229.0], 
+  PARAMETER[&quot;central_meridian&quot;, 0.0], 
+  UNIT[&quot;m&quot;, 1.0], 
+  AXIS[&quot;Easting&quot;, EAST], 
+  AXIS[&quot;Northing&quot;, NORTH]]</CRS>
                 </gridGeometry>
             </descriptor>
         </displays>

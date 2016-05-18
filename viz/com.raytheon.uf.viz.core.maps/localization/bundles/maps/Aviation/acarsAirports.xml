@@ -25,9 +25,11 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
+                        	<capability xsi:type="pointCapability" pointStyle="BOX"/>
+							<capability xsi:type="densityCapability" density="999"/>
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                            <capability xsi:type="colorableCapability" colorAsString="yellow" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
@@ -37,7 +39,7 @@
                     </properties>
                     <resourceData xsi:type="spiResourceData">
                         <filename>basemaps/airports.spi</filename>
-                        <mapName>ACARS Airport Locations</mapName>
+                        <mapName>ACARS Airports</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

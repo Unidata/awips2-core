@@ -27,7 +27,7 @@
                         <capabilities>
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#000033" />
+                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
@@ -36,8 +36,8 @@
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
                     <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.lake</table>
-                        <mapName>Lakes</mapName>
+                        <table>mapdata.ffmp_basins</table>
+                        <mapName>FFMP Small Stream Basins</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
