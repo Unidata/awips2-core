@@ -27,7 +27,7 @@
                         <capabilities>
                             <capability xsi:type="outlineCapability" lineStyle="DASHED" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#333333" />
+                            <capability xsi:type="colorableCapability" colorAsString="#4D4D4D" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>

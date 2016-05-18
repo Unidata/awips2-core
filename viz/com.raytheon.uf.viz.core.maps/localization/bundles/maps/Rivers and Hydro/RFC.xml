@@ -25,19 +25,21 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                            <capability xsi:type="colorableCapability" colorAsString="#000033"/>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="2" />
+                            <capability xsi:type="colorableCapability" colorAsString="#FFC0CB" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" isVisible="true">
-                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-					<resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.allrivers</table>
-						<mapName>All Rivers</mapName>
-					</resourceData>
-	            </resource>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.rfc</table>
+                        <mapName>RFC Boundaries</mapName>
+                    </resourceData>
+                </resource>
             </descriptor>
         </displays>
     </displayList>

@@ -25,19 +25,20 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
+                        	<capability xsi:type="pointCapability" pointStyle="BOX"/>
+                            <capability xsi:type="colorableCapability" colorAsString="yellow" />
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="2" />
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                                outlineWidth="1" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
                     <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
+                        opacity="1.0" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.rfc</table>
-                        <mapName>RFC Boundaries</mapName>
+                    <resourceData xsi:type="lpiResourceData">
+                        <filename>volcanoes.lpi</filename>
+                        <mapName>Volcano Locations</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

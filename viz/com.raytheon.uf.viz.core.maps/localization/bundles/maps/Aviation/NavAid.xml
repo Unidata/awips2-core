@@ -28,8 +28,8 @@
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
                             <capability xsi:type="labelableCapability" labelField="name"/>
-                            <capability xsi:type="densityCapability" density="0.1"/>
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                            <capability xsi:type="densityCapability" density="0.75"/>
+                            <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>

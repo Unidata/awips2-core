@@ -25,19 +25,19 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
+                                outlineWidth="2" />
+                            <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
                     <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        opacity="1.0" isVisible="true">
+                        isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="lpiResourceData">
-                        <filename>volcanoes.lpi</filename>
-                        <mapName>Volcano Locations</mapName>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.offshore</table>
+                        <mapName>Marine Offshore Zones</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
