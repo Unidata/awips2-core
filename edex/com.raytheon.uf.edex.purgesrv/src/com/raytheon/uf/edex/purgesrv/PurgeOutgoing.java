@@ -76,24 +76,30 @@ public class PurgeOutgoing {
             File path = new File(outgoingDirectory);
             if (path.exists()) {
                 String[] files = path.list();
-                for (String file : files) {
-                    Matcher m = outgoingDatePattern.matcher(file);
-                    if (m.find()) {
-                        long time = Long.parseLong(m.group(1));
-                        time *= 1000;
-                        if (now - time >= day) {
-                            // remove the file
-                            File tmp = new File(outgoingDirectory + "/" + file);
-                            if (tmp.exists()) {
-                                count++;
-                                tmp.delete();
+                if (files != null) {
+                    for (String file : files) {
+                        Matcher m = outgoingDatePattern.matcher(file);
+                        if (m.find()) {
+                            long time = Long.parseLong(m.group(1));
+                            time *= 1000;
+                            if (now - time >= day) {
+                                // remove the file
+                                File tmp = new File(outgoingDirectory + "/"
+                                        + file);
+                                if (tmp.exists()) {
+                                    count++;
+                                    tmp.delete();
+                                }
                             }
+                        } else {
+                            PurgeLogger.logInfo(
+                                    "Skipped file with unexpected fileName: "
+                                            + file, plugin);
                         }
-                    } else {
-                        PurgeLogger.logInfo(
-                                "Skipped file with unexpected fileName: "
-                                        + file, plugin);
                     }
+                } else {
+                    PurgeLogger.logError("Unable to list files from directory "
+                            + path.getAbsolutePath(), plugin);
                 }
             }
         }
