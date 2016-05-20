@@ -34,8 +34,6 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.TimeZone;
 
-import javax.xml.bind.JAXBException;
-
 import com.google.common.collect.Multimap;
 import com.raytheon.edex.util.Util;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -430,7 +428,6 @@ public class OfflineStatsManager {
      *            The StatisticsEventConfig the aggregates belong to
      * @param aggregateRecords
      *            The aggregate records
-     * @throws JAXBException
      */
     public void writeAggregatesToDisk(StatisticsEventConfig conf,
             Collection<AggregateRecord> aggregateRecords) {
@@ -483,22 +480,29 @@ public class OfflineStatsManager {
 
         if (eventDir.exists() && eventDir.isDirectory()) {
             File latestDir = null;
-            for (File handle : eventDir.listFiles()) {
-                if (handle.isDirectory()) {
-                    try {
-                        Date handleDate = directorySdf.parse(handle.getName());
+            File[] eventDirFiles = eventDir.listFiles();
+            if (eventDirFiles != null) {
+                for (File handle : eventDirFiles) {
+                    if (handle.isDirectory()) {
+                        try {
+                            Date handleDate = directorySdf.parse(handle
+                                    .getName());
 
-                        if ((rval == null) || rval.before(handleDate)) {
-                            rval = handleDate;
-                            latestDir = handle;
+                            if ((rval == null) || rval.before(handleDate)) {
+                                rval = handleDate;
+                                latestDir = handle;
+                            }
+                        } catch (ParseException e) {
+                            statusHandler.handle(Priority.WARN, "Directory ["
+                                    + handle.getAbsolutePath()
+                                    + "] is not in expected date format ["
+                                    + directorySdf.toPattern() + "]");
                         }
-                    } catch (ParseException e) {
-                        statusHandler.handle(Priority.WARN, "Directory ["
-                                + handle.getAbsolutePath()
-                                + "] is not in expected date format ["
-                                + directorySdf.toPattern() + "]");
                     }
                 }
+            } else {
+                statusHandler.error("Unable to list files from directory "
+                        + eventDir.getAbsolutePath());
             }
 
             // found latest directory date
@@ -582,22 +586,28 @@ public class OfflineStatsManager {
 
         if (eventDir.exists() && eventDir.isDirectory()) {
             try {
-                for (File handle : eventDir.listFiles()) {
-                    if (handle.isDirectory()) {
-                        try {
-                            Date handleDate = directorySdf.parse(handle
-                                    .getName());
+                File[] eventDirFiles = eventDir.listFiles();
+                if (eventDirFiles != null) {
+                    for (File handle : eventDirFiles) {
+                        if (handle.isDirectory()) {
+                            try {
+                                Date handleDate = directorySdf.parse(handle
+                                        .getName());
 
-                            if (handleDate.getTime() <= minTime) {
-                                FileUtil.deleteDir(handle);
+                                if (handleDate.getTime() <= minTime) {
+                                    FileUtil.deleteDir(handle);
+                                }
+                            } catch (ParseException e) {
+                                statusHandler.warn("Directory ["
+                                        + handle.getAbsolutePath()
+                                        + "] is not in expected date format ["
+                                        + directorySdf.toPattern() + "]");
                             }
-                        } catch (ParseException e) {
-                            statusHandler.warn("Directory ["
-                                    + handle.getAbsolutePath()
-                                    + "] is not in expected date format ["
-                                    + directorySdf.toPattern() + "]");
                         }
                     }
+                } else {
+                    statusHandler.error("Unable to list files from directory "
+                            + eventDir.getAbsolutePath());
                 }
             } catch (Exception e) {
                 statusHandler.error(
