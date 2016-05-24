@@ -66,6 +66,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                     Added constructors with Display as parent for dialogs with
  *                                     no parent shell.
  * Mar 30, 2016  5513      randerso    Allowed hide/restore to work for non-independent dialogs
+ * Apr 20, 2016  5541      dgilling    Fix issues with hide/restore and perspective switching.
  * 
  * </pre>
  * 
@@ -159,7 +160,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /** Dialog last offset from parent window. */
     private Point lastOffset;
 
-    /** Flag indicating of the dialog was visible. */
+    /** Flag indicating if the dialog was visible on perspective switch. */
     private boolean wasVisible = true;
 
     private AbstractVizPerspectiveManager perspectiveManager;
@@ -684,15 +685,20 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      */
     @Override
     public final void restore() {
+        restore(false);
+    }
+
+    @Override
+    public final void restore(boolean isPerspectiveSwitch) {
         if ((shell != null) && (!shell.isDisposed())) {
-            if (shell.isVisible() != wasVisible) {
+            if ((isPerspectiveSwitch && wasVisible) || (!isPerspectiveSwitch)) {
                 if ((parent != null) && (lastOffset != null)) {
                     Point parentLocation = parent.getLocation();
                     shell.setLocation(parentLocation.x + lastOffset.x,
                             parentLocation.y + lastOffset.y);
                     lastOffset = null;
                 }
-                shell.setVisible(wasVisible);
+                shell.setVisible(true);
             }
         }
     }
@@ -702,9 +708,14 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      */
     @Override
     public final void hide() {
+        hide(false);
+    }
+
+    @Override
+    public final void hide(boolean isPerspectiveSwitch) {
         if ((shell != null) && (!shell.isDisposed())) {
-            wasVisible = shell.isVisible();
-            if (wasVisible) {
+            wasVisible = shell.isVisible() && isPerspectiveSwitch;
+            if (shell.isVisible()) {
                 if ((parent != null)) {
                     Point myLocation = shell.getLocation();
                     Point parentLocation = parent.getLocation();
@@ -716,5 +727,4 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
             }
         }
     }
-
 }
