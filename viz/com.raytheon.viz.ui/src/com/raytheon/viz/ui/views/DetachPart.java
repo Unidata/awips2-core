@@ -19,9 +19,11 @@
  **/
 package com.raytheon.viz.ui.views;
 
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
+import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.e4.ui.workbench.modeling.EPartService;
@@ -47,6 +49,8 @@ import org.eclipse.ui.services.IServiceLocator;
  * ------------- -------- --------- -------------------------------
  * Jan 07, 2016  5190     bsteffen  Initial creation
  * Mar 16, 2016  5190     bsteffen  Fix attaching the active part.
+ * May 17, 2016  5640     bsteffen  Ensure that when a view is detached from a
+ *                                  detached window it does not shrink.
  *
  * </pre>
  *
@@ -63,12 +67,70 @@ public class DetachPart {
         MPart modelPart = services.getService(MPart.class);
 
         /* First try to detach in a window the same size as the part. */
-        Object rawWidget = modelPart.getWidget();
-        if (rawWidget instanceof Control) {
-            Control control = (Control) rawWidget;
-            Rectangle bounds = control.getBounds();
+        MPlaceholder placeholder = modelPart.getCurSharedRef();
+        MElementContainer<? extends MUIElement> partStack = modelPart
+                .getParent();
+        if (partStack == null && placeholder != null) {
+            partStack = placeholder.getParent();
+        }
+
+        /*
+         * this will be a control that we can use for determining the size of
+         * the detached window.
+         */
+        Control baseSizeControl = null;
+
+        /*
+         * If the part is a child of a partStack then it is better to make the
+         * new window the size of the partStack so that there is room in the
+         * detached window for the part stack tabs, otherwise when the tabs are
+         * incorporated the part will be slightly smaller.
+         */
+        if (partStack != null && partStack instanceof MPartStack) {
+            MElementContainer<? extends MUIElement> window = partStack
+                    .getParent();
+
+            /*
+             * If the partStack is the only child of a window then it is better
+             * to make the new window the size of the old window so that there
+             * is room for the window trim. Otherwise when the trim is
+             * incorporated the part will be slightly smaller.
+             */
+            if (window.getChildren().size() == 1 && window instanceof MWindow) {
+                if (partStack.getChildren().size() == 1) {
+                    /*
+                     * The part is in a partStack that contains only one part,
+                     * and the partStack is in a window with only one child,
+                     * therefore the part is already detached so don't detach it
+                     * again.
+                     */
+                    return;
+                }
+                Object rawWidget = window.getWidget();
+                if (rawWidget instanceof Control) {
+                    baseSizeControl = (Control) rawWidget;
+                }
+            }
+
+            if (baseSizeControl == null) {
+                Object rawWidget = partStack.getWidget();
+                if (rawWidget instanceof Control) {
+                    baseSizeControl = (Control) rawWidget;
+                }
+            }
+        }
+
+        if (baseSizeControl == null) {
+            Object rawWidget = modelPart.getWidget();
+            if (rawWidget instanceof Control) {
+                baseSizeControl = (Control) rawWidget;
+            }
+        }
+
+        if (baseSizeControl != null) {
+            Rectangle bounds = baseSizeControl.getBounds();
             if (!bounds.isEmpty()) {
-                Point corner = control.getParent().toDisplay(bounds.x,
+                Point corner = baseSizeControl.getParent().toDisplay(bounds.x,
                         bounds.y);
                 modelService.detach(modelPart, corner.x, corner.y, bounds.width,
                         bounds.height);
@@ -84,7 +146,7 @@ public class DetachPart {
         MUIElement editors = modelService.find(IPageLayout.ID_EDITOR_AREA,
                 window);
         if (editors != null) {
-            rawWidget = editors.getWidget();
+            Object rawWidget = editors.getWidget();
             if (rawWidget instanceof Control) {
                 Control control = (Control) rawWidget;
                 Rectangle bounds = control.getBounds();

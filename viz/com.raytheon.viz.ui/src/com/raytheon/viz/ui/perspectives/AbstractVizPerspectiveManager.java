@@ -638,13 +638,13 @@ public abstract class AbstractVizPerspectiveManager
 
     private void activateDialogs() {
         for (IPerspectiveSpecificDialog dialog : perspectiveDialogs) {
-            dialog.restore();
+            dialog.restore(true);
         }
     }
 
     private void deactivateDialogs() {
         for (IPerspectiveSpecificDialog dialog : perspectiveDialogs) {
-            dialog.hide();
+            dialog.hide(true);
         }
     }
 

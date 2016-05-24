@@ -5,6 +5,7 @@ Bundle-SymbolicName: com.raytheon.viz.alerts;singleton:=true
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.core.runtime,
+ org.eclipse.ui,
  com.raytheon.viz.core,
  javax.jms;bundle-version="1.0.0"
 Bundle-ActivationPolicy: lazy
