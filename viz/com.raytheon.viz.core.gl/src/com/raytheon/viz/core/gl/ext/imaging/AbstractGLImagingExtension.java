@@ -65,6 +65,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 07, 2014  3119     bsteffen    Switched simple PixelCoverage mesh 
  *                                    rendering to use gl directly instead of
  *                                    GLGeometryObject2D
+ * May 19, 2016  5452     bsteffen    Enable show mesh lines with a system
+ *                                    property.
  * 
  * </pre>
  * 
@@ -78,6 +80,9 @@ public abstract class AbstractGLImagingExtension extends
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGLImagingExtension.class);
 
+    public static final boolean SHOW_MESH_LINES = Boolean
+            .getBoolean("showMeshLines");
+    
     /*
      * (non-Javadoc)
      * 
@@ -193,7 +198,7 @@ public abstract class AbstractGLImagingExtension extends
                     postImageRender(paintProps, glImage, dataObj);
 
                     // Enable if you want to see mesh drawn
-                    if (false) {
+                    if (SHOW_MESH_LINES) {
                         if (program != null) {
                             program.endShader();
                         }
