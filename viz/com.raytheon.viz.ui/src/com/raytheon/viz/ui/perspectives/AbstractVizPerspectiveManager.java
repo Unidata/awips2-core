@@ -473,13 +473,13 @@ public abstract class AbstractVizPerspectiveManager implements
 
     private void activateDialogs() {
         for (IPerspectiveSpecificDialog dialog : perspectiveDialogs) {
-            dialog.restore();
+            dialog.restore(true);
         }
     }
 
     private void deactivateDialogs() {
         for (IPerspectiveSpecificDialog dialog : perspectiveDialogs) {
-            dialog.hide();
+            dialog.hide(true);
         }
     }
 
@@ -627,6 +627,7 @@ public abstract class AbstractVizPerspectiveManager implements
         final String msg = getLowMemoryMessage(availMemory);
         final boolean[] status = new boolean[1];
         VizApp.runSync(new Runnable() {
+            @Override
             public void run() {
                 Display display = Display.getDefault();
                 status[0] = MessageDialog.open(MessageDialog.WARNING,

@@ -21,10 +21,8 @@
 package com.raytheon.uf.edex.core;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
-import java.util.TimeZone;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,6 +34,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
 import com.raytheon.uf.common.message.StatusMessage;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.core.exception.ShutdownException;
 
@@ -57,6 +56,7 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * Jul 16, 2014 2914        garmendariz Remove EnvProperties
  * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
  * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
+ * Apr 25, 2016 5604        rjpeter     Updated checkPersistenceTimes to utilize same object for each call.
  * </pre>
  * 
  * @author chammack
@@ -248,14 +248,15 @@ public class EDEXUtil implements ApplicationContextAware {
     }
 
     public static void checkPersistenceTimes(PluginDataObject[] pdos) {
+        Date curTime = new Date();
+
         for (PluginDataObject record : pdos) {
             if (record instanceof IPersistable) {
                 if (((IPersistable) record).getPersistenceTime() == null) {
-                    ((IPersistable) record).setPersistenceTime(new Date());
+                    ((IPersistable) record).setPersistenceTime(curTime);
                 }
             } else {
-                record.setInsertTime(Calendar.getInstance(TimeZone
-                        .getTimeZone("GMT")));
+                record.setInsertTime(TimeUtil.newGmtCalendar(curTime));
             }
         }
     }
