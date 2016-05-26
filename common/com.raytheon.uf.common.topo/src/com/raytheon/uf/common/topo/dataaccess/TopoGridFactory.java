@@ -21,6 +21,7 @@ package com.raytheon.uf.common.topo.dataaccess;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -35,6 +36,7 @@ import org.opengis.referencing.operation.TransformException;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
+import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
 import com.raytheon.uf.common.dataaccess.exception.ResponseTooLargeException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
@@ -57,26 +59,47 @@ import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * Grid data access factory for Topographic data.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2015 4608       nabowle     Initial creation
- *
+ * May 26, 2016 5587       tgurney     Support getIdentifierValues()
+ * 
  * </pre>
- *
+ * 
  * @author nabowle
- * @version 1.0
  */
 
 public class TopoGridFactory extends AbstractDataFactory {
 
     private static final String TOPO_FILE = "topoFile";
+
     private static final String DATASET = "dataset";
+
     private static final String GROUP = "group";
+
+    /**
+     * All available topo hdf5 files. These are hardcoded because it is not
+     * possible to dynamically list all available topo hdf5 files; they may
+     * exist on a different system and no API is provided to list them
+     */
+    private static final String[] TOPO_FILENAMES = { "defaultTopo",
+            "gmted2010", "gtopo30", "modelStaticTopo", "srtm30", "srtm30_plus",
+            "staticTopo" };
+
+    /*
+     * The below two arrays could be generated dynamically, but since all topo
+     * files have the same groups and datasets it is not strictly necessary
+     */
+    private static final String[] GROUP_NAMES = { "/", "/interpolated" };
+
+    private static final String[] DATASET_NAMES = { "/full", "/interpolated/1",
+            "/interpolated/2", "/interpolated/3", "/interpolated/4",
+            "/interpolated/5" };
 
     /**
      * Constructor.
@@ -97,6 +120,7 @@ public class TopoGridFactory extends AbstractDataFactory {
         return getGridData(request);
     }
 
+    @Override
     public void validateRequest(IDataRequest request) {
         validateRequest(request, false);
 
@@ -118,7 +142,7 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     /**
      * Executes the provided DbQueryRequest and returns an array of IGridData
-     *
+     * 
      * @param request
      *            the original grid request
      * @return an array of IGridData
@@ -197,7 +221,7 @@ public class TopoGridFactory extends AbstractDataFactory {
      * Checks the response size. If the estimated response size is too large, a
      * {@link ResponseTooLargeException} is thrown. If it's not too large,
      * nothing happens.
-     *
+     * 
      * @param width
      *            The width of the grid envelope requested.
      * @param height
@@ -223,11 +247,11 @@ public class TopoGridFactory extends AbstractDataFactory {
         return attributes;
     }
 
-
     /**
      * Creates the GridGeometry2D for the returned record.
-     *
-     * @param gridGeom The grid geometry from the req
+     * 
+     * @param gridGeom
+     *            The grid geometry from the req
      * @param topoCrs
      * @param minX
      * @param minY
@@ -247,7 +271,7 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     /**
      * Get the topo file. If no topo file is specified, use defaultTopo.h5
-     *
+     * 
      * @param identifiers
      *            The request identifiers.
      * @return The topo file to use.
@@ -260,6 +284,23 @@ public class TopoGridFactory extends AbstractDataFactory {
             topofile = topofile.trim() + ".h5";
         }
         return topofile;
+    }
+
+    @Override
+    public String[] getIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        String[] idValuesResult = null;
+        if (identifierKey.equals(TOPO_FILE)) {
+            idValuesResult = TOPO_FILENAMES;
+        } else if (identifierKey.equals(GROUP)) {
+            idValuesResult = GROUP_NAMES;
+        } else if (identifierKey.equals(DATASET)) {
+            idValuesResult = DATASET_NAMES;
+        } else {
+            throw new InvalidIdentifiersException(request.getDatatype(), null,
+                    Arrays.asList(new String[] { identifierKey }));
+        }
+        return idValuesResult;
     }
 
     // Unsupported methods.
@@ -284,4 +325,5 @@ public class TopoGridFactory extends AbstractDataFactory {
                 request.getDatatype()
                         + " data requests do not support getting available location names.");
     }
+
 }
