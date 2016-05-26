@@ -43,8 +43,7 @@ import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * Abstracts the retrieval of geometry data by running queries directly against
- * the database. Maybe this class could also be further abstracted and extended
- * to Grid data types?
+ * the database.
  * 
  * <pre>
  * 
@@ -73,10 +72,11 @@ import com.vividsolutions.jts.geom.Geometry;
  * Apr 22, 2016  5596     tgurney     Fix getAvailableParameters() with
  *                                    unqualified table name
  * Apr 26, 2016  5587     tgurney     Support getIdentifierValues()
+ * May 26, 2016  5587     njensen     assembleGetColumnValues() no longer allows nulls
+ * 
  * </pre>
  * 
  * @author bkowal
- * @version 1.0
  */
 
 public abstract class AbstractGeometryDatabaseFactory extends
@@ -380,7 +380,8 @@ public abstract class AbstractGeometryDatabaseFactory extends
      * @return the query
      */
     protected String assembleGetColumnValues(String tableName, String columnName) {
-        return String.format("select distinct %1$s from %2$s order by %1$s;",
+        return String
+                .format("select distinct %1$s from %2$s where %1$s is not null order by %1$s;",
                 columnName, tableName);
     }
 

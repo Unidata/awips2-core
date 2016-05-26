@@ -44,12 +44,12 @@ import com.vividsolutions.jts.io.WKBReader;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 24, 2015  #4585     dgilling     Initial creation
+ * Jun 24, 2015  #4585     dgilling    Initial creation
+ * May 26, 2016   5587     njensen     Added assembleGetIdentifierValues()
  * 
  * </pre>
  * 
  * @author dgilling
- * @version 1.0
  */
 
 public class StationGeometryTimeAgnosticDatabaseFactory extends
@@ -86,26 +86,11 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
         this.locationColumn = locationColumn;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.dataaccess.impl.
-     * AbstractGeometryTimeAgnosticDatabaseFactory
-     * #assembleGetData(com.raytheon.uf.common.dataaccess.IDataRequest)
-     */
     @Override
     protected String assembleGetData(IDataRequest request) {
         return assembleQuery(request, true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.impl.AbstractGeometryDatabaseFactory
-     * #assembleGetAvailableLocationNames
-     * (com.raytheon.uf.common.dataaccess.IDataRequest)
-     */
     @Override
     protected String assembleGetAvailableLocationNames(IDataRequest request) {
         return assembleQuery(request, false);
@@ -117,13 +102,6 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
                 geometryColumn);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.dataaccess.impl.AbstractGeometryDatabaseFactory
-     * #makeGeometry(java.lang.Object[], java.lang.String[], java.util.Map)
-     */
     @Override
     protected IGeometryData makeGeometry(Object[] data, String[] paramNames,
             Map<String, Object> attrs) {
@@ -251,5 +229,11 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
                 env.getMinX(), env.getMinY(), env.getMaxX(), env.getMaxY()));
         constraint.append(", 4326)");
         return constraint.toString();
+    }
+
+    @Override
+    protected String assembleGetIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        return assembleGetColumnValues(tableName, identifierKey);
     }
 }
