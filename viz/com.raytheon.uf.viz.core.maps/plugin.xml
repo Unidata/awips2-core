@@ -115,7 +115,7 @@
       	  </classContext>
    </extension>
    <extension
-         point="com.raytheon.uf.viz.localization.localizationpath">
+         point="com.raytheon.uf.viz.localization.perspective.localizationpath">
       <path
             application="CAVE"
             localizationType="CAVE_STATIC"
