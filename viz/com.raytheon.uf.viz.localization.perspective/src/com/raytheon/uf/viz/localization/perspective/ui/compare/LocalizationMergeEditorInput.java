@@ -99,8 +99,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
     private boolean isRefreshing = false;
 
     public LocalizationMergeEditorInput(LocalizationEditorInput input,
-            FileEditorInput local, FileEditorInput remote,
-            String serverFileChecksum) {
+            FileEditorInput local, FileEditorInput remote, String serverFileChecksum) {
         super(new CompareConfiguration());
         this.setTitle("Merge (" + input.getName() + ")");
 
@@ -261,20 +260,22 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             // Clear value so it's recalculated
             changesChecksum = null;
 
-            // Flush changes from the viewer into the node
-            parent.flushLeftViewers(monitor);
-
             try {
-                if (validateAndPerformSave(monitor)) {
-                    // Successfully saved to server, update serverFileChecksum
-                    parent.serverFileChecksum = getChangesChecksum();
-                    mergeResolved = true;
-                    /*
-                     * This is normally automatically handled, but if save is
-                     * selected before changing anything when the merge editor
-                     * is opened, it will incorrectly stay dirty
-                     */
-                    parent.setLeftDirty(false);
+                if (validateSave(monitor)) {
+                    // Flush changes from the viewer into the node
+                    parent.flushLeftViewers(monitor);
+
+                    if (performSave(monitor)) {
+                        // Successfully saved to server, update serverChecksum
+                        parent.serverFileChecksum = getChangesChecksum();
+                        mergeResolved = true;
+                        /*
+                         * This is normally automatically handled, but if save
+                         * is selected before changing anything when the merge
+                         * editor is opened, it will incorrectly stay dirty
+                         */
+                        parent.setLeftDirty(false);
+                    }
                 }
             } catch (LocalizationFileVersionConflictException e) {
                 handleAnotherMergeConflict(monitor);
@@ -285,13 +286,13 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         protected boolean validateSave(IProgressMonitor monitor) {
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationFile inputLocFile = input.getLocalizationFile();
-            String serverChecksum = pm.getLocalizationFile(
+            String latestServerFileChecksum = pm.getLocalizationFile(
                     inputLocFile.getContext(), inputLocFile.getPath())
                     .getCheckSum();
-            if (!serverChecksum.equals(parent.serverFileChecksum)) {
+            if (!latestServerFileChecksum.equals(parent.serverFileChecksum)) {
                 // New merge conflict
                 mergeResolved = false;
-                if (!serverChecksum.equals(getChangesChecksum())) {
+                if (!latestServerFileChecksum.equals(getChangesChecksum())) {
                     handleAnotherMergeConflict(monitor);
                     return false;
                 }

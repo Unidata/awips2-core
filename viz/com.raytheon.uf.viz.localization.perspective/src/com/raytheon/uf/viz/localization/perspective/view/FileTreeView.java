@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.localization.perspective.view;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.URL;
 import java.nio.file.Paths;
 import java.util.ArrayList;
@@ -87,6 +88,7 @@ import org.eclipse.ui.IWorkbenchPartReference;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
 
+import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationFile;
@@ -152,7 +154,8 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Apr 14, 2016 4946       mapeters    Fix duplicate files listed in delete confirmation dialog
  *                                     improved tree's double-click handling
  * Apr 21, 2016 5214       mapeters    Fix incorrect ordering of files in multiple localization levels
- * May 23, 2016 4907       mapeters    Changed resourceChanged exception handling from warn to error
+ * May 23, 2016 4907       mapeters    Updates to resourceChanged(): changed exception handling from warn
+ *                                     to error, no need to save if local file matches remote
  * 
  * </pre>
  * 
@@ -1560,25 +1563,50 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     if ((docDelta != null)
                             && (docDelta.getKind() == IResourceDelta.CHANGED)
                             && ((docDelta.getFlags() & IResourceDelta.CONTENT) == IResourceDelta.CONTENT)) {
-                        try {
-                            ILocalizationFile file = input
-                                    .getLocalizationFile();
-                            /*
-                             * TODO can't easily replace the deprecated save()
-                             * call because if we use openOutputStream() it will
-                             * overwrite the file contents
-                             */
-                            if (!file.getContext().getLocalizationLevel()
-                                    .isSystemLevel()
-                                    && input.getLocalizationFile().save()) {
-                                input.refreshLocalizationFile();
-                            }
+                        LocalizationFile file = input.getLocalizationFile();
+                        if (!file.getContext().getLocalizationLevel()
+                                .isSystemLevel()) {
+                            try {
+                                boolean noChange = false;
+                                try {
+                                    String localChecksum = Checksum
+                                            .getMD5Checksum(file.getFile(false));
+                                    IPathManager pm = PathManagerFactory
+                                            .getPathManager();
+                                    String remoteChecksum = pm
+                                            .getLocalizationFile(
+                                                    file.getContext(),
+                                                    file.getPath())
+                                            .getCheckSum();
+                                    noChange = localChecksum
+                                            .equals(remoteChecksum);
+                                } catch (IOException e) {
+                                    statusHandler.handle(Priority.PROBLEM,
+                                            "Error calculating checksum of local file: "
+                                                    + e.getLocalizedMessage(),
+                                            e);
+                                }
+                                /*
+                                 * No need to save if local file matches server
+                                 * file (prevents incorrect file version
+                                 * conflict when we are simply re-syncing with
+                                 * the local file system)
+                                 * 
+                                 * TODO can't easily replace the deprecated
+                                 * save() call because if we use
+                                 * openOutputStream() it will overwrite the file
+                                 * contents
+                                 */
+                                if (noChange || file.save()) {
+                                    input.refreshLocalizationFile();
+                                }
 
-                        } catch (LocalizationException e) {
-                            statusHandler.handle(
-                                    Priority.ERROR,
-                                    "Error saving file: "
-                                            + e.getLocalizedMessage(), e);
+                            } catch (LocalizationException e) {
+                                statusHandler.handle(
+                                        Priority.ERROR,
+                                        "Error saving file: "
+                                                + e.getLocalizedMessage(), e);
+                            }
                         }
                     }
                 }

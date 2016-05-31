@@ -78,19 +78,16 @@ public abstract class AbstractLocalizationSaveable extends Saveable {
     protected abstract boolean validateSave(IProgressMonitor monitor);
 
     /**
-     * Validate that we are able to save, and save the editor contents.
+     * Save the editor contents. Note that {@link #validateSave()} should be
+     * called first to ensure we are able to save.
      * 
      * @param monitor
      * @return true if the contents are successfully saved, false otherwise
      * @throws LocalizationFileVersionConflictException
      *             if the server file has been changed by another user
      */
-    protected boolean validateAndPerformSave(IProgressMonitor monitor)
+    protected boolean performSave(IProgressMonitor monitor)
             throws LocalizationFileVersionConflictException {
-        if (!validateSave(monitor)) {
-            return false;
-        }
-
         boolean success = false;
 
         // write node contents to the localization file

@@ -143,15 +143,16 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
 
         @Override
         public void doSave(IProgressMonitor monitor) throws CoreException {
-            // flush changes from the viewer into the node
-            if (left) {
-                parent.flushLeftViewers(monitor);
-            } else {
-                parent.flushRightViewers(monitor);
-            }
-
             try {
-                validateAndPerformSave(monitor);
+                if (validateSave(monitor)) {
+                    // Flush changes from the viewer into the node
+                    if (left) {
+                        parent.flushLeftViewers(monitor);
+                    } else {
+                        parent.flushRightViewers(monitor);
+                    }
+                    performSave(monitor);
+                }
             } catch (LocalizationFileVersionConflictException e) {
                 IDocument doc = CompareUI.getDocument(node);
                 new ResolveFileVersionConflictAction(input, doc, null).run();
