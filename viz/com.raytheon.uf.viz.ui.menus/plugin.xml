@@ -4,7 +4,7 @@
    <extension-point id="tearoffperspective" name="tearoffperspective" schema="schema/tearoffperspective.exsd"/>
    <extension-point id="com.raytheon.uf.viz.ui.menus.contribItemProvider" name="contribItemProvider" schema="schema/com.raytheon.uf.viz.ui.menus.contribItemProvider.exsd"/>
    <extension
-         point="com.raytheon.uf.viz.localization.localizationpath">
+         point="com.raytheon.uf.viz.localization.perspective.localizationpath">
       <path
             application="CAVE"
             localizationType="CAVE_STATIC,COMMON_STATIC"

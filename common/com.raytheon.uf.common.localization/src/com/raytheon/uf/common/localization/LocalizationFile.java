@@ -37,7 +37,8 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 
 /**
- * Represents a file in the localization service.<BR>
+ * Represents a file in the localization service. See the interface
+ * {@link ILocalizationFile} for more information.<BR>
  * <BR>
  * A LocalizationFile cannot be constructed directly, it must be obtained using
  * the PathManager. PathManager should ensure that only one reference to a
@@ -98,7 +99,6 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public final class LocalizationFile implements Comparable<LocalizationFile>,
@@ -176,9 +176,10 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     }
 
     /**
-     * This returns the check sum of the file where it is stored
+     * This returns the check sum of this instance of the file
      * 
-     * @return the file check sum, may be null if file doesn't exist yet
+     * @return the file check sum, may be {@value #NON_EXISTENT_CHECKSUM} or
+     *         {@value #DIRECTORY_CHECKSUM}
      */
     @Override
     public final String getCheckSum() {
@@ -188,8 +189,8 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Return a local file pointer that can be used to interact with the data in
      * the file. This method is NOT recommended for use in reading/writing to
-     * the file. The methods openInputStream and openOutputStream should be used
-     * to safely read/write to the file.
+     * the file. The methods openInputStream() and openOutputStream() should be
+     * used to safely read/write to the file.
      * 
      * <BR>
      * Prior to calling this method, the file is not guaranteed to exist on the
@@ -198,9 +199,13 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * 
      * @deprecated Please use openInputStream() for retrieving the file
      *             contents, openOutputStream() for saving new file contents,
-     *             and the interface getters for getting metadata. If the
-     *             localization file represents a directory, continue to use
-     *             this method for the time being.
+     *             and the {@link ILocalizationFile} interface getters for
+     *             getting metadata. <strong>If the localization file represents
+     *             a directory</strong>, continue to use this method for the
+     *             time being. <strong>If you aren't sure how to replace the
+     *             call to this method</strong>, continue to use this method for
+     *             the time being.
+     * 
      * 
      * @param retrieveFile
      *            a flag that specifies whether the file should be downloaded if
@@ -233,19 +238,26 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     }
 
     /**
-     * This method is not recommended for use, use openInputStream() for reading
-     * the LocalizationFile and openOutputStream() for writing to the
-     * LocalizationFile. ALWAYS close() the streams when done reading/writing as
-     * those methods will auto lock the file. If must use this method, call
-     * FileLocker.lock/unlock when using the file.
+     * Return a local file pointer that can be used to interact with the data in
+     * the file. This method is NOT recommended for use in reading/writing to
+     * the file. The methods openInputStream() and openOutputStream() should be
+     * used to safely read/write to the file.
+     * 
+     * <BR>
+     * Prior to calling this method, the file is not guaranteed to exist on the
+     * local filesystem. Note that in some cases (e.g. when creating a file),
+     * the File returned may not actually exist.
      * 
      * @deprecated Please use openInputStream() for retrieving the file
      *             contents, openOutputStream() for saving new file contents,
-     *             and the interface getters for getting metadata. If the
-     *             localization file represents a directory, continue to use
-     *             this method for the time being.
+     *             and the {@link ILocalizationFile} interface getters for
+     *             getting metadata. <strong>If the localization file represents
+     *             a directory</strong>, continue to use this method for the
+     *             time being. <strong>If you aren't sure how to replace the
+     *             call to this method</strong>, continue to use this method for
+     *             the time being.
      * 
-     * @return File pointer
+     * @return the file
      */
     @Deprecated
     public File getFile() {
@@ -259,11 +271,11 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /*
      * TODO: Come up with a way to get all the files (potentially recursive) in
      * a directory without using getFile(). At the time of this comment writing
-     * (2015), getFile() on a directory is retrieving all the files within the
-     * directory. This is used for a lot of directories that are added to a
-     * python sub-interpreter's sys.path for importing modules. Therefore the
-     * files inside the directory need to be in some kind of environment or
-     * virtual environment that python can import them from, and
+     * (Nov-Dec 2015), getFile() on a directory is retrieving all the files
+     * within the directory. This is used for a lot of directories that are
+     * added to a python sub-interpreter's sys.path for importing modules.
+     * Therefore the files inside the directory need to be in some kind of
+     * environment or virtual environment that python can import them from, and
      * openInputStream() can't handle that at present.
      */
 
@@ -337,7 +349,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     }
 
     /**
-     * Creates an OutputStream for the LocalizationFile
+     * Creates an OutputStream for the LocalizationFile. NOTE: You MUST call
+     * SaveableOutputStream.save() before closing the file to save the file to
+     * the localization service.
      * 
      * @return the OutputStream to be used for writing to the file
      * @throws LocalizationException
@@ -348,7 +362,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     }
 
     /**
-     * Creates an OutputStream for the LocalizationFile
+     * Creates an OutputStream for the LocalizationFile. NOTE: You MUST call
+     * SaveableOutputStream.save() before closing the file to save the file to
+     * the localization service.
      * 
      * @deprecated Appending will not be supported in the future.
      * 
@@ -371,7 +387,9 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * Writes the data to the underlying file. Also persists the file back to
      * the localization store.
      * 
-     * @deprecated Please use openOutputStream to write out contents.
+     * @deprecated Please use openOutputStream() to get a SaveableOutputStream
+     *             and then call the SaveableOutputStream.save() method after
+     *             writing out the contents to the stream.
      * 
      * @param bytes
      * @throws LocalizationException
@@ -450,8 +468,8 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * Save the file back to the localization store
      * 
      * @deprecated Please use openOutputStream() to get a SaveableOutputStream
-     *             and then call the output stream's save() method after writing
-     *             out the contents to the stream.
+     *             and then call the SaveableOutputStream.save() method after
+     *             writing out the contents to the stream.
      * 
      * 
      * @throws LocalizationException
@@ -532,7 +550,12 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     }
 
     /**
-     * Add an observer on the LocalizationFile
+     * Add an observer on the LocalizationFile.
+     * 
+     * @deprecated Please use IPathManager.addLocalizationPathObserver()
+     *             instead. Note that the listening behavior will be different
+     *             in that the IPathManager observer will observe all changes to
+     *             the file regardless of the context.
      * 
      * @param observer
      */
@@ -557,6 +580,10 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Remove the observer as a listener on the file
      * 
+     * @deprecated Please see the deprecation comments on
+     *             addFileUpdatedObserver() and use the corresponding
+     *             IPathManager method for removal.
+     * 
      * @param observer
      */
     @Deprecated
@@ -575,8 +602,10 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      * Returns the object version of this jaxb serialized file. Returns null if
      * the file does not exist or is empty.
      * 
-     * @deprecated Please use openInputStream() to read in your object, or if
-     *             you must have convenience, use LocalizationXmlUtil
+     * @deprecated Please use
+     *             <code>JAXBManager.unmarshalFromInputStream(Class<T>,
+     *             LocalizationFile.openInputStream());</code> to read in your
+     *             object.
      * 
      * @param resultClass
      * @param manager
@@ -592,8 +621,11 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     /**
      * Marshal the specified object into this file.
      * 
-     * @deprecated Please use openOutputStream() to write out your object, or if
-     *             you must have convenience, use LocalizationXmlUtil
+     * @deprecated Please use <code>JAXBManager.marshalToOutputStream(Object,
+     *             LocalizationFile.openOutputStream()); </code> to write out
+     *             your object. Then call
+     *             <code>SaveableOutputStream.save()</code> on your output
+     *             stream.
      * 
      * @param obj
      *            the object to marshal
@@ -612,7 +644,16 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
         return context + IPathManager.SEPARATOR + path;
     }
 
+    /**
+     * Compares a LocalizationFile, only by the path and ignoring the context.
+     * TODO: Implement this better or make a solid Comparator.
+     * 
+     * @deprecated This implementation is questionable. Try not to use the
+     *             method.
+     * 
+     */
     @Override
+    @Deprecated
     public int compareTo(LocalizationFile o) {
         return getName().compareTo(o.getName());
     }
