@@ -62,13 +62,13 @@ import com.raytheon.uf.common.derivparam.library.LevelType;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- -----------------------------
  * Nov 30, 2015  5072     bsteffen  Initial creation
+ * May 26, 2016  5671     bsteffen  Handle empty map in resolve.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class LevelTypeMap {
 
@@ -117,6 +117,9 @@ public class LevelTypeMap {
      * @return
      */
     public Object resolve() {
+        if (map.isEmpty()) {
+            return null;
+        }
         return map.firstEntry().getValue();
     }
 
