@@ -83,8 +83,10 @@ import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IPartListener2;
 import org.eclipse.ui.IViewSite;
+import org.eclipse.ui.IWindowListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPartReference;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.part.ViewPart;
 
@@ -112,6 +114,7 @@ import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInp
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorUtils;
 import com.raytheon.uf.viz.localization.perspective.service.ILocalizationService;
 import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationCompareEditorInput;
+import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationMergeEditorInput;
 import com.raytheon.uf.viz.localization.perspective.view.actions.CopyToAction;
 import com.raytheon.uf.viz.localization.perspective.view.actions.DeleteAction;
 import com.raytheon.uf.viz.localization.perspective.view.actions.ImportFileAction;
@@ -154,8 +157,8 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Apr 14, 2016 4946       mapeters    Fix duplicate files listed in delete confirmation dialog
  *                                     improved tree's double-click handling
  * Apr 21, 2016 5214       mapeters    Fix incorrect ordering of files in multiple localization levels
- * May 23, 2016 4907       mapeters    Updates to resourceChanged(): changed exception handling from warn
- *                                     to error, no need to save if local file matches remote
+ * May 23, 2016 4907       mapeters    Implement IWindowListener and update partActivated(), don't save 
+ *                                     if local file matches remote,
  * 
  * </pre>
  * 
@@ -163,7 +166,7 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  */
 
 public class FileTreeView extends ViewPart implements IPartListener2,
-        ILocalizationService, IResourceChangeListener,
+        IWindowListener, ILocalizationService, IResourceChangeListener,
         ILocalizationPathObserver {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(FileTreeView.class);
@@ -282,6 +285,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
         site.getPage().addPartListener(this);
 
+        site.getWorkbenchWindow().getWorkbench().addWindowListener(this);
+
         PathManagerFactory.getPathManager().addLocalizationPathObserver(
                 IPathManager.SEPARATOR, this);
 
@@ -310,6 +315,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         }
 
         getSite().getPage().removePartListener(this);
+        getSite().getPage().getWorkbenchWindow().getWorkbench()
+                .removeWindowListener(this);
         PathManagerFactory.getPathManager()
                 .removeLocalizationPathObserver(this);
         ResourcesPlugin.getWorkspace().removeResourceChangeListener(this);
@@ -1569,6 +1576,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                             try {
                                 boolean noChange = false;
                                 try {
+                                    // Check if local changes differ from server
                                     String localChecksum = Checksum
                                             .getMD5Checksum(file.getFile(false));
                                     IPathManager pm = PathManagerFactory
@@ -1600,7 +1608,6 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                 if (noChange || file.save()) {
                                     input.refreshLocalizationFile();
                                 }
-
                             } catch (LocalizationException e) {
                                 statusHandler.handle(
                                         Priority.ERROR,
@@ -1655,7 +1662,22 @@ public class FileTreeView extends ViewPart implements IPartListener2,
     @Override
     public void partActivated(IWorkbenchPartReference partRef) {
         if (partRef instanceof IEditorReference) {
-            selectItem((IEditorReference) partRef);
+            IEditorReference ref = (IEditorReference) partRef;
+
+            selectItem(ref);
+
+            // Check if compare/merge editors are in sync with file system
+            IEditorPart part = ref.getEditor(false);
+            if (part != null) {
+                IEditorInput editorInput = part.getEditorInput();
+                if (editorInput instanceof LocalizationCompareEditorInput) {
+                    ((LocalizationCompareEditorInput) editorInput)
+                            .handlePartActivated();
+                } else if (editorInput instanceof LocalizationMergeEditorInput) {
+                    ((LocalizationMergeEditorInput) editorInput)
+                            .handlePartActivated();
+                }
+            }
         }
     }
 
@@ -1837,5 +1859,27 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 file.getPath(), t, file.getTimeStamp().getTime(),
                 file.getCheckSum());
         fileUpdated(fum);
+    }
+
+    @Override
+    public void windowActivated(IWorkbenchWindow window) {
+        if (window == getSite().getWorkbenchWindow()) {
+            partActivated(getSite().getPage().getActivePartReference());
+        }
+    }
+
+    @Override
+    public void windowDeactivated(IWorkbenchWindow window) {
+        // no-op
+    }
+
+    @Override
+    public void windowClosed(IWorkbenchWindow window) {
+        // no-op
+    }
+
+    @Override
+    public void windowOpened(IWorkbenchWindow window) {
+        // no-op
     }
 }
