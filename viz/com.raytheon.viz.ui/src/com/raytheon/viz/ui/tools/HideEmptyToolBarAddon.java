@@ -25,12 +25,14 @@ import org.eclipse.e4.core.di.annotations.Optional;
 import org.eclipse.e4.ui.di.UIEventTopic;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MTrimBar;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBar;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBarElement;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolBarSeparator;
 import org.eclipse.e4.ui.model.application.ui.menu.MToolItem;
 import org.eclipse.e4.ui.workbench.UIEvents;
+import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.osgi.service.event.Event;
 
 /**
@@ -48,16 +50,20 @@ import org.osgi.service.event.Event;
  * <pre>
  *
  * SOFTWARE HISTORY
- *
+ * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------
+ * ------------- -------- --------- ----------------------------
  * May 11, 2016  5644     bsteffen  Initial creation
- *
+ * Jun 02, 2016  5640     bsteffen  Don't modify part toolbars.
+ * 
  * </pre>
  *
  * @author bsteffen
  */
 public class HideEmptyToolBarAddon {
+
+    @Inject
+    private EModelService modelService;
 
     @Inject
     @Optional
@@ -92,6 +98,24 @@ public class HideEmptyToolBarAddon {
     }
 
     private void updateVisibility(MToolBar toolbar) {
+        if (modelService.getContainer(toolbar) instanceof MPart) {
+            /*
+             * The SWT renderers don't handle toggling part toolbar visibility
+             * correctly(as of eclipse 4.5.1). When the toolbar goes invisible
+             * it is moved to the limbo shell and when it is made visible again
+             * it is reparented onto the CTabFolder of the part stack. This is
+             * wrong, it belongs in the top right composite of the CTabFolder.
+             * This behavior is currently seen when an extension is adding
+             * toolbar items because initially the toolbar is empty and when the
+             * extension is processed it is no longer empty.
+             * 
+             * To work around this bug, simply don't touch the toolbars of
+             * parts. The problems of multiple empty toolbars that this addon is
+             * fixing don't apply to parts because there is only one part
+             * toolbar rendered on the partstack at a time.
+             */
+            return;
+        }
         for (MToolBarElement element : toolbar.getChildren()) {
             if (element instanceof MToolBarSeparator) {
                 continue;
