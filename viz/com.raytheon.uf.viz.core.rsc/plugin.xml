@@ -24,4 +24,21 @@
             </variable>
          </sourceProvider>
    </extension>
+   
+   <extension point="org.eclipse.ui.commands">
+       <command id="com.raytheon.uf.viz.core.rsc.changeLegendMode" name="Change Legend Mode">
+       </command>
+   </extension>
+   
+   <extension point="org.eclipse.ui.bindings"
+                 id="com.raytheon.uf.viz.core.rsc.bindings">
+        <key commandId="com.raytheon.uf.viz.core.rsc.changeLegendMode"
+             contextId="com.raytheon.viz.ui.context" 
+             schemeId="com.raytheon.viz.ui.cave.scheme"
+             sequence="NUMPAD_ENTER">
+        </key>
+              
+   
+   </extension>
+   
 </plugin>
