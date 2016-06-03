@@ -26,7 +26,7 @@ import java.util.Map;
 
 import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.viz.core.gl.dataformat.GLBufferColorMapData;
@@ -42,12 +42,10 @@ import com.raytheon.viz.core.gl.images.GLCMTextureData;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Oct 24, 2013  2492     mschenke  Initial creation
- * Aug 29, 2014  3543     bsteffen  Fixes for NaN unit conversions
- * Nov 05, 2015  5094     bsteffen  Map values between colors instead of on
- *                                  colors
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Oct 24, 2013 2492       mschenke    Initial creation
+ * Aug 29, 2014 3543       bsteffen    Fixes for NaN unit conversions
  * 
  * </pre>
  * 
@@ -214,7 +212,7 @@ public class GLDataMappingFactory {
             refCount += 1;
         }
 
-        private synchronized void initialize() {
+        private synchronized void initialize(GL2 gl) {
             if (initialized) {
                 return;
             }
@@ -227,13 +225,8 @@ public class GLDataMappingFactory {
             if (dataUnit != null && colorMapUnit != null
                     && dataUnit.equals(colorMapUnit) == false
                     && dataUnit.isCompatible(colorMapUnit)) {
-                /*
-                 * Worst case scenario, one more mapping than the number of
-                 * colors. This makes it so that the value directly between each
-                 * pair of colors is calculated so that every color maps to a
-                 * single range.
-                 */
-                double[] colorMapping = new double[colorMapSize + 1];
+                // Worst case scenario, one mapping per color
+                double[] colorMapping = new double[colorMapSize];
                 Arrays.fill(colorMapping, Float.NaN);
                 double[] dataMapping = new double[colorMapping.length];
                 Arrays.fill(dataMapping, Float.NaN);
@@ -294,7 +287,7 @@ public class GLDataMappingFactory {
                 float[] condensedDataMapping = new float[numMappings];
 
                 int index = 0;
-                for (int i = 0; i < colorMapping.length && index < numMappings; ++i) {
+                for (int i = 0; i < colorMapSize && index < numMappings; ++i) {
                     double colorMapVal = colorMapping[i];
                     double dataMapVal = dataMapping[i];
                     if (Double.isNaN(colorMapVal) == false
@@ -338,7 +331,7 @@ public class GLDataMappingFactory {
      * @param colorMapSize
      * @return
      */
-    public static GLDataMapping constructGLDataMapping(GL gl, Unit<?> dataUnit,
+    public static GLDataMapping constructGLDataMapping(GL2 gl, Unit<?> dataUnit,
             Unit<?> colorMapUnit, float colorMapMin, float colorMapMax,
             int colorMapSize) {
         GLDataMapping mapping;
@@ -353,7 +346,7 @@ public class GLDataMappingFactory {
                 mapping.use();
             }
         }
-        mapping.initialize();
+        mapping.initialize(gl);
         return mapping;
     }
 

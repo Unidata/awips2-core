@@ -175,10 +175,10 @@
          version="0.0.0"/>
 
    <plugin
-         id="javax.media.opengl"
+         id="com.jogamp.jogl"
          download-size="0"
          install-size="0"
-         version="1.1.1"/>
+         version="2.3.2"/>
 
    <plugin
          id="javax.media.opengl.linux64"

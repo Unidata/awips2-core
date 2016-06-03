@@ -20,7 +20,7 @@
 
 package com.raytheon.viz.core.gl.internal.cache;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.util.cache.LRUCache;
 import com.raytheon.uf.viz.core.Activator;
@@ -133,7 +133,7 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
         } else if (this == textureCache) {
             new GLDisposer() {
                 @Override
-                protected void dispose(GL gl) {
+                protected void dispose(GL2 gl) {
                     i.disposeTexture();
                 }
             }.dispose();

@@ -19,8 +19,8 @@
  **/
 package com.raytheon.viz.core.gl.images;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.GLU;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.drawables.IImage;
@@ -30,7 +30,7 @@ import com.raytheon.viz.core.gl.GLContextBridge;
 import com.raytheon.viz.core.gl.internal.GLTarget;
 import com.raytheon.viz.core.gl.objects.GLFrameBufferObject;
 import com.raytheon.viz.core.gl.objects.GLRenderBuffer;
-import com.sun.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureCoords;
 
 /**
  * 
@@ -121,7 +121,7 @@ public abstract class AbstractGLImage implements IImage {
     public void target(IGraphicsTarget target) throws VizException {
         // TextureLoaderJob.getInstance().requestLoadIntoTexture(this, ctx);
         GLContextBridge.makeMasterContextCurrent();
-        this.loadTexture(GLU.getCurrentGL());
+        this.loadTexture(GLU.getCurrentGL().getGL2());
         GLContextBridge.releaseMasterContext();
     }
 
@@ -178,7 +178,7 @@ public abstract class AbstractGLImage implements IImage {
     }
 
     public void usaAsFrameBuffer() throws VizException {
-        GL gl = GLU.getCurrentGL();
+        GL2 gl = GLU.getCurrentGL().getGL2();
         if (fbo == null || fbo.isValid() == false) {
             gl.glBindTexture(getTextureStorageType(), 0);
 
@@ -186,29 +186,29 @@ public abstract class AbstractGLImage implements IImage {
             if (fbo.isValid()) {
                 fbo.bind(gl);
                 if ((rbuf == null || rbuf.isValid() == false)
-                        && gl.glIsEnabled(GL.GL_DEPTH_TEST)) {
+                        && gl.glIsEnabled(GL2.GL_DEPTH_TEST)) {
                     // Generate and bind a render buffer for the depth component
                     rbuf = new GLRenderBuffer(this);
                     rbuf.bind(gl);
-                    rbuf.createStorage(gl, GL.GL_DEPTH_COMPONENT, getWidth(),
+                    rbuf.createStorage(gl, GL2.GL_DEPTH_COMPONENT, getWidth(),
                             getHeight());
-                    gl.glBindRenderbufferEXT(GL.GL_RENDERBUFFER_EXT, 0);
+                    gl.glBindRenderbuffer(GL2.GL_RENDERBUFFER, 0);
 
                     // Attach render buffer to depth of fbo
-                    gl.glFramebufferRenderbufferEXT(GL.GL_FRAMEBUFFER_EXT,
-                            GL.GL_DEPTH_ATTACHMENT_EXT, GL.GL_RENDERBUFFER_EXT,
+                    gl.glFramebufferRenderbuffer(GL2.GL_FRAMEBUFFER,
+                            GL2.GL_DEPTH_ATTACHMENT, GL2.GL_RENDERBUFFER,
                             rbuf.getId());
                 }
 
                 // Attach texture to color attachement on fbo
-                gl.glFramebufferTexture2DEXT(GL.GL_FRAMEBUFFER_EXT,
-                        GL.GL_COLOR_ATTACHMENT0_EXT, getTextureStorageType(),
+                gl.glFramebufferTexture2D(GL2.GL_FRAMEBUFFER,
+                        GL2.GL_COLOR_ATTACHMENT0, getTextureStorageType(),
                         getTextureid(), 0);
                 String errorMessage = fbo.checkStatus(gl);
 
                 // use the window buffer
                 if (errorMessage != null) {
-                    gl.glBindFramebufferEXT(GL.GL_FRAMEBUFFER_EXT, 0);
+                    gl.glBindFramebuffer(GL2.GL_FRAMEBUFFER, 0);
                     if (fbo != null) {
                         fbo.dispose();
                         fbo = null;
@@ -228,9 +228,9 @@ public abstract class AbstractGLImage implements IImage {
         }
         setClearColor(gl);
         if (rbuf != null && rbuf.isValid()) {
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT | GL.GL_DEPTH_BUFFER_BIT);
+            gl.glClear(GL2.GL_COLOR_BUFFER_BIT | GL2.GL_DEPTH_BUFFER_BIT);
         } else {
-            gl.glClear(GL.GL_COLOR_BUFFER_BIT);
+            gl.glClear(GL2.GL_COLOR_BUFFER_BIT);
         }
     }
 
@@ -261,11 +261,11 @@ public abstract class AbstractGLImage implements IImage {
      * 
      * @return
      */
-    public boolean bind(GL gl) {
-        return bind(gl, GL.GL_TEXTURE0);
+    public boolean bind(GL2 gl) {
+        return bind(gl, GL2.GL_TEXTURE0);
     }
 
-    public boolean bind(GL gl, int texture) {
+    public boolean bind(GL2 gl, int texture) {
         int texId = getTextureid();
         if (texId > 0) {
             int textureType = getTextureStorageType();
@@ -274,15 +274,15 @@ public abstract class AbstractGLImage implements IImage {
 
             // Apply interpolation
             if (isInterpolated()) {
-                gl.glTexParameteri(textureType, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_LINEAR);
-                gl.glTexParameteri(textureType, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_LINEAR);
+                gl.glTexParameteri(textureType, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_LINEAR);
+                gl.glTexParameteri(textureType, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_LINEAR);
             } else {
-                gl.glTexParameteri(textureType, GL.GL_TEXTURE_MIN_FILTER,
-                        GL.GL_NEAREST);
-                gl.glTexParameteri(textureType, GL.GL_TEXTURE_MAG_FILTER,
-                        GL.GL_NEAREST);
+                gl.glTexParameteri(textureType, GL2.GL_TEXTURE_MIN_FILTER,
+                        GL2.GL_NEAREST);
+                gl.glTexParameteri(textureType, GL2.GL_TEXTURE_MAG_FILTER,
+                        GL2.GL_NEAREST);
             }
             return true;
         }
@@ -315,6 +315,6 @@ public abstract class AbstractGLImage implements IImage {
 
     public abstract boolean stageTexture() throws VizException;
 
-    public abstract void loadTexture(GL gl) throws VizException;
+    public abstract void loadTexture(GL2 gl) throws VizException;
 
 }

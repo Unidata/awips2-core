@@ -4,6 +4,6 @@ Bundle-Name: Wxmath
 Bundle-SymbolicName: com.raytheon.uf.common.wxmath
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.wxmath
 Require-Bundle: javax.measure;bundle-version="1.0.0"

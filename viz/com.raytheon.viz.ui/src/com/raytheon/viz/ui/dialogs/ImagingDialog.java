@@ -211,7 +211,7 @@ public class ImagingDialog extends CaveSWTDialog implements
      */
     public ImagingDialog(Shell parentShell, IDisplayPaneContainer initialEditor) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
-        setText("Imaging...");
+        setText("Image Properties");
         this.currentEditor = initialEditor;
 
         // Setup listeners, this is dynamic mode
@@ -222,7 +222,7 @@ public class ImagingDialog extends CaveSWTDialog implements
 
     public ImagingDialog(Shell parentShell, AbstractVizResource<?, ?> rscToEdit) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
-        setText("Imaging...");
+        setText("Image Properties");
         this.rscToEdit = rscToEdit;
     }
 
