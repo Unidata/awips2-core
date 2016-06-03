@@ -25,9 +25,9 @@
                         <resource>
                             <loadProperties>
                                 <capabilities>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                                    <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
                                     <capability xsi:type="labelableCapability" labelField="name" />
-                                    <capability xsi:type="densityCapability" density="0.2"/>
+                                    <capability xsi:type="densityCapability" density="1.5"/>
                                     <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1" />
                                 </capabilities>
                                 <resourceType>PLAN_VIEW</resourceType>

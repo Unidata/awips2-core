@@ -20,24 +20,27 @@
     -->
 <bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#9b9b9b" />
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID"
+                                outlineOn="true" outlineWidth="1" />
+                            <capability xsi:type="pointCapability" pointStyle="NONE" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        opacity="1.0" isVisible="true">
+                    <properties isSystemResource="false" isBlinking="false"
+                        isMapLayer="true" isHoverOn="false" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="lpiResourceData">
-                        <filename>volcanoes.lpi</filename>
-                        <mapName>Volcano Locations</mapName>
+                    <resourceData xsi:type="dbMapResourceData">
+                        <table>mapdata.warngenloc</table>
+                        <mapName>WarnGenLoc</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

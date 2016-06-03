@@ -38,7 +38,7 @@
                     </properties>
                     <resourceData xsi:type="dbMapResourceData">
 						<table>mapdata.cwa</table>
-                        <mapName>County Warning Areas</mapName>
+                        <mapName>Warning Areas</mapName>
                     </resourceData>
                 </resource>
             </descriptor>

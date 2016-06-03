@@ -25,9 +25,9 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability" lineStyle="DOTTED" outlineOn="true"
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#333333" />
+                            <capability xsi:type="colorableCapability" colorAsString="#FFC0CB" />
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
@@ -37,7 +37,7 @@
                     </properties>
 					<resourceData xsi:type="dbMapResourceData">
 						<table>mapdata.artcc</table>
-                        <mapName>ARTCC Areas</mapName>
+                        <mapName>Air Route Traffic Control</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
