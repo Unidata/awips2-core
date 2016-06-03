@@ -60,6 +60,9 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
  * Mar 04, 2015  4217     mapeters    Sort available times.
  * Apr 13, 2016  5379     tgurney     Add getIdentifierValues()
+ * Jun 01, 2016  5587     tgurney     Add new method signatures for
+ *                                    getRequiredIdentifiers() and
+ *                                    getOptionalIdentifiers()
  * 
  * </pre>
  * 
@@ -274,10 +277,24 @@ public class DataAccessLayer {
      * @param datatype
      *            the datatype to find required identifiers for requests
      * @return the identifiers that are required for this datatype's requests
+     * @deprecated use getRequiredIdentifiers(IDataRequest) instead
      */
+    @Deprecated
     public static String[] getRequiredIdentifiers(String datatype) {
         return DataFactoryRegistry.getInstance().getFactory(datatype)
                 .getRequiredIdentifiers();
+    }
+
+    /**
+     * Gets the identifiers that must be put on the specified IDataRequest
+     * 
+     * @param request
+     *            The request to get required identifiers for
+     * @return the identifiers that are required for this datatype's requests
+     */
+    public static String[] getRequiredIdentifiers(IDataRequest request) {
+        return DataFactoryRegistry.getInstance()
+                .getFactory(request.getDatatype()).getRequiredIdentifiers();
     }
 
     /**
@@ -287,10 +304,25 @@ public class DataAccessLayer {
      * @param datatype
      *            the datatype to find all possible identifiers for
      * @return the identifiers that are recognized by requests for this datatype
+     * @deprecated use getOptionalIdentifiers(IDataRequest) instead
      */
+    @Deprecated
     public static String[] getOptionalIdentifiers(String datatype) {
         return DataFactoryRegistry.getInstance().getFactory(datatype)
                 .getOptionalIdentifiers();
+    }
+
+    /**
+     * Gets the optional identifiers that are allowed on the specified
+     * IDataRequest
+     * 
+     * @param request
+     *            the request to find optional identifiers for
+     * @return the optional identifiers that are allowed for this request
+     */
+    public static String[] getOptionalIdentifiers(IDataRequest request) {
+        return DataFactoryRegistry.getInstance()
+                .getFactory(request.getDatatype()).getOptionalIdentifiers();
     }
 
     /**
