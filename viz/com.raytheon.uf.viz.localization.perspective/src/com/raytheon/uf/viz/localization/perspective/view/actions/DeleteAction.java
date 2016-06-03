@@ -45,6 +45,8 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
+import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationCompareEditorInput;
+import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationMergeEditorInput;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 
@@ -66,11 +68,11 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Jan 27, 2016 5054      randerso     Cleaned up SWTMessageBox
  * Mar 25, 2016 5214      mapeters     Support deletion of directories.
  * Apr 12, 2016 4946      mapeters     Fixed issue where action did nothing if prompt == false
+ * Jun 02, 2016 4907      mapeters     Close merge/compare editors of deleted files
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class DeleteAction extends Action {
@@ -86,7 +88,7 @@ public class DeleteAction extends Action {
     /**
      * Map of extensions associated with the key extension.
      */
-    private Map<String, String> associatedExtensions = new HashMap<String, String>();
+    private Map<String, String> associatedExtensions = new HashMap<>();
 
     public DeleteAction(IWorkbenchPage page, LocalizationFile[] toDelete) {
         this(page, toDelete, true);
@@ -177,6 +179,7 @@ public class DeleteAction extends Action {
      * Delete the selected files and all associated file extension variations.
      */
     private void deleteFiles() {
+        List<LocalizationFile> toDeleteList = Arrays.asList(toDelete);
         List<IEditorReference> toClose = new ArrayList<>();
         // check for open editors and close them
         for (IEditorReference ref : page.getEditorReferences()) {
@@ -188,17 +191,27 @@ public class DeleteAction extends Action {
                         "Failed to check if an editor for the deleted "
                                 + "file was open (in order to close it)", e);
             }
+
+            LocalizationEditorInput[] editorInputs = new LocalizationEditorInput[0];
+
             if (input instanceof LocalizationEditorInput) {
-                ILocalizationFile editorFile = ((LocalizationEditorInput) input)
-                        .getLocalizationFile();
-                String editorFilePath = editorFile.getPath();
-                for (ILocalizationFile file : toDelete) {
-                    if ((editorFilePath.equals(file.getPath()))
-                            && editorFile.getContext()
-                                    .equals(file.getContext())) {
-                        toClose.add(ref);
-                        break;
-                    }
+                LocalizationEditorInput editorInput = (LocalizationEditorInput) input;
+                editorInputs = new LocalizationEditorInput[] { editorInput };
+
+            } else if (input instanceof LocalizationMergeEditorInput) {
+                LocalizationMergeEditorInput mergeInput = (LocalizationMergeEditorInput) input;
+                editorInputs = new LocalizationEditorInput[] { mergeInput
+                        .getLocalizationEditorInput() };
+
+            } else if (input instanceof LocalizationCompareEditorInput) {
+                LocalizationCompareEditorInput compareInput = (LocalizationCompareEditorInput) input;
+                editorInputs = compareInput.getEditorInputs();
+            }
+
+            for (LocalizationEditorInput editorInput : editorInputs) {
+                if (toDeleteList.contains(editorInput.getLocalizationFile())) {
+                    toClose.add(ref);
+                    break;
                 }
             }
         }

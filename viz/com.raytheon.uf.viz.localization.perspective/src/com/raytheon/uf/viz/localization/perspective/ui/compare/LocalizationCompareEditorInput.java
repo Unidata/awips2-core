@@ -125,8 +125,8 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
         this.leftNode = new ResourceNode(left.getFile());
         this.rightNode = new ResourceNode(right.getFile());
 
-        leftTimestamp = leftNode.getModificationDate();
-        rightTimestamp = rightNode.getModificationDate();
+        leftTimestamp = getTimestamp(leftNode);
+        rightTimestamp = getTimestamp(rightNode);
 
         List<Saveable> saveablesList = new ArrayList<>();
         if (!leftReadOnly) {
@@ -245,9 +245,9 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
      */
     private static boolean shouldSync(ResourceNode node, long timestamp,
             long lastSyncPromptTimestamp) {
-        long nodeModificationDate = node.getModificationDate();
+        long localFileTimestamp = getTimestamp(node);
 
-        if (lastSyncPromptTimestamp == nodeModificationDate) {
+        if (lastSyncPromptTimestamp == localFileTimestamp) {
             /*
              * Shouldn't sync if nothing has changed since user was last
              * prompted to sync
@@ -260,7 +260,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
          * if file was modified by another editor in this CAVE
          */
         return !node.getResource().isSynchronized(IResource.DEPTH_ZERO)
-                || nodeModificationDate != timestamp;
+                || localFileTimestamp != timestamp;
     }
 
     private boolean shouldSyncLeft() {
@@ -286,9 +286,9 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
          * timestamp, so that we don't reprompt unless the file changes again
          */
         if (left) {
-            leftTimestampAtLastSyncPrompt = leftNode.getModificationDate();
+            leftTimestampAtLastSyncPrompt = getTimestamp(leftNode);
         } else {
-            rightTimestampAtLastSyncPrompt = rightNode.getModificationDate();
+            rightTimestampAtLastSyncPrompt = getTimestamp(rightNode);
         }
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
@@ -297,6 +297,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
         String msg = "The file '" + input.getName()
                 + "' has been changed on the file system. Do you want to "
                 + "replace the editor contents with these changes?";
+
         SWTMessageBox messageDialog = new SWTMessageBox(shell, "File Changed",
                 msg, SWT.YES | SWT.NO | SWT.ICON_QUESTION);
 
@@ -323,10 +324,21 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
      */
     private void updateTimestamp(boolean left) {
         if (left) {
-            leftTimestamp = leftNode.getModificationDate();
+            leftTimestamp = getTimestamp(leftNode);
         } else {
-            rightTimestamp = rightNode.getModificationDate();
+            rightTimestamp = getTimestamp(rightNode);
         }
+    }
+
+    /**
+     * Get the current timestamp of the given node's file on the file system.
+     * 
+     * @param node
+     * @return the local file's timestamp
+     */
+    private static long getTimestamp(ResourceNode node) {
+        // Only actual file's timestamp updates correctly for external changes
+        return node.getResource().getLocation().toFile().lastModified();
     }
 
     @Override
@@ -337,6 +349,15 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
     @Override
     public Saveable[] getActiveSaveables() {
         return getSaveables();
+    }
+
+    /**
+     * Get the inputs for the left and right editors in this compare editor.
+     * 
+     * @return the editor inputs
+     */
+    public LocalizationEditorInput[] getEditorInputs() {
+        return new LocalizationEditorInput[] { leftInput, rightInput };
     }
 
     private static class LocalizationCompareSaveable extends

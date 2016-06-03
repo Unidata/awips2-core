@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.localization.perspective.service;
 
+import org.eclipse.ui.IViewPart;
 import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
@@ -37,11 +38,14 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 02, 2010            mschenke    Initial creation
- * Nov 27, 2013            mschenke    Moved editor based utility methods to 
- *                                     perspective project
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 02, 2010           mschenke  Initial creation
+ * Nov 27, 2013           mschenke  Moved editor based utility methods to
+ *                                  perspective project
+ * Jun 03, 2016  4907     mapeters  Attempt to restore views when getting
+ *                                  service, allow activation of view that
+ *                                  contributes service
  * 
  * </pre>
  * 
@@ -82,12 +86,33 @@ public class LocalizationPerspectiveUtils {
      * @return the localization service or null if none available
      */
     public static ILocalizationService getService(IWorkbenchPage page) {
+        return getService(page, false);
+    }
+
+    /**
+     * Get a localization service object from the specified workbench page
+     * 
+     * @param page
+     *            the page to search
+     * @param activateServicePart
+     *            whether or not the part providing the localization service
+     *            should be activated
+     * @return the localization service or null if none available
+     */
+    private static ILocalizationService getService(IWorkbenchPage page,
+            boolean activateServicePart) {
         if (page != null) {
             for (IViewReference ref : page.getViewReferences()) {
-                ILocalizationService service = (ILocalizationService) ref
-                        .getView(false).getAdapter(ILocalizationService.class);
-                if (service != null) {
-                    return service;
+                IViewPart part = ref.getView(true);
+                if (part != null) {
+                    ILocalizationService service = (ILocalizationService) part
+                            .getAdapter(ILocalizationService.class);
+                    if (service != null) {
+                        if (activateServicePart) {
+                            page.activate(part);
+                        }
+                        return service;
+                    }
                 }
             }
         }
@@ -97,14 +122,15 @@ public class LocalizationPerspectiveUtils {
     /**
      * Function to make the localization perspective active
      * 
-     * @return
+     * @return the localization service or null if none available
      */
     public static ILocalizationService changeToLocalizationPerspective() {
         try {
             IWorkbenchPage page = PlatformUI.getWorkbench().showPerspective(
                     ID_PERSPECTIVE,
                     PlatformUI.getWorkbench().getActiveWorkbenchWindow());
-            return getService(page);
+            // Get the service, activating the part that contributes the service
+            return getService(page, true);
         } catch (WorkbenchException e) {
             statusHandler.handle(Priority.PROBLEM,
                     "Error switching to localization perspective", e);

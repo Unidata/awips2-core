@@ -111,7 +111,8 @@ public class ResolveFileVersionConflictAction extends Action {
     public void run() {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
-        String msg = "This file has been modified by another user. In order "
+        String msg = "The file '" + input.getName()
+                + "' has been modified by another user. In order "
                 + "to save your changes, you must merge them with the latest "
                 + "version of the file.\n\nSelect OK to merge.";
         SWTMessageBox messageDialog = new SWTMessageBox(shell,

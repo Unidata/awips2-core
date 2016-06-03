@@ -131,7 +131,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
         this.input = input;
 
-        timestamp = input.getFile().getLocalTimeStamp();
+        timestamp = getTimestamp();
 
         this.saveables = new Saveable[] { new LocalizationMergeSaveable(this) };
     }
@@ -221,7 +221,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
      */
     public void handlePartActivated() {
         if (shouldSync()) {
-            if (isDirty()) {
+            if (!isDirty()) {
                 // Auto-sync if clean
                 syncLocalWithFileSystem();
             } else {
@@ -239,7 +239,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
          * Store that we prompted the user to sync when the file had this
          * timestamp, so that we don't reprompt unless the file changes again
          */
-        timestampAtLastSyncPrompt = input.getFile().getLocalTimeStamp();
+        timestampAtLastSyncPrompt = getTimestamp();
 
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
@@ -275,8 +275,9 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             // Only support syncing once conflict is resolved
             return false;
         }
-        long localTimestamp = input.getFile().getLocalTimeStamp();
-        if (timestampAtLastSyncPrompt == localTimestamp) {
+
+        long localFileTimestamp = getTimestamp();
+        if (timestampAtLastSyncPrompt == localFileTimestamp) {
             /*
              * Shouldn't sync if nothing has changed since user was last
              * prompted to sync
@@ -289,7 +290,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
          * if file was modified by another editor in this CAVE
          */
         return !input.getFile().isSynchronized(IResource.DEPTH_ZERO)
-                || localTimestamp != timestamp;
+                || localFileTimestamp != timestamp;
     }
 
     /**
@@ -297,7 +298,17 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
      * the file on the file system
      */
     private void updateTimestamp() {
-        timestamp = input.getFile().getLocalTimeStamp();
+        timestamp = getTimestamp();
+    }
+
+    /**
+     * Get the current timestamp of the localization file on the file system.
+     * 
+     * @return the local file's timestamp
+     */
+    private long getTimestamp() {
+        // Only actual file's timestamp updates correctly for external changes
+        return input.getFile().getLocation().toFile().lastModified();
     }
 
     /**
@@ -455,8 +466,10 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         private void handleAnotherMergeConflict(final IProgressMonitor monitor) {
             Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                     .getShell();
-            String msg = "The file has been modified by another user again. "
-                    + "The remote file will be updated to the latest version from the server.";
+            String msg = "The file '"
+                    + input.getName()
+                    + "' has been modified by another user again. The remote "
+                    + "file will be updated to the latest version from the server.";
             SWTMessageBox messageDialog = new SWTMessageBox(shell,
                     "File Version Conflict", msg, SWT.OK | SWT.ICON_WARNING);
 
