@@ -130,7 +130,6 @@ public class ResolveFileVersionConflictAction extends Action {
         });
 
         messageDialog.open();
-
     }
 
     private void resolveFileVersionConflict() {
@@ -151,7 +150,7 @@ public class ResolveFileVersionConflictAction extends Action {
                 CompareUI.openCompareEditor(mergeInput);
             } else {
                 // Refresh the merge editor with the user's changes
-                mergeInput.refresh(doc, null);
+                mergeInput.refreshForNewMergeConflict(doc, null);
 
                 IWorkbenchPage page = PlatformUI.getWorkbench()
                         .getActiveWorkbenchWindow().getActivePage();
