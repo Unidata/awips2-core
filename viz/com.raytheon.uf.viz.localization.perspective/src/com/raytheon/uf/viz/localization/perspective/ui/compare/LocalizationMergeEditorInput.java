@@ -32,6 +32,7 @@ import org.eclipse.compare.CompareEditorInput;
 import org.eclipse.compare.CompareUI;
 import org.eclipse.compare.ResourceNode;
 import org.eclipse.compare.internal.CompareEditor;
+import org.eclipse.compare.structuremergeviewer.DiffNode;
 import org.eclipse.compare.structuremergeviewer.Differencer;
 import org.eclipse.core.resources.IFile;
 import org.eclipse.core.resources.IResource;
@@ -59,6 +60,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationFileVersionConf
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
@@ -96,10 +98,23 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
     private String serverFileChecksum;
 
+    private long timestamp;
+
+    private long timestampAtLastSyncPrompt = -1;
+
     private boolean isRefreshing = false;
 
+    private boolean isClean = false;
+
+    /**
+     * Everything is on UI thread, this is only for async changes to nodes and
+     * refreshing
+     */
+    private final Object LOCK = new Object();
+
     public LocalizationMergeEditorInput(LocalizationEditorInput input,
-            FileEditorInput local, FileEditorInput remote, String serverFileChecksum) {
+            FileEditorInput local, FileEditorInput remote,
+            String serverFileChecksum) {
         super(new CompareConfiguration());
         this.setTitle("Merge (" + input.getName() + ")");
 
@@ -116,14 +131,24 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
         this.input = input;
 
+        timestamp = input.getFile().getLocalTimeStamp();
+
         this.saveables = new Saveable[] { new LocalizationMergeSaveable(this) };
     }
 
     @Override
     protected Object prepareInput(IProgressMonitor pm)
             throws InvocationTargetException, InterruptedException {
-        return new Differencer().findDifferences(false, pm, null, null,
+        Object diffs = new Differencer().findDifferences(false, pm, null, null,
                 leftLocalNode, rightRemoteNode);
+        if (diffs == null) {
+            // Returning null causes diff to not update when refreshing
+            DiffNode diffNode = new DiffNode(Differencer.NO_CHANGE);
+            diffNode.setLeft(leftLocalNode);
+            diffNode.setRight(rightRemoteNode);
+            diffs = diffNode;
+        }
+        return diffs;
     }
 
     /**
@@ -136,51 +161,50 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
      *            editor
      * @param monitor
      */
-    public void refresh(IDocument doc, IProgressMonitor monitor) {
-        // Update the Local tmp file
-        byte[] bytes = doc.get().getBytes();
-        IFile file = (IFile) leftLocalNode.getResource();
-        try {
-            file.setContents(new ByteArrayInputStream(bytes), IResource.FORCE,
-                    null);
-        } catch (CoreException e) {
-            statusHandler.handle(
-                    Priority.PROBLEM,
-                    "Failed to set contents of local file "
-                            + file.getFullPath().toString() + ": "
-                            + e.getLocalizedMessage(), e);
-        }
+    public void refreshForNewMergeConflict(IDocument doc,
+            IProgressMonitor monitor) {
+        synchronized (LOCK) {
+            // Update the Local tmp file
+            leftLocalNode.setContent(doc.get().getBytes());
 
-        // Update the Remote tmp file
-        File tmpRemoteFile = rightRemoteNode.getResource().getLocation()
-                .toFile();
-        IPathManager pm = PathManagerFactory.getPathManager();
-        ILocalizationFile inputLocFile = input.getLocalizationFile();
-        ILocalizationFile latestLocFile = pm.getLocalizationFile(
-                inputLocFile.getContext(), inputLocFile.getPath());
-        try (InputStream is = latestLocFile.openInputStream()) {
-            Files.copy(is, tmpRemoteFile.toPath(),
-                    StandardCopyOption.REPLACE_EXISTING);
-            serverFileChecksum = Checksum.getMD5Checksum(tmpRemoteFile);
-        } catch (IOException | LocalizationException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Failed to update the remote file to the latest version: "
-                            + e.getLocalizedMessage(), e);
-        }
+            // Update the Remote tmp file
+            File tmpRemoteFile = rightRemoteNode.getResource().getLocation()
+                    .toFile();
+            IPathManager pm = PathManagerFactory.getPathManager();
+            ILocalizationFile inputLocFile = input.getLocalizationFile();
+            ILocalizationFile latestLocFile = pm.getLocalizationFile(
+                    inputLocFile.getContext(), inputLocFile.getPath());
+            try (InputStream is = latestLocFile.openInputStream()) {
+                Files.copy(is, tmpRemoteFile.toPath(),
+                        StandardCopyOption.REPLACE_EXISTING);
+                rightRemoteNode.discardBuffer();
+                serverFileChecksum = Checksum.getMD5Checksum(tmpRemoteFile);
+            } catch (IOException | LocalizationException e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to update the remote file to the latest version: "
+                                + e.getLocalizedMessage(), e);
+            }
 
-        // Refresh the editor with the files' new contents
-        performRefresh();
+            // Refresh the editor with the files' new contents
+            performRefresh(false);
+        }
     }
 
     /**
      * Refresh the editor using this input with the updated contents of the tmp
-     * files for the Local and Remote editors.
+     * files for the Local and Remote editors. Note that it is the caller's
+     * responsibility to call {@link ResourceNode#discardBuffer()} on the
+     * left/right node if it alters its actual file and not just its buffer.
+     * 
+     * @param isRefreshingToSavedState
+     *            true if the updated contents have been saved, false otherwise
+     *            (i.e. whether or not the editor should be dirty after
+     *            refreshing)
      */
-    private void performRefresh() {
+    private void performRefresh(boolean isRefreshingToSavedState) {
         isRefreshing = true;
+        isClean = isRefreshingToSavedState;
 
-        leftLocalNode.discardBuffer();
-        rightRemoteNode.discardBuffer();
         IEditorPart editor = PlatformUI.getWorkbench()
                 .getActiveWorkbenchWindow().getActivePage()
                 .findEditor(LocalizationMergeEditorInput.this);
@@ -188,11 +212,131 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
                 (IReusableEditor) editor);
 
         isRefreshing = false;
+        isClean = false;
+    }
+
+    /**
+     * Handle cases where the file isn't in sync with the local file system when
+     * this editor is activated.
+     */
+    public void handlePartActivated() {
+        if (shouldSync()) {
+            if (isDirty()) {
+                // Auto-sync if clean
+                syncLocalWithFileSystem();
+            } else {
+                // Prompt to sync if dirty
+                promptForSync();
+            }
+        }
+    }
+
+    /**
+     * Prompt the user to sync the local file with the local file system.
+     */
+    private void promptForSync() {
+        /*
+         * Store that we prompted the user to sync when the file had this
+         * timestamp, so that we don't reprompt unless the file changes again
+         */
+        timestampAtLastSyncPrompt = input.getFile().getLocalTimeStamp();
+
+        Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
+                .getShell();
+
+        String msg = "The file '" + input.getName()
+                + "' has been changed on the file system. Do you want to "
+                + "replace the editor contents with these changes?";
+        SWTMessageBox messageDialog = new SWTMessageBox(shell, "File Changed",
+                msg, SWT.YES | SWT.NO | SWT.ICON_QUESTION);
+
+        messageDialog.setCloseCallback(new ICloseCallback() {
+
+            @Override
+            public void dialogClosed(Object returnValue) {
+                if (returnValue instanceof Integer
+                        && ((int) returnValue == SWT.YES)) {
+                    syncLocalWithFileSystem();
+                }
+            }
+        });
+
+        messageDialog.open();
+    }
+
+    /**
+     * Determine if the local file is out of sync with the local file system and
+     * if it should be synced.
+     * 
+     * @return true if the file should be synced, otherwise false
+     */
+    private boolean shouldSync() {
+        if (!isConflictResolved()) {
+            // Only support syncing once conflict is resolved
+            return false;
+        }
+        long localTimestamp = input.getFile().getLocalTimeStamp();
+        if (timestampAtLastSyncPrompt == localTimestamp) {
+            /*
+             * Shouldn't sync if nothing has changed since user was last
+             * prompted to sync
+             */
+            return false;
+        }
+        /*
+         * Otherwise return if it's out of sync: isSynchronized checks if local
+         * file was modified outside of this CAVE, timestamp comparison checks
+         * if file was modified by another editor in this CAVE
+         */
+        return !input.getFile().isSynchronized(IResource.DEPTH_ZERO)
+                || localTimestamp != timestamp;
+    }
+
+    /**
+     * Update the stored timestamp of the local file to the current timestamp of
+     * the file on the file system
+     */
+    private void updateTimestamp() {
+        timestamp = input.getFile().getLocalTimeStamp();
+    }
+
+    /**
+     * Sync the Local editor's contents with the contents of the local file
+     */
+    public void syncLocalWithFileSystem() {
+        VizApp.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                synchronized (LOCK) {
+                    input.refreshLocalizationFile();
+                    try (InputStream is = input.getLocalizationFile()
+                            .openInputStream()) {
+                        IFile file = (IFile) leftLocalNode.getResource();
+                        file.setContents(is, IResource.FORCE, null);
+                        leftLocalNode.discardBuffer();
+
+                        serverFileChecksum = input.getLocalizationFile()
+                                .getCheckSum();
+
+                        performRefresh(true);
+
+                        updateTimestamp();
+                    } catch (IOException | LocalizationException
+                            | CoreException e) {
+                        statusHandler.handle(
+                                Priority.PROBLEM,
+                                "Failed to refresh merge editor: "
+                                        + e.getLocalizedMessage(), e);
+                    }
+                }
+            }
+        });
     }
 
     @Override
     protected void contentsCreated() {
         super.contentsCreated();
+
         if (isRefreshing) {
             // When refreshing, we need to re-register the saveable manually
             SaveablesLifecycleEvent event = new SaveablesLifecycleEvent(this,
@@ -202,7 +346,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             IEditorPart editor = page.findEditor(this);
             ((CompareEditor) editor).handleLifecycleEvent(event);
         }
-        this.setLeftDirty(true);
+        this.setLeftDirty(!isClean);
     }
 
     public boolean isConflictResolved() {
@@ -262,19 +406,21 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
             try {
                 if (validateSave(monitor)) {
-                    // Flush changes from the viewer into the node
-                    parent.flushLeftViewers(monitor);
+                    synchronized (parent.LOCK) {
+                        // Flush changes from the viewer into the node
+                        parent.flushLeftViewers(monitor);
 
-                    if (performSave(monitor)) {
-                        // Successfully saved to server, update serverChecksum
-                        parent.serverFileChecksum = getChangesChecksum();
-                        mergeResolved = true;
-                        /*
-                         * This is normally automatically handled, but if save
-                         * is selected before changing anything when the merge
-                         * editor is opened, it will incorrectly stay dirty
-                         */
-                        parent.setLeftDirty(false);
+                        if (performSave(monitor)) {
+                            parent.updateTimestamp();
+                            /*
+                             * Successfully saved to server, update
+                             * serverFileChecksum
+                             */
+                            parent.serverFileChecksum = getChangesChecksum();
+                            mergeResolved = true;
+                            // Update diff
+                            parent.performRefresh(true);
+                        }
                     }
                 }
             } catch (LocalizationFileVersionConflictException e) {
@@ -318,7 +464,8 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
                 @Override
                 public void dialogClosed(Object returnValue) {
-                    parent.refresh(CompareUI.getDocument(node), monitor);
+                    parent.refreshForNewMergeConflict(
+                            CompareUI.getDocument(node), monitor);
                 }
             });
 

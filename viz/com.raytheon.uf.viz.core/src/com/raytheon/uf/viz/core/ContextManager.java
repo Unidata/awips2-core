@@ -34,19 +34,44 @@ import org.eclipse.ui.contexts.IContextService;
 import org.eclipse.ui.services.IServiceLocator;
 
 /**
- * Uses extension point to look up contexts for editors
+ * The ContextManager adds a layer in front of org.eclipse.ui.contexts
+ * declarations in plugin.xml files to simplify activating and deactivating
+ * contexts based on the active perspective, editor, or view. It uses the
+ * extension point of com.raytheon.uf.viz.core.classContext to determine which
+ * Eclipse contexts to activate/deactivate based on the active part
+ * (IWorkbenchPart).
+ * 
+ * For example, a classContext declaration in a plugin.xml file will refer to a
+ * single class such as a View. There can then be 1 to N contextIDs (Eclipse
+ * contexts) associated with the classContext. When that View class is the
+ * active part, those Eclipse contexts will be activated. When that View class
+ * is not the active part, those Eclipse contexts will be deactivated (unless
+ * another active part or code also activates that context).
+ * 
+ * This becomes harder to manage when you have an Eclipse context that should be
+ * active even if the part (view or editor) is not active. A common example is
+ * when a view is intrinsically tied to an editor. If the view is the active
+ * part, the editor's contexts could be deactivated, and vice versa. In this
+ * example, keybindings or mouse actions that should be active can become
+ * inactive, causing undesired behavior. To solve this problem, you can get the
+ * ContextManager instance or IContextService and explicitly activate or
+ * deactivate contexts. Search for code/references that use
+ * ContextManager.getInstance() or IContextService for examples of these
+ * techniques where the contexts must be active/inactive in conjunction with
+ * more than one part.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 21, 2009            mschenke     Initial creation
+ * Dec 21, 2009            mschenke    Initial creation
+ * Jun 03, 2016            njensen     Added javadoc  
+ * 
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class ContextManager {
@@ -59,11 +84,11 @@ public class ContextManager {
 
     private static Map<String, String[]> contexts = null;
 
-    private static Map<Class<?>, String[]> contextCache = new HashMap<Class<?>, String[]>();
+    private static Map<Class<?>, String[]> contextCache = new HashMap<>();
 
     private static final String EXTENSION_POINT = "com.raytheon.uf.viz.core.classContext";
 
-    private static Map<IServiceLocator, ContextManager> instanceMap = new HashMap<IServiceLocator, ContextManager>();
+    private static Map<IServiceLocator, ContextManager> instanceMap = new HashMap<>();
 
     private static synchronized String[] getContextsForClass(Class<?> clazz) {
         if (contexts == null) {
@@ -77,7 +102,7 @@ public class ContextManager {
     }
 
     private static void loadContexts() {
-        contexts = new HashMap<String, String[]>();
+        contexts = new HashMap<>();
         IExtensionRegistry registry = Platform.getExtensionRegistry();
         if (registry == null) {
             return;
@@ -91,7 +116,7 @@ public class ContextManager {
 
             for (IConfigurationElement cfg : config) {
                 String name = cfg.getAttribute("class");
-                Set<String> ids = new HashSet<String>();
+                Set<String> ids = new HashSet<>();
                 String[] current = contexts.get(name);
                 if (current != null) {
                     for (String curr : current) {
@@ -115,7 +140,7 @@ public class ContextManager {
 
         String[] ids = contextCache.get(clazz);
         if (ids == null) {
-            Set<String> contexts = new HashSet<String>();
+            Set<String> contexts = new HashSet<>();
 
             ids = getContextsForClass(clazz);
             for (String id : ids) {
@@ -159,8 +184,8 @@ public class ContextManager {
 
     private ContextManager(IServiceLocator locator) {
         service = (IContextService) locator.getService(IContextService.class);
-        activeObjects = new HashSet<Object>();
-        activeMap = new HashMap<String, ContextManager.Context>();
+        activeObjects = new HashSet<>();
+        activeMap = new HashMap<>();
     }
 
     public void activateContexts(Object obj) {

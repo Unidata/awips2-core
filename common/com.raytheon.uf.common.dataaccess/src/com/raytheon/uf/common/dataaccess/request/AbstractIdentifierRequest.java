@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess.request;
 
+import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
@@ -34,6 +35,7 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2014 3185       njensen     Initial creation
+ * Jun 01, 2016 5587       tgurney     Replace datatype string with IDataRequest
  * 
  * </pre>
  * 
@@ -45,14 +47,14 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
 public abstract class AbstractIdentifierRequest implements IServerRequest {
 
     @DynamicSerializeElement
-    protected String datatype;
+    protected IDataRequest request;
 
-    public String getDatatype() {
-        return datatype;
+    public IDataRequest getRequest() {
+        return request;
     }
 
-    public void setDatatype(String datatype) {
-        this.datatype = datatype;
+    public void setRequest(IDataRequest request) {
+        this.request = request;
     }
 
 }
