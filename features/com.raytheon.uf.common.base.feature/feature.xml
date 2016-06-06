@@ -303,7 +303,7 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="3.5.1"/>
+         version="3.5.3"/>
 
    <plugin
          id="org.slf4j"
