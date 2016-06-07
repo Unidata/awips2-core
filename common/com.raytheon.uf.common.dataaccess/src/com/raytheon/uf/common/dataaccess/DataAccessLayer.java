@@ -63,6 +63,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jun 01, 2016  5587     tgurney     Add new method signatures for
  *                                    getRequiredIdentifiers() and
  *                                    getOptionalIdentifiers()
+ * Jun 07, 2016  5587     tgurney     Deprecate old get*Identifiers() methods
  * 
  * </pre>
  * 
@@ -281,8 +282,9 @@ public class DataAccessLayer {
      */
     @Deprecated
     public static String[] getRequiredIdentifiers(String datatype) {
-        return DataFactoryRegistry.getInstance().getFactory(datatype)
-                .getRequiredIdentifiers();
+        IDataRequest request = newDataRequest();
+        request.setDatatype(datatype);
+        return getRequiredIdentifiers(request);
     }
 
     /**
@@ -293,8 +295,8 @@ public class DataAccessLayer {
      * @return the identifiers that are required for this datatype's requests
      */
     public static String[] getRequiredIdentifiers(IDataRequest request) {
-        return DataFactoryRegistry.getInstance()
-                .getFactory(request.getDatatype()).getRequiredIdentifiers();
+        return DataFactoryRegistry.getInstance().getFactory(request)
+                .getRequiredIdentifiers(request);
     }
 
     /**
@@ -308,8 +310,9 @@ public class DataAccessLayer {
      */
     @Deprecated
     public static String[] getOptionalIdentifiers(String datatype) {
-        return DataFactoryRegistry.getInstance().getFactory(datatype)
-                .getOptionalIdentifiers();
+        IDataRequest request = newDataRequest();
+        request.setDatatype(datatype);
+        return getOptionalIdentifiers(request);
     }
 
     /**
@@ -321,8 +324,8 @@ public class DataAccessLayer {
      * @return the optional identifiers that are allowed for this request
      */
     public static String[] getOptionalIdentifiers(IDataRequest request) {
-        return DataFactoryRegistry.getInstance()
-                .getFactory(request.getDatatype()).getOptionalIdentifiers();
+        return DataFactoryRegistry.getInstance().getFactory(request)
+                .getOptionalIdentifiers(request);
     }
 
     /**

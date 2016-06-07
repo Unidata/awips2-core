@@ -47,20 +47,25 @@ import com.raytheon.uf.common.util.SizeUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 13, 2012            njensen     Initial creation
- * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
- *                                     single request.
- * Feb 19, 2012 1552       mpduff      Implement IDataFactory.
- * Jan 14, 2014 2667       mnash       Change getGridData and getGeometryData methods
- *                                     to throw exception by default
- * Jul 14, 2014 3184       njensen     Added getAvailableParameters() and getAvailableLevels()
- * Jul 30, 2014 3184       njensen     Refactored validateRequest()
- * Jul 31, 2014 3184       njensen     Added validateParameters()
- * Jan 28, 2014 4009       mapeters    Added validateRequest() with boolean parameter
- * Feb 10, 2014 2866       nabowle     add MAX_RESPONSE_SIZE for limiting response sizes.
- * Apr 13, 2016 5379       tgurney     Add default impl for getIdentifierValues()
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 13, 2012           njensen   Initial creation
+ * Feb 14, 2013  1614     bsteffen  Refactor data access framework to use single
+ *                                  request.
+ * Feb 19, 2012  1552     mpduff    Implement IDataFactory.
+ * Jan 14, 2014  2667     mnash     Change getGridData and getGeometryData
+ *                                  methods to throw exception by default
+ * Jul 14, 2014  3184     njensen   Added getAvailableParameters() and
+ *                                  getAvailableLevels()
+ * Jul 30, 2014  3184     njensen   Refactored validateRequest()
+ * Jul 31, 2014  3184     njensen   Added validateParameters()
+ * Jan 28, 2014  4009     mapeters  Added validateRequest() with boolean
+ *                                  parameter
+ * Feb 10, 2014  2866     nabowle   add MAX_RESPONSE_SIZE for limiting response
+ *                                  sizes.
+ * Apr 13, 2016  5379     tgurney   Add default impl for getIdentifierValues()
+ * Jun 07, 2016  5587     tgurney   Change get*Identifiers() to take
+ *                                  IDataRequest
  * 
  * </pre>
  * 
@@ -85,7 +90,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
      * @return the required identifiers
      */
     @Override
-    public String[] getRequiredIdentifiers() {
+    public String[] getRequiredIdentifiers(IDataRequest request) {
         return EMPTY;
     }
 
@@ -96,7 +101,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
      * @return the valid identifiers.
      */
     @Override
-    public String[] getOptionalIdentifiers() {
+    public String[] getOptionalIdentifiers(IDataRequest request) {
         return EMPTY;
     }
 
@@ -138,7 +143,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
      * @return a collection of missing identifiers
      */
     protected Collection<String> checkForMissingIdentifiers(IDataRequest request) {
-        String[] required = getRequiredIdentifiers();
+        String[] required = getRequiredIdentifiers(request);
         Collection<String> missing = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null && !identifiers.isEmpty()) {
@@ -162,8 +167,8 @@ public abstract class AbstractDataFactory implements IDataFactory {
         Collection<String> invalid = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null && !identifiers.isEmpty()) {
-            String[] optional = getOptionalIdentifiers();
-            String[] required = getRequiredIdentifiers();
+            String[] optional = getOptionalIdentifiers(request);
+            String[] required = getRequiredIdentifiers(request);
             if ((optional != null && optional.length > 0)
                     || (required != null && required.length > 0)) {
                 invalid = new HashSet<>(identifiers.keySet());

@@ -68,6 +68,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2015 4608       nabowle     Initial creation
  * May 26, 2016 5587       tgurney     Support getIdentifierValues()
+ * Jun 07, 2016 5587       tgurney     Change get*Identifiers() to take
+ *                                     IDataRequest
  * 
  * </pre>
  * 
@@ -131,12 +133,12 @@ public class TopoGridFactory extends AbstractDataFactory {
     }
 
     @Override
-    public String[] getRequiredIdentifiers() {
+    public String[] getRequiredIdentifiers(IDataRequest request) {
         return new String[] { GROUP, DATASET };
     }
 
     @Override
-    public String[] getOptionalIdentifiers() {
+    public String[] getOptionalIdentifiers(IDataRequest request) {
         return new String[] { TOPO_FILE };
     }
 
