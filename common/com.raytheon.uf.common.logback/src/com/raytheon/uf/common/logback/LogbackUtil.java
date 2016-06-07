@@ -35,13 +35,13 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Oct 10, 2014 3675       njensen     Initial creation
  * Feb 18, 2015 4015       rferrel     Standard constants and determineLogFilenamePattern.
  * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
+ * Jun 07, 2016 5258       bsteffen    Include sequence number in default message
+ *                                     pattern to allow log forging detection.
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
-
 public class LogbackUtil {
 
     /* Context Property names. */
@@ -66,7 +66,7 @@ public class LogbackUtil {
     /**
      * Standard format for log entry.
      */
-    private final static String UF_MESSAGE_PATTERN = "%-5p %d [%t] %c{0}: %m%n";
+    private final static String UF_MESSAGE_PATTERN = "%-5p %d %4.4lsn [%t] %c{0}: %m%n";
 
     private LogbackUtil() {
         // do not allow instantiation
