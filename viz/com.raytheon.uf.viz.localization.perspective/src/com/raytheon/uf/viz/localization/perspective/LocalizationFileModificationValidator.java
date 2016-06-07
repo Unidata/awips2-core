@@ -141,7 +141,7 @@ public class LocalizationFileModificationValidator extends
         LocalizationMergeEditorInput mergeInput = LocalizationEditorUtils
                 .getOpenMergeInputForLocalizationInput(input);
         if (mergeInput != null && !mergeInput.isConflictResolved()) {
-            handleUnresolvedMergeConflict(mergeInput);
+            handleUnresolvedMergeConflict(mergeInput, input.getName());
             return Status.CANCEL_STATUS;
         }
 
@@ -180,10 +180,14 @@ public class LocalizationFileModificationValidator extends
     }
 
     private static void handleUnresolvedMergeConflict(
-            final LocalizationMergeEditorInput mergeInput) {
+            final LocalizationMergeEditorInput mergeInput, String fileName) {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
-        String msg = "A file version conflict occurred when previously attempting to save this file. The conflict must be resolved before it can be saved.\n\nSelect OK to go to the open merge editor.";
+        String msg = "A file version conflict occurred when previously "
+                + "attempting to save the file '"
+                + fileName
+                + "'. The conflict must be resolved before it can be saved.\n\n"
+                + "Select OK to go to the open merge editor.";
         SWTMessageBox messageDialog = new SWTMessageBox(shell,
                 "Unresolved File Version Conflict", msg, SWT.OK | SWT.CANCEL
                         | SWT.ICON_WARNING);
