@@ -93,6 +93,8 @@ import com.raytheon.uf.common.time.DataTime;
  *                                    use middle of layer for BL
  * Nov 30, 2015  5072     bsteffen    Use LevelTypeMap to normalize field
  *                                    levels.
+ * May 26, 2016  DR18955  dfriedman   Fix marking of recursively referenced
+ *                                    derived parameters.
  * 
  * </pre>
  * 
@@ -804,7 +806,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                 return null;
             }
             if (stack.contains(se)) {
-                Iterator<StackEntry> it = stack.descendingIterator();
+                Iterator<StackEntry> it = stack.iterator();
                 while (it.hasNext()) {
                     StackEntry next = it.next();
                     if (next.equals(se)) {
