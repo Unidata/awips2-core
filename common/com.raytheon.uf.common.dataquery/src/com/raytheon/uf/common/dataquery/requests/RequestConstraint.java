@@ -65,12 +65,12 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                    Mapping.
  * Dec 18, 2013  2579     bsteffen    Remove ISerializableObject
  * Aug 20, 2014  3549     njensen     Optimized split of IN
+ * Jun 08, 2016  5574     tgurney     Add toSqlString()
  * 
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "requestConstraint")
@@ -611,5 +611,53 @@ public class RequestConstraint implements Cloneable {
             }
         }
         return constraints;
+    }
+
+    public String toSqlString() {
+        switch (constraintType) {
+        case EQUALS:
+        case GREATER_THAN:
+        case GREATER_THAN_EQUALS:
+        case LESS_THAN:
+        case LESS_THAN_EQUALS:
+        case LIKE:
+        case ILIKE:
+            return String.format(" %s '%s' ", constraintType.getOperand(),
+                    constraintValue);
+        case IN:
+            String[] items = IN_PATTERN.split(constraintValue);
+            if (items.length == 0) {
+                throw new IllegalArgumentException("Invalid constraint value");
+            }
+            StringBuilder sqlResult = new StringBuilder();
+            sqlResult.append(" in (");
+            boolean isFirstItem = true;
+            for (String item : items) {
+                if (isFirstItem) {
+                    isFirstItem = false;
+                } else {
+                    sqlResult.append(',');
+                }
+                sqlResult.append(String.format("'%s'", item));
+            }
+            sqlResult.append(") ");
+            return sqlResult.toString();
+        case BETWEEN:
+            String[] values = BETWEEN_PATTERN.split(constraintValue);
+            if (values.length != 2) {
+                throw new IllegalArgumentException(
+                        "Invalid between constraint - need exactly two values.");
+            }
+            return String.format(" between %1$s and %2$s ", values[0],
+                    values[1]);
+        case ISNOTNULL:
+            return " is not null ";
+        case ISNULL:
+            return " is null ";
+        case NOT_EQUALS:
+            return String.format(" <> '%s' ", constraintValue);
+        default:
+            throw new IllegalArgumentException("Invalid constraint type");
+        }
     }
 }
