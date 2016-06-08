@@ -57,6 +57,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Dec 23, 2015   5189      bsteffen    Add custom save handler.
  * Jan 05, 2016   5193      bsteffen    Move perspective listener activation to the workbench advisor.
  * Jan 12, 2016   5232      njensen     Removed code that doesn't work in Eclipse 4
+ * Jun 06, 2016   5195      bsteffen    Prevent tiny CAVE.
  * 
  * </pre>
  * 
@@ -193,7 +194,16 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
         } else {
             save = false;
         }
-
+        while (display.readAndDispatch()) {
+            /*
+             * There is a complicated bug in swt/gtk which causes the shell to
+             * occasionally be set to the minimum size instead of the desired
+             * size. Dispatching events here causes the events to propagate
+             * better and the shell to always be the correct size. Initial tests
+             * indicate that the bug is fixed in eclipse 4.6, so this code can
+             * probably be removed safely in the future.
+             */
+        }
         shell.setSize(width, height);
         super.getWindowConfigurer().setInitialSize(new Point(width, height));
 
