@@ -65,6 +65,7 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * ------------- -------- --------- -----------------
  * Mar 03, 2011           mschenke  Initial creation
  * May 23, 2016  4907     mapeters  Added save validation
+ * Jun 08, 2016  4907     mapeters  Handle editors that aren't ITextEditors
  * 
  * </pre>
  * 
@@ -105,10 +106,20 @@ public class LocalizationFileModificationValidator extends
             if (editorInput instanceof LocalizationEditorInput) {
                 LocalizationEditorInput input = (LocalizationEditorInput) editorInput;
                 if (input.getFile().equals(file)) {
-                    ITextEditor editor = (ITextEditor) part;
-                    IDocument doc = editor.getDocumentProvider().getDocument(
-                            editorInput);
-                    return validateSave(input, doc);
+                    IDocument doc = null;
+                    if (part instanceof ITextEditor) {
+                        // Most editors (e.g. python, .txt, images/sounds)
+                        ITextEditor editor = (ITextEditor) part;
+                        doc = editor.getDocumentProvider().getDocument(
+                                editorInput);
+                    } else {
+                        // Multi-page editors (e.g. color map and XML)
+                        doc = (IDocument) part.getAdapter(IDocument.class);
+                    }
+
+                    if (doc != null) {
+                        return validateSave(input, doc);
+                    }
                 }
             }
         }
