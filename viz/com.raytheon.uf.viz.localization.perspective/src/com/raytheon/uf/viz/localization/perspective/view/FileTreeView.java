@@ -159,6 +159,7 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Apr 21, 2016 5214       mapeters    Fix incorrect ordering of files in multiple localization levels
  * May 23, 2016 4907       mapeters    Implement IWindowListener and update partActivated(), don't save 
  *                                     if local file matches remote,
+ * Jun 09, 2016 4907       mapeters    Prevent exception when double clicking with nothing selected
  * 
  * </pre>
  * 
@@ -434,7 +435,11 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 setWaiting();
                 try {
                     Tree tree = getTree();
-                    TreeItem ti = tree.getSelection()[0];
+                    TreeItem[] selection = tree.getSelection();
+                    if (selection.length == 0) {
+                        return;
+                    }
+                    TreeItem ti = selection[0];
                     if (ti.getData() instanceof LocalizationFileEntryData) {
                         LocalizationFileEntryData data = (LocalizationFileEntryData) ti
                                 .getData();
