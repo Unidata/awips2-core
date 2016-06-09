@@ -41,6 +41,7 @@ import java.nio.ShortBuffer;
  * Apr 07, 2014 2968       njensen     Added asReadOnly() and duplicate()
  * May 21, 2015 4495       njensen     Deprecated methods that are OBE
  * Apr 06, 2016 5450       nabowle     Add replaceValue and toIntBuffer.
+ * Jun 09, 2016 5584       nabowle     add toFloatBuffer.
  *
  * </pre>
  *
@@ -285,7 +286,7 @@ public class BufferUtil {
      * numeric cast of fill. That is, if buffer is an IntBuffer, fill.intValue()
      * will be put into the buffer, which may truncate or otherwise change
      * fill's value.
-     * 
+     *
      * @param buffer
      *            the Buffer to modify.
      * @param index
@@ -317,10 +318,10 @@ public class BufferUtil {
 
     /**
      * Returns an IntBuffer version of buffer. If buffer is already an
-     * IntBuffer, buffer is returned unmodified. Otherwise, a new IntBuffer is
-     * allocated, and the data inside buffer is cast to an int and inserted into
-     * the IntBuffer. If buffer cannot be converted into an IntBuffer, null is
-     * returned.
+     * IntBuffer, the buffer is duplicated and the duplicate rewound before
+     * being returned. Otherwise, a new IntBuffer is allocated, and the data
+     * inside buffer is cast to an int and inserted into the IntBuffer. If
+     * buffer cannot be converted into an IntBuffer, null is returned.
      *
      * @param buffer
      *            The buffer.
@@ -335,7 +336,9 @@ public class BufferUtil {
         }
 
         if (buffer instanceof IntBuffer) {
-            return (IntBuffer) buffer;
+            IntBuffer newBuff = ((IntBuffer) buffer).duplicate();
+            newBuff.rewind();
+            return newBuff;
         }
 
         IntBuffer intBuffer = IntBuffer.allocate(buffer.capacity());
@@ -370,4 +373,60 @@ public class BufferUtil {
         return intBuffer;
     }
 
+    /**
+     * Returns a FloatBuffer version of buffer. If buffer is already a
+     * FloatBuffer, the buffer is duplicated and the duplicate rewound before
+     * being returned. Otherwise, a new FloatBuffer is allocated, and the data
+     * inside buffer is cast to a float and inserted into the FloatBuffer. If
+     * buffer cannot be converted into a FloatBuffer, null is returned.
+     *
+     * @param buffer
+     *            The buffer.
+     * @return If buffer is a FloatBuffer already, buffer is returned. If buffer
+     *         is a numeric-type buffer, a newly allocated FloatBuffer with
+     *         buffer's data cast to floats is returned. Otherwise, null is
+     *         returned.
+     */
+    public static FloatBuffer toFloatBuffer(Buffer buffer) {
+        if (buffer == null) {
+            return null;
+        }
+
+        if (buffer instanceof FloatBuffer) {
+            FloatBuffer newBuff = ((FloatBuffer) buffer).duplicate();
+            newBuff.rewind();
+            return newBuff;
+        }
+
+        FloatBuffer floatBuffer = FloatBuffer.allocate(buffer.capacity());
+        if (buffer instanceof DoubleBuffer) {
+            DoubleBuffer dBuffer = (DoubleBuffer) buffer;
+            for (int i = 0; i < dBuffer.capacity(); i++) {
+                floatBuffer.put(i, (float) dBuffer.get(i));
+            }
+        } else if (buffer instanceof LongBuffer) {
+            LongBuffer lBuffer = (LongBuffer) buffer;
+            for (int i = 0; i < lBuffer.capacity(); i++) {
+                floatBuffer.put(i, lBuffer.get(i));
+            }
+        } else if (buffer instanceof IntBuffer) {
+            IntBuffer iBuffer = (IntBuffer) buffer;
+            for (int i = 0; i < iBuffer.capacity(); i++) {
+                floatBuffer.put(i, iBuffer.get(i));
+            }
+        } else if (buffer instanceof ShortBuffer) {
+            ShortBuffer sBuffer = (ShortBuffer) buffer;
+            for (int i = 0; i < sBuffer.capacity(); i++) {
+                floatBuffer.put(i, sBuffer.get(i));
+            }
+        } else if (buffer instanceof ByteBuffer) {
+            ByteBuffer bBuffer = (ByteBuffer) buffer;
+            for (int i = 0; i < bBuffer.capacity(); i++) {
+                floatBuffer.put(i, bBuffer.get(i));
+            }
+        } else {
+            return null;
+        }
+        return floatBuffer;
+    }
 }
