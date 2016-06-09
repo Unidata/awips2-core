@@ -61,6 +61,8 @@ import com.raytheon.uf.common.time.TimeRange;
  * Jul 14, 2014  3184     njensen     Added new methods
  * Jul 30, 2014  3184     njensen     Renamed valid identifiers to optional
  * Apr 13, 2016  5379     tgurney     Add getIdentifierValues()
+ * Jun 07, 2016  5587     tgurney     Change get*Identifiers() to take
+ *                                    IDataRequest
  * 
  * </pre>
  * 
@@ -203,18 +205,24 @@ public interface IDataFactory {
      * Gets the identifiers that must be put on an IDataRequest for this
      * datatype
      * 
+     * @param request
+     *            Request to get required identifiers for
+     * 
      * @return the identifiers that are required for this datatype's requests
      */
-    public String[] getRequiredIdentifiers();
+    public String[] getRequiredIdentifiers(IDataRequest request);
 
     /**
      * Gets the optional identifiers that will be recognized by requests for
      * this datatype.
      * 
+     * @param request
+     *            Request to get optional identifiers for
+     * 
      * @return the optional identifiers that are recognized by requests for this
      *         datatype
      */
-    public String[] getOptionalIdentifiers();
+    public String[] getOptionalIdentifiers(IDataRequest request);
 
     /**
      * Gets the allowed values for a particular identifier recognized by this

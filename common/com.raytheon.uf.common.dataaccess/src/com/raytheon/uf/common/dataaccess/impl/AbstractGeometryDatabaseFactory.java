@@ -49,30 +49,36 @@ import com.vividsolutions.jts.geom.Geometry;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jan 29, 2013           bkowal      Initial creation
- * Feb 14, 2013  1614     bsteffen    Refactor data access framework to use
- *                                    single request.
- * Jan 14, 2014  2667     mnash       Remove getGridData methods
- * Mar 03, 2014  2673     bsteffen    Add ability to query only ref times.
- * Jul 30, 2014  3184     njensen     Added optional identifiers
- *                                     Overrode checkForInvalidIdentifiers()
- * Jan 28, 2015  4009     mapeters    Overrode getAvailableParameters(), 
- *                                    added assembleGetAvailableParameters().
- * Feb 03, 2015  4009     mapeters    Overrode getAvailableLevels().
- * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
- * Mar 18, 2015  4227     mapeters    Add buildDataTimeFromQueryResults(), add checks for 
- *                                    adding geom data, correctly get BinOffsetted times.
- * May 19, 2015  4409     mapeters    Ignore null DataTimes in executeTimeQuery().
- * Jun 29, 2015  4585     dgilling    Stop validating parameters in
- *                                    getAvailableLocationNames.
- * Aug 05, 2015  4486     rjpeter     Changed Timestamp to Date.
- * Apr 08, 2016  5553     bkowal      Ignore null identifiers in {@link #makeGeometries(List, String[], Map)}.
- * Apr 22, 2016  5596     tgurney     Fix getAvailableParameters() with
- *                                    unqualified table name
- * Apr 26, 2016  5587     tgurney     Support getIdentifierValues()
- * May 26, 2016  5587     njensen     assembleGetColumnValues() no longer allows nulls
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 29, 2013           bkowal    Initial creation
+ * Feb 14, 2013  1614     bsteffen  Refactor data access framework to use single
+ *                                  request.
+ * Jan 14, 2014  2667     mnash     Remove getGridData methods
+ * Mar 03, 2014  2673     bsteffen  Add ability to query only ref times.
+ * Jul 30, 2014  3184     njensen   Added optional identifiers Overrode
+ *                                  checkForInvalidIdentifiers()
+ * Jan 28, 2015  4009     mapeters  Overrode getAvailableParameters(), added
+ *                                  assembleGetAvailableParameters().
+ * Feb 03, 2015  4009     mapeters  Overrode getAvailableLevels().
+ * Mar 04, 2015  4217     mapeters  Available times are sorted in
+ *                                  DataAccessLayer.
+ * Mar 18, 2015  4227     mapeters  Add buildDataTimeFromQueryResults(), add
+ *                                  checks for adding geom data, correctly get
+ *                                  BinOffsetted times.
+ * May 19, 2015  4409     mapeters  Ignore null DataTimes in executeTimeQuery().
+ * Jun 29, 2015  4585     dgilling  Stop validating parameters in
+ *                                  getAvailableLocationNames.
+ * Aug 05, 2015  4486     rjpeter   Changed Timestamp to Date.
+ * Apr 08, 2016  5553     bkowal    Ignore null identifiers in {@link
+ *                                  #makeGeometries(List, String[], Map)}.
+ * Apr 22, 2016  5596     tgurney   Fix getAvailableParameters() with
+ *                                  unqualified table name
+ * Apr 26, 2016  5587     tgurney   Support getIdentifierValues()
+ * May 26, 2016  5587     njensen   assembleGetColumnValues() no longer allows
+ *                                  nulls
+ * Jun 07, 2016  5587     tgurney   Change get*Identifiers() to take
+ *                                  IDataRequest
  * 
  * </pre>
  * 
@@ -263,12 +269,12 @@ public abstract class AbstractGeometryDatabaseFactory extends
     }
 
     @Override
-    public String[] getRequiredIdentifiers() {
+    public String[] getRequiredIdentifiers(IDataRequest request) {
         return this.requiredIdentifiers;
     }
 
     @Override
-    public String[] getOptionalIdentifiers() {
+    public String[] getOptionalIdentifiers(IDataRequest request) {
         return this.optionalIdentifiers;
     }
 
@@ -382,7 +388,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
     protected String assembleGetColumnValues(String tableName, String columnName) {
         return String
                 .format("select distinct %1$s from %2$s where %1$s is not null order by %1$s;",
-                columnName, tableName);
+                        columnName, tableName);
     }
 
     /**
