@@ -35,6 +35,7 @@ import javax.measure.unit.Unit;
 import com.raytheon.uf.common.dataaccess.DataAccessLayer;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.impl.AbstractDataPluginFactory;
@@ -75,11 +76,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Feb 19, 2015  4147     mapeters    Override getAvailableParameters().
  * Feb 27, 2015  4179     mapeters    Use super's getAvailableValues().
  * Jan 28, 2016  5275     bsteffen    Avoid creating clutter in level database.
+ * Jun 09, 2016  5587     bsteffen    Support datatype specific optional identifiers.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
@@ -120,7 +121,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
     private String fcstHrPointDataKey = PointDataConstants.DATASET_FORECASTHR;
 
-    private Map<String, TwoDimensionalParameterGroup> parameters2D = new HashMap<String, TwoDimensionalParameterGroup>();
+    private Map<String, TwoDimensionalParameterGroup> parameters2D = new HashMap<>();
+
+    private String[] optionalIdentifiers = EMPTY;
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
@@ -187,10 +190,34 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         return getGeometryData(request, dbQueryRequest);
     }
 
+
+    @Override
+    public String[] getOptionalIdentifiers(IDataRequest request) {
+        return optionalIdentifiers;
+    }
+
+    @Override
+    public String[] getIdentifierValues(IDataRequest request,
+            String identifierKey) {
+        if (!Arrays.asList(getOptionalIdentifiers(request)).contains(
+                identifierKey)) {
+            throw new InvalidIdentifiersException(request.getDatatype(), null,
+                    Arrays.asList(new String[] { identifierKey }));
+        }
+        List<String> idValStrings;
+        Object[] idValues = getAvailableValues(request, identifierKey,
+                Object.class);
+        idValStrings = new ArrayList<>(idValues.length);
+        for (Object idValue : idValues) {
+            idValStrings.add(idValue.toString());
+        }
+        return idValStrings.toArray(new String[0]);
+    }
+
     @Override
     protected Map<String, RequestConstraint> buildConstraintsFromRequest(
             IDataRequest request) {
-        Map<String, RequestConstraint> rcMap = new HashMap<String, RequestConstraint>();
+        Map<String, RequestConstraint> rcMap = new HashMap<>();
         String[] locations = request.getLocationNames();
         if (locations != null && locations.length != 0) {
             rcMap.put(locationDatabaseKey, new RequestConstraint(locations));
@@ -245,13 +272,13 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         }
         LevelFactory lf = LevelFactory.getInstance();
         /* Convert the point data container into a list of IGeometryData */
-        List<IGeometryData> result = new ArrayList<IGeometryData>(
+        List<IGeometryData> result = new ArrayList<>(
                 pdc.getAllocatedSz());
         for (int i = 0; i < pdc.getCurrentSz(); i += 1) {
             PointDataView pdv = pdc.readRandom(i);
             DefaultGeometryData data = createNewGeometryData(pdv);
             data.setLevel(lf.getLevel(LevelFactory.UNKNOWN_LEVEL, 0.0));
-            Set<TwoDimensionalParameterGroup> parameters2D = new HashSet<TwoDimensionalParameterGroup>();
+            Set<TwoDimensionalParameterGroup> parameters2D = new HashSet<>();
             for (String parameter : request.getParameters()) {
                 if (pdc.getParameters().contains(parameter)) {
                     int dim = pdc.getDimensions(parameter);
@@ -304,7 +331,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         /*
          * Figure out what parameters we actually need.
          */
-        Set<String> parameters = new HashSet<String>();
+        Set<String> parameters = new HashSet<>();
 
         for (String parameter : request.getParameters()) {
             /*
@@ -392,7 +419,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
             }
         }
 
-        List<IGeometryData> result = new ArrayList<IGeometryData>(count);
+        List<IGeometryData> result = new ArrayList<>(count);
 
         Unit<?> levelUnit;
         Number[] levelValues;
@@ -583,6 +610,16 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      */
     public void setFcstHrPointDataKey(String fcstHrPointDataKey) {
         this.fcstHrPointDataKey = fcstHrPointDataKey;
+    }
+
+    /**
+     * 
+     * @param optionalIdentifiers
+     *            The hibernate field names of any fields that can be used as
+     *            identifiers.
+     */
+    public void setOptionalIdentifiers(String[] optionalIdentifiers) {
+        this.optionalIdentifiers = optionalIdentifiers;
     }
 
 }
