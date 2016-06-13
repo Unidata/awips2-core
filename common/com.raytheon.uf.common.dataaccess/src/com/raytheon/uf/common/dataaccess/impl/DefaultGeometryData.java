@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess.impl;
 
+import java.math.BigDecimal;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -39,18 +40,19 @@ import com.vividsolutions.jts.geom.Geometry;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 09, 2012            njensen     Initial creation
- * Jun 03, 2013  #2023     dgilling    Implement getAttributes().
- * Jan 21, 2014  2667      bclement    attribute method comments
- * Mar 19, 2014  2882      dgilling    Handle null values with a special Type.
- * Aug 21, 2015  4409      mapeters    Support Short data type.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 09, 2012           njensen   Initial creation
+ * Jun 03, 2013  2023     dgilling  Implement getAttributes().
+ * Jan 21, 2014  2667     bclement  attribute method comments
+ * Mar 19, 2014  2882     dgilling  Handle null values with a special Type.
+ * Aug 21, 2015  4409     mapeters  Support Short data type.
+ * Jun 13, 2016  5574     mapeters  Support BigDecimal data type (convert to
+ *                                  double)
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class DefaultGeometryData implements IGeometryData {
@@ -66,7 +68,7 @@ public class DefaultGeometryData implements IGeometryData {
         private Unit<?> unit;
     }
 
-    protected Map<String, GeomData> dataMap = new HashMap<String, GeomData>();
+    protected Map<String, GeomData> dataMap = new HashMap<>();
 
     protected DataTime time;
 
@@ -76,7 +78,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     protected String locationName;
 
-    protected Map<String, Object> attributes = new HashMap<String, Object>();
+    protected Map<String, Object> attributes = new HashMap<>();
 
     @Override
     public Object getAttribute(String key) {
@@ -272,8 +274,6 @@ public class DefaultGeometryData implements IGeometryData {
             if (data.value instanceof String) {
                 data.type = Type.STRING;
             } else if (data.value instanceof Double) {
-                // TODO do these ifs work or will any number fall into
-                // the first one?
                 data.type = Type.DOUBLE;
             } else if (data.value instanceof Short) {
                 data.type = Type.SHORT;
@@ -283,6 +283,10 @@ public class DefaultGeometryData implements IGeometryData {
                 data.type = Type.LONG;
             } else if (data.value instanceof Float) {
                 data.type = Type.FLOAT;
+            } else if (data.value instanceof BigDecimal) {
+                // Convert to double so dynamic serialize can handle it
+                data.value = ((BigDecimal) data.value).doubleValue();
+                data.type = Type.DOUBLE;
             } else if (data.value == null) {
                 data.type = Type.NULL;
             }
