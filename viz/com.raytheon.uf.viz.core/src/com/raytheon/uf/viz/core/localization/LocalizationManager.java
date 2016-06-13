@@ -109,11 +109,11 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Aug 26, 2015 4691       njensen     No longer using timestamp as part of needDownload()
  * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public class LocalizationManager implements IPropertyChangeListener {
 
@@ -163,7 +163,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     public static boolean internalAlertServer = ProgramArguments.getInstance()
             .getBoolean("-alertviz");
 
-    private static Map<LocalizationLevel, String> contextMap = new HashMap<LocalizationLevel, String>();
+    private static Map<LocalizationLevel, String> contextMap = new HashMap<>();
 
     /**
      * Private constructor Use singleton construction
@@ -550,10 +550,10 @@ public class LocalizationManager implements IPropertyChangeListener {
                             + contexts.length + ", returned: "
                             + responseList.length);
         } else if (responseList.length == 0) {
-            return new ArrayList<ListResponseEntry[]>();
+            return new ArrayList<>();
         }
 
-        List<ListResponseEntry[]> responses = new ArrayList<ListResponseEntry[]>();
+        List<ListResponseEntry[]> responses = new ArrayList<>();
 
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
@@ -603,6 +603,28 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     /**
+     * Retrieves the LocalizationFile contents from the server to the given
+     * outputFile.
+     * 
+     * @param locFile
+     *            the localization file to retrieve
+     * @param outputFile
+     *            the location where the localization file will be downloaded to
+     * @throws CommunicationException
+     */
+    public void retrieveToFile(ILocalizationFile locFile, File outputFile)
+            throws CommunicationException {
+        try {
+            FileLocker.lock(this, outputFile, Type.WRITE);
+            outputFile.delete();
+            restConnect.restGetFile(locFile.getContext(), locFile.getPath(),
+                    outputFile);
+        } finally {
+            FileLocker.unlock(this, outputFile);
+        }
+    }
+
+    /**
      * Retrieval which recursively downloads files for the path given the name.
      * Should be used for directories
      * 
@@ -615,13 +637,13 @@ public class LocalizationManager implements IPropertyChangeListener {
         List<ListResponseEntry[]> entriesList = getListResponseEntry(
                 new LocalizationContext[] { context }, fileName, true, false);
 
-        List<File> toCheck = new ArrayList<File>();
-        Set<File> available = new TreeSet<File>();
+        List<File> toCheck = new ArrayList<>();
+        Set<File> available = new TreeSet<>();
         if (entriesList.size() > 0) {
             ListResponseEntry[] entries = entriesList.get(0);
 
-            List<GetUtilityCommand> commands = new ArrayList<GetUtilityCommand>();
-            List<Date> dates = new ArrayList<Date>();
+            List<GetUtilityCommand> commands = new ArrayList<>();
+            List<Date> dates = new ArrayList<>();
             for (ListResponseEntry entry : entries) {
                 File file = buildFileLocation(entry.getContext(),
                         entry.getFileName(), false);
@@ -925,7 +947,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         AbstractUtilityResponse[] responseList = makeRequest(localizationRequest);
 
-        List<ListResponseEntry[]> responses = new ArrayList<ListResponseEntry[]>();
+        List<ListResponseEntry[]> responses = new ArrayList<>();
 
         for (int i = 0; i < responseList.length; i++) {
             AbstractUtilityResponse response = responseList[i];
