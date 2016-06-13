@@ -26,13 +26,13 @@
    </extension>
    
    <extension point="org.eclipse.ui.commands">
-       <command id="com.raytheon.uf.viz.core.rsc.changeLegendMode" name="Change Legend Mode">
+       <command id="com.raytheon.uf.viz.core.rsc.key.numpadEnter" name="NUMPAD_ENTER command">
        </command>
    </extension>
    
    <extension point="org.eclipse.ui.bindings"
                  id="com.raytheon.uf.viz.core.rsc.bindings">
-        <key commandId="com.raytheon.uf.viz.core.rsc.changeLegendMode"
+        <key commandId="com.raytheon.uf.viz.core.rsc.key.numpadEnter"
              contextId="com.raytheon.viz.ui.context" 
              schemeId="com.raytheon.viz.ui.cave.scheme"
              sequence="NUMPAD_ENTER">
