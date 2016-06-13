@@ -25,7 +25,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.reflect.InvocationTargetException;
 import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
 
 import org.eclipse.compare.CompareConfiguration;
 import org.eclipse.compare.CompareEditorInput;
@@ -50,8 +49,8 @@ import org.eclipse.ui.Saveable;
 import org.eclipse.ui.SaveablesLifecycleEvent;
 import org.eclipse.ui.part.FileEditorInput;
 
+import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.localization.Checksum;
-import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -61,6 +60,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
@@ -76,6 +76,8 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ------------
  * May 23, 2016  4907     mapeters  Initial creation.
+ * Jun 13, 2016  4907     mapeters  Update remote tmp file from server without
+ *                                  overwriting local file.
  * 
  * </pre>
  * 
@@ -170,16 +172,12 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             // Update the Remote tmp file
             File tmpRemoteFile = rightRemoteNode.getResource().getLocation()
                     .toFile();
-            IPathManager pm = PathManagerFactory.getPathManager();
-            ILocalizationFile inputLocFile = input.getLocalizationFile();
-            ILocalizationFile latestLocFile = pm.getLocalizationFile(
-                    inputLocFile.getContext(), inputLocFile.getPath());
-            try (InputStream is = latestLocFile.openInputStream()) {
-                Files.copy(is, tmpRemoteFile.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
+            try {
+                LocalizationManager.getInstance().retrieveToFile(
+                        input.getLocalizationFile(), tmpRemoteFile);
                 rightRemoteNode.discardBuffer();
                 serverFileChecksum = Checksum.getMD5Checksum(tmpRemoteFile);
-            } catch (IOException | LocalizationException e) {
+            } catch (IOException | CommunicationException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Failed to update the remote file to the latest version: "
                                 + e.getLocalizedMessage(), e);
