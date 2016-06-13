@@ -29,6 +29,7 @@ import java.util.Map.Entry;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
+import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.vividsolutions.jts.geom.Envelope;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
@@ -46,6 +47,7 @@ import com.vividsolutions.jts.io.WKBReader;
  * ------------ ---------- ----------- --------------------------
  * Jun 24, 2015  #4585     dgilling    Initial creation
  * May 26, 2016   5587     njensen     Added assembleGetIdentifierValues()
+ * Jun 13, 2016   5574     tgurney     Add RequestConstraint query support
  * 
  * </pre>
  * 
@@ -106,6 +108,9 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
     protected IGeometryData makeGeometry(Object[] data, String[] paramNames,
             Map<String, Object> attrs) {
         Object geomWKB = data[0];
+        if (geomWKB == null) {
+            return null;
+        }
         if (!(geomWKB instanceof byte[])) {
             throw new DataRetrievalException(
                     "Retrieved Geometry was not the expected type; was expecting byte[], received: "
@@ -173,6 +178,12 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
                     Collection<?> collection = (Collection<?>) value;
                     constraints.add(buildInConstraint(identifier,
                             collection.toArray()));
+                } else if (value instanceof RequestConstraint) {
+                    String c = identifier + " "
+                            + ((RequestConstraint) value).toSqlString();
+                    constraints.add(c);
+                } else if (value == null) {
+                    constraints.add(identifier + " IS NULL");
                 } else {
                     constraints.add(buildEqualsConstraint(identifier,
                             value.toString()));
