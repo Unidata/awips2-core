@@ -80,6 +80,7 @@ import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants
  * Sep 03, 2015  4717     mapeters  Added maxDepth limitation to refresh.
  * Sep 11, 2015  4717     mapeters  Don't need to copy/dispose tree items when updating them.
  * Jan 07, 2016  5176     tgurney   Check for null on double-click of tree item.
+ * Jun 13, 2016  5682     bsteffen  Fix double click empty selection
  * 
  * </pre>
  * 
@@ -258,6 +259,9 @@ public class ProductBrowserView extends ViewPart {
             @Override
             public void doubleClick(DoubleClickEvent event) {
                 TreeItem[] selection = productTree.getSelection();
+                if (selection == null || selection.length == 0) {
+                    return;
+                }
                 TreeItem selectedTreeItem = selection[0];
                 if (getLabel(selectedTreeItem) != null) {
                     if (!getLabel(selectedTreeItem).isProduct()) {
