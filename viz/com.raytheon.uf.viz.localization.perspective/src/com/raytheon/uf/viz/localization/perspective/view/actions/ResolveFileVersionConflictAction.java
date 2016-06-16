@@ -20,11 +20,9 @@
 package com.raytheon.uf.viz.localization.perspective.view.actions;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.nio.file.StandardCopyOption;
 
 import org.eclipse.compare.CompareUI;
 import org.eclipse.core.resources.IFile;
@@ -40,13 +38,14 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.part.FileEditorInput;
 
+import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.localization.perspective.Activator;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorUtils;
@@ -64,8 +63,10 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------
+ * ------------- -------- --------- --------------------------------------------
  * May 23, 2016  4907     mapeters  Initial creation.
+ * Jun 13, 2016  4907     mapeters  Copy file from server without overwriting
+ *                                  local file.
  * 
  * </pre>
  * 
@@ -157,7 +158,7 @@ public class ResolveFileVersionConflictAction extends Action {
                         .getActiveWorkbenchWindow().getActivePage();
                 page.activate(page.findEditor(mergeInput));
             }
-        } catch (IOException | CoreException | LocalizationException e) {
+        } catch (IOException | CoreException | CommunicationException e) {
             String msg = "An error occurred while setting up the merge editor. "
                     + "Please consider saving your changes to a local file, updating "
                     + "to the latest version of the file, and manually merging the changes.\n";
@@ -174,16 +175,11 @@ public class ResolveFileVersionConflictAction extends Action {
     }
 
     private IFile copyLatestVersionToTmpFile() throws IOException,
-            CoreException, LocalizationException {
+            CoreException, CommunicationException {
         java.nio.file.Path tmpPath = createTmpFilePath();
 
-        IPathManager pm = PathManagerFactory.getPathManager();
-        ILocalizationFile inputLocFile = input.getLocalizationFile();
-        ILocalizationFile latestLocFile = pm.getLocalizationFile(
-                inputLocFile.getContext(), inputLocFile.getPath());
-        try (InputStream is = latestLocFile.openInputStream()) {
-            Files.copy(is, tmpPath, StandardCopyOption.REPLACE_EXISTING);
-        }
+        LocalizationManager.getInstance().retrieveToFile(
+                input.getLocalizationFile(), tmpPath.toFile());
 
         return getTmpFile(tmpPath);
     }

@@ -55,16 +55,18 @@ import com.raytheon.uf.viz.core.VizApp;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 16, 2015  3978      njensen     Initial creation
- * Dec 03, 2015  4834      njensen     Added PUT support
- * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 16, 2015  3978     njensen   Initial creation
+ * Dec 03, 2015  4834     njensen   Added PUT support
+ * Jan 11, 2016  5242     kbisanz   Replaced calls to deprecated
+ *                                  LocalizationFile methods
+ * Jun 13, 2016  4907     mapeters  Added GET support for downloading a file to
+ *                                  a given file location
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class LocalizationRestConnector {
@@ -195,7 +197,8 @@ public class LocalizationRestConnector {
     }
 
     /**
-     * Sends a GET request to the localization REST service for a file.
+     * Sends a GET request to the localization REST service for a file,
+     * downloading it to the default location within localization.
      * 
      * @param context
      * @param filename
@@ -211,6 +214,24 @@ public class LocalizationRestConnector {
             outputFile.getParentFile().mkdirs();
         }
 
+        return restGetFile(context, filename, outputFile);
+    }
+
+    /**
+     * Sends a GET request to the localization REST service for a file,
+     * downloading it to the given outputFile.
+     * 
+     * @param context
+     * @param filename
+     * @param outputFile
+     *            the local file to download the server file to
+     * @return the response
+     * @throws CommunicationException
+     *             if the http connection failed or the server returned a status
+     *             code other than 200
+     */
+    public HttpClientResponse restGetFile(LocalizationContext context,
+            String filename, File outputFile) throws CommunicationException {
         String url = buildRestAddress(context, filename, false);
         HttpGet request = new HttpGet(url);
         DownloadFileStreamHandler streamHandler = new DownloadFileStreamHandler(

@@ -65,18 +65,22 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Oct 31, 2013  2502     bsteffen    Initial creation
- * Nov 26, 2013  2537     bsteffen    Minor code cleanup.
- * Jan,14, 2014  2667     mnash       Remove getGridData method
- * Feb 06, 2014  2672     bsteffen    Add envelope support
- * Sep 09, 2014  3356     njensen     Remove CommunicationException
- * Sep 10, 2014  3615     nabowle     Add support for null count and level parameters.
- * Feb 19, 2015  4147     mapeters    Override getAvailableParameters().
- * Feb 27, 2015  4179     mapeters    Use super's getAvailableValues().
- * Jan 28, 2016  5275     bsteffen    Avoid creating clutter in level database.
- * Jun 09, 2016  5587     bsteffen    Support datatype specific optional identifiers.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 31, 2013  2502     bsteffen  Initial creation
+ * Nov 26, 2013  2537     bsteffen  Minor code cleanup.
+ * Jan,14, 2014  2667     mnash     Remove getGridData method
+ * Feb 06, 2014  2672     bsteffen  Add envelope support
+ * Sep 09, 2014  3356     njensen   Remove CommunicationException
+ * Sep 10, 2014  3615     nabowle   Add support for null count and level
+ *                                  parameters.
+ * Feb 19, 2015  4147     mapeters  Override getAvailableParameters().
+ * Feb 27, 2015  4179     mapeters  Use super's getAvailableValues().
+ * Jan 28, 2016  5275     bsteffen  Avoid creating clutter in level database.
+ * Jun 09, 2016  5587     bsteffen  Support datatype specific optional
+ *                                  identifiers.
+ * Jun 13, 2016  5574     tgurney   Support RequestConstraint as identifier
+ *                                  value
  * 
  * </pre>
  * 
@@ -190,7 +194,6 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         return getGeometryData(request, dbQueryRequest);
     }
 
-
     @Override
     public String[] getOptionalIdentifiers(IDataRequest request) {
         return optionalIdentifiers;
@@ -225,8 +228,13 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null) {
             for (Entry<String, Object> entry : identifiers.entrySet()) {
-                rcMap.put(entry.getKey(), new RequestConstraint(entry
-                        .getValue().toString()));
+                Object value = entry.getValue();
+                if (value instanceof RequestConstraint) {
+                    rcMap.put(entry.getKey(), (RequestConstraint) value);
+                } else {
+                    rcMap.put(entry.getKey(),
+                            new RequestConstraint(value.toString()));
+                }
             }
         }
         Envelope envelope = request.getEnvelope();
@@ -272,8 +280,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         }
         LevelFactory lf = LevelFactory.getInstance();
         /* Convert the point data container into a list of IGeometryData */
-        List<IGeometryData> result = new ArrayList<>(
-                pdc.getAllocatedSz());
+        List<IGeometryData> result = new ArrayList<>(pdc.getAllocatedSz());
         for (int i = 0; i < pdc.getCurrentSz(); i += 1) {
             PointDataView pdv = pdc.readRandom(i);
             DefaultGeometryData data = createNewGeometryData(pdv);

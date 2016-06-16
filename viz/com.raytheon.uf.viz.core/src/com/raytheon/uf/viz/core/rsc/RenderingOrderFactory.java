@@ -206,7 +206,7 @@ public class RenderingOrderFactory {
         }
 
         statusHandler.handle(Priority.VERBOSE,
-                "Could not find order id for class heirarchy of: "
+                "Could not find order id for class hierarchy of: "
                         + rsc.getClass());
 
         return ResourceOrder.UNKNOWN;

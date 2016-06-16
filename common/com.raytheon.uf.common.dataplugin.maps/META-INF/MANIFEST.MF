@@ -11,3 +11,4 @@ Require-Bundle: org.apache.commons.lang3;bundle-version="3.4.0",
  com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.serialization
 Export-Package: com.raytheon.uf.common.dataplugin.maps.dataaccess.util
+Import-Package: com.raytheon.uf.common.dataquery.requests

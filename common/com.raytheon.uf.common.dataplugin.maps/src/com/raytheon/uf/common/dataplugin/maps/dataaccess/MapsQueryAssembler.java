@@ -21,13 +21,15 @@ package com.raytheon.uf.common.dataplugin.maps.dataaccess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.BooleanUtils;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataplugin.maps.dataaccess.util.MapsQueryUtil;
+import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.vividsolutions.jts.geom.Envelope;
 
 /**
@@ -38,18 +40,19 @@ import com.vividsolutions.jts.geom.Envelope;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 28, 2013            bkowal     Initial creation
- * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
- *                                     single request.
- * Oct 30, 2013            mnash      Allow for no parameters to be set.
- * Aug 31, 2015 4569       mapeters    Alias automatically retrieved location columns.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 28, 2013           bkowal    Initial creation
+ * Feb 14, 2013  1614     bsteffen  Refactor data access framework to use single
+ *                                  request.
+ * Oct 30, 2013           mnash     Allow for no parameters to be set.
+ * Aug 31, 2015  4569     mapeters  Alias automatically retrieved location
+ *                                  columns.
+ * Jun 10, 2016  5574     mapeters  Add advanced query support.
  * 
  * </pre>
  * 
  * @author bkowal
- * @version 1.0
  */
 
 public class MapsQueryAssembler {
@@ -98,7 +101,8 @@ public class MapsQueryAssembler {
     }
 
     /**
-     * Retrieves a named identifier from the request
+     * Retrieves a named identifier from the request that must be provided as a
+     * string
      * 
      * @param request
      *            the original request that we are processing
@@ -106,9 +110,15 @@ public class MapsQueryAssembler {
      *            the name of the identifier to extract
      * @return the identifier
      */
-    public static String extractIdentifier(IDataRequest request,
+    private static String extractStringIdentifier(IDataRequest request,
             String identifierName) {
-        return request.getIdentifiers().get(identifierName).toString();
+        Object identifier = request.getIdentifiers().get(identifierName);
+        if (identifier instanceof String) {
+            return (String) identifier;
+        }
+
+        throw new IncompatibleRequestException("'" + identifier.toString()
+                + "' is not a valid identifier value for " + identifierName);
     }
 
     /**
@@ -118,8 +128,9 @@ public class MapsQueryAssembler {
      *            the original request that we are processing
      * @return the table identifier
      */
-    public static String extractTable(IDataRequest request) {
-        return extractIdentifier(request, REQUIRED_IDENTIFIERS.IDENTIFIER_TABLE);
+    private static String extractTable(IDataRequest request) {
+        return extractStringIdentifier(request,
+                REQUIRED_IDENTIFIERS.IDENTIFIER_TABLE);
     }
 
     /**
@@ -129,8 +140,8 @@ public class MapsQueryAssembler {
      *            the original request that we are processing
      * @return the geometry identifier
      */
-    public static String extractGeomField(IDataRequest request) {
-        return extractIdentifier(request,
+    private static String extractGeomField(IDataRequest request) {
+        return extractStringIdentifier(request,
                 REQUIRED_IDENTIFIERS.IDENTIFIER_GEOM_FIELD);
     }
 
@@ -172,7 +183,7 @@ public class MapsQueryAssembler {
         String table = extractTable(request);
         String geomField = extractGeomField(request);
 
-        List<String> columns = new ArrayList<String>();
+        List<String> columns = new ArrayList<>();
         if (locationQuery == false) {
             /*
              * The first column will always be the geometry. We don't need to
@@ -190,8 +201,8 @@ public class MapsQueryAssembler {
              * it in case it is also included as a parameter (to make the two
              * differentiable).
              */
-            locationField = request.getIdentifiers()
-                    .get(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD).toString();
+            locationField = extractStringIdentifier(request,
+                    IDENTIFIERS.IDENTIFIER_LOCATION_FIELD);
             StringBuilder locationFieldAliased = new StringBuilder(
                     locationField).append(" as ")
                     .append(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)
@@ -209,9 +220,9 @@ public class MapsQueryAssembler {
                 }
             }
         }
-        List<String> constraints = new ArrayList<String>();
+        List<String> constraints = new ArrayList<>();
         // add location constraint (ifdef)
-        if ((request.getLocationNames() == null) == false
+        if (request.getLocationNames() != null
                 && request.getLocationNames().length > 0) {
             boolean inLocation = Boolean.TRUE;
             if (request.getIdentifiers().containsKey(
@@ -221,42 +232,36 @@ public class MapsQueryAssembler {
             }
 
             if (locationField != null) {
+                /*
+                 * TODO if NOT IN support is added to RequestConstraint, use
+                 * RequestConstraint.toSqlString() and remove
+                 * buildInConstraint().
+                 */
                 constraints.add(buildInConstraint(request.getLocationNames(),
                         locationField, inLocation));
             }
         }
         // add remaining identifiers to constraints (ifdef)
-        Iterator<String> identifiersIterator = request.getIdentifiers()
-                .keySet().iterator();
-        while (identifiersIterator.hasNext()) {
-            String identifierKey = identifiersIterator.next();
-            if (RESERVED_IDENTIFIERS.contains(identifierKey)) {
+        for (Map.Entry<String, Object> entry : request.getIdentifiers()
+                .entrySet()) {
+            String key = entry.getKey();
+            if (RESERVED_IDENTIFIERS.contains(key)) {
                 continue;
             }
-            constraints.add(buildEqualsConstraint(identifierKey, request
-                    .getIdentifiers().get(identifierKey).toString()));
+
+            Object value = entry.getValue();
+            RequestConstraint requestConstraint;
+            if (value instanceof RequestConstraint) {
+                requestConstraint = (RequestConstraint) value;
+            } else {
+                requestConstraint = new RequestConstraint(value.toString());
+            }
+
+            constraints.add(key + requestConstraint.toSqlString());
         }
 
         return MapsQueryUtil.assembleMapsTableQuery(envelope, columns,
                 constraints, table, geomField);
-    }
-
-    /**
-     * Constructs an equality constraint
-     * 
-     * @param key
-     *            the operand
-     * @param value
-     *            the expected result
-     * @return the equality constraint
-     */
-    private static String buildEqualsConstraint(String key, String value) {
-        StringBuilder stringBuilder = new StringBuilder(key);
-        stringBuilder.append(" = '");
-        stringBuilder.append(value);
-        stringBuilder.append("'");
-
-        return stringBuilder.toString();
     }
 
     /**
