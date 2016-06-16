@@ -30,8 +30,13 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.renderers.swt.StackRenderer;
+import org.eclipse.swt.custom.CTabFolder;
 import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.layout.RowData;
+import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Menu;
+import org.eclipse.swt.widgets.ToolBar;
 import org.eclipse.ui.internal.e4.compatibility.CompatibilityEditor;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
@@ -70,6 +75,7 @@ import com.raytheon.viz.ui.IRenameablePart;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Dec 23, 2015  5189     bsteffen    Initial Creation.
+ * Jun 14, 2016  5681     bsteffen    Override hideChild
  * 
  * </pre>
  * 
@@ -176,6 +182,59 @@ public class VizStackRenderer extends StackRenderer {
                     tabItem.setText(tabItem.getText().substring(1));
                 }
             }
+        }
+    }
+
+
+    /**
+     * This method is overridden to work around
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=469437. The implementation
+     * of this method from StackRenderer can actually cause toolbars from the
+     * hidden part to become visible, this implementation hides the toolbars if
+     * the currently selected part is hidden.
+     */
+    @Override
+    public void hideChild(MElementContainer<MUIElement> parentElement,
+            MUIElement child) {
+
+        CTabFolder ctf = (CTabFolder) parentElement.getWidget();
+        if (ctf == null) {
+            return;
+        }
+
+        // Check if we have to reset the currently active child for the stack
+        CTabItem cti = null;
+        for (CTabItem item : ctf.getItems()) {
+            if (item.getData(OWNING_ME) == child) {
+                cti = item;
+                break;
+            }
+        }
+        if (cti == ctf.getSelection()) {
+            // If we're the selected part we need to clear the top right...
+
+            /*
+             * This should be equivalent to adjustTopRight when there is no
+             * selection.
+             */
+            Composite trComp = (Composite) ctf.getTopRight();
+            trComp.setData("thePart", null);
+            trComp.setVisible(false);
+
+            Control[] kids = trComp.getChildren();
+            ToolBar menuTB = (ToolBar) kids[kids.length - 1];
+            menuTB.getItem(0).setData("thePart", null);
+            RowData rd = (RowData) menuTB.getLayoutData();
+            rd.exclude = true;
+            menuTB.setVisible(false);
+
+            trComp.pack();
+        }
+
+        // find the 'stale' tab for this element and dispose it
+        if (cti != null && !cti.isDisposed()) {
+            cti.setControl(null);
+            cti.dispose();
         }
     }
 

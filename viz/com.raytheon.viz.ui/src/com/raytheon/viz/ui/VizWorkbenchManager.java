@@ -53,6 +53,7 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
  * Oct 30, 2009            mschenke     Initial creation
  * Oct 01, 2015  4926      njensen      partBroughtToTop() calls partActivated()
  * Jan 13, 2016  5231      njensen      Don't mess with contexts on window activated/deactivated
+ * Jun 09, 2016  5256      njensen      Don't mess with contexts on part opened
  * 
  * </pre>
  * 
@@ -210,7 +211,6 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
             }
             updateUI(part.getSite().getWorkbenchWindow());
         }
-        ContextManager.getInstance(partWindow).activateContexts(part);
     }
 
     @Override
