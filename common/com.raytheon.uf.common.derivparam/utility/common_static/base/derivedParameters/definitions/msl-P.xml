@@ -37,7 +37,7 @@
     <Method name="Alias" models="ETA mesoEta212 mesoEta215 ETA218 ETA242 ETA207" levels="Surface" displayName="ETA Model MSLP">
         <Field abbreviation="EMSP" level="Surface"/>
     </Method>
-    <Method name="Alias" models="GFS215 GFS229" levels="Surface" displayName="MSLP (Eta Reduction)">
+    <Method name="Alias" models="GFS215 GFS229 GFS217 GFS20-PAC GFS20-PRICO" levels="Surface" displayName="MSLP (Eta Reduction)">
         <Field abbreviation="EMSP" level="MSL"/>
     </Method>
     <Method name="Alias" models="HiResW-ARW-East HiResW-ARW-West HiResW-ARW-AK HiResW-ARW-PR HiResW-ARW-SJU" levels="Surface" displayName="ETA Model MSLP">
