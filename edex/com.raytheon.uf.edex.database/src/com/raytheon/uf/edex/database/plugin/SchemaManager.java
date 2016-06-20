@@ -51,21 +51,28 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 10/8/2008    1532       bphillip    Initial checkin
- * 2/9/2009     1990       bphillip    Fixed index creation
- * 03/20/09                njensen     Implemented IPluginRegistryChanged
- * Mar 29, 2013 1841       djohnson    Remove unused method, warnings, and close streams with utility method.
- * Mar 02, 2013 1970       bgonzale    Added check for abstract entities in sql index naming.
- *                                      Removed unused private method populateSchema.
- * Oct 14, 2013 2361       njensen     Moved to plugin uf.edex.database
- *                                      Replaced use of SerializableManager
- * Jul 10, 2014 2914       garmendariz Remove EnvProperties
- * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
- * Oct 23, 2014 3454       bphillip    Fix table creation error introduced from Hibernate 4 upgrade
- * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
- * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
+ * 
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Oct 08, 2008  1532     bphillip     Initial checkin
+ * Feb 09, 2009  1990     bphillip     Fixed index creation
+ * Mar 20, 0009           njensen      Implemented IPluginRegistryChanged
+ * Mar 29, 2013  1841     djohnson     Remove unused method, warnings, and close
+ *                                     streams with utility method.
+ * Mar 02, 2013  1970     bgonzale     Added check for abstract entities in sql
+ *                                     index naming. Removed unused private
+ *                                     method populateSchema.
+ * Oct 14, 2013  2361     njensen      Moved to plugin uf.edex.database Replaced
+ *                                     use of SerializableManager
+ * Jul 10, 2014  2914     garmendariz  Remove EnvProperties
+ * Oct 06, 2014  3702     bsteffen     Create PluginVersion table in each
+ *                                     database containing plugins.
+ * Oct 23, 2014  3454     bphillip     Fix table creation error introduced from
+ *                                     Hibernate 4 upgrade
+ * Jul 13, 2015  4500     rjpeter      Fix SQL Injection concerns.
+ * Dec 17, 2015  5166     kbisanz      Update logging to use SLF4J
+ * Jun 20, 2016  5679     rjpeter      Add admin database account.
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -84,7 +91,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
      */
     private static final long pluginLockTimeOutMillis = 120000;
 
-    private static final String TABLE = "%TABLE%";
+    private static final String TABLE = "%table%";
 
     /** The singleton instance */
     private static SchemaManager instance;
@@ -99,7 +106,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             .compile("^create (?:table |index |sequence )(?:[A-Za-z_0-9]*\\.)?(.+?)(?: .*)?$");
 
     private final Pattern createIndexTableNamePattern = Pattern
-            .compile("^create index %TABLE%.+? on (.+?) .*$");
+            .compile("^create index %table%.+? on (.+?) .*$");
 
     /**
      * Gets the singleton instance
@@ -132,11 +139,12 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
         ClusterTask ct = null;
 
         try {
-            String sessFactoryName = "&" + props.getDatabase()
+            String sessFactoryName = "&admin_" + props.getDatabase()
                     + "SessionFactory";
             DatabaseSessionFactoryBean sessFactory = (DatabaseSessionFactoryBean) EDEXUtil
                     .getESBComponent(sessFactoryName);
-            PluginVersionDao pvd = new PluginVersionDao(props.getDatabase());
+            PluginVersionDao pvd = new PluginVersionDao(props.getDatabase(),
+                    true);
 
             // handle plugin versioning
             if (props.isForceCheck()) {
@@ -231,7 +239,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                             sessFactory.getAnnotatedClasses()));
             createSql = new ArrayList<String>(sqlArray.length);
             for (String sql : sqlArray) {
-                createSql.add(sql);
+                createSql.add(sql.toLowerCase());
             }
 
             for (int i = 0; i < createSql.size(); i++) {
@@ -361,7 +369,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             DatabaseSessionFactoryBean sessFactory, boolean forceResourceCheck)
             throws PluginException {
         List<String> ddls = getRawCreateSql(props, sessFactory);
-        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase()));
+        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase(),
+                true));
         int rows = 0;
 
         for (String sql : ddls) {
@@ -407,7 +416,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void dropSchema(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory) throws PluginException {
         List<String> ddls = getRawDropSql(props, sessFactory);
-        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase()));
+        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase(),
+                true));
 
         for (String sql : ddls) {
             boolean valid = true;

@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 10, 2016 4630       rjpeter     Initial creation
+ * Jun 20, 2016 5679       rjpeter     Add admin database account
  * 
  * </pre>
  * 
@@ -269,7 +270,7 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
     protected final String database;
 
     public PostgresBloatDao(String database) {
-        super(DaoConfig.forDatabase(database));
+        super(DaoConfig.forDatabase(database, true));
         this.database = database;
     }
 
