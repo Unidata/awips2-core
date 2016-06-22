@@ -34,21 +34,25 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 12/11/07     600         bphillip    Initial Check in   
- * Oct 10, 2012 1261        djohnson    Add ability for test overriding of bean lookups.
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 11, 0007  600      bphillip  Initial Check in
+ * Oct 10, 2012  1261     djohnson  Add ability for test overriding of bean
+ *                                  lookups.
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * Jun 20, 2016  5679     rjpeter   Add admin database account.
  * 
  * </pre>
  * 
  * @author bphillip
- * @version 1
  */
 public abstract class DaoConfig {
 
     /** The default database name */
     public static final String DEFAULT_DB_NAME = "metadata";
+
+    /** The admin prefix */
+    private static final String ADMIN = "admin_";
 
     /** The session factory suffix */
     private static final String SESSION_FACTORY = "SessionFactory";
@@ -99,7 +103,6 @@ public abstract class DaoConfig {
      */
     public abstract Class<?> getDaoClass();
 
-
     /**
      * Gets a DaoConfig object for the specified class using the default session
      * factory and default transaction manager.
@@ -115,6 +118,22 @@ public abstract class DaoConfig {
 
     /**
      * Gets a DaoConfig object for the specified class using the default session
+     * factory and default transaction manager. If admin, will login as a super
+     * user, otherwise a normal user login.
+     * 
+     * @param className
+     *            The class for which to create the DaoConfig object
+     * @param admin
+     *            Whether to login as a super user or not
+     * @return A DaoConfig instance using the specified class, default session
+     *         factory and default transaction manager.
+     */
+    public static DaoConfig forClass(Class<?> className, boolean admin) {
+        return new SpringLookupDaoConfig(className, admin);
+    }
+
+    /**
+     * Gets a DaoConfig object for the specified class using the default session
      * factory and default transaction manager.
      * 
      * @param className
@@ -126,8 +145,8 @@ public abstract class DaoConfig {
      */
     public static DaoConfig forClass(String className)
             throws ClassNotFoundException {
-        return new SpringLookupDaoConfig(DaoConfig.class.getClassLoader().loadClass(
-                (className).trim()));
+        return new SpringLookupDaoConfig(DaoConfig.class.getClassLoader()
+                .loadClass((className).trim()));
     }
 
     /**
@@ -150,25 +169,58 @@ public abstract class DaoConfig {
      * @param dbName
      *            The database name
      * @param className
+     *            The class object
+     * @param admin
+     *            Whether to login as a super user or not
+     * @return A DaoConfig instance with the specified database name and class
+     *         name
+     */
+    public static DaoConfig forClass(String dbName, Class<?> className,
+            boolean admin) {
+        return new SpringLookupDaoConfig(dbName, className, admin);
+    }
+
+    /**
+     * Gets a DaoConfig object for the specified class and database
+     * 
+     * @param dbName
+     *            The database name
+     * @param className
      *            The class name
      * @return A DaoConfig instance with the specified database name and class
      *         name
      * @throws ClassNotFoundException
-     *             If the given class name does not exist on the class path  
+     *             If the given class name does not exist on the class path
      */
     public static DaoConfig forClass(String dbName, String className)
             throws ClassNotFoundException {
-        return new SpringLookupDaoConfig(dbName, DaoConfig.class.getClassLoader()
-                .loadClass((className).trim()));
+        return new SpringLookupDaoConfig(dbName, DaoConfig.class
+                .getClassLoader().loadClass((className).trim()));
     }
 
     /**
      * Gets a DaoConfig object for the specified database
-     * @param dbName The database name
+     * 
+     * @param dbName
+     *            The database name
      * @return
      */
     public static DaoConfig forDatabase(String dbName) {
         return new SpringLookupDaoConfig(dbName);
+    }
+
+    /**
+     * Gets a DaoConfig object for the specified database. If admin will login
+     * as a super user, otherwise will use a normal user login.
+     * 
+     * @param dbName
+     *            The database name
+     * @param admin
+     *            Whether to login as a super user or not
+     * @return
+     */
+    public static DaoConfig forDatabase(String dbName, boolean admin) {
+        return new SpringLookupDaoConfig(dbName, admin);
     }
 
     private static class SpringLookupDaoConfig extends DaoConfig {
@@ -191,13 +243,29 @@ public abstract class DaoConfig {
 
         /**
          * Constructs a DaoConfig object using the specified class name, default
-         * session factory, and the default transaction manager
+         * session factory, and the default transaction manager. Database login
+         * will not be as a super user.
          * 
          * @param className
          *            The class object
          */
         private SpringLookupDaoConfig(Class<?> className) {
-            this(DEFAULT_DB_NAME, className);
+            this(DEFAULT_DB_NAME, className, false);
+        }
+
+        /**
+         * Constructs a DaoConfig object using the specified class name, default
+         * session factory, and the default transaction manager. If admin, the
+         * database login will be as a super user, otherwise a normal user login
+         * will be used.
+         * 
+         * @param className
+         *            The class object
+         * @param admin
+         *            Whether to login as a super user or not
+         */
+        private SpringLookupDaoConfig(Class<?> className, boolean admin) {
+            this(DEFAULT_DB_NAME, className, admin);
         }
 
         /**
@@ -207,7 +275,21 @@ public abstract class DaoConfig {
          *            The database name
          */
         private SpringLookupDaoConfig(String dbName) {
-            this(dbName, null);
+            this(dbName, null, false);
+        }
+
+        /**
+         * Constructs a DaoConfig object for the specified database. If admin,
+         * the database login will be as a super user, otherwise a normal user
+         * login will be used.
+         * 
+         * @param dbName
+         *            The database name
+         * @param admin
+         *            Whether to login as a super user or not
+         */
+        private SpringLookupDaoConfig(String dbName, boolean admin) {
+            this(dbName, null, admin);
         }
 
         /**
@@ -221,9 +303,32 @@ public abstract class DaoConfig {
          *            The class object
          */
         private SpringLookupDaoConfig(String dbName, Class<?> daoClass) {
+            this(dbName, daoClass, false);
+        }
+
+        /**
+         * Constructs a DaoConfig object for the specified database using the
+         * specified class name. The appropriate session factory and transaction
+         * manager will be determined from the database name. If admin, the
+         * database login will be as a super user, otherwise a normal user login
+         * will be used.
+         * 
+         * @param dbName
+         *            The database name
+         * @param daoClass
+         *            The class object
+         * @param admin
+         *            Whether to login as a super user or not
+         */
+        private SpringLookupDaoConfig(String dbName, Class<?> daoClass,
+                boolean admin) {
             this.daoClass = daoClass;
-            this.sessionFactoryName = dbName + SESSION_FACTORY;
-            this.txManagerName = dbName + TX_MANAGER;
+            String prefix = "";
+            if (admin) {
+                prefix = ADMIN;
+            }
+            this.sessionFactoryName = prefix + dbName + SESSION_FACTORY;
+            this.txManagerName = prefix + dbName + TX_MANAGER;
         }
 
         /**

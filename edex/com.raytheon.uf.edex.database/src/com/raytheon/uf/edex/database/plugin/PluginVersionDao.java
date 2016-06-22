@@ -54,11 +54,13 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 7/24/07      353        bphillip    Initial Check in
- * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
- * Jul 10, 2015 4500       rjpeter     Changed to package scope, added runPluginScripts.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------------------------------
+ * Jul 24, 0007  353      bphillip  Initial Check in
+ * Oct 06, 2014  3702     bsteffen  Create PluginVersion table in each database containing plugins.
+ * Jul 10, 2015  4500     rjpeter   Changed to package scope, added runPluginScripts.
+ * Jun 20, 2016  5679     rjpeter   Add admin database account.
+ * 
  * </pre>
  * 
  * @author bphillip
@@ -80,9 +82,24 @@ class PluginVersionDao extends CoreDao {
 
     /**
      * Creates a new PluginVersionDao.
+     * 
+     * @param database
+     *            The database to connect to.
      */
     public PluginVersionDao(String database) {
         super(DaoConfig.forClass(database, PluginVersion.class));
+    }
+
+    /**
+     * Creates a new PluginVersionDao.
+     * 
+     * @param database
+     *            The database to connect to.
+     * @param admin
+     *            Whether to connect to be with admin privileges or not.
+     */
+    public PluginVersionDao(String database, boolean admin) {
+        super(DaoConfig.forClass(database, PluginVersion.class, admin));
     }
 
     /**
