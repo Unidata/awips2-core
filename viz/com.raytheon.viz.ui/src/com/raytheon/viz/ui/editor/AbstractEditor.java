@@ -47,8 +47,10 @@ import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
+import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
 import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
+import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.viz.ui.IRenameablePart;
 import com.raytheon.viz.ui.color.BackgroundColor;
@@ -71,6 +73,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 12, 2014  3264     bsteffen    Make listeners thread safe.
  * Mar 02, 2015  4204     njensen     Deprecated setTabTitle and overrode setPartName
  * Jan 13, 2016  DR 18480 D. Friedman Synchronize time matching before initializing displays.
+ * Jun 24, 2016  5708     bsteffen    Notify listeners when dirty status changes.
  * 
  * </pre>
  * 
@@ -103,6 +106,7 @@ public abstract class AbstractEditor extends EditorPart implements
      */
     public AbstractEditor() {
         renderableDisplayListeners = new CopyOnWriteArraySet<IRenderableDisplayChangedListener>();
+        renderableDisplayListeners.add(new DirtyListener());
     }
 
     private IRenderableDisplay[] getRenderableDisplays() {
@@ -619,5 +623,44 @@ public abstract class AbstractEditor extends EditorPart implements
     @Override
     public void setPartName(String partName) {
         super.setPartName(partName);
+    }
+
+    /**
+     * Listen to changes in the display and the resources and fire a property
+     * change event when resources change so that the eclipse platform can
+     * accuratly track the editor dirty state.
+     */
+    private class DirtyListener implements IRenderableDisplayChangedListener,
+            ResourceList.AddListener, ResourceList.RemoveListener {
+
+        @Override
+        public void renderableDisplayChanged(IDisplayPane pane,
+                IRenderableDisplay newRenderableDisplay,
+                DisplayChangeType type) {
+            ResourceList resourceList = newRenderableDisplay.getDescriptor()
+                    .getResourceList();
+            switch (type) {
+            case ADD:
+                resourceList.addPostAddListener(this);
+                resourceList.addPostRemoveListener(this);
+                break;
+            case REMOVE:
+                resourceList.removePostAddListener(this);
+                resourceList.removePostRemoveListener(this);
+                break;
+            }
+        }
+
+        @Override
+        public void notifyAdd(ResourcePair rp) throws VizException {
+            firePropertyChange(ISaveablePart2.PROP_DIRTY);
+        }
+
+        @Override
+        public void notifyRemove(ResourcePair rp) throws VizException {
+            firePropertyChange(ISaveablePart2.PROP_DIRTY);
+
+        }
+
     }
 }
