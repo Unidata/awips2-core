@@ -126,14 +126,6 @@
    </extension>
    <extension
          point="org.eclipse.ui.menus">
-        <menuContribution
-           locationURI="menu:file.new">
-	       <command
-	            commandId="com.raytheon.viz.ui.maps.createProjection"
-	            label="Map Projection..."
-	            style="push">
-	       </command>
-        </menuContribution>
    		<menuContribution
                locationURI="menu:com.raytheon.viz.ui.scale">
            <dynamic

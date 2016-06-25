@@ -65,6 +65,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 26, 2014  3236     njensen     LocalizationEditor can be text or combo
  * Dec 01, 2014  3236     njensen     Fix checking alert service
+ * Jun 24, 2015           mjames@ucar Formatting changes for Unidata AWIPS II
  * 
  * </pre>
  * 
@@ -140,7 +141,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         FieldEditor site;
         if (!LocalizationManager.getInstance().isOverrideSite()) {
             site = new ComboFieldEditor(
-                    LocalizationConstants.P_LOCALIZATION_SITE_NAME, "&Site: ",
+                    LocalizationConstants.P_LOCALIZATION_SITE_NAME, "&Site",
                     entryNamesAndValues, getFieldEditorParent());
         } else {
             Composite note = createNoteComposite(
@@ -169,7 +170,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                     getPreferenceStore(),
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER,
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS,
-                    "&Localization Server: ");
+                    "&EDEX Server");
         } else {
             Composite note = createNoteComposite(
                     getFont(),
@@ -189,7 +190,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             localizationEditor.setEnabled(false, getFieldEditorParent());
         }
         localizationEditor
-                .setErrorMessage("Unable to connect to localization server");
+                .setErrorMessage("Unable to connect to EDEX server");
         localizationEditor.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {

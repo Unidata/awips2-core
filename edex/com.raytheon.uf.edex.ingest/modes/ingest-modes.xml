@@ -24,10 +24,9 @@
 --> 
 <edexModes>
 	<mode name="ingest">
-                <exclude>ebxml.*\.xml</exclude>
-                <exclude>.*datadelivery.*</exclude>
 		<exclude>.*request.*</exclude>
 		<exclude>edex-security.xml</exclude>
-		<exclude>webservices.xml</exclude>
+		<exclude>rpgenvdata.*</exclude>
+		<exclude>taf.*</exclude>
 	</mode>
 </edexModes>

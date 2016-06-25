@@ -305,7 +305,7 @@ public class LoadPerspectiveHandler extends
             } else {
                 // There is a view part specified
                 IViewPart part = UiUtil.findView(window, b.getView(), false);
-
+                // TODO: doens't load saved views if side panel is hidden
                 if (part != null && part instanceof IDisplayPaneContainer) {
                     BundleLoader.loadTo((IDisplayPaneContainer) part, b);
                 }

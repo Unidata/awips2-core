@@ -329,7 +329,7 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
      * com.raytheon.uf.viz.core.drawables.PaintProperties)
      */
     @Override
-    protected final void paintInternal(IGraphicsTarget target,
+    protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
         DataTime time = paintProps.getDataTime();
         if (time == null) {

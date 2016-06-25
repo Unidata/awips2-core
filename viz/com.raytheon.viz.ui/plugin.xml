@@ -189,6 +189,11 @@
          name="Editable"
          sortID="901"/>
       <contextualMenu
+            actionClass="com.raytheon.viz.ui.cmenu.InterpolateAction"
+            name="Interpolate"
+			capabilityClass="com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability"
+            sortID="997"/>
+      <contextualMenu
             actionClass="com.raytheon.viz.ui.cmenu.EnableDisableAction"
             name="Display Product"
             sortID="998"/>
@@ -456,30 +461,6 @@
          class="com.raytheon.viz.ui.actions.PrintScreenReverseAction"
          commandId="com.raytheon.viz.ui.actions.printScreenReverseAction">
    </handler>
-</extension>
-<extension
-      point="org.eclipse.ui.menus">
-   <menuContribution
-         locationURI="menu:import">
-      <command
-             commandId="com.raytheon.viz.ui.loadSerialized"
-             label="Displays..."
-             style="push">
-       </command>
-   </menuContribution>
-   <menuContribution
-         locationURI="menu:export">
-      <command
-             commandId="com.raytheon.viz.ui.saveBundle"
-             label="Editor Display..."
-             style="push">
-       </command>
-       <command
-             commandId="com.raytheon.viz.ui.saveProcedure"
-             label="Perspective Displays..."
-             style="push">
-       </command>
-   </menuContribution>
 </extension>
 <extension
       point="org.eclipse.ui.contexts">

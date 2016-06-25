@@ -27,11 +27,12 @@
 					<loadProperties>
 						<capabilities>
 							<capability xsi:type="colorableCapability"
-								colorAsString="#9b9b9b" />
-							<capability xsi:type="outlineCapability" lineStyle="SOLID"
-								outlineOn="true" outlineWidth="1" />
+								colorAsString="#FFA54F" />
+							<capability xsi:type="outlineCapability" lineStyle="DASHED"
+								outlineOn="true" outlineWidth="1" 
 								interpolationState="false" brightness="1.0" contrast="1.0"
 								alpha="1.0" />
+							<capability xsi:type="densityCapability" density="0.2"/>
 						</capabilities>
 						<resourceType>PLAN_VIEW</resourceType>
 					</loadProperties>
@@ -55,7 +56,7 @@
 							</properties>
 							<resourceData xsi:type="dbMapResourceData">
 								<table>mapdata.latlon10</table>
-								<mapName>Lat/Lon 10 over Ocean</mapName>
+								<mapName>Latitude/Longitude</mapName>
 							</resourceData>
 						</resource>
 						<resource>
@@ -76,7 +77,7 @@
 								<filename>latlon10.lpi</filename>
 							</resourceData>
 						</resource>
-						<mapName>Lat/Lon 10 over Ocean</mapName>
+						<mapName>Latitude/Longitude</mapName>
 					</resourceData>
 				</resource>
 			</descriptor>
