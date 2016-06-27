@@ -32,7 +32,7 @@ import org.hibernate.dialect.Dialect;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 
-import com.raytheon.uf.edex.database.type.JavaUtilDateType;
+import com.raytheon.uf.edex.database.type.CommutativeTimestampType;
 
 /**
  * Extension of the AnnotationSessionFactoryBean provided by Spring.
@@ -157,8 +157,8 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
 
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
-        sfb.registerTypeOverride(new JavaUtilDateType(),
-                JavaUtilDateType.getRegistryKeys());
+        sfb.registerTypeOverride(new CommutativeTimestampType(),
+                CommutativeTimestampType.getRegistryKeys());
         return super.buildSessionFactory(sfb);
     }
 }
