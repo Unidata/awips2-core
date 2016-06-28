@@ -23,9 +23,9 @@ import java.util.LinkedList;
 import java.util.List;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig;
 
 /**
  * Routes pdos to a destination. Should only be used for destination inside the
@@ -35,14 +35,14 @@ import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 19, 2013 2170       rjpeter     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Nov 19, 2013  2170     rjpeter   Initial creation
+ * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class PdoRouter implements INotificationRouter {
 

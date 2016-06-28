@@ -25,14 +25,14 @@ import java.util.zip.GZIPOutputStream;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.message.DataURINotificationMessage;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig.EndpointType;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
-import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig;
-import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig.EndpointType;
 
 /**
  * Routes DataUri Notifications to a destination uri. Notification msg will be
@@ -43,15 +43,16 @@ import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig.EndpointTyp
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 19, 2013 2170       rjpeter     Initial creation
- * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 19, 2013  2170     rjpeter   Initial creation
+ * Oct 30, 2015  4710     bclement  ByteArrayOutputStream renamed to
+ *                                  PooledByteArrayOutputStream
+ * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class DataUriRouter implements INotificationRouter {
 
