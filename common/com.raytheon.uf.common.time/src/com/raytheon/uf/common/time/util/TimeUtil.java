@@ -60,6 +60,8 @@ import com.raytheon.uf.common.time.domain.api.ITimePoint;
  * Feb 19, 2014  2631      mpduff      Added buildThreadLocalSimpleDateFormat(String, TimeZone).
  * May 14, 2014  3169      bclement    Added newGmtCalendar(int,int,int), newCalendar(Calendar) uses clone()
  * Sep 15, 2015  4486      rjpeter     Removed Calendar create from formatDate.
+ * Jun 28, 2016  4625      bkowal      Added {@link #newEpochCalendar()}, {@link #newCalendar(long)},
+ *                                     {@link #newCalendar(TimeZone, long)}, {@link #newGmtCalendar(long)}.
  * </pre>
  * 
  * @author njensen
@@ -395,8 +397,31 @@ public final class TimeUtil {
      * @return the calendar
      */
     public static Calendar newCalendar() {
+        return newCalendar(SimulatedTime.getSystemTime().getMillis());
+    }
+
+    /**
+     * Return a new {@link Calendar} instance initialized to the epoch. Note:
+     * {@link SimulatedTime} is NOT used when creating this Calendar.
+     * 
+     * @return the {@link Calendar}
+     */
+    public static Calendar newEpochCalendar() {
+        return newCalendar(0L);
+    }
+
+    /**
+     * Return a new {@link Calendar} instance initialized to the specified time
+     * in milliseconds. Note: {@link SimulatedTime} is NOT used when creating
+     * this Calendar.
+     * 
+     * @param timeInMillis
+     *            the specified time in milliseconds
+     * @return the {@link Calendar}
+     */
+    public static Calendar newCalendar(final long timeInMillis) {
         Calendar cal = Calendar.getInstance();
-        cal.setTimeInMillis(SimulatedTime.getSystemTime().getMillis());
+        cal.setTimeInMillis(timeInMillis);
         return cal;
     }
 
@@ -411,14 +436,30 @@ public final class TimeUtil {
      * @return the calendar
      */
     public static Calendar newCalendar(TimeZone timeZone) {
+        return newCalendar(timeZone, SimulatedTime.getSystemTime().getMillis());
+    }
+
+    /**
+     * Return a new {@link Calendar} instance for the specified {@link TimeZone}
+     * initalized to the specified time in milliseconds. Note:
+     * {@link SimulatedTime} is NOT used when creating this Calendar.
+     * 
+     * @param timeZone
+     *            the time zone
+     * @param timeInMillis
+     *            the specified time in milliseconds
+     * @return the {@link Calendar}
+     */
+    public static Calendar newCalendar(TimeZone timeZone,
+            final long timeInMillis) {
         Calendar cal = Calendar.getInstance(timeZone);
-        cal.setTimeInMillis(SimulatedTime.getSystemTime().getMillis());
+        cal.setTimeInMillis(timeInMillis);
         return cal;
     }
 
     /**
-     * Return a new {@link Calendar} instance for the GMT {@link TimeZone} .
-     * This method delegates to the {@link SimulatedTime} class to determine the
+     * Return a new {@link Calendar} instance for the GMT {@link TimeZone}. This
+     * method delegates to the {@link SimulatedTime} class to determine the
      * currently configured system time.
      * 
      * @see {@link SimulatedTime}
@@ -426,6 +467,19 @@ public final class TimeUtil {
      */
     public static Calendar newGmtCalendar() {
         return TimeUtil.newCalendar(GMT_TIME_ZONE);
+    }
+
+    /**
+     * Return a new {@link Calendar} instance for the GMT {@link TimeZone}
+     * initialized to the specified time in milliseconds. Note:
+     * {@link SimulatedTime} is NOT used when creating this Calendar.
+     * 
+     * @param timeInMillis
+     *            the specified time in milliseconds
+     * @return the {@link Calendar}
+     */
+    public static Calendar newGmtCalendar(final long timeInMillis) {
+        return newCalendar(GMT_TIME_ZONE, timeInMillis);
     }
 
     /**
