@@ -31,12 +31,13 @@ import com.raytheon.uf.common.event.IEventBusHandler;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 5, 2013  1580       mpduff      Initial creation.
- * 3/18/2013    1802       bphillip    Modified to use transaction synchronization
- * May 9, 2013  1989       njensen     Spring 3.1.4 compatibility
- * May 28, 2013 1650       djohnson    Simplify and extract out the general event bus handling for reuse.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 05, 2013  1580     mpduff    Initial creation.
+ * Mar 18, 2013  1802     bphillip  Modified to use transaction synchronization
+ * May 09, 2013  1989     njensen   Spring 3.1.4 compatibility
+ * May 28, 2013  1650     djohnson  Simplify and extract out the general event
+ *                                  bus handling for reuse.
  * 
  * </pre>
  * 
@@ -75,5 +76,4 @@ public class EdexEventBusHandler extends BaseEdexEventBusHandler<Event>
             eventBus.post(event);
         }
     }
-
 }
