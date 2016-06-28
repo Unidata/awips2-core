@@ -31,11 +31,13 @@ import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
+import com.raytheon.uf.common.time.CommutativeTimestamp;
 import com.raytheon.uf.common.time.FormattedDate;
 
 /**
- * Type override for java.util.Date so that hibernate returns a java.util.Date
- * instead of java.sql.Timestamp.
+ * Type override for {@link java.util.Date} and {@link java.sql.Timestamp} so
+ * that Hibernate returns a
+ * {@link com.raytheon.uf.common.time.CommutativeTimestamp}.
  * 
  * <pre>
  * 
@@ -45,54 +47,38 @@ import com.raytheon.uf.common.time.FormattedDate;
  * ------------ ---------- ----------- --------------------------
  * Aug 05, 2015 4486       rjpeter     Initial creation.
  * Sep 14, 2015 4486       rjpeter     Return FormattedDate.
+ * Jun 23, 2016 5696       rjpeter     Return CommutativeTimestamp.
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
-public class JavaUtilDateType implements UserType {
+public class CommutativeTimestampType implements UserType {
     private static final int[] SQL_TYPES = { Types.TIMESTAMP };
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#sqlTypes()
-     */
     @Override
     public int[] sqlTypes() {
         return SQL_TYPES;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#returnedClass()
-     */
     @Override
     public Class<?> returnedClass() {
-        return Date.class;
+        return Timestamp.class;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#equals(java.lang.Object,
-     * java.lang.Object)
-     */
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if ((x instanceof Date) && (y instanceof Date)) {
-            return x.equals(y);
-        } else {
+        if (x == null) {
+            return y == null;
+        }
+
+        if (y == null) {
             return false;
         }
+
+        return translate(x).equals(translate(y));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#hashCode(java.lang.Object)
-     */
     @Override
     public int hashCode(Object x) throws HibernateException {
         if (x == null) {
@@ -102,110 +88,76 @@ public class JavaUtilDateType implements UserType {
         return x.hashCode();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#nullSafeGet(java.sql.ResultSet,
-     * java.lang.String[], org.hibernate.engine.spi.SessionImplementor,
-     * java.lang.Object)
-     */
     @Override
     public Object nullSafeGet(ResultSet rs, String[] names,
             SessionImplementor session, Object owner)
             throws HibernateException, SQLException {
         Timestamp s = rs.getTimestamp(names[0]);
-        if (s == null) {
-            return null;
-        }
-
-        return new FormattedDate(s.getTime());
+        return translate(s);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.hibernate.usertype.UserType#nullSafeSet(java.sql.PreparedStatement,
-     * java.lang.Object, int, org.hibernate.engine.spi.SessionImplementor)
-     */
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
             SessionImplementor session) throws HibernateException, SQLException {
         if (value == null) {
             st.setTimestamp(index, null);
+        } else if (value instanceof Timestamp) {
+            st.setTimestamp(index, (Timestamp) value);
         } else if (value instanceof Date) {
             st.setTimestamp(index, new Timestamp(((Date) value).getTime()));
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#deepCopy(java.lang.Object)
-     */
     @Override
     public Object deepCopy(Object value) throws HibernateException {
-        if (value == null) {
-            return null;
-        }
-
-        return new FormattedDate(((Date) value).getTime());
+        return translate(value);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#isMutable()
-     */
     @Override
     public boolean isMutable() {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#disassemble(java.lang.Object)
-     */
     @Override
     public Serializable disassemble(Object value) throws HibernateException {
-        if (value == null) {
-            return null;
-        }
-
-        return new FormattedDate(((Date) value).getTime());
+        return translate(value);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#assemble(java.io.Serializable,
-     * java.lang.Object)
-     */
     @Override
     public Object assemble(Serializable cached, Object owner)
             throws HibernateException {
-        if (cached == null) {
-            return null;
-        }
-
-        return new FormattedDate(((Date) cached).getTime());
+        return translate(cached);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.hibernate.usertype.UserType#replace(java.lang.Object,
-     * java.lang.Object, java.lang.Object)
-     */
     @Override
     public Object replace(Object original, Object target, Object owner)
             throws HibernateException {
-        if (original == null) {
+        return translate(original);
+    }
+
+    protected CommutativeTimestamp translate(Object o)
+            throws HibernateException {
+        if (o == null) {
             return null;
         }
 
-        return new FormattedDate(((Date) original).getTime());
+        /*
+         * TODO: replace all FormattedDate with CommutativeTimestamp once 16.4.1
+         * no longer in field
+         */
+        CommutativeTimestamp rval = null;
+        if (o instanceof Timestamp) {
+            rval = new FormattedDate((Timestamp) o);
+        } else if (o instanceof Date) {
+            rval = new FormattedDate((Date) o);
+        } else if (o instanceof Long) {
+            rval = new FormattedDate(((Long) o).longValue());
+        } else {
+            throw new HibernateException("Cannot translate class "
+                    + o.getClass() + " to " + CommutativeTimestamp.class);
+        }
+
+        return rval;
     }
 
     public static String[] getRegistryKeys() {

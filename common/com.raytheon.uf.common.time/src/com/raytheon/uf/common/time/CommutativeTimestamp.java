@@ -28,64 +28,85 @@ import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
-import com.raytheon.uf.common.time.FormattedDate.FormattedDateSerializer;
+import com.raytheon.uf.common.time.CommutativeTimestamp.CommutativeTimestampSerializer;
 
 /**
- * Extend CommutativeTimestamp for backward compatibility. Can delete once
- * 16.4.1 is no longer used. Also need to delete python versions.
+ * Extension of {@link java.sql.Timestamp} that allows equal comparison with
+ * {@link java.util.Date}.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 14, 2015 4486       rjpeter     Initial creation
- * Jun 24, 2016 5696       rjpeter     Extend CommutativeTimestamp for compatibility.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Jun 23, 2016  5696     rjpeter   Initial creation
  * 
  * </pre>
  * 
  * @author rjpeter
  */
 @DynamicSerialize
-@DynamicSerializeTypeAdapter(factory = FormattedDateSerializer.class)
-@Deprecated
-public class FormattedDate extends CommutativeTimestamp {
+@DynamicSerializeTypeAdapter(factory = CommutativeTimestampSerializer.class)
+public class CommutativeTimestamp extends Timestamp {
 
     private static final long serialVersionUID = 1L;
 
-    public FormattedDate() {
-        super();
+    public CommutativeTimestamp() {
+        super(System.currentTimeMillis());
     }
 
-    public FormattedDate(long date) {
+    public CommutativeTimestamp(long date) {
         super(date);
     }
 
-    public FormattedDate(Date date) {
-        super(date);
+    public CommutativeTimestamp(Date date) {
+        super(date.getTime());
     }
 
-    public FormattedDate(Timestamp date) {
-        super(date);
+    public CommutativeTimestamp(Timestamp date) {
+        // drop nanos precision, dynamic serialize only supports to millis
+        super(date.getTime());
     }
 
-    @Deprecated
-    public static class FormattedDateSerializer implements
-            ISerializationTypeAdapter<FormattedDate> {
+    @Override
+    public void setNanos(int nanos) {
+        // drop nanos precision down to milliseconds
+        super.setNanos((nanos / 1000000) * 1000000);
+    }
+
+    /*
+     * Support equals for Date and Timestamp
+     */
+    @Override
+    public boolean equals(Object ts) {
+        if (ts instanceof Date) {
+            return this.getTime() == ((Date) ts).getTime();
+        }
+
+        return false;
+    }
+
+    /**
+     * Serialization support for
+     * {@link com.raytheon.uf.common.time.CommutativeTimestamp}
+     */
+    public static class CommutativeTimestampSerializer implements
+            ISerializationTypeAdapter<CommutativeTimestamp> {
 
         @Override
-        public FormattedDate deserialize(IDeserializationContext deserializer)
+        public CommutativeTimestamp deserialize(
+                IDeserializationContext deserializer)
                 throws SerializationException {
             long t = deserializer.readI64();
-            return new FormattedDate(t);
+            CommutativeTimestamp rval = new CommutativeTimestamp(t);
+            return rval;
         }
 
         @Override
         public void serialize(ISerializationContext serializer,
-                FormattedDate object) throws SerializationException {
+                CommutativeTimestamp object) throws SerializationException {
             serializer.writeI64(object.getTime());
         }
-
     }
 }
