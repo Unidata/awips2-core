@@ -40,6 +40,12 @@
                         <filename>us_county.lpi</filename>
                         <mapName>County Names</mapName>
                     </resourceData>
+                    <!-- 
+                    <resourceData xsi:type="dbPointMapResourceData">
+                        <table>mapdata.county_names</table>
+                        <mapName>County Names</mapName>
+                    </resourceData>
+                     -->
                 </resource>
             </descriptor>
         </displays>
