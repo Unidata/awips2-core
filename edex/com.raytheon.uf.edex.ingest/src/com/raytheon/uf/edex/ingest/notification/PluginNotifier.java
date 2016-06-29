@@ -36,6 +36,10 @@ import javax.xml.bind.JAXBException;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig.EndpointType;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfig.NotifyFormat;
+import com.raytheon.uf.common.dataplugin.notify.PluginNotifierConfigList;
 import com.raytheon.uf.common.dataquery.DecisionTree;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -53,8 +57,6 @@ import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EdexException;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
-import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig.EndpointType;
-import com.raytheon.uf.edex.ingest.notification.PluginNotifierConfig.NotifyFormat;
 import com.raytheon.uf.edex.ingest.notification.router.DataUriRouter;
 import com.raytheon.uf.edex.ingest.notification.router.INotificationRouter;
 import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
@@ -64,23 +66,24 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * to reduce dependencies as we no longer need to call a route directly. All
  * registration must occur before messages are being picked up. Otherwise
  * concurrency problems may occur.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2013            mnash       Initial creation.
- * Nov 19, 2013 2170       rjpeter     Add plugin contributed config files, filtering,
- *                                     and support for pdo vs datauri.
- * Mar 19, 2014 2726       rjpeter     Added graceful shutdown support.
- * Jul 21, 2014 3373       bclement    JAXB manager API changes
- * May 22, 2015 4008       nabowle     Add periodic check for updates and reload.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 13, 2013           mnash     Initial creation.
+ * Nov 19, 2013  2170     rjpeter   Add plugin contributed config files,
+ *                                  filtering, and support for pdo vs datauri.
+ * Mar 19, 2014  2726     rjpeter   Added graceful shutdown support.
+ * Jul 21, 2014  3373     bclement  JAXB manager API changes
+ * May 22, 2015  4008     nabowle   Add periodic check for updates and reload.
+ * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
+ * 
  * </pre>
- *
+ * 
  * @author mnash
- * @version 1.0
  */
 
 public class PluginNotifier implements IContextStateProcessor {
@@ -113,7 +116,7 @@ public class PluginNotifier implements IContextStateProcessor {
      * sendQueuedNotifications(), but block these methods when 'writing' while
      * loading configurations. This class is predominantly reads.
      */
-    private ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
+    private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private Map<String, Long> modifiedTimes = new HashMap<String, Long>();
 
@@ -189,18 +192,18 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /*
      * Register the given PluginNotifierConfig.
-     *
+     * 
      * @param config
-     *
+     * 
      * @return
-     *
+     * 
      * public void register(PluginNotifierConfig config) throws
      * InvalidNotificationConfigException { register(config, true); }
      */
 
     /**
      * Register the given PluginNotifierConfig.
-     *
+     * 
      * @param config
      * @param rebuildTree
      *            Whether or not to rebuild the internal tree. If many things
@@ -208,21 +211,21 @@ public class PluginNotifier implements IContextStateProcessor {
      *            tree once at the end.
      * @return
      */
-    private void register(PluginNotifierConfig config,
-            boolean rebuildTree) throws InvalidNotificationConfigException {
+    private void register(PluginNotifierConfig config, boolean rebuildTree)
+            throws InvalidNotificationConfigException {
         register(config, null, rebuildTree);
     }
 
     /*
      * Register the given PluginNotifierConfig.
-     *
+     * 
      * @param config
-     *
+     * 
      * @param router The INotificationRouter to use for this config. If null,
      * will use the default based on the config format.
-     *
+     * 
      * @return
-     *
+     * 
      * public synchronized void register(PluginNotifierConfig config,
      * INotificationRouter router) throws InvalidNotificationConfigException {
      * register(config, router, true); }
@@ -230,7 +233,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Register the given PluginNotifierConfig.
-     *
+     * 
      * @param config
      * @param router
      *            The INotificationRouter to use for this config. If null, will
@@ -292,7 +295,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Validate the passed config
-     *
+     * 
      * @param config
      * @return
      */
@@ -371,7 +374,7 @@ public class PluginNotifier implements IContextStateProcessor {
     /**
      * Checks the pdo's against the registered routes. Data will then be
      * transformed and queued or sent immediately depending on configuration.
-     *
+     * 
      * @param pdos
      * @return
      */
@@ -437,7 +440,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Send the queued notifications.
-     *
+     * 
      * @return
      */
     public void sendQueuedNotifications() {
@@ -548,7 +551,7 @@ public class PluginNotifier implements IContextStateProcessor {
         Long lastTime;
         for (File file : files) {
             lastTime = this.modifiedTimes.get(file.getName());
-            if (lastTime == null || !lastTime.equals(file.lastModified())) {
+            if ((lastTime == null) || !lastTime.equals(file.lastModified())) {
                 return true;
             }
         }
@@ -557,7 +560,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Lists the files in the notification directory
-     *
+     * 
      * @return An array of the files in the notification directory
      */
     private List<File> getNotificationFiles() {

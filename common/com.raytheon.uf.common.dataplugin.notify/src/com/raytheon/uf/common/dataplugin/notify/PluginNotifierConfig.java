@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.ingest.notification;
+package com.raytheon.uf.common.dataplugin.notify;
 
 import java.util.HashMap;
 
@@ -37,14 +37,14 @@ import com.raytheon.uf.common.dataquery.requests.RequestableMetadataMarshaller;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 19, 2013 2170       rjpeter     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Nov 19, 2013  2170     rjpeter   Initial creation
+ * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class PluginNotifierConfig {

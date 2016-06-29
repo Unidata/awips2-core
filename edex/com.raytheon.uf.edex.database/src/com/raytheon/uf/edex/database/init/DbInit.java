@@ -47,13 +47,19 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Apr 30, 2013 1960        djohnson    Extracted and generalized from the registry DbInit.
- * May 29, 2013 1650        djohnson    Allow initDb() to be overridden, though should rarely be done.
- * Jun 24, 2013 2106        djohnson    initDb() always starts a fresh, shiny, new transaction.
- * 10/11/2013   1682        bphillip    Changed method visibility to allow access by subclasses
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Apr 30, 2013  1960     djohnson  Extracted and generalized from the registry
+ *                                  DbInit.
+ * May 29, 2013  1650     djohnson  Allow initDb() to be overridden, though
+ *                                  should rarely be done.
+ * Jun 24, 2013  2106     djohnson  initDb() always starts a fresh, shiny, new
+ *                                  transaction.
+ * Oct 11, 2013  1682     bphillip  Changed method visibility to allow access by
+ *                                  subclasses
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * May 19, 2016  5666     tjensen   Fix isDbValid check
+ * 
  * </pre>
  * 
  * @author djohnson
@@ -66,7 +72,7 @@ public abstract class DbInit {
 
     /** Constant used for table regeneration */
     private static final Pattern DROP_TABLE_PATTERN = Pattern
-            .compile("^drop\\stable\\s");
+            .compile("^drop[\\s]table[\\s](if[\\s]exists[\\s])?");
 
     /** Constant used for table regeneration */
     private static final Pattern DROP_SEQUENCE_PATTERN = Pattern
@@ -139,8 +145,10 @@ public abstract class DbInit {
             statusHandler.info("Database for application [" + application
                     + "] is up to date!");
         } else {
-            // Database is not valid. Drop and regenerate the tables defined by
-            // Hibernate
+            /*
+             * Database is not valid. Drop and regenerate the tables defined by
+             * Hibernate
+             */
             statusHandler
                     .info("Database for application ["
                             + application
@@ -212,19 +220,20 @@ public abstract class DbInit {
      *             If the drop sql strings cannot be executed
      * @throws EbxmlRegistryException
      */
-    private boolean isDbValid(Configuration aConfig)
-            throws SQLException {
+    private boolean isDbValid(Configuration aConfig) throws SQLException {
         statusHandler.info("Verifying the database for application ["
                 + application + "] against entity classes...");
 
-        final List<String> definedTables = new ArrayList<String>();
+        final List<String> definedTables = new ArrayList<>();
         final String[] dropSqls = aConfig
                 .generateDropSchemaScript(getDialect());
         for (String sql : dropSqls) {
             Matcher matcher = DROP_TABLE_PATTERN.matcher(sql);
             if (matcher.find()) {
-                // Drop the table names to all lower case since this is the form
-                // the database expects
+                /*
+                 * Drop the table names to all lower case since this is the form
+                 * the database expects
+                 */
                 sql = matcher.replaceFirst("").toLowerCase();
 
                 // Replace any trailing cascades
@@ -238,7 +247,7 @@ public abstract class DbInit {
         }
 
         final String schemaPrefix = generateSchemaPrefix(definedTables);
-        final List<String> existingTables = new ArrayList<String>();
+        final List<String> existingTables = new ArrayList<>();
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
@@ -251,8 +260,10 @@ public abstract class DbInit {
         };
         executeWork(work);
 
-        // Check if the table set defined by Hibernate matches the table set
-        // defined in the database already
+        /*
+         * Check if the table set defined by Hibernate matches the table set
+         * defined in the database already
+         */
         if (existingTables.size() != definedTables.size()
                 || !existingTables.containsAll(definedTables)) {
             return false;
@@ -268,15 +279,21 @@ public abstract class DbInit {
      * @return
      */
     private String generateSchemaPrefix(List<String> definedTables) {
+        String schema = "";
         if (!definedTables.isEmpty()) {
             final String table = definedTables.iterator().next();
             final int indexOfPeriod = table.indexOf(".");
             if (indexOfPeriod != -1) {
                 // Returns the <schema>. if present
-                return table.substring(0, indexOfPeriod + 1);
+                schema = table.substring(0, indexOfPeriod + 1);
+                final int lastIndexOfSpace = schema.lastIndexOf(" ");
+                // Trim any thing else that may come before the schema
+                if (lastIndexOfSpace != -1) {
+                    schema = schema.substring(lastIndexOfSpace + 1);
+                }
             }
         }
-        return "";
+        return schema;
     }
 
     /**
@@ -290,8 +307,7 @@ public abstract class DbInit {
      *             If the drop sql strings cannot be executed
      * @throws EbxmlRegistryException
      */
-    protected void dropTables(final Configuration aConfig)
-            throws SQLException {
+    protected void dropTables(final Configuration aConfig) throws SQLException {
 
         final Work work = new Work() {
             @Override
@@ -332,10 +348,11 @@ public abstract class DbInit {
     private void executeDropSql(String sql, Matcher dropTextMatcher,
             String replacementText, Statement stmt, Connection connection)
             throws SQLException {
-        // Modify the drop string to add the 'if exists'
-        // and 'cascade' clauses to avoid any errors if
-        // the tables do not exist already
-        if(!sql.contains(replacementText)){
+        /*
+         * Modify the drop string to add the 'if exists' and 'cascade' clauses
+         * to avoid any errors if the tables do not exist already
+         */
+        if (!sql.contains(replacementText)) {
             sql = dropTextMatcher.replaceFirst(replacementText);
         }
         if (!sql.endsWith(CASCADE)) {
