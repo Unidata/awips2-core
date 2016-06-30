@@ -19,21 +19,22 @@
  **/
 package com.raytheon.uf.common.derivparam.python;
 
+import java.io.ByteArrayOutputStream;
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import jep.JepException;
 
 import com.raytheon.uf.common.derivparam.library.DerivedParameterGenerator;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.python.PyUtil;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.python.concurrent.PythonInterpreterFactory;
+import com.raytheon.uf.common.util.FileUtil;
 
 /**
  * Factory for creating and initializing MasterDerivScript.
@@ -48,13 +49,12 @@ import com.raytheon.uf.common.python.concurrent.PythonInterpreterFactory;
  * Aug 26, 2013 2289       bsteffen    Make number of deriv param threads
  *                                     configurable.
  * Dec 14, 2015 4816       dgilling    Support refactored PythonJobCoordinator API.
+ * Jun 17, 2016 5439       bsteffen    use pathManager within DerivParamImporter
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
-
 public class MasterDerivScriptFactory implements
         PythonInterpreterFactory<MasterDerivScript> {
 
@@ -66,49 +66,45 @@ public class MasterDerivScriptFactory implements
 
     @Override
     public MasterDerivScript createPythonScript() throws JepException {
+        List<String> preEvals = new ArrayList<>(2);
         IPathManager pm = PathManagerFactory.getPathManager();
 
-        File script = pm.getStaticFile(INTERFACE_SCRIPT);
-
-        // Get list of all files for search hierarch of CAVE_STATIC
-        LocalizationFile[] derivParamFiles = pm.listFiles(
-                pm.getLocalSearchHierarchy(LocalizationType.COMMON_STATIC),
-                DerivedParameterGenerator.DERIV_PARAM_DIR, null, false, false);
-        List<String> functionDirs = new ArrayList<String>(
-                derivParamFiles.length);
-        functionDirs.add(script.getParent());
-
-        Arrays.sort(derivParamFiles);
-
-        for (LocalizationFile file : derivParamFiles) {
-            if (file.isDirectory()
-                    && DerivedParameterGenerator.FUNCTIONS
-                            .equals(LocalizationUtil.extractName(file.getName()))) {
-                // If it is a derived parameters functions directory, add to
-                // search list
-                functionDirs.add(file.getFile().getAbsolutePath());
-            }
+        try {
+            ILocalizationFile importInterface = pm
+                    .getStaticLocalizationFile(INTERFACE_SCRIPT);
+            String script = readLocalizationFile(importInterface);
+            /*
+             * Eval will only execute one command but the script has several
+             * commands so work around it by execing an eval of a multiline
+             * string.
+             */
+            script = "exec \"\"\"" + script + "\"\"\"";
+            preEvals.add(script);
+            preEvals.add("sys.meta_path.append(DerivParamImporter())");
+        } catch (IOException | LocalizationException e) {
+            throw new JepException("Error setting up python environment.", e);
         }
-
-        // Create path from function dir list
-        String PATH = PyUtil.buildJepIncludePath(functionDirs
-                .toArray(new String[functionDirs.size()]));
-
-        List<String> preEvals = new ArrayList<String>(2);
-        preEvals.add("import DerivParamImporter");
-        StringBuilder cmd = new StringBuilder(200);
-        cmd.append("sys.meta_path.append(DerivParamImporter.DerivParamImporter(");
-        // Pass in directories to search based on function directories
-        int size = functionDirs.size() - 1;
-        for (int i = size; i > 0; --i) {
-            if (i < size) {
-                cmd.append(", ");
-            }
-            cmd.append("'").append(functionDirs.get(i)).append("'");
-        }
-        cmd.append("))");
-        preEvals.add(cmd.toString());
-        return new MasterDerivScript(PATH,
+        return new MasterDerivScript(null,
                 MasterDerivScript.class.getClassLoader(), preEvals);
+
     }
+
+    /**
+     * Read the entire contents of a localization file into a String.
+     * 
+     * @param file
+     *            the file to read
+     * @return the contents of the file
+     * @throws IOException
+     * @throws LocalizationException
+     */
+    public static String readLocalizationFile(ILocalizationFile file)
+            throws IOException, LocalizationException {
+        ByteArrayOutputStream bos = new ByteArrayOutputStream(8192);
+        try (InputStream stream = file.openInputStream()) {
+            FileUtil.copy(stream, bos);
+        }
+        return new String(bos.toByteArray());
+    }
+
 }

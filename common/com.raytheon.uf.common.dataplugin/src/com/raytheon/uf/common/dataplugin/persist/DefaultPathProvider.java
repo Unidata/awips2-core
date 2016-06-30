@@ -62,6 +62,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 11/08/13     2361       njensen     Use JAXBManager for XML
  * 11/03/14     3761       bsteffen    Fix rare synchronization bug with
  *                                     reading localization files.
+ * 06/20/16     5439       bsteffen    Synchronization in  getKeyNames
  * 
  * </pre>
  * 
@@ -176,13 +177,17 @@ public class DefaultPathProvider implements IHDFFilePathProvider {
         // Retrieve the keys from the xml file if they have not already been
         // loaded
         if (!keyMap.containsKey(pluginName)) {
-            try {
-                unmarshalPathFile(pluginName);
-            } catch (SerializationException | LocalizationException e) {
-                statusHandler.handle(Priority.ERROR,
-                        "Failed to deserialze path key file for " + pluginName,
-                        e);
-                return new ArrayList<String>(0);
+            synchronized (this) {
+                if (!keyMap.containsKey(pluginName)) {
+                    try {
+                        unmarshalPathFile(pluginName);
+                    } catch (SerializationException | LocalizationException e) {
+                        statusHandler.handle(Priority.ERROR,
+                                "Failed to deserialze path key file for "
+                                        + pluginName, e);
+                        return new ArrayList<String>(0);
+                    }
+                }
             }
         }
         return keyMap.get(pluginName);

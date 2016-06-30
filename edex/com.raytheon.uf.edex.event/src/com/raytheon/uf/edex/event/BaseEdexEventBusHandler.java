@@ -24,6 +24,7 @@ import java.util.IdentityHashMap;
 import java.util.List;
 import java.util.Set;
 
+import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import com.google.common.eventbus.EventBus;
@@ -41,11 +42,15 @@ import com.raytheon.uf.edex.event.handler.PublishExternalEvent;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 28, 2013 1650       djohnson     Simplified and extracted from {@link EdexEventBusHandler}.
- * Jun 20, 2013 1802       djohnson     Thread local is not safe across multiple transaction levels.
- * May 14, 2015 4493       dhladky      External event delivery option.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 28, 2013  1650     djohnson  Simplified and extracted from {@link
+ *                                  EdexEventBusHandler}.
+ * Jun 20, 2013  1802     djohnson  Thread local is not safe across multiple
+ *                                  transaction levels.
+ * May 14, 2015  4493     dhladky   External event delivery option.
+ * Jun 28, 2016  5670     tjensen   Moved EventTransactionSynchronization to a subclass
+ * 
  * </pre>
  * 
  * @author djohnson
@@ -57,9 +62,10 @@ public abstract class BaseEdexEventBusHandler<T> implements
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BaseEdexEventBusHandler.class);
-    
+
     /** publishes external events **/
-    private PublishExternalEvent externalPublisher = PublishExternalEvent.getInstance();
+    private PublishExternalEvent externalPublisher = PublishExternalEvent
+            .getInstance();
 
     private static final String NULL_SUBSCRIBER = "Ignoring a null subscriber.";
 
@@ -98,36 +104,41 @@ public abstract class BaseEdexEventBusHandler<T> implements
     @Override
     public void publish(T eventObject) {
         if (eventObject == null) {
-            throw new IllegalArgumentException("Cannot publish a null eventObject");
+            throw new IllegalArgumentException(
+                    "Cannot publish a null eventObject");
         }
 
         if (isTransactionActive()) {
 
             if (TransactionSynchronizationManager.isSynchronizationActive()) {
-                    TransactionSynchronizationManager
+                TransactionSynchronizationManager
                         .registerSynchronization(new EventTransactionSynchronization(
-                                eventObject, googleEventBuses));
+                                eventObject));
             }
         } else {
             if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
                 statusHandler
                         .debug("Sending event from non-transactional operation");
             }
-            
-            boolean deliverLocal = true;
-            // Publish events marked "external" to JMS external event topic
-            if (eventObject instanceof Event) {
-                Event event = (Event) eventObject;
-                if (event.isExternal()) {
-                    deliverLocal = false;
-                    externalPublisher.publish(event);
-                }
-            }
 
-            // Deliver non-local (and non-events) via Guava by default.
-            if (deliverLocal) {
-                publishInternal(eventObject);
+            publishEvent(eventObject);
+        }
+    }
+
+    protected void publishEvent(T eventObject) {
+        boolean deliverLocal = true;
+        // Publish events marked "external" to JMS external event topic
+        if (eventObject instanceof Event) {
+            Event event = (Event) eventObject;
+            if (event.isExternal()) {
+                deliverLocal = false;
+                externalPublisher.publish(event);
             }
+        }
+
+        // Deliver non-local (and non-events) via Guava by default.
+        if (deliverLocal) {
+            publishInternal(eventObject);
         }
     }
 
@@ -206,6 +217,78 @@ public abstract class BaseEdexEventBusHandler<T> implements
             statusHandler.handle(Priority.WARN, NULL_SUBSCRIBER,
                     new IllegalArgumentException(NULL_SUBSCRIBER));
         }
+    }
+
+    class EventTransactionSynchronization implements TransactionSynchronization {
+
+        private final T eventObject;
+
+        public EventTransactionSynchronization(T eventObject) {
+            this.eventObject = eventObject;
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void suspend() {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void resume() {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void flush() {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void beforeCommit(boolean readOnly) {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void beforeCompletion() {
+        }
+
+        /**
+         * {@inheritDoc}
+         */
+        @Override
+        public void afterCommit() {
+        }
+
+        @Override
+        public void afterCompletion(int status) {
+            if (status == TransactionSynchronization.STATUS_COMMITTED) {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler.debug("Posting event of type ["
+                            + eventObject.getClass().getName()
+                            + "] on the event bus");
+                }
+
+                publishEvent(eventObject);
+
+            } else if (status == TransactionSynchronization.STATUS_ROLLED_BACK) {
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler.debug("Discarding event of type ["
+                            + eventObject.getClass().getName()
+                            + "] due to transaction rolling back.");
+                }
+            }
+        }
+
     }
 
 }
