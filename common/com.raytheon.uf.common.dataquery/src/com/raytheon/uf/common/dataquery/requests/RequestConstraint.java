@@ -66,6 +66,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Dec 18, 2013  2579     bsteffen    Remove ISerializableObject
  * Aug 20, 2014  3549     njensen     Optimized split of IN
  * Jun 08, 2016  5574     tgurney     Add toSqlString()
+ * Jun 30, 2016  5725     tgurney     Add NOT IN
  * 
  * 
  * </pre>
@@ -95,7 +96,7 @@ public class RequestConstraint implements Cloneable {
         EQUALS("="), NOT_EQUALS("!="), GREATER_THAN(">"), GREATER_THAN_EQUALS(
                 ">="), LESS_THAN("<"), LESS_THAN_EQUALS("<="), BETWEEN(
                 "between"), IN("in"), LIKE("like"), ILIKE("ilike"), ISNULL(
-                "isnull"), ISNOTNULL("isnotnull");
+                "isnull"), ISNOTNULL("isnotnull"), NOT_IN("not in");
 
         private String operand;
 
@@ -119,8 +120,7 @@ public class RequestConstraint implements Cloneable {
     @DynamicSerializeElement
     protected String constraintValue;
 
-    protected transient Map<Class<?>, Object> asMap = new HashMap<Class<?>, Object>(
-            2);
+    protected transient Map<Class<?>, Object> asMap = new HashMap<>(2);
 
     /**
      * Constructor
@@ -327,41 +327,11 @@ public class RequestConstraint implements Cloneable {
         } else if (constraintType == ConstraintType.EQUALS) {
             return constraintCompare(value);
         } else if (constraintType == ConstraintType.NOT_EQUALS) {
-            return (!constraintCompare(value));
+            return !constraintCompare(value);
         } else if (constraintType == ConstraintType.IN) {
-            String[] list = IN_PATTERN.split(constraintValue);
-            if (value instanceof Number) {
-                Double[] doubles = (Double[]) asMap.get(Double[].class);
-                if (doubles == null) {
-                    doubles = new Double[list.length];
-                    for (int i = 0; i < list.length; i++) {
-                        try {
-                            doubles[i] = Double.valueOf(list[i]);
-                        } catch (NumberFormatException e) {
-                            continue;
-                        }
-                    }
-                    asMap.put(Double[].class, doubles);
-                }
-                for (Double d : doubles) {
-                    if (d == null) {
-                        continue;
-                    }
-                    if (Math.abs(d.doubleValue()
-                            - ((Number) value).doubleValue()) < EQUALITY_TOLERANCE) {
-                        return true;
-                    }
-                }
-                return false;
-            } else {
-                Arrays.sort(list);
-                String searchValue = String.valueOf(value);
-                if (Arrays.binarySearch(list, searchValue) > -1) {
-                    return true;
-                } else {
-                    return false;
-                }
-            }
+            return isIn(value);
+        } else if (constraintType == ConstraintType.NOT_IN) {
+            return !isIn(value);
         } else if (constraintType == ConstraintType.LIKE) {
             String regex = constraintValue.replace("%", ".*");
             if (value.toString().matches(regex)) {
@@ -384,8 +354,8 @@ public class RequestConstraint implements Cloneable {
                     DateFormat df = new SimpleDateFormat();
                     Date first = df.parse(list[0]);
                     Date last = df.parse(list[0]);
-                    return (valueDate.equals(first) || valueDate.equals(last) || (valueDate
-                            .after(first) && valueDate.before(last)));
+                    return valueDate.equals(first) || valueDate.equals(last)
+                            || valueDate.after(first) && valueDate.before(last);
                 } catch (ParseException e) {
                     throw new IllegalArgumentException(
                             "Constraint does not appear to be a date");
@@ -424,7 +394,7 @@ public class RequestConstraint implements Cloneable {
                 }
                 double lower = Double.valueOf(list[0]);
                 double upper = Double.valueOf(list[1]);
-                return (valueDouble >= lower && valueDouble <= upper);
+                return valueDouble >= lower && valueDouble <= upper;
 
             }
 
@@ -438,18 +408,53 @@ public class RequestConstraint implements Cloneable {
             }
 
             if (constraintType == ConstraintType.GREATER_THAN) {
-                return (valueDouble > constraintValueDouble);
+                return valueDouble > constraintValueDouble;
             } else if (constraintType == ConstraintType.GREATER_THAN_EQUALS) {
-                return (valueDouble >= constraintValueDouble);
+                return valueDouble >= constraintValueDouble;
             } else if (constraintType == ConstraintType.LESS_THAN) {
-                return (valueDouble < constraintValueDouble);
+                return valueDouble < constraintValueDouble;
             } else if (constraintType == ConstraintType.LESS_THAN_EQUALS) {
-                return (valueDouble <= constraintValueDouble);
+                return valueDouble <= constraintValueDouble;
             }
 
         }
 
         return false;
+    }
+
+    private boolean isIn(Object value) {
+        String[] list = IN_PATTERN.split(constraintValue);
+        if (value instanceof Number) {
+            Double[] doubles = (Double[]) asMap.get(Double[].class);
+            if (doubles == null) {
+                doubles = new Double[list.length];
+                for (int i = 0; i < list.length; i++) {
+                    try {
+                        doubles[i] = Double.valueOf(list[i]);
+                    } catch (NumberFormatException e) {
+                        continue;
+                    }
+                }
+                asMap.put(Double[].class, doubles);
+            }
+            for (Double d : doubles) {
+                if (d == null) {
+                    continue;
+                }
+                if (Math.abs(d.doubleValue() - ((Number) value).doubleValue()) < EQUALITY_TOLERANCE) {
+                    return true;
+                }
+            }
+            return false;
+        } else {
+            Arrays.sort(list);
+            String searchValue = String.valueOf(value);
+            if (Arrays.binarySearch(list, searchValue) > -1) {
+                return true;
+            } else {
+                return false;
+            }
+        }
     }
 
     /**
@@ -487,9 +492,9 @@ public class RequestConstraint implements Cloneable {
         final int prime = 31;
         int result = 1;
         result = prime * result
-                + ((constraintType == null) ? 0 : constraintType.hashCode());
+                + (constraintType == null ? 0 : constraintType.hashCode());
         result = prime * result
-                + ((constraintValue == null) ? 0 : constraintValue.hashCode());
+                + (constraintValue == null ? 0 : constraintValue.hashCode());
         return result;
     }
 
@@ -569,7 +574,7 @@ public class RequestConstraint implements Cloneable {
 
     private static Map<String, RequestConstraint> toConstraintMapping(
             Map<String, Object> fieldMapping, boolean includeNulls) {
-        Map<String, RequestConstraint> constraints = new HashMap<String, RequestConstraint>();
+        Map<String, RequestConstraint> constraints = new HashMap<>();
         for (String key : fieldMapping.keySet()) {
             Object value = fieldMapping.get(key);
             ConstraintType constraintType = ConstraintType.EQUALS;
@@ -588,8 +593,8 @@ public class RequestConstraint implements Cloneable {
                     constraintValue, constraintType);
             if (constraintType == ConstraintType.IN) {
                 // Set constraint value list
-                List<String> constraintValueList = new ArrayList<String>();
-                if (value.getClass().isArray()) {
+                List<String> constraintValueList = new ArrayList<>();
+                if (value != null && value.getClass().isArray()) {
                     int size = Array.getLength(value);
                     for (int i = 0; i < size; ++i) {
                         Object arrayValue = Array.get(value, i);
@@ -598,7 +603,7 @@ public class RequestConstraint implements Cloneable {
                         }
                     }
                 } else if (value instanceof Collection) {
-                    for (Object collValue : ((Collection<?>) value)) {
+                    for (Object collValue : (Collection<?>) value) {
                         if (collValue != null) {
                             constraintValueList.add(collValue.toString());
                         }
@@ -625,30 +630,16 @@ public class RequestConstraint implements Cloneable {
             return String.format(" %s '%s' ", constraintType.getOperand(),
                     constraintValue);
         case IN:
-            String[] items = IN_PATTERN.split(constraintValue);
-            if (items.length == 0) {
-                throw new IllegalArgumentException("Invalid constraint value");
-            }
-            StringBuilder sqlResult = new StringBuilder();
-            sqlResult.append(" in (");
-            boolean isFirstItem = true;
-            for (String item : items) {
-                if (isFirstItem) {
-                    isFirstItem = false;
-                } else {
-                    sqlResult.append(',');
-                }
-                sqlResult.append(String.format("'%s'", item));
-            }
-            sqlResult.append(") ");
-            return sqlResult.toString();
+            return generateInNotInSql(true);
+        case NOT_IN:
+            return generateInNotInSql(false);
         case BETWEEN:
             String[] values = BETWEEN_PATTERN.split(constraintValue);
             if (values.length != 2) {
                 throw new IllegalArgumentException(
                         "Invalid between constraint - need exactly two values.");
             }
-            return String.format(" between %1$s and %2$s ", values[0],
+            return String.format(" between '%1$s' and '%2$s' ", values[0],
                     values[1]);
         case ISNOTNULL:
             return " is not null ";
@@ -659,5 +650,32 @@ public class RequestConstraint implements Cloneable {
         default:
             throw new IllegalArgumentException("Invalid constraint type");
         }
+    }
+
+    /**
+     * @param in
+     *            If true, make an "in" constraint; if false, make "not in"
+     */
+    private String generateInNotInSql(boolean in) {
+        String[] items = IN_PATTERN.split(constraintValue);
+        if (items.length == 0) {
+            throw new IllegalArgumentException("Invalid constraint value");
+        }
+        StringBuilder sqlResult = new StringBuilder();
+        if (!in) {
+            sqlResult.append(" not");
+        }
+        sqlResult.append(" in (");
+        boolean isFirstItem = true;
+        for (String item : items) {
+            if (isFirstItem) {
+                isFirstItem = false;
+            } else {
+                sqlResult.append(',');
+            }
+            sqlResult.append(String.format("'%s'", item));
+        }
+        sqlResult.append(") ");
+        return sqlResult.toString();
     }
 }
