@@ -38,23 +38,23 @@ import com.raytheon.uf.common.dataplugin.annotations.NullString;
  * Oct 07, 2013 2392       rjpeter     Updated to auto handle passing a null value to an equal operand.
  * Aug 20, 2015 4360       rferrel     Created {@link #checkForNullValueReplacement(String, String)} to determine value to use in place of null.
  * Sep 21, 2015 4486       rjpeter     Update checkForNullValueReplacement to handle null classname.
+ * Jun 30, 2016 5725       tgurney     Add NOT IN
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class QueryParam {
 
     /** Enumeration containing the logic operands */
     public enum QueryOperand {
-        EQUALS, NOTEQUALS, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, IN, LIKE, ILIKE, BETWEEN, ISNULL, ISNOTNULL
+        EQUALS, NOTEQUALS, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, IN, LIKE, ILIKE, BETWEEN, ISNULL, ISNOTNULL, NOTIN
     };
 
     /**
      * A mapping between the enumeration and the string representation of an
      * operand
      */
-    private static HashMap<String, QueryOperand> operandMap = new HashMap<String, QueryOperand>();
+    private static HashMap<String, QueryOperand> operandMap = new HashMap<>();
     static {
         operandMap.put("=", QueryOperand.EQUALS);
         operandMap.put("!=", QueryOperand.NOTEQUALS);
@@ -68,6 +68,7 @@ public class QueryParam {
         operandMap.put("between", QueryOperand.BETWEEN);
         operandMap.put("isNotNull", QueryOperand.ISNOTNULL);
         operandMap.put("isNull", QueryOperand.ISNULL);
+        operandMap.put("not in", QueryOperand.NOTIN);
     }
 
     /** The query field */
@@ -123,7 +124,7 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if ((value == null) && "=".equals(operand)) {
+        if (value == null && "=".equals(operand)) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = operand;
@@ -158,7 +159,7 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if ((value == null) && QueryOperand.EQUALS.equals(operand)) {
+        if (value == null && QueryOperand.EQUALS.equals(operand)) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = QueryParam.reverseTranslateOperand(operand);
@@ -266,7 +267,7 @@ public class QueryParam {
             }
         } catch (ClassNotFoundException | SecurityException
                 | IllegalArgumentException | NoSuchFieldException e) {
-            if ((clazz != null) && clazz.equals(String.class)) {
+            if (clazz != null && clazz.equals(String.class)) {
                 this.operand = "isNull";
             }
         }

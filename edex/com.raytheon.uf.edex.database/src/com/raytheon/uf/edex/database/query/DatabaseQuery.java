@@ -55,10 +55,10 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * 06/03/08     #875       bphillip    Added returned fields
  * 09/19/08     #1531      bphillip    Refactored to include join capability
  * Apr 24, 2014  2060      njensen     Added toString()
+ * Jun 30, 2016  5725      tgurney     Add NOT IN
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class DatabaseQuery {
 
@@ -72,16 +72,16 @@ public class DatabaseQuery {
     private ReturnedField distinctParameter;
 
     /** The list of columns to be returned by the query */
-    private List<ReturnedField> returnedFields = new ArrayList<ReturnedField>();
+    private List<ReturnedField> returnedFields = new ArrayList<>();
 
     /** The map of order fields */
-    private List<OrderField> orderFields = new ArrayList<OrderField>();
+    private List<OrderField> orderFields = new ArrayList<>();
 
     /** A map of the classes that will be joined together to execute this query */
-    private Map<String, String> joinedClasses = new HashMap<String, String>();
+    private Map<String, String> joinedClasses = new HashMap<>();
 
     /** A list of JoinFields which define the columns to join */
-    private List<JoinField> joinFields = new ArrayList<JoinField>();
+    private List<JoinField> joinFields = new ArrayList<>();
 
     /** The primary entity in which this query is querying for */
     private String entityName;
@@ -98,7 +98,7 @@ public class DatabaseQuery {
         this.entityName = entityName;
         this.addJoinedClass(entityName);
         this.maxResults = null;
-        this.parameters = new ArrayList<QueryParam>();
+        this.parameters = new ArrayList<>();
     }
 
     /**
@@ -108,7 +108,7 @@ public class DatabaseQuery {
         this.entityName = entityName.getName();
         this.addJoinedClass(entityName.getName());
         this.maxResults = null;
-        this.parameters = new ArrayList<QueryParam>();
+        this.parameters = new ArrayList<>();
     }
 
     /**
@@ -152,7 +152,7 @@ public class DatabaseQuery {
         this.entityName = entityName.getName();
         this.addJoinedClass(entityName.getName());
         this.maxResults = maxResults;
-        this.parameters = new ArrayList<QueryParam>();
+        this.parameters = new ArrayList<>();
     }
 
     /**
@@ -547,8 +547,14 @@ public class DatabaseQuery {
                     addWhereConstraint(deleteString, parameters.get(i), "<=",
                             constraintIndex++);
                 } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")) {
+                        .equalsIgnoreCase("in")
+                        || parameters.get(i).getOperand()
+                                .equalsIgnoreCase("not in")) {
                     deleteString.append(parameters.get(i).getField());
+                    if (parameters.get(i).getOperand()
+                            .equalsIgnoreCase("not in")) {
+                        deleteString.append(" not");
+                    }
                     deleteString.append(" in (");
                     if (parameters.get(i).getValue() instanceof String) {
                         String[] split = COMMA_PATTERN
@@ -557,7 +563,7 @@ public class DatabaseQuery {
                             deleteString.append(QueryUtil.COLON);
                             deleteString.append(QueryUtil.QUERY_CONSTRAINT
                                     + constraintIndex++);
-                            if (j != (split.length - 1)) {
+                            if (j != split.length - 1) {
                                 deleteString.append(QueryUtil.COMMA);
                             }
                         }
@@ -661,8 +667,14 @@ public class DatabaseQuery {
                     addWhereConstraint(queryString, parameters.get(i), "<=",
                             constraintIndex++);
                 } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")) {
+                        .equalsIgnoreCase("in")
+                        || parameters.get(i).getOperand()
+                                .equalsIgnoreCase("not in")) {
                     queryString.append(parameters.get(i).getField());
+                    if (parameters.get(i).getOperand()
+                            .equalsIgnoreCase("not in")) {
+                        queryString.append(" not");
+                    }
                     queryString.append(" in (");
                     if (parameters.get(i).getValue() instanceof String) {
                         String[] split = COMMA_PATTERN
@@ -671,7 +683,7 @@ public class DatabaseQuery {
                             queryString.append(QueryUtil.COLON);
                             queryString.append(QueryUtil.QUERY_CONSTRAINT
                                     + constraintIndex++);
-                            if (j != (split.length - 1)) {
+                            if (j != split.length - 1) {
                                 queryString.append(QueryUtil.COMMA);
                             }
                         }
@@ -843,7 +855,9 @@ public class DatabaseQuery {
                     query.setParameter(QueryUtil.QUERY_CONSTRAINT
                             + constraintIndex++, ((Object[]) value)[1]);
                 } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")) {
+                        .equalsIgnoreCase("in")
+                        || parameters.get(i).getOperand()
+                                .equalsIgnoreCase("not in")) {
 
                     for (int j = 0; j < ((List<Object>) value).size(); j++) {
                         query.setParameter(QueryUtil.QUERY_CONSTRAINT
@@ -895,9 +909,9 @@ public class DatabaseQuery {
                         + metadata.getEntityName());
             }
 
-            for (int i = 0; i < tokens.length; i++) {
+            for (String token : tokens) {
                 try {
-                    returnedClass = returnedClass.getDeclaredField(tokens[i])
+                    returnedClass = returnedClass.getDeclaredField(token)
                             .getType();
                 } catch (NoSuchFieldException e) {
                     boolean found = false;
@@ -906,7 +920,7 @@ public class DatabaseQuery {
                             && !clazz.getSuperclass().equals(Object.class)) {
                         clazz = clazz.getSuperclass();
                         try {
-                            returnedClass = clazz.getDeclaredField(tokens[i])
+                            returnedClass = clazz.getDeclaredField(token)
                                     .getType();
                             found = true;
                         } catch (NoSuchFieldException e1) {
@@ -935,11 +949,12 @@ public class DatabaseQuery {
                         returnedClass);
                 break;
             case IN:
+            case NOTIN:
                 String[] valueList = ((String) value).split(",");
-                value = new ArrayList<Object>();
+                value = new ArrayList<>();
                 for (String val : valueList) {
                     ((ArrayList<Object>) value).add(ConvertUtil.convertObject(
-                            (val).trim(), returnedClass));
+                            val.trim(), returnedClass));
                 }
                 break;
             case ISNOTNULL:
@@ -989,7 +1004,7 @@ public class DatabaseQuery {
      * @return A list of the returned field names
      */
     public List<String> getReturnedFieldNames() {
-        List<String> fieldNames = new ArrayList<String>();
+        List<String> fieldNames = new ArrayList<>();
         for (ReturnedField field : returnedFields) {
             fieldNames.add(field.getField());
         }
