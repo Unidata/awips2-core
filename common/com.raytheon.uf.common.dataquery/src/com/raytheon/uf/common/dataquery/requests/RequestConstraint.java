@@ -67,6 +67,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Aug 20, 2014  3549     njensen     Optimized split of IN
  * Jun 08, 2016  5574     tgurney     Add toSqlString()
  * Jun 30, 2016  5725     tgurney     Add NOT IN
+ * Jul 05, 2016  5728     mapeters    Add RequestConstraint(String[], boolean)
  * 
  * 
  * </pre>
@@ -173,11 +174,31 @@ public class RequestConstraint implements Cloneable {
      * @param inConstraints
      */
     public RequestConstraint(String[] inConstraints) {
-        this.constraintType = ConstraintType.IN;
+        this(inConstraints, true);
+    }
+
+    /**
+     * Creates a {@link RequestConstraint} with {@link ConstraintType#IN} or
+     * {@link ConstraintType#NOT_IN}, depending on value of in parameter.
+     * inConstraints are set as the {@link #setConstraintValueList(String[])}.
+     * If inConstraints size == 1, then the corresponding
+     * {@link ConstraintType#EQUALS} or {@link ConstraintType#NOT_EQUALS} is
+     * used instead
+     * 
+     * @param inConstraints
+     * @param in
+     *            if true, IN (or EQUALS) is created, otherwise NOT IN (or NOT
+     *            EQUALS) is
+     * 
+     */
+    public RequestConstraint(String[] inConstraints, boolean in) {
         if (inConstraints.length == 1) {
-            this.constraintType = ConstraintType.EQUALS;
+            this.constraintType = in ? ConstraintType.EQUALS
+                    : ConstraintType.NOT_EQUALS;
             this.constraintValue = inConstraints[0];
         } else {
+            this.constraintType = in ? ConstraintType.IN
+                    : ConstraintType.NOT_IN;
             setConstraintValueList(inConstraints);
         }
     }

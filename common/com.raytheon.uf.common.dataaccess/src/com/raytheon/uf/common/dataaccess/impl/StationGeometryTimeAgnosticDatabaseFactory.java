@@ -45,9 +45,11 @@ import com.vividsolutions.jts.io.WKBReader;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 24, 2015  #4585     dgilling    Initial creation
+ * Jun 24, 2015   4585     dgilling    Initial creation
  * May 26, 2016   5587     njensen     Added assembleGetIdentifierValues()
  * Jun 13, 2016   5574     tgurney     Add RequestConstraint query support
+ * Jul 05, 2016   5728     mapeters    Use RequestConstraint to build IN
+ *                                     constraints
  * 
  * </pre>
  * 
@@ -216,20 +218,12 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
     }
 
     private static String buildInConstraint(String fieldName, Object[] elements) {
-        StringBuilder stringBuilder = new StringBuilder(fieldName);
-        stringBuilder.append(" IN ('");
-
-        // add the 0th location
-        stringBuilder.append(elements[0]);
-        stringBuilder.append('\'');
-        for (int i = 1; i < elements.length; i++) {
-            stringBuilder.append(", '");
-            stringBuilder.append(elements[i]);
-            stringBuilder.append('\'');
+        String[] strElements = new String[elements.length];
+        for (int i = 0; i < elements.length; ++i) {
+            strElements[i] = String.valueOf(elements[i]);
         }
-        stringBuilder.append(')');
-
-        return stringBuilder.toString();
+        RequestConstraint in = new RequestConstraint(strElements);
+        return fieldName + in.toSqlString();
     }
 
     private static String buildGeospatialConstraint(String geomField,

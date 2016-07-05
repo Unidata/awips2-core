@@ -49,6 +49,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * Aug 31, 2015  4569     mapeters  Alias automatically retrieved location
  *                                  columns.
  * Jun 10, 2016  5574     mapeters  Add advanced query support.
+ * Jul 05, 2016  5728     mapeters  Use RequestConstraint to build IN
+ *                                  constraints
  * 
  * </pre>
  * 
@@ -232,13 +234,10 @@ public class MapsQueryAssembler {
             }
 
             if (locationField != null) {
-                /*
-                 * TODO if NOT IN support is added to RequestConstraint, use
-                 * RequestConstraint.toSqlString() and remove
-                 * buildInConstraint().
-                 */
-                constraints.add(buildInConstraint(request.getLocationNames(),
-                        locationField, inLocation));
+                // Add IN or NOT IN constraint
+                RequestConstraint rc = new RequestConstraint(
+                        request.getLocationNames(), inLocation);
+                constraints.add(locationField + rc.toSqlString());
             }
         }
         // add remaining identifiers to constraints (ifdef)
@@ -262,38 +261,5 @@ public class MapsQueryAssembler {
 
         return MapsQueryUtil.assembleMapsTableQuery(envelope, columns,
                 constraints, table, geomField);
-    }
-
-    /**
-     * Constructs an IN or NOT IN constraint
-     * 
-     * @param elements
-     *            a list of elements to include in the constraint
-     * @param fieldName
-     *            the database column name
-     * @param in
-     *            indicates whether this is an IN constraint or a NOT IN
-     *            constraint
-     * @return the constraint
-     */
-    private static String buildInConstraint(Object[] elements,
-            String fieldName, boolean in) {
-        StringBuilder stringBuilder = new StringBuilder(fieldName);
-        if (in) {
-            stringBuilder.append(" IN ('");
-        } else {
-            stringBuilder.append(" NOT IN ('");
-        }
-        // add the 0th location
-        stringBuilder.append(elements[0]);
-        stringBuilder.append("'");
-        for (int i = 1; i < elements.length; i++) {
-            stringBuilder.append(", '");
-            stringBuilder.append(elements[i]);
-            stringBuilder.append("'");
-        }
-        stringBuilder.append(")");
-
-        return stringBuilder.toString();
     }
 }
