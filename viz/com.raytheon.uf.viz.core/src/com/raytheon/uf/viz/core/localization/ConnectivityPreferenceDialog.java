@@ -108,7 +108,7 @@ public class ConnectivityPreferenceDialog {
             appendDetails(buildDetails(results));
             if (!results.hasConnectivity && status == null) {
             	if (results.server.length() > 0) {
-            		status = "Can not connect to " + serverName(results.server);
+            		status = "Can not connect";
             	} else {
             		status = "Not connected";
             	}
@@ -602,9 +602,9 @@ public class ConnectivityPreferenceDialog {
 
     protected Color getTextColor(boolean isGood) {
         if (isGood) {
-            return display.getSystemColor(SWT.COLOR_GREEN);
+            return display.getSystemColor(SWT.COLOR_DARK_GREEN);
         } else {
-            return display.getSystemColor(SWT.COLOR_RED);
+            return display.getSystemColor(SWT.COLOR_DARK_RED);
         }
     }
 
@@ -777,7 +777,7 @@ public class ConnectivityPreferenceDialog {
 
             validateSite();
             if (good) {
-                statusLabel.setText("Connected to " + serverName(this.localization));
+                statusLabel.setText("Connected");
                 detailsText.setText("");
             } else {
                 detailsText.setText(details != null ? details : "");
@@ -791,12 +791,12 @@ public class ConnectivityPreferenceDialog {
         }
     }
 
-    private String serverName(String localization) {
-		return localization.replace("http://", "").replace(":9581/services","");
+    protected String serverName(String localization) {
+		return localization.replace("http://", "").replace(":9581","");
 	}
     
-    private String fullServerName(String localization) {
-		return "http://" + localization + ":9581/services";
+    protected String fullServerName(String localization) {
+		return "http://" + localization + ":9581";
 	}
 
 	/**
