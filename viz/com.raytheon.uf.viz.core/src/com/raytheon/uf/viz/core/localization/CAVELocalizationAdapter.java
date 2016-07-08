@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
@@ -34,6 +35,8 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.raytheon.uf.common.localization.FileLocker;
+import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
@@ -75,11 +78,11 @@ import com.raytheon.uf.common.util.FileUtil;
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * Dec 02, 2015 4834        njensen     Updated to use new LocalizationManager.upload()
  * Jan 11, 2016 5242        kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Jun 15, 2016 5695        njensen     delete() deletes local file first
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 public class CAVELocalizationAdapter implements ILocalizationAdapter {
@@ -451,21 +454,24 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public boolean delete(LocalizationFile file) throws LocalizationException {
-        LocalizationManager.getInstance().delete(file.getContext(),
-                file.getPath());
+        // lock and delete local file first
+        try {
+            FileLocker.lock(this, file, Type.WRITE);
 
-        // Made it here! file on server successfully deleted! Delete local file
-        // reference.
-        File localFile = file.getFile(false);
-        /*
-         * NOTE: Do not call file.delete() because LocalizationFile.delete() is
-         * implemented to call CAVELocalizationAdapater.delete() (this method),
-         * which would call LocalizationFile.delete() again, resulting in
-         * infinite recursion.
-         */
-        localFile.delete();
+            File localFile = file.getFile(false);
+            if (localFile.exists()) {
+                Files.delete(localFile.toPath());
+            }
+        } catch (IOException e) {
+            throw new LocalizationException("Error deleting file " + file, e);
+        } finally {
+            FileLocker.unlock(this, file);
+        }
 
-        return true;
+        long timestamp = LocalizationManager.getInstance().delete(
+                file.getContext(), file.getPath());
+
+        return timestamp > 0;
     }
 
     private ListResponse convertResponse(ListResponseEntry entry,
