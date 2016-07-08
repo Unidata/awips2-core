@@ -70,6 +70,8 @@ import com.vividsolutions.jts.geom.Envelope;
  * May 26, 2016 5587       tgurney     Support getIdentifierValues()
  * Jun 07, 2016 5587       tgurney     Change get*Identifiers() to take
  *                                     IDataRequest
+ * Jul 05, 2016 5728       mapeters    Improved handling of invalid identifier
+ *                                     values
  * 
  * </pre>
  * 
@@ -153,8 +155,8 @@ public class TopoGridFactory extends AbstractDataFactory {
         Map<String, Object> identifiers = request.getIdentifiers();
 
         String topofile = getTopoFile(identifiers);
-        String group = ((String) identifiers.get(GROUP)).trim();
-        String dataset = ((String) identifiers.get(DATASET)).trim();
+        String group = getStringIdentifierValue(identifiers, GROUP);
+        String dataset = getStringIdentifierValue(identifiers, DATASET);
         Envelope requestEnv = request.getEnvelope();
 
         File hdf5File = new File(TopoUtils.getDefaultTopoFile().getParent(),
@@ -279,13 +281,34 @@ public class TopoGridFactory extends AbstractDataFactory {
      * @return The topo file to use.
      */
     private String getTopoFile(Map<String, Object> identifiers) {
-        String topofile = (String) identifiers.get(TOPO_FILE);
-        if (topofile == null || topofile.trim().isEmpty()) {
+        String topofile = getStringIdentifierValue(identifiers, TOPO_FILE);
+        if (topofile == null || topofile.isEmpty()) {
             topofile = TopoUtils.DEFAULT_TOPO_FILE;
         } else if (!topofile.endsWith(".h5")) {
-            topofile = topofile.trim() + ".h5";
+            topofile = topofile + ".h5";
         }
         return topofile;
+    }
+
+    /**
+     * Get the value of an identifier that must be provided as a String (or may
+     * not be provided at all)
+     * 
+     * @param identifiers
+     * @param key
+     * @return the trimmed string identifier value
+     */
+    private String getStringIdentifierValue(Map<String, Object> identifiers,
+            String key) {
+        Object value = identifiers.get(key);
+        if (value == null) {
+            return null;
+        } else if (value instanceof String) {
+            return ((String) value).trim();
+        } else {
+            throw new IncompatibleRequestException(
+                    "Only string identifier values are valid for '" + key + "'");
+        }
     }
 
     @Override
