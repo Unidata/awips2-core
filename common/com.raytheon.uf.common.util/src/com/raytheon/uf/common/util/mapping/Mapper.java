@@ -57,11 +57,11 @@ import javax.xml.bind.Unmarshaller;
  * Apr 02, 2014 2906       bclement     fixed not checking for empty set in lookupAliases()
  *                                      and in lookupAliasOrNull()
  * Dec 15, 2015 18139      pwang        Merge alias when NameSpace is same
+ * Jul 06, 2016 5728       mapeters     Fix potential NPE in lookupAliases()
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public abstract class Mapper {
 
@@ -72,18 +72,17 @@ public abstract class Mapper {
 
     private static Unmarshaller unmarshaller;
 
-    private Map<String, AliasNamespace> namespaceMap = new HashMap<String, AliasNamespace>();
+    private Map<String, AliasNamespace> namespaceMap = new HashMap<>();
 
     protected void addAliasList(AliasList list) {
-        // If the NameSpace is existing 
+        // If the NameSpace is existing
         // Merge new AliasList into the Mapper with same NameSpace
         // This enable merge multiple alias files with same NameSpace
 
-        if(namespaceMap.containsKey(list.getNamespace())) {
+        if (namespaceMap.containsKey(list.getNamespace())) {
             AliasNamespace ans = namespaceMap.get(list.getNamespace());
             ans.mergeAliasList(list);
-        }
-        else {
+        } else {
             namespaceMap.put(list.getNamespace(), new AliasNamespace(list));
         }
     }
@@ -127,14 +126,14 @@ public abstract class Mapper {
         }
         if (baseNames == null || baseNames.isEmpty()) {
             if (defaultUseAlias) {
-                baseNames = new HashSet<String>(Arrays.asList(alias));
+                baseNames = new HashSet<>(Arrays.asList(alias));
             } else {
                 return Collections.emptySet();
             }
         }
         AliasNamespace deprecated = namespaceMap.get(DEPRECATED);
         if (deprecated != null) {
-            Set<String> newBaseNames = new HashSet<String>(
+            Set<String> newBaseNames = new HashSet<>(
                     (int) (baseNames.size() / 0.75) + 1, 0.75f);
             for (String name : baseNames) {
                 Set<String> undepNames = deprecated.lookupBaseNames(name);
@@ -188,7 +187,6 @@ public abstract class Mapper {
      * @param defaultUseBase
      *            default to populating return with base if no aliases found
      * @return empty set if no aliases found and defaultUseBase is false
-     * @return
      */
     protected Set<String> lookupAliases(String base, String namespace,
             boolean defaultUseBase) {
@@ -202,11 +200,14 @@ public abstract class Mapper {
             if (deprecated != null) {
                 Set<String> depNames = deprecated.lookupAliases(base);
                 if (depNames != null) {
-                    Set<String> newAliases = new HashSet<String>();
-                    for (String depName : depNames) {
-                        Set<String> depAliases = ns.lookupBaseNames(depName);
-                        if (depAliases != null) {
-                            newAliases.addAll(depAliases);
+                    Set<String> newAliases = new HashSet<>();
+                    if (ns != null) {
+                        for (String depName : depNames) {
+                            Set<String> depAliases = ns
+                                    .lookupBaseNames(depName);
+                            if (depAliases != null) {
+                                newAliases.addAll(depAliases);
+                            }
                         }
                     }
                     if (!newAliases.isEmpty()) {
@@ -218,7 +219,7 @@ public abstract class Mapper {
             }
             if (aliases == null || aliases.isEmpty()) {
                 if (defaultUseBase) {
-                    aliases = new HashSet<String>(Arrays.asList(base));
+                    aliases = new HashSet<>(Arrays.asList(base));
                 } else {
                     aliases = Collections.emptySet();
                 }
@@ -231,7 +232,7 @@ public abstract class Mapper {
      * Lookup an alias name within a given namespace for a base name. If no
      * alias is defined then the baseName is returned
      * 
-     * @param parameter
+     * @param base
      *            - The base name to find an alias for
      * @param namespace
      *            - The namespace in which to look for an alias.
@@ -245,7 +246,7 @@ public abstract class Mapper {
      * Lookup an alias name within a given namespace for a base name. If no
      * alias is defined then an empty set is returned
      * 
-     * @param parameter
+     * @param base
      *            - The base name to find an alias for
      * @param namespace
      *            - The namespace in which to look for an alias.
@@ -257,11 +258,11 @@ public abstract class Mapper {
 
     /**
      * Provides same functionality as lookupBaseNames but is more convenient
-     * when only alias is expected.
+     * when only one base name is expected.
      * 
      * @param alias
      * @param namespace
-     * @return
+     * @return the base name or the alias if the namespace or alias is undefined
      * @throws MultipleMappingException
      */
     public String lookupBaseName(String alias, String namespace)
@@ -279,11 +280,11 @@ public abstract class Mapper {
 
     /**
      * Provides same functionality as lookupAliases but is more convenient when
-     * only one base name is expected.
+     * only one alias is expected.
      * 
      * @param base
      * @param namespace
-     * @return
+     * @return the alias abbreviation or the base name if none is found.
      * @throws MultipleMappingException
      */
     public String lookupAlias(String base, String namespace)

@@ -20,9 +20,7 @@
 package com.raytheon.uf.common.dataquery.requests;
 
 import java.lang.reflect.Array;
-import java.text.DateFormat;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
@@ -68,6 +66,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jun 08, 2016  5574     tgurney     Add toSqlString()
  * Jun 30, 2016  5725     tgurney     Add NOT IN
  * Jul 05, 2016  5728     mapeters    Add RequestConstraint(String[], boolean)
+ * Jul 07, 2016  5728     mapeters    Add more String & Date support in evaluate()
  * 
  * 
  * </pre>
@@ -108,7 +107,7 @@ public class RequestConstraint implements Cloneable {
         public String getOperand() {
             return this.operand;
         }
-    };
+    }
 
     private static EnumSet<ConstraintType> mergableTypesEqualIn = EnumSet.of(
             ConstraintType.EQUALS, ConstraintType.IN);
@@ -368,40 +367,30 @@ public class RequestConstraint implements Cloneable {
                 String[] list = BETWEEN_PATTERN.split(constraintValue);
                 if (list.length != 2) {
                     throw new IllegalArgumentException(
-                            "Invalid between constraint.");
+                            "Invalid between constraint: " + constraintValue);
                 }
 
-                try {
-                    DateFormat df = new SimpleDateFormat();
-                    Date first = df.parse(list[0]);
-                    Date last = df.parse(list[0]);
-                    return valueDate.equals(first) || valueDate.equals(last)
-                            || valueDate.after(first) && valueDate.before(last);
-                } catch (ParseException e) {
-                    throw new IllegalArgumentException(
-                            "Constraint does not appear to be a date");
-                }
-
+                Date first = parseDate(list[0]);
+                Date last = parseDate(list[1]);
+                return valueDate.equals(first) || valueDate.equals(last)
+                        || valueDate.after(first) && valueDate.before(last);
             }
 
-            Date constraintValueDate;
-            try {
-                DateFormat df = new SimpleDateFormat();
-                constraintValueDate = df.parse(constraintValue);
-            } catch (ParseException e) {
-                throw new IllegalArgumentException(
-                        "Constraint does not appear to be a date");
+            Date constraintValueDate = (Date) asMap.get(Date.class);
+            if (constraintValueDate == null) {
+                constraintValueDate = parseDate(constraintValue);
+                asMap.put(Date.class, constraintValueDate);
             }
 
             if (constraintType == ConstraintType.GREATER_THAN) {
-                return ((Date) value).after(constraintValueDate);
+                return valueDate.after(constraintValueDate);
             } else if (constraintType == ConstraintType.GREATER_THAN_EQUALS) {
-                return ((Date) value).after(constraintValueDate)
+                return valueDate.after(constraintValueDate)
                         || constraintValue.equals(value);
             } else if (constraintType == ConstraintType.LESS_THAN) {
-                return ((Date) value).before(constraintValueDate);
+                return valueDate.before(constraintValueDate);
             } else if (constraintType == ConstraintType.LESS_THAN_EQUALS) {
-                return ((Date) value).before(constraintValueDate)
+                return valueDate.before(constraintValueDate)
                         || constraintValue.equals(value);
             }
         } else if (value instanceof Number) {
@@ -411,7 +400,7 @@ public class RequestConstraint implements Cloneable {
                 String[] list = BETWEEN_PATTERN.split(constraintValue);
                 if (list.length != 2) {
                     throw new IllegalArgumentException(
-                            "Invalid between constraint.");
+                            "Invalid between constraint: " + constraintValue);
                 }
                 double lower = Double.valueOf(list[0]);
                 double upper = Double.valueOf(list[1]);
@@ -425,7 +414,8 @@ public class RequestConstraint implements Cloneable {
                 constraintValueDouble = Double.parseDouble(constraintValue);
             } catch (NumberFormatException e) {
                 throw new IllegalArgumentException(
-                        "Constraint does not appear to be a number");
+                        "Constraint does not appear to be a number: "
+                                + constraintValue);
             }
 
             if (constraintType == ConstraintType.GREATER_THAN) {
@@ -437,17 +427,41 @@ public class RequestConstraint implements Cloneable {
             } else if (constraintType == ConstraintType.LESS_THAN_EQUALS) {
                 return valueDouble <= constraintValueDouble;
             }
+        } else if (value instanceof String) {
+            String strValue = (String) value;
 
+            if (constraintType == ConstraintType.BETWEEN) {
+                String[] list = BETWEEN_PATTERN.split(constraintValue);
+                if (list.length != 2) {
+                    throw new IllegalArgumentException(
+                            "Invalid between constraint: " + constraintValue);
+                }
+                String lower = list[0];
+                String upper = list[1];
+                return strValue.compareTo(lower) >= 0
+                        && strValue.compareTo(upper) <= 0;
+            }
+
+            int compareResult = strValue.compareTo(constraintValue);
+            if (constraintType == ConstraintType.GREATER_THAN) {
+                return compareResult > 0;
+            } else if (constraintType == ConstraintType.GREATER_THAN_EQUALS) {
+                return compareResult >= 0;
+            } else if (constraintType == ConstraintType.LESS_THAN) {
+                return compareResult < 0;
+            } else if (constraintType == ConstraintType.LESS_THAN_EQUALS) {
+                return compareResult <= 0;
+            }
         }
 
         return false;
     }
 
     private boolean isIn(Object value) {
-        String[] list = IN_PATTERN.split(constraintValue);
         if (value instanceof Number) {
             Double[] doubles = (Double[]) asMap.get(Double[].class);
             if (doubles == null) {
+                String[] list = IN_PATTERN.split(constraintValue);
                 doubles = new Double[list.length];
                 for (int i = 0; i < list.length; i++) {
                     try {
@@ -458,19 +472,47 @@ public class RequestConstraint implements Cloneable {
                 }
                 asMap.put(Double[].class, doubles);
             }
+
+            double valueDouble = ((Number) value).doubleValue();
             for (Double d : doubles) {
                 if (d == null) {
                     continue;
                 }
-                if (Math.abs(d.doubleValue() - ((Number) value).doubleValue()) < EQUALITY_TOLERANCE) {
+                if (Math.abs(d.doubleValue() - valueDouble) < EQUALITY_TOLERANCE) {
+                    return true;
+                }
+            }
+            return false;
+        } else if (value instanceof Date) {
+            Date[] dates = (Date[]) asMap.get(Date[].class);
+            if (dates == null) {
+                String[] list = IN_PATTERN.split(constraintValue);
+                dates = new Date[list.length];
+                for (int i = 0; i < list.length; i++) {
+                    try {
+                        dates[i] = parseDate(list[i]);
+                    } catch (IllegalArgumentException e) {
+                        continue;
+                    }
+                }
+                asMap.put(Date[].class, dates);
+            }
+            Date valueDate = (Date) value;
+            for (Date constraintDate : dates) {
+                if (valueDate.equals(constraintDate)) {
                     return true;
                 }
             }
             return false;
         } else {
-            Arrays.sort(list);
+            String[] strs = (String[]) asMap.get(String[].class);
+            if (strs == null) {
+                strs = IN_PATTERN.split(constraintValue);
+                Arrays.sort(strs);
+                asMap.put(String[].class, strs);
+            }
             String searchValue = String.valueOf(value);
-            if (Arrays.binarySearch(list, searchValue) > -1) {
+            if (Arrays.binarySearch(strs, searchValue) > -1) {
                 return true;
             } else {
                 return false;
@@ -495,6 +537,13 @@ public class RequestConstraint implements Cloneable {
             } catch (NumberFormatException e) {
                 return false;
             }
+        } else if (value instanceof Date) {
+            Date constraintValueDate = (Date) asMap.get(Date.class);
+            if (constraintValueDate == null) {
+                constraintValueDate = parseDate(constraintValue);
+                asMap.put(Date.class, constraintValueDate);
+            }
+            return constraintValueDate.equals(value);
         } else {
             if (value != null) {
                 return constraintValue.equals(value.toString());
@@ -503,11 +552,16 @@ public class RequestConstraint implements Cloneable {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
+    private Date parseDate(String dateStr) {
+        try {
+            return TimeUtil.parseSqlTimestamp(dateStr);
+        } catch (ParseException e) {
+            throw new IllegalArgumentException(
+                    "Constraint does not appear to be a date: " + dateStr
+                            + " (expected a SQL timestamp)");
+        }
+    }
+
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -519,11 +573,6 @@ public class RequestConstraint implements Cloneable {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -553,11 +602,6 @@ public class RequestConstraint implements Cloneable {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
         return getConstraintType().name() + " " + getConstraintValue();

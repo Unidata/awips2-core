@@ -62,6 +62,7 @@ import com.raytheon.uf.common.time.domain.api.ITimePoint;
  * Sep 15, 2015  4486      rjpeter     Removed Calendar create from formatDate.
  * Jun 28, 2016  4625      bkowal      Added {@link #newEpochCalendar()}, {@link #newCalendar(long)},
  *                                     {@link #newCalendar(TimeZone, long)}, {@link #newGmtCalendar(long)}.
+ * Jul 11, 2016  5744      mapeters    Added parseSqlTimestamp(Date)
  * </pre>
  * 
  * @author njensen
@@ -275,6 +276,11 @@ public final class TimeUtil {
 
     public static String formatToSqlTimestamp(Date aDate) {
         return sqlSdf.get().format(aDate);
+    }
+
+    public static Date parseSqlTimestamp(String sqlTimestamp)
+            throws ParseException {
+        return sqlSdf.get().parse(sqlTimestamp);
     }
 
     /**
