@@ -45,6 +45,7 @@ import com.raytheon.uf.viz.core.ContextManager;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
@@ -61,7 +62,8 @@ import com.raytheon.viz.ui.statusline.TimeDisplay;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 3, 2010            mschenke     Initial creation
+ * May 03, 2010            mschenke    Initial creation
+ * Jul 11, 2016  5641      njensen     Set focus to editor on activate()  
  * 
  * </pre>
  * 
@@ -98,6 +100,22 @@ public abstract class AbstractCAVEPerspectiveManager extends
                     .getPerspective());
         }
         super.activate();
+        
+        /*
+         * workaround for Eclipse bug where keybindings are lost on perspective
+         * change https://bugs.eclipse.org/bugs/show_bug.cgi?id=481416
+         */
+        IWorkbenchPage activePage = perspectiveWindow.getActivePage();
+        if (activePage != null) {
+            IEditorPart part = activePage.getActiveEditor();
+            if (part != null) {
+                VizApp.runAsync(new Runnable() {
+                    public void run() {
+                        part.setFocus();
+                    }
+                });
+            }
+        }
     }
 
     @Override
