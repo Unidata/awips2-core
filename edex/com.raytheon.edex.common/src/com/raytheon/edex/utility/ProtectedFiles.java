@@ -59,11 +59,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * ------------ ---------- ----------- --------------------------
  * Aug 25, 2010            mschenke     Initial creation
  * Apr 08, 2015 4346       rferrel      Load plugin entries into the BASE entry.
+ * Jul 11, 2016 5750       tgurney      Move protectedFiles.txt to common_static
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class ProtectedFiles {
@@ -90,10 +90,10 @@ public class ProtectedFiles {
             + "# Any entries in this file will only apply for users localized to the site\n";
 
     private static ProtectedFiles base = new ProtectedFiles(PathManagerFactory
-            .getPathManager().getContext(LocalizationType.EDEX_STATIC,
+            .getPathManager().getContext(LocalizationType.COMMON_STATIC,
                     LocalizationLevel.BASE));
 
-    private static Map<String, ProtectedFiles> sites = new HashMap<String, ProtectedFiles>();
+    private static Map<String, ProtectedFiles> sites = new HashMap<>();
 
     /**
      * Add the list of protected files into protectedFiles.txt for the site with
@@ -144,7 +144,7 @@ public class ProtectedFiles {
         if (site == null) {
             LocalizationContext siteContext = PathManagerFactory
                     .getPathManager().getContextForSite(
-                            LocalizationType.EDEX_STATIC, siteId);
+                            LocalizationType.COMMON_STATIC, siteId);
             site = new ProtectedFiles(siteContext);
             sites.put(siteId, site);
         }
@@ -161,7 +161,7 @@ public class ProtectedFiles {
 
     private ProtectedFiles(LocalizationContext context) {
         this.level = context.getLocalizationLevel();
-        this.protectedFiles = new LinkedHashSet<String>();
+        this.protectedFiles = new LinkedHashSet<>();
         this.file = PathManagerFactory.getPathManager()
                 .getLocalizationFile(context, PROTECTED_FILE).getFile();
         reloadFile();
@@ -207,7 +207,7 @@ public class ProtectedFiles {
                     // Merge plugins protected files.
                     IPathManager pm = PathManagerFactory.getPathManager();
                     LocalizationContext context = pm.getContext(
-                            LocalizationType.EDEX_STATIC,
+                            LocalizationType.COMMON_STATIC,
                             LocalizationLevel.BASE);
                     String[] extensions = { ".txt" };
                     LocalizationFile[] files = pm.listFiles(context,
