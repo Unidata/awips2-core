@@ -107,7 +107,7 @@ public abstract class AbstractCAVEPerspectiveManager extends
          */
         IWorkbenchPage activePage = perspectiveWindow.getActivePage();
         if (activePage != null) {
-            IEditorPart part = activePage.getActiveEditor();
+            final IEditorPart part = activePage.getActiveEditor();
             if (part != null) {
                 VizApp.runAsync(new Runnable() {
                     public void run() {
