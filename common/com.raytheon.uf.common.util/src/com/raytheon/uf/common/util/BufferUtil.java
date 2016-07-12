@@ -31,9 +31,9 @@ import java.nio.ShortBuffer;
 
 /**
  * Utility for creating and managing nio Buffers
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -42,9 +42,10 @@ import java.nio.ShortBuffer;
  * May 21, 2015 4495       njensen     Deprecated methods that are OBE
  * Apr 06, 2016 5450       nabowle     Add replaceValue and toIntBuffer.
  * Jun 09, 2016 5584       nabowle     add toFloatBuffer.
- *
+ * Jul 07, 2016 5584       nabowle     add getNumber.
+ * 
  * </pre>
- *
+ * 
  * @author mschenke
  * @version 1.0
  */
@@ -314,6 +315,39 @@ public class BufferUtil {
             ByteBuffer buff = (ByteBuffer) buffer;
             buff.put(index, fill.byteValue());
         }
+    }
+
+    /**
+     * Get the Number at the given index from a buffer. If the Buffer is
+     * non-numeric, null is returned.
+     *
+     * @param buffer
+     *            The Buffer to retrieve a number from.
+     * @param index
+     *            The index to get.
+     * @return The number, or null.
+     */
+    public static Number getNumber(Buffer buffer, int index) {
+        if (buffer instanceof DoubleBuffer) {
+            DoubleBuffer buff = (DoubleBuffer) buffer;
+            return buff.get(index);
+        } else if (buffer instanceof FloatBuffer) {
+            FloatBuffer buff = (FloatBuffer) buffer;
+            return buff.get(index);
+        } else if (buffer instanceof LongBuffer) {
+            LongBuffer buff = (LongBuffer) buffer;
+            return buff.get(index);
+        } else if (buffer instanceof IntBuffer) {
+            IntBuffer buff = (IntBuffer) buffer;
+            return buff.get(index);
+        } else if (buffer instanceof ShortBuffer) {
+            ShortBuffer buff = (ShortBuffer) buffer;
+            return buff.get(index);
+        } else if (buffer instanceof ByteBuffer) {
+            ByteBuffer buff = (ByteBuffer) buffer;
+            return buff.get(index);
+        }
+        return null;
     }
 
     /**
