@@ -55,12 +55,12 @@ import com.raytheon.uf.common.status.slf4j.UFMarkers;
  * Aug 25, 2010            rjpeter     Initial creation
  * Oct 23, 2013 2303       bgonzale    Merged VizStatusHandler and SysErrStatusHandler into StatusHandler.
  *                                     Implemented log method from base class.
- * May 22, 2015 4473       njensen     Send to SLF4J instead of Eclipse                                    
+ * May 22, 2015 4473       njensen     Send to SLF4J instead of Eclipse      
+ * Jul 13, 2016 5743       njensen     Updated for new logback                              
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 
 public class VizStatusHandlerFactory extends AbstractHandlerFactory {
@@ -72,39 +72,10 @@ public class VizStatusHandlerFactory extends AbstractHandlerFactory {
 
     static {
         /*
-         * Disables the packaging data feature of logback (ie how the
-         * stacktraces list the jar the class is in). Due to the viz dependency
-         * tree, in some scenarios the determination of the packaging data can
-         * spend an inordinate amount of time in the OSGi classloader trying to
-         * find classes. If the viz dependency tree is cleaned up (ie
-         * modularized, unnecessary imports removed, register buddies reduced)
-         * then this may be able to be re-enabled without a performance hit.
-         * 
-         * Unfortunately there is no way to do this other than casting to a
-         * logback Logger, see http://jira.qos.ch/browse/LOGBACK-730 and
-         * http://jira.qos.ch/browse/LOGBACK-899
-         * 
-         * TODO This is fixed in logback 1.1.4. Once that is upgraded, we should
-         * remove this and disable packaging data through the xml file. Please
-         * place the first paragraph about why we want to disiable packaging
-         * data in the xml as a comment at that time.
-         */
-        try {
-            ((ch.qos.logback.classic.Logger) logger).getLoggerContext()
-                    .setPackagingDataEnabled(false);
-        } catch (Throwable t) {
-            /*
-             * given that this static block is for initializing the logger
-             * correctly, if that went wrong let's not even try to "log" it,
-             * just use stderr
-             */
-            System.err.println("Error disabling logback packaging data");
-            t.printStackTrace();
-        }
-
-        /*
-         * TODO logback 1.1.3 adds a configuration tag to the XML for shutdown
-         * hooks, we should use that instead
+         * Logback 1.1.3 adds a configuration tag to the XML for a Logback
+         * shutdown hook, but that is for LogbackContexts and requires extending
+         * a Logback ShutdownHookBase. All we really want to do is shut down all
+         * the appenders on this logger.
          */
         Runtime.getRuntime().addShutdownHook(new Thread() {
             @Override
