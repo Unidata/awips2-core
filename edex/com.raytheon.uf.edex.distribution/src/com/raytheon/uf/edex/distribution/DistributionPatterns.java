@@ -46,11 +46,11 @@ import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * Container for the various Distribution patterns used by plugins.
- *
+ * 
  * <pre>
- *
+ * 
  * SOFTWARE HISTORY
- *
+ * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 6, 2013  2327       rjpeter     Initial creation
@@ -59,11 +59,11 @@ import com.raytheon.uf.common.status.UFStatus;
  * Apr 14, 2016 5565       skorolev    extended getDistributionFiles() to common_static
  * Apr 14, 2016 5450       nabowle     Enable auxiliary files that specify a
  *                                     plugin within the RequestPatterns.
- *
+ * Jul 15, 2016 5744       mapeters    Added todo in getDistributionFiles()
+ * 
  * </pre>
- *
+ * 
  * @author rjpeter
- * @version 1.0
  */
 public class DistributionPatterns {
     private static final IUFStatusHandler statusHandler = UFStatus
@@ -93,7 +93,7 @@ public class DistributionPatterns {
 
     /**
      * Returns the singleton instance.
-     *
+     * 
      * @return
      */
     public static DistributionPatterns getInstance() {
@@ -106,7 +106,7 @@ public class DistributionPatterns {
 
     /**
      * Loads patterns from a distribution file for the specified plugin.
-     *
+     * 
      * @param jaxb
      *            jaxb manager for request patterns
      * @param file
@@ -129,12 +129,16 @@ public class DistributionPatterns {
 
     /**
      * Lists the files in the distribution directory
-     *
+     * 
      * @return An array of the files in the distribution directory
      */
     private Collection<File> getDistributionFiles() {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        // files from edex_static
+        /*
+         * files from edex_static (TODO: this should eventually be removed, it
+         * is only being kept around for now to support non-Raytheon plugins
+         * that have files in edex_static)
+         */
         LocalizationFile[] edex_files = pathMgr.listFiles(
                 pathMgr.getLocalSearchHierarchy(LocalizationType.EDEX_STATIC),
                 "distribution", new String[] { ".xml" }, true, false);
@@ -144,8 +148,7 @@ public class DistributionPatterns {
                         pathMgr.getLocalSearchHierarchy(LocalizationType.COMMON_STATIC),
                         "distribution", new String[] { ".xml" }, true, false);
         // join both arrays of files
-        LocalizationFile[] files = ArrayUtils.addAll(
-                common_files, edex_files);
+        LocalizationFile[] files = ArrayUtils.addAll(common_files, edex_files);
 
         Map<String, File> distFiles = new HashMap<>();
         for (LocalizationFile file : files) {
@@ -221,11 +224,13 @@ public class DistributionPatterns {
                     merged = mergedPatterns.get(fpEntry.getValue());
                     filePattern = this.filePatterns.get(fpEntry.getKey());
                     merged.getPatterns().addAll(filePattern.getPatterns());
-                    merged.getExclusionPatterns().addAll(filePattern.getExclusionPatterns());
+                    merged.getExclusionPatterns().addAll(
+                            filePattern.getExclusionPatterns());
                 }
             }
 
-            for (Entry<String, RequestPatterns> mergedEntry : mergedPatterns.entrySet()) {
+            for (Entry<String, RequestPatterns> mergedEntry : mergedPatterns
+                    .entrySet()) {
                 mergedEntry.getValue().compilePatterns();
                 this.patterns.put(mergedEntry.getKey(), mergedEntry.getValue());
             }
@@ -241,8 +246,7 @@ public class DistributionPatterns {
     private SingleTypeJAXBManager<RequestPatterns> createJaxbManager()
             throws DistributionException {
         try {
-            return new SingleTypeJAXBManager<>(true,
-                    RequestPatterns.class);
+            return new SingleTypeJAXBManager<>(true, RequestPatterns.class);
         } catch (JAXBException e) {
             throw new DistributionException(
                     "Unable to refresh distribution patterns, "
@@ -252,7 +256,7 @@ public class DistributionPatterns {
 
     /**
      * Returns a list of plugins that are interested in the given header.
-     *
+     * 
      * @param header
      * @return
      */
@@ -270,7 +274,7 @@ public class DistributionPatterns {
 
     /**
      * Returns a list of plugins that are interested in the given header.
-     *
+     * 
      * @param header
      * @param pluginsToCheck
      * @return
@@ -306,7 +310,7 @@ public class DistributionPatterns {
     /**
      * Returns true if there are patterns registered for the given plugin, false
      * otherwise.
-     *
+     * 
      * @param pluginName
      * @return
      */
