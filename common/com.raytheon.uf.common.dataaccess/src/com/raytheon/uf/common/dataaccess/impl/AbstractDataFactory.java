@@ -33,6 +33,7 @@ import com.raytheon.uf.common.dataaccess.exception.MethodNotSupportedYetExceptio
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
+import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
@@ -66,7 +67,8 @@ import com.raytheon.uf.common.util.SizeUtil;
  * Apr 13, 2016  5379     tgurney   Add default impl for getIdentifierValues()
  * Jun 07, 2016  5587     tgurney   Change get*Identifiers() to take
  *                                  IDataRequest
- * 
+ * Aug 04, 2016  2416     tgurney   Prevent dataURI constraint being combined
+ *                                  with other constraints.
  * </pre>
  * 
  * @author njensen
@@ -134,6 +136,11 @@ public abstract class AbstractDataFactory implements IDataFactory {
             throw new InvalidIdentifiersException(request.getDatatype(),
                     missing, invalid);
         }
+        if (request.getIdentifiers().containsKey(PluginDataObject.DATAURI_ID)
+                && request.getIdentifiers().size() > 1) {
+            throw new IncompatibleRequestException("Cannot specify "
+                    + PluginDataObject.DATAURI_ID + " with other identifiers");
+        }
     }
 
     /**
@@ -169,8 +176,8 @@ public abstract class AbstractDataFactory implements IDataFactory {
         if (identifiers != null && !identifiers.isEmpty()) {
             String[] optional = getOptionalIdentifiers(request);
             String[] required = getRequiredIdentifiers(request);
-            if ((optional != null && optional.length > 0)
-                    || (required != null && required.length > 0)) {
+            if (optional != null && optional.length > 0 || required != null
+                    && required.length > 0) {
                 invalid = new HashSet<>(identifiers.keySet());
                 if (optional != null) {
                     invalid.removeAll(Arrays.asList(optional));

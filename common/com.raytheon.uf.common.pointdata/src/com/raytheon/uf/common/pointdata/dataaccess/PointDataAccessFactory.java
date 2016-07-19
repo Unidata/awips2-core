@@ -40,6 +40,7 @@ import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.impl.AbstractDataPluginFactory;
 import com.raytheon.uf.common.dataaccess.impl.DefaultGeometryData;
+import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
@@ -81,6 +82,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  *                                  identifiers.
  * Jun 13, 2016  5574     tgurney   Support RequestConstraint as identifier
  *                                  value
+ * Jul 22, 2016  2416     tgurney   Add dataURI as optional identifier
  * 
  * </pre>
  * 
@@ -125,9 +127,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
     private String fcstHrPointDataKey = PointDataConstants.DATASET_FORECASTHR;
 
-    private Map<String, TwoDimensionalParameterGroup> parameters2D = new HashMap<>();
+    private final Map<String, TwoDimensionalParameterGroup> parameters2D = new HashMap<>();
 
-    private String[] optionalIdentifiers = EMPTY;
+    private String[] optionalIdentifiers = { PluginDataObject.DATAURI_ID };
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
@@ -440,7 +442,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         MasterLevel masterLevel = lf.getMasterLevel(p2d.levelType);
         Unit<?> masterUnit = masterLevel.getUnit();
         UnitConverter levelUnitConverter = UnitConverter.IDENTITY;
-        if ((levelUnit != null && masterUnit != null)) {
+        if (levelUnit != null && masterUnit != null) {
             levelUnitConverter = levelUnit.getConverterTo(masterUnit);
         }
 
@@ -626,7 +628,19 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      *            identifiers.
      */
     public void setOptionalIdentifiers(String[] optionalIdentifiers) {
-        this.optionalIdentifiers = optionalIdentifiers;
-    }
+        // dataURI is always an option
+        if (optionalIdentifiers != null) {
+            this.optionalIdentifiers = optionalIdentifiers;
 
+            if (!Arrays.asList(optionalIdentifiers).contains(
+                    PluginDataObject.DATAURI_ID)) {
+                this.optionalIdentifiers = new String[optionalIdentifiers.length + 1];
+                System.arraycopy(optionalIdentifiers, 0,
+                        this.optionalIdentifiers, 0, optionalIdentifiers.length);
+                this.optionalIdentifiers[optionalIdentifiers.length] = PluginDataObject.DATAURI_ID;
+            }
+        } else {
+            this.optionalIdentifiers = new String[] { PluginDataObject.DATAURI_ID };
+        }
+    }
 }
