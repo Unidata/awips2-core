@@ -106,6 +106,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                      non restorable views.
  * Feb 10, 2016 5329        bsteffen    Close saved editors when deactivating
  *                                      while closing.
+ * Jul 11, 2016 5751        bsteffen    Fix timing of tool activation when a
+ *                                      part is opened.
  * 
  * </pre>
  * 
@@ -194,27 +196,44 @@ public abstract class AbstractVizPerspectiveManager
             // update editor on last selected modal tool
             if (part instanceof IEditorPart
                     && part instanceof IDisplayPaneContainer) {
-                AbstractVizPerspectiveManager mgr = VizPerspectiveListener
+                final AbstractVizPerspectiveManager mgr = VizPerspectiveListener
                         .getCurrentPerspectiveManager();
                 if (mgr != null && !mgr.opened && mgr.getToolManager()
                         .getSelectedModalTools().isEmpty()) {
-                    try {
-                        mgr.activateDefaultTool(
-                                ((AbstractEditor) part).getDefaultTool());
-                        if (mgr.getToolManager().getSelectedModalTools()
-                                .isEmpty()) {
-                            // Hack due to tool activation not sending whether
-                            // it should be activated or deactivated and is just
-                            // toggling instead. TODO: Make AbstractModalTool
-                            // required command parameter for activate or
-                            // deactivate
-                            mgr.activateDefaultTool(
-                                    ((AbstractEditor) part).getDefaultTool());
+                    final AbstractEditor editor = (AbstractEditor) part;
+                    /*
+                     * Need to delay activation so that other part listeners
+                     * have time to run and activate part specific contexts
+                     * before activating tools. Otherwise tools may not be valid
+                     * because the context is not active.
+                     */
+                    VizApp.runAsync(new Runnable() {
+
+                        @Override
+                        public void run() {
+                            try {
+                                mgr.activateDefaultTool(
+                                        editor.getDefaultTool());
+                                if (mgr.getToolManager().getSelectedModalTools()
+                                        .isEmpty()) {
+                                    /*
+                                     * Hack due to tool activation not sending
+                                     * whether it should be activated or
+                                     * deactivated and is just toggling instead.
+                                     * TODO: Make AbstractModalTool required
+                                     * command parameter for activate or
+                                     * deactivate
+                                     */
+                                    mgr.activateDefaultTool(
+                                            editor.getDefaultTool());
+                                }
+                            } catch (VizException e) {
+                                statusHandler.handle(Priority.SIGNIFICANT,
+                                        "Error activating tool set", e);
+                            }
+
                         }
-                    } catch (VizException e) {
-                        statusHandler.handle(Priority.SIGNIFICANT,
-                                "Error activating tool set", e);
-                    }
+                    });
                 }
             }
         }
@@ -414,11 +433,9 @@ public abstract class AbstractVizPerspectiveManager
         MPerspective perspective = (MPerspective) modelService
                 .find(perspectiveId, window);
         List<MTrimmedWindow> windows = modelService.findElements(perspective,
-                null,
-                MTrimmedWindow.class, null);
+                null, MTrimmedWindow.class, null);
         List<MPartSashContainer> sashs = modelService.findElements(perspective,
-                null,
-                MPartSashContainer.class, null);
+                null, MPartSashContainer.class, null);
         List<MUIElement> containers = new ArrayList<>();
         containers.addAll(windows);
         containers.addAll(sashs);
