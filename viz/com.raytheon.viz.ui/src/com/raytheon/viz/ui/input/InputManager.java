@@ -32,16 +32,21 @@ import org.eclipse.swt.widgets.Listener;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
 import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
+import com.raytheon.uf.viz.core.rsc.IInputHandler2;
 
 /**
- * Manages input events for the display
+ * TODO Add Description
  * 
  * <pre>
+ * 
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * 7/1/06                   chammack    Initial Creation.
- * Sep 11, 2014 3549        mschenke    Added mouse move notification after up
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 01, 0006           chammack  Initial Creation.
+ * Sep 11, 2014  3549     mschenke  Added mouse move notification after up
+ * Jun 23, 2016  5674     randerso  Extend IInputHandler to pass raw event to
+ *                                  handler
  * 
  * </pre>
  * 
@@ -92,7 +97,7 @@ public class InputManager implements Listener {
     /**
      * Constructor
      * 
-     * @param anEditor
+     * @param container
      */
     public InputManager(IDisplayPaneContainer container) {
         this.handlers = new ArrayList<PrioritizedHandler>();
@@ -104,7 +109,7 @@ public class InputManager implements Listener {
      * Get all input handlers registered at a particular priority
      * 
      * @param priority
-     * @return
+     * @return array of handlers for the specified priority
      */
     public IInputHandler[] getHandlersForPriority(InputPriority priority) {
         List<IInputHandler> handlers = new ArrayList<IInputHandler>();
@@ -119,6 +124,7 @@ public class InputManager implements Listener {
     /**
      * Handle Mouse Click events
      */
+    @Override
     public void handleEvent(Event event) {
 
         if ((container == null)
@@ -184,22 +190,40 @@ public class InputManager implements Listener {
         }
     }
 
-    private void handleMouseDoubleClick(Event event) {
+    private void handleMouseDoubleClick(Event e) {
         isMouseDown = false;
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleDoubleClick(event.x, event.y,
-                    event.button))
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleDoubleClick(e);
+            } else {
+                status = handler.handleDoubleClick(e.x, e.y, e.button);
+            }
+
+            if (status) {
+                break;
+            }
         }
     }
 
-    private void handleMouseUp(Event event) {
+    private void handleMouseUp(Event e) {
         isMouseDown = false;
 
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleMouseUp(event.x, event.y,
-                    lastMouseButton))
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleMouseUp(e);
+            } else {
+                status = handler.handleMouseUp(e.x, e.y, e.button);
+            }
+
+            if (status) {
                 break;
+            }
         }
 
         /*
@@ -207,60 +231,109 @@ public class InputManager implements Listener {
          * were not getting notified for the mouse down/move/up and need to know
          * the current position
          */
-        handleMouseMove(event);
+        handleMouseMove(e);
     }
 
-    private void handleMouseDown(Event event) {
-        if (menuDetected && (event.button != 3)) {
+    private void handleMouseDown(Event e) {
+        if (menuDetected && (e.button != 3)) {
             menuDetected = false;
             return;
         }
 
-        if (event.type == SWT.MouseDoubleClick)
+        if (e.type == SWT.MouseDoubleClick) {
             return;
+        }
 
-        lastMouseButton = event.button;
+        lastMouseButton = e.button;
 
-        if (!menuDetected)
+        if (!menuDetected) {
             isMouseDown = true;
-        else
+        } else {
             menuDetected = false;
+        }
 
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleMouseDown(event.x, event.y,
-                    event.button)) {
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleMouseDown(e);
+            } else {
+                status = handler.handleMouseDown(e.x, e.y, e.button);
+            }
+
+            if (status) {
+                break;
             }
         }
 
     }
 
-    private void handleMouseWheel(Event event) {
+    private void handleMouseWheel(Event e) {
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleMouseWheel(event, event.x,
-                    event.y))
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleMouseWheel(e);
+            } else {
+                status = handler.handleMouseWheel(e, e.x, e.y);
+            }
+
+            if (status) {
+                break;
+            }
         }
     }
 
     private void handleMouseHover(final Event e) {
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleMouseHover(e.x, e.y))
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleMouseHover(e);
+            } else {
+                status = handler.handleMouseHover(e.x, e.y);
+            }
+
+            if (status) {
+                break;
+            }
         }
     }
 
     private void handleKeyDown(final Event e) {
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleKeyDown(e.keyCode))
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleKeyDown(e);
+            } else {
+                status = handler.handleKeyDown(e.keyCode);
+            }
+
+            if (status) {
+                break;
+            }
         }
     }
 
     private void handleKeyUp(final Event e) {
         for (int i = handlers.size() - 1; i >= 0; i--) {
-            if (handlers.get(i).handler.handleKeyUp(e.keyCode))
-                return;
+            IInputHandler handler = handlers.get(i).handler;
+
+            boolean status;
+            if (handler instanceof IInputHandler2) {
+                status = ((IInputHandler2) handler).handleKeyUp(e);
+            } else {
+                status = handler.handleKeyUp(e.keyCode);
+            }
+
+            if (status) {
+                break;
+            }
         }
     }
 
@@ -271,14 +344,30 @@ public class InputManager implements Listener {
 
         if (isMouseDown) {
             for (int i = handlers.size() - 1; i >= 0; i--) {
-                if (handlers.get(i).handler.handleMouseDownMove(e.x, e.y,
-                        lastMouseButton))
-                    return;
+                IInputHandler handler = handlers.get(i).handler;
+
+                boolean status;
+                if (handler instanceof IInputHandler2) {
+                    status = ((IInputHandler2) handler).handleMouseDownMove(e);
+                } else {
+                    status = handler.handleMouseDownMove(e.x, e.y,
+                            lastMouseButton);
+                }
+
+                if (status) {
+                    break;
+                }
             }
         } else {
             for (int i = 0; i < handlers.size(); i++) {
                 // Let all handlers know about moves
-                handlers.get(i).handler.handleMouseMove(e.x, e.y);
+                IInputHandler handler = handlers.get(i).handler;
+
+                if (handler instanceof IInputHandler2) {
+                    ((IInputHandler2) handler).handleMouseMove(e);
+                } else {
+                    handler.handleMouseMove(e.x, e.y);
+                }
             }
         }
     }
@@ -287,6 +376,8 @@ public class InputManager implements Listener {
      * Register a mouse handler, lowest priority are handled last
      * 
      * @param aHandler
+     * @param priority
+     * 
      */
     public void registerMouseHandler(IInputHandler aHandler,
             InputPriority priority) {
