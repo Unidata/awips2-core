@@ -489,11 +489,6 @@
          name="MapContext">
    </context>
    <context
-         description="The Looping Context"
-         id="com.raytheon.viz.ui.loopContext"
-         name="LoopContext">
-   </context>
-   <context
          description="The General Context"
          id="com.raytheon.viz.ui.context"
          name="context">
