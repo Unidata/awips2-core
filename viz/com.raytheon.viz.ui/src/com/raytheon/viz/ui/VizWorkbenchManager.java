@@ -54,6 +54,7 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
  * Oct 01, 2015  4926      njensen      partBroughtToTop() calls partActivated()
  * Jan 13, 2016  5231      njensen      Don't mess with contexts on window activated/deactivated
  * Jun 09, 2016  5256      njensen      Don't mess with contexts on part opened
+ * Jun 28, 2016  5717      bsteffen     Ensure ui is updated when an editor is activated
  * 
  * </pre>
  * 
@@ -306,14 +307,13 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
     public void partVisible(IWorkbenchPartReference partRef) {
         IWorkbenchPart part = partRef.getPart(false);
         if (part instanceof IEditorPart) {
-            Set<IEditorPart> parts = visibleParts.get(part.getSite()
-                    .getWorkbenchWindow());
+            IWorkbenchWindow partWindow = part.getSite().getWorkbenchWindow();
+            Set<IEditorPart> parts = visibleParts.get(partWindow);
             if (parts != null) {
                 parts.add((IEditorPart) part);
             }
 
-            IEditorPart active = activeEditorMap.get(part.getSite()
-                    .getWorkbenchWindow());
+            IEditorPart active = activeEditorMap.get(partWindow);
             if (active == null) {
                 // Active will be null if our active editor became hidden, try
                 // and get an active editor from the page
@@ -324,11 +324,11 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
                     // visible
                     active = (IEditorPart) part;
                 }
-                activeEditorMap
-                        .put(part.getSite().getWorkbenchWindow(), active);
+                activeEditorMap.put(partWindow, active);
                 if (active instanceof IDisplayPaneContainer) {
                     notifyListeners();
                 }
+                updateUI(partWindow);
             }
         }
     }

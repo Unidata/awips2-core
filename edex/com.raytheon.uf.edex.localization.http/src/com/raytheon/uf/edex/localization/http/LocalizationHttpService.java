@@ -77,6 +77,7 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
  * ------------ ---------- ----------- --------------------------
  * Jan 12, 2015 3978       bclement    Initial creation
  * Dec 02, 2015 4834       njensen     Added support for PUT requests
+ * Jul 01, 2016 5729       bsteffen    Fix restricted permissions on files after PUT.
  * 
  * </pre>
  * 
@@ -282,8 +283,12 @@ public class LocalizationHttpService {
                 Path parentPath = file.toPath().getParent();
                 Path tmpFile = null;
                 try {
-                    tmpFile = Files.createTempFile(parentPath, file.getName(),
-                            ".tmp");
+                    /*
+                     * Files.createTempFile is not used because we want to
+                     * create files with the default umask.
+                     */
+                    tmpFile = File.createTempFile(file.getName(), ".tmp",
+                            parentPath.toFile()).toPath();
                     try (FileOutputStream fos = new FileOutputStream(
                             tmpFile.toFile())) {
                         try (InputStream is = request.getInputStream()) {
