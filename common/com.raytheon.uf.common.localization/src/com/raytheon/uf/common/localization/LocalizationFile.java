@@ -95,6 +95,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
  * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
  * Apr 07, 2016 5540        njensen     Updated isAvailableOnServer() for compatibility with older servers
+ * Jun 15, 2016 5695        njensen     Rewrote delete() to delegate to adapter
  * 
  * </pre>
  * 
@@ -521,22 +522,7 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
      */
     @Override
     public void delete() throws LocalizationException {
-        try {
-            FileLocker.lock(this, file, Type.WRITE);
-            if (exists()) {
-                adapter.delete(this);
-            } else if (file.exists()) {
-                // Local file does actually exist, delete manually
-                try {
-                    Files.delete(file.toPath());
-                } catch (IOException e) {
-                    throw new LocalizationException("Error deleting file "
-                            + file, e);
-                }
-            }
-        } finally {
-            FileLocker.unlock(this, file);
-        }
+        adapter.delete(this);
     }
 
     /**
