@@ -23,7 +23,7 @@
        Refer to edex/modes/README.txt for documentation
 --> 
 <edexModes>
-	<mode name="request">
+	<mode name="registry">
 		<include>.*request.*</include>
 		<include>.*common.*</include>
 		<exclude>nwsauth.*</exclude>
