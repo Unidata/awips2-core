@@ -1,10 +1,28 @@
-<beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
-	<bean class="com.raytheon.uf.common.convert.ConvertUtil" factory-method="registerConverter">
-  		<constructor-arg><bean class="com.raytheon.uf.common.units.UnitConverter"/></constructor-arg>
-  		<constructor-arg><value>javax.measure.unit.Unit</value></constructor-arg>
-	</bean>
-	
+  <bean class="com.raytheon.uf.common.convert.ConvertUtil" factory-method="registerConverter">
+    <constructor-arg>
+      <bean class="com.raytheon.uf.common.units.UnitConverter" />
+    </constructor-arg>
+    <constructor-arg>
+      <value>javax.measure.unit.Unit</value>
+    </constructor-arg>
+  </bean>
+
+  <!--
+    Must serialize using java.io.Serializable because for some types of Units
+    there is no other way to access the state. For example if you apply a scale
+    and offset value to a unit then the formatted String for that unit is not
+    parseable and the Java Compound UnitConverter provides no way to access the
+    original scale/offset value for custom serialization.
+  -->
+  <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
+    <constructor-arg>
+      <value>javax.measure.unit.Unit</value>
+    </constructor-arg>
+    <constructor-arg>
+      <bean class="com.raytheon.uf.common.serialization.adapters.JavaSerializableAdapter" />
+    </constructor-arg>
+  </bean>
 </beans>

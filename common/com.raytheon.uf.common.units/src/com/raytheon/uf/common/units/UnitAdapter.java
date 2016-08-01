@@ -26,11 +26,6 @@ import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-import com.raytheon.uf.common.serialization.IDeserializationContext;
-import com.raytheon.uf.common.serialization.ISerializationContext;
-import com.raytheon.uf.common.serialization.ISerializationTypeAdapter;
-import com.raytheon.uf.common.serialization.SerializationException;
-
 /**
  * Serialization adapter for Unit
  * 
@@ -43,13 +38,13 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Aug 08, 2014  3503     bclement  moved from common.serialization to
  *                                  common.units
  * Mar 25, 2016  5439     bsteffen  Include unparseable unit in exception text.
+ * Jul 28, 2016  5738     bsteffen  Remove unused ISerializationTypeAdapter methods.
  * 
  * </pre>
  * 
  * @author njensen
  */
-public class UnitAdapter extends XmlAdapter<String, Unit<?>> implements
-        ISerializationTypeAdapter<Unit<?>> {
+public class UnitAdapter extends XmlAdapter<String, Unit<?>> {
 
     @Override
     public String marshal(Unit<?> v) throws Exception {
@@ -76,32 +71,6 @@ public class UnitAdapter extends XmlAdapter<String, Unit<?>> implements
             }
         }
         return retVal;
-    }
-
-    @Override
-    public Unit<?> deserialize(IDeserializationContext deserializer)
-            throws SerializationException {
-        Unit<?> retVal = Unit.ONE;
-        String str = deserializer.readString();
-        if (str != null) {
-            if (!str.equals("")) {
-                try {
-                    retVal = (Unit<?>) UnitFormat.getUCUMInstance()
-                            .parseObject(str);
-                } catch (ParseException e) {
-                    throw new SerializationException(
-                            "Error parsing unit from string " + str, e);
-                }
-            }
-        }
-
-        return retVal;
-    }
-
-    @Override
-    public void serialize(ISerializationContext serializer, Unit<?> object)
-            throws SerializationException {
-        serializer.writeString(object.toString());
     }
 
 }
