@@ -33,7 +33,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
  * General colormapped image extension. Uses
- * {@link ColormappedRenderedImageCallback} to construct RenderedImages
+ * {@link IColorMapDataRetrievalCallback} to construct RenderedImages
  * 
  * <pre>
  * 
@@ -41,26 +41,18 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 22, 2011            mschenke     Initial creation
+ * Nov 22, 2011            mschenke    Initial creation
+ * Jul 27, 2016  5759      njensen     Cleanup
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class GeneralColormappedImageExtension extends
         GraphicsExtension<IGraphicsTarget> implements
         IColormappedImageExtension {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.ext.IColormappedImageExtension#
-     * initializeRaster
-     * (com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback,
-     * com.raytheon.uf.viz.core.drawables.ColorMapParameters)
-     */
     @Override
     public IColormappedImage initializeRaster(
             IColorMapDataRetrievalCallback dataCallback,
@@ -68,33 +60,24 @@ public class GeneralColormappedImageExtension extends
         return new ColormappedImage(target, dataCallback, colorMapParameters);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.ext.GraphicsExtension#
-     * getCompatibilityValue(com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public int getCompatibilityValue(IGraphicsTarget target) {
         return Compatibilty.GENERIC;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.ext.IImagingExtension#drawRasters(
-     * com.raytheon.uf.viz.core.drawables.PaintProperties,
-     * com.raytheon.uf.viz.core.DrawableImage[])
-     */
     @Override
     public boolean drawRasters(PaintProperties paintProps,
             DrawableImage... images) throws VizException {
-        List<DrawableImage> renderables = new ArrayList<DrawableImage>();
+        List<DrawableImage> renderables = new ArrayList<>();
         for (DrawableImage di : images) {
             if (di.getImage() instanceof ColormappedImage) {
                 renderables.add(new DrawableImage(((ColormappedImage) di
                         .getImage()).getWrappedImage(), di.getCoverage()));
+            } else {
+                throw new IllegalArgumentException(this.getClass()
+                        .getSimpleName()
+                        + " cannot handle images of type: "
+                        + di.getImage().getClass().getSimpleName());
             }
         }
         return target.drawRasters(paintProps,

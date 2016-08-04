@@ -40,7 +40,8 @@ import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
 
 /**
- * For targets which cannot optimize support of {@link IColormapShadedShape}
+ * For targets which cannot optimize support of
+ * {@link com.raytheon.uf.viz.core.drawables.ext.colormap.IColormapShadedShapeExtension.IColormapShadedShape}
  * this will provide an inefficient default that simply generates a shaded shape
  * whenever draw is called with new colors.
  * 
@@ -51,11 +52,11 @@ import com.vividsolutions.jts.geom.Polygon;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Jan 23, 2014  2363     bsteffen    Initial creation
+ * Jul 27, 2016  5759     njensen     Cleanup
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class GeneralColormapShadedShapeExtension extends
         GraphicsExtension<IGraphicsTarget> implements
@@ -64,7 +65,7 @@ public class GeneralColormapShadedShapeExtension extends
     @Override
     public GeneralColormapShadedShape createColormapShadedShape(
             GeneralGridGeometry targetGeometry, boolean tesselate) {
-        return new GeneralColormapShadedShape(targetGeometry, tesselate);
+        return new GeneralColormapShadedShape(targetGeometry);
     }
 
     @Override
@@ -79,9 +80,14 @@ public class GeneralColormapShadedShapeExtension extends
             Map<Object, RGB> colors, float alpha, float brightness)
             throws VizException {
         if (shape.isDrawable()) {
+            if (!(shape instanceof GeneralColormapShadedShape)) {
+                throw new IllegalArgumentException(this.getClass()
+                        .getSimpleName()
+                        + " cannot handle shapes of type: "
+                        + shape.getClass().getSimpleName());
+            }
             GeneralColormapShadedShape generalShape = (GeneralColormapShadedShape) shape;
-            IShadedShape shadedShape = generalShape.getShape(target,
-                    colors);
+            IShadedShape shadedShape = generalShape.getShape(target, colors);
             target.drawShadedShape(shadedShape, alpha, brightness);
         }
     }
@@ -103,18 +109,14 @@ public class GeneralColormapShadedShapeExtension extends
 
         private final GeneralGridGeometry targetGeometry;
 
-        private final boolean tesselate;
-
-        private List<AddPair> addPairs = new ArrayList<AddPair>();
+        private List<AddPair> addPairs = new ArrayList<>();
 
         private Map<Object, RGB> lastColors;
 
         private IShadedShape lastShape;
 
-        private GeneralColormapShadedShape(GeneralGridGeometry targetGeometry,
-                boolean tesselate) {
+        private GeneralColormapShadedShape(GeneralGridGeometry targetGeometry) {
             this.targetGeometry = targetGeometry;
-            this.tesselate = tesselate;
         }
 
         /**
@@ -134,7 +136,7 @@ public class GeneralColormapShadedShapeExtension extends
                     lastShape.dispose();
                 }
                 lastShape = generateShape(target, colors);
-                lastColors = new HashMap<Object, RGB>(colors);
+                lastColors = new HashMap<>(colors);
             }
 
             return lastShape;
@@ -152,8 +154,7 @@ public class GeneralColormapShadedShapeExtension extends
          */
         public IShadedShape generateShape(IGraphicsTarget target,
                 Map<Object, RGB> colors) {
-            IShadedShape shape = target.createShadedShape(true, targetGeometry,
-                    tesselate);
+            IShadedShape shape = target.createShadedShape(true, targetGeometry);
             for (AddPair pair : addPairs) {
                 if (pair.pixelSpace) {
                     shape.addPolygonPixelSpace(pair.lineString,
@@ -191,19 +192,19 @@ public class GeneralColormapShadedShapeExtension extends
                 lastShape.dispose();
                 lastShape = null;
             }
-            addPairs = new ArrayList<AddPair>();
+            addPairs = new ArrayList<>();
         }
 
         @Override
         public void reset() {
             lastShape.reset();
             lastColors.clear();
-            addPairs = new ArrayList<AddPair>();
+            addPairs = new ArrayList<>();
         }
 
         @Override
         public Collection<Object> getColorKeys() {
-            Set<Object> keys = new HashSet<Object>(addPairs.size(), 1.0f);
+            Set<Object> keys = new HashSet<>(addPairs.size(), 1.0f);
 
             return keys;
         }
