@@ -63,6 +63,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * Apr 13, 2016  5379     tgurney     Add getIdentifierValues()
  * Jun 07, 2016  5587     tgurney     Change get*Identifiers() to take
  *                                    IDataRequest
+ * Aug 01, 2016  2416     tgurney     Add getNotificationFilter()
  * 
  * </pre>
  * 
@@ -241,4 +242,12 @@ public interface IDataFactory {
     public String[] getIdentifierValues(IDataRequest request,
             String identifierKey);
 
+    /**
+     * Gets an INotificationFilter to be applied to dataURIs for update
+     * notification.
+     * 
+     * @param request
+     * @return
+     */
+    public INotificationFilter getNotificationFilter(IDataRequest request);
 }
