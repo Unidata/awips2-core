@@ -24,6 +24,7 @@ import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
+import org.geotools.referencing.operation.projection.ProjectionException;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.geometry.Envelope;
 import org.opengis.referencing.FactoryException;
@@ -45,19 +46,19 @@ import com.vividsolutions.jts.geom.Geometry;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------
- * Aug 08, 2012           mschenke  Initial creation
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 08, 2012  28       mschenke  Initial creation
  * Apr 03, 2013  1824     bsteffen  Fix Tile Geometry creation.
  * Aug 27, 2013  2190     mschenke  Remove unused transforms
  * Sep 04, 2015  4828     bsteffen  Fix when tile center is not valid in
  *                                  descriptor CRS.
+ * Aug 08, 2016  5806     bsteffen  Fix when tile center is not valid in
+ *                                  descriptor CRS and throws an Exception.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class TileLevel {
 
     /** Tile level's GridGeometry */
@@ -131,7 +132,12 @@ public class TileLevel {
                     levelEnv.getMinimum(0) + (levelEnv.getSpan(0) / 2),
                     levelEnv.getMinimum(1) + (levelEnv.getSpan(1) / 2) };
             double[] out = new double[in.length];
-            tileCRSToTargetGrid.transform(in, 0, out, 0, 1);
+            try {
+                tileCRSToTargetGrid.transform(in, 0, out, 0, 1);
+            } catch (ProjectionException e) {
+                out[0] = Double.NaN;
+                out[1] = Double.NaN;
+            }
 
             double mapPointX = out[0];
             double mapPointY = out[1];
