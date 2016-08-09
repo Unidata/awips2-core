@@ -25,11 +25,15 @@ import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.INotificationFilter;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
 import com.raytheon.uf.common.dataaccess.exception.UnsupportedOutputTypeException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
+import com.raytheon.uf.common.dataplugin.PluginDataObject;
+import com.raytheon.uf.common.dataplugin.PluginException;
+import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
 import com.raytheon.uf.common.dataquery.requests.DbQueryRequest;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint.ConstraintType;
@@ -65,12 +69,12 @@ import com.raytheon.uf.common.time.TimeRange;
  * Feb 27, 2015  4179     mapeters    Add getAvailableValues(), change methods
  *                                    to use it.
  * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
+ * Jul 27, 2016  2416     tgurney     Implement getNotificationFilter()
  * 
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 
 public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
@@ -96,7 +100,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
             DataTime[] dataTimes = new DataTime[refTimes.length];
             int i = 0;
             for (Date refTime : refTimes) {
-                dataTimes[i++] = (new DataTime(refTime));
+                dataTimes[i++] = new DataTime(refTime);
             }
             return dataTimes;
         } else {
@@ -109,7 +113,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     public DataTime[] getAvailableTimes(IDataRequest request,
             BinOffset binOffset) throws TimeAgnosticDataException {
         TimeQueryRequest timeQueryRequest = this.buildTimeQueryRequest(request);
-        if ((binOffset == null) == false) {
+        if (binOffset != null) {
             timeQueryRequest.setBinOffset(binOffset);
         }
 
@@ -123,7 +127,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
                             + request.toString(), e);
         }
 
-        List<DataTime> dataTimes = new ArrayList<DataTime>();
+        List<DataTime> dataTimes = new ArrayList<>();
         for (Object result : results) {
             dataTimes.add((DataTime) result);
         }
@@ -173,6 +177,13 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         return getGridData(request, dbQueryResponse);
     }
 
+    @Override
+    public INotificationFilter getNotificationFilter(IDataRequest request) {
+        validateRequest(request);
+        return new DefaultNotificationFilter(request.getDatatype(),
+                buildConstraintsFromRequest(request));
+    }
+
     /**
      * Get the available values of the desired field.
      * 
@@ -197,7 +208,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
      * Builds a TimeQueryRequest that will be used to retrieve Data Times.
      * 
      * @param request
-     *            the original grid request
+     *            the original request
      * @return a TimeQueryRequest to execute
      */
     protected TimeQueryRequest buildTimeQueryRequest(IDataRequest request) {
@@ -238,7 +249,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
      * Constructs a db query request using the provided data times
      * 
      * @param request
-     *            the original grid request
+     *            the original request
      * @param dataTimes
      *            the data times to include in the request (if any)
      * @return a DbQueryRequest to execute
@@ -268,7 +279,7 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
      * Constructs a db request using the provided time range
      * 
      * @param request
-     *            the original grid request
+     *            the original request
      * @param timeRange
      *            the time range to include in the request
      * @return a DbQueryRequest to execute
@@ -290,16 +301,36 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     }
 
     /**
-     * Constructs the base of a db query request using the supplied grid request
+     * Constructs the base of a db query request using the supplied request
      * 
      * @param request
-     *            the original grid request
+     *            the original request
      * @return the base DbQueryRequest
      */
     protected DbQueryRequest buildDbQueryRequest(IDataRequest request) {
         DbQueryRequest dbQueryRequest = new DbQueryRequest();
-        Map<String, RequestConstraint> constraints = this
-                .buildConstraintsFromRequest(request);
+        Map<String, RequestConstraint> constraints = null;
+
+        Map<String, Object> identifiers = request.getIdentifiers();
+        if (identifiers != null) {
+            Object dataUri = identifiers.get(PluginDataObject.DATAURI_ID);
+            if (dataUri != null) {
+                try {
+                    Map<String, Object> dataUriMap = DataURIUtil
+                            .createDataURIMap((String) dataUri);
+                    constraints = RequestConstraint
+                            .toConstraintMapping(dataUriMap);
+                } catch (PluginException e) {
+                    throw new DataRetrievalException(
+                            "Unable to build DbQueryRequest for request: "
+                                    + request.toString(), e);
+                }
+            }
+        }
+
+        if (constraints == null) {
+            constraints = this.buildConstraintsFromRequest(request);
+        }
         constraints.put(DBQUERY_PLUGIN_NAME_KEY,
                 new RequestConstraint(request.getDatatype()));
         dbQueryRequest.setConstraints(constraints);

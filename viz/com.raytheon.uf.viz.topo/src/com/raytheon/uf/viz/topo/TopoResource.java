@@ -32,6 +32,8 @@ import javax.measure.unit.UnitFormat;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.raytheon.uf.common.colormap.ColorMapException;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters.PersistedParameters;
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
@@ -50,7 +52,6 @@ import com.raytheon.uf.common.style.image.ImagePreferences;
 import com.raytheon.uf.common.style.image.SamplePreferences;
 import com.raytheon.uf.common.topo.TopoUtils;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
@@ -73,11 +74,11 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
  * Apr 03, 2013 1562        mschenke    Fix for custom colormaps
  * Apr 24, 2013 1638        mschenke    Made topo configurable for source data
  * Aug 06, 2013 2235        bsteffen    Added Caching version of TopoQuery.
+ * Aug 05, 2016 4906        randerso    Added no data value to color map parameters
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class TopoResource extends
         AbstractVizResource<TopoResourceData, IMapDescriptor> {
@@ -158,6 +159,7 @@ public class TopoResource extends
         params.setDataMin(Short.MIN_VALUE);
         params.setDataMax(Short.MAX_VALUE);
         params.setFormatString("0");
+        params.setNoDataValue(Short.MIN_VALUE);
 
         if (styleRule != null) {
             // TODO: This basic logic should be extracted somewhere,
@@ -209,7 +211,11 @@ public class TopoResource extends
                 // Use one specified in params over style rules
                 colorMapName = params.getColorMapName();
             }
-            params.setColorMap(ColorMapLoader.loadColorMap(colorMapName));
+            try {
+                params.setColorMap(ColorMapLoader.loadColorMap(colorMapName));
+            } catch (ColorMapException e) {
+                statusHandler.error(e.getLocalizedMessage(), e);
+            }
         }
 
         if (persisted != null) {

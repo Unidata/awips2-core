@@ -57,18 +57,22 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------  -------- ----------- --------------------------
- *                        Jim Ramer   Original Code
- * Jun 18, 2007           chammack    Partial port to Java
- * Apr 12, 2013  1857     bgonzale    Added Index annotations to getter
- *                                    methods.
- * Mar 02, 2013  1970     bgonzale    Removed Index annotations.
- * Aug 08, 2013  2245     bsteffen    Make all DataTime comparisons consistent.
- * Oct 14, 2013  2468     bsteffen    Add getValidTimeAsDate() for comparison
- *                                    performance.
- * Jul 14, 2014  2587     bclement    made reftime non null in hibernate.
- * Sep 14, 2015  4486     rjpeter     Added IllegalArgumentException to String constructor.
+ * 
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -------------------------------------------
+ *                        Jim Ramer  Original Code
+ * Jun 18, 2007           chammack   Partial port to Java
+ * Apr 12, 2013  1857     bgonzale   Added Index annotations to getter methods.
+ * Mar 02, 2013  1970     bgonzale   Removed Index annotations.
+ * Aug 08, 2013  2245     bsteffen   Make all DataTime comparisons consistent.
+ * Oct 14, 2013  2468     bsteffen   Add getValidTimeAsDate() for comparison
+ *                                   performance.
+ * Jul 14, 2014  2587     bclement   made reftime non null in hibernate.
+ * Sep 14, 2015  4486     rjpeter    Added IllegalArgumentException to String
+ *                                   constructor.
+ * Aug 08, 2016  5807     bsteffen   When forecast minutes are present, always
+ *                                   format as 2 digits.
+ * 
  * </pre>
  * 
  * A DataTime has methods that allow the user to obtain the valid time,
@@ -113,7 +117,6 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 
  * 
  * @author chammack
- * @version 1.0
  */
 @Embeddable
 @XmlAccessorType(XmlAccessType.NONE)
@@ -657,6 +660,8 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
             int mins = (fcstTime - (hrs * 3600)) / 60;
             if ((fcstTime % 3600) == 0) {
                 return "(" + hrs + ")";
+            } else if (mins < 10) {
+                return "(" + hrs + ":0" + mins + ")";
             } else {
                 return "(" + hrs + ":" + mins + ")";
             }

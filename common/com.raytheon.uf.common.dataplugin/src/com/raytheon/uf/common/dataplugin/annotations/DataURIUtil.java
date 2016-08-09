@@ -59,11 +59,11 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                     {@link DataURI#SEPARATOR} specially
  * Oct  4, 2013 2081       mschenke    Refactored for custom uri field conversion
  * Mar 11, 2016 5454       tgurney     Handle dataURI with trailing slash
+ * Jul 27, 2016 2416       tgurney     Add getDataURIFields(Class<?>)
  * 
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class DataURIUtil {
 
@@ -97,7 +97,7 @@ public class DataURIUtil {
     /*
      * Internal cache to avoid constant reflection
      */
-    private static Map<Class<?>, DataURIFieldAccessCache> uriFieldMap = new ConcurrentHashMap<Class<?>, DataURIFieldAccessCache>();
+    private static Map<Class<?>, DataURIFieldAccessCache> uriFieldMap = new ConcurrentHashMap<>();
 
     /**
      * The classMapper needs to be injected to allow this class to create new
@@ -125,6 +125,24 @@ public class DataURIUtil {
             addToDataURI(uri, access.getFieldString(pdo));
         }
         return uri.toString();
+    }
+
+    /**
+     * Get ordered list of dataURI fields for specified class
+     * 
+     * @param clazz
+     * @return the dataURI fields
+     * @throws PluginException
+     */
+    public static List<String> getDataURIFieldNamesInOrder(Class<?> clazz)
+            throws PluginException {
+        DataURIFieldAccessCache cache = getAccessCache(clazz);
+        DataURIFieldAccess[] fields = cache.getDataURIFields();
+        List<String> rval = new ArrayList<>(fields.length);
+        for (DataURIFieldAccess field : fields) {
+            rval.add(field.getFieldName());
+        }
+        return Collections.unmodifiableList(rval);
     }
 
     /**
@@ -173,8 +191,7 @@ public class DataURIUtil {
     public static Map<String, Object> createDataURIMap(String dataURI)
             throws PluginException {
         String[] tokens = tokenizeURI(dataURI);
-        Map<String, Object> dataMap = new HashMap<String, Object>(
-                tokens.length, 1.0f);
+        Map<String, Object> dataMap = new HashMap<>(tokens.length, 1.0f);
         String pluginName = tokens[0];
         dataMap.put(PLUGIN_NAME_KEY, pluginName);
 
@@ -211,8 +228,7 @@ public class DataURIUtil {
             throws PluginException {
         DataURIFieldAccessCache cache = getAccessCache(object.getClass());
         DataURIFieldAccess[] accessArray = cache.getDataURIFields();
-        Map<String, Object> dataMap = new HashMap<String, Object>(
-                accessArray.length, 1.0f);
+        Map<String, Object> dataMap = new HashMap<>(accessArray.length, 1.0f);
         if (object instanceof PluginDataObject) {
             dataMap.put(PLUGIN_NAME_KEY,
                     ((PluginDataObject) object).getPluginName());
@@ -335,7 +351,7 @@ public class DataURIUtil {
     /*
      * Split a URI on the separator and remove empty first element.
      */
-    private static String[] tokenizeURI(String dataURI) {
+    public static String[] tokenizeURI(String dataURI) {
         // Limit of -1 keeps trailing empty string(s)
         String[] tokens = DATAURI_SEPARATOR_PATTERN.split(dataURI, -1);
         for (int i = 0; i < tokens.length; ++i) {
@@ -392,7 +408,7 @@ public class DataURIUtil {
             public int compare(Field f1, Field f2) {
                 int i1 = f1.getAnnotation(DataURI.class).position();
                 int i2 = f2.getAnnotation(DataURI.class).position();
-                return (i1 < i2 ? -1 : (i1 == i2 ? 0 : 1));
+                return i1 < i2 ? -1 : i1 == i2 ? 0 : 1;
             }
 
         };
@@ -402,7 +418,7 @@ public class DataURIUtil {
         private Map<String, DataURIFieldAccess> fieldMap;
 
         public DataURIFieldAccessCache(Class<?> type) throws PluginException {
-            this.fieldMap = new HashMap<String, DataURIFieldAccess>();
+            this.fieldMap = new HashMap<>();
             this.dataURIFields = getDataURIAccessFields(type);
             for (DataURIFieldAccess access : dataURIFields) {
                 fieldMap.put(access.getFieldName(), access);
@@ -417,7 +433,7 @@ public class DataURIUtil {
             DataURIFieldAccess access = fieldMap.get(fieldName);
             if (access == null && object != null) {
                 synchronized (this) {
-                    Map<String, DataURIFieldAccess> newFieldMap = new HashMap<String, DataURIFieldAccess>(
+                    Map<String, DataURIFieldAccess> newFieldMap = new HashMap<>(
                             fieldMap);
 
                     access = new DataURIFieldAccess(
@@ -444,9 +460,9 @@ public class DataURIUtil {
         private static List<DataURIFieldAccess> getAccess(Class<?> clazz,
                 List<String> parents) throws PluginException {
             List<Field> fields = getOrderedDataURIFields(clazz);
-            List<DataURIFieldAccess> accessors = new ArrayList<DataURIFieldAccess>();
+            List<DataURIFieldAccess> accessors = new ArrayList<>();
             for (Field field : fields) {
-                List<String> names = new ArrayList<String>(parents);
+                List<String> names = new ArrayList<>(parents);
                 names.add(field.getName());
                 Class<?> type = field.getType();
                 DataURI dataURI = field.getAnnotation(DataURI.class);
@@ -471,7 +487,7 @@ public class DataURIUtil {
         }
 
         private static List<Field> getOrderedDataURIFields(Class<?> clazz) {
-            List<Field> fields = new ArrayList<Field>();
+            List<Field> fields = new ArrayList<>();
             Class<?> currentClass = clazz;
             while (currentClass != null) {
                 for (Field field : currentClass.getDeclaredFields()) {
@@ -508,7 +524,7 @@ public class DataURIUtil {
         private final Class<?> fieldClass;
 
         /** URI field converter */
-        private DataURIFieldConverter fieldConverter;
+        private final DataURIFieldConverter fieldConverter;
 
         public DataURIFieldAccess(List<String> fieldNames, Class<?> fieldClass,
                 DataURIFieldConverter fieldConverter) {
@@ -609,7 +625,7 @@ public class DataURIUtil {
                 throws PluginException {
             Object source = fieldContainer;
             try {
-                for (int i = 0; i < (fieldNames.length - 1); i += 1) {
+                for (int i = 0; i < fieldNames.length - 1; i += 1) {
                     Object obj = PropertyUtils.getProperty(source,
                             fieldNames[i]);
                     if (obj == null) {

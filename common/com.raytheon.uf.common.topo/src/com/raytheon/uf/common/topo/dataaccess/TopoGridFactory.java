@@ -34,6 +34,7 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.INotificationFilter;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.InvalidIdentifiersException;
@@ -72,6 +73,7 @@ import com.vividsolutions.jts.geom.Envelope;
  *                                     IDataRequest
  * Jul 05, 2016 5728       mapeters    Improved handling of invalid identifier
  *                                     values
+ * Jul 27, 2016 2416       tgurney     Stub impl of getNotificationFilter()
  * 
  * </pre>
  * 
@@ -349,6 +351,12 @@ public class TopoGridFactory extends AbstractDataFactory {
         throw new IncompatibleRequestException(
                 request.getDatatype()
                         + " data requests do not support getting available location names.");
+    }
+
+    @Override
+    public INotificationFilter getNotificationFilter(IDataRequest request) {
+        throw new IncompatibleRequestException(
+                "Cannot listen for updates to topography data");
     }
 
 }
