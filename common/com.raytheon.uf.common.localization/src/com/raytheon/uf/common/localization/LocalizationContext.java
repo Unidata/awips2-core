@@ -64,11 +64,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdap
  * Jul 14, 2008 1250       jelkins     EDEX LocalizationAdapter additions.
  * Oct 01, 2013 2361       njensen     Removed XML annotations and methods
  * Feb 06, 2014 2761       mnash       Add region localization level
+ * Aug 08, 2016 5744       mapeters    Deprecate LocalizationType.EDEX_STATIC
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 @DynamicSerialize
 public class LocalizationContext implements Cloneable {
@@ -83,14 +83,6 @@ public class LocalizationContext implements Cloneable {
     public static class LocalizationLevelSerializationAdapter implements
             ISerializationTypeAdapter<LocalizationLevel> {
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see
-         * com.raytheon.uf.common.serialization.ISerializationTypeAdapter#serialize
-         * (com.raytheon.uf.common.serialization.ISerializationContext,
-         * java.lang.Object)
-         */
         @Override
         public void serialize(ISerializationContext serializer,
                 LocalizationLevel object) throws SerializationException {
@@ -99,13 +91,6 @@ public class LocalizationContext implements Cloneable {
             serializer.writeBool(object.systemLevel);
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see com.raytheon.uf.common.serialization.ISerializationTypeAdapter#
-         * deserialize
-         * (com.raytheon.uf.common.serialization.IDeserializationContext)
-         */
         @Override
         public LocalizationLevel deserialize(
                 IDeserializationContext deserializer)
@@ -128,27 +113,12 @@ public class LocalizationContext implements Cloneable {
     public static class LocalizationTypeSerializationAdapter implements
             ISerializationTypeAdapter<LocalizationType> {
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see
-         * com.raytheon.uf.common.serialization.ISerializationTypeAdapter#serialize
-         * (com.raytheon.uf.common.serialization.ISerializationContext,
-         * java.lang.Object)
-         */
         @Override
         public void serialize(ISerializationContext serializer,
                 LocalizationType object) throws SerializationException {
             serializer.writeString(object.text);
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see com.raytheon.uf.common.serialization.ISerializationTypeAdapter#
-         * deserialize
-         * (com.raytheon.uf.common.serialization.IDeserializationContext)
-         */
         @Override
         public LocalizationType deserialize(IDeserializationContext deserializer)
                 throws SerializationException {
@@ -172,7 +142,7 @@ public class LocalizationContext implements Cloneable {
     @DynamicSerializeTypeAdapter(factory = LocalizationTypeSerializationAdapter.class)
     public static class LocalizationType {
 
-        private static Map<String, LocalizationType> typeMap = new HashMap<String, LocalizationType>();
+        private static Map<String, LocalizationType> typeMap = new HashMap<>();
 
         // STANDARD TYPES, OTHERS SHOULD BE ADDED IN CUSTOM CODE
         public static LocalizationType UNKNOWN = valueOf("UNKNOWN");
@@ -183,6 +153,13 @@ public class LocalizationContext implements Cloneable {
 
         public static LocalizationType COMMON_STATIC = valueOf("COMMON_STATIC");
 
+        /**
+         * Use {@link #COMMON_STATIC} instead to simplify the code and to allow
+         * files to be accessed both by EDEX and CAVE.
+         * 
+         * @deprecated
+         */
+        @Deprecated
         public static LocalizationType EDEX_STATIC = valueOf("EDEX_STATIC");
 
         public static LocalizationType[] values() {
@@ -266,7 +243,7 @@ public class LocalizationContext implements Cloneable {
             }
         };
 
-        private static Map<String, LocalizationLevel> typeMap = new HashMap<String, LocalizationLevel>();
+        private static Map<String, LocalizationLevel> typeMap = new HashMap<>();
 
         public static LocalizationLevel UNKNOWN = new LocalizationLevel(
                 "UNKNOWN");
@@ -400,11 +377,6 @@ public class LocalizationContext implements Cloneable {
             return true;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Comparable#compareTo(java.lang.Object)
-         */
         @Override
         public int compareTo(LocalizationLevel lvl) {
             return (order - lvl.order);
