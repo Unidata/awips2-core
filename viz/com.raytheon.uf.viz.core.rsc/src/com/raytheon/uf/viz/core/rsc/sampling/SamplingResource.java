@@ -29,7 +29,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.DrawableString;
-import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.HorizontalAlignment;
@@ -43,8 +42,6 @@ import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.GenericResourceData;
-import com.raytheon.uf.viz.core.rsc.IInputHandler;
-import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.RenderingOrderFactory.ResourceOrder;
 import com.raytheon.uf.viz.core.rsc.ResourceList;
@@ -62,21 +59,21 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Dec 22, 2010           mschenke     Initial creation
- * Jan 31, 2012  14306    kshresth     Cursor readout as you sample the dispays
- * Mar 03, 2014  2804     mschenke     Set back up clipping pane
- * May 12, 2014  3074     bsteffen     Remove use of deprecated methods.
- * Oct 21, 2014  3549     mschenke     Fixed positioning if x/y aspect ratio 
- *                                     are different
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 22, 2010  7712     mschenke  Initial creation
+ * Jan 31, 2012  14306    kshresth  Cursor readout as you sample the dispays
+ * Mar 03, 2014  2804     mschenke  Set back up clipping pane
+ * May 12, 2014  3074     bsteffen  Remove use of deprecated methods.
+ * Oct 21, 2014  3549     mschenke  Fixed positioning if x/y aspect ratio are
+ *                                  different
+ * Aug 08, 2016  2676     bsteffen  SamplingInputAdapter will track container
+ *                                  itself.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class SamplingResource extends
         AbstractVizResource<GenericResourceData, IDescriptor> implements
         ISamplingResource {
@@ -101,7 +98,7 @@ public class SamplingResource extends
 
     boolean sampling = false;
 
-    private IInputHandler inputAdapter = getSamplingInputHandler();
+    private SamplingInputAdapter<?> inputAdapter = getSamplingInputHandler();
 
     protected ReferencedCoordinate sampleCoord;
 
@@ -120,8 +117,8 @@ public class SamplingResource extends
         super(resourceData, loadProperties);
     }
 
-    protected IInputHandler getSamplingInputHandler() {
-        return new SamplingInputAdapter<SamplingResource>(this);
+    protected SamplingInputAdapter<?> getSamplingInputHandler() {
+        return new SamplingInputAdapter<>(this);
     }
 
     /*
@@ -131,10 +128,7 @@ public class SamplingResource extends
      */
     @Override
     protected void disposeInternal() {
-        IDisplayPaneContainer container = getResourceContainer();
-        if (container != null) {
-            container.unregisterMouseHandler(inputAdapter);
-        }
+        inputAdapter.unregister();
 
         if (hoverFont != null) {
             hoverFont.dispose();
@@ -150,11 +144,7 @@ public class SamplingResource extends
      */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
-        IDisplayPaneContainer container = getResourceContainer();
-        if (container != null) {
-            container.registerMouseHandler(inputAdapter,
-                    InputPriority.SYSTEM_RESOURCE);
-        }
+        inputAdapter.register(getResourceContainer());
         hoverFont = target.initializeFont(getClass().getName());
     }
 

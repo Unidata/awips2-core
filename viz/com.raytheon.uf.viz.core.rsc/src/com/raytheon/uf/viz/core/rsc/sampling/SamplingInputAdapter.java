@@ -23,6 +23,7 @@ import org.eclipse.swt.widgets.Event;
 
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.rsc.IContainerAwareInputHandler;
 import com.raytheon.viz.ui.input.InputAdapter;
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -33,20 +34,21 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 17, 2011            mschenke     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Jun 17, 2011  9730     mschenke  Initial creation
+ * Aug 08, 2016  2676     bsteffen  Track container for reliable unregister()
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class SamplingInputAdapter<T extends SamplingResource> extends
-        InputAdapter {
+        InputAdapter implements IContainerAwareInputHandler {
 
     private T resource;
+
+    private IDisplayPaneContainer container;
 
     public SamplingInputAdapter(T resource) {
         this.resource = resource;
@@ -72,6 +74,7 @@ public class SamplingInputAdapter<T extends SamplingResource> extends
         return handleMouseMove(x, y);
     }
 
+    @Override
     public boolean handleMouseExit(Event event) {
         resource.sampleCoord = null;
         if (resource.isSampling()) {
@@ -80,7 +83,26 @@ public class SamplingInputAdapter<T extends SamplingResource> extends
         return false;
     }
 
+    @Override
     public boolean handleMouseEnter(Event event) {
         return handleMouseMove(event.x, event.y);
+    }
+
+    public void register(IDisplayPaneContainer container) {
+        if (container != null) {
+            container.registerMouseHandler(this, InputPriority.SYSTEM_RESOURCE);
+            /* This should call setContainer() automatically. */
+        }
+    }
+
+    public void unregister() {
+        if (this.container != null) {
+            container.unregisterMouseHandler(this);
+        }
+    }
+
+    @Override
+    public void setContainer(IDisplayPaneContainer container) {
+        this.container = container;
     }
 }
