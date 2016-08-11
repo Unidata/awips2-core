@@ -20,6 +20,12 @@ BASE:cave_static/gfe/userPython/textproducts/MultipleElementTable.py
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py
 
+SITE:common_static/gfe/config/siteConfig.py
+SITE:common_static/gfe/config/localConfig.py
+SITE:common_static/gfe/config/localMaps.py
+SITE:common_static/gfe/config/localWxConfig.py
+SITE:common_static/gfe/config/sbcbu.properties
+
 BASE:common_static/gfe/textproducts/templates/product/AFD.py
 BASE:common_static/gfe/textproducts/templates/product/PFM.py
 BASE:common_static/gfe/textproducts/templates/product/AreaFcst.py
@@ -169,3 +175,7 @@ SITE:common_static/ffmp/FFMPTemplateConfig.xml
 
 # TextWS Files
 SITE:common_static/mixedCase/mixedCaseProductIds.txt
+
+# VTEC Files
+BASE:common_static/vtec/VTECPartners.py
+SITE:common_static/vtec/localVTECPartners.py

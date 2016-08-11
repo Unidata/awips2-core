@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.localization;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.commons.lang.StringUtils;
@@ -33,18 +34,32 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 13, 2011            njensen     Initial creation
- * Apr 25, 2016  #5605     randerso    Added join()
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 13, 2011           njensen   Initial creation
+ * Apr 25, 2016  5605     randerso  Added join()
+ * Aug 11, 2016  5816     randerso  Added getParaent()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class LocalizationUtil {
+
+    /**
+     * Extracts the parent directory of a file
+     * 
+     * @param filePath
+     * @return the parent directory
+     */
+    public static String getParent(String filePath) {
+        String[] split = splitUnique(filePath);
+        if (split.length > 1) {
+            return join(Arrays.copyOfRange(split, 0, split.length - 1));
+        }
+        return "";
+    }
 
     /**
      * Extracts the name of a file or directory from a path

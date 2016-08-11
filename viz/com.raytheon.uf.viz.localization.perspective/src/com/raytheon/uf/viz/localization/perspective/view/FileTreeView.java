@@ -131,35 +131,52 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 26, 2010            mnash       Initial creation
- * Feb 13, 2013  1610      mschenke    Fixed null pointer by repopulating LocalizationFileGroupData
- *                                     objects even if they weren't expanded
- * May  1, 2013  1967      njensen     Fix for pydev 2.7
- * Sep 17, 2013  2285      mschenke    Made openFile refresh items if file not found
- * Oct  9, 2013  2104      mschenke    Fixed file delete/add refresh issue and file change message
- *                                     found when testing scalesInfo.xml file
- * Sep 18, 2014  3531      bclement    fixed file delete/add refresh issue when paths share string prefixes
- * Feb 06, 2015  4028      mapeters    fixed file selection issue when reopening CAVE with files open
- * Apr 02, 2015  4288      randerso    Fix Widget is disposed error
- * Aug 24, 2015  4393      njensen     Updates for observer changes
- * Oct 13, 2015  4410      bsteffen    Allow localization perspective to mix
- *                                     files for multiple Localization Types.
- * Nov 12, 2015 4834       njensen     Changed LocalizationOpFailedException to LocalizationException
- * Nov 18, 2015 4834       njensen     Updated to register file observing on PathManager
- * Dec 03, 2015 4834       njensen     Updated for ILocalizationFile changes
- * Jan 06, 2016 4834       nabowle     Fix single-user edit-save-edit-save.
- * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
- * Jan 15, 2016 5242       kbisanz     Replaced LocalizationFile with
- *                                     ILocalizationFile where possible
- * Mar 25, 2016 5214       mapeters    Support deletion of directories containing only USER-level files,
- * Apr 14, 2016 4946       mapeters    Fix duplicate files listed in delete confirmation dialog
- *                                     improved tree's double-click handling
- * Apr 21, 2016 5214       mapeters    Fix incorrect ordering of files in multiple localization levels
- * May 23, 2016 4907       mapeters    Implement IWindowListener and update partActivated(), don't save 
- *                                     if local file matches remote,
- * Jun 09, 2016 4907       mapeters    Prevent exception when double clicking with nothing selected
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 26, 2010           mnash     Initial creation
+ * Feb 13, 2013  1610     mschenke  Fixed null pointer by repopulating
+ *                                  LocalizationFileGroupData objects even if
+ *                                  they weren't expanded
+ * May 01, 2013  1967     njensen   Fix for pydev 2.7
+ * Sep 17, 2013  2285     mschenke  Made openFile refresh items if file not
+ *                                  found
+ * Oct 09, 2013  2104     mschenke  Fixed file delete/add refresh issue and file
+ *                                  change message found when testing
+ *                                  scalesInfo.xml file
+ * Sep 18, 2014  3531     bclement  fixed file delete/add refresh issue when
+ *                                  paths share string prefixes
+ * Feb 06, 2015  4028     mapeters  fixed file selection issue when reopening
+ *                                  CAVE with files open
+ * Apr 02, 2015  4288     randerso  Fix Widget is disposed error
+ * Aug 24, 2015  4393     njensen   Updates for observer changes
+ * Oct 13, 2015  4410     bsteffen  Allow localization perspective to mix files
+ *                                  for multiple Localization Types.
+ * Nov 12, 2015  4834     njensen   Changed LocalizationOpFailedException to
+ *                                  LocalizationException
+ * Nov 18, 2015  4834     njensen   Updated to register file observing on
+ *                                  PathManager
+ * Dec 03, 2015  4834     njensen   Updated for ILocalizationFile changes
+ * Jan 06, 2016  4834     nabowle   Fix single-user edit-save-edit-save.
+ * Jan 11, 2016  5242     kbisanz   Replaced calls to deprecated
+ *                                  LocalizationFile methods
+ * Jan 15, 2016  5242     kbisanz   Replaced LocalizationFile with
+ *                                  ILocalizationFile where possible
+ * Mar 25, 2016  5214     mapeters  Support deletion of directories containing
+ *                                  only USER-level files,
+ * Apr 14, 2016  4946     mapeters  Fix duplicate files listed in delete
+ *                                  confirmation dialog improved tree's
+ *                                  double-click handling
+ * Apr 21, 2016  5214     mapeters  Fix incorrect ordering of files in multiple
+ *                                  localization levels
+ * May 23, 2016  4907     mapeters  Implement IWindowListener and update
+ *                                  partActivated(), don't save if local file
+ *                                  matches remote,
+ * Jun 09, 2016  4907     mapeters  Prevent exception when double clicking with
+ *                                  nothing selected
+ * Aug 11, 2016  5816     randerso  Changed find to search for deepest match of
+ *                                  nearest parent instead of first partial
+ *                                  match
  * 
  * </pre>
  * 
@@ -1439,22 +1456,33 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             boolean populateToFind, boolean nearestParent) {
         Tree tree = getTree();
         TreeItem[] items = tree.getItems();
+        TreeItem bestMatch = null;
+        int matchLen = 0;
         for (TreeItem item : items) {
-            // item is an Application level node, check child, find will return
-            // null if incorrect path, otherwise it will return closest ancestor
-            // of the item we are looking for. If null, keep looking, otherwise
-            // check the search method
+            /*
+             * item is an Application level node, for each child, we try to find
+             * the desired path, find will return null if we are on the
+             * incorrect path, otherwise it will return the lowest directory
+             * found on the path of the item we are looking for.
+             * 
+             * If we find a partial match to the path, we check to see if it is
+             * closer to the desired item than the previous partial match.
+             * 
+             * If null, keep looking, otherwise check the search method
+             */
             for (TreeItem basePathItem : item.getItems()) {
                 TreeItem found = find(basePathItem, context, path,
                         populateToFind);
-                if (found != null) {
-                    TreeItem rval = null;
-                    if (nearestParent) {
-                        rval = found;
-                    }
 
+                if (found != null) {
                     FileTreeEntryData foundData = (FileTreeEntryData) found
                             .getData();
+                    if (nearestParent
+                            && (foundData.getPath().length() > matchLen)) {
+                        bestMatch = found;
+                        matchLen = foundData.getPath().length();
+                    }
+
                     if (foundData.getPath().equals(path)) {
                         // Found this item, check if group data
                         if (foundData instanceof LocalizationFileGroupData) {
@@ -1464,19 +1492,20 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                         .getData();
                                 if (fileData.getFile().getContext()
                                         .equals(context)) {
-                                    rval = fileItem;
-                                    break;
+                                    return fileItem;
                                 }
                             }
                         } else {
-                            rval = found;
+                            return found;
                         }
                     }
-                    return rval;
                 }
             }
+            if (bestMatch != null) {
+                return bestMatch;
+            }
         }
-        return null;
+        return bestMatch;
     }
 
     /**
