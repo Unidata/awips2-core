@@ -17,6 +17,9 @@ BASE:cave_static/derivedParameters/DerivedParameterInterface.py
 # GFE protected files
 BASE:cave_static/gfe/userPython/textproducts/MultipleElementTable.py
 
+BASE:common_static/gfe/config/serverConfig.py
+BASE:common_static/gfe/config/Maps.py
+
 BASE:common_static/gfe/textproducts/templates/product/AFD.py
 BASE:common_static/gfe/textproducts/templates/product/PFM.py
 BASE:common_static/gfe/textproducts/templates/product/AreaFcst.py
