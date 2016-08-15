@@ -38,11 +38,11 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * ------------ ---------- ----------- --------------------------
  * Aug 18, 2015  3806      njensen     Initial creation
  * Nov 12, 2015  4834      njensen     Removed LocalizationOpFailedException
+ * Aug 15, 2016  5834      njensen     Added flush() call to save()
  *
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class LocalizationSaveableFileOutputStream extends SaveableOutputStream {
@@ -82,6 +82,7 @@ public class LocalizationSaveableFileOutputStream extends SaveableOutputStream {
     @Override
     public void save() throws IOException {
         try {
+            this.flush();
             stream.closeAndSave();
         } catch (LocalizationException e) {
             throw new IOException("Error saving output stream", e);

@@ -34,6 +34,7 @@ import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.localization.exception.LocalizationProtectedFileException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 
 /**
@@ -96,6 +97,7 @@ import com.raytheon.uf.common.serialization.JAXBManager;
  * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
  * Apr 07, 2016 5540        njensen     Updated isAvailableOnServer() for compatibility with older servers
  * Jun 15, 2016 5695        njensen     Rewrote delete() to delegate to adapter
+ * Aug 15, 2016 5834        njensen     Check protection level in openOutputStream()
  * 
  * </pre>
  * 
@@ -376,6 +378,13 @@ public final class LocalizationFile implements Comparable<LocalizationFile>,
     @Deprecated
     public SaveableOutputStream openOutputStream(boolean isAppending)
             throws LocalizationException {
+        if (this.isProtected()) {
+            if (context.getLocalizationLevel().compareTo(protectedLevel) > 0) {
+                throw new LocalizationProtectedFileException("File " + path
+                        + " is protected at level " + protectedLevel,
+                        protectedLevel);
+            }
+        }
         try {
             return new LocalizationSaveableFileOutputStream(
                     new LocalizationFileOutputStream(this, isAppending));

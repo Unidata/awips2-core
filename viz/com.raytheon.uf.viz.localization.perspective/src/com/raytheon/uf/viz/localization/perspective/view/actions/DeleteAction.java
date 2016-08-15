@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Mar 25, 2016 5214      mapeters     Support deletion of directories.
  * Apr 12, 2016 4946      mapeters     Fixed issue where action did nothing if prompt == false
  * Jun 02, 2016 4907      mapeters     Close merge/compare editors of deleted files
+ * Aug 15, 2016 5834      njensen      Enable delete regardless of protection level
  * 
  * </pre>
  * 
@@ -298,10 +299,6 @@ public class DeleteAction extends Action {
             LocalizationContext ctx = file.getContext();
             LocalizationLevel level = ctx.getLocalizationLevel();
             if (level.isSystemLevel()) {
-                canDelete = false;
-                break;
-            }
-            if (file.isProtected() && file.getProtectedLevel().equals(level)) {
                 canDelete = false;
                 break;
             }
