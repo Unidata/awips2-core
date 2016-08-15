@@ -24,6 +24,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.List;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,11 +63,12 @@ import com.raytheon.uf.edex.core.EdexException;
  * Nov 17, 2015  4834     njensen   Extracted checksum code to ChecksumIO
  * Dec 17, 2015  5166     kbisanz   Update logging to use SLF4J
  * Feb 05, 2016  4754     bsteffen  Use PathManager for checksums
+ * Aug 15, 2016  5834     njensen   Always return entry in addEntry, even if
+ *                                   file is protected
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public class UtilityManager {
 
@@ -100,7 +102,7 @@ public class UtilityManager {
     public static ListUtilityResponse listFiles(String localizedSite,
             String baseDir, LocalizationContext context, String subPath,
             boolean recursive, boolean filesOnly) {
-        ArrayList<ListResponseEntry> entries = new ArrayList<ListResponseEntry>();
+        List<ListResponseEntry> entries = new ArrayList<>();
         String msg = null;
         try {
             checkParameters(baseDir, context);
@@ -134,7 +136,8 @@ public class UtilityManager {
         /*
          * TODO verify checksum on filesystem matches checksum sent from delete
          * request, otherwise throw
-         * LocalizationFileChangedOutFromUnderYouException.
+         * LocalizationFileChangedOutFromUnderYouException aka
+         * LocalizationFileVersionConflictException.
          */
 
         String msg = null;
@@ -223,7 +226,7 @@ public class UtilityManager {
 
     private static void addEntry(String localizedSite,
             LocalizationContext context, String path, File file,
-            ArrayList<ListResponseEntry> entries) {
+            List<ListResponseEntry> entries) {
 
         if (!path.endsWith(Checksum.CHECKSUM_FILE_EXTENSION)) {
             ListResponseEntry entry = new ListResponseEntry();
@@ -253,26 +256,18 @@ public class UtilityManager {
                 entry.setChecksum(ILocalizationFile.NON_EXISTENT_CHECKSUM);
             }
 
-
             LocalizationLevel protectedLevel = ProtectedFiles
                     .getProtectedLevel(localizedSite,
                             context.getLocalizationType(), path);
             entry.setProtectedLevel(protectedLevel);
-
-            // add to entry if not protected or we are requesting protected
-            // version or levels below (BASE if SITE protected, etc)
-            if (protectedLevel == null
-                    || context.getLocalizationLevel().compareTo(protectedLevel) <= 0) {
-                entries.add(entry);
-            }
+            entries.add(entry);
         }
     }
 
     private static void recursiveFileBuild(String localizedSite,
             LocalizationContext context, File dir, String subPath,
             boolean recursive, boolean filesOnly,
-            ArrayList<ListResponseEntry> entries, int depth)
-            throws EdexException {
+            List<ListResponseEntry> entries, int depth) throws EdexException {
 
         String path = dir.getPath();
         if ((subPath == null) || subPath.isEmpty()) {
@@ -325,7 +320,7 @@ public class UtilityManager {
 
     public static ListUtilityResponse listContexts(String path,
             LocalizationLevel level) {
-        ArrayList<ListResponseEntry> entries = new ArrayList<ListResponseEntry>();
+        List<ListResponseEntry> entries = new ArrayList<>();
         for (LocalizationType type : LocalizationType.values()) {
             if (type.name().equals("UNKNOWN")
                     || type.name().equals("EDEX_STATIC")) {
