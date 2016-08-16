@@ -32,11 +32,13 @@ import javax.xml.bind.annotation.XmlAttribute;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 24, 2007            njensen     Initial creation
- * Nov 14, 2013 2361       njensen     Remove ISerializableObject
- * May 1, 2014  DCS 027    MPorricelli Add WBZ level
+ * 
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ ---------------------------
+ * Sep 24, 2007           njensen      Initial creation
+ * Nov 14, 2013  2361     njensen      Remove ISerializableObject
+ * May 01, 2014  DCS 027  MPorricelli  Add WBZ level
+ * Aug 15, 2016  5821     bsteffen     Add TROP level
  * 
  * </pre>
  * 
@@ -46,8 +48,8 @@ import javax.xml.bind.annotation.XmlAttribute;
 public abstract class Level {
 
     public static enum LevelType {
-        THETA, HEIGHT_AGL, HEIGHT_MSL, PRESSURE, SURFACE, TILT, MB_AGL, MAXW, TW0, TEMP, FRZ, DEFAULT, WBZ
-    };
+        THETA, HEIGHT_AGL, HEIGHT_MSL, PRESSURE, SURFACE, TILT, MB_AGL, MAXW, TW0, TEMP, FRZ, DEFAULT, WBZ, TROP
+    }
 
     protected LevelType type;
 
@@ -101,11 +103,6 @@ public abstract class Level {
             aType = "HEIGHT_MSL";
         } else if (aType.equals("BL")) {
             aType = "MB_AGL";
-        } else if (aType.equals("MAXW")) {
-
-        } else if (aType.equals("TROP")) {
-            // See GridLevelTranslator.construct
-            aType = "DEFAULT";
         }
         this.type = LevelType.valueOf(aType);
         init();

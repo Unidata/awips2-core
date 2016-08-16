@@ -26,6 +26,7 @@ import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.WorkbenchException;
 
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -46,6 +47,8 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Jun 03, 2016  4907     mapeters  Attempt to restore views when getting
  *                                  service, allow activation of view that
  *                                  contributes service
+ * Aug 11, 2016  5816     randerso  Added openLocalizationFile() (moved from GFE
+ *                                  specific code)
  * 
  * </pre>
  * 
@@ -137,6 +140,21 @@ public class LocalizationPerspectiveUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Open a file in the localization perspective
+     * 
+     * @param file
+     *            the file to open
+     */
+    public static void openLocalizationFile(LocalizationFile file) {
+        ILocalizationService service = changeToLocalizationPerspective();
+        if (service != null) {
+            service.refresh(file);
+            service.openFile(file);
+            service.selectFile(file);
+        }
     }
 
 }

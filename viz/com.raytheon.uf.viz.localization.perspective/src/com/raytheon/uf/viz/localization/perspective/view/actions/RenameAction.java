@@ -59,6 +59,7 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Oct 13, 2015 4410       bsteffen    Allow localization perspective to mix
  *                                     files for multiple Localization Types.
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Aug 15, 2016 5834       njensen     Use file's localization level if not system level, otherwise USER   
  * 
  * 
  * </pre>
@@ -151,9 +152,14 @@ public class RenameAction extends Action {
                 }
 
                 IPathManager pm = PathManagerFactory.getPathManager();
+                LocalizationLevel renameLevel = file.getContext()
+                        .getLocalizationLevel();
+                if (renameLevel.isSystemLevel()) {
+                    renameLevel = LocalizationLevel.USER;
+                }
                 final LocalizationFile newFile = pm.getLocalizationFile(pm
                         .getContext(file.getContext().getLocalizationType(),
-                                LocalizationLevel.USER), newPath);
+                                renameLevel), newPath);
                 boolean rename = true;
                 if (newFile.exists()) {
                     rename = MessageDialog.openConfirm(parent, "Override file",
