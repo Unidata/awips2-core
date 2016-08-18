@@ -24,7 +24,7 @@ SITE:common_static/gfe/config/siteConfig.py
 SITE:common_static/gfe/config/localConfig.py
 SITE:common_static/gfe/config/localMaps.py
 SITE:common_static/gfe/config/localWxConfig.py
-SITE:common_static/gfe/config/sbcbu.properties
+SITE:common_static/gfe/config/svcbu.properties
 
 BASE:common_static/gfe/textproducts/templates/product/AFD.py
 BASE:common_static/gfe/textproducts/templates/product/PFM.py
@@ -168,6 +168,11 @@ BASE:common_static/gfe/smartinit/NamDNG5.py
 
 #gfeConfig files
 BASE:cave_static/gfe/userPython/gfeConfig/gfeConfig.py
+
+# GFE level and parameter mapping files
+SITE:common_static/grid/gfeLevelMappingFile.xml
+SITE:common_static/grid/dataset/alias/gfeParamInfo.xml
+SITE:common_static/parameter/alias/gfeParamName.xml
 
 # FFMP Files
 SITE:common_static/purge/ffmpPurgeRules.xml
