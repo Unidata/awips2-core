@@ -59,6 +59,8 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  *                                  subclasses
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
  * May 19, 2016  5666     tjensen   Fix isDbValid check
+ * Aug 18, 2016  5810     tjensen   Added additional logging if going to drop
+ *                                  tables
  * 
  * </pre>
  * 
@@ -150,7 +152,7 @@ public abstract class DbInit {
              * Hibernate
              */
             statusHandler
-                    .info("Database for application ["
+                    .warn("Database for application ["
                             + application
                             + "] is out of sync with defined java classes.  Regenerating default database tables...");
             statusHandler.info("Dropping existing tables...");
@@ -266,6 +268,10 @@ public abstract class DbInit {
          */
         if (existingTables.size() != definedTables.size()
                 || !existingTables.containsAll(definedTables)) {
+            statusHandler
+                    .warn("Existing tables do not match the expected list of tables!");
+            statusHandler.warn("Existing tables: " + existingTables);
+            statusHandler.warn("Expected tables: " + definedTables);
             return false;
         }
         return true;
