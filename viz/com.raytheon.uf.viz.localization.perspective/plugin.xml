@@ -245,7 +245,7 @@
 		
 		<!-- TOOL BAR ENTRIES -->
 		<menuContribution 
-            locationURI="toolbar:org.eclipse.ui.main.toolbar?after=additions">
+            locationURI="toolbar:org.eclipse.ui.main.toolbar?before=additions">
             <toolbar id="loc-bar">
                <visibleWhen checkEnabled="false">
                   <reference
@@ -420,15 +420,111 @@
             </activeWhen>
       </handler>
    </extension>
+
    <extension
          point="org.eclipse.ui.activities">
+         
+      <!-- Hide specific pydev contributions -->
       <activity
             id="com.raytheon.uf.viz.localization.perspective.stopPydev"
             name="com.raytheon.uf.viz.localization.perspective.stopPydev">
       </activity>
+      
+      <!-- Hide pydev perspective -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev/org.python.pydev.ui.PythonPerspective">
+      </activityPatternBinding>
+      
+      <!-- Hide pydev interactive console toolbar button -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="com.python.pydev/org.python.pydev.interactiveconsole.evaluateActionSetter">
+      </activityPatternBinding>                 
+      
+      <!-- Hide pydev debug menu items -->
       <activityPatternBinding
             activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
             pattern="org.python.pydev.debug.*">
       </activityPatternBinding>
+      
+      <!-- Hide pydev interpreters jython pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev/org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageJython">
+      </activityPatternBinding>
+      
+      <!-- Hide pydev interpreters iron python pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev/org.python.pydev.ui.pythonpathconf.interpreterPreferencesPageIronpython">
+      </activityPatternBinding>
+      
+      <!-- Hide pydev pylint pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev/org.python.pydev.prefs.pylint">
+      </activityPatternBinding>
+      
+      <!-- Hide pydev pyunit pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev/org.python.pydev.prefs.pyunitPage">
+      </activityPatternBinding>
+      
+      <!-- Hide pydev scripting pydev pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.stopPydev"
+            isEqualityPattern="true"
+            pattern="org.python.pydev.jython/org.python.pydev.jython.ui.JyScriptingPreferencesPage">
+      </activityPatternBinding>
+      <!-- end of pydev hiding -->
+
+
+      <!-- Hide specific contributions related to supporting XML editors -->
+      <activity
+            id="com.raytheon.uf.viz.localization.perspective.hideXml"
+            name="com.raytheon.uf.viz.localization.perspective.hideXml">
+      </activity>
+      
+      <!-- Hide the XML perspective -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.hideXml"
+            isEqualityPattern="true"
+            pattern="org.eclipse.wst.xml.ui/org.eclipse.wst.xml.ui.perspective">
+      </activityPatternBinding>      
+
+      <!-- Hide the Validation pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.hideXml"
+            isEqualityPattern="true"
+            pattern="org.eclipse.wst.validation.ui/ValidationPreferencePage">
+      </activityPatternBinding>
+
+      <!-- Hide the XMLCatalog pref page -->
+      <activityPatternBinding
+            activityId="com.raytheon.uf.viz.localization.perspective.hideXml"
+            isEqualityPattern="true"
+            pattern="org.eclipse.wst.xml.ui/org.eclipse.wst.xml.core.ui.XMLCatalogPreferencePage">
+      </activityPatternBinding>
+      <!-- end of xml-related hiding -->
+      
+      
    </extension>
+   <extension
+         id="LocalizationToolbarAdditionsProcessor"
+         point="org.eclipse.e4.workbench.model">
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="com.raytheon.uf.viz.localization.perspective.LocalizationToolbarAdditionsProcessor">
+      </processor>
+   </extension>
+
 </plugin>
