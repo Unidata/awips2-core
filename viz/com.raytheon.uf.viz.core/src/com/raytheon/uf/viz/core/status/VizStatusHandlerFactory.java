@@ -55,8 +55,9 @@ import com.raytheon.uf.common.status.slf4j.UFMarkers;
  * Aug 25, 2010            rjpeter     Initial creation
  * Oct 23, 2013 2303       bgonzale    Merged VizStatusHandler and SysErrStatusHandler into StatusHandler.
  *                                     Implemented log method from base class.
- * May 22, 2015 4473       njensen     Send to SLF4J instead of Eclipse      
- * Jul 13, 2016 5743       njensen     Updated for new logback                              
+ * May 22, 2015 4473       njensen     Send to SLF4J instead of Eclipse
+ * Jul 13, 2016 5743       njensen     Updated for new logback
+ * Aug 23, 2016 5743       njensen     Check instance and cast logback Logger for shutdown hook                          
  * 
  * </pre>
  * 
@@ -75,15 +76,18 @@ public class VizStatusHandlerFactory extends AbstractHandlerFactory {
          * Logback 1.1.3 adds a configuration tag to the XML for a Logback
          * shutdown hook, but that is for LogbackContexts and requires extending
          * a Logback ShutdownHookBase. All we really want to do is shut down all
-         * the appenders on this logger.
+         * the appenders on this logger. If we are sending log messages over JMS
+         * we need a clean shutdown of the connection in the appender.
          */
-        Runtime.getRuntime().addShutdownHook(new Thread() {
-            @Override
-            public void run() {
-                ((ch.qos.logback.classic.Logger) logger)
-                        .detachAndStopAllAppenders();
-            }
-        });
+        if (logger instanceof ch.qos.logback.classic.Logger) {
+            final ch.qos.logback.classic.Logger shutdownLogger = (ch.qos.logback.classic.Logger) logger;
+            Runtime.getRuntime().addShutdownHook(new Thread() {
+                @Override
+                public void run() {
+                    shutdownLogger.detachAndStopAllAppenders();
+                }
+            });
+        }
     }
 
     private static final StatusHandler instance = new StatusHandler(
@@ -94,11 +98,6 @@ public class VizStatusHandlerFactory extends AbstractHandlerFactory {
         PathManagerFactory.addObserver(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance()
-     */
     @Override
     public IUFStatusHandler getInstance() {
         return instance;
