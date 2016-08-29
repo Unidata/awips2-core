@@ -1,0 +1,186 @@
+# The layout of this file is a line that starts with '#' is treated as a
+# comment and any other line is treated as a protected base file in the format
+# localization_level:localization_type/subpath/to/file
+#
+# A simple example would be 
+# BASE:common_static/textdb/textCategoryClass.txt
+
+#SCAN_COMMON files
+SITE:common_static/scan/SCANRunSiteConfig.xml
+
+#AvnFPS files
+SITE:cave_static/aviation/avnwatch/aviationForecasterConfig.xml
+
+#D2D files
+BASE:cave_static/derivedParameters/DerivedParameterInterface.py
+
+# GFE protected files
+BASE:cave_static/gfe/userPython/textproducts/MultipleElementTable.py
+
+BASE:common_static/gfe/config/serverConfig.py
+BASE:common_static/gfe/config/Maps.py
+
+SITE:common_static/gfe/config/siteConfig.py
+SITE:common_static/gfe/config/localConfig.py
+SITE:common_static/gfe/config/localMaps.py
+SITE:common_static/gfe/config/localWxConfig.py
+SITE:common_static/gfe/config/svcbu.properties
+
+BASE:common_static/gfe/textproducts/templates/product/AFD.py
+BASE:common_static/gfe/textproducts/templates/product/PFM.py
+BASE:common_static/gfe/textproducts/templates/product/AreaFcst.py
+BASE:common_static/gfe/textproducts/templates/product/CCF.py
+BASE:common_static/gfe/textproducts/templates/product/CWF_Pacific.py
+BASE:common_static/gfe/textproducts/templates/product/CWF.py
+BASE:common_static/gfe/textproducts/templates/product/FWF.py
+BASE:common_static/gfe/textproducts/templates/product/FWFTable.py
+BASE:common_static/gfe/textproducts/templates/product/FWM.py
+BASE:common_static/gfe/textproducts/templates/product/GLF.py
+BASE:common_static/gfe/textproducts/templates/product/MVF.py
+BASE:common_static/gfe/textproducts/templates/product/OFF.py
+BASE:common_static/gfe/textproducts/templates/product/NSH.py
+BASE:common_static/gfe/textproducts/templates/product/SFT.py
+BASE:common_static/gfe/textproducts/templates/product/SRF.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_MWS_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_WSW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_FFA_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_HLS.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_NPW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_AQA_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_RFW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_CFW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_WCN_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_HWO_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_MWW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/GenericReport.py
+BASE:common_static/gfe/textproducts/templates/product/CivilEmerg.py
+BASE:common_static/gfe/textproducts/templates/product/GenericHazards.py
+BASE:common_static/gfe/textproducts/templates/product/SAF_Site_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/SAF_Site_MultiPil_Region.py
+BASE:common_static/gfe/textproducts/templates/product/SAF_Site_MultiPil_Baseline.py
+BASE:common_static/gfe/textproducts/templates/product/FWS_Site_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/FWS_Site_MultiPil_Region.py
+BASE:common_static/gfe/textproducts/templates/product/FWS_Site_MultiPil_Baseline.py
+BASE:common_static/gfe/textproducts/templates/product/Product_Site_MultiPil_Baseline.py
+BASE:common_static/gfe/textproducts/templates/product/Product_Site_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Product_Site_MultiPil_Region.py
+BASE:common_static/gfe/textproducts/templates/utility/FIPS_EA_Site_MultiPil_Definition.py
+BASE:common_static/gfe/textproducts/templates/utility/PublicMarineFireWx_EA_Site_MultiPil_Definition.py
+BASE:common_static/gfe/textproducts/templates/utility/FireWxZones_EA_Site_MultiPil_Definition.py
+BASE:common_static/gfe/textproducts/templates/utility/MarineZones_EA_Site_MultiPil_Definition.py
+BASE:common_static/gfe/textproducts/templates/utility/PublicZones_EA_Site_MultiPil_Definition.py
+
+BASE:cave_static/gfe/userPython/textUtilities/regular/VTECMessageType.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/CombinedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/CommonUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigurableIssuance.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigVariables.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/DiscretePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/EditAreaUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/FirePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/Header.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/Holidays.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/Interfaces.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/MarinePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/ModuleAccessor.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/PhraseBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/SAF_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/FWS_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/SampleAnalysis.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/ScalarPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/SimpleTableUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/StringUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/TableBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/TextRules.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/TextUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/TimeDescriptor.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/TimeRangeUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/UnitConvertor.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/VectorRelatedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/WxPhrases.py
+
+BASE:cave_static/gfe/userPython/utilities/ISC_Utility.py
+BASE:cave_static/gfe/userPython/utilities/SmartScript.py
+BASE:cave_static/gfe/userPython/utilities/HazardUtils.py
+BASE:cave_static/gfe/userPython/utilities/WxMethods.py
+
+# procedures
+BASE:cave_static/gfe/userPython/procedures/ISC_Discrepancies.py
+BASE:cave_static/gfe/userPython/procedures/PlotSPCWatches.py
+BASE:cave_static/gfe/userPython/procedures/PlotTPCEvents.py
+BASE:cave_static/gfe/userPython/procedures/HazardRecovery.py
+BASE:cave_static/gfe/userPython/procedures/SeparateHazards.py
+BASE:cave_static/gfe/userPython/procedures/ViewWCL.py
+
+# smart tools
+BASE:cave_static/gfe/userPython/smartTools/AdjustValue_Down.py
+BASE:cave_static/gfe/userPython/smartTools/AdjustValue_Up.py
+BASE:cave_static/gfe/userPython/smartTools/Assign_Value.py
+BASE:cave_static/gfe/userPython/smartTools/Smooth.py
+
+# smartInits
+BASE:common_static/gfe/smartinit/AKNAM40.py
+BASE:common_static/gfe/smartinit/AKWAVE.py
+BASE:common_static/gfe/smartinit/NAM12.py
+BASE:common_static/gfe/smartinit/NAM40.py
+BASE:common_static/gfe/smartinit/NAM80.py
+BASE:common_static/gfe/smartinit/NAM95.py
+BASE:common_static/gfe/smartinit/GFS190.py
+BASE:common_static/gfe/smartinit/GFS80.py
+BASE:common_static/gfe/smartinit/GFS40.py
+BASE:common_static/gfe/smartinit/GFS75.py
+BASE:common_static/gfe/smartinit/gfsLR.py
+BASE:common_static/gfe/smartinit/GLERL.py
+BASE:common_static/gfe/smartinit/GWW.py
+BASE:common_static/gfe/smartinit/HPCGuide.py
+BASE:common_static/gfe/smartinit/HPCQPF.py
+BASE:common_static/gfe/smartinit/RFCQPF.py
+BASE:common_static/gfe/smartinit/Init.py
+BASE:common_static/gfe/smartinit/LAPS.py
+BASE:common_static/gfe/smartinit/MOSGuide.py
+BASE:common_static/gfe/smartinit/AKMOSGuide.py
+BASE:common_static/gfe/smartinit/OPCTAFBE.py
+BASE:common_static/gfe/smartinit/OPCTAFBNW.py
+BASE:common_static/gfe/smartinit/OPCTAFBSW.py
+BASE:common_static/gfe/smartinit/MSAS.py
+BASE:common_static/gfe/smartinit/NGM80.py
+BASE:common_static/gfe/smartinit/NGM95.py
+BASE:common_static/gfe/smartinit/RUC80.py
+BASE:common_static/gfe/smartinit/SAT.py
+BASE:common_static/gfe/smartinit/TPCtcm.py
+BASE:common_static/gfe/smartinit/DGEX.py
+BASE:common_static/gfe/smartinit/WNAWAVE.py
+BASE:common_static/gfe/smartinit/WW3.py
+BASE:common_static/gfe/smartinit/AKwave10.py
+BASE:common_static/gfe/smartinit/AKwave4.py
+BASE:common_static/gfe/smartinit/EPwave10.py
+BASE:common_static/gfe/smartinit/GlobalWave.py
+BASE:common_static/gfe/smartinit/GLWM.py
+BASE:common_static/gfe/smartinit/HIRESWarw.py
+BASE:common_static/gfe/smartinit/HIRESWnmm.py
+BASE:common_static/gfe/smartinit/SREF.py
+BASE:common_static/gfe/smartinit/WCwave4.py
+BASE:common_static/gfe/smartinit/WCwave10.py
+BASE:common_static/gfe/smartinit/WNAwave4.py
+BASE:common_static/gfe/smartinit/WNAwave10.py                       
+BASE:common_static/gfe/smartinit/RTMA.py
+BASE:common_static/gfe/smartinit/NamDNG5.py
+
+#gfeConfig files
+BASE:cave_static/gfe/userPython/gfeConfig/gfeConfig.py
+
+# GFE level and parameter mapping files
+SITE:common_static/grid/gfeLevelMappingFile.xml
+SITE:common_static/grid/dataset/alias/gfeParamInfo.xml
+SITE:common_static/parameter/alias/gfeParamName.xml
+
+# FFMP Files
+SITE:common_static/purge/ffmpPurgeRules.xml
+SITE:common_static/ffmp/FFMPTemplateConfig.xml
+
+# TextWS Files
+SITE:common_static/mixedCase/mixedCaseProductIds.txt
+
+# VTEC Files
+BASE:common_static/vtec/VTECPartners.py
+SITE:common_static/vtec/localVTECPartners.py

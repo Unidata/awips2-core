@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.INotificationFilter;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
@@ -79,6 +80,7 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                  nulls
  * Jun 07, 2016  5587     tgurney   Change get*Identifiers() to take
  *                                  IDataRequest
+ * Jul 27, 2016  2416     tgurney   Stub impl of getNotificationFilter()
  * 
  * </pre>
  * 
@@ -562,7 +564,7 @@ public abstract class AbstractGeometryDatabaseFactory extends
         geometryData.setGeometry(geometry);
         geometryData.setLocationName(locationName);
         geometryData.setAttributes(attributes);
-        if (((data == null) == false) && (data.length > dataIndex)) {
+        if (data != null && data.length > dataIndex) {
             for (int i = dataIndex; i < data.length; i++) {
                 String name = paramNames[i - dataIndex];
                 Object dataItem = data[i];
@@ -590,4 +592,11 @@ public abstract class AbstractGeometryDatabaseFactory extends
          */
         return Collections.emptyList();
     }
+
+    @Override
+    public INotificationFilter getNotificationFilter(IDataRequest request) {
+        throw new IncompatibleRequestException("Cannot listen for updates to "
+                + request.getDatatype() + " data");
+    }
+
 }

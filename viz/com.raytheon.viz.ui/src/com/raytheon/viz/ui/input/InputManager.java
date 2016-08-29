@@ -30,12 +30,14 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.rsc.IContainerAwareInputHandler;
 import com.raytheon.uf.viz.core.rsc.IInputHandler;
 import com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority;
 import com.raytheon.uf.viz.core.rsc.IInputHandler2;
 
 /**
- * TODO Add Description
+ * Manage the {@link IInputHandler}s that are registered for an
+ * {@link IDisplayPaneContainer}.
  * 
  * <pre>
  * 
@@ -43,15 +45,15 @@ import com.raytheon.uf.viz.core.rsc.IInputHandler2;
  * 
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
- * Jul 01, 0006           chammack  Initial Creation.
+ * Jul 01, 2006           chammack  Initial Creation.
  * Sep 11, 2014  3549     mschenke  Added mouse move notification after up
  * Jun 23, 2016  5674     randerso  Extend IInputHandler to pass raw event to
  *                                  handler
+ * Aug 08, 2016  2676     bsteffen  Add IContainerAwareInputHandler
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class InputManager implements Listener {
 
@@ -381,6 +383,9 @@ public class InputManager implements Listener {
      */
     public void registerMouseHandler(IInputHandler aHandler,
             InputPriority priority) {
+        if (aHandler instanceof IContainerAwareInputHandler) {
+            ((IContainerAwareInputHandler) aHandler).setContainer(container);
+        }
         PrioritizedHandler pHandler = new PrioritizedHandler(aHandler, priority);
         synchronized (this) {
             if (!handlers.contains(pHandler)) {

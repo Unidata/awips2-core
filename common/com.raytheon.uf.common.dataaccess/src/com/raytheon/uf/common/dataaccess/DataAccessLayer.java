@@ -42,9 +42,7 @@ import com.raytheon.uf.common.time.TimeRange;
  * much support has been provided per datatype.
  * 
  * The implementation of this class is a retrieval of the corresponding factory
- * and then delegating the processing to that factory. All the generics that
- * exist in this implementation are to save the caller from the hassle of
- * casting what is returned.
+ * and then delegating the processing to that factory.
  * 
  * <pre>
  * 
@@ -64,7 +62,7 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                    getRequiredIdentifiers() and
  *                                    getOptionalIdentifiers()
  * Jun 07, 2016  5587     tgurney     Deprecate old get*Identifiers() methods
- * 
+ * Jun 21, 2016  2416     rjpeter     Made getFactory() protected
  * </pre>
  * 
  * @author njensen
@@ -223,15 +221,14 @@ public class DataAccessLayer {
     }
 
     /**
-     * TODO: contemplate making this public to allow for special case handling
      * Returns the factory that should process the request. Will never return
-     * null, will instead throw exceptions.
+     * null; will instead throw exceptions.
      * 
      * @param request
      * @return the factory that matches the request
      * @throws DataFactoryNotFoundException
      */
-    private static IDataFactory getFactory(IDataRequest request) {
+    protected static IDataFactory getFactory(IDataRequest request) {
         return DataFactoryRegistry.getInstance().getFactory(request);
     }
 

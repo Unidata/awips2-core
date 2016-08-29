@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 
+import org.eclipse.swt.graphics.Rectangle;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
@@ -64,24 +65,23 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Aug 08, 2012           mschenke    Initial creation
- * May 28, 2013  2037     njensen     Made imageMap concurrent to fix leak
- * Jun 20, 2013  2122     mschenke    Fixed null pointer in interrogate and
- *                                    made canceling jobs safer
- * Oct 16, 2013  2333     mschenke    Added auto NaN checking for interrogation
- * Nov 14, 2013  2492     mschenke    Added more interrogate methods that take
- *                                    units
- * Feb 07, 2014  2211     bsteffen    Fix sampling units when data mapping is
- *                                    enabled.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 08, 2012           mschenke  Initial creation
+ * May 28, 2013  2037     njensen   Made imageMap concurrent to fix leak
+ * Jun 20, 2013  2122     mschenke  Fixed null pointer in interrogate and made
+ *                                  canceling jobs safer
+ * Oct 16, 2013  2333     mschenke  Added auto NaN checking for interrogation
+ * Nov 14, 2013  2492     mschenke  Added more interrogate methods that take
+ *                                  units
+ * Feb 07, 2014  2211     bsteffen  Fix sampling units when data mapping is
+ *                                  enabled.
+ * Aug 03, 2016  5786     bsteffen  Add method for scheduling tile loading
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class TileSetRenderable implements IRenderable {
 
     public static interface TileImageCreator {
@@ -133,10 +133,10 @@ public class TileSetRenderable implements IRenderable {
             "Creating Image Tiles", 10, false);
 
     /** Job map, should only have one job running per tile at a time */
-    protected Map<Tile, Runnable> jobMap = new ConcurrentHashMap<Tile, Runnable>();
+    protected Map<Tile, Runnable> jobMap = new ConcurrentHashMap<>();
 
     /** Image map for tiles */
-    protected Map<Tile, DrawableImage> imageMap = new ConcurrentHashMap<Tile, DrawableImage>();
+    protected Map<Tile, DrawableImage> imageMap = new ConcurrentHashMap<>();
 
     /** Full resolution tile set GridGeometry2D */
     protected final GridGeometry2D tileSetGeometry;
@@ -310,8 +310,38 @@ public class TileSetRenderable implements IRenderable {
     public synchronized Collection<DrawableImage> getImagesToRender(
             IGraphicsTarget target, PaintProperties paintProps)
             throws VizException {
-        double screenToWorldRatio = paintProps.getCanvasBounds().width
-                / paintProps.getView().getExtent().getWidth();
+        IExtent extent = paintProps.getView().getExtent();
+
+        lastPaintedLevel = getTileLevel(extent, paintProps.getCanvasBounds());
+
+        return getImagesWithinExtent(target, extent, lastPaintedLevel);
+    }
+
+    /**
+     * Schedule the loading of data for all tiles that are needed to render
+     * within the specified extent. The canvasBounds is used to determine the
+     * appropriate tile level to display for the extent.
+     * 
+     * @param target
+     *            The target to use when creating images.
+     * @param extent
+     *            the area over which to create tiles
+     * @param canvasBounds
+     *            the size of the area of the physical screen that is used to
+     *            display the extent, used for determining the best tile level.
+     * @return Returns true if all images are available and false if some images
+     *         may still be loading in the background.
+     */
+    public synchronized boolean scheduleImagesWithinExtent(
+            IGraphicsTarget target, IExtent extent, Rectangle canvasBounds) {
+        getImagesWithinExtent(target, extent,
+                getTileLevel(extent, canvasBounds));
+        return jobMap.isEmpty();
+    }
+
+    protected int getTileLevel(IExtent extent, Rectangle canvasBounds) {
+
+        double screenToWorldRatio = canvasBounds.width / extent.getWidth();
 
         int usedTileLevel = tileLevels - 1;
 
@@ -325,10 +355,7 @@ public class TileSetRenderable implements IRenderable {
                 && usedTileLevel > 0) {
             usedTileLevel--;
         }
-        lastPaintedLevel = usedTileLevel;
-
-        return getImagesWithinExtent(target, paintProps.getView().getExtent(),
-                usedTileLevel);
+        return usedTileLevel;
     }
 
     /**
@@ -370,8 +397,8 @@ public class TileSetRenderable implements IRenderable {
                 extent);
 
         // These Tiles still need images created for them
-        List<Tile> tilesNeedingImage = new ArrayList<Tile>(intersecting.size());
-        List<DrawableImage> drawableImages = new ArrayList<DrawableImage>(
+        List<Tile> tilesNeedingImage = new ArrayList<>(intersecting.size());
+        List<DrawableImage> drawableImages = new ArrayList<>(
                 intersecting.size());
 
         for (Tile tile : intersecting) {

@@ -106,15 +106,18 @@
        </path>
     </extension>
     <extension
-   		point="com.raytheon.uf.viz.core.graphicsExtension">
-   		<graphicsExtension
+        point="com.raytheon.uf.viz.core.graphicsExtension">
+        <graphicsExtension
            class="com.raytheon.uf.viz.core.drawables.ext.colormap.GeneralColormappedImageExtension">
-   		</graphicsExtension>
-   		<graphicsExtension
+        </graphicsExtension>
+        <graphicsExtension
            class="com.raytheon.uf.viz.core.drawables.ext.GeneralCanvasRenderingExtension">
-   		</graphicsExtension>
-   		<graphicsExtension
+        </graphicsExtension>
+        <graphicsExtension
            class="com.raytheon.uf.viz.core.drawables.ext.colormap.GeneralColormapShadedShapeExtension">
-   		</graphicsExtension>
-   	</extension>
+        </graphicsExtension>
+        <graphicsExtension
+           class="com.raytheon.uf.viz.core.drawables.ext.point.GeneralBulkPointsRenderingExtension">
+        </graphicsExtension>
+        </extension>
 </plugin>

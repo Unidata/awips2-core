@@ -1,4 +1,4 @@
-<configuration debug="false" scan="false">
+<configuration debug="false" scan="false" packagingData="false">
    <!-- Only define when not wanting to use the UF Standard.
    <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
    -->

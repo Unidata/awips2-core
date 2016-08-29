@@ -73,6 +73,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Nov 12, 2015 4834       njensen     PathManager takeover of watching for localization file changes
  * Jan 28, 2016 4834       njensen     Pass along FileChangeType to old style observers
  * Jun 21, 2016 5695       njensen     Clear parent directories from cache on file add
+ * Aug 15, 2016 5834       njensen     Reuse protected file level in fireListeners()
  * 
  * </pre>
  * 
@@ -151,7 +152,7 @@ public class PathManager implements IPathManager {
         name = name.replace(File.separator, IPathManager.SEPARATOR);
 
         // Iterate through the types
-        List<LocalizationContext> contexts = new ArrayList<LocalizationContext>();
+        List<LocalizationContext> contexts = new ArrayList<>();
         for (LocalizationType type : types) {
             // Iterate through the hierarchy
             LocalizationContext[] searchContexts = this.adapter
@@ -220,7 +221,7 @@ public class PathManager implements IPathManager {
     @Override
     public Map<LocalizationLevel, LocalizationFile> getTieredLocalizationFile(
             LocalizationType type, String name) {
-        Map<LocalizationLevel, LocalizationFile> map = new HashMap<LocalizationLevel, LocalizationFile>();
+        Map<LocalizationLevel, LocalizationFile> map = new HashMap<>();
 
         LocalizationContext[] contexts = getLocalSearchHierarchy(type);
 
@@ -257,11 +258,10 @@ public class PathManager implements IPathManager {
             LocalizationContext[] contexts, String name) {
         name = name.replace(File.separator, IPathManager.SEPARATOR); // Win32
 
-        Map<LocalizationContext, LocalizationFile> availableFiles = new HashMap<LocalizationContext, LocalizationFile>(
+        Map<LocalizationContext, LocalizationFile> availableFiles = new HashMap<>(
                 contexts.length * 2);
 
-        List<LocalizationContext> ctxToCheck = new ArrayList<LocalizationContext>(
-                contexts.length);
+        List<LocalizationContext> ctxToCheck = new ArrayList<>(contexts.length);
         for (LocalizationContext ctx : contexts) {
             LocalizationFile cached = fileCache.get(new LocalizationFileKey(
                     name, ctx));
@@ -297,8 +297,7 @@ public class PathManager implements IPathManager {
             }
         }
 
-        List<LocalizationFile> rval = new ArrayList<LocalizationFile>(
-                availableFiles.size());
+        List<LocalizationFile> rval = new ArrayList<>(availableFiles.size());
         for (LocalizationContext ctx : contexts) {
             LocalizationFile file = availableFiles.get(ctx);
             if (file != null) {
@@ -357,7 +356,7 @@ public class PathManager implements IPathManager {
     public LocalizationFile[] listFiles(LocalizationContext[] contexts,
             String name, String[] filter, boolean recursive, boolean filesOnly) {
         try {
-            List<LocalizationFile> files = new ArrayList<LocalizationFile>();
+            List<LocalizationFile> files = new ArrayList<>();
             ListResponse[] entries = this.adapter.listDirectory(contexts, name,
                     recursive, filesOnly);
 
@@ -428,7 +427,7 @@ public class PathManager implements IPathManager {
             String name, String[] filter, boolean recursive, boolean filesOnly) {
         Validate.notNull(name, "Path name must not be null");
 
-        List<LocalizationContext> contexts = new ArrayList<LocalizationContext>();
+        List<LocalizationContext> contexts = new ArrayList<>();
         for (LocalizationType type : types) {
             // Iterate through the hierarchy
             LocalizationContext[] searchContexts = this.adapter
@@ -464,11 +463,11 @@ public class PathManager implements IPathManager {
 
         LocalizationFile[] files = listFiles(searchContexts, name, filter,
                 recursive, filesOnly);
-        List<LocalizationFile> filterFiles = new ArrayList<LocalizationFile>();
+        List<LocalizationFile> filterFiles = new ArrayList<>();
 
-        Map<String, LocalizationFile> filterMap = new HashMap<String, LocalizationFile>();
+        Map<String, LocalizationFile> filterMap = new HashMap<>();
         for (LocalizationFile file : files) {
-            String id = file.getName();
+            String id = file.getPath();
             id = id.replace("\\", "/"); // Win32
             if (filterMap.containsKey(id) == false) {
                 filterFiles.add(file);
@@ -518,7 +517,7 @@ public class PathManager implements IPathManager {
     @Override
     public void storeCache(File cacheFile) throws IOException,
             SerializationException {
-        Map<SerializableKey, ListResponseEntry> cacheObject = new HashMap<PathManager.SerializableKey, ListResponseEntry>(
+        Map<SerializableKey, ListResponseEntry> cacheObject = new HashMap<>(
                 fileCache.size() * 2);
         for (Map.Entry<LocalizationFileKey, LocalizationFile> entry : fileCache
                 .entrySet()) {
@@ -529,7 +528,7 @@ public class PathManager implements IPathManager {
             lre.setDate(file.getTimeStamp());
             lre.setDirectory(file.isDirectory());
             lre.setExistsOnServer(file.isAvailableOnServer());
-            lre.setFileName(file.getName());
+            lre.setFileName(file.getPath());
             lre.setProtectedLevel(file.getProtectedLevel());
             cacheObject.put(new SerializableKey(entry.getKey()), lre);
         }
@@ -708,10 +707,15 @@ public class PathManager implements IPathManager {
             // ideally we should never get a null checksum but just in case...
             newInstance = getLocalizationFile(fum.getContext(), name);
         } else {
+            LocalizationLevel protectedLevel = null;
+            if (fileInCache != null) {
+                // protected level won't change
+                protectedLevel = fileInCache.getProtectedLevel();
+            }
             File localFile = adapter.getPath(fum.getContext(), name);
             newInstance = new LocalizationFile(this, adapter, fum.getContext(),
                     localFile, new Date(fum.getTimeStamp()), name,
-                    fum.getCheckSum(), false, null);
+                    fum.getCheckSum(), false, protectedLevel);
         }
         fileCache.put(key, newInstance);
 
@@ -743,8 +747,7 @@ public class PathManager implements IPathManager {
             for (int i = 1; i < pathsToCheck.size() - 1; i++) {
                 String parentName = pathsToCheck.get(i);
                 LocalizationFileKey parentKey = new LocalizationFileKey(
-                        parentName,
-                        fum.getContext());
+                        parentName, fum.getContext());
                 LocalizationFile parentFile = fileCache.get(parentKey);
                 if (parentFile != null
                         && ILocalizationFile.NON_EXISTENT_CHECKSUM
