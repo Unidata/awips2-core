@@ -117,36 +117,35 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Mar 09, 2011           bsteffen    Initial creation
- * May 08, 2013  1980     bsteffen    Set paint status in GridResources for
- *                                    KML.
- * Jul 15, 2013  2107     bsteffen    Fix sampling of grid vector arrows.
- * Aug 27, 2013  2287     randerso    Added new parameters required by 
- *                                    GriddedVectorDisplay and
- *                                    GriddedIconDisplay
- * Sep 24, 2013  2404     bclement    colormap params now created using match
- *                                    criteria
- * Sep 23, 2013  2363     bsteffen    Add more vector configuration options.
- * Jan 14, 2014  2594     bsteffen    Switch vector mag/dir to use data source
- *                                    instead of raw float data.
- * Feb 28, 2014  2791     bsteffen    Switch all data to use data source.
- * Aug 21, 2014  DR 17313 jgerth      Implements ImageProvider
- * Oct 07, 2014  3668     bclement    Renamed requestJob to requestRunner
- * Dec 09, 2014  5056     jing        Added data access interfaces
- * May 11, 2015  4384     dgilling    Add arrow style preference for minimum
- *                                    magnitude.
- * May 14, 2015  4079     bsteffen    Move to core.grid, add getDisplayUnit
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 09, 2011  7738     bsteffen  Initial creation
+ * May 08, 2013  1980     bsteffen  Set paint status in GridResources for KML.
+ * Jul 15, 2013  2107     bsteffen  Fix sampling of grid vector arrows.
+ * Aug 27, 2013  2287     randerso  Added new parameters required by
+ *                                  GriddedVectorDisplay and GriddedIconDisplay
+ * Sep 24, 2013  2404     bclement  colormap params now created using match
+ *                                  criteria
+ * Sep 23, 2013  2363     bsteffen  Add more vector configuration options.
+ * Jan 14, 2014  2594     bsteffen  Switch vector mag/dir to use data source
+ *                                  instead of raw float data.
+ * Feb 28, 2014  2791     bsteffen  Switch all data to use data source.
+ * Aug 21, 2014  17313    jgerth    Implements ImageProvider
+ * Oct 07, 2014  3668     bclement  Renamed requestJob to requestRunner
+ * Dec 09, 2014  5056     jing      Added data access interfaces
+ * May 11, 2015  4384     dgilling  Add arrow style preference for minimum
+ *                                  magnitude.
+ * May 14, 2015  4079     bsteffen  Move to core.grid, add getDisplayUnit
+ * Aug 30, 2016  3240     bsteffen  Apply Eclipse 4 Java Formatter
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  * @param <T>
  */
 public abstract class AbstractGridResource<T extends AbstractResourceData>
-        extends AbstractVizResource<T, IMapDescriptor> implements ImageProvider {
+        extends AbstractVizResource<T, IMapDescriptor>
+        implements ImageProvider {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
 
@@ -186,7 +185,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      */
     protected DecimalFormat sampleFormat = new DecimalFormat("0.00");
 
-    protected AbstractGridResource(T resourceData, LoadProperties loadProperties) {
+    protected AbstractGridResource(T resourceData,
+            LoadProperties loadProperties) {
         super(resourceData, loadProperties);
         resourceData.addChangeListener(new IResourceDataChanged() {
             @Override
@@ -292,43 +292,47 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (renderable instanceof AbstractGriddedDisplay<?>) {
             AbstractGriddedDisplay<?> gridDisplay = (AbstractGriddedDisplay<?>) renderable;
             if (capability instanceof ColorableCapability) {
-                gridDisplay.setColor(getCapability(ColorableCapability.class)
-                        .getColor());
+                gridDisplay.setColor(
+                        getCapability(ColorableCapability.class).getColor());
             }
             if (capability instanceof MagnificationCapability) {
-                gridDisplay.setMagnification(getCapability(
-                        MagnificationCapability.class).getMagnification());
+                gridDisplay.setMagnification(
+                        getCapability(MagnificationCapability.class)
+                                .getMagnification());
             }
             if (capability instanceof DensityCapability) {
-                gridDisplay.setDensity(getCapability(DensityCapability.class)
-                        .getDensity());
+                gridDisplay.setDensity(
+                        getCapability(DensityCapability.class).getDensity());
             }
             if (gridDisplay instanceof GriddedVectorDisplay) {
                 GriddedVectorDisplay vectorDisplay = (GriddedVectorDisplay) gridDisplay;
-                vectorDisplay.setLineStyle(getCapability(
-                        OutlineCapability.class).getLineStyle());
-                vectorDisplay.setLineWidth(getCapability(
-                        OutlineCapability.class).getOutlineWidth());
+                vectorDisplay.setLineStyle(
+                        getCapability(OutlineCapability.class).getLineStyle());
+                vectorDisplay
+                        .setLineWidth(getCapability(OutlineCapability.class)
+                                .getOutlineWidth());
             }
         } else if (renderable instanceof ContourRenderable) {
             ContourRenderable contourRenderable = (ContourRenderable) renderable;
             if (capability instanceof ColorableCapability) {
-                contourRenderable.setColor(getCapability(
-                        ColorableCapability.class).getColor());
+                contourRenderable.setColor(
+                        getCapability(ColorableCapability.class).getColor());
             }
             if (capability instanceof MagnificationCapability) {
-                contourRenderable.setMagnification(getCapability(
-                        MagnificationCapability.class).getMagnification());
+                contourRenderable.setMagnification(
+                        getCapability(MagnificationCapability.class)
+                                .getMagnification());
             }
             if (capability instanceof DensityCapability) {
-                contourRenderable.setDensity(getCapability(
-                        DensityCapability.class).getDensity());
+                contourRenderable.setDensity(
+                        getCapability(DensityCapability.class).getDensity());
             }
             if (capability instanceof OutlineCapability) {
-                contourRenderable.setLineStyle(getCapability(
-                        OutlineCapability.class).getLineStyle());
-                contourRenderable.setOutlineWidth(getCapability(
-                        OutlineCapability.class).getOutlineWidth());
+                contourRenderable.setLineStyle(
+                        getCapability(OutlineCapability.class).getLineStyle());
+                contourRenderable
+                        .setOutlineWidth(getCapability(OutlineCapability.class)
+                                .getOutlineWidth());
             }
         }
     }
@@ -397,19 +401,19 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (criteria != null) {
             switch (displayType) {
             case IMAGE:
-                styleRule = StyleManager.getInstance().getStyleRule(
-                        StyleType.IMAGERY, criteria);
+                styleRule = StyleManager.getInstance()
+                        .getStyleRule(StyleType.IMAGERY, criteria);
                 break;
             case CONTOUR:
             case STREAMLINE:
-                styleRule = StyleManager.getInstance().getStyleRule(
-                        StyleType.CONTOUR, criteria);
+                styleRule = StyleManager.getInstance()
+                        .getStyleRule(StyleType.CONTOUR, criteria);
                 break;
             case BARB:
             case ARROW:
             case DUALARROW:
-                styleRule = StyleManager.getInstance().getStyleRule(
-                        StyleType.ARROW, criteria);
+                styleRule = StyleManager.getInstance()
+                        .getStyleRule(StyleType.ARROW, criteria);
                 break;
             }
         }
@@ -434,12 +438,12 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             if (prefs.getSamplePrefs() != null
                     && prefs.getSamplePrefs().getFormatString() != null) {
                 try {
-                    int numDecimalPlaces = Integer.parseInt(prefs
-                            .getSamplePrefs().getFormatString());
+                    int numDecimalPlaces = Integer
+                            .parseInt(prefs.getSamplePrefs().getFormatString());
                     char[] zeroes = new char[numDecimalPlaces];
                     Arrays.fill(zeroes, '0');
-                    sampleFormat = new DecimalFormat("0."
-                            + String.copyValueOf(zeroes));
+                    sampleFormat = new DecimalFormat(
+                            "0." + String.copyValueOf(zeroes));
 
                 } catch (NumberFormatException e) {
                     statusHandler.handle(Priority.INFO,
@@ -470,8 +474,10 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
         switch (displayType) {
         case IMAGE:
-            ColorMapCapability colorMapCap = getCapability(ColorMapCapability.class);
-            ImagingCapability imagingCap = getCapability(ImagingCapability.class);
+            ColorMapCapability colorMapCap = getCapability(
+                    ColorMapCapability.class);
+            ImagingCapability imagingCap = getCapability(
+                    ImagingCapability.class);
             ColorMapParameters params = null;
             if (renderableMap.isEmpty()) {
                 params = createColorMapParameters(data);
@@ -479,8 +485,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     if (params.getColorMapName() == null) {
                         params.setColorMapName("Grid/gridded data");
                     }
-                    params.setColorMap(ColorMapLoader.loadColorMap(params
-                            .getColorMapName()));
+                    params.setColorMap(ColorMapLoader
+                            .loadColorMap(params.getColorMapName()));
                 }
                 colorMapCap.setColorMapParameters(params);
             } else {
@@ -505,8 +511,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             config.setBaseSize(VECTOR_SIZE);
             if (displayType != DisplayType.BARB) {
                 config.setArrowHeadSizeRatio(0.15625);
-                config.setMinimumMagnitude(VECTOR_SIZE
-                        * config.getArrowHeadSizeRatio());
+                config.setMinimumMagnitude(
+                        VECTOR_SIZE * config.getArrowHeadSizeRatio());
                 config.disableCalmCircle();
                 if (stylePreferences != null
                         && stylePreferences instanceof ArrowPreferences) {
@@ -531,27 +537,29 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     data.getMagnitude(), data.getDirectionFrom(), descriptor,
                     gridGeometry, VECTOR_DENSITY_FACTOR, true, displayType,
                     config);
-            vectorDisplay.setColor(getCapability(ColorableCapability.class)
-                    .getColor());
-            vectorDisplay.setLineStyle(getCapability(OutlineCapability.class)
-                    .getLineStyle());
-            vectorDisplay.setLineWidth(getCapability(OutlineCapability.class)
-                    .getOutlineWidth());
-            vectorDisplay.setDensity(getCapability(DensityCapability.class)
-                    .getDensity());
-            vectorDisplay.setMagnification(getCapability(
-                    MagnificationCapability.class).getMagnification());
+            vectorDisplay.setColor(
+                    getCapability(ColorableCapability.class).getColor());
+            vectorDisplay.setLineStyle(
+                    getCapability(OutlineCapability.class).getLineStyle());
+            vectorDisplay.setLineWidth(
+                    getCapability(OutlineCapability.class).getOutlineWidth());
+            vectorDisplay.setDensity(
+                    getCapability(DensityCapability.class).getDensity());
+            vectorDisplay.setMagnification(
+                    getCapability(MagnificationCapability.class)
+                            .getMagnification());
             renderable = vectorDisplay;
             break;
         case ICON:
             GriddedIconDisplay iconDisplay = new GriddedIconDisplay(
                     data.getScalarData(), descriptor, gridGeometry, 80, 0.75);
-            iconDisplay.setColor(getCapability(ColorableCapability.class)
-                    .getColor());
-            iconDisplay.setDensity(getCapability(DensityCapability.class)
-                    .getDensity());
-            iconDisplay.setMagnification(getCapability(
-                    MagnificationCapability.class).getMagnification());
+            iconDisplay.setColor(
+                    getCapability(ColorableCapability.class).getColor());
+            iconDisplay.setDensity(
+                    getCapability(DensityCapability.class).getDensity());
+            iconDisplay.setMagnification(
+                    getCapability(MagnificationCapability.class)
+                            .getMagnification());
             renderable = iconDisplay;
             break;
         case CONTOUR:
@@ -566,16 +574,17 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                         gridGeometry, data.getUComponent(),
                         data.getVComponent());
             }
-            contourRenderable.setColor(getCapability(ColorableCapability.class)
-                    .getColor());
-            contourRenderable.setLineStyle(getCapability(
-                    OutlineCapability.class).getLineStyle());
-            contourRenderable.setOutlineWidth(getCapability(
-                    OutlineCapability.class).getOutlineWidth());
-            contourRenderable.setDensity(getCapability(DensityCapability.class)
-                    .getDensity());
-            contourRenderable.setMagnification(getCapability(
-                    MagnificationCapability.class).getMagnification());
+            contourRenderable.setColor(
+                    getCapability(ColorableCapability.class).getColor());
+            contourRenderable.setLineStyle(
+                    getCapability(OutlineCapability.class).getLineStyle());
+            contourRenderable.setOutlineWidth(
+                    getCapability(OutlineCapability.class).getOutlineWidth());
+            contourRenderable.setDensity(
+                    getCapability(DensityCapability.class).getDensity());
+            contourRenderable.setMagnification(
+                    getCapability(MagnificationCapability.class)
+                            .getMagnification());
             if (stylePreferences != null
                     && stylePreferences instanceof ContourPreferences) {
                 contourRenderable
@@ -616,8 +625,9 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         } catch (StyleException e) {
             throw new VizException("Unable to build colormap parameters", e);
         }
-        ColorMapParameters oldParameters = this.getCapability(
-                ColorMapCapability.class).getColorMapParameters();
+        ColorMapParameters oldParameters = this
+                .getCapability(ColorMapCapability.class)
+                .getColorMapParameters();
         if (oldParameters != null
                 && oldParameters.getColorMapMin() <= newParameters
                         .getColorMapMin()
@@ -685,8 +695,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             GeneralGridData data1 = dataList.get(i);
             for (int j = i + 1; j < dataList.size(); j += 1) {
                 GeneralGridData data2 = dataList.get(j);
-                GeneralGridData merged = GeneralGridData
-                        .mergeData(data1, data2);
+                GeneralGridData merged = GeneralGridData.mergeData(data1,
+                        data2);
                 if (merged != null) {
                     data1 = merged;
                     dataList.set(i, merged);
@@ -768,8 +778,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     protected boolean projectRenderable(IRenderable renderable)
             throws VizException {
         if (renderable instanceof TileSetRenderable) {
-            ((TileSetRenderable) renderable).project(descriptor
-                    .getGridGeometry());
+            ((TileSetRenderable) renderable)
+                    .project(descriptor.getGridGeometry());
             return true;
         } else if (renderable instanceof AbstractGriddedDisplay<?>) {
             ((AbstractGriddedDisplay<?>) renderable).reproject();
@@ -819,8 +829,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             ColorMapParameters cmp = getCapability(ColorMapCapability.class)
                     .getColorMapParameters();
             if (cmp.getDataMapping() != null) {
-                double imageVal = cmp.getDisplayToImageConverter().convert(
-                        value);
+                double imageVal = cmp.getDisplayToImageConverter()
+                        .convert(value);
                 String mapResult = cmp.getDataMapping()
                         .getLabelValueForDataValue(imageVal);
                 if (mapResult != null && !mapResult.isEmpty()) {
@@ -984,7 +994,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     @Override
     public Collection<DrawableImage> getImages(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
-        if (getCapability(DisplayTypeCapability.class).getDisplayType() != DisplayType.IMAGE) {
+        if (getCapability(DisplayTypeCapability.class)
+                .getDisplayType() != DisplayType.IMAGE) {
             throw new VizException(
                     "Grid resource not configured for image rendering");
         }
@@ -996,15 +1007,15 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
         List<DrawableImage> images = new ArrayList<DrawableImage>();
         for (IRenderable renderable : renderables) {
-            images.addAll(((TileSetRenderable) renderable).getImagesToRender(
-                    target, paintProps));
+            images.addAll(((TileSetRenderable) renderable)
+                    .getImagesToRender(target, paintProps));
         }
         return images;
     }
 
     protected Collection<IRenderable> getOrCreateRenderables(
             IGraphicsTarget target, PaintProperties paintProps)
-            throws VizException {
+                    throws VizException {
         DataTime time = paintProps.getDataTime();
         if (time == null) {
             time = getTimeForResource();
@@ -1041,7 +1052,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
-        for (IRenderable renderable : getOrCreateRenderables(target, paintProps)) {
+        for (IRenderable renderable : getOrCreateRenderables(target,
+                paintProps)) {
             renderable.paint(target, paintProps);
         }
     }
