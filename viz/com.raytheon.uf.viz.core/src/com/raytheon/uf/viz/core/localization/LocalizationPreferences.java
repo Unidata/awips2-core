@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -66,6 +67,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 26, 2014  3236     njensen     LocalizationEditor can be text or combo
  * Dec 01, 2014  3236     njensen     Fix checking alert service
  * Jun 24, 2015           mjames@ucar Formatting changes for Unidata AWIPS II
+ * Aug 30, 2016  ----     mjames@ucar Restart dialog on localization change OK/apply.
  * 
  * </pre>
  * 
@@ -294,9 +296,6 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             warning.setMessage("Localization preferences have changed "
                     + "and CAVE needs to be restarted to use the new "
                     + "settings. \n"
-                    + "Click OK to save your changes. You MUST restart CAVE "
-                    + "after closing this window or errors will occur in your "
-                    + "current CAVE session. \n"
                     + "Click Cancel if you do not wish to save these new preferences.");
 
             int retVal = warning.open();
@@ -304,8 +303,8 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                 return false;
             }
         }
-
-        return super.performOk();
+        PlatformUI.getWorkbench().restart();
+        return true;
     }
 
     /*
