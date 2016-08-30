@@ -23,18 +23,16 @@
 		<partId view="false" id="com.raytheon.viz.ui.glmap.GLMapEditor"/>
 	</mapScale>
 	<mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml" areaScale="false">
-		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
-	</mapScale>
-	<mapScale displayName="Regional" fileName="Regional.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
 	</mapScale>
-	<mapScale displayName="State" fileName="States.xml" areaScale="false">
+	<mapScale displayName="Regional" fileName="Regional.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
 	</mapScale>
 	<mapScale displayName="WFO" fileName="WFO.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
 	</mapScale>
 	<mapScale displayName="World - Mercator" fileName="WorldMercator.xml" areaScale="false">
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
 	</mapScale>
 	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false">
 	</mapScale>
