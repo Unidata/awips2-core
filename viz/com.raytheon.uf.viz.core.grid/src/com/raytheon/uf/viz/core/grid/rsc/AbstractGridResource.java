@@ -25,11 +25,14 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.measure.Measure;
 import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 
@@ -39,11 +42,14 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
 
+import com.raytheon.uf.common.colormap.ColorMapException;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters.PersistedParameters;
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
+import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
 import com.raytheon.uf.common.geospatial.interpolation.BilinearInterpolation;
 import com.raytheon.uf.common.geospatial.interpolation.GridSampler;
 import com.raytheon.uf.common.geospatial.interpolation.Interpolation;
@@ -69,7 +75,6 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableImage;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
 import com.raytheon.uf.viz.core.drawables.IRenderable;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.PaintStatus;
@@ -99,6 +104,12 @@ import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.MagnificationCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.OutlineCapability;
+import com.raytheon.uf.viz.core.rsc.interrogation.ClassInterrogationKey;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogatable;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogateMap;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogator;
+import com.raytheon.uf.viz.core.rsc.interrogation.StringInterrogationKey;
 import com.raytheon.uf.viz.core.tile.DataSourceTileImageCreator;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
@@ -136,7 +147,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 11, 2015  4384     dgilling  Add arrow style preference for minimum
  *                                  magnitude.
  * May 14, 2015  4079     bsteffen  Move to core.grid, add getDisplayUnit
- * Aug 30, 2016  3240     bsteffen  Apply Eclipse 4 Java Formatter
+ * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
  * 
  * </pre>
  * 
@@ -145,7 +156,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  */
 public abstract class AbstractGridResource<T extends AbstractResourceData>
         extends AbstractVizResource<T, IMapDescriptor>
-        implements ImageProvider {
+        implements ImageProvider, Interrogatable {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
 
@@ -157,10 +168,31 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     private static final int IMAGE_TILE_SIZE = 1024;
 
+    public static final InterrogationKey<Number> DIRECTION_INTERROGATE_KEY = new StringInterrogationKey<>(
+            "GridVectorDirection", Number.class);
+
+    /**
+     * This is needed because the user wants to see the unit exactly as it
+     * appears in the database and/or style rules. The Unit<?> object in
+     * {@link Interrogator#VALUE} has been parsed from this String but it is not
+     * guaranteed to get reformated the same way.
+     */
+    protected static final InterrogationKey<String> UNIT_STRING_INTERROGATE_KEY = new StringInterrogationKey<>(
+            "unitString", String.class);
+
+    private static final InterrogationKey<GeographicDataSource> DATA_SOURCE_INTERROGATE_KEY = new ClassInterrogationKey<>(
+            GeographicDataSource.class);
+
+    /** @deprecated Use {@link Interrogator#VALUE} */
+    @Deprecated
     public static final String INTERROGATE_VALUE = "value";
 
+    /** @deprecated Use {@link Interrogator#VALUE} */
+    @Deprecated
     public static final String INTERROGATE_UNIT = "unit";
 
+    /** @deprecated Use {@link #DIRECTION_INTERROGATE_KEY} */
+    @Deprecated
     public static final String INTERROGATE_DIRECTION = "direction";
 
     private final GridDataRequestRunner requestRunner;
@@ -485,8 +517,12 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     if (params.getColorMapName() == null) {
                         params.setColorMapName("Grid/gridded data");
                     }
-                    params.setColorMap(ColorMapLoader
-                            .loadColorMap(params.getColorMapName()));
+                    try {
+                        params.setColorMap(ColorMapLoader
+                                .loadColorMap(params.getColorMapName()));
+                    } catch (ColorMapException e) {
+                        throw new VizException(e);
+                    }
                 }
                 colorMapCap.setColorMapParameters(params);
             } else {
@@ -818,19 +854,25 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     @Override
     public String inspect(ReferencedCoordinate coord) throws VizException {
-        Map<String, Object> map = interrogate(coord);
-        if (map == null) {
+        InterrogateMap map = interrogate(coord, getTimeForResource(),
+                Interrogator.VALUE, UNIT_STRING_INTERROGATE_KEY,
+                DIRECTION_INTERROGATE_KEY);
+        if (map == null || map.isEmpty()) {
             return "NO DATA";
         }
-        double value = (Double) map.get(INTERROGATE_VALUE);
-        String result = sampleFormat.format(value) + map.get(INTERROGATE_UNIT);
+        Measure<? extends Number, ?> value = map.get(Interrogator.VALUE);
+        if (value == null) {
+            return "NO DATA";
+        }
+        String unit = map.get(UNIT_STRING_INTERROGATE_KEY);
+        String result = sampleFormat.format(value) + unit;
         // Data mapping images.
         if (hasCapability(ColorMapCapability.class)) {
             ColorMapParameters cmp = getCapability(ColorMapCapability.class)
                     .getColorMapParameters();
             if (cmp.getDataMapping() != null) {
                 double imageVal = cmp.getDisplayToImageConverter()
-                        .convert(value);
+                        .convert(value.getValue().doubleValue());
                 String mapResult = cmp.getDataMapping()
                         .getLabelValueForDataValue(imageVal);
                 if (mapResult != null && !mapResult.isEmpty()) {
@@ -838,84 +880,128 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 }
             }
         }
-        if (map.containsKey(INTERROGATE_DIRECTION)) {
-            double dir = (Double) map.get(INTERROGATE_DIRECTION);
+        if (map.containsKey(DIRECTION_INTERROGATE_KEY)) {
+            double dir = map.get(DIRECTION_INTERROGATE_KEY).doubleValue();
             result = String.format("%.0f\u00B0 ", dir) + result;
         }
         return result;
     }
 
-    protected Map<String, Object> interrogate(ReferencedCoordinate coord,
-            GeneralGridData data) throws VizException {
-        Coordinate pixel = null;
-        try {
-            pixel = coord.asPixel(data.getGridGeometry());
-        } catch (TransformException e) {
-            // this should never happen, if your data geometry and screen
-            // geometry are incompatible then you probably already saw piles of
-            // errors in paint.
-            throw new VizException(
-                    "Error transforming coordinate for interrogate", e);
-        } catch (FactoryException e) {
-            // again, this should never hit.
-            throw new VizException(
-                    "Error transforming coordinate for interrogate", e);
+    @Override
+    public Set<InterrogationKey<?>> getInterrogationKeys() {
+        Set<InterrogationKey<?>> result = new HashSet<>();
+        result.add(Interrogator.VALUE);
+        result.add(DIRECTION_INTERROGATE_KEY);
+        result.add(DATA_SOURCE_INTERROGATE_KEY);
+        return result;
+    }
+
+    protected InterrogateMap interrogate(ReferencedCoordinate coordinate,
+            GeneralGridData data, InterrogationKey<?>... keys) {
+        InterrogateMap result = new InterrogateMap();
+        Set<InterrogationKey<?>> keySet = new HashSet<>(Arrays.asList(keys));
+        if (keySet.contains(DATA_SOURCE_INTERROGATE_KEY)) {
+            result.put(DATA_SOURCE_INTERROGATE_KEY, data.getScalarData());
+            keySet.remove(DATA_SOURCE_INTERROGATE_KEY);
         }
-        Interpolation interpolation = getInspectInterpolation();
-        GridSampler sampler = null;
-        if (data.isVector()) {
-            sampler = new GridSampler(data.getMagnitude(), interpolation);
-        } else {
-            sampler = new GridSampler(data.getScalarData(), interpolation);
-        }
-        double value = sampler.sample(pixel.x, pixel.y);
-        if (Double.isNaN(value)) {
-            return null;
-        }
-        String unitString = null;
-        Unit<?> unit = data.getDataUnit();
-        if (stylePreferences != null) {
-            Unit<?> styleUnit = stylePreferences.getDisplayUnits();
-            if (unit != null && styleUnit != null
-                    && unit.isCompatible(styleUnit)) {
-                value = (float) unit.getConverterTo(styleUnit).convert(value);
-                unit = styleUnit;
-                unitString = stylePreferences.getDisplayUnitLabel();
+        if (!keySet.isEmpty()) {
+            Coordinate pixel = null;
+            try {
+                pixel = coordinate.asPixel(data.getGridGeometry());
+            } catch (FactoryException | TransformException e) {
+                statusHandler.error(
+                        "Error transforming coordinate for interrogate", e);
+                return result;
             }
-        }
-        Map<String, Object> result = new HashMap<String, Object>();
-        result.put(INTERROGATE_VALUE, value);
-        if (unitString != null) {
-            result.put(INTERROGATE_UNIT, unitString);
-        } else if (unit != null && !unit.equals(Unit.ONE)) {
-            result.put(INTERROGATE_UNIT,
-                    UnitFormat.getUCUMInstance().format(unit));
-        } else {
-            result.put(INTERROGATE_UNIT, "");
-        }
-        if (data.isVector()) {
-            sampler.setSource(data.getDirectionFrom());
-            Double dir = sampler.sample(pixel.x, pixel.y);
-            result.put(INTERROGATE_DIRECTION, dir);
+            Interpolation interpolation = getInspectInterpolation();
+            if (keySet.contains(Interrogator.VALUE)) {
+                GridSampler sampler = new GridSampler(data.getScalarData(),
+                        interpolation);
+                double value = sampler.sample(pixel.x, pixel.y);
+                if (!Double.isNaN(value)) {
+                    Unit<?> unit = data.getDataUnit();
+                    String unitString = null;
+                    if (stylePreferences != null) {
+                        Unit<?> styleUnit = stylePreferences.getDisplayUnits();
+                        if (unit != null && styleUnit != null
+                                && unit.isCompatible(styleUnit)) {
+                            value = (float) unit.getConverterTo(styleUnit)
+                                    .convert(value);
+                            unit = styleUnit;
+                            unitString = stylePreferences.getDisplayUnitLabel();
+                        }
+                    }
+                    result.put(Interrogator.VALUE,
+                            Measure.valueOf(value, unit));
+                    if (keySet.contains(UNIT_STRING_INTERROGATE_KEY)) {
+                        if (unitString != null) {
+                            result.put(UNIT_STRING_INTERROGATE_KEY, unitString);
+                        } else if (unit != null && !unit.equals(Unit.ONE)) {
+                            result.put(UNIT_STRING_INTERROGATE_KEY,
+                                    UnitFormat.getUCUMInstance().format(unit));
+                        } else {
+                            result.put(UNIT_STRING_INTERROGATE_KEY, "");
+                        }
+                    }
+                }
+            }
+            if ((keySet.contains(DIRECTION_INTERROGATE_KEY)
+                    && data.isVector())) {
+                GridSampler sampler = new GridSampler(data.getDirectionFrom(),
+                        interpolation);
+                Double dir = sampler.sample(pixel.x, pixel.y);
+                result.put(DIRECTION_INTERROGATE_KEY, dir);
+            }
         }
         return result;
     }
 
     @Override
-    public Map<String, Object> interrogate(ReferencedCoordinate coord)
-            throws VizException {
-        List<GeneralGridData> dataList = getCurrentData();
+    public InterrogateMap interrogate(ReferencedCoordinate coordinate,
+            DataTime time, InterrogationKey<?>... keys) {
+        List<GeneralGridData> dataList = requestData(time);
         if (dataList == null) {
             return null;
         }
         for (GeneralGridData data : dataList) {
-            Map<String, Object> result = interrogate(coord, data);
+            InterrogateMap result = interrogate(coordinate, data, keys);
             if (result != null) {
                 return result;
             }
         }
+        return new InterrogateMap();
+    }
 
-        return null;
+    /**
+     * @deprecated use
+     *             {@link #interrogate(ReferencedCoordinate, DataTime, InterrogationKey...)}
+     *             instead.
+     */
+    @Deprecated
+    @Override
+    public Map<String, Object> interrogate(ReferencedCoordinate coord)
+            throws VizException {
+        InterrogateMap map = interrogate(coord, getTimeForResource(),
+                Interrogator.VALUE, UNIT_STRING_INTERROGATE_KEY,
+                DIRECTION_INTERROGATE_KEY);
+        if (map == null || map.isEmpty()) {
+            return null;
+        }
+        Measure<? extends Number, ?> value = map.get(Interrogator.VALUE);
+        String unitString = map.get(UNIT_STRING_INTERROGATE_KEY);
+        Number direction = map.get(DIRECTION_INTERROGATE_KEY);
+
+        Map<String, Object> result = new HashMap<>();
+        if (value != null) {
+            result.put(INTERROGATE_VALUE, value.getValue());
+        }
+        if (unitString != null) {
+            result.put(INTERROGATE_UNIT, unitString);
+        }
+        if (direction != null) {
+            result.put(INTERROGATE_DIRECTION, direction);
+        }
+        return result;
     }
 
     @Override
