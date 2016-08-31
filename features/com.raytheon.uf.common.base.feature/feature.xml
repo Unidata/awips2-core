@@ -263,7 +263,7 @@
          download-size="0"
          install-size="0"
          version="2.6.0"/>
-         
+
    <plugin
          id="org.apache.commons.lang3"
          download-size="0"
@@ -286,7 +286,7 @@
          id="org.geotools"
          download-size="0"
          install-size="0"
-         version="10.5.0"/>
+         version="15.1.0"/>
 
    <plugin
          id="org.apache.commons.pool"
