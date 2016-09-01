@@ -52,24 +52,24 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 07, 2013 1543       djohnson    Initial creation
- * 3/18/2013    1802       bphillip    Added additional database functions. Enforcing mandatory transaction propogation
- * 3/27/2013    1802       bphillip    Changed transaction propagation of query methods
- * 4/9/2013     1802       bphillip    Modified how arguments are passed in to query methods
- * May 01, 2013 1967       njensen     Fixed autoboxing for Eclipse 3.8
- * Jun 24, 2013 2106       djohnson    Use IDENTIFIER generic for method signature.
- * 10/8/2013    1682       bphillip    Added the createCriteria method
- * 12/9/2013    2613       bphillip    Added flushAndClearSession method
- * Jan 17, 2014 2459       mpduff      Added null check to prevent NPE.
- * 2/13/2014    2769       bphillip    Added read-only flag to query methods and loadById method
- * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ----------------------------------------------------------------
+ * Feb 07, 2013  1543     djohnson  Initial creation
+ * Mar 18, 2013  1802     bphillip  Added additional database functions. Enforcing mandatory
+ *                                  transaction propogation
+ * Mar 27, 2013  1802     bphillip  Changed transaction propagation of query methods
+ * Apr 09, 2013  1802     bphillip  Modified how arguments are passed in to query methods
+ * May 01, 2013  1967     njensen   Fixed autoboxing for Eclipse 3.8
+ * Jun 24, 2013  2106     djohnson  Use IDENTIFIER generic for method signature.
+ * Oct 08, 2013  1682     bphillip  Added the createCriteria method
+ * Dec 09, 2013  2613     bphillip  Added flushAndClearSession method
+ * Jan 17, 2014  2459     mpduff    Added null check to prevent NPE.
+ * Feb 13, 2014  2769     bphillip  Added read-only flag to query methods and loadById method
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * Sep 01, 2016  5846     rjpeter   Support IN style hql queries
  * </pre>
  * 
  * @author djohnson
- * @version 1.0
  */
 @Repository
 @Transactional(propagation = Propagation.MANDATORY)
@@ -300,7 +300,12 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
         Query query = getCurrentSession().createQuery(queryString);
         query.setMaxResults(maxResults);
         for (int i = 0; i < params.length; i += 2) {
-            query.setParameter((String) params[i], params[i+1]);
+            if (params[i + 1] instanceof Collection<?>) {
+                query.setParameterList((String) params[i],
+                        (Collection<?>) params[i + 1]);
+            } else {
+                query.setParameter((String) params[i], params[i + 1]);
+            }
         }
         return query.list();
     }
@@ -405,7 +410,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     @SuppressWarnings("unchecked")
     public ENTITY load(Serializable id) {
-        return (ENTITY)getCurrentSession().load(getEntityClass(), id);
+        return (ENTITY) getCurrentSession().load(getEntityClass(), id);
 
     }
 
@@ -425,8 +430,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * @return The criteria instance
      */
     protected Criteria createCriteria() {
-        return getCurrentSession()
-                .createCriteria(getEntityClass());
+        return getCurrentSession().createCriteria(getEntityClass());
     }
 
     /**

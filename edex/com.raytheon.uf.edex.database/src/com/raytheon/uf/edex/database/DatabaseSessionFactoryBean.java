@@ -29,6 +29,8 @@ import java.util.Set;
 import org.hibernate.SessionFactory;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
 import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
 
@@ -46,17 +48,20 @@ import com.raytheon.uf.edex.database.type.JavaUtilDateType;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 10/8/2008    1532        bphillip    Initial checkin
- * Jun 18, 2013 2117        djohnson    Remove use of config.buildSettings().
- * Oct 14, 2013 2361        njensen     Changes to support new technique for finding classes
- * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
- * Aug 05, 2015 4486        rjpeter     Ensure hibernate returns java.util.Date.
- * </pre>
  * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------------------
+ * Oct 08, 2008  1532     bphillip  Initial checkin
+ * Jun 18, 2013  2117     djohnson  Remove use of config.buildSettings().
+ * Oct 14, 2013  2361     njensen   Changes to support new technique for finding classes
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * Aug 05, 2015  4486     rjpeter   Ensure hibernate returns java.util.Date.
+ * Sep 01, 2016  5846     rjpeter   Fix infinite database session creation issue.
+ * </pre>
  */
 public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
+
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
 
     protected Class<?>[] accessibleClasses = null;
 
@@ -157,8 +162,13 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
 
     @Override
     protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
-        sfb.registerTypeOverride(new JavaUtilDateType(),
-                JavaUtilDateType.getRegistryKeys());
-        return super.buildSessionFactory(sfb);
+        try {
+            sfb.registerTypeOverride(new JavaUtilDateType(),
+                    JavaUtilDateType.getRegistryKeys());
+            return super.buildSessionFactory(sfb);
+        } catch (Throwable e) {
+            logger.error("Failed to build database session factory", e);
+            return null;
+        }
     }
 }
