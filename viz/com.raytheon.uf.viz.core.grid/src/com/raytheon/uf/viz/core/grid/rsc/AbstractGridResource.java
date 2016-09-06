@@ -865,7 +865,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             return "NO DATA";
         }
         String unit = map.get(UNIT_STRING_INTERROGATE_KEY);
-        String result = sampleFormat.format(value) + unit;
+        String result = sampleFormat.format(value.getValue()) + unit;
         // Data mapping images.
         if (hasCapability(ColorMapCapability.class)) {
             ColorMapParameters cmp = getCapability(ColorMapCapability.class)
