@@ -30,6 +30,7 @@ import org.eclipse.core.commands.ExecutionException;
 import com.raytheon.uf.viz.core.DescriptorMap;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.exception.VizException;
+import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.viz.ui.BundleLoader;
 import com.raytheon.viz.ui.BundleLoader.BundleInfoType;
@@ -50,6 +51,7 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 30, 2013  2310     bsteffen    Initial creation
+ * Sep 07, 2016  ----     mjames@ucar Always animate on bundle load
  * 
  * </pre>
  * 
@@ -98,6 +100,13 @@ public class LoadBundleHandler extends AbstractHandler {
             } else {
                 loader = new BundleProductLoader(editor, bundle);
             }
+            
+            // Animate
+            if (editor != null) {
+            	editor.getLoopProperties().setLooping(true);
+                VizGlobalsManager.getCurrentInstance().updateUI(editor);
+            }
+            
             loader.schedule();
             return event;
         } catch (VizException e) {
