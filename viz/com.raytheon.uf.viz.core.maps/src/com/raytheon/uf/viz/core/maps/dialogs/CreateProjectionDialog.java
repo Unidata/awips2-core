@@ -533,16 +533,17 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         }
     }
 
-    private void generateExtents() {
+    private void generateWFOExtents() {
     	
     	try{
             BufferedReader buf = new BufferedReader(
-            		new FileReader("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/wfo.dat"));
+            	new FileReader("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/wfo.dat"));
+            
             String lineJustFetched = null;
             String[] wfoCSV;
             
-            //PrintStream out = new PrintStream(new FileOutputStream("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/coords.dat"));
-            //System.setOut(out);
+            PrintStream out = new PrintStream(new FileOutputStream("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/coords_regional.dat"));
+            System.setOut(out);
 
             while(true){
                 lineJustFetched = buf.readLine();
@@ -555,7 +556,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                     cent.y = validateDouble(wfoCSV[8], -90, 90);
                     cent.x = validateDouble(wfoCSV[9], -180, 180);
                     GeneralGridGeometry siteGeom = MapDescriptor.createGridGeometry(crs, cent,
-                            900000., 700000.);
+                            2700000., 2100000.);
                     String siteID = wfoCSV[0];
                     Envelope siteEnvelope = siteGeom.getEnvelope();
                     GridEnvelope siteRange = siteGeom.getGridRange();
@@ -567,7 +568,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 		                    + ", " + siteEnvelope.getMinimum(1) + ", " + siteEnvelope.getMaximum(1));
                 }
             }
-
+         
             buf.close();
 
         }catch(Exception e){
@@ -575,6 +576,49 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         }
 
     }
+    
+private void generateRadarExtents() {
+    	
+    	try{
+            BufferedReader buf = new BufferedReader(
+            		new FileReader("/home/awips/awips2-core/viz/com.raytheon.uf.viz.core.maps/localization/basemaps/88D.lpi"));
+            String lineJustFetched = null;
+            String[] wfoCSV;
+
+            PrintStream out = new PrintStream(new FileOutputStream("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/coords_wsr88d.dat"));
+            System.setOut(out);
+            
+            while(true){
+                lineJustFetched = buf.readLine();
+                if(lineJustFetched == null){  
+                    break; 
+                }else{
+                    wfoCSV = lineJustFetched.split("\\s+");
+                    
+                    Coordinate cent = new Coordinate();
+                    cent.y = validateDouble(wfoCSV[1], -90, 90);
+                    cent.x = validateDouble(wfoCSV[2], -180, 180);
+                    GeneralGridGeometry siteGeom = MapDescriptor.createGridGeometry(crs, cent,
+                    		750000., 750000.);
+                    String siteID = wfoCSV[4];
+                    Envelope siteEnvelope = siteGeom.getEnvelope();
+                    GridEnvelope siteRange = siteGeom.getGridRange();
+                    
+                    System.out.println(siteID + ", " + cent.y + ", " + cent.x 
+                    		+ ", " + siteRange.getLow(0) + ", " + siteRange.getHigh(0) 
+                    		+ ", " + siteRange.getLow(1) + ", " + siteRange.getHigh(1)
+		                    + ", " + siteEnvelope.getMinimum(0) + ", " + siteEnvelope.getMaximum(0)
+		                    + ", " + siteEnvelope.getMinimum(1) + ", " + siteEnvelope.getMaximum(1));
+                }
+            }
+            buf.close();
+
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+    }
+    
     private void validateExtent() {
         newMapGeom = null;
 
@@ -671,7 +715,8 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
     @Override
     protected void okPressed() {
     	
-    	//generateExtents();
+    	//generateWFOExtents();
+    	//generateRadarExtents();
     	
         validateParameters();
 
