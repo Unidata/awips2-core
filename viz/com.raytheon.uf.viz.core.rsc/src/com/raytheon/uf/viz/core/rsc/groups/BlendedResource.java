@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -48,16 +48,16 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jul 31, 2014  3461     bsteffen    Recycle properly.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Jul 31, 2014  3461     bsteffen  Recycle properly.
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
-
 public class BlendedResource extends
         AbstractVizResource<BlendedResourceData, IDescriptor> implements
         IResourceGroup {
@@ -89,11 +89,6 @@ public class BlendedResource extends
         addResourceInternal(res);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#dispose()
-     */
     @Override
     protected void disposeInternal() {
         for (ResourcePair rp : this.resourceData.getResourceList()) {
@@ -108,13 +103,6 @@ public class BlendedResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#init(com.raytheon.uf
-     * .viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         ResourcePair me = new ResourcePair();
@@ -142,26 +130,11 @@ public class BlendedResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#setDescriptor(com.raytheon
-     * .uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public void setDescriptor(IDescriptor descriptor) {
         super.setDescriptor(descriptor);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderable#paint(com.raytheon.uf.
-     * viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
@@ -204,13 +177,6 @@ public class BlendedResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#project(org.opengis.
-     * referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public void project(CoordinateReferenceSystem mapData) throws VizException {
         for (ResourcePair rp : this.resourceData.resourceList) {
@@ -237,13 +203,6 @@ public class BlendedResource extends
         return displayedData.toString();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#interrogate(com.raytheon
-     * .uf.viz.core.geospatial.ReferencedCoordinate)
-     */
     @Override
     public Map<String, Object> interrogate(ReferencedCoordinate coord)
             throws VizException {

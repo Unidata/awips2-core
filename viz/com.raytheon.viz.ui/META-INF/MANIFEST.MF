@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz UI
 Bundle-SymbolicName: com.raytheon.viz.ui; singleton:=true
-Bundle-Version: 1.15.3.qualifier
+Bundle-Version: 1.16.0.qualifier
 Bundle-Activator: com.raytheon.viz.ui.UiPlugin
 Bundle-ActivationPolicy: lazy
 Bundle-Vendor: Raytheon
@@ -25,7 +25,6 @@ Require-Bundle: org.eclipse.ui;bundle-version="3.8.0";visibility:=reexport,
  org.eclipse.e4.core.di.annotations;bundle-version="1.4.0",
  org.eclipse.e4.core.services;bundle-version="2.0.0"
 Import-Package: com.raytheon.viz.core,
- com.raytheon.viz.core.imagery,
  com.raytheon.viz.core.mode
 Export-Package: com.raytheon.viz.ui,
  com.raytheon.viz.ui.actions,

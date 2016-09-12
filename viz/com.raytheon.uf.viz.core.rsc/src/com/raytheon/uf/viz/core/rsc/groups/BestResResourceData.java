@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,18 +54,18 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jan 05, 2010           mnash       Initial creation
- * Jun 10, 2014  3263     bsteffen    Make bestResTimes thread safe.
- * Sep 26, 2014  3669     bsteffen    Fix updates so that no alert parser is used.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 05, 2010  2496     mnash     Initial creation
+ * Jun 10, 2014  3263     bsteffen  Make bestResTimes thread safe.
+ * Sep 26, 2014  3669     bsteffen  Fix updates so that no alert parser is used.
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author mnash
- * @version 1.0
  */
-
 @XmlRootElement(name = "bestResResource")
 @XmlAccessorType(XmlAccessType.NONE)
 public class BestResResourceData extends AbstractRequestableResourceData
@@ -93,14 +93,6 @@ public class BestResResourceData extends AbstractRequestableResourceData
         bestResTimes = new ConcurrentSkipListMap<DataTime, AbstractVizResource<?, ?>>();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#construct(com.raytheon
-     * .uf.viz.core.rsc.LoadProperties,
-     * com.raytheon.uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public AbstractVizResource<?, ?> construct(LoadProperties loadProperties,
             IDescriptor descriptor) throws VizException {
@@ -199,13 +191,6 @@ public class BestResResourceData extends AbstractRequestableResourceData
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#update(java.lang.Object
-     * )
-     */
     @Override
     public void update(Object updateData) {
         if (updateData instanceof PluginDataObject[]) {
@@ -213,8 +198,8 @@ public class BestResResourceData extends AbstractRequestableResourceData
             for (int i = 0; i < updatePDO.length; i++) {
                 Map<String, Object> recordMap = null;
                 try {
-                    recordMap = RecordFactory.getInstance().loadMapFromUri(
-                            updatePDO[i].toString());
+                    recordMap = RecordFactory.getInstance()
+                            .loadMapFromUri(updatePDO[i].toString());
                 } catch (VizException e) {
                     e.printStackTrace();
                 }
@@ -227,9 +212,6 @@ public class BestResResourceData extends AbstractRequestableResourceData
         super.update(updateData);
     }
 
-    /**
-     * @return the resourceList
-     */
     public ResourceList getResourceList() {
         return resourceList;
     }
@@ -243,17 +225,10 @@ public class BestResResourceData extends AbstractRequestableResourceData
         return dts;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData#
-     * constructResource(com.raytheon.uf.viz.core.rsc.LoadProperties,
-     * com.raytheon.uf.common.dataplugin.PluginDataObject[])
-     */
     @Override
     protected AbstractVizResource<?, ?> constructResource(
             LoadProperties loadProperties, PluginDataObject[] objects)
-            throws VizException {
+                    throws VizException {
         this.enabler = null;
         this.retrieveData = true;
         return new BestResResource(this, loadProperties);
@@ -264,14 +239,9 @@ public class BestResResourceData extends AbstractRequestableResourceData
             throws VizException {
         for (int i = 0; i < resourceList.size(); i++) {
             try {
-                resourceList
-                        .get(i)
-                        .getLoadProperties()
-                        .setPerspectiveProperty(
-                                loadProperties.getPerspectiveProperty());
-                AbstractVizResource rsc = resourceList
-                        .get(i)
-                        .getResourceData()
+                resourceList.get(i).getLoadProperties().setPerspectiveProperty(
+                        loadProperties.getPerspectiveProperty());
+                AbstractVizResource rsc = resourceList.get(i).getResourceData()
                         .construct(resourceList.get(i).getLoadProperties(),
                                 desc);
                 if (rsc != null) {
@@ -298,36 +268,18 @@ public class BestResResourceData extends AbstractRequestableResourceData
         return rscs;
     }
 
-    /**
-     * @return the desc
-     */
     public IDescriptor getDesc() {
         return desc;
     }
 
-    /**
-     * @return the productIdentifierKey
-     */
     public String getProductIdentifierKey() {
         return productIdentifierKey;
     }
 
-    /**
-     * @param productIdentifierKey
-     *            the productIdentifierKey to set
-     */
     public void setProductIdentifierKey(String productIdentifierKey) {
         this.productIdentifierKey = productIdentifierKey;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public void resourceChanged(ChangeType type, Object data) {
         fireChangeListeners(type, data);

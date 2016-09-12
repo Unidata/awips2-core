@@ -20,8 +20,15 @@
 
 package com.raytheon.viz.ui.cmenu;
 
+import org.eclipse.core.commands.Command;
+import org.eclipse.core.commands.ParameterizedCommand;
+import org.eclipse.core.expressions.IEvaluationContext;
+import org.eclipse.ui.PlatformUI;
+import org.eclipse.ui.commands.ICommandService;
+import org.eclipse.ui.handlers.IHandlerService;
+import org.eclipse.ui.services.IServiceLocator;
+
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
-import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.dialogs.ImagingDialog;
 
 /**
@@ -29,15 +36,17 @@ import com.raytheon.viz.ui.dialogs.ImagingDialog;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Nov 22, 2006             chammack    Initial Creation.
- * Oct 17, 2012 1229        rferrel     Changes for non-blocking ImagingDialog.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 22, 2006           chammack  Initial Creation.
+ * Oct 17, 2012  1229     rferrel   Changes for non-blocking ImagingDialog.
+ * Sep 12, 2016  3241     bsteffen  Remove image combination from core imaging
+ *                                  dialog
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class ImagingAction extends AbstractRightClickAction {
     private ImagingDialog dialog;
@@ -49,13 +58,44 @@ public class ImagingAction extends AbstractRightClickAction {
      */
     @Override
     public void run() {
-        if (dialog == null || dialog.getShell() == null || dialog.isDisposed()) {
-            AbstractVizResource<?, ?> rsc = getTopMostSelectedResource();
-            dialog = new ImagingDialog(VizWorkbenchManager.getInstance()
-                    .getCurrentWindow().getShell(), rsc);
-            dialog.open();
-        } else {
-            dialog.bringToTop();
+        AbstractVizResource<?, ?> rsc = getTopMostSelectedResource();
+        if (true) {
+            IServiceLocator services = null;
+            if (container instanceof IServiceLocator) {
+                services = (IServiceLocator) container;
+
+            } else {
+                services = PlatformUI.getWorkbench().getActiveWorkbenchWindow();
+            }
+
+            IHandlerService handlerService = services
+                    .getService(IHandlerService.class);
+            ICommandService commandService = services
+                    .getService(ICommandService.class);
+
+            Command command = commandService
+                    .getCommand("com.raytheon.viz.ui.imageProperties");
+            if (command == null) {
+                return;
+            }
+
+
+            IEvaluationContext context = handlerService
+                    .createContextSnapshot(true);
+            if (rsc != null) {
+                context.addVariable(AbstractVizResource.class.getName(), rsc);
+            }
+
+
+            ParameterizedCommand parameterizedCommand = ParameterizedCommand
+                    .generateCommand(command, null);
+            try {
+                handlerService.executeCommandInContext(parameterizedCommand,
+                        null, context);
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
+            return;
         }
     }
 

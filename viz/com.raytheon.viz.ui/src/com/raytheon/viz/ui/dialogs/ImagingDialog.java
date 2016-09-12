@@ -34,10 +34,10 @@ import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Scale;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.handlers.IHandlerService;
 
 import com.raytheon.uf.common.colormap.ColorMap;
+import com.raytheon.uf.common.colormap.ColorMapException;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -48,11 +48,11 @@ import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener;
 import com.raytheon.uf.viz.core.IVizEditorChangedListener;
 import com.raytheon.uf.viz.core.VizApp;
-import com.raytheon.uf.viz.core.drawables.ColorMapLoader;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
+import com.raytheon.uf.viz.core.rsc.IDisposeListener;
 import com.raytheon.uf.viz.core.rsc.IResourceDataChanged;
 import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.uf.viz.core.rsc.ResourceList.AddListener;
@@ -60,8 +60,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
 import com.raytheon.uf.viz.core.rsc.capabilities.BlendableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
-import com.raytheon.viz.core.imagery.ImageCombiner;
-import com.raytheon.viz.core.imagery.ImageCombiner.IImageCombinerListener;
+import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.dialogs.ColormapComp.IColormapCompChangeListener;
 import com.raytheon.viz.ui.dialogs.colordialog.ColorEditDialog;
@@ -72,29 +71,33 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Nov 26, 2006           chammack    Initial Creation.
- * Jul 10, 2008  980      lvenable    Changed to a SWT dialog to correct a
- *                                    problem caused by a JFace/shell issue.  I
- *                                    also rearranged the controls a bit, used
- *                                    labels instead of text controls since the
- *                                    text is not being edited, changed sliders
- *                                    to scales, added tooltiptext to buttons to
- *                                    show full colormap names, and added
- *                                    comments &amp; Javadoc.
- * Aug 20, 2008	          dglazesk    Updated for the new ColorMap interface
- * Feb 10, 2011  7842     bkowal      set caveStyle for dialog to INDEPENDENT
- *                                    SHELL
- * Oct 17, 2012  1229     rferrel     Make dialog non-blocking.
- * Jan 15, 2014  2313     bsteffen    Disable color map selection when
- *                                    ColorMapCapability is not present.
- * Apr 08, 2014  2905     bsteffen    Add option to interpolate colors.
- * Apr 16, 2014  3037     lvenable    Add dispose check in runAsync call.
- * Sep 10, 2014  3604     bsteffen    Check for colormap before setting interpolation state.
- * Jan 25, 2016  5054     randerso    Fix dialog parenting, code cleanup
- * Feb 03, 2016  5301     tgurney     Check for combined image before opening
- *                                    color dialog
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 26, 2006           chammack  Initial Creation.
+ * Jul 10, 2008  980      lvenable  Changed to a SWT dialog to correct a problem
+ *                                  caused by a JFace/shell issue.  I also
+ *                                  rearranged the controls a bit, used labels
+ *                                  instead of text controls since the text is
+ *                                  not being edited, changed sliders to scales,
+ *                                  added tooltiptext to buttons to show full
+ *                                  colormap names, and added comments &amp;
+ *                                  Javadoc.
+ * Aug 20, 2008           dglazesk  Updated for the new ColorMap interface
+ * Feb 10, 2011  7842     bkowal    set caveStyle for dialog to INDEPENDENT
+ *                                  SHELL
+ * Oct 17, 2012  1229     rferrel   Make dialog non-blocking.
+ * Jan 15, 2014  2313     bsteffen  Disable color map selection when
+ *                                  ColorMapCapability is not present.
+ * Apr 08, 2014  2905     bsteffen  Add option to interpolate colors.
+ * Apr 16, 2014  3037     lvenable  Add dispose check in runAsync call.
+ * Sep 10, 2014  3604     bsteffen  Check for colormap before setting
+ *                                  interpolation state.
+ * Jan 25, 2016  5054     randerso  Fix dialog parenting, code cleanup
+ * Feb 03, 2016  5301     tgurney   Check for combined image before opening
+ *                                  color dialog
+ * Sep 12, 2016  3241     bsteffen  Remove image combination from core imaging
+ *                                  dialog
  * 
  * </pre>
  * 
@@ -103,7 +106,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  */
 public class ImagingDialog extends CaveSWTDialog implements
         IVizEditorChangedListener, IRenderableDisplayChangedListener,
-        AddListener, RemoveListener, IResourceDataChanged {
+        AddListener, RemoveListener, IResourceDataChanged, IDisposeListener {
     private final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ImagingDialog.class);
 
@@ -161,21 +164,9 @@ public class ImagingDialog extends CaveSWTDialog implements
      */
     private Button interpolateColorsCheckbox;
 
-    /**
-     * Interpolation check box control.
-     */
-    private Button combineNextImage;
-
     private final String UNSAVED_CMAP_DISPLAY_NAME = "Untitled Colormap";
 
     private boolean fromControl = false;
-
-    private IImageCombinerListener combineNextImageListener = new IImageCombinerListener() {
-        @Override
-        public void preferenceChanged(boolean newPref) {
-            combineNextImage.setSelection(newPref);
-        }
-    };
 
     /**
      * Top color map button.
@@ -238,13 +229,38 @@ public class ImagingDialog extends CaveSWTDialog implements
         this(parentShell);
 
         this.rscToEdit = rscToEdit;
+        this.rscToEdit.registerListener(this);
+    }
+
+    public void setResource(AbstractVizResource<?, ?> rscToEdit) {
+        if (this.rscToEdit == null) {
+            VizWorkbenchManager.getInstance().removeListener(this);
+            setupListeners(currentEditor, null);
+            this.currentEditor = null;
+        }else{
+            this.rscToEdit.unregisterListener(this);
+        }
+        this.rscToEdit = rscToEdit;
+        this.rscToEdit.registerListener(this);
+    }
+
+    public void setContainer(IDisplayPaneContainer editor) {
+        if (this.rscToEdit != null) {
+            rscToEdit.unregisterListener(this);
+            rscToEdit = null;
+            VizWorkbenchManager.getInstance().addListener(this);
+        }
+        setupListeners(currentEditor, editor);
+        this.currentEditor = editor;
     }
 
     @Override
     protected void disposed() {
-        ImageCombiner.removeListener(combineNextImageListener);
         setupListeners(currentEditor, null);
         VizWorkbenchManager.getInstance().removeListener(this);
+        if (rscToEdit != null) {
+            rscToEdit.unregisterListener(this);
+        }
     }
 
     @Override
@@ -319,7 +335,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                         }
                     }
                     refreshEditor();
-                } catch (VizException e) {
+                } catch (ColorMapException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Error changing colormap", e);
                 }
@@ -393,45 +409,19 @@ public class ImagingDialog extends CaveSWTDialog implements
         initializeAlphaScale(body);
 
         Composite checkBoxComp = new Composite(body, SWT.NONE);
-        checkBoxComp.setLayoutData(new GridData(SWT.CENTER, SWT.CENTER, true,
-                true, 3, 1));
-        checkBoxComp.setLayout(new GridLayout(2, false));
+        checkBoxComp.setLayoutData(
+                new GridData(SWT.FILL, SWT.CENTER, true, true, 3, 1));
+        checkBoxComp.setLayout(new GridLayout(2, true));
 
         interpolateImageCheckbox = new Button(checkBoxComp, SWT.CHECK);
         interpolateImageCheckbox.setText("Interpolate Image");
         GridData gd = new GridData(SWT.LEFT, SWT.CENTER, true, true);
         interpolateImageCheckbox.setLayoutData(gd);
 
-        combineNextImage = new Button(checkBoxComp, SWT.CHECK);
-        combineNextImage.setText("Combine Next Image Load");
-        combineNextImage.setLayoutData(gd);
-        combineNextImage.setSelection(ImageCombiner.isCombineImages());
-        combineNextImage.addSelectionListener(new SelectionAdapter() {
-            @Override
-            public void widgetSelected(SelectionEvent e) {
-                // Lets call our command
-                IHandlerService handlerService = (IHandlerService) PlatformUI
-                        .getWorkbench().getActiveWorkbenchWindow()
-                        .getService(IHandlerService.class);
-                try {
-                    handlerService
-                            .executeCommand(
-                                    "com.raytheon.uf.viz.d2d.ui.actions.imageCombination",
-                                    null);
-                } catch (Exception ex) {
-                    // Eat exception
-                }
-                combineNextImage.setSelection(ImageCombiner.isCombineImages());
-                refreshEditor();
-            }
-        });
-
         interpolateColorsCheckbox = new Button(checkBoxComp, SWT.CHECK);
         interpolateColorsCheckbox.setText("Interpolate Colors");
         interpolateColorsCheckbox.setLayoutData(new GridData(SWT.LEFT,
                 SWT.CENTER, true, true));
-
-        ImageCombiner.addListener(combineNextImageListener);
 
         brightnessScale.addSelectionListener(new SelectionAdapter() {
 
@@ -491,6 +481,12 @@ public class ImagingDialog extends CaveSWTDialog implements
             }
 
         });
+        
+        addCustomControls(body, checkBoxComp);
+    }
+    
+    protected void addCustomControls(Composite bodyComp, Composite checkBoxComp){
+        /* Provided so subclasses can easily add custom widgets. */
     }
 
     protected void setInterpolatedColors(
@@ -549,7 +545,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                         }
                     }
                     refreshEditor();
-                } catch (VizException e) {
+                } catch (ColorMapException e) {
                     statusHandler.handle(Priority.PROBLEM,
                             "Error applying colormap", e);
                 }
@@ -1084,5 +1080,13 @@ public class ImagingDialog extends CaveSWTDialog implements
                 refreshComponentsUpdate();
             }
         }
+    }
+
+    @Override
+    public void disposed(AbstractVizResource<?, ?> rsc) {
+        if (rsc == rscToEdit) {
+            setContainer(EditorUtil.getActiveVizContainer());
+        }
+        refreshComponentsUpdate();
     }
 }

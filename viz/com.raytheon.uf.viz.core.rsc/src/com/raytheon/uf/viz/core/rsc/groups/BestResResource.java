@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -49,18 +49,18 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jan 05, 2010           mnash       Initial creation
- * Mar 12, 2014  2898     bsteffen    Clear times in resource data on dispose.
- * Jun 10, 2014  3263     bsteffen    Null check keys before accessing map.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Jan 05, 2010  2496     mnash     Initial creation
+ * Mar 12, 2014  2898     bsteffen  Clear times in resource data on dispose.
+ * Jun 10, 2014  3263     bsteffen  Null check keys before accessing map.
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author mnash
- * @version 1.0
  */
-
 public class BestResResource extends
         AbstractVizResource<BestResResourceData, AbstractDescriptor> implements
         IResourceDataChanged, IRefreshListener {
@@ -69,20 +69,11 @@ public class BestResResource extends
 
     private ResourceOrder highestResourceOrder = null;
 
-    /**
-     * @param data
-     * @param props
-     */
     public BestResResource(BestResResourceData data, LoadProperties props) {
         super(data, props);
         data.addChangeListener(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#getName()
-     */
     @Override
     public String getName() {
         DataTime displayedDate = descriptor.getTimeForResource(this);
@@ -102,11 +93,6 @@ public class BestResResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#disposeInternal()
-     */
     @Override
     protected void disposeInternal() {
         for (AbstractVizResource<?, ?> resource : resourceData.getRscs()) {
@@ -117,16 +103,11 @@ public class BestResResource extends
         resourceData.getMap().clear();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
-        // If child resources have capabilities that this does not, steal them
+        /*
+         * If child resources have capabilities that this does not, steal them
+         */
         for (AbstractVizResource<?, ?> rcs : getResourceData().getRscs()) {
             for (AbstractCapability capability : rcs.getCapabilities()
                     .getCapabilityClassCollection()) {
@@ -137,8 +118,10 @@ public class BestResResource extends
             }
         }
 
-        // Set the master set of capabilites for all children and add listeners
-        // for new capabilities.
+        /*
+         * Set the master set of capabilites for all children and add listeners
+         * for new capabilities.
+         */
         for (AbstractVizResource<?, ?> rcs : getResourceData().getRscs()) {
             rcs.getLoadProperties().setCapabilities(getCapabilities());
             rcs.getResourceData().addChangeListener(new IResourceDataChanged() {
@@ -171,14 +154,6 @@ public class BestResResource extends
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#paintInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
@@ -188,13 +163,6 @@ public class BestResResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#project(org.opengis.
-     * referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public void project(CoordinateReferenceSystem crs) throws VizException {
         for (int i = 0; i < getResourceData().getRscs().size(); i++) {
@@ -218,14 +186,6 @@ public class BestResResource extends
         return resourceData.getMap().keySet().toArray(new DataTime[] {});
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         // ((IResourceDataChanged) vizResource).resourceChanged(type, object);
@@ -243,13 +203,6 @@ public class BestResResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#interrogate(com.raytheon
-     * .uf.common.geospatial.ReferencedCoordinate)
-     */
     @Override
     public Map<String, Object> interrogate(ReferencedCoordinate coord)
             throws VizException {
@@ -290,13 +243,6 @@ public class BestResResource extends
         return highestResourceOrder;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#remove(com.raytheon.
-     * uf.common.time.DataTime)
-     */
     @Override
     public void remove(DataTime dataTime) {
         super.remove(dataTime);

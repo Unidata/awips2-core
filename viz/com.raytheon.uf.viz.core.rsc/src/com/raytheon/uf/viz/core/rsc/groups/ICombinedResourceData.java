@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -37,16 +37,16 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 15, 2010            jelkins     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Jan 15, 2010  3106     jelkins   Initial creation
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author jelkins
- * @version 1.0
  */
-
 public interface ICombinedResourceData {
 
     public enum CombineOperation {

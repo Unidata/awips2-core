@@ -2,11 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Capabilities
 Bundle-SymbolicName: com.raytheon.viz.core;singleton:=true
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.16.0.qualifier
 Require-Bundle: org.eclipse.ui,
  org.eclipse.core.runtime,
  com.raytheon.uf.common.localization,
- com.raytheon.uf.common.serialization;visibility:=reexport,
  com.raytheon.uf.common.geospatial;visibility:=reexport,
  com.raytheon.uf.common.time;visibility:=reexport,
  com.raytheon.uf.common.datastorage;visibility:=reexport,
@@ -15,17 +14,14 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.units;visibility:=reexport,
  com.raytheon.uf.viz.core;visibility:=reexport,
  com.raytheon.uf.common.colormap,
- com.raytheon.uf.common.serialization.comm,
  org.eclipse.core.expressions
 Eclipse-RegisterBuddy: com.raytheon.uf.common.geospatial
 Export-Package: 
  com.raytheon.viz.core,
- com.raytheon.viz.core.imagery,
  com.raytheon.viz.core.interval,
  com.raytheon.viz.core.map,
  com.raytheon.viz.core.mode,
  com.raytheon.viz.core.preferences,
- com.raytheon.viz.core.rsc,
  com.raytheon.viz.core.rsc.hdf5,
  com.raytheon.viz.core.rsc.jts
 Bundle-Vendor: Raytheon

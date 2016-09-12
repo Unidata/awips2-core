@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -51,18 +51,18 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 28, 2011            mpduff      Initial creation.
- * Sep 11, 2012  1162      mpduff      Made mergeMetaDataMap method public.
- * Jun 21, 2013 DR15394        mgamazaychikov Remove implementation of resourceChanged
+ * Date          Ticket#  Engineer        Description
+ * ------------- -------- --------------- --------------------------------------
+ * Jan 28, 2011  3298     mpduff          Initial creation.
+ * Sep 11, 2012  1162     mpduff          Made mergeMetaDataMap method public.
+ * Jun 21, 2013  15394    mgamazaychikov  Remove implementation of
+ *                                        resourceChanged
+ * Sep 12, 2016  3241     bsteffen        Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author mpduff
- * @version 1.0
  */
-
 @XmlRootElement(name = "vizGroupResource")
 @XmlAccessorType(XmlAccessType.NONE)
 public class VizGroupResourceData extends AbstractRequestableResourceData
@@ -86,13 +86,6 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
         };
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData#
-     * constructResource(com.raytheon.uf.viz.core.rsc.LoadProperties,
-     * com.raytheon.uf.common.dataplugin.PluginDataObject[])
-     */
     @Override
     public AbstractVizResource<?, ?> construct(LoadProperties loadProperties,
             IDescriptor descriptor) throws VizException {
@@ -267,14 +260,7 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
 //        }
 //    }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
+
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         // TODO Auto-generated method stub
@@ -287,32 +273,18 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
         return new VizGroupResource(this, loadProperties);
     }
 
-    /**
-     * @return the resourceList
-     */
     public ResourceList getResourceList() {
         return resourceList;
     }
 
-    /**
-     * @return the name
-     */
     public String getName() {
         return name;
     }
 
-    /**
-     * @param name
-     *            the name to set
-     */
     public void setName(String name) {
         this.name = name;
     }
 
-    /**
-     * @param resourceList
-     *            the resourceList to set
-     */
     public void setResourceList(ResourceList resourceList) {
         this.resourceList = resourceList;
     }
@@ -323,16 +295,10 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
         return super.getMetadataMap();
     }
 
-    /**
-     * @return the rscs
-     */
     public List<AbstractVizResource<?, ?>> getRscs() {
         return rscs;
     }
 
-    /**
-     * @param rscs the rscs to set
-     */
     public void setRscs(List<AbstractVizResource<?, ?>> rscs) {
         this.rscs = rscs;
     }

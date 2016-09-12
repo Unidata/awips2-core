@@ -23,8 +23,10 @@ package com.raytheon.viz.ui.actions;
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
+import org.eclipse.core.expressions.IEvaluationContext;
 
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.dialogs.ImagingDialog;
@@ -34,45 +36,67 @@ import com.raytheon.viz.ui.dialogs.ImagingDialog;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Nov 22, 2006             chammack    Initial Creation.
- * Oct 17, 2012 1229        rferrel     Changes for non-blocking ImagingDialog.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 22, 2006           chammack  Initial Creation.
+ * Oct 17, 2012  1229     rferrel   Changes for non-blocking ImagingDialog.
+ * Sep 12, 2016  3241     bsteffen  Remove image combination from core imaging
+ *                                  dialog
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class ImagePropertiesAction extends AbstractHandler {
 
     private static ImagingDialog dialog = null;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.core.commands.AbstractHandler#execute(org.eclipse.core.commands
-     * .ExecutionEvent)
-     */
     @Override
     public Object execute(ExecutionEvent arg0) throws ExecutionException {
-        if (dialog == null || dialog.getShell() == null || dialog.isDisposed()) {
-            IDisplayPaneContainer container = EditorUtil
-                    .getActiveVizContainer();
-            if (container != null) {
+        IDisplayPaneContainer container = EditorUtil.getActiveVizContainer();
+
+        AbstractVizResource<?, ?> selected = getSelectedResource(arg0);
+
+        if (container == null && selected == null) {
+            return null;
+        }
+
+        if (dialog == null || dialog.getShell() == null
+                || dialog.isDisposed()) {
+            if (selected != null) {
+                dialog = new ImagingDialog(VizWorkbenchManager.getInstance()
+                        .getCurrentWindow().getShell(), selected);
+            } else {
                 dialog = new ImagingDialog(VizWorkbenchManager.getInstance()
                         .getCurrentWindow().getShell(), container);
-                // initalize
-                dialog.open();
-            } else {
-                dialog = null;
             }
+            // initalize
+            dialog.open();
         } else {
+            if (selected != null) {
+                dialog.setResource(selected);
+            } else {
+                dialog.setContainer(container);
+            }
             dialog.refreshComponents();
             dialog.bringToTop();
         }
 
+        return null;
+    }
+
+    protected static AbstractVizResource<?, ?> getSelectedResource(
+            ExecutionEvent event) {
+        Object contextObj = event.getApplicationContext();
+        if (contextObj instanceof IEvaluationContext) {
+            IEvaluationContext context = (IEvaluationContext) contextObj;
+            Object componentObj = context
+                    .getVariable(AbstractVizResource.class.getName());
+            if (componentObj instanceof AbstractVizResource) {
+                return (AbstractVizResource<?, ?>) componentObj;
+            }
+        }
         return null;
     }
 }

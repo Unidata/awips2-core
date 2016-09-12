@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -40,14 +40,15 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 5, 2009            chammack     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Feb 05, 2009  1959     chammack  Initial creation
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 @XmlRootElement(name = "blendedResource")
 @XmlAccessorType(XmlAccessType.NONE)
@@ -85,14 +86,6 @@ public class BlendedResourceData extends AbstractResourceData implements
         return rsc;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#configure(com.raytheon
-     * .uf.viz.core.rsc.LoadProperties,
-     * com.raytheon.uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public void configure(LoadProperties loadProperties, IDescriptor descriptor)
             throws VizException {
@@ -106,9 +99,7 @@ public class BlendedResourceData extends AbstractResourceData implements
         // Updating should be modified to update the children directly
     }
 
-    /**
-     * @return the resourceList
-     */
+
     public ResourceList getResourceList() {
         return resourceList;
     }

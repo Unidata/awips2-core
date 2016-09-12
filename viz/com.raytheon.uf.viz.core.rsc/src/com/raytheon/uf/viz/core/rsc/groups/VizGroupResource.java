@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
 import java.util.Map;
@@ -44,37 +44,27 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 28, 2011            mpduff     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Jan 28, 2011  3298     mpduff    Initial creation
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
  * </pre>
  * 
  * @author mpduff
- * @version 1.0
  */
-
 public class VizGroupResource extends
         AbstractVizResource<VizGroupResourceData, MapDescriptor> implements
         IResourceDataChanged, IRefreshListener, IResourceGroup {
 
     private static final String NO_DATA = "No Data";
 
-    /**
-     * @param resourceData
-     * @param loadProperties
-     */
     protected VizGroupResource(VizGroupResourceData resourceData,
             LoadProperties loadProperties) {
         super(resourceData, loadProperties);
         dataTimes = new ArrayList<DataTime>();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#disposeInternal()
-     */
     @Override
     protected void disposeInternal() {
         for (ResourcePair rp : this.resourceData.resourceList) {
@@ -84,14 +74,6 @@ public class VizGroupResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#paintInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
@@ -104,13 +86,6 @@ public class VizGroupResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#inspect(com.raytheon
-     * .uf.common.geospatial.ReferencedCoordinate)
-     */
     @Override
     public String inspect(ReferencedCoordinate coord) throws VizException {
         ResourceList rl = resourceData.resourceList;
@@ -128,13 +103,6 @@ public class VizGroupResource extends
         return value;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#interrogate(com.raytheon
-     * .uf.common.geospatial.ReferencedCoordinate)
-     */
     @Override
     public Map<String, Object> interrogate(ReferencedCoordinate coord)
             throws VizException {
@@ -142,13 +110,6 @@ public class VizGroupResource extends
         return super.interrogate(coord);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         for (AbstractVizResource<?, ?> resource : resourceData.getRscs()) {
@@ -179,36 +140,18 @@ public class VizGroupResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.IRefreshListener#refresh()
-     */
     @Override
     public void refresh() {
         // TODO Auto-generated method stub
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         // TODO Auto-generated method stub
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.IResourceGroup#getResourceList()
-     */
     @Override
     public ResourceList getResourceList() {
         return this.getResourceData().getResourceList();

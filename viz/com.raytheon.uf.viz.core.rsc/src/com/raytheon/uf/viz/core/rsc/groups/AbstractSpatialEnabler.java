@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.rsc;
+package com.raytheon.uf.viz.core.rsc.groups;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -28,20 +28,20 @@ import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
 /**
  * @deprecated do not extend this class, only exists for XML compatibility.
  * 
- * <pre>
+ *             <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Mar 2, 2010            mnash       Initial creation
- * Oct 23, 2013  2491     bsteffen    Remove ISerializableObject
- * Sep 26, 2014  3669     bsteffen    Deprecate
  * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Mar 02, 2010  2496     mnash     Initial creation
+ * Oct 23, 2013  2491     bsteffen  Remove ISerializableObject
+ * Sep 26, 2014  3669     bsteffen  Deprecate
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * 
- * </pre>
+ *             </pre>
  * 
  * @author mnash
- * @version 1.0
  */
 @Deprecated
 @XmlAccessorType(XmlAccessType.NONE)
