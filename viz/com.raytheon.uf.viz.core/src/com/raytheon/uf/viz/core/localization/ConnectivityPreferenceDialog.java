@@ -80,6 +80,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  *                                    org.eclipse.swt.widgets.Dialog
  * Feb 17, 2016  5281     tjensen     Fix Dialog centering
  * Apr 07, 2016  5281     tjensen     Clear details if status is good.
+ * Sep 12, 2016           mjames@ucar Clean formatted server name.
  * 
  * </pre>
  * 
@@ -263,11 +264,8 @@ public class ConnectivityPreferenceDialog {
         comp.setLayout(new GridLayout(3, false));
         comp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
-        Label lbl = new Label(comp, SWT.NONE);
-        lbl.setText("Status:");
-
         GridData gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        statusLabel = new Label(comp, SWT.BORDER);
+        statusLabel = new Label(comp, SWT.NONE);
         statusLabel.setLayoutData(gd);
         statusLabel.setText("");
 
@@ -321,18 +319,18 @@ public class ConnectivityPreferenceDialog {
         localizationLabel.setLayoutData(gd);
 
         String[] pastOptions =  {
-        		"http://localhost:9581/services",
-        		"http://edex:9581/services",
-        		"http://edex-cloud.unidata.ucar.edu:9581/services"
+        		"localhost",
+        		"edex",
+        		"edex-cloud.unidata.ucar.edu",
+        		"edex.unidata.ucar.edu"
         		};
-        //String[] pastOptions = getServerOptions();
+        String[] serverOptions = getServerOptions();
 
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
         localizationSrv.setText(localization == null ? "" : localization);
-        //localizationSrv.widget.setForeground(getTextColor(localizationGood));
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -420,7 +418,7 @@ public class ConnectivityPreferenceDialog {
 
         gd = new GridData(80, SWT.DEFAULT);
         Button okBtn = new Button(centeredComp, SWT.NONE);
-        okBtn.setText("Start CAVE");
+        okBtn.setText("Start");
         okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -766,8 +764,7 @@ public class ConnectivityPreferenceDialog {
     }
 
     protected String fullServerName(String localization) {
-    	//return "http://" + localization + ":9581";
-    	return localization;
+    	return "http://" + localization + ":9581/services";
     }
 
     /**
