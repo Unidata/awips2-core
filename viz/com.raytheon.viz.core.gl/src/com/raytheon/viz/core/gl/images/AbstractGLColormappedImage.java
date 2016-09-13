@@ -42,6 +42,7 @@ import com.jogamp.opengl.util.texture.TextureCoords;
  * Oct 16, 2013  2333     mschenke  Initial creation
  * Nov  4, 2013  2492     mschenke  Reworked to use GLSL Data mapping
  * May 29, 2015  4507     bsteffen  Implemented setClearColor().
+ * Jun 16, 2016           mjames    Refactor for jogamp 2/GL2
  * 
  * </pre>
  * 
@@ -306,7 +307,7 @@ public abstract class AbstractGLColormappedImage extends AbstractGLImage
     }
 
     @Override
-    protected void setClearColor(GL gl) {
+    protected void setClearColor(GL2 gl) {
         AbstractGLColorMapDataFormat dataFormat = getDataFormat();
         if (dataFormat.isScaled()) {
             /*

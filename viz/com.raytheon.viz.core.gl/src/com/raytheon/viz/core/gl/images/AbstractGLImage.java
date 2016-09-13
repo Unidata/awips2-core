@@ -45,6 +45,7 @@ import com.jogamp.opengl.util.texture.TextureCoords;
  * Aug 02, 2011           bsteffen  Initial creation
  * Oct 16, 2013  2333     mschenke  Cleaned up usaAsFrameBuffer for clearer logic
  * May 29, 2015  4507     bsteffen  Add setClearColor().
+ * Jun 16, 2016           mjames    Refactor for jogamp 2/GL2
  * 
  * </pre>
  * 
@@ -241,7 +242,7 @@ public abstract class AbstractGLImage implements IImage {
      * display. For textures with no alpha(including luminance textures) there
      * may a more appropriate default value so this method should be overridden.
      */
-    protected void setClearColor(GL gl) {
+    protected void setClearColor(GL2 gl) {
         gl.glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
     }
 
