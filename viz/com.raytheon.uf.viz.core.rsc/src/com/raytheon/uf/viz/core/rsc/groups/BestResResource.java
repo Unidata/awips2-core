@@ -20,7 +20,9 @@
 package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
@@ -40,6 +42,9 @@ import com.raytheon.uf.viz.core.rsc.RenderingOrderFactory.ResourceOrder;
 import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogatable;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogateMap;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
 
 /**
  * Resource for rendering the best resource from a list. For each frame time the
@@ -51,19 +56,20 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jan 05, 2010  2496     mnash     Initial creation
  * Mar 12, 2014  2898     bsteffen  Clear times in resource data on dispose.
  * Jun 10, 2014  3263     bsteffen  Null check keys before accessing map.
- * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin, implement
+ *                                  Interrogatable
  * 
  * </pre>
  * 
  * @author mnash
  */
-public class BestResResource extends
-        AbstractVizResource<BestResResourceData, AbstractDescriptor> implements
-        IResourceDataChanged, IRefreshListener {
+public class BestResResource
+        extends AbstractVizResource<BestResResourceData, AbstractDescriptor>
+        implements IResourceDataChanged, IRefreshListener, Interrogatable {
 
     private AbstractVizResource<?, ?> vizResource = null;
 
@@ -150,7 +156,7 @@ public class BestResResource extends
             }
         }
 
-        this.dataTimes = new ArrayList<DataTime>(resourceData.getMap().keySet());
+        this.dataTimes = new ArrayList<>(resourceData.getMap().keySet());
 
     }
 
@@ -210,6 +216,32 @@ public class BestResResource extends
             return vizResource.interrogate(coord);
         } else {
             return null;
+        }
+    }
+
+    @Override
+    public Set<InterrogationKey<?>> getInterrogationKeys() {
+        Set<InterrogationKey<?>> resultSet = new HashSet<>();
+
+        for (ResourcePair pair : getResourceList()) {
+            AbstractVizResource<?, ?> resource = pair.getResource();
+            if (resource instanceof Interrogatable) {
+                resultSet.addAll(
+                        ((Interrogatable) resource).getInterrogationKeys());
+            }
+        }
+        return resultSet;
+    }
+
+    @Override
+    public InterrogateMap interrogate(ReferencedCoordinate coordinate,
+            DataTime time, InterrogationKey<?>... keys) {
+        AbstractVizResource<?, ?> resource = getBestResResource(time);
+        if (resource instanceof Interrogatable) {
+            return ((Interrogatable) resource).interrogate(coordinate, time,
+                    keys);
+        } else {
+            return new InterrogateMap();
         }
     }
 

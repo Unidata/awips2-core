@@ -20,13 +20,17 @@
 package com.raytheon.uf.viz.core.rsc.groups;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
+import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
+import com.raytheon.uf.viz.core.drawables.IDescriptor.FramesInfo;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -41,6 +45,9 @@ import com.raytheon.uf.viz.core.rsc.capabilities.BlendableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.BlendedCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
+import com.raytheon.uf.viz.core.rsc.interrogation.Interrogatable;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogateMap;
+import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
 
 /**
  * A Blended resource is a combination of two resources displayed together with
@@ -50,17 +57,18 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Jul 31, 2014  3461     bsteffen  Recycle properly.
- * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
+ * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin, implement
+ *                                  Interrogatable
  * 
  * </pre>
  * 
  * @author randerso
  */
-public class BlendedResource extends
-        AbstractVizResource<BlendedResourceData, IDescriptor> implements
-        IResourceGroup {
+public class BlendedResource
+        extends AbstractVizResource<BlendedResourceData, IDescriptor>
+        implements IResourceGroup, Interrogatable {
 
     private ResourceOrder highestResourceOrder = null;
 
@@ -76,8 +84,8 @@ public class BlendedResource extends
             ResourceProperties rp = new ResourceProperties();
             rp.setVisible(true);
             pair.setProperties(rp);
-            res.getCapabilities().addCapability(
-                    getCapability(ImagingCapability.class));
+            res.getCapabilities()
+                    .addCapability(getCapability(ImagingCapability.class));
             this.resourceData.getResourceList().add(pair);
         } else {
             throw new UnsupportedOperationException(
@@ -113,16 +121,14 @@ public class BlendedResource extends
         int i = 0;
         for (ResourcePair rp : this.getResourceList()) {
             if (rp.getResource() != null) {
-                BlendedCapability blendCap = rp.getResource().getCapability(
-                        BlendedCapability.class);
+                BlendedCapability blendCap = rp.getResource()
+                        .getCapability(BlendedCapability.class);
                 blendCap.setBlendableResource(me);
                 blendCap.setResourceIndex(i++);
                 rp.getResource().init(target);
             } else {
-                BlendedCapability blendCap = rp
-                        .getLoadProperties()
-                        .getCapabilities()
-                        .getCapability(rp.getResourceData(),
+                BlendedCapability blendCap = rp.getLoadProperties()
+                        .getCapabilities().getCapability(rp.getResourceData(),
                                 BlendedCapability.class);
                 blendCap.setBlendableResource(me);
                 blendCap.setResourceIndex(i++);
@@ -155,7 +161,7 @@ public class BlendedResource extends
 
     private void paintResource(IGraphicsTarget target, int index, float alpha,
             float brightness, float contrast, PaintProperties pProps)
-            throws VizException {
+                    throws VizException {
         if (index < 0 || index >= this.resourceData.getResourceList().size()) {
             return;
         }
@@ -165,8 +171,8 @@ public class BlendedResource extends
             return;
         }
         ImagingCapability rscIcap = rsc.getCapability(ImagingCapability.class);
-        rsc.getCapability(ColorableCapability.class).setColor(
-                getCapability(ColorableCapability.class).getColor());
+        rsc.getCapability(ColorableCapability.class)
+                .setColor(getCapability(ColorableCapability.class).getColor());
         pProps.setAlpha(alpha);
         rscIcap.setAlpha(alpha, false);
         rscIcap.setBrightness(brightness, false);
@@ -207,7 +213,7 @@ public class BlendedResource extends
     public Map<String, Object> interrogate(ReferencedCoordinate coord)
             throws VizException {
         ResourceList rl = this.resourceData.getResourceList();
-        Map<String, Object> resultMap = new HashMap<String, Object>();
+        Map<String, Object> resultMap = new HashMap<>();
 
         for (int i = 0; i < rl.size(); ++i) {
             ResourcePair rp = rl.get(i);
@@ -217,6 +223,49 @@ public class BlendedResource extends
                 if (rscMap != null) {
                     resultMap.putAll(rp.getResource().interrogate(coord));
                 }
+            }
+        }
+        return resultMap;
+    }
+
+    @Override
+    public Set<InterrogationKey<?>> getInterrogationKeys() {
+        Set<InterrogationKey<?>> resultSet = new HashSet<>();
+
+        for (ResourcePair pair : getResourceList()) {
+            AbstractVizResource<?, ?> resource = pair.getResource();
+            if (resource instanceof Interrogatable) {
+                resultSet.addAll(
+                        ((Interrogatable) resource).getInterrogationKeys());
+            }
+        }
+        return resultSet;
+    }
+
+    @Override
+    public InterrogateMap interrogate(ReferencedCoordinate coordinate,
+            DataTime time, InterrogationKey<?>... keys) {
+        FramesInfo framesInfo = descriptor.getFramesInfo();
+        DataTime[] frameTimes = framesInfo.getFrameTimes();
+        int timeIndex = -1;
+        for (int i = 0; i < frameTimes.length; i += 1) {
+            if (time.equals(frameTimes[i])) {
+                timeIndex = i;
+                break;
+            }
+        }
+
+        InterrogateMap resultMap = new InterrogateMap();
+        for (ResourcePair pair : getResourceList()) {
+            AbstractVizResource<?, ?> resource = pair.getResource();
+            if (resource instanceof Interrogatable) {
+                DataTime rscTime = time;
+                if (timeIndex >= 0) {
+                    rscTime = framesInfo.getTimeForResource(resource,
+                            timeIndex);
+                }
+                resultMap.putAll(((Interrogatable) resource)
+                        .interrogate(coordinate, rscTime, keys));
             }
         }
         return resultMap;
