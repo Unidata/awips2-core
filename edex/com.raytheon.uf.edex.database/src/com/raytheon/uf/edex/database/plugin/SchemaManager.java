@@ -29,9 +29,9 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
 import org.hibernate.AnnotationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.util.StringUtil;
@@ -63,8 +63,9 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  *                                      Replaced use of SerializableManager
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * Oct 06, 2014 3702       bsteffen    Create PluginVersion table in each database containing plugins.
- * 10/23/2014   3454       bphillip    Fix table creation error introduced from Hibernate 4 upgrade
+ * Oct 23, 2014 3454       bphillip    Fix table creation error introduced from Hibernate 4 upgrade
  * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author bphillip
@@ -73,7 +74,8 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
 public class SchemaManager implements IDatabasePluginRegistryChanged {
 
     /** The logger */
-    private static final Log logger = LogFactory.getLog(SchemaManager.class);
+    private static final Logger logger = LoggerFactory
+            .getLogger(SchemaManager.class);
 
     private static final String resourceSelect = "select relname from pg_class where relname = '";
 

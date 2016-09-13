@@ -59,23 +59,25 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#   Engineer    Description
- * ------------- --------  ----------- --------------------------
- * Jul 03, 2008            brockwoo    Initial creation
- * Nov 16, 2009  3120      rjpeter     Removed use of LevelNameMappingFile.
- * Nov 20, 2009  3387      jelkins     Use derived script's variableId instead
- *                                     of filename
- * Nov 21, 2009  3576      rjpeter     Refactored DerivParamDesc.
- * Jun 04, 2013  2041      bsteffen    Switch derived parameters to use
- *                                     concurrent python for threading.
- * Nov 19, 2013  2361      njensen     Only shutdown if initialized
- * Jan 14, 2014  2661      bsteffen    Shutdown using uf.viz.core.Activator
- * Jan 30, 2014  #2725     ekladstrup  Refactor to remove dependencies on
- *                                     eclipse runtime and support some configuration
- *                                     through spring
- * Mar 27, 2014  2945     bsteffen     Recursively find definitions in
- *                                     subdirectories.
- * Jul 21, 2014  3373     bclement     JAXB manager API changes
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------
+ * Jul 03, 2008           brockwoo    Initial creation
+ * Nov 16, 2009  3120     rjpeter     Removed use of LevelNameMappingFile.
+ * Nov 20, 2009  3387     jelkins     Use derived script's variableId instead
+ *                                    of filename
+ * Nov 21, 2009  3576     rjpeter     Refactored DerivParamDesc.
+ * Jun 04, 2013  2041     bsteffen    Switch derived parameters to use
+ *                                    concurrent python for threading.
+ * Nov 19, 2013  2361     njensen     Only shutdown if initialized
+ * Jan 14, 2014  2661     bsteffen    Shutdown using uf.viz.core.Activator
+ * Jan 30, 2014  2725     ekladstrup  Refactor to remove dependencies on
+ *                                    eclipse runtime and support some configuration
+ *                                    through spring
+ * Mar 27, 2014  2945    bsteffen     Recursively find definitions in
+ *                                    subdirectories.
+ * Jul 21, 2014  3373    bclement     JAXB manager API changes
+ * Jul 22, 2015  4672    bsteffen     Create notification task to avoid
+ *                                    notifying newly added listeners at startup.
  * 
  * </pre>
  * 
@@ -276,40 +278,18 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
             }
             this.derParLibrary = derParLibrary;
             adapter.init();
-
-            scheduleNotifyJob(listeners, derParLibrary);
+            
+            Runnable notifyTask;
+            synchronized (listeners) {
+                notifyTask = new NotifyTask(new ArrayList<>(listeners),
+                        derParLibrary);
+            }
+            execService.execute(notifyTask);
 
             System.out.println("time to init derived parameters: "
                     + (System.currentTimeMillis() - start) + "ms");
             needsLibInit = false;
         }
-    }
-
-    /**
-     * Run the notification thread in the executor service.
-     * 
-     * @param theListeners
-     * @param theDerParLibrary
-     */
-    protected void scheduleNotifyJob(
-            final Set<DerivParamUpdateListener> theListeners,
-            final Map<String, DerivParamDesc> theDerParLibrary) {
-        Thread notifyJob = new Thread() {
-
-            @Override
-            public void run() {
-                Collection<DerivParamUpdateListener> l = null;
-                synchronized (listeners) {
-                    l = new ArrayList<DerivParamUpdateListener>(listeners);
-                }
-                for (DerivParamUpdateListener listener : l) {
-                    listener.updateDerParLibrary(derParLibrary);
-                }
-            }
-
-        };
-
-        execService.submit(notifyJob);
     }
 
     public Map<String, DerivParamDesc> getLibrary() {
@@ -334,6 +314,30 @@ public class DerivedParameterGenerator implements ILocalizationFileObserver {
         if (instance != null) {
             getInstance().adapter.shutdown();
             instance = null;
+        }
+    }
+
+    private static class NotifyTask implements Runnable {
+
+        final Collection<DerivParamUpdateListener> listeners;
+
+        final Map<String, DerivParamDesc> derParLibrary;
+
+        public NotifyTask(Collection<DerivParamUpdateListener> listeners,
+                Map<String, DerivParamDesc> derParLibrary) {
+            this.listeners = listeners;
+            this.derParLibrary = derParLibrary;
+        }
+
+        @Override
+        public void run() {
+            Collection<DerivParamUpdateListener> l = null;
+            synchronized (listeners) {
+                l = new ArrayList<DerivParamUpdateListener>(listeners);
+            }
+            for (DerivParamUpdateListener listener : l) {
+                listener.updateDerParLibrary(derParLibrary);
+            }
         }
     }
 

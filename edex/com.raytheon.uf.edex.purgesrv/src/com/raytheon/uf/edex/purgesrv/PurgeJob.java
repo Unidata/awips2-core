@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,6 +24,7 @@ import java.sql.SQLException;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.TimeZone;
 
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -36,21 +37,23 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
 import com.raytheon.uf.edex.database.purge.PurgeLogger;
 
 /**
- * 
+ *
  * This class encapsulates the purge activity for a plugin into a cluster task.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 19, 2012   #470      bphillip     Initial creation
- * Jun 20, 2012  NC#606     ghull        send purge-complete messages 
+ * Jun 20, 2012  NC#606     ghull        send purge-complete messages
  * May 08, 2013  1814       rjpeter      Added time to live to topic
  * May 09, 2014  3138       ekladstr     Refactor dao purge calls to a method and notify waiting threads when purge is finished
+ * Oct 15, 2015  4023       nabowle      Move stacktrace string into timeout
+ *                                       error log. Log only once every 5 minutes.
  * </pre>
- * 
+ *
  * @author bphillip
  * @version 1.0
  */
@@ -75,7 +78,7 @@ public class PurgeJob extends Thread {
     private final PURGE_JOB_TYPE purgeType;
 
     /** Last time job has printed a timed out message */
-    private final long lastTimeOutMessage = 0;
+    private long lastTimeOutMessage = 0;
 
     private PurgeManager purgeManager;
 
@@ -83,7 +86,7 @@ public class PurgeJob extends Thread {
 
     /**
      * Creates a new Purge job for the specified plugin.
-     * 
+     *
      * @param pluginName
      *            The plugin to be purged
      * @param purgeType
@@ -250,73 +253,66 @@ public class PurgeJob extends Thread {
                     "Purger running time has exceeded timeout duration of "
                             + deadPurgeJobAge
                             + " minutes.  Current running time: "
-                            + (getAge() / 60000) + " minutes", pluginName);
-            printStackTrace();
+                            + (getAge() / 60000) + " minutes", pluginName,
+                    getTimedOutException());
+            lastTimeOutMessage = System.currentTimeMillis();
         }
     }
 
-    /**
-     * Prints the stack trace for this job thread.
-     */
-    public void printStackTrace() {
-        StringBuffer buffer = new StringBuffer();
-        buffer.append("Stack trace for Purge Job Thread:\n");
-        buffer.append(getStackTrace(this));
-        // If this thread is blocked, output the stack traces for the other
-        // blocked threads to assist in determining the source of the
-        // deadlocked
-        // threads
-        if (this.getState().equals(State.BLOCKED)) {
-            buffer.append("\tDUMPING OTHER BLOCKED THREADS\n");
-            buffer.append(getBlockedStackTraces());
+    private Exception getTimedOutException() {
+        State state = this.getState();
 
+        StringBuilder message = new StringBuilder("Timed out Thread ID: ")
+                .append(this.getId()).append(" Thread State: ")
+                .append(state.name()).append(".");
+
+        StackTraceElement[] stack = this.getStackTrace();
+        if (stack == null) {
+            message.append(" No stack trace is available.");
+            stack = new StackTraceElement[0];
         }
-        PurgeLogger.logError(buffer.toString(), this.pluginName);
 
+        Exception timedOutException = new Exception(message.toString());
+        timedOutException.setStackTrace(stack);
+
+        if (state.equals(State.BLOCKED)) {
+            addBlockedThreads(timedOutException);
+        }
+
+        return timedOutException;
     }
 
     /**
-     * Gets the stack traces for all other threads in the BLOCKED state in the
-     * JVM
-     * 
-     * @return The stack traces for all other threads in the BLOCKED state in
-     *         the JVM
+     * Creates exceptions for each blocked thread (other than this thread) and
+     * chains them as the caused-by exception for the previous exception.
+     *
+     * @param parent The timed out exception.
      */
-    private String getBlockedStackTraces() {
-        StringBuffer buffer = new StringBuffer();
+    private void addBlockedThreads(Exception parent) {
+        StringBuilder causeMessage;
+        StackTraceElement[] stack;
+        Exception otherBlocked;
+        Thread t;
         Map<Thread, StackTraceElement[]> threads = Thread.getAllStackTraces();
-        for (Thread t : threads.keySet()) {
+        for (Entry<Thread, StackTraceElement[]> entry : threads.entrySet()) {
+            t = entry.getKey();
             if (t.getState().equals(State.BLOCKED)) {
                 if (t.getId() != this.getId()) {
-                    buffer.append(getStackTrace(t));
+                    causeMessage = new StringBuilder("Blocked Thread ID: ")
+                            .append(t.getId()).append(".");
+                    stack = entry.getValue();
+                    if (stack == null) {
+                        causeMessage
+                                .append(" No stack trace is available.");
+                        stack = new StackTraceElement[0];
+                    }
+                    otherBlocked = new Exception(causeMessage.toString());
+                    otherBlocked.setStackTrace(stack);
+                    parent.initCause(otherBlocked);
+                    parent = otherBlocked;
                 }
             }
         }
-
-        return buffer.toString();
-    }
-
-    /**
-     * Gets the stack trace for the given thread
-     * 
-     * @param thread
-     *            The thread to get the stack trace for
-     * @return The stack trace as a String
-     */
-    private String getStackTrace(Thread thread) {
-        StringBuffer buffer = new StringBuffer();
-        StackTraceElement[] stack = Thread.getAllStackTraces().get(thread);
-        buffer.append("\tThread ID: ").append(thread.getId())
-                .append("  Thread state: ").append(this.getState())
-                .append("\n");
-        if (stack == null) {
-            buffer.append("No stack trace could be retrieved for this thread");
-        } else {
-            for (StackTraceElement element : stack) {
-                buffer.append("\t\t").append(element).append("\n");
-            }
-        }
-        return buffer.toString();
     }
 
     public long getStartTime() {

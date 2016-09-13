@@ -30,6 +30,8 @@ import org.hibernate.annotations.Type;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
+import com.raytheon.uf.common.dataplugin.annotations.NullFloat;
+import com.raytheon.uf.common.dataplugin.annotations.NullString;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
@@ -56,6 +58,7 @@ import com.vividsolutions.jts.geom.Point;
  *                                     spatial
  * Jul 23, 2014 3410       bclement    changed lat and lon to floats
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Jul 20, 2015 4360       rferrel     Made flightLevel, stationId, latitude and longitude non-nullable.
  * 
  * </pre>
  * 
@@ -70,14 +73,15 @@ public class AircraftObsLocation implements ISpatialObject {
     private static final long serialVersionUID = 1L;
 
     // Elevation of this location in meters.
-    @Column
+    @Column(nullable = false)
     @DataURI(position = 3)
     @DynamicSerializeElement
     private Integer flightLevel = null;
 
     // Id of the station making this observation.
-    @Column(length = 16)
+    @Column(length = 16, nullable = false)
     @DataURI(position = 0)
+    @NullString
     @DynamicSerializeElement
     @Index(name = "%TABLE%_stationIndex")
     private String stationId;
@@ -88,13 +92,15 @@ public class AircraftObsLocation implements ISpatialObject {
     @DynamicSerializeElement
     private Boolean locationDefined = Boolean.FALSE;
 
-    @Column
+    @Column(nullable = false)
     @DataURI(position = 1)
+    @NullFloat
     @DynamicSerializeElement
     private float latitude;
 
-    @Column
+    @Column(nullable = false)
     @DataURI(position = 2)
+    @NullFloat
     @DynamicSerializeElement
     private float longitude;
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -49,8 +49,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 15, 2013            mnash     Initial creation
+ * Jan 15, 2013            mnash       Initial creation
  * Feb 15, 2013 1614       bsteffen    Cache LatLonReprojection results.
+ * Jul 20, 2015 4608       nabowle     Use gridrange's min/max instead of span
  * 
  * </pre>
  * 
@@ -86,7 +87,7 @@ public class LatLonReprojection {
 
     /**
      * Take a {@link GeneralGridGeometry} and reproject it to lat/lon space
-     * 
+     *
      * @param source
      * @return float[] of all lat/lon points
      */
@@ -105,9 +106,11 @@ public class LatLonReprojection {
             finalTransform = mtf.createConcatenatedTransform(gridToCRS,
                     MapUtil.getTransformToLatLon(source
                             .getCoordinateReferenceSystem()));
+            int maxY = source.getGridRange().getHigh(1);
+            int maxX = source.getGridRange().getHigh(0);
             int index = 0;
-            for (int j = 0; j < sourceNy; j++) {
-                for (int i = 0; i < sourceNx; i++) {
+            for (int j = source.getGridRange().getLow(1); j <= maxY; j++) {
+                for (int i = source.getGridRange().getLow(0); i <= maxX; i++) {
                     transformTable[index++] = i;
                     transformTable[index++] = j;
                 }
@@ -130,7 +133,7 @@ public class LatLonReprojection {
 
     /**
      * Get the latitudes as an array after being reprojected
-     * 
+     *
      * @param source
      * @return
      */

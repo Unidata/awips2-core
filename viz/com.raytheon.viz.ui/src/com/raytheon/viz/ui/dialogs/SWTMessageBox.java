@@ -26,9 +26,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 /**
  * This is a message box that will only block the parent shell and not the
@@ -40,24 +42,19 @@ import org.eclipse.swt.widgets.Shell;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 7, 2011            lvenable     Initial creation
+ * Apr 7, 2011             lvenable    Initial creation
  * Oct 18, 2012 1229       rferrel     Made dialog non-blocking.
+ * Nov 13, 2015 4946       mapeters    Use scrollable StyledText for long messages.
+ * Jan 15, 2016 5054       randerso    Change to subclass CaveSWTDialog
+ * Jan 27, 2016 4946       randerso    Make text scrollable for long messages
+ * Mar 28, 2016 5482       randerso    Fix fixed size buttons
  * 
  * </pre>
  * 
  * @author lvenable
  * @version 1.0
  */
-public class SWTMessageBox extends CaveSWTDialogBase {
-    /**
-     * Label displaying the icon.
-     */
-    private Label iconLbl;
-
-    /**
-     * Label displaying the message.
-     */
-    private Label messageLbl;
+public class SWTMessageBox extends CaveSWTDialog {
 
     /**
      * The SWT icon to be displayed.
@@ -70,16 +67,11 @@ public class SWTMessageBox extends CaveSWTDialogBase {
     private int swtMessageBoxStyle = 0;
 
     /**
-     * Number of buttons to be displayed.
-     */
-    private int btnCount = 0;
-
-    /**
      * Message to be displayed.
      */
     private String message = "";
 
-    private boolean centerMessage = false;
+    private Text messageText;
 
     /**
      * Constructor.
@@ -92,19 +84,33 @@ public class SWTMessageBox extends CaveSWTDialogBase {
      *            Message.
      * @param swtMessageBoxStyle
      *            Style for icon and buttons.
+     * 
      */
     public SWTMessageBox(Shell parent, String title, String message,
             int swtMessageBoxStyle) {
-        this(parent, title, message, swtMessageBoxStyle, SWT.PRIMARY_MODAL,
-                false);
-    }
-
-    public SWTMessageBox(Shell parent, String title, String message,
-            int swtMessageBoxStyle, int modalSetting, boolean centerMessage) {
-        super(parent, SWT.DIALOG_TRIM | modalSetting, CAVE.DO_NOT_BLOCK);
+        super(parent, SWT.DIALOG_TRIM | SWT.PRIMARY_MODAL, CAVE.DO_NOT_BLOCK);
         this.swtMessageBoxStyle = swtMessageBoxStyle;
         this.message = message;
-        this.centerMessage = centerMessage;
+        setText(title);
+    }
+
+    /**
+     * Constructor.
+     * 
+     * @param display
+     * 
+     * @param title
+     *            Dialog title.
+     * @param message
+     *            Message.
+     * @param swtMessageBoxStyle
+     *            Style for icon and buttons.
+     */
+    public SWTMessageBox(Display display, String title, String message,
+            int swtMessageBoxStyle) {
+        super(display, SWT.DIALOG_TRIM | SWT.MODELESS, CAVE.DO_NOT_BLOCK);
+        this.swtMessageBoxStyle = swtMessageBoxStyle;
+        this.message = message;
         setText(title);
     }
 
@@ -121,58 +127,69 @@ public class SWTMessageBox extends CaveSWTDialogBase {
         return new GridData(SWT.FILL, SWT.DEFAULT, true, false);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * swtconfirmationdialog.CaveSWTDialogBase#initializeComponents(org.eclipse
-     * .swt.widgets.Shell)
-     */
     @Override
     protected void initializeComponents(Shell shell) {
         determineLabelIcon();
-        createIconAndLabel();
+        createIconAndMessage();
         createBottomButtons();
+
+        shell.layout(true, true);
+        shell.pack(true);
+
+        int desiredHeight = messageText.getLineHeight() * 10;
+        int height = messageText.getClientArea().height;
+        if (height <= desiredHeight) {
+            messageText.getVerticalBar().setVisible(false);
+        } else {
+            GridData gd = (GridData) messageText.getLayoutData();
+            int heightHint = messageText.computeTrim(0, 0, gd.widthHint,
+                    desiredHeight).height;
+            gd.heightHint = heightHint;
+            messageText.setBackground(getDisplay().getSystemColor(
+                    SWT.COLOR_WHITE));
+        }
+
     }
 
     /**
-     * Create the icon label (in needed) and the message label.
+     * Create the icon label (if needed) and the message field.
      */
-    private void createIconAndLabel() {
+    private void createIconAndMessage() {
         int numberOfGridCells = 1;
-        int labelStyle = SWT.NONE;
         if (swtIcon != 0) {
             numberOfGridCells = 2;
         }
-        if (centerMessage) {
-            labelStyle = SWT.CENTER;
-        }
-        Composite iconLabelComp = new Composite(shell, SWT.NONE);
+        Composite iconMessageComp = new Composite(shell, SWT.NONE);
         GridLayout gl = new GridLayout(numberOfGridCells, false);
         gl.horizontalSpacing = 20;
-        iconLabelComp.setLayout(gl);
+        iconMessageComp.setLayout(gl);
         if (swtIcon != 0) {
-            iconLbl = new Label(iconLabelComp, SWT.NONE);
+            Label iconLbl = new Label(iconMessageComp, SWT.NONE);
             iconLbl.setImage(getDisplay().getSystemImage(swtIcon));
         }
         GridData gd = new GridData(SWT.FILL, SWT.CENTER, false, true);
         gd.widthHint = 300;
-        messageLbl = new Label(iconLabelComp, SWT.WRAP | labelStyle);
-        messageLbl.setText(message);
-        messageLbl.setLayoutData(gd);
+
+        messageText = new Text(iconMessageComp, SWT.READ_ONLY | SWT.WRAP
+                | SWT.MULTI | SWT.V_SCROLL);
+        messageText.setText(message);
+        messageText.setLayoutData(gd);
+        messageText.setBackground(shell.getDisplay().getSystemColor(
+                SWT.COLOR_WIDGET_BACKGROUND));
     }
 
     /**
      * Create the bottom buttons.
      */
     private void createBottomButtons() {
-        int buttonWidth = 80;
+        int buttonWidth = shell.getDisplay().getDPI().x;
         GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         Composite mainButtonComp = new Composite(shell, SWT.NONE);
         mainButtonComp.setLayout(new GridLayout(getButtonCount(), false));
         mainButtonComp.setLayoutData(gd);
         if (hasStyleAttributes(SWT.OK)) {
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button okBtn = new Button(mainButtonComp, SWT.PUSH);
             okBtn.setText("OK");
             okBtn.setLayoutData(gd);
@@ -186,7 +203,8 @@ public class SWTMessageBox extends CaveSWTDialogBase {
 
             if (hasStyleAttributes(SWT.CANCEL)) {
                 setReturnValue(new Integer(SWT.CANCEL));
-                gd = new GridData(buttonWidth, SWT.DEFAULT);
+                gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+                gd.minimumWidth = buttonWidth;
                 Button cancelBtn = new Button(mainButtonComp, SWT.PUSH);
                 cancelBtn.setText("Cancel");
                 cancelBtn.setLayoutData(gd);
@@ -200,7 +218,8 @@ public class SWTMessageBox extends CaveSWTDialogBase {
             }
         } else if (hasStyleAttributes(SWT.YES | SWT.NO)) {
             setReturnValue(new Integer(SWT.NO));
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button yesBtn = new Button(mainButtonComp, SWT.PUSH);
             yesBtn.setText("Yes");
             yesBtn.setLayoutData(gd);
@@ -212,7 +231,8 @@ public class SWTMessageBox extends CaveSWTDialogBase {
                 }
             });
 
-            gd = new GridData(buttonWidth, SWT.DEFAULT);
+            gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+            gd.minimumWidth = buttonWidth;
             Button noBtn = new Button(mainButtonComp, SWT.PUSH);
             noBtn.setText("No");
             noBtn.setLayoutData(gd);
@@ -250,7 +270,7 @@ public class SWTMessageBox extends CaveSWTDialogBase {
      * @return
      */
     private int getButtonCount() {
-        btnCount = 2;
+        int btnCount;
         if (hasStyleAttributes(SWT.OK | SWT.CANCEL)) {
             btnCount = 2;
         } else if (hasStyleAttributes(SWT.YES | SWT.NO)) {

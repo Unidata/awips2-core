@@ -24,18 +24,19 @@ import com.raytheon.uf.common.util.SizeUtil;
 /**
  * An exception for when a request would generate a response size that exceeds a
  * set limit.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 28, 2015 2866       nabowle     Initial creation
  * Feb 23, 2015 2866       nabowle     Improve messages.
- * 
+ * Jul 16, 2015 4608       nabowle     Allow custom suggestions.
+ *
  * </pre>
- * 
+ *
  * @author nabowle
  * @version 1.0
  */
@@ -91,7 +92,22 @@ public class ResponseTooLargeException extends DataAccessException {
      *            The maximum size in bytes.
      */
     public ResponseTooLargeException(long estimatedSize, long maxSize) {
-        super(buildSizeMessage(estimatedSize, maxSize));
+        this(estimatedSize, maxSize, SUGGESTION);
+    }
+
+    /**
+     * Uses an exception message with the estimated size and maximum size.
+     *
+     * @param estimatedSize
+     *            The estimated size in bytes.
+     * @param maxSize
+     *            The maximum size in bytes.
+     * @param suggestion
+     *            A suggestion for how to decrease the size of the response.
+     */
+    public ResponseTooLargeException(long estimatedSize, long maxSize,
+            String suggestion) {
+        super(buildSizeMessage(estimatedSize, maxSize, suggestion));
     }
 
     /**
@@ -102,18 +118,22 @@ public class ResponseTooLargeException extends DataAccessException {
      *            The estimated size in bytes.
      * @param maxSize
      *            The maximum size in bytes.
+     * @param suggestion
+     *            A suggestion for how to decrease the size of the response.
      * @return An exception message that includes the estimated size, maximum
      *         size, and suggested fixes.
      */
-    protected static String buildSizeMessage(long estimatedSize,
-            long maxSize) {
+    protected static String buildSizeMessage(long estimatedSize, long maxSize,
+            String suggestion) {
         StringBuilder message = new StringBuilder();
         message.append("The estimated response size of ")
                 .append(SizeUtil.prettyByteSize(estimatedSize))
                 .append(" exceeds the configured limit of ")
                 .append(SizeUtil.prettyByteSize(maxSize))
-                .append(" and cannot be returned. ")
-                .append(SUGGESTION);
+                .append(" and cannot be returned.");
+        if (suggestion != null && !suggestion.trim().isEmpty()) {
+            message.append(" ").append(suggestion);
+        }
         return message.toString();
     }
 

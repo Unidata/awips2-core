@@ -27,10 +27,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * May 12, 2008				randerso	Initial creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * May 12, 2008             randerso    Initial creation
  * Oct 01, 2013  2361       njensen     Removed XML annotations
+ * Nov 12, 2015  4834       njensen     Added checksum
  * 
  * </pre>
  * 
@@ -42,7 +43,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 public class FileUpdatedMessage {
     public static enum FileChangeType {
         ADDED, UPDATED, DELETED
-    };
+    }
 
     @DynamicSerializeElement
     private LocalizationContext context;
@@ -56,15 +57,20 @@ public class FileUpdatedMessage {
     @DynamicSerializeElement
     private long timeStamp;
 
+    @DynamicSerializeElement
+    private String checkSum;
+
     public FileUpdatedMessage() {
+
     }
 
     public FileUpdatedMessage(LocalizationContext context, String fileName,
-            FileChangeType changeType, long timeStamp) {
+            FileChangeType changeType, long timeStamp, String checkSum) {
         this.context = context;
         this.fileName = fileName;
         this.changeType = changeType;
         this.timeStamp = timeStamp;
+        this.checkSum = checkSum;
     }
 
     public LocalizationContext getContext() {
@@ -104,6 +110,14 @@ public class FileUpdatedMessage {
      */
     public void setTimeStamp(long timeStamp) {
         this.timeStamp = timeStamp;
+    }
+
+    public String getCheckSum() {
+        return checkSum;
+    }
+
+    public void setCheckSum(String checkSum) {
+        this.checkSum = checkSum;
     }
 
 }

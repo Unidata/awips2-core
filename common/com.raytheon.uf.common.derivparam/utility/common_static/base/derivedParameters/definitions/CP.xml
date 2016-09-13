@@ -28,6 +28,10 @@
     <Method name="Alias">
         <Field abbreviation="CP2hr"/>
     </Method>
+    <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
+        <Field abbreviation="CP3hr"/>
+        <Field abbreviation="CP6hr"/>
+    </Method>
     <Method name="Alias">
         <Field abbreviation="CP3hr"/>
     </Method>

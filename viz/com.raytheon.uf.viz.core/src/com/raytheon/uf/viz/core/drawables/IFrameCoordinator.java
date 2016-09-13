@@ -37,6 +37,7 @@ import com.raytheon.uf.viz.core.datastructure.LoopProperties;
  * ------------ ---------- ----------- --------------------------
  * Oct 18, 2011            mschenke     Initial creation
  * May 13, 2015  4461      bsteffen     Add determineFrameIndex
+ * Aug 07, 2015  4700      bsteffen     Add SPACE_AND_TIME
  * 
  * </pre>
  * 
@@ -57,14 +58,59 @@ public interface IFrameCoordinator {
     }
 
     /**
-     * Possible modes for changing frames
+     * Possible modes for changing frames.
      * 
-     * TIME_ONLY - Advance only using time (ignore/stationary space) SPACE_ONLY
-     * - Advance only in space (ignore/stationary time) TIME_AND_SPACE - Advance
-     * in time and space (the highest spatial level
+     * <pre>
+     * TIME_ONLY - Advance only using time (ignore/stationary space)
+     * SPACE_ONLY - Advance only in space (ignore/stationary time)
+     * TIME_AND_SPACE - Advance in time and space (the highest spatial level for the latest time)
+     * SPACE_AND_TIME - Advance in space and time (the latest time for the highest spatial elevation)
+     * </pre>
+     * 
+     * To clarify the difference between the modes below is some sample code of
+     * how a loop in each mode might work. This example assumes a simplified set
+     * of frames where all levels are available for all times, a real frame
+     * coordinator will have significantly more complexity while trying to
+     * maintain a similar ordering.
+     * 
+     * <strong>TIME_ONLY</strong>
+     * 
+     * <pre>
+     * for(Date time : allTheTimes){
+     *     paint(time, currentLevelValue)
+     * }
+     * </pre>
+     * 
+     * <strong>SPACE_ONLY</strong>
+     * 
+     * <pre>
+     * for(Double levelValue : allTheLevels){
+     *     paint(currentTime, levelValue)
+     * }
+     * </pre>
+     * 
+     * <strong>TIME_AND_SPACE</strong>
+     * 
+     * <pre>
+     * for(Date time : allTheTimes){
+     *     for(Double levelValue : allTheLevels){
+     *         paint(time, levelValue)
+     *     }
+     * }
+     * </pre>
+     * 
+     * <strong>SPACE_AND_TIME</strong>
+     * 
+     * <pre>
+     * for(Double levelValue : allTheLevels){
+     *     for(Date time : allTheTimes){
+     *         paint(time, levelValue)
+     *     }
+     * }
+     * </pre>
      */
     public static enum FrameChangeMode {
-        TIME_ONLY, SPACE_ONLY, TIME_AND_SPACE
+        TIME_ONLY, SPACE_ONLY, TIME_AND_SPACE, SPACE_AND_TIME
     }
 
     /**

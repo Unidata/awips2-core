@@ -23,8 +23,10 @@ import java.util.Map;
 
 import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.impl.AbstractGeometryTimeAgnosticDatabaseFactory;
+import com.raytheon.uf.common.dataplugin.maps.dataaccess.MapsQueryAssembler.IDENTIFIERS;
 import com.vividsolutions.jts.geom.Geometry;
 import com.vividsolutions.jts.io.ParseException;
 import com.vividsolutions.jts.io.WKBReader;
@@ -46,6 +48,8 @@ import com.vividsolutions.jts.io.WKBReader;
  * Jul 14, 2014 3184       njensen     Overrode getAvailableLevels()
  * Jul 30, 2014 3184       njensen     Added optional identifiers
  * Feb 03, 2015 4009       mapeters    Moved getAvailableLevels() override to super
+ * Aug 13, 2015 4705       bkowal      Make parameters optional. Fixed implementation of optional
+ *                                     location field.
  * 
  * </pre>
  * 
@@ -75,6 +79,16 @@ public class MapsGeometryFactory extends
                 new String[] { COL_NAME_OPTION });
     }
 
+    @Override
+    protected void validateParameters(IDataRequest request)
+            throws IncompatibleRequestException {
+        /*
+         * The {@link MapsGeometryFactory} will allow {@link IDataRequest}s
+         * without parameters.
+         */
+        // Do Nothing.
+    }
+
     /*
      * (non-Javadoc)
      * 
@@ -90,6 +104,7 @@ public class MapsGeometryFactory extends
         // build the geometry
         Geometry geometry = null;
         Object object = data[0];
+        int dataIndex = 1;
         if ((object instanceof byte[]) == false) {
             throw new DataRetrievalException(
                     "Retrieved Geometry was not the expected type; was expecting byte[], received: "
@@ -100,10 +115,17 @@ public class MapsGeometryFactory extends
         } catch (ParseException e) {
             throw new DataRetrievalException("Failed to parse the geometry.", e);
         }
-        String location = (String) data[1];
+        String location = null;
+        /*
+         * Determine if location information should be present.
+         */
+        if (attrs.containsKey(IDENTIFIERS.IDENTIFIER_LOCATION_FIELD)) {
+            location = (String) data[1];
+            ++dataIndex;
+        }
 
         return super.buildGeometryData(null, null, geometry, location, attrs,
-                2, data, paramNames);
+                dataIndex, data, paramNames);
     }
 
     /*

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,6 +21,7 @@
 package com.raytheon.uf.edex.database.plugin;
 
 import java.io.File;
+import java.io.InputStream;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -63,10 +64,9 @@ import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EdexException;
@@ -74,6 +74,7 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 import com.raytheon.uf.edex.database.processor.IDatabaseProcessor;
+import com.raytheon.uf.edex.database.purge.PurgeKeyValue;
 import com.raytheon.uf.edex.database.purge.PurgeLogger;
 import com.raytheon.uf.edex.database.purge.PurgeRule;
 import com.raytheon.uf.edex.database.purge.PurgeRuleSet;
@@ -119,6 +120,10 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Oct 16, 2014  3454     bphillip    Upgrading to Hibernate 4
  * Feb 19, 2015  4123     bsteffen    Log foreign key constraint violations.
  * Jul 27, 2015 17011     kshrestha   Changed to call deleteGroups
+ * Aug 06, 2015  1574     nabowle     Add purgeOrphanedData
+ * Jan 20, 2016  5262     bkowal      Updated to retrieve and validate {@link PurgeKeyValue}.
+ *                                    Replaced deprecated method usage.
+ * Feb 11, 2016  4630     rjpeter     Fix Archiver NPE.
  * </pre>
  * 
  * @author bphillip
@@ -134,6 +139,10 @@ public abstract class PluginDao extends CoreDao {
 
     /** The hdf5 file system suffix */
     public static final String HDF5_SUFFIX = ".h5";
+
+    /** The number of days to allow a buffer for orphan data. */
+    public static final int PURGE_ORPHAN_BUFFER_DAYS = Integer.getInteger(
+            "purge.orphan.buffer", 7);
 
     // should match batch size in hibernate config
     protected static final int COMMIT_INTERVAL = 100;
@@ -1146,8 +1155,7 @@ public abstract class PluginDao extends CoreDao {
                         if (uris == null) {
                             ds.deleteFiles(null);
                         } else {
-                            ds.deleteGroups(uris.toArray(new String[uris
-                                    .size()]));
+                            ds.deleteGroups(uris.toArray(new String[uris.size()]));
                         }
                     } catch (Exception e) {
                         PurgeLogger.logError("Error occurred purging file: "
@@ -1210,6 +1218,40 @@ public abstract class PluginDao extends CoreDao {
         }
 
         return new RuleResult(timesKept, timesPurged, itemsDeletedForKey);
+    }
+
+    /**
+     * Purges orphaned datastore data that does not have associated database
+     * records.
+     * 
+     * @throws PluginException
+     *             if purging fails
+     */
+    public void purgeOrphanedData() throws PluginException {
+        if (this.daoClass == null) {
+            return;
+        }
+        IDataStore ds = DataStoreFactory
+                .getDataStore(new File(this.pluginName));
+
+        Date oldestDate;
+        try {
+            oldestDate = this.getMinRefTime(null);
+        } catch (DataAccessLayerException e) {
+            throw new PluginException("Error retrieving known dates.", e);
+        }
+        Calendar cal = Calendar.getInstance(TimeUtil.GMT_TIME_ZONE);
+        if (oldestDate != null) {
+            cal.setTime(oldestDate);
+        }
+        cal.add(Calendar.DAY_OF_YEAR, -PURGE_ORPHAN_BUFFER_DAYS);
+        Date bufferDate = cal.getTime();
+
+        try {
+            ds.deleteOrphanData(bufferDate);
+        } catch (StorageException e) {
+            throw new PluginException("Error occurred purging orphans. ", e);
+        }
     }
 
     /**
@@ -1617,7 +1659,13 @@ public abstract class PluginDao extends CoreDao {
         if ((result == null) || result.isEmpty()) {
             return null;
         } else {
-            return result.get(0).getTime();
+            Calendar row = result.get(0);
+            if (row != null) {
+                return row.getTime();
+            } else {
+                throw new DataAccessLayerException(
+                        "Unable to determine minInsertTime.  Null insertTime records found.");
+            }
         }
     }
 
@@ -1715,30 +1763,30 @@ public abstract class PluginDao extends CoreDao {
         Pattern auxFileNameMatcher = Pattern.compile(IPathManager.SEPARATOR
                 + pluginName + "PurgeRules\\w+\\.xml$");
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/",
+        ILocalizationFile[] allFiles = pathMgr.listStaticFiles("purge/",
                 new String[] { ".xml" }, true, true);
-        LocalizationFile purgeRulesFile = null;
-        List<LocalizationFile> auxRuleFiles = new ArrayList<LocalizationFile>();
+        ILocalizationFile purgeRulesFile = null;
+        List<ILocalizationFile> auxRuleFiles = new ArrayList<>();
         /*
          * Find master purge rules and any auxillary purge rules. Since the
          * auxillary rules can have an arbitrary suffix before the extension we
          * have to check all the files.
          */
-        for (LocalizationFile file : allFiles) {
+        for (ILocalizationFile file : allFiles) {
             if (file.exists()) {
-                if (auxFileNameMatcher.matcher(file.getName()).find()) {
+                if (auxFileNameMatcher.matcher(file.getPath()).find()) {
                     auxRuleFiles.add(file);
-                } else if (file.getName().equals(masterFileName)) {
+                } else if (file.getPath().equals(masterFileName)) {
                     purgeRulesFile = file;
                 }
             }
         }
         PurgeRuleSet purgeRules = null;
         if (purgeRulesFile != null) {
-            try {
-                purgeRules = purgeRulesFile.jaxbUnmarshal(PurgeRuleSet.class,
-                        PurgeRuleSet.jaxbManager);
-            } catch (LocalizationException e) {
+            try (InputStream is = purgeRulesFile.openInputStream()) {
+                purgeRules = PurgeRuleSet.jaxbManager
+                        .unmarshalFromInputStream(is);
+            } catch (Exception e) {
                 PurgeLogger
                         .logError(
                                 "Error deserializing purge rules! Data will not be purged. Please define rules.",
@@ -1757,20 +1805,20 @@ public abstract class PluginDao extends CoreDao {
         } else {
             return null;
         }
-        /* Sorting guarantees multiple auxiliary files behave deterministicly. */
-        Collections.sort(auxRuleFiles, new Comparator<LocalizationFile>() {
+        /* Sorting guarantees multiple auxiliary files behave deterministically. */
+        Collections.sort(auxRuleFiles, new Comparator<ILocalizationFile>() {
             @Override
-            public int compare(LocalizationFile o1, LocalizationFile o2) {
-                return o1.getName().compareTo(o2.getName());
+            public int compare(ILocalizationFile o1, ILocalizationFile o2) {
+                return o1.getPath().compareTo(o2.getPath());
             }
         });
 
-        for (LocalizationFile file : auxRuleFiles) {
+        for (ILocalizationFile file : auxRuleFiles) {
             PurgeRuleSet auxRules = null;
-            try {
-                auxRules = file.jaxbUnmarshal(PurgeRuleSet.class,
-                        PurgeRuleSet.jaxbManager);
-            } catch (LocalizationException e) {
+            try (InputStream is = file.openInputStream()) {
+                auxRules = PurgeRuleSet.jaxbManager
+                        .unmarshalFromInputStream(is);
+            } catch (Exception e) {
                 PurgeLogger.logError(
                         "Error deserializing auxiliary purge rules! Rules from "
                                 + file.toString() + " will be ignored",
@@ -1802,12 +1850,37 @@ public abstract class PluginDao extends CoreDao {
                                         + masterFileName, pluginName);
             }
         }
+
+        /*
+         * Immediately discard and log an error for rules that were setup as
+         * regex rules that cannot be compiled into a valid {@link Pattern}.
+         */
+        Iterator<PurgeRule> rulesIterator = purgeRules.getRules().iterator();
+        while (rulesIterator.hasNext()) {
+            PurgeRule validateRule = rulesIterator.next();
+            if (validateRule.declaredRegexRule()) {
+                try {
+                    validateRule.initRegex();
+                    PurgeLogger
+                            .logInfo(
+                                    "Successfully initialized regex-based purge rule: "
+                                            + validateRule.toString() + ".",
+                                    pluginName);
+                } catch (Exception e) {
+                    PurgeLogger.logError(
+                            "Ignoring purge rule: " + validateRule.toString()
+                                    + " due to invalid regex.", pluginName, e);
+                    rulesIterator.remove();
+                }
+            }
+        }
+
         return purgeRules;
 
     }
 
     public static List<PurgeRule> loadDefaultPurgeRules() {
-        LocalizationFile defaultRule = PathManagerFactory.getPathManager()
+        ILocalizationFile defaultRule = PathManagerFactory.getPathManager()
                 .getStaticLocalizationFile("purge/defaultPurgeRules.xml");
         if ((defaultRule == null) || (defaultRule.exists() == false)) {
             PurgeLogger
@@ -1817,11 +1890,11 @@ public abstract class PluginDao extends CoreDao {
             return null;
         }
 
-        try {
-            PurgeRuleSet purgeRules = defaultRule.jaxbUnmarshal(
-                    PurgeRuleSet.class, PurgeRuleSet.jaxbManager);
+        try (InputStream is = defaultRule.openInputStream()) {
+            PurgeRuleSet purgeRules = PurgeRuleSet.jaxbManager
+                    .unmarshalFromInputStream(is);
             return purgeRules.getDefaultRules();
-        } catch (LocalizationException e) {
+        } catch (Exception e) {
             PurgeLogger.logError("Error deserializing default purge rule!",
                     "DEFAULT", e);
         }
@@ -1840,6 +1913,10 @@ public abstract class PluginDao extends CoreDao {
         dbQuery.addOrder("insertTime", true);
         dbQuery.addOrder("dataTime.refTime", true);
 
+        /*
+         * TODO: the next person to work on archiving. Fix the two warnings
+         * remaining in this method. The only two warnings left in this file.
+         */
         return this.processByCriteria(dbQuery, processor);
     }
 

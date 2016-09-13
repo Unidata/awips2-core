@@ -25,6 +25,7 @@ import org.opengis.geometry.BoundingBox;
  * ------------ ---------- ----------- --------------------------
  * Aug  9, 2011            bclement    Initial creation
  * Mar 11, 2014      #2718 randerso    Changes for GeoTools 10.5
+ * Oct 27, 2015  4767      bclement    removed warning
  * 
  * </pre>
  * 
@@ -67,7 +68,7 @@ public class MixedFeatureCollection extends DataFeatureCollection {
     }
 
     @Override
-    public Object[] toArray(Object[] array) {
+    public <T> T[] toArray(T[] array) {
         List<Object> rval = new ArrayList<Object>();
         Iterator<SimpleFeature> i = this.iterator();
         while (i.hasNext()) {

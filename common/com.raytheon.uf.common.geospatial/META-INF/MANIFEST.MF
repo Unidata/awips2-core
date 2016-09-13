@@ -2,13 +2,13 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Geospatial Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.geospatial
-Bundle-Version: 1.14.2.qualifier
+Bundle-Version: 1.15.1.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Eclipse-RegisterBuddy: org.geotools
 Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
  org.apache.commons.collections;bundle-version="3.2.0",
- org.apache.commons.lang;bundle-version="2.3.0",
+ org.apache.commons.lang3;bundle-version="3.4.0",
  javax.measure,
  org.apache.commons.beanutils;bundle-version="1.8.3",
  com.raytheon.uf.common.serialization,

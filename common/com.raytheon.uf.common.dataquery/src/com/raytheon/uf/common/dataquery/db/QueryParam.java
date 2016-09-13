@@ -20,8 +20,12 @@
 
 package com.raytheon.uf.common.dataquery.db;
 
+import java.lang.reflect.Field;
 import java.util.HashMap;
 import java.util.Iterator;
+
+import com.raytheon.uf.common.dataplugin.annotations.NullFloat;
+import com.raytheon.uf.common.dataplugin.annotations.NullString;
 
 /**
  * Encapsulates the query parameters for a database query.
@@ -32,6 +36,8 @@ import java.util.Iterator;
  * ------------ ---------- ----------- --------------------------
  * May 29, 2008 875        bphillip    Initial Creation
  * Oct 07, 2013 2392       rjpeter     Updated to auto handle passing a null value to an equal operand.
+ * Aug 20, 2015 4360       rferrel     Created {@link #checkForNullValueReplacement(String, String)} to determine value to use in place of null.
+ * Sep 21, 2015 4486       rjpeter     Update checkForNullValueReplacement to handle null classname.
  * </pre>
  * 
  * @author bphillip
@@ -117,8 +123,8 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && "=".equals(operand)) {
-            this.operand = "isNull";
+        if ((value == null) && "=".equals(operand)) {
+            checkForNullValueReplacement(field, className);
         } else {
             this.operand = operand;
         }
@@ -152,8 +158,8 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && QueryOperand.EQUALS.equals(operand)) {
-            this.operand = "isNull";
+        if ((value == null) && QueryOperand.EQUALS.equals(operand)) {
+            checkForNullValueReplacement(field, className);
         } else {
             this.operand = QueryParam.reverseTranslateOperand(operand);
         }
@@ -220,5 +226,49 @@ public class QueryParam {
 
     public void setClassName(String className) {
         this.className = className;
+    }
+
+    /**
+     * Determine for the field if there is an annotation to override the null
+     * value.
+     * 
+     * @param fieldStr
+     * @param className
+     */
+    private void checkForNullValueReplacement(String fieldStr, String className) {
+        if (className == null) {
+            this.operand = "isNull";
+            return;
+        }
+
+        Class<?> clazz = null;
+        this.operand = "=";
+        try {
+            clazz = Class.forName(className);
+            String fieldName = null;
+
+            // Drill down to the class that contains the field.
+            while (fieldStr.contains(".")) {
+                String[] tmp = fieldStr.split("\\.", 2);
+                fieldName = tmp[0];
+                fieldStr = tmp[1];
+                clazz = clazz.getDeclaredField(fieldName).getType();
+            }
+
+            Field field = clazz.getDeclaredField(fieldStr);
+            if (field.isAnnotationPresent(NullString.class)) {
+                this.value = field.getAnnotation(NullString.class).value();
+            } else if (field.isAnnotationPresent(NullFloat.class)) {
+                this.value = field.getAnnotation(NullFloat.class).value();
+            } else if (clazz.getDeclaredField(fieldStr).getType()
+                    .equals(String.class)) {
+                this.operand = "isNull";
+            }
+        } catch (ClassNotFoundException | SecurityException
+                | IllegalArgumentException | NoSuchFieldException e) {
+            if ((clazz != null) && clazz.equals(String.class)) {
+                this.operand = "isNull";
+            }
+        }
     }
 }

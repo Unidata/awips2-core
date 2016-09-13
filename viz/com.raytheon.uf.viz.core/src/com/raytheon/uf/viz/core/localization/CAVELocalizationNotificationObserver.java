@@ -23,8 +23,8 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import org.eclipse.core.runtime.Status;
-import org.eclipse.ui.statushandlers.StatusManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.jms.notification.INotificationObserver;
 import com.raytheon.uf.common.jms.notification.NotificationException;
@@ -32,8 +32,8 @@ import com.raytheon.uf.common.jms.notification.NotificationMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationNotificationObserver;
-import com.raytheon.uf.viz.core.Activator;
+import com.raytheon.uf.common.localization.PathManager;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 
 /**
@@ -41,11 +41,13 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * May 20, 2008				randerso	Initial creation
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * May 20, 2008             randerso    Initial creation
  * Sep 3, 2008  1448        chammack    Support refactored interface
  * Oct 07, 2014 2768        bclement    Added white list to filter unwanted localization types
+ * Aug 24, 2015 4393        njensen     Updates for observer changes
+ * Nov 16, 2015 4834        njensen     Fire listeners on PathManagers
  * 
  * </pre>
  * 
@@ -56,42 +58,34 @@ import com.raytheon.uf.viz.core.notification.jobs.NotificationManagerJob;
 public class CAVELocalizationNotificationObserver implements
         INotificationObserver {
 
+    private static final String LOCALIZATION_TOPIC = "edex.alerts.utility";
+
+    private static final Logger logger = LoggerFactory
+            .getLogger(CAVELocalizationNotificationObserver.class);
+
     private static final Set<LocalizationType> TYPE_WHITELIST = new HashSet<>(
             Arrays.asList(LocalizationType.COMMON_STATIC,
                     LocalizationType.CAVE_CONFIG, LocalizationType.CAVE_STATIC));
 
     private static CAVELocalizationNotificationObserver instance = null;
 
-    private LocalizationNotificationObserver observer;
-
     public static synchronized void register() {
         if (instance == null) {
             instance = new CAVELocalizationNotificationObserver();
-            NotificationManagerJob.addObserver(
-                    LocalizationNotificationObserver.LOCALIZATION_TOPIC,
-                    instance);
         }
+        NotificationManagerJob.addObserver(LOCALIZATION_TOPIC, instance);
     }
 
     public static synchronized void unregister() {
         if (instance != null) {
-            NotificationManagerJob.removeObserver(
-                    LocalizationNotificationObserver.LOCALIZATION_TOPIC,
-                    instance);
+            NotificationManagerJob.removeObserver(LOCALIZATION_TOPIC, instance);
         }
     }
 
     private CAVELocalizationNotificationObserver() {
-        observer = LocalizationNotificationObserver.getInstance();
+
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.alerts.INotificationObserver#notificationArrived(javax
-     * .jms.Message[])
-     */
     @Override
     public void notificationArrived(NotificationMessage[] messages) {
         for (NotificationMessage message : messages) {
@@ -101,12 +95,13 @@ public class CAVELocalizationNotificationObserver implements
                 LocalizationContext context = fum.getContext();
                 LocalizationType type = context.getLocalizationType();
                 if (TYPE_WHITELIST.contains(type)) {
-                    observer.fileUpdateMessageRecieved(fum);
+                    for (PathManager pm : PathManagerFactory
+                            .getActivePathManagers()) {
+                        pm.fireListeners(fum);
+                    }
                 }
             } catch (NotificationException e) {
-                StatusManager.getManager().handle(
-                        new Status(Status.ERROR, Activator.PLUGIN_ID,
-                                "Error reading incoming notification", e));
+                logger.error("Error reading incoming notification", e);
             }
         }
 

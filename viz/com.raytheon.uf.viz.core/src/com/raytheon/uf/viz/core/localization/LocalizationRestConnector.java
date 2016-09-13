@@ -22,15 +22,28 @@ package com.raytheon.uf.viz.core.localization;
 import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.FileEntity;
 
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
+import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.checksum.ChecksumIO;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.localization.exception.LocalizationFileVersionConflictException;
+import com.raytheon.uf.common.localization.exception.LocalizationPermissionDeniedException;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
@@ -45,6 +58,8 @@ import com.raytheon.uf.viz.core.VizApp;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 16, 2015  3978      njensen     Initial creation
+ * Dec 03, 2015  4834      njensen     Added PUT support
+ * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -58,9 +73,19 @@ public class LocalizationRestConnector {
 
     private static final String SERVICE = "localization";
 
-    private static final String ACCEPT = "accept";
+    private static final String ACCEPT = "Accept";
 
     private static final String DIR_FORMAT = "application/zip";
+
+    private static final String IF_MATCH = "If-Match";
+
+    private static final String CONTENT_MD5 = "Content-MD5";
+
+    private static final String LAST_MODIFIED = "Last-Modified";
+
+    private static final ThreadLocal<SimpleDateFormat> TIME_HEADER_FORMAT = TimeUtil
+            .buildThreadLocalSimpleDateFormat("EEE, dd MMM yyyy HH:mm:ss z",
+                    TimeUtil.GMT_TIME_ZONE);
 
     private final ILocalizationAdapter adapter;
 
@@ -195,4 +220,67 @@ public class LocalizationRestConnector {
         return resp;
     }
 
+    /**
+     * Sends a PUT request to the localization REST service to upload a file.
+     * 
+     * @param lfile
+     * @param fileToUpload
+     * @return
+     * @throws CommunicationException
+     */
+    public FileUpdatedMessage restPutFile(ILocalizationFile lfile,
+            File fileToUpload) throws LocalizationException,
+            CommunicationException {
+        String url = buildRestAddress(lfile.getContext(), lfile.getPath(),
+                false);
+        HttpPut request = new HttpPut(url);
+        request.setEntity(new FileEntity(fileToUpload));
+
+        // add the checksum of the version we modified
+        request.addHeader(IF_MATCH, lfile.getCheckSum());
+
+        // add the checksum of the new contents
+        request.addHeader(CONTENT_MD5,
+                ChecksumIO.getFileChecksum(fileToUpload, false));
+
+        // send the put request
+        HttpClientResponse resp = HttpClient.getInstance().executeRequest(
+                request);
+
+        if (resp.code != 200) {
+            String msg = new String(resp.data);
+            switch (resp.code) {
+            case 403:
+                throw new LocalizationPermissionDeniedException(msg);
+            case 409:
+                throw new LocalizationFileVersionConflictException(msg);
+            default:
+                throw new LocalizationException("Error code " + resp.code
+                        + ": " + msg);
+            }
+        }
+
+        // build a FileUpdatedMessage
+        FileUpdatedMessage fum = new FileUpdatedMessage();
+        fum.setContext(lfile.getContext());
+        fum.setFileName(lfile.getPath());
+        if (ILocalizationFile.NON_EXISTENT_CHECKSUM.equals(lfile.getCheckSum())) {
+            fum.setChangeType(FileChangeType.ADDED);
+        } else {
+            fum.setChangeType(FileChangeType.UPDATED);
+        }
+        Date time;
+        try {
+            time = TIME_HEADER_FORMAT.get().parse(
+                    resp.headers.get(LAST_MODIFIED));
+        } catch (ParseException e) {
+            throw new LocalizationException(
+                    "Error parsing last modified header from response: "
+                            + resp.headers.get(LAST_MODIFIED), e);
+        }
+        fum.setTimeStamp(time.getTime());
+        fum.setCheckSum(resp.headers.get(CONTENT_MD5));
+
+        return fum;
+    }
 }

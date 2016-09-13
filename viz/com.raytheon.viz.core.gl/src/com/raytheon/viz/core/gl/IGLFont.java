@@ -19,6 +19,8 @@
  **/
 package com.raytheon.viz.core.gl;
 
+import org.eclipse.swt.graphics.Point;
+
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
@@ -31,7 +33,8 @@ import com.jogamp.opengl.util.awt.TextRenderer;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 19, 2010            mschenke     Initial creation
+ * Oct 19, 2010            mschenke    Initial creation
+ * Nov 04, 2015   5070     randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -52,4 +55,9 @@ public interface IGLFont extends IFont {
      * Force a dispose
      */
     public void disposeInternal();
+
+    /**
+     * @return the device dpi for this font
+     */
+    public Point getDPI();
 }

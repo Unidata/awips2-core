@@ -49,6 +49,7 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  * Aug 21, 2014 3541       mschenke    Initial creation
  * Feb 27, 2015 4196       njensen     Null authentication data on responses
  *                                      for backwards compatibility
+ * Dec 02, 2015 4834       njensen     Stop triple-wrapping AuthExceptions                                     
  * 
  * </pre>
  * 
@@ -140,16 +141,12 @@ public class RequestServiceExecutor {
                  * they've passed authentication and authorization, let the
                  * handler execute the request
                  */
-                try {
-                    /*
-                     * TODO someday pass in updated IAuthenticationData if we
-                     * have an actual implementation that uses it for security
-                     */
-                    return ResponseFactory.constructSuccessfulExecution(
-                            privHandler.handleRequest(privReq), null);
-                } catch (Throwable t) {
-                    throw new AuthException(resp.getUpdatedData(), t);
-                }
+                /*
+                 * TODO someday pass in updated IAuthenticationData if we have
+                 * an actual implementation that uses it for security
+                 */
+                return ResponseFactory.constructSuccessfulExecution(
+                        privHandler.handleRequest(privReq), null);
             } catch (ClassCastException e) {
                 throw new AuthException(
                         "Roles can only be defined for requests/handlers of AbstractPrivilegedRequest/Handler, request was "
@@ -159,9 +156,7 @@ public class RequestServiceExecutor {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error occured while performing privileged request "
                                 + request, t);
-                throw new AuthException(
-                        "Error occured while performing privileged request "
-                                + request, t);
+                throw t;
             }
         }
 

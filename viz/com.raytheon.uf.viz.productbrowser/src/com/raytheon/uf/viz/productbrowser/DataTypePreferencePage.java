@@ -43,6 +43,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference.PreferenceType;
 import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
+import com.raytheon.uf.viz.productbrowser.pref.ProductBrowserPreferenceConstants;
 
 /**
  * Builds each data type's preference specifically for product browser
@@ -56,6 +57,10 @@ import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
  * May 16, 2011           mnash     Initial creation
  * Jun 02, 2015  4153     bsteffen  Use an interface to get preferences from
  *                                  data definition.
+ * Aug 11, 2015  4717     mapeters  Remove performApply override, performOk only refreshes 
+ *                                  this page's corresponding data type (not all data types).
+ * Sep 03, 2015  4717     mapeters  Add tool tip texts, pass old tree item order to 
+ *                                  {@link ProductBrowserView#refresh(String, String[])}
  * 
  * </pre>
  * 
@@ -63,17 +68,17 @@ import com.raytheon.uf.viz.productbrowser.pref.PreferenceBasedDataDefinition;
  * @version 1.0
  */
 
-public class DataTypePreferencePage extends FieldEditorPreferencePage implements IWorkbenchPreferencePage {
+public class DataTypePreferencePage extends FieldEditorPreferencePage implements
+        IWorkbenchPreferencePage {
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus.getHandler(DataTypePreferencePage.class);
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(DataTypePreferencePage.class);
 
     private static IExtension[] extensions;
 
     private List<PreferenceBasedDataDefinition> prods = null;
 
     private List<FieldEditor> editors = null;
-
-    private static boolean saved = false;
 
     public DataTypePreferencePage() {
         super(GRID);
@@ -90,11 +95,11 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
      */
     @Override
     public void init(IWorkbench workbench) {
-        saved = false;
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
         setDescription("Data Type Preferences");
         IExtensionRegistry registry = Platform.getExtensionRegistry();
-        IExtensionPoint point = registry.getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
+        IExtensionPoint point = registry
+                .getExtensionPoint(ProductBrowserUtils.DATA_DEFINITION_ID);
         if (point != null) {
             extensions = point.getExtensions();
         } else {
@@ -111,7 +116,9 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
                         prods.add((PreferenceBasedDataDefinition) prod);
                     }
                 } catch (CoreException e) {
-                    statusHandler.error("Unable to create a data definition for the product browser.", e);
+                    statusHandler
+                            .error("Unable to create a data definition for the product browser.",
+                                    e);
                 }
             }
         }
@@ -124,29 +131,19 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
      */
     @Override
     public boolean performOk() {
-        boolean tf = super.performOk();
-        for (IViewReference reference : PlatformUI.getWorkbench().getActiveWorkbenchWindow().getActivePage()
-                .getViewReferences()) {
-            if (!saved) {
-                if (ProductBrowserView.ID.equals(reference.getId())) {
-                    ((ProductBrowserView) reference.getPart(true)).populateInitialProductTree();
-                    saved = true;
-                }
+        String dataType = getTitle();
+        String[] oldOrder = ProductBrowserPreferenceConstants
+                .getOrder(dataType);
+        boolean rval = super.performOk();
+        for (IViewReference reference : PlatformUI.getWorkbench()
+                .getActiveWorkbenchWindow().getActivePage().getViewReferences()) {
+            if (ProductBrowserView.ID.equals(reference.getId())) {
+                ((ProductBrowserView) reference.getPart(true)).refresh(
+                        dataType, oldOrder);
+                break;
             }
         }
-        return tf;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.preference.PreferencePage#performApply()
-     */
-    @Override
-    protected void performApply() {
-        for (FieldEditor editor : editors) {
-            editor.store();
-        }
+        return rval;
     }
 
     /*
@@ -181,17 +178,22 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
      * 
      * @param prod
      */
-    private void getPreferences(final PreferenceBasedDataDefinition prod, final String displayName) {
+    private void getPreferences(final PreferenceBasedDataDefinition prod,
+            final String displayName) {
         List<ProductBrowserPreference> prefs = prod.getPreferences();
         for (ProductBrowserPreference pref : prefs) {
             String prefName = pref.getLabel() + displayName;
             if (pref.getPreferenceType() == PreferenceType.EDITABLE_STRING) {
-                StringFieldEditor editor = new StringFieldEditor(prefName, pref.getLabel(),
-                        getFieldEditorParent());
+                StringFieldEditor editor = new StringFieldEditor(prefName,
+                        pref.getLabel(), getFieldEditorParent());
+                editor.getTextControl(getFieldEditorParent()).setToolTipText(
+                        pref.getTooltip());
                 editors.add(editor);
             } else if (pref.getPreferenceType() == PreferenceType.BOOLEAN) {
-                BooleanFieldEditor editor = new BooleanFieldEditor(prefName, pref.getLabel(),
-                        getFieldEditorParent());
+                BooleanFieldEditor editor = new BooleanFieldEditor(prefName,
+                        pref.getLabel(), getFieldEditorParent());
+                editor.getDescriptionControl(getFieldEditorParent())
+                        .setToolTipText(pref.getTooltip());
                 editors.add(editor);
             } else if (pref.getPreferenceType() == PreferenceType.STRING_ARRAY) {
                 final String[] values = ((String[]) pref.getValue());
@@ -222,15 +224,22 @@ public class DataTypePreferencePage extends FieldEditorPreferencePage implements
                     }
 
                     @Override
-                    protected void doFillIntoGrid(Composite parent, int numColumns) {
+                    protected void doFillIntoGrid(Composite parent,
+                            int numColumns) {
                         super.doFillIntoGrid(parent, numColumns);
                         for (int i = 0; i < values.length; i++) {
                             getList().add(values[i]);
                         }
                     }
                 };
-                editor.getButtonBoxControl(getFieldEditorParent()).getChildren()[0].setVisible(false);
-                editor.getButtonBoxControl(getFieldEditorParent()).getChildren()[1].setVisible(false);
+                // Hide Add and Remove buttons
+                for (int i : new int[] { 0, 1 }) {
+                    editor.getButtonBoxControl(getFieldEditorParent())
+                            .getChildren()[i].setVisible(false);
+                }
+
+                editor.getLabelControl(getFieldEditorParent()).setToolTipText(
+                        pref.getTooltip());
                 editor.getButtonBoxControl(getFieldEditorParent()).layout();
                 editors.add(editor);
             }

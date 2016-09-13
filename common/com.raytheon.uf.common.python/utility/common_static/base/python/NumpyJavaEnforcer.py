@@ -30,10 +30,37 @@
 #    Date            Ticket#       Engineer       Description
 #    ------------    ----------    -----------    --------------------------
 #    Feb 05, 2015    4089          njensen        Initial Creation.
+#    Aug 13, 2015    4704          randerso       Added logging when types are coerced
+#                                                 so developers can find and fix typing
+#                                                 issues
 #
 #
+ENDIAN_DICT = {
+    '<': "little endian",
+    '>': "big endian",
+    '=': "native endian",
+    '|': "n/a"
+}
+MESSAGE = "Java expected grid of type ({}) but Python returned ({})"
 
 import numpy
+
+import logging
+import UFStatusHandler
+logging.basicConfig(level=logging.INFO)
+__log = logging.getLogger("NumpyJavaEnforcer")
+__log.addHandler(UFStatusHandler.UFStatusHandler("com.raytheon.uf.common.python", "DEFAULT", level=logging.INFO))
+
+def __formatDtypeAndOrder(a):
+    typename = a.dtype.name
+    endian = ENDIAN_DICT[a.dtype.byteorder]
+    order = 'UNKNOWN'
+    if a.flags['C_CONTIGUOUS']:
+        order = 'C ordered'
+    elif a.flags['F_CONTIGUOUS']:
+        order = 'Fortran ordered'
+    
+    return ", ".join((typename, endian, order))
 
 def forceJavaCompatible(grid, correctType):
     """
@@ -41,7 +68,7 @@ def forceJavaCompatible(grid, correctType):
     
     Args: 
             grid: the numpy ndarray
-            correctType: a string of the correct dtype, e.g. 'int8'
+            correctType: the correct dtype, e.g. numpy.int8
                           
     Returns:
             a copy of the array as the specified dtype, or the original object
@@ -49,9 +76,14 @@ def forceJavaCompatible(grid, correctType):
     """
     gridType = type(grid)
     if gridType == numpy.ndarray:
-        if grid.dtype.name != correctType:
-            return numpy.ascontiguousarray(grid, correctType)
-    return grid
+        retval = numpy.ascontiguousarray(grid, correctType)
+        if retval is not grid:
+            # copy was required, __log warning message
+            msg = MESSAGE.format(__formatDtypeAndOrder(retval), __formatDtypeAndOrder(grid))
+            __log.info(msg)    
+    else:
+        retval = grid
+    return retval
 
 def checkdTypes(item, correctType):
     """
@@ -61,7 +93,7 @@ def checkdTypes(item, correctType):
     
     Args: 
             item: a numpy ndarray or a list or tuple of ndarrays
-            correctType: a string of the correct dtype, e.g. 'int8'
+            correctType: the correct dtype, e.g. numpy.int8
                           
     Returns:
             an object similar to item with any ndarrays converted to the correct dtype

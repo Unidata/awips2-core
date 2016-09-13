@@ -24,7 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
 import org.eclipse.jface.action.IContributionItem;
@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * 12/05/2008              ebabin      Changed findView to not always assume
  *                                      view has a secondaryid.
  *                                     Added hideView method for quickly hiding views.
+ * Aug 31, 2016 ----       mjames@ucar Force open new editor if bundle is multipane.
  * 
  * </pre>
  * 
@@ -380,7 +381,7 @@ public class UiUtil {
         }
         // Check the current editor first
         IEditorPart ep = EditorUtil.getActiveEditor(windowToLoadTo);
-        if (ep instanceof AbstractEditor) {
+        if (ep instanceof AbstractEditor && displays.length < 2) {
             AbstractEditor currentEditor = (AbstractEditor) ep;
             if (currentEditor != null
                     && currentEditor.getEditorSite().getId().equals(editorName)) {
@@ -398,7 +399,7 @@ public class UiUtil {
         }
 
         for (IEditorReference ref : references) {
-            if (editorName.equals(ref.getId())) {
+            if (editorName.equals(ref.getId()) && displays.length < 2) {
                 IEditorPart editorPart = ref.getEditor(false);
                 if (editorPart instanceof AbstractEditor) {
                     AbstractEditor aEditor = (AbstractEditor) editorPart;

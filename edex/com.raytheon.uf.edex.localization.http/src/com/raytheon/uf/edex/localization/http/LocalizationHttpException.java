@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.localization.http;
 
+import java.util.Map;
+
 /**
  * Exception encapsulating an HTTP error. Used only to send error messages to
  * client.
@@ -30,6 +32,7 @@ package com.raytheon.uf.edex.localization.http;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 15, 2015 3978       bclement     Initial creation
+ * Dec 04, 2015 4834       njensen      Added headers map
  * 
  * </pre>
  * 
@@ -42,6 +45,9 @@ public class LocalizationHttpException extends Exception {
 
     private final int errorCode;
 
+    /** additional http headers to include with a response */
+    private Map<String, String> headers;
+
     /**
      * @param message
      */
@@ -50,11 +56,21 @@ public class LocalizationHttpException extends Exception {
         this.errorCode = errorCode;
     }
 
+    public LocalizationHttpException(int errorCode, String message,
+            Map<String, String> additionalHeaders) {
+        this(errorCode, message);
+        this.headers = additionalHeaders;
+    }
+
     /**
      * @return the errorCode
      */
     public int getErrorCode() {
         return errorCode;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
     }
 
 }

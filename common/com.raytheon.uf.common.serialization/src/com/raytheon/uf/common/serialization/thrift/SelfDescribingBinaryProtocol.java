@@ -51,15 +51,16 @@ import org.apache.thrift.transport.TTransport;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * Aug 7, 2008				chammack	Initial creation
- * Jun 17, 2010   #5091     njensen     Added primitive list methods
- * Jun 12, 2013    2102     njensen     Added max read length to prevent out
- *                                       of memory errors due to bad stream
- * Jul 23, 2013    2215     njensen     Updated for thrift 0.9.0
- * Aug 06, 2013    2228     njensen     Overrode readBinary() to ensure it
- *                                       doesn't read too much
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 07, 2008           chammack  Initial creation
+ * Jun 17, 2010  5091     njensen   Added primitive list methods
+ * Jun 12, 2013  2102     njensen   Added max read length to prevent out of
+ *                                  memory errors due to bad stream
+ * Jul 23, 2013  2215     njensen   Updated for thrift 0.9.0
+ * Aug 06, 2013  2228     njensen   Overrode readBinary() to ensure it doesn't
+ *                                  read too much
+ * Jul 13, 2015  4589     bsteffen  Copy arrays in chunks to save memory.
  * 
  * </pre>
  * 
@@ -68,6 +69,19 @@ import org.apache.thrift.transport.TTransport;
  */
 
 public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
+
+    /**
+     * The size(in bytes) of the intermediate buffer to use when converting
+     * primitive arrays to or from bytes.
+     * <p>
+     * To interact with a {@link TTransport} arrays of primitives must be
+     * represented as byte arrays. It is possible to convert each primitive
+     * object individually or to use buffers to convert all the data at once,
+     * but the best performance has been observed when large arrays are copied
+     * in fixed sized chunks. In testing a chunk size of 1024 bytes yielded the
+     * best performance.
+     */
+    private static int ARRAY_CHUNK_SIZE = 1024;
 
     public static final byte FLOAT = 64;
 
@@ -202,23 +216,6 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
     }
 
     /**
-     * Reads a set number of bytes into a buffer
-     * 
-     * @param length
-     * @return
-     * @throws TException
-     */
-    private ByteBuffer readBytes(int length) throws TException {
-        byte[] b = new byte[length];
-        int n = this.trans_.readAll(b, 0, length);
-        if (n != length) {
-            throw new TException("Bytes read does not match indicated size");
-        }
-        ByteBuffer buf = ByteBuffer.wrap(b);
-        return buf;
-    }
-
-    /**
      * Read a list of floats
      * 
      * @param sz
@@ -226,11 +223,32 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public float[] readF32List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz * 4);
-        FloatBuffer fbuf = buf.asFloatBuffer();
-        float[] f = new float[sz];
-        fbuf.get(f);
-        return f;
+        FloatBuffer result = FloatBuffer.allocate(sz);
+        int arrByteLength = sz * 4;
+        int bufferSize = Math.min(ARRAY_CHUNK_SIZE, arrByteLength);
+        byte[] buffer = new byte[bufferSize];
+        FloatBuffer floatBuffer = ByteBuffer.wrap(buffer).asFloatBuffer();
+        int offset = 0;
+        int len = bufferSize;
+        while (result.remaining() > 0) {
+            int bytesRead = offset + this.trans_.read(buffer, offset, len);
+            int floatsRead = bytesRead / 4;
+            if (floatsRead > 0) {
+                floatBuffer.limit(floatsRead);
+                result.put(floatBuffer);
+                floatBuffer.rewind();
+                offset = bytesRead % 4;
+                if (offset > 0) {
+                    System.arraycopy(buffer, floatsRead * 4, buffer, 0, offset);
+                }
+            } else if (bytesRead <= offset) {
+                throw new TException("Failed to read any data.");
+            } else {
+                offset = bytesRead;
+            }
+            len = Math.min(bufferSize, result.remaining() * 4) - offset;
+        }
+        return result.array();
     }
 
     /**
@@ -240,11 +258,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeF32List(float[] arr) throws TException {
-        byte[] b = new byte[4 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        FloatBuffer fb = bb.asFloatBuffer();
-        fb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 4;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asFloatBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int floatChunkSize = ARRAY_CHUNK_SIZE / 4;
+            int remainder = arrLength % floatChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            FloatBuffer floats = ByteBuffer.wrap(bytes).asFloatBuffer();
+            for (int i = 0; i < fullChunkSize; i += floatChunkSize) {
+                floats.put(arr, i, floatChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                floats.rewind();
+            }
+            if (remainder > 0) {
+                floats.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 4);
+            }
+        }
     }
 
     /**
@@ -255,11 +291,32 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public int[] readI32List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz * 4);
-        IntBuffer ibuf = buf.asIntBuffer();
-        int[] i = new int[sz];
-        ibuf.get(i);
-        return i;
+        IntBuffer result = IntBuffer.allocate(sz);
+        int arrByteLength = sz * 4;
+        int bufferSize = Math.min(ARRAY_CHUNK_SIZE, arrByteLength);
+        byte[] buffer = new byte[bufferSize];
+        IntBuffer intBuffer = ByteBuffer.wrap(buffer).asIntBuffer();
+        int offset = 0;
+        int len = bufferSize;
+        while (result.remaining() > 0) {
+            int bytesRead = offset + this.trans_.read(buffer, offset, len);
+            int intsRead = bytesRead / 4;
+            if (intsRead > 0) {
+                intBuffer.limit(intsRead);
+                result.put(intBuffer);
+                intBuffer.rewind();
+                offset = bytesRead % 4;
+                if (offset > 0) {
+                    System.arraycopy(buffer, intsRead * 4, buffer, 0, offset);
+                }
+            } else if (bytesRead <= offset) {
+                throw new TException("Failed to read any data.");
+            } else {
+                offset = bytesRead;
+            }
+            len = Math.min(bufferSize, result.remaining() * 4) - offset;
+        }
+        return result.array();
     }
 
     /**
@@ -269,11 +326,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI32List(int[] arr) throws TException {
-        byte[] b = new byte[4 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        IntBuffer ib = bb.asIntBuffer();
-        ib.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 4;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asIntBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int intChunkSize = ARRAY_CHUNK_SIZE / 4;
+            int remainder = arrLength % intChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            IntBuffer ints = ByteBuffer.wrap(bytes).asIntBuffer();
+            for (int i = 0; i < fullChunkSize; i += intChunkSize) {
+                ints.put(arr, i, intChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                ints.rewind();
+            }
+            if (remainder > 0) {
+                ints.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 4);
+            }
+        }
     }
 
     /**
@@ -284,11 +359,32 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public double[] readD64List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz * 8);
-        DoubleBuffer pbuf = buf.asDoubleBuffer();
-        double[] arr = new double[sz];
-        pbuf.get(arr);
-        return arr;
+        DoubleBuffer result = DoubleBuffer.allocate(sz);
+        int arrByteLength = sz * 8;
+        int bufferSize = Math.min(ARRAY_CHUNK_SIZE, arrByteLength);
+        byte[] buffer = new byte[bufferSize];
+        DoubleBuffer doubleBuffer = ByteBuffer.wrap(buffer).asDoubleBuffer();
+        int offset = 0;
+        int len = bufferSize;
+        while (result.remaining() > 0) {
+            int bytesRead = offset + this.trans_.read(buffer, offset, len);
+            int doublesRead = bytesRead / 8;
+            if (doublesRead > 0) {
+                doubleBuffer.limit(doublesRead);
+                result.put(doubleBuffer);
+                doubleBuffer.rewind();
+                offset = bytesRead % 8;
+                if (offset > 0) {
+                    System.arraycopy(buffer, doublesRead * 8, buffer, 0, offset);
+                }
+            } else if (bytesRead <= offset) {
+                throw new TException("Failed to read any data.");
+            } else {
+                offset = bytesRead;
+            }
+            len = Math.min(bufferSize, result.remaining() * 8) - offset;
+        }
+        return result.array();
     }
 
     /**
@@ -298,11 +394,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeD64List(double[] arr) throws TException {
-        byte[] b = new byte[8 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        DoubleBuffer pb = bb.asDoubleBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 8;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asDoubleBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int doubleChunkSize = ARRAY_CHUNK_SIZE / 8;
+            int remainder = arrLength % doubleChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            DoubleBuffer doubles = ByteBuffer.wrap(bytes).asDoubleBuffer();
+            for (int i = 0; i < fullChunkSize; i += doubleChunkSize) {
+                doubles.put(arr, i, doubleChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                doubles.rewind();
+            }
+            if (remainder > 0) {
+                doubles.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 8);
+            }
+        }
     }
 
     /**
@@ -313,11 +427,32 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public long[] readI64List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz * 8);
-        LongBuffer pbuf = buf.asLongBuffer();
-        long[] arr = new long[sz];
-        pbuf.get(arr);
-        return arr;
+        LongBuffer result = LongBuffer.allocate(sz);
+        int arrByteLength = sz * 8;
+        int bufferSize = Math.min(ARRAY_CHUNK_SIZE, arrByteLength);
+        byte[] buffer = new byte[bufferSize];
+        LongBuffer longBuffer = ByteBuffer.wrap(buffer).asLongBuffer();
+        int offset = 0;
+        int len = bufferSize;
+        while (result.remaining() > 0) {
+            int bytesRead = offset + this.trans_.read(buffer, offset, len);
+            int longsRead = bytesRead / 8;
+            if (longsRead > 0) {
+                longBuffer.limit(longsRead);
+                result.put(longBuffer);
+                longBuffer.rewind();
+                offset = bytesRead % 8;
+                if (offset > 0) {
+                    System.arraycopy(buffer, longsRead * 8, buffer, 0, offset);
+                }
+            } else if (bytesRead <= offset) {
+                throw new TException("Failed to read any data.");
+            } else {
+                offset = bytesRead;
+            }
+            len = Math.min(bufferSize, result.remaining() * 8) - offset;
+        }
+        return result.array();
     }
 
     /**
@@ -327,11 +462,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI64List(long[] arr) throws TException {
-        byte[] b = new byte[8 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        LongBuffer pb = bb.asLongBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 8;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asLongBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int longChunkSize = ARRAY_CHUNK_SIZE / 8;
+            int remainder = arrLength % longChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            LongBuffer longs = ByteBuffer.wrap(bytes).asLongBuffer();
+            for (int i = 0; i < fullChunkSize; i += longChunkSize) {
+                longs.put(arr, i, longChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                longs.rewind();
+            }
+            if (remainder > 0) {
+                longs.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 8);
+            }
+        }
     }
 
     /**
@@ -342,11 +495,32 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public short[] readI16List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz * 2);
-        ShortBuffer pbuf = buf.asShortBuffer();
-        short[] arr = new short[sz];
-        pbuf.get(arr);
-        return arr;
+        ShortBuffer result = ShortBuffer.allocate(sz);
+        int arrByteLength = sz * 2;
+        int bufferSize = Math.min(ARRAY_CHUNK_SIZE, arrByteLength);
+        byte[] buffer = new byte[bufferSize];
+        ShortBuffer shortBuffer = ByteBuffer.wrap(buffer).asShortBuffer();
+        int offset = 0;
+        int len = bufferSize;
+        while (result.remaining() > 0) {
+            int bytesRead = offset + this.trans_.read(buffer, offset, len);
+            int shortsRead = bytesRead / 2;
+            if (shortsRead > 0) {
+                shortBuffer.limit(shortsRead);
+                result.put(shortBuffer);
+                shortBuffer.rewind();
+                offset = bytesRead % 2;
+                if (offset > 0) {
+                    System.arraycopy(buffer, shortsRead * 2, buffer, 0, offset);
+                }
+            } else if (bytesRead <= offset) {
+                throw new TException("Failed to read any data.");
+            } else {
+                offset = bytesRead;
+            }
+            len = Math.min(bufferSize, result.remaining() * 2) - offset;
+        }
+        return result.array();
     }
 
     /**
@@ -356,11 +530,29 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public void writeI16List(short[] arr) throws TException {
-        byte[] b = new byte[2 * arr.length];
-        ByteBuffer bb = ByteBuffer.wrap(b);
-        ShortBuffer pb = bb.asShortBuffer();
-        pb.put(arr);
-        this.trans_.write(bb.array());
+        int arrLength = arr.length;
+        int arrByteLength = arrLength * 2;
+        if (ARRAY_CHUNK_SIZE > arrByteLength) {
+            byte[] bytes = new byte[arrByteLength];
+            ByteBuffer.wrap(bytes).asShortBuffer().put(arr);
+            this.trans_.write(bytes);
+        } else {
+            int shortChunkSize = ARRAY_CHUNK_SIZE / 2;
+            int remainder = arrLength % shortChunkSize;
+            int fullChunkSize = arrLength - remainder;
+
+            byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
+            ShortBuffer shorts = ByteBuffer.wrap(bytes).asShortBuffer();
+            for (int i = 0; i < fullChunkSize; i += shortChunkSize) {
+                shorts.put(arr, i, shortChunkSize);
+                trans_.write(bytes, 0, ARRAY_CHUNK_SIZE);
+                shorts.rewind();
+            }
+            if (remainder > 0) {
+                shorts.put(arr, fullChunkSize, remainder);
+                trans_.write(bytes, 0, remainder * 2);
+            }
+        }
     }
 
     /**
@@ -371,8 +563,12 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
      * @throws TException
      */
     public byte[] readI8List(int sz) throws TException {
-        ByteBuffer buf = readBytes(sz);
-        return buf.array();
+        byte[] b = new byte[sz];
+        int n = this.trans_.readAll(b, 0, sz);
+        if (n != sz) {
+            throw new TException("Bytes read does not match indicated size");
+        }
+        return b;
     }
 
     /**

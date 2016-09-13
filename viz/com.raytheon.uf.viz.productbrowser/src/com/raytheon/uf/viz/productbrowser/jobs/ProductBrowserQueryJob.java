@@ -25,6 +25,7 @@ import java.util.List;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.core.runtime.jobs.ISchedulingRule;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.TreeItem;
@@ -52,6 +53,9 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  *                                   run methods to fix eternal 'Loading...' problem
  * Jul 07, 2014  3135     bsteffen  Remove child nodes when there are no results.
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
+ * Aug 13, 2015  4717     mapeters  Moved copyItem() to ProductBrowserView, only allow
+ *                                  8 jobs to run concurrently.
+ * Sep 11, 2015  4717     mapeters  Moved copyItem() back to here.
  * 
  * </pre>
  * 
@@ -64,6 +68,12 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
             .getHandler(ProductBrowserQueryJob.class);
 
     protected static final String JOB_DATA_KEY = "queryJob";
+
+    protected static final int maxConcurrentJobs = 8;
+
+    protected static SchedulingRule[] schedulingRules;
+
+    protected static int schedulingRulesIndex = 0;
 
     protected TreeItem item;
 
@@ -82,6 +92,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         this.def = ProductBrowserView.getDataDef(item);
         this.selection = ProductBrowserView.getProductURI(item, false);
         item.setData(JOB_DATA_KEY, this);
+        this.setSchedulingRule();
     }
 
     /**
@@ -188,14 +199,15 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
     }
 
     /**
-     * Recursively copy an item. This is only needed if a query is repeated and
-     * returns items in a new order.
+     * Recursively copy a TreeItem. This is only needed if a query is repeated
+     * and returns items in a new order.
      * 
      * @param oldItem
      * @param newItem
      */
-    protected void copyItem(TreeItem oldItem, TreeItem newItem) {
+    protected static void copyItem(TreeItem oldItem, TreeItem newItem) {
         newItem.setText(oldItem.getText());
+        newItem.setFont(oldItem.getFont());
         for (TreeItem oldChild : oldItem.getItems()) {
             TreeItem newChild = new TreeItem(newItem, SWT.NONE);
             if (newItem.getItemCount() == 1) {
@@ -208,8 +220,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
             copyItem(oldChild, newChild);
         }
         newItem.setData(ProductBrowserView.LABEL_DATA_KEY,
-                ProductBrowserView
-                .getLabel(oldItem));
+                ProductBrowserView.getLabel(oldItem));
         newItem.setData(ProductBrowserView.DEF_DATA_KEY,
                 ProductBrowserView.getDataDef(oldItem));
         ProductBrowserQueryJob job = (ProductBrowserQueryJob) oldItem
@@ -218,7 +229,6 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
             job.setItem(newItem);
             newItem.setData(JOB_DATA_KEY, job);
         }
-
     }
 
     protected void setItem(TreeItem item) {
@@ -251,4 +261,53 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
         }
     }
 
+    @Override
+    public boolean belongsTo(Object family) {
+        return family == this.getClass();
+    }
+
+    /**
+     * Assign this job the next SchedulingRule instance in schedulingRules and
+     * increment schedulingRulesIndex. This ensures only
+     * {@value #maxConcurrentJobs} jobs run concurrently so we don't eat up too
+     * many threads.
+     */
+    protected void setSchedulingRule() {
+        this.setRule(getSchedulingRules()[schedulingRulesIndex]);
+        schedulingRulesIndex = (schedulingRulesIndex + 1) % maxConcurrentJobs;
+    }
+
+    /**
+     * Get the list of {@value #maxConcurrentJobs} SchedulingRule instances,
+     * used to prevent more than {@value #maxConcurrentJobs} jobs from running
+     * concurrently.
+     * 
+     * @return the list of SchedulingRules
+     */
+    protected static SchedulingRule[] getSchedulingRules() {
+        if (schedulingRules == null) {
+            schedulingRules = new SchedulingRule[maxConcurrentJobs];
+            for (int i = 0; i < maxConcurrentJobs; i++) {
+                schedulingRules[i] = new SchedulingRule();
+            }
+        }
+        return schedulingRules;
+    }
+
+    /**
+     * ISchedulingRule implementation where conflicts are determined solely by
+     * if two SchedulingRules are the same instance.
+     */
+    protected static class SchedulingRule implements ISchedulingRule {
+
+        @Override
+        public boolean contains(ISchedulingRule rule) {
+            return rule == this;
+        }
+
+        @Override
+        public boolean isConflicting(ISchedulingRule rule) {
+            return rule == this;
+        }
+    }
 }

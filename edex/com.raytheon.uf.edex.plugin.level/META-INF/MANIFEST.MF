@@ -2,12 +2,11 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Level Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.plugin.level
-Bundle-Version: 1.14.1.qualifier
+Bundle-Version: 1.15.1.qualifier
 Bundle-Vendor: Raytheon
 Require-Bundle: com.raytheon.edex.common,
  javax.measure,
  javax.persistence,
- org.apache.commons.lang,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.dataplugin.level,
  com.raytheon.uf.common.serialization.comm,

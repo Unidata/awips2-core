@@ -27,11 +27,11 @@ import java.util.Set;
 
 import org.eclipse.swt.widgets.Shell;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 
@@ -50,6 +50,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  *                                     all users or all procedures should be requested.
  * 02 Jun 2015  #4401      bkowal      Re-factored for reuse.
  * 30 Jun 2015  #4401      bkowal      Perspectives are now stored in common_static.
+ * 13 Jan 2016  #5242      kbisanz     Replaced calls to deprecated LocalizationFile methods
  * 
  * </pre>
  * 
@@ -77,7 +78,7 @@ public class VizOpenLocalizationFileListDlg extends VizLocalizationFileListDlg {
 
         VizLocalizationFileTree root = new VizLocalizationFileTree("root", null);
         IPathManager pm = PathManagerFactory.getPathManager();
-        Set<LocalizationContext> searchContexts = new HashSet<LocalizationContext>();
+        Set<LocalizationContext> searchContexts = new HashSet<>();
 
         searchContexts.addAll(Arrays.asList(pm
                 .getLocalSearchHierarchy(this.localizationType)));
@@ -111,20 +112,20 @@ public class VizOpenLocalizationFileListDlg extends VizLocalizationFileListDlg {
             }
         }
 
-        LocalizationFile[] files = pm
+        ILocalizationFile[] files = pm
                 .listFiles(
                         searchContexts
                                 .toArray(new LocalizationContext[searchContexts
                                         .size()]), this.localizationDirectory,
                         new String[] { "xml" }, false, true);
 
-        Map<String, VizLocalizationFileTree> locLevels = new HashMap<String, VizLocalizationFileTree>();
+        Map<String, VizLocalizationFileTree> locLevels = new HashMap<>();
 
         for (int i = 0; i < files.length; i++) {
-            String str = LocalizationUtil.extractName(files[i].getName());
+            String str = LocalizationUtil.extractName(files[i].getPath());
             String level = "";
 
-            LocalizationFile file = files[i];
+            ILocalizationFile file = files[i];
             if (file.getContext().getLocalizationLevel().isSystemLevel() == false) {
 
                 // place under the localization level

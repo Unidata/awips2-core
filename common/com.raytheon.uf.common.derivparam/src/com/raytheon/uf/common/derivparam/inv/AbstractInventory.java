@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.SortedSet;
@@ -79,14 +80,21 @@ import com.raytheon.uf.common.time.DataTime;
  * <pre>
  * 
  * SOFTWARE HISTORY
+ * 
  * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
+ * ------------- -------- ----------- ------------------------------------------
  * Mar 17, 2010           bsteffen    Initial creation
  * Jan 23, 2014  2711     bsteffen    Get all levels from LevelFactory.
- * Jan 30, 2014  #2725    ekladstrup  handle different exceptions for moving
+ * Jan 30, 2014  2725     ekladstrup  handle different exceptions for moving
  *                                    derived parameters to common
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
- * Apr 06, 2015  #17215   D. Friedman Use ReentrantLock instead of synchronize
+ * Apr 06, 2015  17215    dfriedman   Use ReentrantLock instead of synchronize
+ * Nov 01, 2015  DR14947  porricel    Modified resolveField to
+ *                                    use middle of layer for BL
+ * Nov 30, 2015  5072     bsteffen    Use LevelTypeMap to normalize field
+ *                                    levels.
+ * May 26, 2016  DR18955  dfriedman   Fix marking of recursively referenced
+ *                                    derived parameters.
  * 
  * </pre>
  * 
@@ -762,7 +770,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * possible. The stack is used to detect and respond to recursion. nodata is
      * used to make the algorithm more efficient by preventing attempts at
      * deriving the same parameters multiple times, however it should be cleared
-     * occasionally to avoid getting huge. THis function will either return a
+     * occasionally to avoid getting huge. This function will either return a
      * node which can request data for the given source, parameter, and level or
      * null if there is no way to derive the parameter.
      * 
@@ -798,7 +806,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                 return null;
             }
             if (stack.contains(se)) {
-                Iterator<StackEntry> it = stack.descendingIterator();
+                Iterator<StackEntry> it = stack.iterator();
                 while (it.hasNext()) {
                     StackEntry next = it.next();
                     if (next.equals(se)) {
@@ -869,15 +877,42 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                                 request.clear();
                             }
                         } else {
+                            boolean needsNormalization = false;
                             for (IDerivParamField ifield : method.getFields()) {
                                 Object result = resolveField(sourceNode, level,
                                         ifield, stack, nodata);
                                 if (result != null) {
                                     request.add(result);
+                                    if (result instanceof LevelTypeMap) {
+                                        needsNormalization = true;
+                                    }
                                 } else if (method.getFrameworkMethod() != FrameworkMethod.OR) {
                                     break;
                                 }
                             }// field loop
+                            if (needsNormalization) {
+                                List<LevelTypeMap> toNormalize = new ArrayList<>();
+                                for (Object obj : request) {
+                                    if (obj instanceof LevelTypeMap) {
+                                        toNormalize.add((LevelTypeMap) obj);
+                                    }
+                                }
+                                ListIterator<Object> it = request
+                                        .listIterator();
+                                while (it.hasNext()) {
+                                    Object next = it.next();
+                                    if (next instanceof LevelTypeMap) {
+                                        LevelTypeMap map = (LevelTypeMap) next;
+                                        map.normalize(toNormalize);
+                                        next = map.resolve();
+                                        if (next == null) {
+                                            it.remove();
+                                        } else {
+                                            it.set(next);
+                                        }
+                                    }
+                                }
+                            }
                         }
                         if (request.size() == method.getFields().size()
                                 || ((method.getFrameworkMethod() == FrameworkMethod.UNION || method
@@ -967,7 +1002,7 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                  * The check following this comment existed so that definitions that
                  * can be derived without auto-averaging will always be used before
                  * definitions that need auto-averaging, even if the auto-average
-                 * happens in dependencies or dependiencies of dependencies etc.
+                 * happens in dependencies or dependencies of dependencies etc.
                  * There are two problems with this, first if a user over rides a
                  * definition that does not use auto-average with a definition that
                  * uses auto-average the user override will never be used which can
@@ -1011,8 +1046,11 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
      * @param ifield
      * @param stack
      * @param nodata
-     * @return Should be Either some IStaticData or an
-     *         AbstractRequestableLevelNode
+     * @return May return null, if there is no data for the field,
+     *         AbstractRequestableData for static data or constants,
+     *         AbstractRequestableLevelNode for fields that can be fully
+     *         resolved, or a LevelTypeMap for fields that may require
+     *         normalization with other fields.
      * @throws VizCommunicationException
      */
     private Object resolveField(SourceNode sourceNode,
@@ -1039,8 +1077,16 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
             // masterlevel name
             if (level.getMasterLevel().getName().equals(fieldParamAbbrev)) {
 
-                FloatRequestableData data = new FloatRequestableData(
-                        (float) level.getLevelonevalue());
+                FloatRequestableData data;
+                if (level.isRangeLevel() && fieldParamAbbrev.equals("BL")) {
+                    // get midpoint of boundary layer
+                    data = new FloatRequestableData(
+                            (float) ((level.getLevelonevalue() + level
+                                    .getLeveltwovalue()) / 2));
+                } else {
+                    data = new FloatRequestableData(
+                            (float) level.getLevelonevalue());
+                }
                 data.setUnit(level.getMasterLevel().getUnit());
                 return data;
             }
@@ -1058,9 +1104,8 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
             LevelType type = field.getLevelType();
             if (type == null || type == LevelType.Upper || type == LevelType.Lower) {
 
-                // By default, no mapping
+                /* By default, no mapping */
                 Level fieldLevel = null;
-                LevelNode target = null;
                 if (type == null) {
                     fieldLevel = level;
                 } else if (level.isRangeLevel()) {
@@ -1081,28 +1126,34 @@ public abstract class AbstractInventory implements DerivParamUpdateListener {
                                         level.getMasterLevel().getName())
                                 .headSet(level, false).descendingSet();
                     }
+                    LevelTypeMap map = new LevelTypeMap(type,
+                            levels.comparator());
                     for (Level l : levels) {
-                        target = resolveNode(fieldSourceNode, fieldParamAbbrev, l,
-                                stack, nodata);
-                        if (target != null) {
-                            fieldLevel = l;
-                            break;
+                        Object result = resolveNode(fieldSourceNode,
+                                fieldParamAbbrev, l, stack, nodata);
+                        if (result != null) {
+                            map.add(l, result);
                         }
+                    }
+                    if (!map.isEmpty()) {
+                        return map;
                     }
                 }
 
-                // If that level is defined than add a
-                // request to the map
-                if (fieldLevel != null && target == null) {
-                    target = resolveNode(fieldSourceNode, fieldParamAbbrev,
-                            fieldLevel, stack, nodata);
-                }
-                if (target != null) {
-                    return target;
+                /* If that level is defined than add a request to the map */
+                if (fieldLevel != null) {
+                    AbstractRequestableNode target = resolveNode(
+                            fieldSourceNode, fieldParamAbbrev, fieldLevel,
+                            stack, nodata);
+                    if (target != null) {
+                        return target;
+                    }
                 }
 
-                // Level mapping must be handled seperately
-                // because it is valid for all requests
+                /*
+                 * Level mapping must be handled separately because it is valid
+                 * for all requests
+                 */
             } else if (type == LevelType.LevelMapping) {
                 LevelNode target = null;
                 List<Level> levels;

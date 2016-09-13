@@ -48,8 +48,10 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jan 9, 2012            mpduff       Initial creation
- * Mar 24, 2014 #1426     lvenable     Removed unnecessary code, cleaned up code.
+ * Jan 9, 2012             mpduff      Initial creation
+ * Mar 24, 2014 #1426      lvenable    Removed unnecessary code, cleaned up code.
+ * Jan 15, 2016 #5054      randerso    Change to subclass CaveSWTDialog
+ * Mar 17, 2016 #5483      randerso    Added timeEntry.setLayoutData()
  * 
  * </pre>
  * 
@@ -57,7 +59,7 @@ import com.raytheon.viz.ui.widgets.TimeEntry;
  * @version 1.0
  */
 
-public class AwipsCalendar extends CaveSWTDialogBase {
+public class AwipsCalendar extends CaveSWTDialog {
 
     /** The date selection calendar widget */
     private DateTime calendar;
@@ -118,7 +120,7 @@ public class AwipsCalendar extends CaveSWTDialogBase {
         super(parentShell, SWT.DIALOG_TRIM);
         setText("Calendar");
         this.date = d;
-        if (timeFieldCount < 0 || timeFieldCount > 3) {
+        if ((timeFieldCount < 0) || (timeFieldCount > 3)) {
             throw new IllegalArgumentException(
                     "timeFieldCount must be 0, 1, 2, or 3");
         }
@@ -185,6 +187,8 @@ public class AwipsCalendar extends CaveSWTDialogBase {
             timeEntry = new TimeEntry(shell, timeFieldCount);
             timeEntry.setTime(cal.get(Calendar.HOUR_OF_DAY),
                     cal.get(Calendar.MINUTE), cal.get(Calendar.SECOND));
+            timeEntry.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
+                    false));
         }
 
         calendar = new DateTime(shell, SWT.CALENDAR | SWT.BORDER);
@@ -261,7 +265,7 @@ public class AwipsCalendar extends CaveSWTDialogBase {
      * @param args
      */
     public static void main(String[] args) {
-        AwipsCalendar ac = new AwipsCalendar(new Shell(), 1);
+        AwipsCalendar ac = new AwipsCalendar(new Shell(), 3);
         ac.setTimeZone(TimeZone.getDefault());
         Date date = (Date) ac.open();
         if (date == null) {

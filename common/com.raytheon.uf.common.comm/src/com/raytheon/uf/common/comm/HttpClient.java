@@ -25,6 +25,8 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -33,7 +35,6 @@ import java.util.zip.GZIPOutputStream;
 import javax.net.ssl.SSLPeerUnverifiedException;
 
 import org.apache.http.Header;
-import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
 import org.apache.http.auth.AuthProtocolState;
@@ -64,7 +65,7 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
-import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStream;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 
 /**
  * 
@@ -72,36 +73,40 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
- *   
- *    Date          Ticket#     Engineer    Description
- *    ------------  ----------  ----------- --------------------------
- *    7/1/06        #1088       chammack    Initial Creation.
- *    5/17/10       #5901       njensen     Moved to common
- *    03/02/11      #8045       rferrel     Add connect reestablished message.
- *    07/17/12      #911        njensen     Refactored significantly
- *    08/09/12      15307       snaples     Added putEntitiy in postStreamingEntity.
- *    01/07/13      DR 15294    D. Friedman Added streaming requests.
- *    Jan 24, 2013  1526        njensen     Added postDynamicSerialize()
- *    Feb 20, 2013  1628        bsteffen    clean up Inflaters used by
- *                                           HttpClient.
- *    Mar 11, 2013  1786        mpduff      Add https capability.
- *    Jun 12, 2013  2102        njensen     Better error handling when using
- *                                           DynamicSerializeStreamHandler
- *    Feb 04, 2014  2704        njensen     Better error message with bad address
- *                                           Https authentication failures notify handler
- *    Feb 17, 2014  2756        bclement    added content type to response object
- *    Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
- *    6/18/2014     1712        bphillip    Updated Proxy configuration
- *    Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
- *    Aug 20, 2014  3549        njensen     Removed cookie interceptors
- *    Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
- *    Nov 15, 2014  3757        dhladky     General HTTPS handler
- *    Jan 07, 2015  3952        bclement    reset auth state on authentication failure
- *    Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
- *    Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
- *    Apr 16, 2015  4239        njensen     Better error handling on response != 200
- *    Feb 22, 2015  5306        njensen     Get new HttpClientContext if host or port change
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#     Engineer    Description
+ * ------------  ----------  ----------- --------------------------
+ * 7/1/06        #1088       chammack    Initial Creation.
+ * 5/17/10       #5901       njensen     Moved to common
+ * 03/02/11      #8045       rferrel     Add connect reestablished message.
+ * 07/17/12      #911        njensen     Refactored significantly
+ * 08/09/12      15307       snaples     Added putEntitiy in postStreamingEntity.
+ * 01/07/13      DR 15294    D. Friedman Added streaming requests.
+ * Jan 24, 2013  1526        njensen     Added postDynamicSerialize()
+ * Feb 20, 2013  1628        bsteffen    clean up Inflaters used by
+ *                                        HttpClient.
+ * Mar 11, 2013  1786        mpduff      Add https capability.
+ * Jun 12, 2013  2102        njensen     Better error handling when using
+ *                                        DynamicSerializeStreamHandler
+ * Feb 04, 2014  2704        njensen     Better error message with bad address
+ *                                        Https authentication failures notify handler
+ * Feb 17, 2014  2756        bclement    added content type to response object
+ * Feb 28, 2014  2756        bclement    added isSuccess() and isNotExists() to response
+ * 6/18/2014     1712        bphillip    Updated Proxy configuration
+ * Aug 15, 2014  3524        njensen     Pass auth credentials on every https request
+ * Aug 20, 2014  3549        njensen     Removed cookie interceptors
+ * Aug 29, 2014  3570        bclement    refactored to configuration builder model using 4.3 API
+ * Nov 15, 2014  3757        dhladky     General HTTPS handler
+ * Jan 07, 2015  3952        bclement    reset auth state on authentication failure
+ * Jan 23, 2015  3952        njensen     Ensure https contexts are thread safe
+ * Feb 17, 2015  3978        njensen     Added executeRequest(HttpUriRequest, IStreamHandler)
+ * Apr 16, 2015  4239        njensen     Better error handling on response != 200
+ * Oct 30, 2015  4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ * Dec 04, 2015  4834        njensen     Support authorization on http requests too
+ * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse
+ * Jan 27, 2016  5070        tjensen     Added comment noting stats stored here but logged elsewhere
+ * Feb 22, 2016  5306        njensen     Get new HttpClientContext if host or port change
  * 
  * </pre>
  * 
@@ -115,16 +120,13 @@ public class HttpClient {
 
         public final byte[] data;
 
-        public final String contentType;
+        public final Map<String, String> headers;
 
-        /*
-         * TODO contemplate including headers in response object
-         */
-
-        private HttpClientResponse(int code, byte[] data, String contentType) {
+        private HttpClientResponse(int code, byte[] data,
+                Map<String, String> headers) {
             this.code = code;
             this.data = data != null ? data : new byte[0];
-            this.contentType = contentType;
+            this.headers = Collections.unmodifiableMap(headers);
         }
 
         /**
@@ -159,12 +161,16 @@ public class HttpClient {
     private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
             HttpClient.class, "DEFAULT");
 
+    /**
+     * Stores networks statistics to be accessible by other plugins where stats
+     * logging is performed. No logging of stats is done by HttpClient directly.
+     */
     private final NetworkStatistics stats = new NetworkStatistics();
 
     private boolean gzipRequests = false;
 
     /** number of requests currently in process by the application per host */
-    private final Map<String, AtomicInteger> currentRequestsCount = new ConcurrentHashMap<String, AtomicInteger>();
+    private final Map<String, AtomicInteger> currentRequestsCount = new ConcurrentHashMap<>();
 
     private volatile CloseableHttpClient sslClient;
 
@@ -173,13 +179,14 @@ public class HttpClient {
     private final HttpClientConfig config;
 
     /**
-     * The credentials provider is for https requests only and ensures that a
-     * user does not have to enter username/password authentication more than
-     * once per application startup.
+     * The credentials provider takes care of adding the Authorization header
+     * for the http/https requests as necessary. This is a map of hostname to
+     * CredentialsProvider, as different hosts may require different
+     * authorization schemes.
      */
-    private CredentialsProvider credentialsProvider;
+    private Map<String, CredentialsProvider> credentialsMap = new ConcurrentHashMap<>();
 
-    private final ThreadLocal<HttpClientContext> httpsContext = new ThreadLocal<HttpClientContext>() {
+    private final ThreadLocal<HttpClientContext> httpClientContext = new ThreadLocal<HttpClientContext>() {
         @Override
         protected HttpClientContext initialValue() {
             return HttpClientContext.create();
@@ -212,7 +219,7 @@ public class HttpClient {
         if (sslClient == null) {
             synchronized (this) {
                 if (sslClient == null) {
-                    if (config.getHttpsHandler() == null) {
+                    if (config.getHttpAuthHandler() == null) {
                         throw new ExceptionInInitializerError(
                                 "Https configuration required.");
                     }
@@ -351,59 +358,64 @@ public class HttpClient {
     private HttpResponse postRequest(HttpUriRequest put) throws IOException,
             CommunicationException {
         HttpResponse resp = null;
-        if (put.getURI().getScheme().equalsIgnoreCase(HTTPS)) {
-            IHttpsHandler handler = config.getHttpsHandler();
-            org.apache.http.client.HttpClient client = getHttpsInstance();
-            URI uri = put.getURI();
-            String host = uri.getHost();
-            int port = uri.getPort();
-            HttpClientContext context = getHttpsContext(host, port);
-            resp = client.execute(put, context);
 
-            // Check for not authorized, 401
-            while (resp.getStatusLine().getStatusCode() == 401) {
-                String authValue = null;
-                if (resp.containsHeader(WWW_AUTHENTICATE)) {
-                    authValue = resp.getFirstHeader(WWW_AUTHENTICATE)
-                            .getValue();
-                }
+        /*
+         * Get a thread-local context since an HttpClientContext is not
+         * thread-safe.
+         */
+        URI uri = put.getURI();
+        String host = uri.getHost();
+        int port = uri.getPort();
+        String protocol = put.getURI().getScheme();
+        HttpClientContext context = getHttpClientContext(protocol, host, port);
 
-                String[] credentials = null;
-                if (handler != null) {
-                    credentials = handler.getCredentials(host, port, authValue);
-                }
-                if (credentials == null) {
-                    return resp;
-                }
-                this.setupCredentials(host, port, credentials[0],
-                        credentials[1]);
-                context = getHttpsContext(host, port);
-                /*
-                 * The context auth state gets set to FAILED on a 401 which
-                 * causes any future requests to abort prematurely. Therefore we
-                 * set it to unchallenged so it will try again with new
-                 * credentials.
-                 */
-                AuthState targetAuthState = context.getTargetAuthState();
-                targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
-                try {
-                    resp = client.execute(put, context);
-                } catch (Exception e) {
-                    statusHandler.handle(Priority.ERROR,
-                            "Error retrying http request", e);
-                    return resp;
-                }
-
-                if (resp.getStatusLine().getStatusCode() == 401) {
-                    // obtained credentials and they failed!
-                    if (handler != null) {
-                        handler.credentialsFailed();
-                    }
-                }
-
-            }
+        org.apache.http.client.HttpClient clientToUse = null;
+        if (protocol.equalsIgnoreCase(HTTPS)) {
+            clientToUse = getHttpsInstance();
         } else {
-            resp = getHttpInstance().execute(put);
+            clientToUse = getHttpInstance();
+        }
+        resp = clientToUse.execute(put, context);
+
+        // Check for not authorized, 401
+        while (resp.getStatusLine().getStatusCode() == 401) {
+            String authValue = null;
+            if (resp.containsHeader(WWW_AUTHENTICATE)) {
+                authValue = resp.getFirstHeader(WWW_AUTHENTICATE).getValue();
+            }
+
+            String[] credentials = null;
+            HttpAuthHandler authHandler = null;
+            authHandler = config.getHttpAuthHandler();
+            if (authHandler != null) {
+                credentials = authHandler.getCredentials(uri, authValue);
+            }
+            if (credentials == null) {
+                return resp;
+            }
+            this.setupCredentials(host, port, credentials[0], credentials[1]);
+            context = getHttpClientContext(protocol, host, port);
+            /*
+             * The context auth state gets set to FAILED on a 401 which causes
+             * any future requests to abort prematurely. Therefore we set it to
+             * unchallenged so it will try again with new credentials.
+             */
+            AuthState targetAuthState = context.getTargetAuthState();
+            targetAuthState.setState(AuthProtocolState.UNCHALLENGED);
+            try {
+                resp = clientToUse.execute(put, context);
+            } catch (Exception e) {
+                statusHandler.handle(Priority.ERROR,
+                        "Error retrying http request", e);
+                return resp;
+            }
+
+            if (resp.getStatusLine().getStatusCode() == 401) {
+                // obtained credentials and they failed!
+                if (authHandler != null) {
+                    authHandler.credentialsFailed();
+                }
+            }
         }
 
         if (previousConnectionFailed) {
@@ -519,31 +531,18 @@ public class HttpClient {
                 throw new HttpServerException(new String(byteResult),
                         statusCode);
             }
-            return new HttpClientResponse(statusCode, byteResult,
-                    getContentType(resp));
+
+            Header[] headers = resp.getAllHeaders();
+            Map<String, String> headerMap = new HashMap<>(headers.length);
+            for (Header h : headers) {
+                headerMap.put(h.getName(), h.getValue());
+            }
+            return new HttpClientResponse(statusCode, byteResult, headerMap);
         } finally {
             if (ongoing != null) {
                 ongoing.decrementAndGet();
             }
         }
-    }
-
-    /**
-     * Get content type of response
-     * 
-     * @param response
-     * @return null if none found
-     */
-    private static String getContentType(HttpResponse response) {
-        String rval = null;
-        HttpEntity entity = response.getEntity();
-        if (entity != null) {
-            Header contentType = entity.getContentType();
-            if (contentType != null) {
-                rval = contentType.getValue();
-            }
-        }
-        return rval;
     }
 
     /**
@@ -558,23 +557,13 @@ public class HttpClient {
      */
     private void processResponse(HttpResponse resp,
             IStreamHandler handlerCallback) throws CommunicationException {
-        InputStream is = null;
         if ((resp != null) && (resp.getEntity() != null)) {
-            try {
-                is = resp.getEntity().getContent();
+            try (InputStream is = resp.getEntity().getContent()) {
                 handlerCallback.handleStream(is);
             } catch (IOException e) {
                 throw new CommunicationException(
                         "IO error processing http response", e);
             } finally {
-                if (is != null) {
-                    try {
-                        is.close();
-                    } catch (IOException e) {
-                        // ignore
-                    }
-                }
-
                 // Closes the stream if it's still open
                 try {
                     EntityUtils.consume(resp.getEntity());
@@ -624,7 +613,7 @@ public class HttpClient {
 
         HttpPost put = new HttpPost(address);
         if (gzipRequests) {
-            ByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+            PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
                     .getInstance().getStream(message.length);
             GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream);
             gzipStream.write(message);
@@ -673,6 +662,7 @@ public class HttpClient {
         DynamicSerializeStreamHandler handlerCallback = new DynamicSerializeStreamHandler();
         HttpClientResponse resp = this.process(put, handlerCallback);
         checkStatusCode(resp);
+
         return handlerCallback.getResponseObject();
     }
 
@@ -851,7 +841,9 @@ public class HttpClient {
     }
 
     /**
-     * Gets the network statistics for http traffic.
+     * Gets the network statistics for http traffic for other plugins where
+     * stats logging is performed. No logging of stats is done by HttpClient
+     * directly.
      * 
      * @return network stats
      */
@@ -908,7 +900,7 @@ public class HttpClient {
 
         @Override
         public void handleStream(InputStream is) throws CommunicationException {
-            ByteArrayOutputStream baos = ByteArrayOutputStreamPool
+            PooledByteArrayOutputStream baos = ByteArrayOutputStreamPool
                     .getInstance().getStream();
             try {
                 byte[] underlyingArray = baos.getUnderlyingArray();
@@ -962,8 +954,10 @@ public class HttpClient {
      */
     public synchronized void setupCredentials(String host, int port,
             String username, String password) {
+        CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (credentialsProvider == null) {
             credentialsProvider = new BasicCredentialsProvider();
+            credentialsMap.put(host, credentialsProvider);
         }
         credentialsProvider.setCredentials(new AuthScope(host, port,
                 AuthScope.ANY_REALM, AuthSchemes.BASIC),
@@ -971,13 +965,21 @@ public class HttpClient {
     }
 
     /**
-     * Gets a thread local HttpContext to use for an https request.
+     * Gets a thread local HttpContext to use for an http or https request.
      * 
-     * @return a safe context containing https credential and auth info
+     * @param protocol
+     *            the protocol, either http or https
+     * @param host
+     *            the hostname
+     * @param port
+     *            the port
+     * 
+     * 
+     * @return a safe context containing http or https credential and auth info
      */
-    private HttpClientContext getHttpsContext(String host, int port) {
-        HttpClientContext context = httpsContext.get();
-
+    private HttpClientContext getHttpClientContext(String protocol,
+            String host, int port) {
+        HttpClientContext context = httpClientContext.get();
         HttpHost targetHost = context.getTargetHost();
         if (targetHost == null || !host.equals(targetHost.getHostName())
                 || port != targetHost.getPort()) {
@@ -987,9 +989,10 @@ public class HttpClient {
              * context to try and avoid that mess
              */
             context = HttpClientContext.create();
-            httpsContext.set(context);
+            httpClientContext.set(context);
         }
-
+        
+        CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (context.getCredentialsProvider() != credentialsProvider) {
             context.setCredentialsProvider(credentialsProvider);
         }
@@ -1004,7 +1007,7 @@ public class HttpClient {
             authCache = new BasicAuthCache();
             context.setAuthCache(authCache);
         }
-        HttpHost hostObj = new HttpHost(host, port, HTTPS);
+        HttpHost hostObj = new HttpHost(host, port, protocol);
         if (authCache.get(hostObj) == null) {
             authCache.put(hostObj, new BasicScheme());
         }

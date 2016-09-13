@@ -231,7 +231,7 @@
          id="org.apache.commons.codec"
          download-size="0"
          install-size="0"
-         version="1.4.0"/>
+         version="1.10.0"/>
 
    <plugin
          id="org.apache.commons.collections"
@@ -255,7 +255,13 @@
          id="org.apache.commons.lang"
          download-size="0"
          install-size="0"
-         version="2.3.0"/>
+         version="2.6.0"/>
+         
+   <plugin
+         id="org.apache.commons.lang3"
+         download-size="0"
+         install-size="0"
+         version="3.4.0"/>
 
    <plugin
          id="org.apache.http"
@@ -279,7 +285,7 @@
          id="org.apache.commons.pool"
          download-size="0"
          install-size="0"
-         version="1.5.4"/>
+         version="1.6.0"/>
 
    <plugin
          id="org.javassist"
@@ -297,19 +303,19 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="3.3.6"/>
+         version="3.4.1"/>
 
    <plugin
          id="org.slf4j"
          download-size="0"
          install-size="0"
-         version="1.7.5"/>
+         version="1.7.12"/>
 
    <plugin
          id="org.springframework"
          download-size="0"
          install-size="0"
-         version="3.2.13"/>
+         version="4.1.6"/>
 
    <plugin
          id="com.raytheon.uf.common.pypies"
@@ -433,5 +439,11 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="org.apache.commons.pool2"
+         download-size="0"
+         install-size="0"
+         version="2.4.2"/>
 
 </feature>

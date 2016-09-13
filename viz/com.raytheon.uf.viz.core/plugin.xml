@@ -50,7 +50,7 @@
         categoryId="com.raytheon.uf.viz.core.theme"
         id="com.raytheon.uf.viz.core.defaultFont"
         label="Default CAVE Font"
-        value="Monospace-bold-14">
+        value="Monospace-bold-12">
         <description>
             The default font for CAVE
         </description>
@@ -59,13 +59,13 @@
         categoryId="com.raytheon.uf.viz.core.theme"
         id="com.raytheon.uf.viz.core.rsc.sampling.SamplingResource"
         label="Sampling Font"
-        value="Monospaced-bold-12">
+        value="Monospace-bold-10">
         <description>
             The sampling font for CAVE
         </description>
     </fontDefinition>
     <colorDefinition
-    	  categoryId="com.raytheon.uf.viz.core.theme"
+          categoryId="com.raytheon.uf.viz.core.theme"
           id="com.raytheon.uf.viz.core.backgroundColor"
           label="Canvas Background Color"
           value="0,0,0">

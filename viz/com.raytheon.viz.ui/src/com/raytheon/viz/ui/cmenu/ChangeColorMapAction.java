@@ -30,7 +30,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
 
 /**
  * 
- * ChangeColorMapAction
+ * Action to launch the colormap dialog
  * 
  * <pre>
  * 
@@ -40,6 +40,7 @@ import com.raytheon.viz.ui.dialogs.ICloseCallback;
  *    ------------ ----------  ----------- --------------------------
  *    Jul 24, 2007             chammack    Initial Creation.
  *    Oct 17, 2012 1229        rferrel     Changes for non-blocking ColormapDialog.
+ *    Aug 31, 2015 4749        njensen     Changed setCloseCallback to addCloseCallback
  * 
  * </pre>
  * 
@@ -78,7 +79,7 @@ public class ChangeColorMapAction extends AbstractRightClickAction {
             colorMapDlg = new ColormapDialog(shell, "Set Color Table Range",
                     cap);
             colorMapDlg.setBlockOnOpen(false);
-            colorMapDlg.setCloseCallback(new ICloseCallback() {
+            colorMapDlg.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {

@@ -19,14 +19,16 @@
  **/
 package com.raytheon.uf.edex.ingest;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
@@ -49,9 +51,11 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 31, 2008            chammack    Initial creation
- * 02/06/09     1990       bphillip    Refactored to use plugin specific daos
+ * Feb 06, 2009 1990       bphillip    Refactored to use plugin specific daos
  * Nov 02, 2012 1302       djohnson    Remove unused method, fix formatting.
  * Mar 19, 2013 1785       bgonzale    Added performance status to persist.
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
+ * Apr 25, 2016 5604       rjpeter     Added dupElim checking by dataURI.
  * </pre>
  * 
  * @author chammack
@@ -59,7 +63,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  */
 public class PersistSrv {
 
-    private final Log logger = LogFactory.getLog(getClass());
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private static final PersistSrv instance = new PersistSrv();
 
@@ -73,30 +77,31 @@ public class PersistSrv {
     private PersistSrv() {
     }
 
-    public PluginDataObject[] persist(PluginDataObject[] pdo) {
-
-        if (pdo == null || pdo.length == 0) {
+    public PluginDataObject[] persist(PluginDataObject[] pdos) {
+        if ((pdos == null) || (pdos.length == 0)) {
             return new PluginDataObject[0];
         }
 
-        Set<PluginDataObject> pdoList = new HashSet<PluginDataObject>();
-        EDEXUtil.checkPersistenceTimes(pdo);
+        EDEXUtil.checkPersistenceTimes(pdos);
+
+        pdos = dupElim(pdos);
+        Set<PluginDataObject> pdoSet = new HashSet<>(pdos.length, 1);
 
         try {
-            String pluginName = pdo[0].getPluginName();
+            String pluginName = pdos[0].getPluginName();
             PluginDao dao = PluginFactory.getInstance()
                     .getPluginDao(pluginName);
             ITimer timer = TimeUtil.getTimer();
             timer.start();
-            StorageStatus ss = dao.persistToHDF5(pdo);
+            StorageStatus ss = dao.persistToHDF5(pdos);
             timer.stop();
-            perfLog.logDuration(pluginName + ": Persisted " + pdo.length
-                    + " record(s): Time to Persist",
-                    timer.getElapsedTime());
+            perfLog.logDuration(pluginName + ": Persisted " + pdos.length
+                    + " record(s): Time to Persist", timer.getElapsedTime());
             StorageException[] se = ss.getExceptions();
-            pdoList.addAll(Arrays.asList(pdo));
+            pdoSet.addAll(Arrays.asList(pdos));
             if (se != null) {
-                Map<PluginDataObject, StorageException> pdosThatFailed = new HashMap<PluginDataObject, StorageException>();
+                Map<PluginDataObject, StorageException> pdosThatFailed = new HashMap<>(
+                        se.length, 1);
                 for (StorageException s : se) {
                     IDataRecord rec = s.getRecord();
 
@@ -104,8 +109,8 @@ public class PersistSrv {
                         // If we have correlation info and it's a pdo, use that
                         // for the error message...
                         Object corrObj = rec.getCorrelationObject();
-                        if (corrObj != null
-                                && corrObj instanceof PluginDataObject) {
+                        if ((corrObj != null)
+                                && (corrObj instanceof PluginDataObject)) {
                             pdosThatFailed.put((PluginDataObject) corrObj, s);
                         } else {
                             // otherwise, do the best we can with the group
@@ -124,6 +129,8 @@ public class PersistSrv {
                 boolean suppressed = false;
                 for (Map.Entry<PluginDataObject, StorageException> e : pdosThatFailed
                         .entrySet()) {
+                    PluginDataObject failedPdo = e.getKey();
+
                     if (errCnt > 50) {
                         logger.warn("More than 50 errors occurred in this batch.  The remaining errors will be suppressed.");
                         suppressed = true;
@@ -132,34 +139,76 @@ public class PersistSrv {
 
                     if (!suppressed) {
                         if (e.getValue() instanceof DuplicateRecordStorageException) {
-                            logger.warn("Duplicate record encountered (duplicate ignored): "
-                                    + e.getKey().getDataURI());
+                            logger.warn("Duplicate record encountered (duplicate skipped): "
+                                    + failedPdo.getDataURI());
 
                         } else {
-                            logger.error(
-                                    "Error persisting record " + e.getKey()
-                                            + " to database: ", e.getValue());
+                            logger.error("Error persisting record " + failedPdo
+                                    + " to database: ", e.getValue());
                         }
                     }
 
-                    // Remove from the pdoList so the pdo is not propagated
-                    // to the next service
-                    pdoList.remove(e.getKey());
+                    /*
+                     * Remove from pdoSet so the pdo is not propagated to the
+                     * next service
+                     */
+                    pdoSet.remove(failedPdo);
                     errCnt++;
-
                 }
             }
         } catch (Throwable e1) {
             logger.error(
                     "Critical persistence error occurred.  Individual records that failed will be logged separately.",
                     e1);
-            for (PluginDataObject p : pdo) {
+            for (PluginDataObject p : pdos) {
                 logger.error("Record "
                         + p
                         + " failed persistence due to critical error logged above.");
             }
         }
 
-        return pdoList.toArray(new PluginDataObject[pdoList.size()]);
+        return pdoSet.toArray(new PluginDataObject[pdoSet.size()]);
+    }
+
+    /**
+     * Checks pdos for any duplicates based on dataURI.
+     * 
+     * @param pdos
+     * @return
+     */
+    protected PluginDataObject[] dupElim(PluginDataObject[] pdos) {
+        Set<String> dataUris = new HashSet<>(pdos.length, 1);
+
+        /*
+         * have to maintaint a separate list due to overwrite on the same
+         * dataURI with two different objects
+         */
+        List<PluginDataObject> pdosToStore = new ArrayList<>(pdos.length);
+
+        boolean pdosRemoved = false;
+
+        /*
+         * dup elim same dataURI within pdos that do not have overwrite set, for
+         * partial writes to a large dataset overwrite must be set to true
+         */
+        for (PluginDataObject pdo : pdos) {
+            String dataUri = pdo.getDataURI();
+
+            if (dataUris.contains(dataUri) && !pdo.isOverwriteAllowed()) {
+                pdosRemoved = true;
+                logger.warn("Duplicate record encountered in batched persist (duplicate skipped): "
+                        + pdo.getDataURI());
+            } else {
+                dataUris.add(dataUri);
+                pdosToStore.add(pdo);
+            }
+        }
+
+        if (pdosRemoved) {
+            pdos = pdosToStore
+                    .toArray(new PluginDataObject[pdosToStore.size()]);
+        }
+
+        return pdos;
     }
 }

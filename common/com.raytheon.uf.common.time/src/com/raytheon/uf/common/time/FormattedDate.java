@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.time;
 
-import java.sql.Timestamp;
+import java.util.Date;
 
 import com.raytheon.uf.common.serialization.IDeserializationContext;
 import com.raytheon.uf.common.serialization.ISerializationContext;
@@ -40,7 +40,6 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 14, 2015 4486       rjpeter     Initial creation
- * Nov 16, 2015 5132       bsteffen    Backport and change to extend Timestamp.
  * 
  * </pre>
  * 
@@ -49,16 +48,21 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  */
 @DynamicSerialize
 @DynamicSerializeTypeAdapter(factory = FormattedDateSerializer.class)
-public class FormattedDate extends Timestamp {
+public class FormattedDate extends Date {
 
     private static final long serialVersionUID = 1L;
 
     public FormattedDate() {
-        super(System.currentTimeMillis());
+        super();
     }
 
     public FormattedDate(long date) {
         super(date);
+    }
+
+    @Override
+    public String toString() {
+        return TimeUtil.formatToSqlTimestamp(this);
     }
 
     /**

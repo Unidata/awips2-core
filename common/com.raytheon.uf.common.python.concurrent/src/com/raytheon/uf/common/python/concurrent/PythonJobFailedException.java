@@ -32,6 +32,7 @@ import jep.JepException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 04, 2013 2041       bsteffen    Initial creation
+ * Oct 12, 2015 4963       dgilling    Extend Exception, not RuntimeException.
  * 
  * </pre>
  * 
@@ -39,11 +40,11 @@ import jep.JepException;
  * @version 1.0
  */
 
-public class PythonJobFailedException extends RuntimeException {
+public class PythonJobFailedException extends Exception {
 
     private static final long serialVersionUID = -6716989387583873621L;
 
-    public PythonJobFailedException(JepException cause) {
+    public PythonJobFailedException(Throwable cause) {
         super(cause.getMessage(), cause);
     }
 

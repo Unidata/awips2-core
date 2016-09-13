@@ -29,6 +29,8 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
 import com.raytheon.uf.common.numeric.source.DataSource;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.LineStyle;
@@ -73,6 +75,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jan 14, 2014  2661     bsteffen    Switch magnitude and direction from
  *                                    buffers to DataSource
  * May 14, 2015  4079     bsteffen    Move to core.grid
+ * Oct 16, 2015  4849     bsteffen    Fix antimeridian direction.
  * 
  * </pre>
  * 
@@ -80,6 +83,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1.0
  */
 public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(GriddedVectorDisplay.class);
 
     private final DataSource magnitude;
 
@@ -100,6 +105,9 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
     private DisplayType displayType;
 
     private GeodeticCalculator gc;
+
+    /** used to avoid spamming the logs. */
+    private transient boolean logProjectionProblems = true;
 
     /**
      * 
@@ -192,7 +200,6 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
         if (Double.isNaN(spd) || Double.isNaN(dir)) {
             return;
         }
-        int tryDiffPixLoc = 0;
         try {
             ReferencedCoordinate rCoord = new ReferencedCoordinate(
                     gridGeometryOfGrid, ijcoord);
@@ -204,24 +211,35 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
 
             if (stationPixelLocation != null) {
                 stationPixelLocation[1]--;
-                do {
-                   try {
-                        double[] newWorldLocation = this.descriptor
-                                .pixelToWorld(stationPixelLocation);
-                        this.gc.setStartingGeographicPoint(stationLocation[0],
-                                stationLocation[1]);
-                        this.gc.setDestinationGeographicPoint(
-                                newWorldLocation[0], newWorldLocation[1]);
-                        tryDiffPixLoc = 2; // setting of pts succeeded; do not need to try again
-
-                    } catch (Exception e2) {
-                        if (tryDiffPixLoc == 0) { // setting of points failed first time through
-                            stationPixelLocation[1] += 2; // try pixel location in opposite dir of 1st try
-                            tryDiffPixLoc++;
-                        } else
-                            throw new VizException(e2); // failed on second try; give up
+                try {
+                    double[] newWorldLocation = this.descriptor
+                            .pixelToWorld(stationPixelLocation);
+                    this.gc.setStartingGeographicPoint(stationLocation[0],
+                            stationLocation[1]);
+                    /*
+                     * Near the antimeridian rounding errors in the reproject
+                     * can lead to values that are just slightly out of range,
+                     * the GeodeticCalculator is very strict about values being
+                     * in the range ±180°.
+                     */
+                    newWorldLocation[0] = MapUtil
+                            .correctLon(newWorldLocation[0]);
+                    this.gc.setDestinationGeographicPoint(newWorldLocation[0],
+                            newWorldLocation[1]);
+                } catch (Exception e) {
+                    /*
+                     * Exceptions are logged rather than thrown because if the
+                     * error is specific to a particular location it will still
+                     * render other locations. Only log once to avoid spamming.
+                     */
+                    if (logProjectionProblems) {
+                        statusHandler
+                                .error("Unable to calculate reprojected vector direction, some vectors will not be displayed.",
+                                        e);
+                        logProjectionProblems = false;
                     }
-                } while (tryDiffPixLoc < 2);
+                    return;
+                }
             }
 
             if (gridRelative) {

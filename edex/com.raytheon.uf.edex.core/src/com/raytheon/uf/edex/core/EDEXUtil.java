@@ -21,12 +21,11 @@
 package com.raytheon.uf.edex.core;
 
 import java.io.File;
-import java.util.Calendar;
 import java.util.Date;
-import java.util.TimeZone;
+import java.util.Map;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.BeansException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.ApplicationContextAware;
@@ -35,6 +34,7 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.persist.IPersistable;
 import com.raytheon.uf.common.message.StatusMessage;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.edex.core.exception.ShutdownException;
 
@@ -54,6 +54,9 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * 04/10/2014   2726        rjpeter     Added methods for waiting for edex to be running.
  * 06/25/2014   3165        njensen     Remove dead code
  * Jul 16, 2014 2914        garmendariz Remove EnvProperties
+ * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
+ * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
+ * Apr 25, 2016 5604        rjpeter     Updated checkPersistenceTimes to utilize same object for each call.
  * </pre>
  * 
  * @author chammack
@@ -75,13 +78,11 @@ public class EDEXUtil implements ApplicationContextAware {
     private static final String EDEX_DATA = EDEX_HOME + File.separator + "data"
             + File.separator;
 
-    private static final String EDEX_UTILITY = EDEX_DATA
-            + "utility";
+    private static final String EDEX_UTILITY = EDEX_DATA + "utility";
 
-    private static final String EDEX_SHARE = EDEX_DATA
-            + "share";
+    private static final String EDEX_SHARE = EDEX_DATA + "share";
 
-    static Log logger = LogFactory.getLog(EDEXUtil.class);
+    private static Logger logger = LoggerFactory.getLogger(EDEXUtil.class);
 
     private static ApplicationContext CONTEXT;
 
@@ -247,15 +248,50 @@ public class EDEXUtil implements ApplicationContextAware {
     }
 
     public static void checkPersistenceTimes(PluginDataObject[] pdos) {
+        Date curTime = new Date();
+
         for (PluginDataObject record : pdos) {
             if (record instanceof IPersistable) {
                 if (((IPersistable) record).getPersistenceTime() == null) {
-                    ((IPersistable) record).setPersistenceTime(new Date());
+                    ((IPersistable) record).setPersistenceTime(curTime);
                 }
             } else {
-                record.setInsertTime(Calendar.getInstance(TimeZone
-                        .getTimeZone("GMT")));
+                record.setInsertTime(TimeUtil.newGmtCalendar(curTime));
             }
+        }
+    }
+
+    /**
+     * Send a message to alertViz with filters
+     * 
+     * @param priority
+     * @param pluginName
+     * @param source
+     * @param category
+     * @param message
+     * @param details
+     * @param audioFile
+     * @param filters
+     */
+    public static void sendMessageAlertViz(Priority priority,
+            String pluginName, String source, String category, String message,
+            String details, String audioFile, Map<String, String> filters) {
+
+        StatusMessage sm = new StatusMessage();
+        sm.setPriority(priority);
+        sm.setPlugin(pluginName);
+        sm.setCategory(category);
+        sm.setMessage(message);
+        sm.setMachineToCurrent();
+        sm.setSourceKey(source);
+        sm.setDetails(details);
+        sm.setEventTime(new Date());
+        sm.setAudioFile(audioFile);
+        sm.setFilters(filters);
+        try {
+            getMessageProducer().sendAsync(alertEndpoint, sm);
+        } catch (Exception e) {
+            logger.error("Could not send message to AlertViz");
         }
     }
 
@@ -268,27 +304,14 @@ public class EDEXUtil implements ApplicationContextAware {
      * @param category
      * @param message
      * @param details
+     * @param audioFile
      */
     public static void sendMessageAlertViz(Priority priority,
             String pluginName, String source, String category, String message,
             String details, String audioFile) {
 
-        StatusMessage sm = new StatusMessage();
-        sm.setPriority(priority);
-        sm.setPlugin(pluginName);
-        sm.setCategory(category);
-        sm.setMessage(message);
-        sm.setMachineToCurrent();
-        sm.setSourceKey(source);
-        sm.setDetails(details);
-        sm.setEventTime(new Date());
-        sm.setAudioFile(audioFile);
-
-        try {
-            getMessageProducer().sendAsync(alertEndpoint, sm);
-        } catch (Exception e) {
-            logger.error("Could not send message to AlertViz");
-        }
+        sendMessageAlertViz(priority, pluginName, source, category, message,
+                details, audioFile, null);
     }
 
     /**

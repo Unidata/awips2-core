@@ -25,7 +25,7 @@ import java.util.List;
 import javax.measure.converter.UnitConverter;
 import javax.measure.unit.Unit;
 
-import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang3.ArrayUtils;
 
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
@@ -68,6 +68,8 @@ import com.raytheon.uf.common.util.GridUtil;
  *                                    adaptive building
  * Feb 28, 2014  2791     bsteffen    Add a build method that takes min/max
  *                                    data values.
+ * Aug 31, 2015  4709     bsteffen    Fix incremental labeling.
+ * Oct 22, 2015  4914     bsteffen    Expose an additional build method.
  * 
  * </pre>
  * 
@@ -135,7 +137,7 @@ public class ColorMapParameterFactory {
         return build(data, parameterUnits, match);
     }
 
-    protected static ColorMapParameters build(StyleRule sr, Object data,
+    public static ColorMapParameters build(StyleRule sr, Object data,
             SingleLevel level, Unit<?> parameterUnits) {
 
         ColorMapParameters params = new ColorMapParameters();
@@ -235,21 +237,26 @@ public class ColorMapParameterFactory {
                 } else if (dataScaleType == Type.LOG) {
                     final double VERY_SMALL = 1e-30f;
                     // log scaling...redefine min and max to all positive
-                    if (scale != null && scale.isMirror() && -min > max)
+                    if (scale != null && scale.isMirror() && -min > max) {
                         max = -min;
-                    if (min < max / 1e4)
+                    }
+                    if (min < max / 1e4) {
                         min = (float) (max / 1e4);
-                    if (min < VERY_SMALL)
+                    }
+                    if (min < VERY_SMALL) {
                         min = (float) VERY_SMALL;
+                    }
 
                     double interval = Math.log(max / min) / 4.0;
                     min *= Math.exp(-interval);
                     max *= Math.exp(interval);
 
-                    if (min < max / 1e4)
+                    if (min < max / 1e4) {
                         min = max / 1e4f;
-                    if (min < VERY_SMALL)
+                    }
+                    if (min < VERY_SMALL) {
                         min = (float) VERY_SMALL;
+                    }
                 }
                 colormapMin = min;
                 colormapMax = max;
@@ -285,10 +292,12 @@ public class ColorMapParameterFactory {
             if (scale.getMinValue2() != null || scale.getMaxValue2() != null) {
                 Double min2 = scale.getMinValue2();
                 Double max2 = scale.getMaxValue2();
-                if (min2 == null)
+                if (min2 == null) {
                     min2 = scale.getMinValue();
-                if (max2 == null)
+                }
+                if (max2 == null) {
                     max2 = scale.getMaxValue();
+                }
 
                 Type scaleType = preferences.getDataScale().getLevelScale();
                 if (scaleType == Type.LINEAR || scaleType == Type.LOG) {
@@ -316,11 +325,12 @@ public class ColorMapParameterFactory {
             }
 
             if (dataScaleType == Type.LINEAR) {
-                if (scale != null && scale.isMirror()) {
-                    if (-displayMin > displayMax)
+                if (scale.isMirror()) {
+                    if (-displayMin > displayMax) {
                         displayMax = -displayMin;
-                    else
+                    } else {
                         displayMin = -displayMax;
+                    }
                 }
             } else if (dataScaleType == Type.LOG) {
                 if (displayMin > displayMax) {
@@ -329,11 +339,13 @@ public class ColorMapParameterFactory {
                     displayMin = t;
                 }
 
-                if (scale != null && scale.isMirror()
-                        && -displayMin > displayMax)
+                if (scale.isMirror()
+                        && -displayMin > displayMax) {
                     displayMax = -displayMin;
-                if (displayMin < displayMax / 1e4)
+                }
+                if (displayMin < displayMax / 1e4) {
                     displayMin = displayMax / 1e4;
+                }
             }
 
             double dataMin;
@@ -502,14 +514,14 @@ public class ColorMapParameterFactory {
                 params.setColorBarIntervals(labeling.getValues());
             } else if (labeling.getIncrement() != 0) {
                 float increment = labeling.getIncrement();
-                float initialPoint = (float) (Math
-                        .ceil(colorMapMin / increment) * increment);
-                float finalPoint = (float) (Math.floor(colorMapMin / increment) * increment);
+                float initialPoint = (float) (Math.ceil(displayMin / increment) * increment);
+                float finalPoint = (float) (Math.floor(displayMax / increment) * increment);
                 int count = (int) ((finalPoint - initialPoint) / increment) + 1;
                 float[] vals = new float[count];
                 for (int i = 0; i < count; i += 1) {
                     vals[i] = initialPoint + increment * i;
                 }
+                params.setColorBarIntervals(vals);
             }
         }
 
@@ -634,8 +646,9 @@ public class ColorMapParameterFactory {
             if (!haveIncrement) {
                 increment = Math.abs((max - min) / 10);
                 increment = newDataIntervalFromZoom(increment, 1, 3);
-                if (increment < VERY_SMALL)
+                if (increment < VERY_SMALL) {
                     increment = VERY_SMALL;
+                }
                 if (min + increment == min) {
                     // This can be the case if the numbers are very close
                     // together, essentially just give up and use min and max as
@@ -653,8 +666,9 @@ public class ColorMapParameterFactory {
             labellingPositions = new ArrayList<Float>(Math.min(100,
                     Math.max(0, n)));
             if (min < max) {
-                if (initialPoint <= min)
+                if (initialPoint <= min) {
                     initialPoint += increment;
+                }
 
                 float currentPoint = initialPoint;
                 while (currentPoint < max) {
@@ -662,8 +676,9 @@ public class ColorMapParameterFactory {
                     currentPoint += increment;
                 }
             } else {
-                if (initialPoint >= min)
+                if (initialPoint >= min) {
                     initialPoint -= increment;
+                }
 
                 float currentPoint = initialPoint;
                 while (currentPoint > max) {
@@ -679,15 +694,18 @@ public class ColorMapParameterFactory {
             // NOTE: This ignores any increment specified in the style rule
 
             increment = (float) (Math.log(max / min) / 10);
-            if (isMirror)
+            if (isMirror) {
                 increment *= 2;
-            if (increment < Math.log(1.2))
+            }
+            if (increment < Math.log(1.2)) {
                 increment = (float) Math.log(1.2);
+            }
             int perDecade = (int) (Math.log(10) / increment + 0.5);
             increment = (float) Math.exp(increment);
             float value = newDataIntervalFromZoom(max, 1, perDecade);
-            if (value > max)
+            if (value > max) {
                 value = newDataIntervalFromZoom(max / 2, 1, perDecade);
+            }
 
             List<Float> tempval = new ArrayList<Float>(20);
 
@@ -700,12 +718,14 @@ public class ColorMapParameterFactory {
             labellingPositions = new ArrayList<Float>(tempval.size()
                     + (isMirror ? tempval.size() + 1 : 0));
             if (isMirror) {
-                for (float v : tempval)
+                for (float v : tempval) {
                     labellingPositions.add(-v);
+                }
                 labellingPositions.add(0f);
             }
-            for (int i = tempval.size() - 1; i >= 0; i--)
+            for (int i = tempval.size() - 1; i >= 0; i--) {
                 labellingPositions.add(tempval.get(i));
+            }
 
         } else {
             labellingPositions = new ArrayList<Float>();
@@ -747,22 +767,24 @@ public class ColorMapParameterFactory {
         case 5:
         case 6:
         case 7:
-            if (m >= 4)
+            if (m >= 4) {
                 m = m < 6 ? 5 : (m < 8.5 ? 7 : 10);
-            else
+            } else {
                 m = (float) (m < 1.75 ? (m < 1.25 ? 1 : 1.5)
                         : (m < 2.5 ? 2 : 3));
+            }
             break;
         default:
-            if (m >= 9.5)
+            if (m >= 9.5) {
                 m = 10;
-            else if (m >= 5.5)
+            } else if (m >= 5.5) {
                 m = m < 7.5 ? (m < 6.5 ? 6 : 7) : (m < 8.5 ? 8 : 9);
-            else if (m >= 2.25)
+            } else if (m >= 2.25) {
                 m = (float) (m < 3.5 ? (m < 2.75 ? 2.5 : 3) : (m < 4.5 ? 4 : 5));
-            else
+            } else {
                 m = (float) (m < 1.35 ? (m < 1.1 ? 1 : 1.2) : (m < 1.75 ? 1.5
                         : 2));
+            }
         }
         return m * e;
     }

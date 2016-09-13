@@ -19,6 +19,8 @@
  **/
 package com.raytheon.viz.core.gl.internal;
 
+import org.eclipse.swt.graphics.Point;
+
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -36,7 +38,8 @@ import com.jogamp.opengl.util.awt.TextRenderer;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 18, 2010            mschenke     Initial creation
+ * Oct 18, 2010            mschenke    Initial creation
+ * Nov 04, 2015   5070     randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -101,46 +104,62 @@ public class UnmodifiableGLFont implements IGLFont {
                         + " must be disposed of internally only");
     }
 
+    @Override
     public void disposeInternal() {
         unmodifiableFont.disposeInternal();
     }
 
+    @Override
     public int hashCode() {
         return unmodifiableFont.hashCode();
     }
 
+    @Override
     public boolean equals(Object obj) {
         return unmodifiableFont.equals(obj);
     }
 
+    @Override
+    public Point getDPI() {
+        return unmodifiableFont.getDPI();
+    }
+
+    @Override
     public String getFontName() {
         return unmodifiableFont.getFontName();
     }
 
+    @Override
     public float getFontSize() {
         return unmodifiableFont.getFontSize();
     }
 
+    @Override
     public Style[] getStyle() {
         return unmodifiableFont.getStyle();
     }
 
+    @Override
     public TextRenderer getTextRenderer() {
         return unmodifiableFont.getTextRenderer();
     }
 
+    @Override
     public IFont deriveWithSize(float size) {
         return unmodifiableFont.deriveWithSize(size);
     }
 
+    @Override
     public boolean getSmoothing() {
         return unmodifiableFont.getSmoothing();
     }
 
+    @Override
     public boolean isScaleFont() {
         return unmodifiableFont.isScaleFont();
     }
 
+    @Override
     public String toString() {
         return unmodifiableFont.toString();
     }

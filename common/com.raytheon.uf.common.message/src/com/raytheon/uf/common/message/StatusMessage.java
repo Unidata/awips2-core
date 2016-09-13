@@ -31,7 +31,9 @@ import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
+import com.raytheon.uf.common.serialization.XmlGenericMapAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -51,6 +53,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                     using RuntimeMXBean
  * Jun 24, 2013 2135       randerso    Fixed NullPointerException in buildMessageAndDetails
  * Sep 12, 2014 3583       bclement     removed ISerializableObject
+ * Jul 27, 2015 4654       skorolev    Added localization level filters. Corrected annotation for filters.
  * 
  * </pre>
  * 
@@ -142,6 +145,14 @@ public class StatusMessage implements IMessage {
     @XmlAttribute
     @DynamicSerializeElement
     private String audioFile;
+
+    /**
+     * Optional: Key = LocalizationLevel, such as SITE, and Value = Name, such
+     * as OAX
+     */
+    @XmlJavaTypeAdapter(type = Map.class, value = XmlGenericMapAdapter.class)
+    @DynamicSerializeElement
+    private Map<String, String> filters;
 
     /**
      * Default constructor
@@ -418,6 +429,14 @@ public class StatusMessage implements IMessage {
         headers.put("CATEGORY", category);
         headers.put("PRIORITY", priority);
         return headers;
+    }
+
+    public Map<String, String> getFilters() {
+        return filters;
+    }
+
+    public void setFilters(Map<String, String> filters) {
+        this.filters = filters;
     }
 
     @Override

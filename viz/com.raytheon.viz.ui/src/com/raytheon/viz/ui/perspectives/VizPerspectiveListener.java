@@ -58,6 +58,10 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Apr 21, 2010            mschenke    Initial creation
  * Mar 21, 2013       1638 mschenke    Added method to get managed perspectives
  * Aug 11, 2014 3480       bclement    added log message in perspectiveOpened()
+ * Oct 20, 2015 4749       dgilling    Fix bug in perspectiveClosed that caused
+ *                                     unwanted GFE startup dialog to pop up.
+ * Jan 15, 2015 5054       randerso    Fix NullPointerException when called from outside
+ *                                     a CAVE environment (e.g. prototype, unit test)
  * 
  * </pre>
  * 
@@ -84,17 +88,19 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
 
     static {
         IExtensionRegistry registry = Platform.getExtensionRegistry();
-        IExtensionPoint point = registry
-                .getExtensionPoint(PERSPECTIVE_MANAGER_EXTENSION);
-        if (point != null) {
-            IExtension[] extensions = point.getExtensions();
+        if (registry != null) {
+            IExtensionPoint point = registry
+                    .getExtensionPoint(PERSPECTIVE_MANAGER_EXTENSION);
+            if (point != null) {
+                IExtension[] extensions = point.getExtensions();
 
-            for (IExtension ext : extensions) {
-                for (IConfigurationElement element : ext
-                        .getConfigurationElements()) {
-                    configurationElements.add(element);
-                    managedPerspectives.add(element
-                            .getAttribute(PERSPECTIVE_ID));
+                for (IExtension ext : extensions) {
+                    for (IConfigurationElement element : ext
+                            .getConfigurationElements()) {
+                        configurationElements.add(element);
+                        managedPerspectives.add(element
+                                .getAttribute(PERSPECTIVE_ID));
+                    }
                 }
             }
         }
@@ -226,8 +232,6 @@ public class VizPerspectiveListener implements IPerspectiveListener4 {
                 if (activePerspectives.size() == 0) {
                     manager.close();
                 }
-            } else {
-                manager.close();
             }
         }
     }

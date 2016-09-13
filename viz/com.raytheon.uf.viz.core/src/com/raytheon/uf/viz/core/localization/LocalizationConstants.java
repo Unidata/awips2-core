@@ -58,6 +58,6 @@ public class LocalizationConstants {
 
     public static final String P_LOCALIZATION_HTTP_SERVER_OPTIONS = "httpServerAddressOptions";
     
-    public static final String DEFAULT_LOCALIZATION_SITE = "OAX";
+    public static final String DEFAULT_LOCALIZATION_SITE = "BOU";
 
 }

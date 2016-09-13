@@ -34,6 +34,7 @@ package com.raytheon.uf.common.comm;
  * Jan 26, 2015  3952      njensen      gzip handled by default
  * Jun 30, 2015            mjames@ucar  maxConnections increased from 10 to 1000
  * Jul 06, 2015  4614      njensen      Add gzipEnabled
+ * Dec 07, 2015  4834      njensen      Changed for rename of IHttpsHandler to HttpAuthHandler
  * 
  * </pre>
  * 
@@ -48,7 +49,7 @@ public class HttpClientConfigBuilder {
 
     private int maxConnections = 1000;
 
-    private IHttpsHandler httpsHandler;
+    private HttpAuthHandler httpAuthHandler;
 
     private boolean tcpNoDelay = true;
 
@@ -69,7 +70,7 @@ public class HttpClientConfigBuilder {
      */
     public HttpClientConfigBuilder(HttpClientConfig config) {
         this.setConnectionTimeout(config.getConnectionTimeout());
-        this.setHttpsHandler(config.getHttpsHandler());
+        this.setHttpAuthHandler(config.getHttpAuthHandler());
         this.setMaxConnections(config.getMaxConnections());
         this.setSocketTimeout(config.getSocketTimeout());
         this.setTcpNoDelay(config.isTcpNoDelay());
@@ -85,7 +86,7 @@ public class HttpClientConfigBuilder {
      */
     public HttpClientConfig build() {
         return new HttpClientConfig(socketTimeout, connectionTimeout,
-                maxConnections, httpsHandler, tcpNoDelay,
+                maxConnections, httpAuthHandler, tcpNoDelay,
                 expectContinueEnabled, gzipEnabled);
     }
 
@@ -120,8 +121,8 @@ public class HttpClientConfigBuilder {
      * @param handler
      *            the handler to set
      */
-    public HttpClientConfigBuilder withHttpsHandler(IHttpsHandler handler) {
-        this.httpsHandler = handler;
+    public HttpClientConfigBuilder withHttpsHandler(HttpAuthHandler handler) {
+        this.httpAuthHandler = handler;
         return this;
     }
 
@@ -192,16 +193,16 @@ public class HttpClientConfigBuilder {
     /**
      * @return the httpsHandler
      */
-    public IHttpsHandler getHttpsHandler() {
-        return httpsHandler;
+    public HttpAuthHandler getHttpAuthHandler() {
+        return httpAuthHandler;
     }
 
     /**
-     * @param httpsHandler
-     *            the httpsHandler to set
+     * @param httpAuthHandler
+     *            the httpAuthHandler to set
      */
-    public void setHttpsHandler(IHttpsHandler httpsHandler) {
-        this.httpsHandler = httpsHandler;
+    public void setHttpAuthHandler(HttpAuthHandler httpAuthHandler) {
+        this.httpAuthHandler = httpAuthHandler;
     }
 
     /**

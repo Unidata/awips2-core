@@ -22,7 +22,7 @@ package com.raytheon.uf.viz.core.drawables;
 
 import com.raytheon.uf.common.colormap.ColorMapException;
 import com.raytheon.uf.common.colormap.IColorMap;
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
@@ -32,7 +32,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * @deprecated Use the com.raytheon.uf.common.colormap.ColorMapLoader instead.
  * 
- *             <pre>
+ * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
@@ -46,6 +46,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  *                                    ColorMapTree.
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Jun 30, 2014  3165     njensen     Deprecated and copied to common colormap plugin
+ * Dec 10, 2015  4834     njensen     Switched to use ILocalizationFile
  * 
  * </pre>
  * 
@@ -82,12 +83,12 @@ public class ColorMapLoader {
      *            the subdirectory of the colormaps dir to search
      * @return
      */
-    public static LocalizationFile[] listColorMapFiles(String subDirectory) {
+    public static ILocalizationFile[] listColorMapFiles(String subDirectory) {
         return com.raytheon.uf.common.colormap.ColorMapLoader
                 .listColorMapFiles(subDirectory);
     }
 
-    public static String shortenName(LocalizationFile file) {
+    public static String shortenName(ILocalizationFile file) {
         return com.raytheon.uf.common.colormap.ColorMapLoader.shortenName(file);
     }
 

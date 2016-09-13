@@ -20,6 +20,7 @@
 package com.raytheon.uf.viz.localization.filetreeview;
 
 import java.util.Arrays;
+import java.util.List;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.viz.localization.adapter.LocalizationPerspectiveAdapter;
@@ -34,7 +35,9 @@ import com.raytheon.uf.viz.localization.adapter.LocalizationPerspectiveAdapter;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 17, 2010            mpduff     Initial creation
+ * Aug 17, 2010            mpduff      Initial creation
+ * Oct 13, 2015 4410       bsteffen    Allow localization perspective to mix
+ *                                     files for multiple Localization Types.
  * 
  * </pre>
  * 
@@ -48,10 +51,7 @@ public class PathData {
      */
     private String name = null;
 
-    /**
-     * Localization Type.
-     */
-    private LocalizationType type = null;
+    private List<LocalizationType> types = null;
 
     /**
      * The path of the file.
@@ -100,16 +100,16 @@ public class PathData {
     /**
      * @return the type
      */
-    public LocalizationType getType() {
-        return type;
+    public List<LocalizationType> getTypes() {
+        return types;
     }
 
     /**
      * @param type
      *            the type to set
      */
-    public void setType(LocalizationType type) {
-        this.type = type;
+    public void setTypes(List<LocalizationType> types) {
+        this.types = types;
     }
 
     /**
@@ -137,7 +137,7 @@ public class PathData {
         StringBuilder sb = new StringBuilder();
         sb.append("Name = " + name + "\n");
         sb.append("Path = " + path + "\n");
-        sb.append("Type = " + type.name() + "\n");
+        sb.append("Types = " + types.toString() + "\n");
         return sb.toString();
     }
 
@@ -231,7 +231,7 @@ public class PathData {
         result = prime * result + ((name == null) ? 0 : name.hashCode());
         result = prime * result + ((path == null) ? 0 : path.hashCode());
         result = prime * result + (recursive ? 1231 : 1237);
-        result = prime * result + ((type == null) ? 0 : type.hashCode());
+        result = prime * result + ((types == null) ? 0 : types.hashCode());
         return result;
     }
 
@@ -263,8 +263,12 @@ public class PathData {
             return false;
         if (recursive != other.recursive)
             return false;
-        if (type != other.type)
+        if (types == null) {
+            if (other.types != null)
+                return false;
+        } else if (!types.equals(other.types))
             return false;
         return true;
     }
+
 }

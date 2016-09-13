@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,16 +31,20 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
+import com.raytheon.uf.common.dataplugin.PluginException;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils.LockState;
 import com.raytheon.uf.edex.database.cluster.ClusterTask;
+import com.raytheon.uf.edex.database.plugin.PluginDao;
+import com.raytheon.uf.edex.database.plugin.PluginFactory;
 import com.raytheon.uf.edex.database.purge.PurgeLogger;
 import com.raytheon.uf.edex.database.status.StatusConstants;
 import com.raytheon.uf.edex.purgesrv.PurgeJob.PURGE_JOB_TYPE;
 
 /**
- * 
+ *
  * Object for managing purge jobs. The purge manager relies on the purgejobs
  * table to coordinate information. The executePurge() method on this class is
  * executed every minute via a quartz timer defined in the purge-spring.xml
@@ -73,21 +77,22 @@ import com.raytheon.uf.edex.purgesrv.PurgeJob.PURGE_JOB_TYPE;
  * longer than the 20 minute threshold, it is considered a failure, and the
  * failure count is updated.
  * <p>
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 18, 2012 #470       bphillip    Initial creation
  * Apr 11, 2013 #1959      dhladky     Added method that only processes running plugins
  * Aug 18, 2013 #2280      dhladky     Made OGC method of only purging active plugins the standard practice
  * Jun 24, 2014 #3314      randerso    Purge least recently purged first.
- * 
+ * Jul 30, 2015 #1574      nabowle     Add purging of orphan data.
+ *
  * </pre>
- * 
+ *
  * @author bphillip
  * @version 1.0
  */
@@ -182,7 +187,7 @@ public class PurgeManager {
 
     /**
      * The guts of the actual purge process
-     * 
+     *
      * @param availablePlugins
      */
     protected void purgeRunner(List<String> pluginList) {
@@ -426,7 +431,7 @@ public class PurgeManager {
      * Starts a purge expired data job for the specified plugin. Using this
      * method allows for exceeding failure count via a manual purge as well as
      * kicking off a second purge for one already running on a server.
-     * 
+     *
      * @param plugin
      *            The plugin to purge the expired data for
      * @return The PurgeJob that was started
@@ -442,7 +447,7 @@ public class PurgeManager {
      * Starts a purge all data job for the specified plugin. Using this method
      * allows for exceeding failure count via a manual purge as well as kicking
      * off a second purge for one already running on a server.
-     * 
+     *
      * @param plugin
      *            The plugin to purge all data for
      * @return The PurgeJob that was started
@@ -452,6 +457,24 @@ public class PurgeManager {
         PurgeJob job = new PurgeJob(plugin, PURGE_JOB_TYPE.PURGE_ALL, this);
         job.start();
         return job;
+    }
+
+    /**
+     * Purges orphaned data for all registered plugins.
+     */
+    public void purgeOrphanedData() throws PluginException {
+        if (this.purgeEnabled) {
+            Set<String> plugins = PluginRegistry.getInstance()
+                    .getRegisteredObjects();
+            PluginDao pluginDao;
+            for (String plugin : plugins) {
+                if (EDEXUtil.isShuttingDown()) {
+                    break;
+                }
+                pluginDao = PluginFactory.getInstance().getPluginDao(plugin);
+                pluginDao.purgeOrphanedData();
+            }
+        }
     }
 
     public int getClusterLimit() {

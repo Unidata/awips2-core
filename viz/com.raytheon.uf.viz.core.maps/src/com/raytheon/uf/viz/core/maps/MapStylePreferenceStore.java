@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.maps;
 
-import java.io.File;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -33,12 +32,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlTransient;
 
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.jaxb.JAXBClassLocator;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -63,6 +64,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * Nov 08, 2013 2361       njensen     Use JAXBManager for XML
  * Feb 24, 2015 3978       njensen     Removed OBE code
  * Jun 26, 2015 4598       randerso    Added better XML annotations
+ * Feb 11, 2016 5242       dgilling    Remove calls to deprecated Localization APIs.
  * 
  * </pre>
  * 
@@ -272,18 +274,18 @@ public class MapStylePreferenceStore {
         preferences.put(key, value);
 
         IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationFile lf = pathMgr.getLocalizationFile(pathMgr.getContext(
+        ILocalizationFile lf = pathMgr.getLocalizationFile(pathMgr.getContext(
                 LocalizationType.CAVE_STATIC, LocalizationLevel.USER),
                 MAPSTYLE_FILENAME);
 
-        File file = lf.getFile();
-        try {
-            getJaxbManager().marshalToXmlFile(this, file.getAbsolutePath());
-            lf.save();
+        try (SaveableOutputStream outStream = lf.openOutputStream()) {
+            getJaxbManager().marshalToStream(this, outStream);
+            outStream.save();
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
+            statusHandler.error(
                     "Exception while storing map style preferences", e);
         }
+
         return oldValue;
     }
 }

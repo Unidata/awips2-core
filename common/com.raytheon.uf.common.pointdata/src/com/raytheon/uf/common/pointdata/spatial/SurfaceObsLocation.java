@@ -32,7 +32,10 @@ import org.hibernate.annotations.Index;
 import org.hibernate.annotations.Type;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
+import com.raytheon.uf.common.dataplugin.NullUtil;
 import com.raytheon.uf.common.dataplugin.annotations.DataURI;
+import com.raytheon.uf.common.dataplugin.annotations.NullFloat;
+import com.raytheon.uf.common.dataplugin.annotations.NullString;
 import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
@@ -63,6 +66,7 @@ import com.vividsolutions.jts.geom.Point;
  * July 15, 2013 2180      dhladky     Changed to hibernate spatial type (Done in 13.51) not in dev
  * Jul 23, 2014 3410       bclement    changed lat and lon to floats
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Jul 31, 2016 4360       rferrel     Made stationId, latitude and longitude non-nullable.
  * 
  * </pre>
  * 
@@ -76,14 +80,13 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     private static final long serialVersionUID = 1L;
 
-    private static final ThreadLocal<DecimalFormat> LATLON_FORMAT = new ThreadLocal<DecimalFormat>(){
+    private static final ThreadLocal<DecimalFormat> LATLON_FORMAT = new ThreadLocal<DecimalFormat>() {
 
         @Override
         protected DecimalFormat initialValue() {
-            return new DecimalFormat(
-                    "###.###");
+            return new DecimalFormat("###.###");
         }
-        
+
     };
 
     // Elevation of this location in meters.
@@ -92,12 +95,13 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     private Integer elevation = null;
 
     // Id of the station making this observation.
-    @Column(length = 48)
+    @Column(length = 48, nullable = false)
     @Index(name = "%TABLE%_stationIndex")
     @DataURI(position = 0)
+    @NullString
     @XmlAttribute
     @DynamicSerializeElement
-    private String stationId;
+    private String stationId = NullUtil.NULL_STRING;;
 
     // Default to mobile. If defined the base location data has been retrieved
     // from a data base.
@@ -113,16 +117,18 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     private Point location;
 
     @DataURI(position = 1)
-    @Column
+    @NullFloat
+    @Column(nullable = false)
     @XmlAttribute
     @DynamicSerializeElement
-    private Float latitude;
+    private Float latitude = NullUtil.NULL_FLOAT;
 
     @DataURI(position = 2)
-    @Column
+    @NullFloat
+    @Column(nullable = false)
     @XmlAttribute
     @DynamicSerializeElement
-    private Float longitude;
+    private Float longitude = NullUtil.NULL_FLOAT;
 
     /**
      * Create an empty instance of this class.
@@ -152,23 +158,23 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
      * @param stationIdentifier
      */
     public SurfaceObsLocation(String stationIdentifier) {
-        stationId = stationIdentifier;
+        stationId = NullUtil.convertNullToNullString(stationIdentifier);
     }
 
     public Float getLatitude() {
-        return latitude;
+        return NullUtil.convertNullFloatoNull(this.latitude);
     }
 
     public void setLatitude(Float latitude) {
-        this.latitude = latitude;
+        this.latitude = NullUtil.convertNullToNullFloat(latitude);
     }
 
     public Float getLongitude() {
-        return longitude;
+        return NullUtil.convertNullFloatoNull(this.longitude);
     }
 
     public void setLongitude(Float longitude) {
-        this.longitude = longitude;
+        this.longitude = NullUtil.convertNullToNullFloat(longitude);
     }
 
     /**
@@ -194,7 +200,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
      * @return the stationId
      */
     public String getStationId() {
-        return stationId;
+        return NullUtil.convertNullStringToNull(this.stationId);
     }
 
     /**
@@ -202,7 +208,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
      *            the stationId to set
      */
     public void setStationId(String stationId) {
-        this.stationId = stationId;
+        this.stationId = NullUtil.convertNullToNullString(stationId);
     }
 
     /**
@@ -272,14 +278,14 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     public void assignLatitude(float latitude) {
         this.latitude = latitude;
-        if (longitude != null && location == null) {
+        if (!NullUtil.isNull(longitude) && (location == null)) {
             assignLocation(this.latitude, this.longitude);
         }
     }
 
     public void assignLongitude(float longitude) {
         this.longitude = longitude;
-        if (latitude != null && location == null) {
+        if (!NullUtil.isNull(latitude) && (location == null)) {
             assignLocation(this.latitude, this.longitude);
         }
     }

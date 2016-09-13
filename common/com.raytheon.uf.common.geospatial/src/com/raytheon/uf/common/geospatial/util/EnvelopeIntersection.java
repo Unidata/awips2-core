@@ -39,6 +39,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 import com.vividsolutions.jts.geom.LineSegment;
 import com.vividsolutions.jts.geom.LineString;
 import com.vividsolutions.jts.geom.Polygon;
+import com.vividsolutions.jts.geom.TopologyException;
 import com.vividsolutions.jts.geom.Triangle;
 
 /**
@@ -50,21 +51,26 @@ import com.vividsolutions.jts.geom.Triangle;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Dec 14, 2012           mschenke    Initial creation
- * Sep 13, 2013  2309     bsteffen    Corrected Lines that are extrapolated to
- *                                    intersect the border will use projection
- *                                    factor from all 4 corners instead of 3.
- * Oct 08, 2013  2104     mschenke    Added case for where actual border is 
- *                                    inside out by checking interior point
- * Nov 18, 2013  2528     bsteffen    Fall back to brute force when corner
- *                                    points are not found.
- * Feb 23, 2015  4022     bsteffen    Return empty polygon when empty envelopes
- *                                    are used.
- * May 27, 2015  4472     bsteffen    Change the way the border is calculated
- *                                    to handle untransformable corners better.
- * Jun 11, 2015  4551     bsteffen    Add minNumDivs to calculateEdge
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Dec 14, 2012           mschenke  Initial creation
+ * Sep 13, 2013  2309     bsteffen  Corrected Lines that are extrapolated to
+ *                                  intersect the border will use projection
+ *                                  factor from all 4 corners instead of 3.
+ * Oct 08, 2013  2104     mschenke  Added case for where actual border is 
+ *                                  inside out by checking interior point
+ * Nov 18, 2013  2528     bsteffen  Fall back to brute force when corner
+ *                                  points are not found.
+ * Feb 23, 2015  4022     bsteffen  Return empty polygon when empty envelopes
+ *                                  are used.
+ * May 27, 2015  4472     bsteffen  Change the way the border is calculated to
+ *                                  handle untransformable corners better.
+ * Jun 11, 2015  4551     bsteffen  Add minNumDivs to calculateEdge
+ * Aug 11, 2015  4713     bsteffen  Fall back to brute force for topology
+ *                                  exception.
+ * Sep 03, 2015  4831     bsteffen  Use approximateEquals when comparing
+ *                                  coordinates that have been through the
+ *                                  WorldWrapCorrector.
  * 
  * </pre>
  * 
@@ -353,9 +359,14 @@ public class EnvelopeIntersection {
                             Coordinate[] c2 = ls2.getCoordinates();
                             Coordinate c2_0 = c2[0];
                             Coordinate c2_l = c2[c2.length - 1];
-                            if (c1_0.equals(c2_l) || c1_l.equals(c2_0)) {
+
+                            boolean connectLS1toLS2 = approximateEquals(c1_l,
+                                    c2_0);
+                            boolean connectLS2toLS1 = approximateEquals(c1_0,
+                                    c2_l);
+                            if (connectLS2toLS1 || connectLS1toLS2) {
                                 // ls1 and ls2 are connected, create new geom
-                                if (c1_0.equals(c2_l)) {
+                                if (connectLS2toLS1) {
                                     Coordinate[] tmp = c1;
                                     c1 = c2;
                                     c2 = tmp;
@@ -436,8 +447,23 @@ public class EnvelopeIntersection {
                             correctedLs = gf.createLineString(lsCoords);
                         }
 
-                        // Intersect with targetBorder to trim LineString
-                        correctedLs = targetBorder.intersection(correctedLs);
+                        /* Intersect with targetBorder to trim LineString */
+                        try {
+                            correctedLs = targetBorder
+                                    .intersection(correctedLs);
+                        } catch (TopologyException e) {
+                            /*
+                             * This is known to happen when the target envelope
+                             * is stereographic and the source envelope contains
+                             * the point on the earth that is opposite of the
+                             * stereographic center. It would be better to
+                             * detect this case earlier but I don't know how.
+                             */
+                            return BruteForceEnvelopeIntersection
+                                    .createEnvelopeIntersection(sourceEnvelope,
+                                            targetEnvelope, maxHorDivisions,
+                                            maxVertDivisions);
+                        }
                     } else {
                         System.err
                                 .println("LineString lives completely outside target extent");
@@ -1072,5 +1098,33 @@ public class EnvelopeIntersection {
                 buildPolygonList(polygons, geometry.getGeometryN(n));
             }
         }
+    }
+
+    /**
+     * Return true if two coordinates are very very close to eachother(within 4
+     * ULP). This is necessary when the world wrap corrector introduces very
+     * small rounding errors during the correction process.
+     * 
+     * @see Math#ulp(double)
+     */
+    private static boolean approximateEquals(Coordinate c1, Coordinate c2) {
+        return approximateEquals(c1.x, c2.x) && approximateEquals(c1.y, c2.y);
+    }
+
+    /**
+     * Return true if two doubles are very very close to eachother(within 4
+     * ULP).
+     * 
+     * @see #approximateEquals(Coordinate, Coordinate)
+     */
+    private static boolean approximateEquals(double d1, double d2) {
+        double test = d1;
+        for (int i = 0; i < 4; i += 1) {
+            if (test == d2) {
+                return true;
+            }
+            test = Math.nextAfter(test, d2);
+        }
+        return false;
     }
 }

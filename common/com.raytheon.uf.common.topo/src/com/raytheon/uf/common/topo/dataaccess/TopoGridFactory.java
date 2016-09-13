@@ -1,0 +1,287 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
+package com.raytheon.uf.common.topo.dataaccess;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.HashMap;
+import java.util.Map;
+
+import org.geotools.coverage.grid.GridEnvelope2D;
+import org.geotools.coverage.grid.GridGeometry2D;
+import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.opengis.referencing.FactoryException;
+import org.opengis.referencing.datum.PixelInCell;
+import org.opengis.referencing.operation.MathTransform;
+import org.opengis.referencing.operation.TransformException;
+
+import com.raytheon.uf.common.dataaccess.IDataRequest;
+import com.raytheon.uf.common.dataaccess.exception.DataRetrievalException;
+import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
+import com.raytheon.uf.common.dataaccess.exception.ResponseTooLargeException;
+import com.raytheon.uf.common.dataaccess.exception.TimeAgnosticDataException;
+import com.raytheon.uf.common.dataaccess.grid.IGridData;
+import com.raytheon.uf.common.dataaccess.impl.AbstractDataFactory;
+import com.raytheon.uf.common.dataaccess.impl.AbstractGridDataPluginFactory;
+import com.raytheon.uf.common.dataaccess.impl.DefaultGridData;
+import com.raytheon.uf.common.dataaccess.util.DataWrapperUtil;
+import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.IDataStore;
+import com.raytheon.uf.common.datastorage.Request;
+import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.geospatial.CRSCache;
+import com.raytheon.uf.common.numeric.source.DataSource;
+import com.raytheon.uf.common.time.BinOffset;
+import com.raytheon.uf.common.time.DataTime;
+import com.raytheon.uf.common.time.TimeRange;
+import com.raytheon.uf.common.topo.TopoUtils;
+import com.vividsolutions.jts.geom.Envelope;
+
+/**
+ * Grid data access factory for Topographic data.
+ *
+ * <pre>
+ *
+ * SOFTWARE HISTORY
+ *
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jul 14, 2015 4608       nabowle     Initial creation
+ *
+ * </pre>
+ *
+ * @author nabowle
+ * @version 1.0
+ */
+
+public class TopoGridFactory extends AbstractDataFactory {
+
+    private static final String TOPO_FILE = "topoFile";
+    private static final String DATASET = "dataset";
+    private static final String GROUP = "group";
+
+    /**
+     * Constructor.
+     */
+    public TopoGridFactory() {
+        super();
+    }
+
+    @Override
+    public IGridData[] getGridData(IDataRequest request, DataTime... times) {
+        validateRequest(request);
+        return getGridData(request);
+    }
+
+    @Override
+    public IGridData[] getGridData(IDataRequest request, TimeRange timeRange) {
+        validateRequest(request);
+        return getGridData(request);
+    }
+
+    public void validateRequest(IDataRequest request) {
+        validateRequest(request, false);
+
+        if (request.getEnvelope() == null) {
+            throw new IncompatibleRequestException(
+                    "Topo data requests must specify an envelope.");
+        }
+    }
+
+    @Override
+    public String[] getRequiredIdentifiers() {
+        return new String[] { GROUP, DATASET };
+    }
+
+    @Override
+    public String[] getOptionalIdentifiers() {
+        return new String[] { TOPO_FILE };
+    }
+
+    /**
+     * Executes the provided DbQueryRequest and returns an array of IGridData
+     *
+     * @param request
+     *            the original grid request
+     * @return an array of IGridData
+     */
+    protected IGridData[] getGridData(IDataRequest request) {
+        Map<String, Object> identifiers = request.getIdentifiers();
+
+        String topofile = getTopoFile(identifiers);
+        String group = ((String) identifiers.get(GROUP)).trim();
+        String dataset = ((String) identifiers.get(DATASET)).trim();
+        Envelope requestEnv = request.getEnvelope();
+
+        File hdf5File = new File(TopoUtils.getDefaultTopoFile().getParent(),
+                topofile);
+        IDataStore ds = DataStoreFactory.getDataStore(hdf5File);
+
+        IDataRecord rec;
+        int width;
+        int height;
+        GridGeometry2D recGeom;
+        Map<String, Object> attributes;
+        try {
+            GridGeometry2D gridGeom = TopoUtils.getTopoGeometry(ds, "full");
+
+            MathTransform llToTopoCRS = CRSCache.getInstance()
+                    .findMathTransform(DefaultGeographicCRS.WGS84,
+                            gridGeom.getCoordinateReferenceSystem());
+            MathTransform topoCRSToGrid = gridGeom.getGridToCRS(
+                    PixelInCell.CELL_CORNER).inverse();
+
+            double[] latLon = new double[] { requestEnv.getMinX(),
+                    requestEnv.getMinY(), requestEnv.getMaxX(),
+                    requestEnv.getMaxY() };
+            double[] topoCrs = new double[latLon.length];
+            double[] topoGrid = new double[latLon.length];
+
+            // transform user envelope to the topo's CRS
+            llToTopoCRS.transform(latLon, 0, topoCrs, 0, 2);
+            // transform envelope in topo CRS to grid coordinates
+            topoCRSToGrid.transform(topoCrs, 0, topoGrid, 0, 2);
+
+            int minX = (int) Math.min(topoGrid[0], topoGrid[2]);
+            int maxX = (int) Math.max(topoGrid[0], topoGrid[2]);
+            int minY = (int) Math.min(topoGrid[1], topoGrid[3]);
+            int maxY = (int) Math.max(topoGrid[1], topoGrid[3]);
+            width = maxX - minX;
+            height = maxY - minY;
+
+            checkResponseSize(width, height);
+
+            Request req = Request.buildSlab(new int[] { minX, minY },
+                    new int[] { maxX, maxY });
+
+            rec = ds.retrieve(group, dataset, req);
+
+            attributes = createRecordAttributes(width, height, minX, minY);
+            recGeom = createRecordGeometry(gridGeom, topoCrs, minX, minY,
+                    width, height);
+
+        } catch (FileNotFoundException | StorageException | TransformException
+                | FactoryException e) {
+            throw new DataRetrievalException(
+                    "Could not retrieve the requested topo data for "
+                            + topofile + ". ", e);
+        }
+
+        DataSource dataSource = DataWrapperUtil
+                .constructArrayWrapper(rec, true);
+
+        DefaultGridData retData = new DefaultGridData(dataSource, recGeom);
+        retData.setAttributes(attributes);
+        return new IGridData[] { retData };
+    }
+
+    /**
+     * Checks the response size. If the estimated response size is too large, a
+     * {@link ResponseTooLargeException} is thrown. If it's not too large,
+     * nothing happens.
+     *
+     * @param width
+     *            The width of the grid envelope requested.
+     * @param height
+     *            The height of the grid envelope requested.
+     */
+    private void checkResponseSize(long width, long height) {
+        long estimatedSize = width * height
+                * AbstractGridDataPluginFactory.SIZE_OF_POINT;
+        if (estimatedSize > MAX_RESPONSE_SIZE) {
+            throw new ResponseTooLargeException(estimatedSize,
+                    MAX_RESPONSE_SIZE,
+                    "Please specify a smaller request envelope.");
+        }
+    }
+
+    private Map<String, Object> createRecordAttributes(int width, int height,
+            int minX, int minY) {
+        Map<String, Object> attributes = new HashMap<>();
+        attributes.put("width", width);
+        attributes.put("height", height);
+        attributes.put("minX", minX);
+        attributes.put("minY", minY);
+        return attributes;
+    }
+
+
+    /**
+     * Creates the GridGeometry2D for the returned record.
+     *
+     * @param gridGeom The grid geometry from the req
+     * @param topoCrs
+     * @param minX
+     * @param minY
+     * @param maxX
+     * @param maxY
+     * @return
+     */
+    private GridGeometry2D createRecordGeometry(GridGeometry2D gridGeom,
+            double[] topoCrs, int minX, int minY, int width, int height) {
+        GridEnvelope2D gridEnvelope = new GridEnvelope2D(minX, minY, width,
+                height);
+        GridGeometry2D recGeom = new GridGeometry2D(gridEnvelope,
+                gridGeom.getGridToCRS(PixelInCell.CELL_CORNER),
+                gridGeom.getCoordinateReferenceSystem());
+        return recGeom;
+    }
+
+    /**
+     * Get the topo file. If no topo file is specified, use defaultTopo.h5
+     *
+     * @param identifiers
+     *            The request identifiers.
+     * @return The topo file to use.
+     */
+    private String getTopoFile(Map<String, Object> identifiers) {
+        String topofile = (String) identifiers.get(TOPO_FILE);
+        if (topofile == null || topofile.trim().isEmpty()) {
+            topofile = TopoUtils.DEFAULT_TOPO_FILE;
+        } else if (!topofile.endsWith(".h5")) {
+            topofile = topofile.trim() + ".h5";
+        }
+        return topofile;
+    }
+
+    // Unsupported methods.
+
+    @Override
+    public DataTime[] getAvailableTimes(IDataRequest request,
+            boolean refTimeOnly) throws TimeAgnosticDataException {
+        throw new TimeAgnosticDataException(request.getDatatype()
+                + " data requests do not support getting available times.");
+    }
+
+    @Override
+    public DataTime[] getAvailableTimes(IDataRequest request,
+            BinOffset binOffset) throws TimeAgnosticDataException {
+        throw new TimeAgnosticDataException(request.getDatatype()
+                + " data requests do not support getting available times.");
+    }
+
+    @Override
+    public String[] getAvailableLocationNames(IDataRequest request) {
+        throw new IncompatibleRequestException(
+                request.getDatatype()
+                        + " data requests do not support getting available location names.");
+    }
+}

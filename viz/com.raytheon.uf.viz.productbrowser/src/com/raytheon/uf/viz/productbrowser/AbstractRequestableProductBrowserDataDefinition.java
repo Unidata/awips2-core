@@ -29,6 +29,9 @@ import java.util.Map;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 
+import org.eclipse.jface.preference.IPreferenceStore;
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IWorkbenchWindow;
 
@@ -44,6 +47,7 @@ import com.raytheon.uf.viz.core.RecordFactory;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
+import com.raytheon.uf.viz.core.exception.NoPluginException;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
 import com.raytheon.uf.viz.core.procedures.Bundle;
@@ -76,6 +80,10 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                  DbQueryRequest.
  * May 13, 2014  3135     bsteffen  Remove ISerializableObject.
  * Jun 02, 2015  4153     bsteffen  Extract interface and deprecate.
+ * Aug 13, 2015  4717     mapeters  Update order when its preference store value changes
+ * Sep 03, 2015  4717     mapeters  Get preference store order value using 
+ *                                  ProductBrowserPreferenceConstants.getOrder()
+ * Nov 03, 2015  5030     mapeters  Quietly handle CAVE & EDEX plugins being out of sync
  * 
  * </pre>
  * 
@@ -100,7 +108,7 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     // request constraints
     public String[] order = null;
 
-    /** Use {@link ProductBrowserPreferenceConstants#FORMAT_DATA} instead */
+    /** Use {@link ProductBrowserPreferenceConstants#ORDER} instead */
     @Deprecated
     protected static final String ORDER = ProductBrowserPreferenceConstants.ORDER;
 
@@ -125,6 +133,12 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
                 DbQueryResponse response = (DbQueryResponse) ThriftClient
                         .sendRequest(request);
                 parameters = response.getEntityObjects(Object.class);
+            } catch (NoPluginException e) {
+                String msg = "Unable to display "
+                        + displayName
+                        + " data in Product Browser because the server does not support the "
+                        + productName + " plugin";
+                statusHandler.debug(msg);
             } catch (VizException e) {
                 statusHandler.handle(Priority.ERROR,
                         "Unable to populate initial product tree", e);
@@ -251,7 +265,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
         }
         Bundle b = new Bundle();
         b.setDisplays(new AbstractRenderableDisplay[] { display });
-        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b).schedule();
+        new BundleProductLoader(EditorUtil.getActiveVizContainer(), b)
+                .schedule();
     }
 
     /**
@@ -372,7 +387,8 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
     @Override
     protected List<ProductBrowserPreference> configurePreferences() {
         List<ProductBrowserPreference> widgets = super.configurePreferences();
-        widgets.add(ProductBrowserPreferenceConstants.createOrderPreference(order));
+        widgets.add(ProductBrowserPreferenceConstants
+                .createOrderPreference(order));
         widgets.add(ProductBrowserPreferenceConstants.createFormatPreference());
         return widgets;
     }
@@ -381,18 +397,19 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
      * @return the order
      */
     protected String[] getOrder() {
-        String temp = Activator.getDefault().getPreferenceStore()
-                .getString(ORDER + displayName);
-        if (temp != null && !temp.isEmpty()) {
-            order = temp.split(",");
+        String[] order = ProductBrowserPreferenceConstants
+                .getOrder(displayName);
+        if (order != null) {
+            this.order = order;
         }
-        return order;
+        return this.order;
     }
 
     @Override
     public List<ProductBrowserLabel> getLabels(String[] selection) {
         if (selection.length == 0) {
-            ProductBrowserLabel label = new ProductBrowserLabel(displayName, productName);
+            ProductBrowserLabel label = new ProductBrowserLabel(displayName,
+                    productName);
             label.setData(productName);
             label.setProduct(order.length == 0);
             return Collections.singletonList(label);
@@ -411,5 +428,25 @@ public abstract class AbstractRequestableProductBrowserDataDefinition<T extends 
             stringBuilder.append(order[i - 1] + " = " + selection[i]);
         }
         return stringBuilder.toString();
+    }
+
+    @Override
+    public List<ProductBrowserPreference> getPreferences() {
+        if (preferences == null) {
+            IPreferenceStore store = Activator.getDefault()
+                    .getPreferenceStore();
+            store.addPropertyChangeListener(new IPropertyChangeListener() {
+                @Override
+                public void propertyChange(PropertyChangeEvent event) {
+                    if (event.getProperty().equals(
+                            ProductBrowserPreferenceConstants.ORDER
+                                    + displayName)) {
+                        // Update order from preference store
+                        getOrder();
+                    }
+                }
+            });
+        }
+        return super.getPreferences();
     }
 }

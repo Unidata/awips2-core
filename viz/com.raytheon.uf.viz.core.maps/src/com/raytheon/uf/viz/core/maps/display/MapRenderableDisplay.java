@@ -36,6 +36,7 @@ import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
+import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -53,28 +54,35 @@ import com.raytheon.uf.viz.core.rsc.legend.DefaultLegendResource;
 import com.raytheon.uf.viz.core.rsc.sampling.SamplingResource;
 
 /**
- * TODO Add Description
+ * An {@link IRenderableDisplay} specifically for displaying geospatial data on
+ * a 2 dimensional map.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 4, 2009            njensen     Initial creation
- * Mar 3, 2009	 	2032  jsanchez	  Set the paintProps in the rsc.
- * Oct 28, 2009     2354  bsteffen    Moved logic for handling IMiddleClickCapableResource to the input handler so it uses configurable mouse preferences
- * Jul 20, 2010     6187  bkowal      The alpha level will always be reset for every
- *                                    resource when the paint method is called now.
- * 06/24/2013       2140  randerso    Changed to use standardized paint error handling
- * Mar 3, 2014      2804  mschenke    Setup display to clip before each resource is
- *                                    to ensure resources do not affect each other
- * Aug 17, 2015 ASM#14474 D. Friedman Update map center in scaleToClientArea.
  * 
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -------------------------------------------
+ * Feb 04, 2009  1960     njensen    Initial creation
+ * Mar 03, 2009  2032     jsanchez   Set the paintProps in the rsc.
+ * Oct 28, 2009  2354     bsteffen   Moved logic for handling
+ *                                   IMiddleClickCapableResource to the input
+ *                                   handler so it uses configurable mouse
+ *                                   preferences
+ * Jul 20, 2010  6187     bkowal     The alpha level will always be reset for
+ *                                   every resource when the paint method is
+ *                                   called now.
+ * Jun 24, 2013  2140     randerso   Changed to use standardized paint error
+ *                                   handling
+ * Mar 03, 2014  2804     mschenke   Setup display to clip before each resource
+ *                                   is to ensure resources do not affect each
+ *                                   other
+ * Aug 17, 2015  14474    dfriedman  Update map center in scaleToClientArea.
+ * Feb 18, 2016  5245     bsteffen   Update zoom level in scaleToClientArea.
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement
@@ -290,6 +298,7 @@ public class MapRenderableDisplay extends AbstractRenderableDisplay implements
     public void scaleToClientArea(Rectangle clientArea) {
         super.scaleToClientArea(clientArea);
         setMapCenter(descriptor.pixelToWorld(getView().getExtent().getCenter()));
+        setZoomLevel(recalcZoomLevel(getDimensions()));
     }
 
     @Override

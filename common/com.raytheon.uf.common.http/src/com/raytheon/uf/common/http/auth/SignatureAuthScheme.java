@@ -24,8 +24,6 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
-import org.apache.commons.codec.binary.Base64;
-
 /**
  * Base class for signature authentication scheme
  * 
@@ -35,14 +33,15 @@ import org.apache.commons.codec.binary.Base64;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 25, 2014 2756       bclement     Initial creation
+ * Feb 25, 2014 2756       bclement    Initial creation
+ * Dec 09, 2015 4834       njensen     Promoted methods to and now extends AuthScheme
  * 
  * </pre>
  * 
  * @author bclement
  * @version 1.0
  */
-public abstract class SignatureAuthScheme {
+public abstract class SignatureAuthScheme extends AuthScheme {
 
     protected static final String RANDOM_ALG = "SHA1PRNG";
 
@@ -61,7 +60,7 @@ public abstract class SignatureAuthScheme {
     public static final String SIG_FIELD_NAME = "Signature";
 
     /**
-     * matches '[alorithm-name] [credentials-and-signature]'
+     * matches '[algorithm-name] [credentials-and-signature]'
      */
     private static final Pattern AUTH_HEADER_PATTERN = Pattern
             .compile("^(\\S+)\\s+(\\S.+)$");
@@ -88,7 +87,7 @@ public abstract class SignatureAuthScheme {
     public static String formatAuthHeader(String userid, String signature) {
         return formatAuthHeader(new SignedCredential(userid, signature, SIG_ALG));
     }
-    
+
     /**
      * Create an Authorization header in the form
      * 
@@ -108,7 +107,7 @@ public abstract class SignatureAuthScheme {
         builder.append(sc.getSignature());
         return builder.toString();
     }
-    
+
     /**
      * Parse an Authorization header in the form
      * 
@@ -134,27 +133,6 @@ public abstract class SignatureAuthScheme {
         String userid = parameters.get(CRED_FIELD_NAME.toLowerCase());
         String signature = parameters.get(SIG_FIELD_NAME.toLowerCase());
         return new SignedCredential(userid, signature, algorithm);
-    }
-
-    /**
-     * Create a non-chuncked (no newlines) base64 string from bytes
-     * 
-     * @param bytes
-     * @return
-     */
-    public static final String base64Encode(byte[] bytes) {
-        bytes = Base64.encodeBase64(bytes, false);
-        return org.apache.commons.codec.binary.StringUtils.newStringUtf8(bytes);
-    }
-
-    /**
-     * Decode a base64 encoded string
-     * 
-     * @param encString
-     * @return
-     */
-    public static final byte[] base64Decode(String encString) {
-        return Base64.decodeBase64(encString);
     }
 
 }

@@ -57,6 +57,7 @@ import com.jogamp.opengl.util.awt.TextRenderer;
  * May 12, 2014  3074     bsteffen    Initial creation
  * Jul 30, 2014  3476     bsteffen    Flush text renderer before rotating strings.
  * Sep 08, 2015  4824     bsteffen    Fix underline, overline, strikethrough.
+ * Oct 16, 2015  4971     bsteffen    Preserve order of multiline strings when using BOTTOM alignment.
  * 
  * </pre>
  * 
@@ -67,10 +68,6 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         implements IGraphicsExtensionInterface {
 
     protected final RGB DEFAULT_LABEL_COLOR = new RGB(255, 255, 255);
-
-    /** @deprecated this can be removed when support for word wrap is removed. */
-    @Deprecated
-    private static final int MIN_WRAP_LEN = 3;
 
     @Override
     public int getCompatibilityValue(GLTarget target) {
@@ -133,8 +130,9 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
      * <li>Convert x,y into canvas space to match the modelview matrix used in
      * rendering.</li>
      * <li>Ensure font is not null and an IGLFont</li>
-     * <li>Switch multiline data the has VerticalAlignment.MIDDLE to
-     * VerticalAlignment.TOP and shift y coordinates accordingly.</li>
+     * <li>Switch multiline data the has VerticalAlignment.MIDDLE or
+     * VerticalAlignment.BOTTOM to VerticalAlignment.TOP and shift y coordinates
+     * accordingly.</li>
      * </ol>
      * Ensure font is a IGLFont, Adjust coordinates so that multiline data that
      * is vertically aligned in the middle is rendered from the top.
@@ -158,11 +156,15 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 throw new VizException("Font was not prepared using GLTarget");
             }
             /* Switch multi-line vertical middle to top and shift y. */
-            if (string.verticalAlignment == VerticalAlignment.MIDDLE
+            if (string.verticalAlignment != VerticalAlignment.TOP
                     && string.getText().length > 1) {
                 Rectangle2D totalBounds = target.getStringsBounds(string);
                 double totalHeight = totalBounds.getHeight();
-                string.basics.y -= totalHeight * .5;
+                if (string.verticalAlignment == VerticalAlignment.MIDDLE) {
+                    string.basics.y -= totalHeight * .5;
+                } else if (string.verticalAlignment == VerticalAlignment.BOTTOM) {
+                    string.basics.y -= totalHeight;
+                }
                 string.verticalAlignment = VerticalAlignment.TOP;
             }
             copy.add(string);
@@ -230,11 +232,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 setGlColor(gl, blankColor, alpha);
                 gl.glRectd(bounds.getMinX(), bounds.getMaxY(),
                         bounds.getMaxX(), bounds.getMinY());
-                if (string.verticalAlignment == VerticalAlignment.TOP) {
-                    yPos += lineHeight;
-                } else {
-                    yPos -= lineHeight;
-                }
+                yPos += lineHeight;
             }
         }
         unrotate(string, rotatedPoint);
@@ -348,27 +346,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                                 color.green / 255.0f, color.blue / 255.0f,
                                 alpha);
                     }
-                    if (string.hasTextStyle(TextStyle.WORD_WRAP)) {
-                        int i = 0;
-                        int j = -1;
-                        float y = xy[1];
-                        float x = xy[0];
-                        while (true) {
-                            j = str.indexOf(' ', j + 1);
-                            if (j < 0) {
-                                break;
-                            }
-                            if ((j - i) >= MIN_WRAP_LEN) {
-                                textRenderer.draw3D(str.substring(i, j), x, y,
-                                        0.0f, fontPercentage);
-                                i = j + 1;
-                                y -= fontPercentage * textBounds.getHeight();
-                            }
-                        }
-                        textRenderer.draw3D(str.substring(i), x, y, 0.0f,
-                                fontPercentage);
-
-                    } else if (string.hasTextStyle(TextStyle.DROP_SHADOW)) {
+                    if (string.hasTextStyle(TextStyle.DROP_SHADOW)) {
                         RGB shadowColor = string.getTextStyleColorMap().get(
                                 TextStyle.DROP_SHADOW);
                         if (shadowColor == null) {
@@ -393,11 +371,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                         textRenderer.draw3D(str, xy[0], xy[1], 0.0f,
                                 fontPercentage);
                     }
-                    if (string.verticalAlignment == VerticalAlignment.TOP) {
-                        yPos += textBounds.getHeight();
-                    } else {
-                        yPos -= textBounds.getHeight();
-                    }
+                    yPos += textBounds.getHeight();
                 }
                 if (rotatedPoint != null) {
                     textRenderer.flush();
@@ -497,12 +471,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 gl.glVertex2d(x2, lineY);
             }
             gl.glEnd();
-
-            if (string.verticalAlignment == VerticalAlignment.TOP) {
-                yPos += textBounds.getHeight();
-            } else {
-                yPos -= textBounds.getHeight();
-            }
+            yPos += textBounds.getHeight();
         }
 
         unrotate(string, rotatedPoint);

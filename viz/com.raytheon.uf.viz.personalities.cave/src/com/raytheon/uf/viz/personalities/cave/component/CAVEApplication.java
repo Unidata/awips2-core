@@ -79,6 +79,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Sep 10, 2014 3612       mschenke    Refactored, mirgrated logic from awips
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
+ * May 31, 2016            mjames@ucar Mute CAVEMode.performStartupDuties()
  * 
  * </pre>
  * 
@@ -115,7 +116,7 @@ public class CAVEApplication implements IStandaloneComponent {
                 .addLogListener(getEclipseLogListener());
 
         UnitRegistrar.registerUnits();
-        CAVEMode.performStartupDuties();
+        //CAVEMode.performStartupDuties();
 
         ITimer timer = TimeUtil.getTimer();
         timer.start();

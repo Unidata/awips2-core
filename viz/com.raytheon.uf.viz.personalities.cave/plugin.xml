@@ -87,15 +87,6 @@
                 label="Help"
                 mnemonic="H">
              <command
-                   commandId="com.raytheon.viz.ui.actions.notImplemented"
-                   label="Show tooltips"
-                   style="toggle">
-             </command>
-             <separator
-                   name="separator1"
-                   visible="true">
-             </separator>
-             <command
                    commandId="org.eclipse.ui.help.aboutAction"
                    label="About CAVE"
                    mnemonic="A"

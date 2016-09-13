@@ -35,9 +35,12 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.colormap.ColorMap;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationOpFailedException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -79,7 +82,12 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  *                                    are removed when it is selected.
  * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
  * Jun 30, 2014  3165     njensen     Cleaned up save actions
- * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
+ * May 07, 2015  DCS17219 jgerth      Allow user to interpolate alpha only
+ * Nov 12, 2015  4834     njensen     Removed LocalizationOpFailedException
+ * Dec 09, 2015  4834     njensen     getCurrentColormapName() detects LocalizationContext in name
+ * Feb 01, 2016  4834     njensen     Handle null colormap name
+ * Feb 04, 2016  5301     tgurney     Fix undo, redo and revert behavior, plus general cleanup
+ * Mar 02, 2016  4834     bsteffen    Save sets the current name correctly.
  * 
  * </pre>
  * 
@@ -90,6 +98,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         IVizEditorChangedListener, IRenderableDisplayChangedListener,
         RemoveListener, AddListener, IResourceDataChanged,
         ISelectedPanesChangedListener, IColorEditCompCallback {
+
     private final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ColorEditDialog.class);
 
@@ -199,8 +208,33 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     private String getCurrentColormapName(ColorMapCapability cap) {
-        return cap != null ? cap.getColorMapParameters().getColorMapName()
-                : null;
+        String cname = null;
+        if (cap != null) {
+            cname = cap.getColorMapParameters().getColorMapName();
+            if (cname != null) {
+                int slashIndex = cname.indexOf(IPathManager.SEPARATOR);
+                if (slashIndex > -1) {
+                    String dirname = cname.substring(0, slashIndex);
+                    LocalizationContext[] contexts = PathManagerFactory
+                            .getPathManager().getLocalSearchHierarchy(
+                                    LocalizationType.COMMON_STATIC);
+                    boolean isLocalizationDir = false;
+                    for (LocalizationContext ctx : contexts) {
+                        if (ctx.getLocalizationLevel().toString()
+                                .equals(dirname)) {
+                            isLocalizationDir = true;
+                            break;
+                        }
+                    }
+                    if (isLocalizationDir) {
+                        slashIndex = cname.lastIndexOf(IPathManager.SEPARATOR);
+                        cname = cname.substring(slashIndex + 1);
+                    }
+                }
+            }
+        }
+        // null is a valid result that represents a new unsaved colormap
+        return cname;
     }
 
     private ColorMapCapability getCapabilityToEdit() {
@@ -312,7 +346,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     public void update(IDisplayPaneContainer container,
             AbstractVizResource<?, ?> singleRscToEdit, boolean rightImages) {
-        // Don't update qwhen disposed.
+        // Don't update when disposed.
         if (this.isDisposed()) {
             return;
         }
@@ -339,8 +373,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
                         cap.getColorMapParameters());
                 colorEditComp.updateColorCount();
             }
-            setText(currentColormapName != null ? currentColormapName
-                    : "Untitled Colormap");
         } else {
             // disable everything
             enabled = false;
@@ -362,8 +394,10 @@ public class ColorEditDialog extends CaveSWTDialog implements
             undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
             redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
             saveBtn.setEnabled(currentColormapName != null);
+            deleteBtn.setEnabled(currentColormapName != null);
             colorEditComp.enableAlphaOnly();
         }
+        updateTitleText();
     }
 
     @Override
@@ -373,9 +407,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     @Override
     protected void initializeComponents(Shell shell) {
-        setText(cap != null ? (currentColormapName != null ? currentColormapName
-                : "Untitled Colormap")
-                : NO_COLOR_TABLE);
         colorEditComp = new ColorEditComposite(shell, SWT.FILL, this);
         GridLayout mainLayout = new GridLayout(1, false);
         mainLayout.marginHeight = 1;
@@ -384,6 +415,11 @@ public class ColorEditDialog extends CaveSWTDialog implements
         colorEditComp
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         createBottomButtons(shell);
+        if (cap != null) {
+            updateTitleText();
+        } else {
+            setText(NO_COLOR_TABLE);
+        }
     }
 
     /**
@@ -406,21 +442,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         interpolateBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                ColorData upperColorData = colorEditComp.getUpperColorWheel()
-                        .getColorData();
-                ColorData lowerColorData = colorEditComp.getLowerColorWheel()
-                        .getColorData();
-
-                if (colorEditComp.isInterpolateAlphaOnly()) {
-                    colorEditComp.getColorBar().interpolateAlphaOnly(upperColorData,
-                            lowerColorData);
-                } else {
-                    colorEditComp.getColorBar().interpolate(upperColorData,
-                            lowerColorData,
-                            colorEditComp.getRgbRdo().getSelection());
-                }
-                undoBtn.setEnabled(true);
-                colorEditComp.updateColorMap();
+                interpolate();
             }
         });
 
@@ -433,9 +455,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         undoBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                undoBtn.setEnabled(colorEditComp.getColorBar().undoColorBar());
-                colorEditComp.updateColorMap();
-                redoBtn.setEnabled(true);
+                undo();
             }
         });
 
@@ -448,9 +468,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         redoBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                redoBtn.setEnabled(colorEditComp.getColorBar().redoColorBar());
-                colorEditComp.updateColorMap();
-                undoBtn.setEnabled(true);
+                redo();
             }
         });
 
@@ -518,7 +536,39 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
         if (currentColormapName == null) {
             saveBtn.setEnabled(false);
+            deleteBtn.setEnabled(false);
         }
+    }
+
+    private void interpolate() {
+        ColorData upperColorData = colorEditComp.getUpperColorWheel()
+                .getColorData();
+        ColorData lowerColorData = colorEditComp.getLowerColorWheel()
+                .getColorData();
+
+        if (colorEditComp.isInterpolateAlphaOnly()) {
+            colorEditComp.getColorBar().interpolateAlphaOnly(upperColorData,
+                    lowerColorData);
+        } else {
+            colorEditComp.getColorBar().interpolate(upperColorData,
+                    lowerColorData, colorEditComp.getRgbRdo().getSelection());
+        }
+        undoBtn.setEnabled(true);
+        colorEditComp.updateColorMap();
+    }
+
+    private void redo() {
+        redoBtn.setEnabled(colorEditComp.getColorBar().redoColorBar());
+        colorEditComp.updateColorMap();
+        undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
+        updateTitleText();
+    }
+
+    private void undo() {
+        undoBtn.setEnabled(colorEditComp.getColorBar().undoColorBar());
+        colorEditComp.updateColorMap();
+        redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
+        updateTitleText();
     }
 
     private void applyToAll(ColorMapCapability applyFrom) {
@@ -609,13 +659,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         });
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IVizEditorChangedListener#editorChanged(com.
-     * raytheon.uf.viz.core.IDisplayPaneContainer)
-     */
     @Override
     public void editorChanged(IDisplayPaneContainer container) {
         if (this.container != container) {
@@ -629,15 +672,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IRenderableDisplayChangedListener#
-     * renderableDisplayChanged(com.raytheon.uf.viz.core.IDisplayPane,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay,
-     * com.raytheon.uf.viz
-     * .core.IRenderableDisplayChangedListener.DisplayChangeType)
-     */
     @Override
     public void renderableDisplayChanged(IDisplayPane pane,
             IRenderableDisplay newRenderableDisplay, DisplayChangeType type) {
@@ -650,13 +684,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         updateOnUIThread();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener#notifyRemove
-     * (com.raytheon.uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyRemove(ResourcePair rp) throws VizException {
         if (rp.getResource() != null
@@ -670,13 +697,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         updateOnUIThread();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.AddListener#notifyAdd(com.raytheon
-     * .uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyAdd(ResourcePair rp) throws VizException {
         if (rp.getResource() != null
@@ -687,14 +707,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         updateOnUIThread();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         if (ChangeType.CAPABILITY == type
@@ -796,13 +808,6 @@ public class ColorEditDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.ISelectedPaneChangedListener#selectedPaneChanged
-     * (java.lang.String, com.raytheon.uf.viz.core.IDisplayPane)
-     */
     @Override
     public void selectedPanesChanged(String id, IDisplayPane[] pane) {
         update(container, singleResourceToEdit, rightImages);
@@ -811,15 +816,26 @@ public class ColorEditDialog extends CaveSWTDialog implements
     /**
      * Resets the colorbar to an initial state with the newly saved data
      */
-    private void completeSave() {
+    private void completeSave(LocalizationLevel level) {
         colorEditComp.getColorBar().updateRevertToCurrent();
         colorEditComp.getColorBar().revertColorBar();
         undoBtn.setEnabled(false);
         redoBtn.setEnabled(false);
-        cap.getColorMapParameters().setColorMapName(currentColormapName);
+        if (level == LocalizationLevel.BASE) {
+            cap.getColorMapParameters().setColorMapName(currentColormapName);
+        } else {
+            IPathManager pathManager = PathManagerFactory.getPathManager();
+            LocalizationContext context = pathManager.getContext(
+                    LocalizationType.COMMON_STATIC, level);
+            String fullName = level.toString() + IPathManager.SEPARATOR
+                    + context.getContextName() + IPathManager.SEPARATOR
+                    + currentColormapName;
+            cap.getColorMapParameters().setColorMapName(fullName);
+        }
         saveBtn.setEnabled(true);
+        deleteBtn.setEnabled(true);
         cap.getColorMapParameters().setDirty(false);
-
+        updateTitleText();
         applyToAll(cap);
     }
 
@@ -834,7 +850,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
             try {
                 // only allow deletes of USER level
                 ColorUtil.deleteColorMap(shortName, LocalizationLevel.USER);
-            } catch (LocalizationOpFailedException e) {
+                deleteBtn.setEnabled(false);
+            } catch (LocalizationException e) {
                 String err = "Error performing delete of colormap";
                 statusHandler.handle(Priority.PROBLEM, err, e);
             }
@@ -860,7 +877,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof String) {
                         currentColormapName = (String) returnValue;
-                        completeSave();
+                        completeSave(LocalizationLevel.SITE);
+
                     }
                 }
             });
@@ -868,6 +886,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         } else {
             officeSaveAsDialog.bringToTop();
         }
+
     }
 
     private void saveAs() {
@@ -880,7 +899,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof String) {
                         currentColormapName = (String) returnValue;
-                        completeSave();
+                        completeSave(LocalizationLevel.USER);
                     }
                 }
             });
@@ -899,78 +918,59 @@ public class ColorEditDialog extends CaveSWTDialog implements
             statusHandler.error("Error saving colormap " + currentColormapName,
                     e);
         }
-        completeSave();
+        completeSave(LocalizationLevel.USER);
     }
 
     private void revert() {
         colorEditComp.getColorBar().revertColorBar();
         colorEditComp.updateColorMap();
+        // must set name again as updateColorMap resets it to null
+        cap.getColorMapParameters().setColorMapName(currentColormapName);
         undoBtn.setEnabled(false);
         redoBtn.setEnabled(false);
         cap.getColorMapParameters().setDirty(false);
         applyToAll(cap);
+        updateTitleText();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.colordialog.IColorBarAction#updateColor(com
-     * .raytheon.viz.ui.dialogs.colordialog.ColorData, boolean)
-     */
     @Override
     public void updateColor(ColorData colorData, boolean upperFlag) {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.colordialog.IColorWheelAction#setColor(com
-     * .raytheon.viz.ui.dialogs.colordialog.ColorData, java.lang.String)
-     */
     @Override
     public void setColor(ColorData colorData, String colorWheelTitle) {
-        undoBtn.setEnabled(true);
+        undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.dialogs.colordialog.IColorWheelAction#fillColor(com
-     * .raytheon.viz.ui.dialogs.colordialog.ColorData)
-     */
     @Override
     public void fillColor(ColorData colorData) {
-        undoBtn.setEnabled(true);
+        undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.colordialog.IColorEditCompCallback#
-     * colorMapUpdated(com.raytheon.uf.common.colormap.ColorMap)
-     */
     @Override
     public void updateColorMap(ColorMap newColorMap) {
-        // this is only called when the color map is edited, add asterisk to
-        // current color map name to indicate that it wasn't saved
-        // -------------------------
-        // This can break caching of colormaps in GlTarget
-        // to check load visible satellite, edit colormap, close dialog without
-        // saving
-        // if edited colormap is still used ( it is at the time of writing )
-        // save the editor display
-        // restart cave, load visible sat ( cmap is the correct default ),
-        // clear, load editor display with edited colormap saved in it, notice
-        // edited colormap is used, clear and reload vis sat from menu, edited
-        // colormap is used because the name matches the default and it is
-        // chached in GLTarget
-        // -------------------------
-        // newColorMap
-        // .setName(cap.getColorMapParameters().getColorMap().getName());
+        /*
+         * This is only called when the color map is edited -- add asterisk to
+         * current color map name (in the dialog, not in the object itself), to
+         * indicate that it wasn't saved.
+         * 
+         * -------------------------
+         * 
+         * This can break caching of colormaps in GlTarget to check load visible
+         * satellite, edit colormap, close dialog without saving if edited
+         * colormap is still used ( it is at the time of writing ) save the
+         * editor display restart cave, load visible sat ( cmap is the correct
+         * default ), clear, load editor display with edited colormap saved in
+         * it, notice edited colormap is used, clear and reload vis sat from
+         * menu, edited colormap is used because the name matches the default
+         * and it is cached in GLTarget
+         * 
+         * -------------------------
+         * 
+         * newColorMap.setName(cap.getColorMapParameters().getColorMap().getName(
+         * ));
+         */
 
         // set colormap to new colormap passed in
         cap.getColorMapParameters().setColorMap(newColorMap);
@@ -982,14 +982,22 @@ public class ColorEditDialog extends CaveSWTDialog implements
         if (container != null) {
             container.refresh();
         }
+        updateTitleText();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.dialogs.colordialog.IColorEditCompCallback#
-     * getColorMapParameters()
-     */
+    private void updateTitleText() {
+        String newColormapName = currentColormapName != null ? currentColormapName
+                : "Untitled Colormap";
+        if (cap != null) {
+            if (cap.getColorMapParameters().getColorMapName() == null
+                    || colorEditComp != null
+                    && colorEditComp.getColorBar().canUndo()) {
+                newColormapName = "*".concat(newColormapName);
+            }
+        }
+        setText(newColormapName);
+    }
+
     @Override
     public ColorMapParameters getColorMapParameters() {
         return cap.getColorMapParameters();

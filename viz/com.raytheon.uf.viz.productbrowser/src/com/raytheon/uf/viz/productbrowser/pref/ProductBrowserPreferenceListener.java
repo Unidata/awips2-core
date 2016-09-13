@@ -45,13 +45,16 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserPreference;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * Jun 04, 2015  4153     bsteffen  Initial creation
+ * Aug 12, 2015  4717     mapeters  Break after each case in propertyChange's switch statement
+ * Sep 04, 2015  4717     mapeters  Prevent NPE in propertyChange()
  * 
  * </pre>
  * 
  * @author bsteffen
  * @version 1.0
  */
-public class ProductBrowserPreferenceListener extends WeakReference<ProductBrowserPreference> implements
+public class ProductBrowserPreferenceListener extends
+        WeakReference<ProductBrowserPreference> implements
         IPropertyChangeListener {
 
     private static final String ARRAY_SEPARAT0R = ",";
@@ -60,7 +63,8 @@ public class ProductBrowserPreferenceListener extends WeakReference<ProductBrows
 
     private final String propertyName;
 
-    public ProductBrowserPreferenceListener(String displayName, ProductBrowserPreference preference) {
+    public ProductBrowserPreferenceListener(String displayName,
+            ProductBrowserPreference preference) {
         super(preference, referenceQueue);
         this.propertyName = preference.getLabel() + displayName;
 
@@ -85,13 +89,15 @@ public class ProductBrowserPreferenceListener extends WeakReference<ProductBrows
                 }
             }
             store.setDefault(propertyName, temp);
-            preference.setValue(store.getString(propertyName).split(ARRAY_SEPARAT0R));
+            preference.setValue(store.getString(propertyName).split(
+                    ARRAY_SEPARAT0R));
             break;
         }
 
         store.addPropertyChangeListener(this);
         /* Clean up references to avoid leaking listeners. */
-        Reference<? extends ProductBrowserPreference> ref = referenceQueue.poll();
+        Reference<? extends ProductBrowserPreference> ref = referenceQueue
+                .poll();
         while (ref != null) {
             if (ref instanceof ProductBrowserPreferenceListener) {
                 store.removePropertyChangeListener((ProductBrowserPreferenceListener) ref);
@@ -106,16 +112,18 @@ public class ProductBrowserPreferenceListener extends WeakReference<ProductBrows
         ProductBrowserPreference pref = this.get();
         if (pref == null) {
             store.removePropertyChangeListener(this);
-        }
-        if (propertyName.equals(event.getProperty())) {
+        } else if (propertyName.equals(event.getProperty())) {
             switch (pref.getPreferenceType()) {
             case BOOLEAN:
                 pref.setValue(store.getBoolean(propertyName));
+                break;
             case EDITABLE_STRING:
                 pref.setValue(store.getString(propertyName));
+                break;
             case STRING_ARRAY:
-                pref.setValue(store.getString(propertyName).split(ARRAY_SEPARAT0R));
-
+                pref.setValue(store.getString(propertyName).split(
+                        ARRAY_SEPARAT0R));
+                break;
             }
         }
     }

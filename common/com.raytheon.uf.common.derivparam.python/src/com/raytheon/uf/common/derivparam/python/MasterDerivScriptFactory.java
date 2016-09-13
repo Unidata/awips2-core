@@ -33,7 +33,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.python.PyUtil;
-import com.raytheon.uf.common.python.concurrent.AbstractPythonScriptFactory;
+import com.raytheon.uf.common.python.concurrent.PythonInterpreterFactory;
 
 /**
  * Factory for creating and initializing MasterDerivScript.
@@ -47,6 +47,7 @@ import com.raytheon.uf.common.python.concurrent.AbstractPythonScriptFactory;
  * Jun 04, 2013 2041       bsteffen    Initial creation
  * Aug 26, 2013 2289       bsteffen    Make number of deriv param threads
  *                                     configurable.
+ * Dec 14, 2015 4816       dgilling    Support refactored PythonJobCoordinator API.
  * 
  * </pre>
  * 
@@ -54,22 +55,14 @@ import com.raytheon.uf.common.python.concurrent.AbstractPythonScriptFactory;
  * @version 1.0
  */
 
-public class MasterDerivScriptFactory extends
-        AbstractPythonScriptFactory<MasterDerivScript> {
-
-    private static final int DEFAULT_MAX_THREADS = 3;
-
-    public static final String NAME = "DerivedParameterPython";
+public class MasterDerivScriptFactory implements
+        PythonInterpreterFactory<MasterDerivScript> {
 
     private static final String INTERFACE_SCRIPT = DerivedParameterGenerator.DERIV_PARAM_DIR
             + File.separator
             + "python"
             + File.separator
             + "DerivParamImporter.py";
-
-    public MasterDerivScriptFactory() {
-        super(NAME, getMaxThreadsProperty());
-    }
 
     @Override
     public MasterDerivScript createPythonScript() throws JepException {
@@ -117,11 +110,5 @@ public class MasterDerivScriptFactory extends
         preEvals.add(cmd.toString());
         return new MasterDerivScript(PATH,
                 MasterDerivScript.class.getClassLoader(), preEvals);
-    }
-
-    private static int getMaxThreadsProperty() {
-        return Integer.getInteger(
-                "com.raytheon.uf.viz.derivparam.python.threads",
-                DEFAULT_MAX_THREADS);
     }
 }

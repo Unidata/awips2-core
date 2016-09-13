@@ -19,5 +19,5 @@
 ##
 import numpy
 
-def execute1(tstorm_bestCatStation):
+def execute(tstorm_bestCatStation):
     return (tstorm_bestCatStation <= 1).astype('float32')

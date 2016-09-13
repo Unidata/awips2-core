@@ -20,8 +20,8 @@
 
 package com.raytheon.uf.edex.ingest;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -41,10 +41,11 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  *                         fgriffit    Initial Creation.
- * 20080408     1039       jkorman     Added traceId for tracing data.
+ * Apr 08, 2008 1039       jkorman     Added traceId for tracing data.
  * Nov 11, 2008            chammack    Refactored for Camel
- * 02/06/09     1990       bphillip    Refactored to use plugin daos
+ * Feb 06, 2009 1990       bphillip    Refactored to use plugin daos
  * Mar 19, 2013 1785       bgonzale    Added performance status to indexOne and index.
+ * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * </pre>
  * 
  * @author Frank Griffith
@@ -56,7 +57,7 @@ public class IndexSrv {
 
     private String txFactory;
 
-    private Log logger = LogFactory.getLog(getClass());
+    private Logger logger = LoggerFactory.getLogger(getClass());
 
     private final IPerformanceStatusHandler perfLog = PerformanceStatus
             .getHandler("DataBase:");
@@ -114,15 +115,15 @@ public class IndexSrv {
 
         try {
             String pluginName = record[0].getPluginName();
-            PluginDao dao = PluginFactory.getInstance().getPluginDao(pluginName);
+            PluginDao dao = PluginFactory.getInstance()
+                    .getPluginDao(pluginName);
             EDEXUtil.checkPersistenceTimes(record);
             ITimer timer = TimeUtil.getTimer();
             timer.start();
             PluginDataObject[] persisted = dao.persistToDatabase(record);
             timer.stop();
             perfLog.logDuration(pluginName + ": Saved " + persisted.length
-                    + " record(s): Time to Save",
-                    timer.getElapsedTime());
+                    + " record(s): Time to Save", timer.getElapsedTime());
             if (logger.isDebugEnabled()) {
                 for (PluginDataObject rec : record) {
                     logger.debug("Persisted: " + rec + " to database");

@@ -33,6 +33,7 @@ package com.raytheon.uf.common.comm;
  * Nov 15, 2014 3757       dhladky      General HTTPS handler
  * Jan 26, 2015 3952       njensen      gzip handled by default
  * Jul 06, 2015 4614       njensen      Add gzipEnabled
+ * Dec 07, 2015 4834       njensen      Changes for rename of IHttpsHandler to HttpAuthHandler
  * 
  * </pre>
  * 
@@ -47,7 +48,7 @@ public class HttpClientConfig {
 
     private final int maxConnections;
 
-    private final IHttpsHandler httpsHandler;
+    private final HttpAuthHandler httpAuthHandler;
 
     private final boolean tcpNoDelay;
 
@@ -68,7 +69,7 @@ public class HttpClientConfig {
      * 
      */
     protected HttpClientConfig(int socketTimeout, int connectionTimeout,
-            int maxConnections, IHttpsHandler handler, boolean tcpNoDelay,
+            int maxConnections, HttpAuthHandler handler, boolean tcpNoDelay,
             boolean expectContinueEnabled, boolean gzipEnabled) {
         /*
          * This is protected to limit required changes if the arguments change
@@ -77,7 +78,7 @@ public class HttpClientConfig {
         this.socketTimeout = socketTimeout;
         this.connectionTimeout = connectionTimeout;
         this.maxConnections = maxConnections;
-        this.httpsHandler = handler;
+        this.httpAuthHandler = handler;
         this.tcpNoDelay = tcpNoDelay;
         this.expectContinueEnabled = expectContinueEnabled;
         this.gzipEnabled = gzipEnabled;
@@ -107,8 +108,8 @@ public class HttpClientConfig {
     /**
      * @return the httpsHandler
      */
-    public IHttpsHandler getHttpsHandler() {
-        return httpsHandler;
+    public HttpAuthHandler getHttpAuthHandler() {
+        return httpAuthHandler;
     }
 
     /**

@@ -22,6 +22,7 @@ package com.raytheon.viz.core.gl.internal;
 import org.eclipse.jface.resource.FontRegistry;
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
+import org.eclipse.swt.graphics.Point;
 
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
@@ -36,7 +37,8 @@ import com.jogamp.opengl.util.awt.TextRenderer;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct 19, 2010            mschenke     Initial creation
+ * Oct 19, 2010            mschenke    Initial creation
+ * Nov 04, 2015   5070     randerso    Added DPI font scaling
  * 
  * </pre>
  * 
@@ -60,66 +62,87 @@ public class PreferenceBasedGLFont implements IGLFont, IPropertyChangeListener {
         registry.addListener(this);
     }
 
+    @Override
     public int hashCode() {
         return preferenceFont.hashCode();
     }
 
+    @Override
     public void dispose() {
         preferenceFont.dispose();
     }
 
+    @Override
     public boolean equals(Object obj) {
         return preferenceFont.equals(obj);
     }
 
+    @Override
+    public Point getDPI() {
+        return preferenceFont.getDPI();
+    }
+
+    @Override
     public String getFontName() {
         return preferenceFont.getFontName();
     }
 
+    @Override
     public float getFontSize() {
         return preferenceFont.getFontSize();
     }
 
+    @Override
     public Style[] getStyle() {
         return preferenceFont.getStyle();
     }
 
+    @Override
     public TextRenderer getTextRenderer() {
         return preferenceFont.getTextRenderer();
     }
 
+    @Override
     public IFont deriveWithSize(float size) {
         return preferenceFont.deriveWithSize(size);
     }
 
+    @Override
     public void setMagnification(float magnification) {
         preferenceFont.setMagnification(magnification);
     }
 
+    @Override
     public void setMagnification(float magnification, boolean scaleFont) {
         preferenceFont.setMagnification(magnification, scaleFont);
     }
 
+    @Override
     public float getMagnification() {
         return preferenceFont.getMagnification();
     }
 
+    @Override
     public boolean getSmoothing() {
         return preferenceFont.getSmoothing();
     }
 
+    @Override
     public void setSmoothing(boolean smoothing) {
         preferenceFont.setSmoothing(smoothing);
     }
 
+    @Override
     public boolean isScaleFont() {
         return preferenceFont.isScaleFont();
     }
 
+    @Override
     public void setScaleFont(boolean scaleFont) {
         preferenceFont.setScaleFont(scaleFont);
     }
 
+    @Override
     public String toString() {
         return preferenceFont.toString();
     }
@@ -135,7 +158,8 @@ public class PreferenceBasedGLFont implements IGLFont, IPropertyChangeListener {
     public void propertyChange(PropertyChangeEvent event) {
         if (propertyName.equals(event.getProperty())) {
             preferenceFont.disposeInternal();
-            preferenceFont = FontFactory.getInstance().getFont(propertyName);
+            preferenceFont = FontFactory.getInstance().getFont(getDPI(),
+                    propertyName);
         }
     }
 
@@ -149,5 +173,4 @@ public class PreferenceBasedGLFont implements IGLFont, IPropertyChangeListener {
         preferenceFont.disposeInternal();
         registry.removeListener(this);
     }
-
 }

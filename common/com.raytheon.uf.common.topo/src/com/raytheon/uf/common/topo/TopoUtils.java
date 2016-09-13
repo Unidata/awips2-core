@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -43,18 +43,19 @@ import com.raytheon.uf.common.geospatial.CRSCache;
 /**
  * Common utility methods that can be shared among different areas of the system
  * using topo.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug  2, 2013            bsteffen    Initial creation
  * Feb 10, 2014     #2788  randerso    Changed default topo file name
- * 
+ * Jul 17, 2015      4608  nabowle     Add public default topo file constant.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
@@ -63,7 +64,10 @@ public class TopoUtils {
 
     // NOTE: this file is actually a symbolic link to the desired topo data file
     // allowing the topo data set to be changed without updating Java code
-    private static final String DEFAULT_TOPO_PATH = "/topo/defaultTopo.h5";
+    public static final String DEFAULT_TOPO_FILE = "defaultTopo.h5";
+
+    private static final String DEFAULT_TOPO_PATH = "/topo/"
+            + DEFAULT_TOPO_FILE;
 
     private static final String FULL_TOPO_DATASET = "/full";
 

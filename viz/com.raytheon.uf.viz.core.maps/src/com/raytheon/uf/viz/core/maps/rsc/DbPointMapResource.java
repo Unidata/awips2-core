@@ -70,6 +70,8 @@ import com.vividsolutions.jts.io.WKBReader;
  * May 14, 2014  3074     bsteffen    Remove WORD_WRAP TextStyle and handle
  *                                    wrapping locally.
  * Aug 11, 2014  3459     randerso    Cleaned up MapQueryJob implementation
+ * Nov 04, 2015  5070     randerso    Change map resources to use a preference based font
+ *                                    Move management of font magnification into AbstractMapResource
  * 
  * </pre>
  * 
@@ -347,7 +349,7 @@ public class DbPointMapResource extends
     }
 
     @Override
-    protected void paintInternal(IGraphicsTarget aTarget,
+    protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
         PixelExtent screenExtent = (PixelExtent) paintProps.getView()
                 .getExtent();
@@ -378,7 +380,7 @@ public class DbPointMapResource extends
                 Geometry boundingGeom = buildBoundingGeometry(expandedExtent,
                         worldToScreenRatio, kmPerPixel);
 
-                queryJob.queueRequest(new Request(aTarget, this, labelField,
+                queryJob.queueRequest(new Request(target, this, labelField,
                         resourceData.getGoodnessField(), boundingGeom));
 
                 lastExtent = expandedExtent;
@@ -398,17 +400,11 @@ public class DbPointMapResource extends
         }
 
         if (labels != null) {
-            if (font == null) {
-                font = aTarget.initializeFont(aTarget.getDefaultFont()
-                        .getFontName(), (float) (10 * magnification), null);
-                font.setSmoothing(false);
-                font.setScaleFont(false);
-            }
 
             RGB color = getCapability(ColorableCapability.class).getColor();
             DrawableString test = new DrawableString("N", color);
-            test.font = font;
-            Rectangle2D charSize = aTarget.getStringsBounds(test);
+            test.font = getFont(target);
+            Rectangle2D charSize = target.getStringsBounds(test);
             double charWidth = charSize.getWidth();
             double charHeight = charSize.getHeight();
 
@@ -447,7 +443,7 @@ public class DbPointMapResource extends
                                 str.setCoordinates(c.x + offsetX, c.y + offsetY);
                                 str.horizontalAlignment = horizAlign;
                                 str.verticalAlignment = VerticalAlignment.MIDDLE;
-                                str.font = font;
+                                str.font = getFont(target);
                                 strings.add(str);
                             }
                         }
@@ -457,8 +453,8 @@ public class DbPointMapResource extends
                 }
             }
 
-            aTarget.drawPoints(points, color, pointStyle, 1.0f);
-            aTarget.drawStrings(strings);
+            target.drawPoints(points, color, pointStyle, 1.0f);
+            target.drawStrings(strings);
         }
     }
 }

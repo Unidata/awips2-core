@@ -19,7 +19,7 @@
         further_licensing_information.
     -->
 <DerivedParameter name="Categorical thunderstorm" abbreviation="ThPcat" xmlns:ns2="group">
-    <Method levels="Surface" name="ThPcat">
+    <Method name="ThPcat" levels="Surface" models="bufrmosLAMP">
         <Field level="Station" abbreviation="tstorm_bestCat"/>
     </Method>
 </DerivedParameter>

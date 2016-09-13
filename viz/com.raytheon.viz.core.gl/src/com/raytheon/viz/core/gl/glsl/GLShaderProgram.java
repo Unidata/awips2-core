@@ -19,6 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.glsl;
 
+import java.nio.Buffer;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
@@ -26,8 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import com.jogamp.opengl.GL2;
-import com.jogamp.common.nio.Buffers;
+import javax.media.opengl.GL;
 
 import org.eclipse.swt.graphics.RGB;
 
@@ -36,6 +36,8 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.glsl.internal.GLProgramManager;
+import com.raytheon.viz.core.gl.objects.GLVertexBufferObject;
+import com.sun.opengl.util.BufferUtil;
 
 /**
  * Wrapper class to using shader programs. A shader program must use one vertex
@@ -43,9 +45,9 @@ import com.raytheon.viz.core.gl.glsl.internal.GLProgramManager;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------
+ * Aug 19, 2015  4709     bsteffen  Allow setting vertex attributes.
  * 
  * </pre>
  * 
@@ -63,7 +65,7 @@ public class GLShaderProgram {
 
     static public String NONE = "NONE";
 
-    private final GL2 gl;
+    private final GL gl;
 
     private int glslContext = -1;
 
@@ -84,11 +86,9 @@ public class GLShaderProgram {
     // * attribute - Global read-only variables only available to the vertex
     // shader (and not the fragment shader). Passed from an OpenGL program,
     // these can be changed on a per vertex level.
-    // currently we are only using uniforms variables
     private Map<String, Object> loadedUniforms = new HashMap<String, Object>();
 
-    // TODO make configurable
-    private static final int MAX_MULTIGRIDS = 8;
+    private Map<String, Integer> loadedAttributes = new HashMap<>();
 
     private final String name;
 
@@ -102,7 +102,7 @@ public class GLShaderProgram {
      * @param fragmentShader
      *            - can be null (but not if vertexShader == null)
      */
-    GLShaderProgram(GL2 gl, String name, String vertexShader,
+    GLShaderProgram(GL gl, String name, String vertexShader,
             String fragmentShader) throws VizException {
         this.gl = gl;
         glslContext = gl.glCreateProgram();
@@ -113,11 +113,11 @@ public class GLShaderProgram {
 
         List<Integer> shaderIds = new ArrayList<Integer>(2);
         if (vertexShader != null) {
-            shaderIds.add(addShader(vertexShader, GL2.GL_VERTEX_SHADER));
+            shaderIds.add(addShader(vertexShader, GL.GL_VERTEX_SHADER));
         }
 
         if (fragmentShader != null) {
-            shaderIds.add(addShader(fragmentShader, GL2.GL_FRAGMENT_SHADER));
+            shaderIds.add(addShader(fragmentShader, GL.GL_FRAGMENT_SHADER));
         }
 
         for (Integer shaderId : shaderIds) {
@@ -145,6 +145,7 @@ public class GLShaderProgram {
             state = State.IN_USE;
         }
         loadedUniforms.clear();
+        loadedAttributes.clear();
     }
 
     /**
@@ -153,6 +154,11 @@ public class GLShaderProgram {
     public void endShader() {
         if (state == State.IN_USE) {
             gl.glUseProgram(0);
+            loadedUniforms.clear();
+            for (Integer attributeLocation : loadedAttributes.values()) {
+                gl.glDisableVertexAttribArray(attributeLocation);
+            }
+            loadedAttributes.clear();
             state = State.INITIALIZED;
         }
     }
@@ -254,6 +260,23 @@ public class GLShaderProgram {
         }
     }
 
+    public void setVertexAttributeData(String key, int type, Buffer buffer) {
+        int location = gl.glGetAttribLocation(glslContext, key);
+        gl.glEnableVertexAttribArray(location);
+        gl.glVertexAttribPointer(location, 1, type, false, 0, buffer);
+        loadedAttributes.put(key, location);
+    }
+
+    public void setVertexAttributeData(String key, int type,
+            GLVertexBufferObject vbo) {
+        int location = gl.glGetAttribLocation(glslContext, key);
+        vbo.bind(gl, GL.GL_ARRAY_BUFFER);
+        gl.glEnableVertexAttribArray(location);
+        gl.glVertexAttribPointer(location, 1, type, false, 0, 0);
+        gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
+        loadedAttributes.put(key, location);
+    }
+
     /**
      * Get location of uniform variable for this program
      * 
@@ -271,32 +294,32 @@ public class GLShaderProgram {
      * @param shader
      * @return
      */
-    private boolean checkForCompileErrors(GL2 gl, int shader, int glId,
+    private boolean checkForCompileErrors(GL gl, int shader, int glId,
             String name) {
         String type = "unknown";
-        if (glId == GL2.GL_FRAGMENT_SHADER) {
+        if (glId == GL.GL_FRAGMENT_SHADER) {
             type = "fragment";
-        } else if (glId == GL2.GL_VERTEX_SHADER) {
+        } else if (glId == GL.GL_VERTEX_SHADER) {
             type = "vertex";
         }
 
         boolean rval = false;
         int[] compilecheck = new int[1];
-        gl.glGetObjectParameterivARB(shader, GL2.GL_OBJECT_COMPILE_STATUS_ARB,
+        gl.glGetObjectParameterivARB(shader, GL.GL_OBJECT_COMPILE_STATUS_ARB,
                 compilecheck, 0);
-        if (compilecheck[0] == GL2.GL_FALSE) {
+        if (compilecheck[0] == GL.GL_FALSE) {
             System.err.println("A compilation error occured in the " + type
                     + " shader source file (" + name + ")");
 
-            IntBuffer iVal = Buffers.newDirectIntBuffer(1);
+            IntBuffer iVal = BufferUtil.newIntBuffer(1);
             gl.glGetObjectParameterivARB(shader,
-                    GL2.GL_OBJECT_INFO_LOG_LENGTH_ARB, iVal);
+                    GL.GL_OBJECT_INFO_LOG_LENGTH_ARB, iVal);
 
             int length = iVal.get();
             if (length <= 1) {
                 return true;
             }
-            ByteBuffer infoLog = Buffers.newDirectByteBuffer(length);
+            ByteBuffer infoLog = BufferUtil.newByteBuffer(length);
             iVal.flip();
             gl.glGetInfoLogARB(shader, length, iVal, infoLog);
             // Remove null termination
@@ -318,19 +341,19 @@ public class GLShaderProgram {
      * @param gl
      * @return
      */
-    private boolean checkForLinkingErrors(GL2 gl) {
+    private boolean checkForLinkingErrors(GL gl) {
         boolean errors = false;
         int[] param = new int[1];
-        gl.glGetProgramiv(glslContext, GL2.GL_LINK_STATUS, param, 0);
-        if (param[0] == GL2.GL_FALSE) {
+        gl.glGetProgramiv(glslContext, GL.GL_LINK_STATUS, param, 0);
+        if (param[0] == GL.GL_FALSE) {
             errors = true;
             System.err.println("Error linking shader programs");
-            IntBuffer iVal = Buffers.newDirectIntBuffer(1);
-            gl.glGetObjectParameterivARB(glslContext, GL2.GL_INFO_LOG_LENGTH,
+            IntBuffer iVal = BufferUtil.newIntBuffer(1);
+            gl.glGetObjectParameterivARB(glslContext, GL.GL_INFO_LOG_LENGTH,
                     iVal);
             int length = iVal.get();
             if (length > 0) {
-                ByteBuffer infoLog = Buffers.newDirectByteBuffer(length);
+                ByteBuffer infoLog = BufferUtil.newByteBuffer(length);
                 iVal.flip();
                 gl.glGetProgramInfoLog(glslContext, length, iVal, infoLog);
                 // Remove null termination

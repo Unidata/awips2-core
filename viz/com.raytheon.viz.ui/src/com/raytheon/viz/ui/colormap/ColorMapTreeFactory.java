@@ -281,8 +281,6 @@ public class ColorMapTreeFactory {
 
     /**
      * Method used to inform listeners of any changes to any ColorMapTree.
-     * 
-     * @param level
      */
     public void refresh() {
 
@@ -356,7 +354,7 @@ public class ColorMapTreeFactory {
                     tree = queue.pop();
                 }
                 System.out.println(Thread.currentThread().getName()
-                        + "A job is optimizing " + tree.getName());
+                        + " A job is optimizing " + tree.getName());
                 tree.optimizeIsEmpty();
             }
             return Status.OK_STATUS;

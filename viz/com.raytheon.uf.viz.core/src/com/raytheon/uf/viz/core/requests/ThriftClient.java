@@ -8,7 +8,7 @@ import java.util.UUID;
 
 import javax.jws.WebService;
 
-import org.apache.commons.lang.Validate;
+import org.apache.commons.lang3.Validate;
 
 import com.raytheon.uf.common.auth.req.AbstractPrivilegedRequest;
 import com.raytheon.uf.common.auth.resp.SuccessfulExecution;
@@ -60,8 +60,9 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * ------------ ---------- ----------- --------------------------
  * Aug 3, 2009             mschenke    Initial creation
  * Jul 24, 2012            njensen     Enhanced logging
- * Nov 15, 2012 1322       djohnson    Publicize ability to specify specific httpAddress.
- * Jan 24, 2013   1526      njensen      Switch from using postBinary() to postDynamicSerialize()
+ * Nov 15, 2012  1322      djohnson    Publicize ability to specify specific httpAddress.
+ * Jan 24, 2013  1526      njensen     Switch from using postBinary() to postDynamicSerialize()
+ * Jan 27, 2016  5170      tjensen     Added logging of stats to sendRequest
  * 
  * </pre>
  * 
@@ -294,10 +295,18 @@ public class ThriftClient {
             rval = HttpClient.getInstance().postDynamicSerialize(httpAddress,
                     wrapper, true);
             long time = System.currentTimeMillis() - t0;
+
             if (time >= SIMPLE_LOG_TIME) {
                 System.out.println("Took " + time + "ms to run request id["
                         + uniqueId + "] " + request.toString());
             }
+            /**
+             * Log that we have a message. Size information in NOT logged here.
+             * Sending a '1' for sent to trigger request increment.
+             */
+            HttpClient.getInstance().getStats()
+                    .log(request.getClass().getSimpleName(), 1, 0);
+
             if (time >= BAD_LOG_TIME) {
                 new Exception() {
                     private static final long serialVersionUID = 1L;

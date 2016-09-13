@@ -37,8 +37,8 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.zip.DataFormatException;
 
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.context.ConfigurableApplicationContext;
 
 import com.raytheon.uf.common.util.FileUtil;
@@ -52,14 +52,15 @@ import com.raytheon.uf.common.util.FileUtil;
  * ------------ ----------  ----------- --------------------------
  * 14Jun2006    TO 3        G Armendariz Initial baseline
  * 02Jul2007    333         MW Fegan    Removed Lucene based methods.
- * 08/10/2007          379  jkorman     Added copyFile method. 
+ * 08/10/2007   379         jkorman     Added copyFile method.
  * 10Apr2008    1068        MW Fegan    Remove redundant memory reporting.
  * 15Jul2008    1014        MW Fegan    Improved logging of JiBX marshaling errors.
  * Aug 20, 2008             dglazesk    Added functions for handling JaXB marshalling
  * Nov 09, 2012 1322        djohnson    Add close for Spring context.
  * Feb 15, 2013 1638        mschenke    Deleted unused functions and moved ones used by common/viz
  *                                      code into common projects
- * Jun 25, 2015 4495        njensen     Removed dead code, deprecated near death code                                     
+ * Jun 25, 2015 4495        njensen     Removed dead code, deprecated near death code
+ * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
  * 
  * </pre>
  * 
@@ -68,10 +69,11 @@ import com.raytheon.uf.common.util.FileUtil;
  */
 public final class Util {
 
-    protected static Log logger = LogFactory.getLog(Util.class);
+    protected static Logger logger = LoggerFactory.getLogger(Util.class);
 
     /**
      * Easy reference to system-dependent end of line
+     * 
      * @deprecated Use FileUtil.EOL instead
      */
     @Deprecated
@@ -84,7 +86,7 @@ public final class Util {
     /**
      * Converts a string in YYYYMMDDhhmmss format to a {@link Calendar}.
      * Milli-seconds are set to zero. If the input value is not a valid date
-     * time string, the current time is returned.     
+     * time string, the current time is returned.
      * 
      * @param date
      *            the formated date string
@@ -266,6 +268,7 @@ public final class Util {
 
     /**
      * Closes any closeable object.
+     * 
      * @deprecated Use Java 1.7 try-with-resources
      * 
      * @param c

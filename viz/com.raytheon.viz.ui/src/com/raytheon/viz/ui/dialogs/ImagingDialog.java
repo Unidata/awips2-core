@@ -92,6 +92,9 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Apr 08, 2014  2905     bsteffen    Add option to interpolate colors.
  * Apr 16, 2014  3037     lvenable    Add dispose check in runAsync call.
  * Sep 10, 2014  3604     bsteffen    Check for colormap before setting interpolation state.
+ * Jan 25, 2016  5054     randerso    Fix dialog parenting, code cleanup
+ * Feb 03, 2016  5301     tgurney     Check for combined image before opening
+ *                                    color dialog
  * 
  * </pre>
  * 
@@ -203,15 +206,22 @@ public class ImagingDialog extends CaveSWTDialog implements
 
     private AbstractVizResource<?, ?> bottomResource = null;
 
+    private ImagingDialog(Shell parentShell) {
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
+                | CAVE.DO_NOT_BLOCK);
+        setText("Imaging...");
+    }
+
     /**
      * Constructor
      * 
      * @param parentShell
+     * @param initialEditor
      * @param dialogTitle
      */
     public ImagingDialog(Shell parentShell, IDisplayPaneContainer initialEditor) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
-        setText("Image Properties");
+        this(parentShell);
+
         this.currentEditor = initialEditor;
 
         // Setup listeners, this is dynamic mode
@@ -220,9 +230,13 @@ public class ImagingDialog extends CaveSWTDialog implements
         VizWorkbenchManager.getInstance().addListener(this);
     }
 
+    /**
+     * @param parentShell
+     * @param rscToEdit
+     */
     public ImagingDialog(Shell parentShell, AbstractVizResource<?, ?> rscToEdit) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.DO_NOT_BLOCK);
-        setText("Image Properties");
+        this(parentShell);
+
         this.rscToEdit = rscToEdit;
     }
 
@@ -263,8 +277,13 @@ public class ImagingDialog extends CaveSWTDialog implements
             @Override
             public void widgetSelected(SelectionEvent e) {
                 if (topResource != null) {
-                    ColorEditDialog.openDialog(new Shell(getDisplay()),
-                            currentEditor, rscToEdit, false, true);
+                    if (blended) {
+                        ColorEditDialog.openDialog(getShell(), currentEditor,
+                                topResource, false, true);
+                    } else {
+                        ColorEditDialog.openDialog(getShell(), currentEditor,
+                                rscToEdit, false, true);
+                    }
                     // refresh to update color map name ( in case it was edited
                     // but not saved )
                     refreshComponents();
@@ -287,7 +306,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                             ResourceList subList = rsc.getCapability(
                                     BlendableCapability.class)
                                     .getResourceList();
-                            if (subList.size() > 0) {
+                            if (!subList.isEmpty()) {
                                 rsc = subList.get(0).getResource();
                             } else {
                                 rsc = null;
@@ -321,12 +340,6 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         blendAlphaScale.addSelectionListener(new SelectionAdapter() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -422,12 +435,6 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         brightnessScale.addSelectionListener(new SelectionAdapter() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -444,12 +451,7 @@ public class ImagingDialog extends CaveSWTDialog implements
         });
 
         contrastScale.addSelectionListener(new SelectionAdapter() {
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
+
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -559,8 +561,8 @@ public class ImagingDialog extends CaveSWTDialog implements
 
             @Override
             public void widgetSelected(SelectionEvent e) {
-                ColorEditDialog.openDialog(new Shell(getDisplay()),
-                        currentEditor, null, true, true);
+                ColorEditDialog.openDialog(getShell(), currentEditor, null,
+                        true, true);
             }
 
         });
@@ -583,12 +585,7 @@ public class ImagingDialog extends CaveSWTDialog implements
         alphaScale.setPageIncrement(5);
 
         alphaScale.addSelectionListener(new SelectionAdapter() {
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.swt.events.SelectionListener#widgetSelected(org
-             * .eclipse.swt.events.SelectionEvent)
-             */
+
             @Override
             public void widgetSelected(SelectionEvent e) {
                 for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
@@ -622,7 +619,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                 }
             }
         }
-        if (rsc == null && editables.size() > 0) {
+        if ((rsc == null) && (!editables.isEmpty())) {
             rsc = editables.get(0);
         }
         return rsc;
@@ -644,7 +641,7 @@ public class ImagingDialog extends CaveSWTDialog implements
             for (IDisplayPane pane : getDisplayPanesToEdit()) {
                 for (ResourcePair rp : pane.getDescriptor().getResourceList()) {
                     AbstractVizResource<?, ?> rsc = rp.getResource();
-                    if (rsc != null
+                    if ((rsc != null)
                             && rsc.hasCapability(ImagingCapability.class)
                             && (rsc.hasCapability(ColorMapCapability.class) || rsc
                                     .hasCapability(BlendableCapability.class))) {
@@ -656,9 +653,9 @@ public class ImagingDialog extends CaveSWTDialog implements
                         }
                         case BOTTOM: {
                             if (rsc.hasCapability(BlendableCapability.class)
-                                    && rsc.getCapability(
+                                    && (rsc.getCapability(
                                             BlendableCapability.class)
-                                            .getResourceList().size() > 1) {
+                                            .getResourceList().size() > 1)) {
                                 rscsToEdit.add(rsc);
                             }
                             break;
@@ -730,7 +727,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                 blended = true;
                 ResourceList list = firstResource.getCapability(
                         BlendableCapability.class).getResourceList();
-                if (list.size() > 0) {
+                if (!list.isEmpty()) {
                     topResource = list.get(0).getResource();
                 }
                 if (list.size() > 1) {
@@ -772,7 +769,7 @@ public class ImagingDialog extends CaveSWTDialog implements
                         .getCapability(ColorMapCapability.class);
                 ColorMapParameters cmparms = cmcap.getColorMapParameters();
                 String currentCMap = "Not Selected";
-                if (cmparms != null && cmparms.getColorMap() != null) {
+                if ((cmparms != null) && (cmparms.getColorMap() != null)) {
                     currentCMap = cmparms.getColorMap().getName();
                     if (currentCMap == null) {
                         currentCMap = "";
@@ -855,8 +852,8 @@ public class ImagingDialog extends CaveSWTDialog implements
                     .getCapability(ColorMapCapability.class);
 
             String currentCMap = "Not Selected";
-            if (bottomCap.getColorMapParameters() != null
-                    && bottomCap.getColorMapParameters().getColorMap() != null) {
+            if ((bottomCap.getColorMapParameters() != null)
+                    && (bottomCap.getColorMapParameters().getColorMap() != null)) {
                 currentCMap = bottomCap.getColorMapParameters().getColorMap()
                         .getName();
                 if (currentCMap == null) {
@@ -981,13 +978,6 @@ public class ImagingDialog extends CaveSWTDialog implements
         });
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IVizEditorChangedListener#editorChanged(com.
-     * raytheon.uf.viz.core.IDisplayPaneContainer)
-     */
     @Override
     public void editorChanged(IDisplayPaneContainer container) {
         IDisplayPaneContainer oldEditor = currentEditor;
@@ -1023,13 +1013,6 @@ public class ImagingDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IRenderableDisplayChangedListener#
-     * renderableDisplayChanged(com.raytheon.uf.viz.core.IDisplayPane,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay)
-     */
     @Override
     public void renderableDisplayChanged(IDisplayPane pane,
             IRenderableDisplay display, DisplayChangeType type) {
@@ -1060,7 +1043,7 @@ public class ImagingDialog extends CaveSWTDialog implements
     }
 
     private void addListeners(AbstractVizResource<?, ?> rsc) {
-        if (rsc != null && rsc.getResourceData() != null) {
+        if ((rsc != null) && (rsc.getResourceData() != null)) {
             rsc.getResourceData().addChangeListener(this);
 
             if (rsc.hasCapability(BlendableCapability.class)) {
@@ -1071,7 +1054,7 @@ public class ImagingDialog extends CaveSWTDialog implements
     }
 
     private void removeListeners(AbstractVizResource<?, ?> rsc) {
-        if (rsc != null && rsc.getResourceData() != null) {
+        if ((rsc != null) && (rsc.getResourceData() != null)) {
             rsc.getResourceData().removeChangeListener(this);
 
             if (rsc.hasCapability(BlendableCapability.class)) {
@@ -1081,44 +1064,22 @@ public class ImagingDialog extends CaveSWTDialog implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.AddListener#notifyAdd(com.raytheon
-     * .uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyAdd(ResourcePair rp) throws VizException {
         addListeners(rp.getResource());
         refreshComponentsUpdate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener#notifyRemove
-     * (com.raytheon.uf.viz.core.drawables.ResourcePair)
-     */
     @Override
     public void notifyRemove(ResourcePair rp) throws VizException {
         removeListeners(rp.getResource());
         refreshComponentsUpdate();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public synchronized void resourceChanged(ChangeType type, Object object) {
-        if (type == ChangeType.CAPABILITY
-                && (object instanceof ColorMapCapability || object instanceof ImagingCapability)) {
+        if ((type == ChangeType.CAPABILITY)
+                && ((object instanceof ColorMapCapability) || (object instanceof ImagingCapability))) {
             if (!fromControl) {
                 refreshComponentsUpdate();
             }

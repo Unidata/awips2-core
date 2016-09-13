@@ -24,17 +24,21 @@
     
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
         <constructor-arg ref="productName"/>
-        <constructor-arg ref="version"/>
+        <!--
+            Version information will be available in a system property when dynamic. The dynamic
+            version will override the version defined at the time CAVE was built.
+        -->
+        <constructor-arg value="#{systemProperties['vizVersion'] == null ? version : systemProperties['vizVersion']}"/>
         <constructor-arg value="#{component != null ? component : 'viz'}"/>
     </bean>
 
-    <bean id="caveCredentialHandler" class="com.raytheon.uf.viz.core.comm.CaveHttpsCredentialsHandler" />
+    <bean id="caveCredentialHandler" class="com.raytheon.uf.viz.core.comm.CaveHttpCredentialsHandler" />
 
     <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
        <property name="socketTimeout" value="330000"/>
-	   <property name="connectionTimeout" value="10000"/>
+       <property name="connectionTimeout" value="10000"/>
 	   <property name="maxConnections" value="1000"/>
-	   <property name="httpsHandler" ref="caveCredentialHandler" />
+       <property name="httpAuthHandler" ref="caveCredentialHandler" />
     </bean>
     
     <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder" factory-method="build"/>

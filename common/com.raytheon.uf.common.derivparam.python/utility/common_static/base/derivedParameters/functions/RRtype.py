@@ -20,17 +20,22 @@
 #
 ####################################
 
+
+#
+# SOFTWARE HISTORY
+#
+# Date           Ticket#      Engineer      Description
+# ------------   ----------   -----------   -----------
+#                             ????          Initial creation
+# Aug 17, 2015   4402         njensen       Removed workaround nan_to_num
+#
+
 import numpy
 
 
 def execute1(CSNOW,CICEP,CFRZR,CRAIN,RR):
     #USING 1kmAgl reflectivity
     # Assign zeros to the array 
-    # TODO - REMOVE THE FOLLOWING 4 CALLS TO nan_to_num WHEN DR 17265 IS DELIVERED
-    CRAIN = numpy.nan_to_num(CRAIN)
-    CFRZR = numpy.nan_to_num(CFRZR)
-    CICEP = numpy.nan_to_num(CICEP)
-    CSNOW = numpy.nan_to_num(CSNOW)
     tmp = numpy.zeros(CSNOW.shape,dtype=CSNOW.dtype)
     #
     # Transform the type grids. 

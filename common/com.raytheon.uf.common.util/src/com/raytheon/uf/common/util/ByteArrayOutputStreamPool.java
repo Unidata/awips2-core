@@ -19,8 +19,6 @@
  **/
 package com.raytheon.uf.common.util;
 
-import java.io.IOException;
-import java.util.Arrays;
 import java.util.concurrent.ArrayBlockingQueue;
 
 /**
@@ -36,7 +34,9 @@ import java.util.concurrent.ArrayBlockingQueue;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 6, 2010            rjpeter     Initial creation
+ * Dec 06, 2010            rjpeter     Initial creation
+ * Oct 30, 2015 4710       bclement    moved ByteArrayOutputStream subclass to ResizeableByteArrayOutputStream
+ *                                      now returns PooledByteArrayOutputStream objects to protected pooled streams
  * 
  * </pre>
  * 
@@ -49,7 +49,7 @@ public class ByteArrayOutputStreamPool {
     private static final ByteArrayOutputStreamPool instance = new ByteArrayOutputStreamPool();
 
     /** Pooled output streams for performance **/
-    private ArrayBlockingQueue<ByteArrayOutputStream> streams;
+    private ArrayBlockingQueue<ResizeableByteArrayOutputStream> streams;
 
     private int maxPoolSize = 8;
 
@@ -62,7 +62,7 @@ public class ByteArrayOutputStreamPool {
     }
 
     private ByteArrayOutputStreamPool() {
-        streams = new ArrayBlockingQueue<ByteArrayOutputStream>(maxPoolSize);
+        streams = new ArrayBlockingQueue<>(maxPoolSize);
     }
 
     /**
@@ -73,7 +73,7 @@ public class ByteArrayOutputStreamPool {
      * @param minInitialSize
      * @return
      */
-    public ByteArrayOutputStream getStream() {
+    public PooledByteArrayOutputStream getStream() {
         return getStream(initStreamSize);
     }
 
@@ -85,26 +85,26 @@ public class ByteArrayOutputStreamPool {
      * @param minInitialSize
      * @return
      */
-    public ByteArrayOutputStream getStream(int minInitialSize) {
-        ByteArrayOutputStream rval = streams.poll();
-        if (rval == null) {
-            rval = new ByteArrayOutputStream(minInitialSize);
-        } else if (rval.getCapacity() < minInitialSize) {
-            rval.setCapacity(minInitialSize);
+    public PooledByteArrayOutputStream getStream(int minInitialSize) {
+        ResizeableByteArrayOutputStream stream = streams.poll();
+        if (stream == null) {
+            stream = new ResizeableByteArrayOutputStream(minInitialSize);
+        } else if (stream.getCapacity() < minInitialSize) {
+            stream.setCapacity(minInitialSize);
         }
 
-        return rval;
+        return new PooledByteArrayOutputStream(this, stream);
     }
 
     public void setMaxPoolSize(int size) {
         if (size > 0) {
-            ArrayBlockingQueue<ByteArrayOutputStream> tmp = new ArrayBlockingQueue<ByteArrayOutputStream>(
+            ArrayBlockingQueue<ResizeableByteArrayOutputStream> tmp = new ArrayBlockingQueue<>(
                     size);
             streams.drainTo(tmp, size);
             streams = tmp;
         } else {
             // throw illegal arg exception
-            streams = new ArrayBlockingQueue<ByteArrayOutputStream>(1);
+            streams = new ArrayBlockingQueue<>(1);
         }
     }
 
@@ -114,7 +114,6 @@ public class ByteArrayOutputStreamPool {
      */
     public void setInitStreamSize(double initStreamSize) {
         this.initStreamSize = (int) (initStreamSize * MEGABYTE);
-        ;
     }
 
     /**
@@ -131,62 +130,11 @@ public class ByteArrayOutputStreamPool {
      * 
      * @param stream
      */
-    protected void returnToPool(ByteArrayOutputStream stream) {
+    protected void returnToPool(ResizeableByteArrayOutputStream stream) {
         if (stream.getCapacity() <= maxStreamSize) {
             stream.reset();
             streams.offer(stream);
         }
     }
 
-    /**
-     * Override the base ByteArrayOutputStream to return to the pool on close.
-     */
-    public class ByteArrayOutputStream extends java.io.ByteArrayOutputStream {
-        public ByteArrayOutputStream(int size) {
-            super(size);
-        }
-
-        public int getCapacity() {
-            return this.buf.length;
-        }
-
-        public void setCapacity(int length) {
-            this.buf = Arrays.copyOf(this.buf, length);
-            if (this.buf.length < this.count) {
-                this.count = this.buf.length - 1;
-            }
-
-        }
-
-        /**
-         * This returns the underlying array of the output stream. Care should
-         * be taken to keep count in sync if the underlying array is changed.
-         * 
-         * @return The underlying array.
-         */
-        public byte[] getUnderlyingArray() {
-            return this.buf;
-        }
-
-        /**
-         * Sets the current count. This should only be used if the
-         * underlyingArray was changed outside of this classes knowledge.
-         * 
-         * @param count
-         */
-        public void setCount(int count) {
-            if (count < this.buf.length) {
-                this.count = count;
-            } else {
-                this.count = this.buf.length - 1;
-            }
-
-        }
-
-        @Override
-        public void close() throws IOException {
-            ByteArrayOutputStreamPool.getInstance().returnToPool(this);
-        }
-
-    }
 }

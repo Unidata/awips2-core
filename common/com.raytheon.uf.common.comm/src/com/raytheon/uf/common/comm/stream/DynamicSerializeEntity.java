@@ -31,7 +31,7 @@ import com.raytheon.uf.common.serialization.DynamicSerializationManager.Serializ
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
-import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStream;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 
 /**
  * An Http Entity that serializes an object through dynamic serialize.
@@ -43,6 +43,7 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool.ByteArrayOutputStre
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 22, 2013            njensen     Initial creation
+ * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * 
  * </pre>
  * 
@@ -176,7 +177,7 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
             throw new IOException("Error serializing object " + obj, e);
         }
         if (gzip) {
-            ByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+            PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
                     .getInstance().getStream(bytes.length);
             GZIPOutputStream gzipStream = new GZIPOutputStream(byteStream);
             gzipStream.write(bytes);

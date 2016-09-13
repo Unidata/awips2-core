@@ -28,16 +28,15 @@ package com.raytheon.uf.common.http.auth;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Feb 25, 2014 2756       bclement     Initial creation
+ * Feb 25, 2014 2756       bclement    Initial creation
+ * Dec 09, 2015 4834       njensen     Promoted userid to Credential
  * 
  * </pre>
  * 
  * @author bclement
  * @version 1.0
  */
-public class SignedCredential {
-
-    private final String userid;
+public class SignedCredential extends Credential {
 
     private final String signature;
 
@@ -49,16 +48,9 @@ public class SignedCredential {
      * @param algorithm
      */
     public SignedCredential(String userid, String signature, String algorithm) {
-        this.userid = userid;
+        super(userid);
         this.signature = signature;
         this.algorithm = algorithm;
-    }
-
-    /**
-     * @return the userid
-     */
-    public String getUserid() {
-        return userid;
     }
 
     /**

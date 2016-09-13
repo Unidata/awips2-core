@@ -51,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.Pair;
+import com.raytheon.uf.edex.core.EdexAsyncStartupBean;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
 
 /**
@@ -152,6 +153,13 @@ public class ContextManager implements ApplicationContextAware,
      * regenerate the dependency mappings.
      */
     private long lastDependencyTime = 0;
+
+    /**
+     * Collection of beans required for startup that can be initialized off the
+     * main thread. EDEX will not call startContexts until all these beans have
+     * completed their initialization.
+     */
+    private final Set<EdexAsyncStartupBean> asyncStartupBeans = new HashSet<>();
 
     public static ContextManager getInstance() {
         return instance;
@@ -598,5 +606,37 @@ public class ContextManager implements ApplicationContextAware,
                 ((DefaultCamelContext) ctx).setManagementName(ctx.getName());
             }
         }
+    }
+
+    /**
+     * Register the provided bean as an {@link EdexAsyncStartupBean}. EDEX will
+     * not start its contexts until all registered async startup beans have
+     * completed initialization.
+     * 
+     * @param asyncBean
+     *            {@code EdexAsyncStartupBean} instance to register
+     * @return Reference to this {@code ContextManager} instance.
+     */
+    public ContextManager registerAsyncStartupBean(
+            final EdexAsyncStartupBean asyncBean) {
+        asyncStartupBeans.add(asyncBean);
+        return this;
+    }
+
+    /**
+     * Poll all the async startup beans and determine if they've all completed
+     * their initialization or not.
+     * 
+     * @return {@code true} if all beans have completed initialization,
+     *         {@code false} if they have not.
+     */
+    public boolean readyToStartContexts() {
+        for (EdexAsyncStartupBean bean : asyncStartupBeans) {
+            if (!bean.isDone()) {
+                return false;
+            }
+        }
+
+        return true;
     }
 }

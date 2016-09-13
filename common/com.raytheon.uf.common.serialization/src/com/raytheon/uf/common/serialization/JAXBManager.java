@@ -20,12 +20,13 @@
 package com.raytheon.uf.common.serialization;
 
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.FileReader;
-import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.StringReader;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.Map;
 
@@ -56,6 +57,7 @@ import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
  * Jul 15, 2014 3373       bclement     moved marshaller management to JaxbMarshallerStrategy
  *                                      added MarshalOptions, no longer pools by default
  * Feb 18, 2015 4125       rjpeter      Added type safe unmarshalFromXml
+ * Feb 10, 2016 5307       bkowal       Added Java 7 {@link Path} support.
  * </pre>
  * 
  * @author chammack
@@ -122,10 +124,12 @@ public class JAXBManager {
      * @return the JAXBContext
      * @throws JAXBException
      * @Deprecated TODO This method should be protected and the JAXBContext
-     *             should be hidden from outside libraries. Any options needing
-     *             to be applied to the context or its marshallers/unmarshallers
-     *             should either have convenience methods or flags on
-     *             JAXBManager to provide that functionality.
+     *             should be hidden from outside libraries. At this point only
+     *             NCEP plugins directly access the JAXBContext via
+     *             SerializationUtil. Any options needing to be applied to the
+     *             context or its marshallers/unmarshallers should either have
+     *             convenience methods or flags on JAXBManager to provide that
+     *             functionality.
      */
     @Deprecated
     public JAXBContext getJaxbContext() throws JAXBException {
@@ -231,6 +235,21 @@ public class JAXBManager {
     }
 
     /**
+     * Convert an instance of a class to an XML representation and writes pretty
+     * print formatted XML to file specified by a {@link Path}.
+     * 
+     * @param obj
+     *            Object to be marshaled
+     * @param filePath
+     *            Path to the output file
+     * @throws SerializationException
+     */
+    public void marshalToXmlFile(Object obj, Path filePath)
+            throws SerializationException {
+        marshalToXmlFile(obj, filePath, MarshalOptions.FORMATTED);
+    }
+
+    /**
      * Convert an instance of a class to an XML representation and writes XML to
      * file.
      * 
@@ -244,22 +263,29 @@ public class JAXBManager {
      */
     public void marshalToXmlFile(Object obj, String filePath,
             MarshalOptions options) throws SerializationException {
-        OutputStream os = null;
-        try {
-            os = new FileOutputStream(new File(filePath));
+        this.marshalToXmlFile(obj, Paths.get(filePath), options);
+    }
+
+    /**
+     * Converts an instance of a class to a XML representation and writes XML to
+     * the file specified by a {@link Path}.
+     * 
+     * @param obj
+     *            Object to be marshaled
+     * @param filePath
+     *            output file path
+     * @param options
+     *            Formatting options
+     * @throws SerializationException
+     */
+    public void marshalToXmlFile(Object obj, Path filePath,
+            MarshalOptions options) throws SerializationException {
+        try (OutputStream os = Files.newOutputStream(filePath)) {
             marshalToStream(obj, os, options);
         } catch (SerializationException e) {
             throw e;
         } catch (Exception e) {
             throw new SerializationException(e);
-        } finally {
-            if (os != null) {
-                try {
-                    os.close();
-                } catch (IOException e) {
-                    // ignore
-                }
-            }
         }
     }
 
@@ -362,6 +388,22 @@ public class JAXBManager {
     }
 
     /**
+     * Instantiates an object from the XML representation in a File specified by
+     * a {@link Path}.
+     * 
+     * @param clazz
+     *            The class to cast the Object in the file to
+     * @param path
+     *            the {@link Path} to the XML file.
+     * @return A new instance from the XML representation
+     * @throws SerializationException
+     */
+    public <T> T unmarshalFromXmlFile(Class<T> clazz, Path path)
+            throws SerializationException {
+        return this.unmarshalFromXmlFile(clazz, path.toFile());
+    }
+
+    /**
      * Instantiates an object from the XML representation in a stream.
      * 
      * @param is
@@ -376,6 +418,26 @@ public class JAXBManager {
             return marshStrategy.unmarshalFromInputStream(ctx, is);
         } catch (JAXBException e) {
             throw new SerializationException(e);
+        }
+    }
+
+    /**
+     * Instantiates an object of the specified type from the XML representation
+     * in a stream.
+     * 
+     * @param clazz
+     *            The class to cast the Object to.
+     * @param is
+     *            The input stream. The stream will be closed by this operation.
+     * @return A new instance from the XML representation
+     * @throws SerializationException
+     */
+    public <T> T unmarshalFromInputStream(Class<T> clazz, InputStream is)
+            throws SerializationException {
+        try {
+            return clazz.cast(unmarshalFromInputStream(is));
+        } catch (ClassCastException cce) {
+            throw new SerializationException(cce);
         }
     }
 

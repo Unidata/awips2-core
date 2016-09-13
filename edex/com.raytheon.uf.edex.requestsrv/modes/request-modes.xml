@@ -26,6 +26,5 @@
 	<mode name="request">
 		<include>.*request.*</include>
 		<include>.*common.*</include>
-		<exclude>nwsauth.*</exclude>
 	</mode>
 </edexModes>

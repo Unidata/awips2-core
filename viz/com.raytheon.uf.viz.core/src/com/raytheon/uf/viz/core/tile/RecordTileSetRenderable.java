@@ -77,6 +77,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                    interrogating
  * Nov 20, 2013  2492     bsteffen    Move unit converting interrogate into
  *                                    TileSetRenderable.
+ * Aug 26, 2015  4633     bsteffen    Preserve CRS when requesting multiple
+ *                                    tiles.
  * 
  * </pre>
  * 
@@ -328,7 +330,7 @@ public class RecordTileSetRenderable extends TileSetRenderable {
                         // Join the envelopes
                         envelopes.remove(e1);
                         envelopes.remove(e2);
-                        joined = new Envelope2D();
+                        joined = new Envelope2D(e1.getCoordinateReferenceSystem());
                         Rectangle2D.union(e1, e2, joined);
                         envelopes.add((Envelope2D) joined);
 

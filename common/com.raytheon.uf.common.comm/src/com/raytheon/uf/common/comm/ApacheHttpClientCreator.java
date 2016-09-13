@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.comm;
 
-import java.io.IOException;
 import java.security.KeyManagementException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
@@ -30,13 +29,7 @@ import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLContext;
 
-import org.apache.http.Header;
-import org.apache.http.HttpException;
 import org.apache.http.HttpHost;
-import org.apache.http.HttpRequest;
-import org.apache.http.HttpRequestInterceptor;
-import org.apache.http.HttpResponse;
-import org.apache.http.HttpResponseInterceptor;
 import org.apache.http.client.config.RequestConfig;
 import org.apache.http.config.Registry;
 import org.apache.http.config.RegistryBuilder;
@@ -49,7 +42,6 @@ import org.apache.http.conn.ssl.TrustStrategy;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClientBuilder;
 import org.apache.http.impl.conn.PoolingHttpClientConnectionManager;
-import org.apache.http.protocol.HttpContext;
 import org.apache.http.util.VersionInfo;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -69,9 +61,13 @@ import com.raytheon.uf.common.util.app.AppInfo;
  * Sep 04, 2014  3570      bclement     Initial creation
  * Nov 15, 2014  3757      dhladky      Added general certificate checks.
  * Jan 22, 2015  3952      njensen      Removed gzip handling as apache http client has it built-in
- * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as trustMaterial.
+ * May 10, 2015  4435      dhladky      PDA necessitated the loading of keyMaterial as well as 
+ *                                       trustMaterial.
  * Jul 01, 2015  4021      bsteffen     Set User Agent
  * Jul 06, 2015  4614      njensen      Disable gzip by default
+ * Dec 07, 2015  4834      njensen      Changes for rename of IHttpsHandler to HttpAuthHandler
+ * Jan 27, 2016  5170      tjensen      Removed log interceptors. Logging moved to methods where 
+ *                                       message type is known.
  * 
  * </pre>
  * 
@@ -118,7 +114,7 @@ public class ApacheHttpClientCreator {
             UnrecoverableKeyException {
 
         SSLContextBuilder sslCtxBuilder = new SSLContextBuilder();
-        IHttpsHandler handler = config.getHttpsHandler();
+        HttpAuthHandler handler = config.getHttpAuthHandler();
 
         /**
          * If this returns false, Java will automatically, (According to
@@ -192,7 +188,6 @@ public class ApacheHttpClientCreator {
         HttpClientBuilder clientBuilder = HttpClientBuilder.create();
 
         clientBuilder.setSSLSocketFactory(ssf);
-        addLoggingInterceptors(clientBuilder, stats);
         RequestConfig.Builder reqConfigBuilder = RequestConfig.custom();
         SocketConfig.Builder soConfigBuilder = SocketConfig.custom();
 
@@ -231,54 +226,6 @@ public class ApacheHttpClientCreator {
     }
 
     /**
-     * Adds statistics logging interceptors to client builder
-     * 
-     * @param clientBuilder
-     * @param stats
-     */
-    private static void addLoggingInterceptors(HttpClientBuilder clientBuilder,
-            final NetworkStatistics stats) {
-        if (stats != null) {
-            clientBuilder.addInterceptorLast(new HttpRequestInterceptor() {
-                @Override
-                public void process(final HttpRequest request,
-                        final HttpContext context) throws HttpException,
-                        IOException {
-                    try {
-                        if (request != null
-                                && request.getFirstHeader("Content-Length") != null) {
-                            Header contentLenHeader = request
-                                    .getFirstHeader("Content-Length");
-                            long len = Long.valueOf(contentLenHeader.getValue());
-                            stats.log(len, 0);
-                        }
-                    } catch (Throwable t) {
-                        statusHandler.handle(Priority.DEBUG,
-                                "Error in httpClient request interceptor", t);
-                    }
-                }
-            });
-            clientBuilder.addInterceptorLast(new HttpResponseInterceptor() {
-                @Override
-                public void process(final HttpResponse response,
-                        final HttpContext context) throws HttpException,
-                        IOException {
-                    try {
-                        if (response != null && response.getEntity() != null) {
-
-                            stats.log(0, response.getEntity()
-                                    .getContentLength());
-                        }
-                    } catch (Throwable t) {
-                        statusHandler.handle(Priority.DEBUG,
-                                "Error in httpsClient response interceptor", t);
-                    }
-                }
-            });
-        }
-    }
-
-    /**
      * @param config
      * @return an http client based on the config
      * @see #createClient(HttpClientConfig, NetworkStatistics)
@@ -302,7 +249,6 @@ public class ApacheHttpClientCreator {
          * interceptors
          */
         clientBuilder.disableCookieManagement();
-        addLoggingInterceptors(clientBuilder, stats);
         RequestConfig.Builder reqConfigBuilder = RequestConfig.custom();
         SocketConfig.Builder soConfigBuilder = SocketConfig.custom();
 
@@ -367,8 +313,7 @@ public class ApacheHttpClientCreator {
          * don't expose it so need to build it here
          */
         userAgent.append(" Apache-HttpClient/");
-        VersionInfo vi = VersionInfo.loadVersionInfo(
-                "org.apache.http.client",
+        VersionInfo vi = VersionInfo.loadVersionInfo("org.apache.http.client",
                 HttpClientBuilder.class.getClassLoader());
         String release = (vi != null) ? vi.getRelease()
                 : VersionInfo.UNAVAILABLE;

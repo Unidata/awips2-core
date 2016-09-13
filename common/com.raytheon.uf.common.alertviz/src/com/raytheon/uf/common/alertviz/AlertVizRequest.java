@@ -20,12 +20,15 @@
 
 package com.raytheon.uf.common.alertviz;
 
+import java.util.HashMap;
+import java.util.Map;
+
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
 
 /**
- * TODO Add Description
+ * AlertViz Request
  * 
  * <pre>
  * 
@@ -33,7 +36,8 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 10/19/2010   5849       cjeanbap    Initial creation
- *                                     
+ * 07/27/2015   4654       skorolev    Added filters
+ * 
  * </pre>
  * 
  * @author cjeanbap
@@ -44,33 +48,38 @@ public class AlertVizRequest implements IServerRequest {
 
     @DynamicSerializeElement
     private String message;
-    
+
     @DynamicSerializeElement
     private String machine;
-    
+
     @DynamicSerializeElement
     private String priority;
-    
+
     @DynamicSerializeElement
     private String sourceKey;
-    
+
     @DynamicSerializeElement
     private String category;
-    
+
     @DynamicSerializeElement
     private String audioFile = null;
-    
+
+    // Key = LocalizationLevel, such as SITE, and Value = Name, such as OAX
+    @DynamicSerializeElement
+    private Map<String, String> filters = new HashMap<String, String>();
+
     public AlertVizRequest() {
     }
 
     public AlertVizRequest(String message, String priority, String sourceKey,
-            String category, String audioFile) {
+            String category, String audioFile, Map<String, String> filters) {
         super();
         this.message = message;
         this.priority = priority;
         this.sourceKey = sourceKey;
         this.category = category;
         this.audioFile = audioFile;
+        this.setFilters(filters);
     }
 
     public String getMachine() {
@@ -120,13 +129,32 @@ public class AlertVizRequest implements IServerRequest {
     public void setAudioFile(String audioFile) {
         this.audioFile = audioFile;
     }
-    
+
+    public Map<String, String> getFilters() {
+        return filters;
+    }
+
+    public void setFilters(Map<String, String> filters) {
+        if (filters != null) {
+            if (filters.keySet().contains(null)
+                    || filters.values().contains(null)) {
+                throw new IllegalArgumentException(
+                        "Filters must not contain null keys or values: "
+                                + filters.toString());
+            }
+        }
+        this.filters = filters;
+    }
+
+    @Override
     public String toString() {
         StringBuilder sb = new StringBuilder();
-        
-        sb.append(machine) .append(" | ").append(priority).append(" | ").
-            append(category).append(" | ").append(sourceKey);
-        
+
+        sb.append(machine).append(" | ").append(priority).append(" | ")
+                .append(category).append(" | ").append(sourceKey);
+        if (filters != null && !filters.isEmpty()) {
+            sb.append(" | ").append(filters);
+        }
         return sb.toString();
     }
 }

@@ -23,7 +23,7 @@ import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 
-import org.apache.commons.lang.StringUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.eclipse.swt.graphics.Rectangle;
 import org.geotools.geometry.jts.CoordinateSequenceTransformer;
 import org.geotools.geometry.jts.DefaultCoordinateSequenceTransformer;
