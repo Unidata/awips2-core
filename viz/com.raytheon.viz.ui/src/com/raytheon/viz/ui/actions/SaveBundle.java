@@ -19,7 +19,12 @@
  **/
 package com.raytheon.viz.ui.actions;
 
+import java.io.BufferedWriter;
 import java.io.File;
+import java.nio.charset.Charset;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +44,7 @@ import org.eclipse.ui.PlatformUI;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.procedures.Bundle;
-import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
+import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.UiUtil;
@@ -58,6 +63,8 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
  *                                     ProcedureXmlManager
  * Mar 02, 2015  4204     njensen     Extract part name as bundle name
+ * Sep 15, 2016           mjames@ucar Save as perspective / multi-display rather
+ *                                    single map editor.
  * 
  * </pre>
  * 
@@ -66,6 +73,8 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  */
 public class SaveBundle extends AbstractHandler {
 
+	private final String EXT = ".xml";
+	
     /*
      * (non-Javadoc)
      * 
@@ -80,46 +89,40 @@ public class SaveBundle extends AbstractHandler {
 
         String fileName = null;
         FileDialog fd = new FileDialog(shell, SWT.SAVE);
-        fd.setOverwrite(true);
         fd.setFileName(fileName);
-        fd.setFilterExtensions(new String[] { "*.xml" });
+        fd.setFilterExtensions(new String[] { "*" + EXT });
         fd.setFilterPath(System.getProperty("user.home"));
-        while (fileName == null) {
-            String retVal = fd.open();
-            if (retVal == null) {
-                return null;
-            }
-
-            String name = fd.getFileName();
-            fileName = fd.getFilterPath() + File.separator + name;
-            if (name.endsWith(".xml") == false) {
-                name += ".xml";
-                fd.setFileName(name);
-                fileName = fd.getFilterPath() + File.separator + name;
-                if (new File(fileName).exists()) {
-                    boolean result = MessageDialog
-                            .openQuestion(
-                                    shell,
-                                    "Confirm Overwrite",
-                                    "A file named \""
-                                            + name
-                                            + "\" already exists.  Do you want to replace it?");
-                    if (result == false) {
-                        fileName = null;
-                    }
-                }
-            }
+        String retVal = fd.open();
+        if (retVal == null) {
+            return null;
         }
 
-        try {
-            Bundle bundle = extractCurrentBundle();
-            ProcedureXmlManager.getInstance().marshalToFile(bundle, fileName);
+        String name = fd.getFileName();
+        if (name != null && name.endsWith(EXT) == false) {
+            name += EXT;
+            fd.setFileName(name);
+        }
+        fileName = fd.getFilterPath() + File.separator + name;
+        if (new File(fileName).exists()) {
+            boolean result = MessageDialog.openQuestion(shell,
+                    "Confirm Overwrite", "A file named \"" + name
+                    + "\" already exists.  Do you want to replace it?");
+            if (result == false) {
+                fileName = null;
+            }
+        }
+        
+        final Path procedurePath = Paths.get(fileName);
+        try (BufferedWriter br = Files.newBufferedWriter(procedurePath,
+                Charset.defaultCharset())) {
+            Procedure procedure = SavePerspectiveHandler.getCurrentProcedure();
+            String xml = procedure.toXML();
+            br.write(xml);
         } catch (Exception e) {
-            Status status = new Status(Status.ERROR, UiPlugin.PLUGIN_ID, 0,
-                    "Error occurred during bundle save.", e);
-            ErrorDialog.openError(Display.getCurrent().getActiveShell(),
+        	Status status = new Status(Status.ERROR, UiPlugin.PLUGIN_ID, 0,
+        			"Failed to write perspective file: " + fileName + ".", e);
+        	ErrorDialog.openError(Display.getCurrent().getActiveShell(),
                     "ERROR", "Error occurred during bundle save.", status);
-            throw new ExecutionException("Error occurred during bundle save", e);
         }
         return null;
     }
