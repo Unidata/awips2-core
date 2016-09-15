@@ -58,6 +58,8 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 17, 2012            bsteffen     Initial creation
+ * Sep 15, 2016            mjames@ucar  Prevent context.destroy() to avoid segfault
+ *                                      when closing displays.
  * 
  * </pre>
  * 
@@ -147,7 +149,6 @@ public class GLContextBridge {
 
     public void destroyContext() {
         releaseContext();
-        context.destroy();
     }
 
     /**
