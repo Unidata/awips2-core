@@ -7,23 +7,23 @@ import com.raytheon.uf.common.time.DataTime;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
- * 
+ *
  * Provide static helper methods for assisting in interrogation and also
  * contains several common keys that can be referenced for guaranteed
  * compatibility between callers and Interrogatables.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 19, 2014  2820     bsteffen    Initial creation
- * 
+ * Sep 21, 2016  3239     nabowle     Add getTypedMeasureClass()
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 public class Interrogator {
     /**
@@ -31,7 +31,7 @@ public class Interrogator {
      * information about a geometry for a specific coordinate and time. One
      * example would be information on maps.
      */
-    public static final InterrogationKey<Geometry> GEOMETRY = new ClassInterrogationKey<Geometry>(
+    public static final InterrogationKey<Geometry> GEOMETRY = new ClassInterrogationKey<>(
             Geometry.class);
 
     /**
@@ -40,9 +40,8 @@ public class Interrogator {
      * {@link Interrogatable} representing multiple values should not use this
      * key but should somehow provide a unique key for each value.
      */
-    @SuppressWarnings("unchecked")
-    public static final InterrogationKey<Measure<? extends Number, ?>> VALUE = new ClassInterrogationKey<Measure<? extends Number, ?>>(
-            (Class<Measure<? extends Number, ?>>) ((Class<?>) Measure.class));
+    public static final InterrogationKey<Measure<? extends Number, ?>> VALUE = new ClassInterrogationKey<>(
+            getTypedMeasureClass());
 
     /**
      * Retrieve a single value for a specific {@link InterrogationKey}. If
@@ -51,7 +50,7 @@ public class Interrogator {
      * should be called instead of calling this method multiple times because
      * some Interrogatable implementations may be able to optimize multiple
      * keys.
-     * 
+     *
      * @param coordinate
      *            the coordinate of interest
      * @param time
@@ -70,13 +69,12 @@ public class Interrogator {
     public static <T> T interrogateSingle(Interrogatable interrogatable,
             ReferencedCoordinate coordinate, DataTime time,
             InterrogationKey<T> key) {
-        return interrogatable.interrogate(coordinate, time, key).get(
-                key);
+        return interrogatable.interrogate(coordinate, time, key).get(key);
     }
 
     /**
-     * Determine if an interrogatable contains the specificed key.
-     * 
+     * Determine if an interrogatable contains the specified key.
+     *
      * @param interrogatable
      *            an interrogatable
      * @param key
@@ -88,4 +86,11 @@ public class Interrogator {
         return interrogatable.getInterrogationKeys().contains(key);
     }
 
+    /**
+     * Get the typed Measure class.
+     */
+    @SuppressWarnings("unchecked")
+    public static <M extends Measure<?, ?>> Class<M> getTypedMeasureClass() {
+        return (Class<M>) Measure.class;
+    }
 }
