@@ -20,15 +20,11 @@
 
 package com.raytheon.uf.viz.personalities.cave.workbench;
 
-import org.eclipse.core.runtime.IStatus;
 import org.eclipse.e4.core.contexts.IEclipseContext;
+import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.modeling.ISaveHandler;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
-import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IMemento;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.application.ActionBarAdvisor;
@@ -58,6 +54,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Jan 05, 2016   5193      bsteffen    Move perspective listener activation to the workbench advisor.
  * Jan 12, 2016   5232      njensen     Removed code that doesn't work in Eclipse 4
  * Jun 06, 2016   5195      bsteffen    Prevent tiny CAVE.
+ * Aug 05, 2016   5764      bsteffen    Move window placement logic to the WindowPlacementProcessor.
  * 
  * </pre>
  * 
@@ -65,8 +62,6 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * @version 1
  */
 public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
-
-    private boolean firstTime = true;
 
     /**
      * Constructor
@@ -76,6 +71,7 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
     public VizWorkbenchWindowAdvisor(IWorkbenchWindowConfigurer configurer) {
         super(configurer);
     }
+
 
     /*
      * (non-Javadoc)
@@ -91,7 +87,20 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
         configurer.setShowCoolBar(true);
         configurer.setShowStatusLine(true);
 
-        OpenPerspectiveList.getInstance(configurer.getWindow());
+        Point minimum = new Point(400, 400);
+        IWorkbenchWindow window = configurer.getWindow();
+        Shell shell = window.getShell();
+        shell.setMinimumSize(minimum);
+
+        MWindow model = configurer.getWindow().getService(MWindow.class);
+        int width = model.getWidth();
+        int height = model.getHeight();
+        /* The WindowPlacementProcessor should have set reasonable values. */
+        if (width >= minimum.x && height >= minimum.y) {
+            configurer.setInitialSize(new Point(width, height));
+        }
+
+        OpenPerspectiveList.getInstance(window);
     }
 
     /*
@@ -140,106 +149,19 @@ public class VizWorkbenchWindowAdvisor extends WorkbenchWindowAdvisor {
     @Override
     public void postWindowCreate() {
         super.postWindowCreate();
-
-        IWorkbenchWindow window = super.getWindowConfigurer().getWindow();
-
-        Shell shell = window.getShell();
-        shell.setMinimumSize(new Point(400, 400));
-
-        Display display = shell.getDisplay();
-        Monitor[] monitors = display.getMonitors();
-
-        boolean save = true;
+        
         ProgramArguments args = ProgramArguments.getInstance();
         Integer monitor = args.getInteger("-monitor");
-        if (monitor == null) {
-            monitor = 0;
-
-            Point cursor = display.getCursorLocation();
-            for (int i = 0; i < monitors.length; i++) {
-                if (monitors[i].getBounds().contains(cursor)) {
-                    monitor = i;
-                    break;
-                }
-            }
-        } else {
-            save = false;
-        }
-
-        if (monitor >= monitors.length) {
-            monitor = monitors.length - 1;
-        }
-        Rectangle bounds = monitors[monitor].getBounds();
-
         Integer width = args.getInteger("-width");
-        if (width == null) {
-            if (firstTime) {
-                width = Math.min(bounds.width - 80, (bounds.height * 5) / 4);
-            } else {
-                // use saved width unless greater than monitor width
-                width = Math.min(bounds.width, shell.getSize().x);
-            }
-        } else {
-            save = false;
-        }
-
         Integer height = args.getInteger("-height");
-        if (height == null) {
-            if (firstTime) {
-                height = bounds.height;
-            } else {
-                // use saved height unless greater than monitor height
-                height = Math.min(bounds.height, shell.getSize().y);
-            }
-        } else {
-            save = false;
-        }
-        while (display.readAndDispatch()) {
-            /*
-             * There is a complicated bug in swt/gtk which causes the shell to
-             * occasionally be set to the minimum size instead of the desired
-             * size. Dispatching events here causes the events to propagate
-             * better and the shell to always be the correct size. Initial tests
-             * indicate that the bug is fixed in eclipse 4.6, so this code can
-             * probably be removed safely in the future.
-             */
-        }
-        shell.setSize(width, height);
-        super.getWindowConfigurer().setInitialSize(new Point(width, height));
-
         Integer x = args.getInteger("-x");
         Integer y = args.getInteger("-y");
-        if ((x != null) && (y != null)) {
-            save = false;
-            shell.setLocation(x + bounds.x, y + bounds.y);
-        } else if (firstTime) {
-            shell.setLocation((bounds.x + bounds.width) - width, bounds.y);
-        } else {
-            // scale saved location to selected monitor size
-            Point loc = shell.getLocation();
-            for (Monitor m : monitors) {
-                Rectangle b = m.getBounds();
-                if (b.contains(loc)) {
-                    x = (((loc.x - b.x) * bounds.width) / b.width) + bounds.x;
-                    y = (((loc.y - b.y) * bounds.height) / b.width) + bounds.y;
-                    shell.setLocation(x, y);
-                    break;
-                }
-            }
-        }
-
         /* if we've overridden the window size/position don't save it on exit */
-        if (!save) {
+        if (monitor != null || height != null || width != null || x != null
+                || y != null) {
             getWindowConfigurer().getWorkbenchConfigurer().setSaveAndRestore(
                     false);
         }
-    }
-
-    @Override
-    public IStatus restoreState(IMemento memento) {
-        // If we have state to restore then this isn't our first time
-        firstTime = false;
-        return super.restoreState(memento);
     }
 
 }

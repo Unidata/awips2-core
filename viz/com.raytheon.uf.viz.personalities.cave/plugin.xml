@@ -529,4 +529,13 @@
       </activityPatternBinding>     
       
    </extension>
+   <extension
+         id="VizPeronalityProcessors"
+         point="org.eclipse.e4.workbench.model">
+      <processor
+            apply="always"
+            beforefragment="false"
+            class="com.raytheon.uf.viz.personalities.cave.workbench.WindowPlacementProcessor">
+      </processor>
+   </extension>
 </plugin>
