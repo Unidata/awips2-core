@@ -25,9 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jep.JepException;
-import jep.NDArray;
-
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
@@ -35,7 +32,11 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.derivparam.library.DerivedParameterRequest;
 import com.raytheon.uf.common.inventory.tree.CubeLevel;
+import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.python.PythonInterpreter;
+
+import jep.JepException;
+import jep.NDArray;
 
 /**
  * A script for running the master derived parameter script, which can run any
@@ -43,29 +44,30 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jul 08, 2008           njensen     Initial creation
- * Nov 20, 2009  3387     jelkins     Use derived script's variableId instead of filename
- * Nov 21, 2009  3576     rjpeter     Refactored to populate DerivParamDesc.
- * Oct 29, 2013  2476     njensen     Renamed numeric methods to numpy
- * Apr 11, 2014  2947     bsteffen    Allow returning NaN
- * May 01, 2014  3101     njensen     Safe cast result shape values to Number
- * Apr 20, 2015  4259     njensen     Updated for new Jep API
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 08, 2008           njensen   Initial creation
+ * Nov 20, 2009  3387     jelkins   Use derived script's variableId instead of
+ *                                  filename
+ * Nov 21, 2009  3576     rjpeter   Refactored to populate DerivParamDesc.
+ * Oct 29, 2013  2476     njensen   Renamed numeric methods to numpy
+ * Apr 11, 2014  2947     bsteffen  Allow returning NaN
+ * May 01, 2014  3101     njensen   Safe cast result shape values to Number
+ * Apr 20, 2015  4259     njensen   Updated for new Jep API
+ * Oct 05, 2016  5891     bsteffen  Allow functions in subdirectories
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
-
 public class MasterDerivScript extends PythonInterpreter {
 
     protected static final String RESULT = "__result";
 
     private static final String DATA_NAME = "Data";
 
-    private final Map<Object, List<String>> prevArgs = new HashMap<Object, List<String>>();
+    private final Map<Object, List<String>> prevArgs = new HashMap<>();
 
     /**
      * Constructor
@@ -122,8 +124,12 @@ public class MasterDerivScript extends PythonInterpreter {
             int lastIdx = name.lastIndexOf(".");
             String functionName = name.substring(lastIdx + 1);
             String path = name.substring(0, lastIdx);
+            /* Translate directory into a python submodule */
+            path = path.replace(IPathManager.SEPARATOR, ".");
             jep.eval("from " + path + " import " + functionName + " as execute");
         } else {
+            /* Translate directory into a python submodule */
+            name = name.replace(IPathManager.SEPARATOR, ".");
             jep.eval("from " + name + " import execute");
         }
         jep.eval(functionCall.toString());
@@ -263,7 +269,7 @@ public class MasterDerivScript extends PythonInterpreter {
         }
         List<String> pArgs = prevArgs.get(argValue);
         if (pArgs == null) {
-            pArgs = new ArrayList<String>();
+            pArgs = new ArrayList<>();
             prevArgs.put(argValue, pArgs);
         }
         pArgs.add(argName);
@@ -282,7 +288,7 @@ public class MasterDerivScript extends PythonInterpreter {
             int lenTuple = ((Integer) jep.getValue("len(" + RESULT + ")"))
                     .intValue();
             // create result as a list of arrays
-            result = new ArrayList<IDataRecord>(lenTuple);
+            result = new ArrayList<>(lenTuple);
             jep.eval("__tmp = " + RESULT);
 
             // get each array and put it in the list
@@ -294,7 +300,7 @@ public class MasterDerivScript extends PythonInterpreter {
                 getExecutionResult(result, shape);
             }
         } else {
-            result = new ArrayList<IDataRecord>(1);
+            result = new ArrayList<>(1);
             getExecutionResult(result, null);
         }
         jep.eval("del globals()['" + RESULT + "']");
