@@ -37,19 +37,20 @@ import com.raytheon.uf.common.time.TimeRange;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 24, 2013            dgilling     Initial creation
+ * Oct 18, 2016 5916       bsteffen    Allow lazy loading of lat/lon data
  * 
  * </pre>
  * 
  * @author dgilling
- * @version 1.0
  */
-
 @DynamicSerialize
 public final class GetGridDataRequest extends AbstractDataAccessRequest {
 
     private List<DataTime> requestedTimes;
 
     private TimeRange requestedPeriod;
+
+    private boolean includeLatLonData = true;
 
     public GetGridDataRequest() {
         // no-op, for serialization
@@ -84,4 +85,13 @@ public final class GetGridDataRequest extends AbstractDataAccessRequest {
     public void setRequestedPeriod(TimeRange requestedPeriod) {
         this.requestedPeriod = requestedPeriod;
     }
+
+    public boolean isIncludeLatLonData() {
+        return includeLatLonData;
+    }
+
+    public void setIncludeLatLonData(boolean includeLatLonData) {
+        this.includeLatLonData = includeLatLonData;
+    }
+
 }
