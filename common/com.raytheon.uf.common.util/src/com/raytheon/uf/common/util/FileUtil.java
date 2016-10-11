@@ -20,9 +20,6 @@
 
 package com.raytheon.uf.common.util;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.io.Closeable;
 import java.io.File;
 import java.io.FileFilter;
@@ -32,6 +29,10 @@ import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.nio.file.WatchService;
 import java.util.ArrayList;
 import java.util.List;
@@ -68,6 +69,7 @@ import java.util.zip.GZIPOutputStream;
  * Aug 07, 2014 3502       bclement    added copy(), deprecated getFileModifiedWatcher()
  * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
  * Mar 02, 2016 5432       bkowal      Deprecated methods now implemented by the JDK.
+ * Oct 22, 2016 5856       skorolev    Added copyDirectory with overwrite option.
  * 
  * </pre>
  * 
@@ -110,8 +112,10 @@ public class FileUtil {
         StringBuilder fullPath = new StringBuilder();
         for (String component : pathComponents) {
             if ((fullPath.length() > 0)
-                    && (fullPath.charAt(fullPath.length() - 1) != File.separatorChar)
-                    && ((component.isEmpty()) || (component.charAt(0) != File.separatorChar))) {
+                    && (fullPath.charAt(
+                            fullPath.length() - 1) != File.separatorChar)
+                    && ((component.isEmpty())
+                            || (component.charAt(0) != File.separatorChar))) {
                 fullPath.append(File.separatorChar);
             }
             fullPath.append(component);
@@ -232,11 +236,7 @@ public class FileUtil {
     }
 
     /**
-     * Recursively copies all files from one directory to another.
-     * <p>
-     * If the destination directory does not exist, it will be created.
-     * 
-     * TODO add options for controlling file overwriting
+     * Recursively overwrites all files from one directory to another.
      * 
      * @param source
      * @param destination
@@ -244,6 +244,22 @@ public class FileUtil {
      */
     public static void copyDirectory(File source, File destination)
             throws IOException {
+
+        copyDirectory(source, destination, true);
+    }
+
+    /**
+     * Recursively copies all files from one directory to another. If the
+     * destination directory does not exist, it will be created.
+     * 
+     * @param source
+     * @param destination
+     * @param overwrite
+     *            Performs the copy even when the target file already exists.
+     * @throws IOException
+     */
+    public static void copyDirectory(File source, File destination,
+            boolean overwrite) throws IOException {
 
         if (source.isDirectory()) {
 
@@ -254,12 +270,20 @@ public class FileUtil {
             String[] files = source.list();
 
             for (String file : files) {
-                copyDirectory(new File(source, file), new File(destination,
-                        file));
+                copyDirectory(new File(source, file),
+                        new File(destination, file), overwrite);
             }
         } else {
-            Files.copy(Paths.get(source.getAbsolutePath()),
-                    Paths.get(destination.getAbsolutePath()));
+            if (!destination.exists()) {
+                Files.copy(Paths.get(source.getAbsolutePath()),
+                        Paths.get(destination.getAbsolutePath()));
+                return;
+            }
+            if (overwrite) {
+                Files.copy(Paths.get(source.getAbsolutePath()),
+                        Paths.get(destination.getAbsolutePath()),
+                        StandardCopyOption.REPLACE_EXISTING);
+            }
         }
     }
 
@@ -733,9 +757,9 @@ public class FileUtil {
                     }
                 } else {
                     if (!tempDir.isDirectory()) {
-                        String msg = String
-                                .format("Path [%s] is not a directory, cannot create temporary directory",
-                                        tempDir.getAbsolutePath());
+                        String msg = String.format(
+                                "Path [%s] is not a directory, cannot create temporary directory",
+                                tempDir.getAbsolutePath());
                         throw new IOException(msg);
                     }
                 }
@@ -789,9 +813,9 @@ public class FileUtil {
             // isDirectory will not work until we actually have a path that
             // exists!
             if (!tempPath.isDirectory()) {
-                String msg = String
-                        .format("Path [%s] is not a directory, cannot create temporary file",
-                                tempPath.getAbsolutePath());
+                String msg = String.format(
+                        "Path [%s] is not a directory, cannot create temporary file",
+                        tempPath.getAbsolutePath());
                 throw new IOException(msg);
             }
             if (namePrefix == null) {
