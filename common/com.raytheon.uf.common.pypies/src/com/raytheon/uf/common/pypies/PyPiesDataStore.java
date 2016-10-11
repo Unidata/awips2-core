@@ -1,3 +1,22 @@
+/**
+ * This software was developed and / or modified by Raytheon Company,
+ * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+ *
+ * U.S. EXPORT CONTROLLED TECHNICAL DATA
+ * This software product contains export-restricted data whose
+ * export/transfer/disclosure is restricted by U.S. law. Dissemination
+ * to non-U.S. persons whether in the United States or abroad requires
+ * an export license or other authorization.
+ *
+ * Contractor Name:        Raytheon Company
+ * Contractor Address:     6825 Pine Street, Suite 340
+ *                         Mail Stop B8
+ *                         Omaha, NE 68106
+ *                         402.291.0100
+ *
+ * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
+ * further licensing information.
+ **/
 package com.raytheon.uf.common.pypies;
 
 import java.io.File;
@@ -19,6 +38,7 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.pypies.records.CompressedDataRecord;
 import com.raytheon.uf.common.pypies.request.AbstractRequest;
 import com.raytheon.uf.common.pypies.request.CopyRequest;
 import com.raytheon.uf.common.pypies.request.CreateDatasetRequest;
@@ -40,26 +60,7 @@ import com.raytheon.uf.common.serialization.DynamicSerializationManager.Serializ
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.FileUtil;
-
-/**
- * This software was developed and / or modified by Raytheon Company,
- * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- *
- * U.S. EXPORT CONTROLLED TECHNICAL DATA
- * This software product contains export-restricted data whose
- * export/transfer/disclosure is restricted by U.S. law. Dissemination
- * to non-U.S. persons whether in the United States or abroad requires
- * an export license or other authorization.
- *
- * Contractor Name:        Raytheon Company
- * Contractor Address:     6825 Pine Street, Suite 340
- *                         Mail Stop B8
- *                         Omaha, NE 68106
- *                         402.291.0100
- *
- * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
- * further licensing information.
- **/
+import com.raytheon.uf.common.util.format.BytesFormat;
 
 /**
  * Data Store implementation that communicates with a PyPIES server over http.
@@ -80,22 +81,25 @@ import com.raytheon.uf.common.util.FileUtil;
  * Jan 27, 2016  5170      tjensen     Added logging of stats to doSendRequests
  * Feb 24, 2016  5389      nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
  * Feb 29, 2016  5420      tgurney     Remove timestampCheck arg from copy()
+ * Nov 15, 2016  5992      bsteffen    Compress large records
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
-
 public class PyPiesDataStore implements IDataStore {
 
     private static final long SIMPLE_LOG_TIME = 300;
 
-    private static final long HUGE_REQUEST = 1024 * 1024 * 25;
+    private static final long HUGE_REQUEST = BytesFormat
+            .parseSystemProperty("pypies.limits.streaming", "25MiB");
+
+    private static final long COMPRESSION_LIMIT = BytesFormat
+            .parseSystemProperty("pypies.limits.compression", "5MiB");
 
     protected static String address = null;
 
-    protected List<IDataRecord> records = new ArrayList<IDataRecord>();
+    protected List<IDataRecord> records = new ArrayList<>();
 
     protected String filename;
 
@@ -108,14 +112,18 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public void addDataRecord(final IDataRecord dataset,
-            final StorageProperties properties) throws StorageException {
+    public void addDataRecord(IDataRecord dataset, StorageProperties properties)
+            throws StorageException {
         if (dataset.validateDataSet()) {
+            if (dataset.getSizeInBytes() > COMPRESSION_LIMIT) {
+                dataset = CompressedDataRecord.convert(dataset);
+            }
             dataset.setProperties(properties);
             records.add(dataset);
         } else {
-            throw new StorageException("Invalid dataset " + dataset.getName()
-                    + " :" + dataset, null);
+            throw new StorageException(
+                    "Invalid dataset " + dataset.getName() + " :" + dataset,
+                    null);
         }
 
     }
@@ -142,16 +150,16 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public void deleteGroups(final String... groups) throws StorageException,
-            FileNotFoundException {
+    public void deleteGroups(final String... groups)
+            throws StorageException, FileNotFoundException {
         DeleteRequest delete = new DeleteRequest();
         delete.setGroups(groups);
         sendRequest(delete);
     }
 
     @Override
-    public String[] getDatasets(final String group) throws StorageException,
-            FileNotFoundException {
+    public String[] getDatasets(final String group)
+            throws StorageException, FileNotFoundException {
         DatasetNamesRequest req = new DatasetNamesRequest();
         req.setGroup(group);
         String[] result = (String[]) cachedRequest(req);
@@ -159,8 +167,8 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public IDataRecord[] retrieve(final String group) throws StorageException,
-            FileNotFoundException {
+    public IDataRecord[] retrieve(final String group)
+            throws StorageException, FileNotFoundException {
         RetrieveRequest req = new RetrieveRequest();
         req.setGroup(group);
         RetrieveResponse resp = (RetrieveResponse) cachedRequest(req);
@@ -169,8 +177,8 @@ public class PyPiesDataStore implements IDataStore {
 
     @Override
     public IDataRecord retrieve(final String group, final String dataset,
-            final Request request) throws StorageException,
-            FileNotFoundException {
+            final Request request)
+                    throws StorageException, FileNotFoundException {
         RetrieveRequest req = new RetrieveRequest();
         req.setGroup(group);
         req.setDataset(dataset);
@@ -181,8 +189,8 @@ public class PyPiesDataStore implements IDataStore {
 
     @Override
     public IDataRecord[] retrieveDatasets(final String[] datasetGroupPath,
-            final Request request) throws StorageException,
-            FileNotFoundException {
+            final Request request)
+                    throws StorageException, FileNotFoundException {
         DatasetDataRequest req = new DatasetDataRequest();
         req.setDatasetGroupPath(datasetGroupPath);
         req.setRequest(request);
@@ -192,8 +200,8 @@ public class PyPiesDataStore implements IDataStore {
 
     @Override
     public IDataRecord[] retrieveGroups(final String[] groups,
-            final Request request) throws StorageException,
-            FileNotFoundException {
+            final Request request)
+                    throws StorageException, FileNotFoundException {
         GroupsRequest req = new GroupsRequest();
         req.setGroups(groups);
         req.setRequest(request);
@@ -238,8 +246,8 @@ public class PyPiesDataStore implements IDataStore {
                         IDataRecord oldRec = recordIter.next();
                         if (oldRec.getGroup().equals(rec.getGroup())
                                 && oldRec.getName().equals(rec.getName())) {
-                            rec.setCorrelationObject(oldRec
-                                    .getCorrelationObject());
+                            rec.setCorrelationObject(
+                                    oldRec.getCorrelationObject());
                             recordIter.remove();
                             break;
                         }
@@ -290,8 +298,8 @@ public class PyPiesDataStore implements IDataStore {
         try {
             ret = doSendRequest(obj, huge);
         } catch (Exception e) {
-            throw new StorageException(
-                    "Error communicating with pypies server", null, e);
+            throw new StorageException("Error communicating with pypies server",
+                    null, e);
         }
         long time = System.currentTimeMillis() - t0;
 
@@ -317,9 +325,9 @@ public class PyPiesDataStore implements IDataStore {
                         public void writeToStream(OutputStream os)
                                 throws CommunicationException {
                             try {
-                                DynamicSerializationManager.getManager(
-                                        SerializationType.Thrift).serialize(
-                                        obj, os);
+                                DynamicSerializationManager
+                                        .getManager(SerializationType.Thrift)
+                                        .serialize(obj, os);
                             } catch (SerializationException e) {
                                 throw new CommunicationException(e);
                             }
@@ -328,8 +336,8 @@ public class PyPiesDataStore implements IDataStore {
             return SerializationUtil.transformFromThrift(Object.class, resp);
         } else {
             // can't stream to pypies due to WSGI spec not handling chunked http
-            Object response = HttpClient.getInstance().postDynamicSerialize(
-                    address, obj, false);
+            Object response = HttpClient.getInstance()
+                    .postDynamicSerialize(address, obj, false);
             /**
              * Log that we have a message. Size information in NOT logged here.
              * Sending a '1' for sent to trigger request increment.
@@ -366,8 +374,8 @@ public class PyPiesDataStore implements IDataStore {
     protected Object deserializeResponse(final byte[] response)
             throws StorageException {
         try {
-            return SerializationUtil
-                    .transformFromThrift(Object.class, response);
+            return SerializationUtil.transformFromThrift(Object.class,
+                    response);
         } catch (SerializationException e) {
             throw new StorageException(
                     "Error deserializing response from pypies server", null, e);
@@ -389,8 +397,8 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public void createDataset(final IDataRecord rec) throws StorageException,
-            FileNotFoundException {
+    public void createDataset(final IDataRecord rec)
+            throws StorageException, FileNotFoundException {
         CreateDatasetRequest req = new CreateDatasetRequest();
         req.setRecord(rec);
         sendRequest(req);
@@ -475,4 +483,5 @@ public class PyPiesDataStore implements IDataStore {
             throw new StorageException(sb.toString(), null);
         }
     }
+
 }

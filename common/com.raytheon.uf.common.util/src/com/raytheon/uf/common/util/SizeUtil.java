@@ -19,6 +19,10 @@
  **/
 package com.raytheon.uf.common.util;
 
+import java.text.DecimalFormat;
+
+import com.raytheon.uf.common.util.format.BytesFormat;
+
 /**
  * Utilities for calculating the size of objects
  * 
@@ -31,18 +35,15 @@ package com.raytheon.uf.common.util;
  * Jul 24, 2012            njensen     Initial creation
  * Jun 12, 2013   2064     mpduff      Add prettyKiloByteSize.
  * Apr 10, 2014   3023     rferrel     Properly handle negative numbers.
+ * Dec 02, 2016   5992     bsteffen    Use BytesFormat internally.
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
-
 public class SizeUtil {
     private static final int BYTES_PER = 1024;
 
-    private static final String[] REP_PREFIX = new String[] { "B", "kB", "MB",
-            "GB", "TB", "PB", "EB", "ZB", "YB" };
 
     public static final long BYTES_PER_KB = BYTES_PER;
 
@@ -58,24 +59,10 @@ public class SizeUtil {
      * @return the pretty String representation of the byte size
      */
     public static String prettyByteSize(long numberOfBytes) {
-        StringBuilder sb = new StringBuilder();
-        float n;
-        if (numberOfBytes < 0) {
-            sb.append("-");
-            n = -numberOfBytes;
-        } else {
-            n = numberOfBytes;
-        }
-
-        int reps = 0;
-        while ((n > BYTES_PER) && (reps < (REP_PREFIX.length - 1))) {
-            reps++;
-            n /= BYTES_PER;
-        }
-        int tenth = ((int) (n * 10)) % 10;
-        sb.append((int) n).append(".").append(tenth);
-        sb.append(REP_PREFIX[reps]);
-        return sb.toString();
+        return new BytesFormat(BytesFormat.Standard.CUSTOMARY)
+                .setDecimalFormat(new DecimalFormat("0.0"))
+                .setSeparator("")
+                .format(numberOfBytes);
     }
 
     /**
