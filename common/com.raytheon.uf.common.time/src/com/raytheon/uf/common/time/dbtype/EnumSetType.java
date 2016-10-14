@@ -18,41 +18,51 @@
  * further licensing information.
  **/
 
-package com.raytheon.edex.db.objects.hibernate;
+package com.raytheon.uf.common.time.dbtype;
 
 import java.io.Serializable;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Types;
-import java.util.Comparator;
+import java.util.EnumSet;
 
 import org.hibernate.HibernateException;
 import org.hibernate.engine.spi.SessionImplementor;
 import org.hibernate.usertype.UserType;
 
-import com.raytheon.uf.common.time.DataTime;
-
 /**
- * Custom Hibernate type for the DataTime class. This class defines how a
- * DataTime object is saved and retrieved from the database.
- * 
+ * Custom Hibernate type for storing and retrieving EnumSets
  * 
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 8/27/07      428        bphillip    Initial Creation
+ *                         bphillip    Initial Creation
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
+ * Oct 14, 2016 5934       njensen     Moved to time plugin
  * 
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
-public class DataTimeType implements UserType, Comparator<DataTime> {
+public class EnumSetType<E extends Enum<E>> implements UserType {
 
+    /** Stored as a varchar in the databse */
     private static final int[] SQL_TYPES = { Types.VARCHAR };
+
+    /** The EnumSet parameter class */
+    private Class<E> clazz;
+
+    /**
+     * Creates a new EnumSetType for a specific class
+     * 
+     * @param clazz
+     *            The enum type
+     */
+    protected EnumSetType(Class<E> clazz) {
+        this.clazz = clazz;
+    }
 
     @Override
     public Object assemble(Serializable cached, Object owner)
@@ -72,16 +82,16 @@ public class DataTimeType implements UserType, Comparator<DataTime> {
 
     @Override
     public boolean equals(Object x, Object y) throws HibernateException {
-        if (x instanceof DataTime && y instanceof DataTime) {
-            return ((DataTime) x).equals(y);
-        } else {
+        if (x == y)
+            return true;
+        if (null == x || null == y)
             return false;
-        }
+        return x.equals(y);
     }
 
     @Override
-    public int hashCode(Object arg0) throws HibernateException {
-        return 0;
+    public int hashCode(Object x) throws HibernateException {
+        return x.hashCode();
     }
 
     @Override
@@ -93,14 +103,27 @@ public class DataTimeType implements UserType, Comparator<DataTime> {
     public Object nullSafeGet(ResultSet rs, String[] names,
             SessionImplementor session, Object owner)
             throws HibernateException, SQLException {
-        return new DataTime(rs.getString(names[0]));
+        String name = rs.getString(names[0]);
+        EnumSet<E> result = EnumSet.noneOf(clazz);
+        if (!rs.wasNull() && !name.equals("[]")) {
+            String[] tokens = name.split(",");
+            if (tokens.length > 0) {
+                tokens[0] = tokens[0].replace("[", "");
+                tokens[tokens.length - 1] = tokens[tokens.length - 1].replace(
+                        "]", "");
+            }
+            for (int i = 0; i < tokens.length; i++) {
+                result.add(Enum.valueOf(clazz, tokens[i].trim()));
+            }
+        }
+        return result;
     }
 
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
             SessionImplementor session) throws HibernateException, SQLException {
-        if (value == null) {
-            st.setString(index, null);
+        if (null == value) {
+            st.setNull(index, Types.VARCHAR);
         } else {
             st.setString(index, value.toString());
         }
@@ -110,26 +133,17 @@ public class DataTimeType implements UserType, Comparator<DataTime> {
     @Override
     public Object replace(Object original, Object target, Object owner)
             throws HibernateException {
+        // TODO Auto-generated method stub
         return original;
     }
 
     @Override
-    public Class<?> returnedClass() {
-        return DataTime.class;
+    public Class<E> returnedClass() {
+        return clazz;
     }
 
     @Override
     public int[] sqlTypes() {
-        return DataTimeType.SQL_TYPES;
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.util.Comparator#compare(java.lang.Object, java.lang.Object)
-     */
-    @Override
-    public int compare(DataTime o1, DataTime o2) {
-        return o1.compareTo(o2);
+        return SQL_TYPES;
     }
 }

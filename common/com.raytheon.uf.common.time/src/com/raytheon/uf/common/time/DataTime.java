@@ -171,7 +171,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
 
     /** The set of flags set on the time */
     @Column
-    @Type(type = "com.raytheon.edex.db.mapping.DataTimeFlagType")
+    @Type(type = "com.raytheon.uf.common.time.dbtype.DataTimeFlagType")
     @XmlElement
     @DynamicSerializeElement
     protected EnumSet<FLAG> utilityFlags = EnumSet.noneOf(FLAG.class);
