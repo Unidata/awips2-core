@@ -18,8 +18,7 @@
  * further licensing information.
  **/
 
-
-package com.raytheon.edex.db.mapping;
+package com.raytheon.uf.common.time.dbtype;
 
 import com.raytheon.uf.common.time.DataTime.FLAG;
 
@@ -31,10 +30,10 @@ import com.raytheon.uf.common.time.DataTime.FLAG;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  *                         bphillip    Initial Creation
+ * Oct 14, 2016 5934       njensen     Moved to time plugin                        
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class DataTimeFlagType extends EnumSetType<FLAG>{
     

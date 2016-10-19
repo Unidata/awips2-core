@@ -2,12 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common Plug-in
 Bundle-SymbolicName: com.raytheon.edex.common
-Bundle-Version: 1.16.0.qualifier
+Bundle-Version: 1.16.1.qualifier
 Bundle-Vendor: RAYTHEON
 Export-Package: com.raytheon.edex.common.request,
  com.raytheon.edex.db.dao,
- com.raytheon.edex.db.mapping,
- com.raytheon.edex.db.objects.hibernate,
  com.raytheon.edex.esb,
  com.raytheon.edex.exception,
  com.raytheon.edex.msg,
@@ -36,5 +34,5 @@ Require-Bundle: org.apache.commons.lang3;bundle-version="3.4.0",
  com.raytheon.uf.edex.database;visibility:=reexport,
  com.raytheon.uf.edex.core;visibility:=reexport,
  org.slf4j;bundle-version="1.7.5"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: com.raytheon.uf.common.convert
