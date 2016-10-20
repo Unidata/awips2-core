@@ -51,7 +51,8 @@ import org.eclipse.ui.services.IServiceLocator;
  * Mar 16, 2016  5190     bsteffen  Fix attaching the active part.
  * May 17, 2016  5640     bsteffen  Ensure that when a view is detached from a
  *                                  detached window it does not shrink.
- *
+ * Oct 20, 2016  5952     bsteffen  Handle detaching from a parentless window.
+ * 
  * </pre>
  *
  * @author bsteffen
@@ -130,8 +131,13 @@ public class DetachPart {
         if (baseSizeControl != null) {
             Rectangle bounds = baseSizeControl.getBounds();
             if (!bounds.isEmpty()) {
-                Point corner = baseSizeControl.getParent().toDisplay(bounds.x,
-                        bounds.y);
+                Point corner = null;
+                if (baseSizeControl.getParent() == null) {
+                    corner = new Point(bounds.x, bounds.y);
+                } else {
+                    corner = baseSizeControl.getParent().toDisplay(bounds.x,
+                            bounds.y);
+                }
                 modelService.detach(modelPart, corner.x, corner.y, bounds.width,
                         bounds.height);
                 return;
