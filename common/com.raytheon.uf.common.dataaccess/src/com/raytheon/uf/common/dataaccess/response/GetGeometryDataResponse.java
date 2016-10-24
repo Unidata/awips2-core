@@ -29,6 +29,7 @@ import java.util.Map;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
 import com.vividsolutions.jts.io.WKBWriter;
 
 /**
@@ -43,14 +44,16 @@ import com.vividsolutions.jts.io.WKBWriter;
  * Jun 3, 2013            dgilling    Initial creation
  * Jan 06, 2014  2537     bsteffen    Share geometry WKT.
  * Jun 30, 2015  4569     nabowle     Switch to WKB.
+ * Oct 24, 2016  5919     njensen     Use custom serialization type adapter
+ *                                     Added equals() and hashCode()
  *
  * </pre>
  *
  * @author dgilling
- * @version 1.0
  */
 
 @DynamicSerialize
+@DynamicSerializeTypeAdapter(factory = GeomDataRespAdapter.class)
 public class GetGeometryDataResponse {
 
     @DynamicSerializeElement
@@ -67,7 +70,7 @@ public class GetGeometryDataResponse {
         Map<ByteArrayKey, Integer> indexMap = new HashMap<>();
         WKBWriter writer = new WKBWriter();
         this.geometryWKBs = new ArrayList<>();
-        this.geoData = new ArrayList<GeometryResponseData>(geoData.size());
+        this.geoData = new ArrayList<>(geoData.size());
         byte[] wkb;
         Integer index;
         ByteArrayKey key;
@@ -127,4 +130,56 @@ public class GetGeometryDataResponse {
             return Arrays.equals(data, other.data);
         }
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + ((geoData == null) ? 0 : geoData.hashCode());
+        // modified from auto-generated
+        if (geometryWKBs == null) {
+            result = prime * result + 0;
+        } else {
+            for (int i = 0; i < geometryWKBs.size(); i++) {
+                result = prime * result + Arrays.hashCode(geometryWKBs.get(i));
+            }
+        }
+        // end of modifications
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        GetGeometryDataResponse other = (GetGeometryDataResponse) obj;
+        if (geoData == null) {
+            if (other.geoData != null)
+                return false;
+        } else if (!geoData.equals(other.geoData))
+            return false;
+        if (geometryWKBs == null) {
+            if (other.geometryWKBs != null)
+                return false;
+        }
+        // modified from auto-generated
+        else {
+            if (geometryWKBs.size() != other.getGeometryWKBs().size()) {
+                return false;
+            }
+            for (int i = 0; i < geometryWKBs.size(); i++) {
+                if (!Arrays.equals(geometryWKBs.get(i),
+                        other.geometryWKBs.get(i))) {
+                    return false;
+                }
+            }
+        }
+        // end of modifications
+        return true;
+    }
+
 }

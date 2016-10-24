@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess.response;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -39,11 +40,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jun 03, 2013           dgilling    Initial creation
  * Jan 06, 2014  2537     bsteffen    Store geometry index instead of WKT.
  * Jun 30, 2015  4569     nabowle     Switch to WKB.
+ * Oct 24, 2016  5919     njensen     Added equals() and hashCode()
  *
  * </pre>
  *
  * @author dgilling
- * @version 1.0
  */
 
 @DynamicSerialize
@@ -59,11 +60,12 @@ public class GeometryResponseData extends AbstractResponseData {
         // no-op, for serialization
     }
 
-    public GeometryResponseData(final IGeometryData data, final int geometryWKBindex) {
+    public GeometryResponseData(final IGeometryData data,
+            final int geometryWKBindex) {
         super(data);
 
         Set<String> parameters = data.getParameters();
-        dataMap = new HashMap<String, Object[]>(parameters.size(), 1);
+        dataMap = new HashMap<>(parameters.size(), 1);
         for (String param : parameters) {
             Object[] dataTuple = new Object[3];
             if (IGeometryData.Type.STRING.equals(data.getType(param))) {
@@ -95,4 +97,52 @@ public class GeometryResponseData extends AbstractResponseData {
     public void setGeometryWKBindex(int geometryWKBindex) {
         this.geometryWKBindex = geometryWKBindex;
     }
+
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        // modified from auto-generated
+        if (dataMap == null) {
+            result = result + 0;
+        } else {
+            for (String key : dataMap.keySet()) {
+                result = result + Arrays.hashCode(dataMap.get(key));
+            }
+        }
+        // end of modifications
+        result = prime * result + geometryWKBindex;
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj)
+            return true;
+        if (obj == null)
+            return false;
+        if (getClass() != obj.getClass())
+            return false;
+        GeometryResponseData other = (GeometryResponseData) obj;
+        if (dataMap == null) {
+            if (other.dataMap != null)
+                return false;
+
+        }
+        // modified from auto-generated
+        else if (!dataMap.keySet().equals(other.dataMap.keySet())) {
+            return false;
+        } else {
+            for (String key : dataMap.keySet()) {
+                if (!Arrays.equals(dataMap.get(key), other.dataMap.get(key))) {
+                    return false;
+                }
+            }
+        }
+        // end of modifications
+        if (geometryWKBindex != other.geometryWKBindex)
+            return false;
+        return true;
+    }
+
 }
