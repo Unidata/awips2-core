@@ -20,7 +20,6 @@ Require-Bundle: org.apache.camel;bundle-version="2.16.0",
  com.raytheon.uf.common.json;bundle-version="1.0.0"
 Export-Package: com.raytheon.uf.edex.esb.camel,
  com.raytheon.uf.edex.esb.camel.context,
- com.raytheon.uf.edex.esb.camel.ftp,
  com.raytheon.uf.edex.esb.camel.jms
 Import-Package: com.raytheon.uf.common.event,
  com.raytheon.uf.common.message,

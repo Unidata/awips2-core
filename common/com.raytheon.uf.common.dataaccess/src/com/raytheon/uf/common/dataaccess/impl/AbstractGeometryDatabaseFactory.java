@@ -81,14 +81,15 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jun 07, 2016  5587     tgurney   Change get*Identifiers() to take
  *                                  IDataRequest
  * Jul 27, 2016  2416     tgurney   Stub impl of getNotificationFilter()
+ * Oct 06, 2016  5926     dgilling  Add executeGetColumns.
  * 
  * </pre>
  * 
  * @author bkowal
  */
 
-public abstract class AbstractGeometryDatabaseFactory extends
-        AbstractDataFactory {
+public abstract class AbstractGeometryDatabaseFactory
+        extends AbstractDataFactory {
 
     /*
      * for now, we will assume that we will always be executing sql queries. If
@@ -387,10 +388,11 @@ public abstract class AbstractGeometryDatabaseFactory extends
      *            name of the column
      * @return the query
      */
-    protected String assembleGetColumnValues(String tableName, String columnName) {
-        return String
-                .format("select distinct %1$s from %2$s where %1$s is not null order by %1$s;",
-                        columnName, tableName);
+    protected String assembleGetColumnValues(String tableName,
+            String columnName) {
+        return String.format(
+                "select distinct %1$s from %2$s where %1$s is not null order by %1$s;",
+                columnName, tableName);
     }
 
     /**
@@ -436,8 +438,8 @@ public abstract class AbstractGeometryDatabaseFactory extends
             schema = tableParsed[0];
             tableName = tableParsed[1];
         } else {
-            throw new IncompatibleRequestException(tableNameQualified
-                    + " is not a valid table");
+            throw new IncompatibleRequestException(
+                    tableNameQualified + " is not a valid table");
         }
         return new String[] { schema, tableName };
     }
@@ -454,10 +456,10 @@ public abstract class AbstractGeometryDatabaseFactory extends
         String[] table = splitTableName(request);
         String schema = table[0];
         String tableName = table[1];
-        return String.format("select column_name "
-                + "from information_schema.columns "
-                + "where table_schema = '%s' and table_name = '%s';", schema,
-                tableName);
+        return String.format(
+                "select column_name " + "from information_schema.columns "
+                        + "where table_schema = '%s' and table_name = '%s';",
+                schema, tableName);
     }
 
     /**
@@ -584,13 +586,53 @@ public abstract class AbstractGeometryDatabaseFactory extends
     }
 
     @Override
-    protected Collection<String> checkForInvalidIdentifiers(IDataRequest request) {
+    protected Collection<String> checkForInvalidIdentifiers(
+            IDataRequest request) {
         /*
          * Specifically do not validate identifiers since the current subclass
          * implementations allow column names of specific tables, i.e. optional
          * identifiers are semi-undefined based on database tables
          */
         return Collections.emptyList();
+    }
+
+    /**
+     * Queries the the table specified by the given request to determine which
+     * of the given columnsToCheck it contains.
+     * 
+     * @param columnsToCheck
+     *            the columns to check the existence of
+     * @param request
+     *            the IDataRequest being performed
+     * @return the names of the columns in columnsToCheck that the table has
+     */
+    protected Collection<String> executeGetColumnNames(String[] columnsToCheck,
+            IDataRequest request) {
+        StringBuilder existenceQuery = new StringBuilder(
+                "select column_name from information_schema.columns where column_name in (");
+        boolean first = true;
+        for (String columnName : columnsToCheck) {
+            if (!first) {
+                existenceQuery.append(", ");
+            } else {
+                first = false;
+            }
+            existenceQuery.append("'").append(columnName).append("'");
+        }
+
+        // Extract the table name (ignore schema since there is only 1)
+        String[] tableNameParts = splitTableName(request);
+        String table = tableNameParts[1];
+        existenceQuery.append(") and table_name = '").append(table)
+                .append("';");
+        List<Object[]> results = this.executeQuery(existenceQuery.toString(),
+                request);
+
+        Collection<String> foundColumns = new ArrayList<>(results.size());
+        for (Object[] result : results) {
+            foundColumns.add(result[0].toString());
+        }
+        return foundColumns;
     }
 
     @Override
