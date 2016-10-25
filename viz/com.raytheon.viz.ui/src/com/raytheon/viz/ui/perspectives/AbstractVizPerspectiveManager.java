@@ -34,6 +34,7 @@ import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
+import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
@@ -42,6 +43,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
+import org.eclipse.e4.ui.workbench.modeling.EPartService;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
@@ -91,28 +93,30 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------ ----------  ----------- --------------------------
- * Jul 22, 2008             randerso    Initial creation
- * Mar 26, 2013 1799        bsteffen    Fix pan/zoom when in views.
- * Jun 19, 2013 2116        bsteffen    Do not deactivate contexts for parts
- *                                      when closing an inactive perspective.
- * Jan 14, 2014 2594        bclement    added low memory notification
- * Jun 05, 2015 4401        bkowal      Renamed LoadSerializedXml to
- *                                      LoadPerspectiveHandler.
- * Dec 14, 2015 5193        bsteffen    Updates to handle changed eclipse 4
- *                                      listener calls.
- * Feb 09, 2016 5267        bsteffen    Workaround eclipse 4 poor support for
- *                                      non restorable views.
- * Feb 10, 2016 5329        bsteffen    Close saved editors when deactivating
- *                                      while closing.
- * Jul 11, 2016 5751        bsteffen    Fix timing of tool activation when a
- *                                      part is opened.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 22, 2008  1223     randerso  Initial creation
+ * Mar 26, 2013  1799     bsteffen  Fix pan/zoom when in views.
+ * Jun 19, 2013  2116     bsteffen  Do not deactivate contexts for parts when
+ *                                  closing an inactive perspective.
+ * Jan 14, 2014  2594     bclement  added low memory notification
+ * Jun 05, 2015  4401     bkowal    Renamed LoadSerializedXml to
+ *                                  LoadPerspectiveHandler.
+ * Dec 14, 2015  5193     bsteffen  Updates to handle changed eclipse 4 listener
+ *                                  calls.
+ * Feb 09, 2016  5267     bsteffen  Workaround eclipse 4 poor support for non
+ *                                  restorable views.
+ * Feb 10, 2016  5329     bsteffen  Close saved editors when deactivating while
+ *                                  closing.
+ * Jul 11, 2016  5751     bsteffen  Fix timing of tool activation when a part is
+ *                                  opened.
+ * Oct 25, 2016  5929     bsteffen  Ensure compatibility layer listeners fire
+ *                                  when editors swap
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
 public abstract class AbstractVizPerspectiveManager
         implements IBackgroundColorChangedListener {
@@ -471,6 +475,13 @@ public abstract class AbstractVizPerspectiveManager
      * the provided elements. The old elements are returned and must be either
      * saved off or removed from the UI by the caller.
      * 
+     * This method is needed to work around
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=374132. This method must
+     * account for many subtle interactions between the model, renderer, addons,
+     * and compatibility layer to ensure that all parts of the system remain
+     * consistent.
+     * 
+     * 
      * @param newContents
      *            the contents that should go in the editor area.
      * @return the elements that were previously in the editor area.
@@ -481,6 +492,8 @@ public abstract class AbstractVizPerspectiveManager
         MWindow window = perspectiveWindow.getService(MWindow.class);
         EModelService modelService = perspectiveWindow
                 .getService(EModelService.class);
+        EPartService partService = perspectiveWindow
+                .getService(EPartService.class);
         MPerspective perspective = modelService.getActivePerspective(window);
         List<MPlaceholder> editorPlaceholders = modelService.findElements(
                 perspective, IPageLayout.ID_EDITOR_AREA, MPlaceholder.class,
@@ -493,6 +506,35 @@ public abstract class AbstractVizPerspectiveManager
                 MArea editorArea = (MArea) editorElement;
                 List<MPartSashContainerElement> children = editorArea
                         .getChildren();
+
+                /*
+                 * The compatibility layer, specifically the WorkbenchPage, does
+                 * not send out notifications when the model is changed like
+                 * this. Specifically this causes problems with parts being
+                 * hidden or deactivated because listeners may believe the parts
+                 * we are hiding are still active/visible. To force the
+                 * compatibility layer to send events we create blank MParts and
+                 * make them the selected elements for all MPartStacks. The
+                 * compatibility layer sees that these blank MParts are covering
+                 * the currently visible parts and sends the correct events.
+                 */
+                MPart activePart = partService.getActivePart();
+                List<MPartStack> stacks = modelService.findElements(editorArea,
+                        null, MPartStack.class, null);
+                for (MPartStack stack : stacks) {
+                    if (stack.getChildren().isEmpty()) {
+                        continue;
+                    }
+                    MPart cover = modelService.createModelElement(MPart.class);
+                    cover.setElementId("cover");
+                    cover.setLabel("Cover");
+                    stack.getChildren().add(cover);
+                    stack.setSelectedElement(cover);
+                    if (stack.getChildren().contains(activePart)) {
+                        partService.activate(cover);
+                    }
+                }
+
                 /*
                  * When the editor area contains no visible children then the
                  * CleanupAddon sets the visibility to false, if that happens
@@ -506,6 +548,11 @@ public abstract class AbstractVizPerspectiveManager
                 List<MPartSashContainerElement> oldContents = new ArrayList<MPartSashContainerElement>(
                         children);
                 for (MPartSashContainerElement element : oldContents) {
+                    /*
+                     * If the element is not set invisible then the renderer
+                     * does not seem to notice it is gone and will leave it in
+                     * the layout.
+                     */
                     element.setVisible(false);
                     children.remove(element);
                 }
@@ -514,6 +561,13 @@ public abstract class AbstractVizPerspectiveManager
                     element.setVisible(true);
                 }
                 tags.remove(IPresentationEngine.HIDDEN_EXPLICITLY);
+
+                List<MPart> covers = modelService.findElements(editorArea,
+                        "cover", MPart.class, null);
+                for (MPart cover : covers) {
+                    cover.getParent().getChildren().remove(cover);
+                }
+
                 return oldContents;
             } else {
                 statusHandler.warn(
