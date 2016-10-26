@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -45,9 +45,9 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 /**
  * Abstract base class for all maps
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -55,9 +55,9 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * Aug 21, 2014  #3459     randerso    Restructured Map resource class hierarchy
  * Nov 04, 2015  #5070     randerso    Change map resources to use a preference based font
  *                                     Move management of font magnification into AbstractMapResource
- * 
+ *
  * </pre>
- * 
+ *
  * @author randerso
  * @version 1.0
  */
@@ -86,7 +86,8 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
      * @param resourceData
      * @param loadProperties
      */
-    protected AbstractMapResource(T resourceData, LoadProperties loadProperties) {
+    protected AbstractMapResource(T resourceData,
+            LoadProperties loadProperties) {
         super(resourceData, loadProperties);
         resourceData.addChangeListener(this);
     }
@@ -105,10 +106,9 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget)
+     *
+     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.
+     * raytheon .uf.viz.core.IGraphicsTarget)
      */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
@@ -121,6 +121,7 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
             double magnification = getCapability(MagnificationCapability.class)
                     .getMagnification();
             font.setMagnification((float) magnification);
+            font.setScaleFont(false);
             font.setSmoothing(false);
 
             this.font = font;
@@ -130,7 +131,7 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
      * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
@@ -152,24 +153,23 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
 
     /*
      * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#setDescriptor(com.raytheon
-     * .uf.viz.core.drawables.IDescriptor)
+     *
+     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#setDescriptor(com.
+     * raytheon .uf.viz.core.drawables.IDescriptor)
      */
     @Override
     public void setDescriptor(D descriptor) {
         super.setDescriptor(descriptor);
 
-        projExtent = new PixelExtent(descriptor.getGridGeometry()
-                .getGridRange());
+        projExtent = new PixelExtent(
+                descriptor.getGridGeometry().getGridRange());
 
         lastExtent = null;
     }
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.uf.viz.core.rsc.AbstractVizResource#project(org.opengis.
      * referencing.crs.CoordinateReferenceSystem)
@@ -178,8 +178,8 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
     public void project(CoordinateReferenceSystem crs) throws VizException {
         super.project(crs);
 
-        projExtent = new PixelExtent(descriptor.getGridGeometry()
-                .getGridRange());
+        projExtent = new PixelExtent(
+                descriptor.getGridGeometry().getGridRange());
 
         lastExtent = null;
     }
@@ -207,7 +207,7 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#toString()
      */
     @Override
@@ -240,10 +240,10 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
                 targetCRS);
 
         double threshold = kmPerPixel * SPEED_UP;
-        int maxHorDivisions = (int) Math.ceil(extent.getWidth() / SPEED_UP
-                / worldToScreenRatio);
-        int maxVertDivisions = (int) Math.ceil(extent.getHeight() / SPEED_UP
-                / worldToScreenRatio);
+        int maxHorDivisions = (int) Math
+                .ceil(extent.getWidth() / SPEED_UP / worldToScreenRatio);
+        int maxVertDivisions = (int) Math
+                .ceil(extent.getHeight() / SPEED_UP / worldToScreenRatio);
 
         Geometry g = null;
         try {
@@ -253,14 +253,15 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
 
             CoordinateSequenceTransformer cst = new DefaultCoordinateSequenceTransformer(
                     PackedCoordinateSequenceFactory.DOUBLE_FACTORY);
-            final GeometryTransformer transformer = new GeometryTransformer(cst);
+            final GeometryTransformer transformer = new GeometryTransformer(
+                    cst);
             MathTransform toLL = MapUtil.getTransformToLatLon(targetCRS);
             transformer.setMathTransform(toLL);
 
             g = transformer.transform(g);
         } catch (Exception e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM, e1.getLocalizedMessage(),
+                    e1);
         }
 
         // long t1 = System.currentTimeMillis();
