@@ -38,7 +38,6 @@ import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
-import org.apache.camel.impl.DefaultCamelContext;
 import org.apache.camel.model.RouteDefinition;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
@@ -69,10 +68,11 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Nov 10, 2010 5050       rjpeter     Initial creation.
  * May 13, 2013 1989       njensen     Camel 2.11 compatibility.
  * Mar 11, 2014 2726       rjpeter     Implemented graceful shutdown.
+ * Oct 27, 2016 5860       njensen     Contexts setAllowOriginalMessage to false
+ * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class ContextManager implements ApplicationContextAware,
         BeanFactoryPostProcessor {
@@ -88,7 +88,7 @@ public class ContextManager implements ApplicationContextAware,
     private static final Set<String> INTERNAL_ENDPOINT_TYPES;
 
     static {
-        HashSet<String> set = new HashSet<String>(
+        HashSet<String> set = new HashSet<>(
                 ContextDependencyMapping.DEPENDENCY_ENDPOINT_TYPES);
         set.add("timer");
         set.add("quartz");
@@ -101,7 +101,7 @@ public class ContextManager implements ApplicationContextAware,
      */
     private final ExecutorService service = Executors.newCachedThreadPool();
 
-    private final Set<CamelContext> clusteredContexts = new HashSet<CamelContext>();
+    private final Set<CamelContext> clusteredContexts = new HashSet<>();
 
     /**
      * State Manager for all contexts that are not clustered.
@@ -124,7 +124,7 @@ public class ContextManager implements ApplicationContextAware,
      * Map of context processors that have been registered for a given context.
      * Used to allow contexts to do custom worn on startup/shutdown.
      */
-    private final Map<CamelContext, IContextStateProcessor> contextProcessors = new HashMap<CamelContext, IContextStateProcessor>();
+    private final Map<CamelContext, IContextStateProcessor> contextProcessors = new HashMap<>();
 
     /**
      * Cluster lock timeout for clustered contexts.
@@ -191,9 +191,8 @@ public class ContextManager implements ApplicationContextAware,
         if (contextData == null) {
             synchronized (this) {
                 if (contextData == null) {
-                    contextData = new ContextData(new ArrayList<CamelContext>(
-                            springCtx.getBeansOfType(CamelContext.class)
-                                    .values()));
+                    contextData = new ContextData(new ArrayList<>(springCtx
+                            .getBeansOfType(CamelContext.class).values()));
                 }
             }
         }
@@ -290,7 +289,7 @@ public class ContextManager implements ApplicationContextAware,
                 }
             }
 
-            List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<Future<Pair<CamelContext, Boolean>>>();
+            List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
             for (final CamelContext context : cxtData.getContexts()) {
                 final IContextStateManager stateManager = getStateManager(context);
                 if (stateManager.isContextStartable(context)) {
@@ -324,8 +323,7 @@ public class ContextManager implements ApplicationContextAware,
                                                 System.exit(1);
                                             }
 
-                                            return new Pair<CamelContext, Boolean>(
-                                                    context, rval);
+                                    return new Pair<>(context, rval);
                                         }
                                     }));
                 }
@@ -398,7 +396,7 @@ public class ContextManager implements ApplicationContextAware,
             try {
                 ContextData ctxData = getContextData();
                 List<CamelContext> contexts = ctxData.getContexts();
-                List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<Future<Pair<CamelContext, Boolean>>>();
+                List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
 
                 for (final CamelContext context : contexts) {
                     callbacks.add(service.submit(new StopContext(context)));
@@ -474,7 +472,7 @@ public class ContextManager implements ApplicationContextAware,
                 }
             }
 
-            return new Pair<CamelContext, Boolean>(context, rval);
+            return new Pair<>(context, rval);
         }
     }
 
@@ -492,7 +490,7 @@ public class ContextManager implements ApplicationContextAware,
             List<Future<Pair<CamelContext, Boolean>>> callbacks,
             String message, long sleepInterval) {
         statusHandler.info(message + callbacks.size() + " remaining");
-        List<CamelContext> failures = new LinkedList<CamelContext>();
+        List<CamelContext> failures = new LinkedList<>();
 
         while (!callbacks.isEmpty()) {
             boolean foundOne = false;
@@ -581,8 +579,8 @@ public class ContextManager implements ApplicationContextAware,
     }
 
     /**
-     * Update all camel beans to have autoStartup to false and handles quartz
-     * workaround when JMX is disabled.
+     * Update all camel beans to have autoStartup to false and
+     * allowUseOriginalMessage to false.
      */
     @Override
     public void postProcessBeanFactory(
@@ -596,15 +594,10 @@ public class ContextManager implements ApplicationContextAware,
             ctx.setAutoStartup(false);
 
             /*
-             * Quartz work around to set management name.
-             * 
-             * TODO: Remove with camel 2.12.3 upgrade:
-             * https://issues.apache.org/jira/browse/CAMEL-7132
+             * set contexts to not allow use original message as that can hurt
+             * performance and is only useful for advanced error handling
              */
-            if ((ctx instanceof DefaultCamelContext)
-                    && (ctx.getManagementName() == null)) {
-                ((DefaultCamelContext) ctx).setManagementName(ctx.getName());
-            }
+            ctx.setAllowUseOriginalMessage(false);
         }
     }
 
