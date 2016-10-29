@@ -19,10 +19,7 @@
  **/
 package com.raytheon.uf.viz.core.maps.scales;
 
-//import gov.noaa.nws.ncep.viz.common.area.IAreaProviderCapable;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import org.eclipse.jface.action.IContributionItem;
@@ -32,12 +29,8 @@ import org.eclipse.ui.actions.CompoundContributionItem;
 import org.eclipse.ui.menus.CommandContributionItem;
 import org.eclipse.ui.menus.CommandContributionItemParameter;
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
-import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.maps.scales.MapScalesManager.ManagedMapScale;
-import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
-//import com.raytheon.viz.satellite.rsc.SatResource;
 import com.raytheon.viz.ui.EditorUtil;
 
 /**
@@ -53,6 +46,8 @@ import com.raytheon.viz.ui.EditorUtil;
  * Oct 10, 2013       2104 mschenke    Switched to use MapScalesManager
  * May 17, 2015			   mjames@ucar Added functionality to add loaded 
  * 									   area definitions as bundles
+ * Oct 29, 2016            mjames@ucar Added WFO submenu and cleaned up 
+ * 									   imports and comments
  * 
  * </pre>
  * 
@@ -123,54 +118,6 @@ public class MapScalePopulator extends CompoundContributionItem {
             
             menuMgr.add(wfoSubMenu);
 
-//            /*
-//             * Contribute scales from loaded resources which provide an area (pre-rendered).
-//             */
-//            List<IAreaProviderCapable> rscList = new ArrayList<IAreaProviderCapable>();
-//            IDisplayPane pane = cont.getActiveDisplayPane();
-//        	IDescriptor desc = pane.getDescriptor();
-//        	/*
-//        	 * Query only the loaded Satellite Resources
-//        	 */
-//        	List<AbstractVizResource<?, ?>> rList = desc.getResourceList().getResourcesByType(
-//                    		SatResource.class);
-//        	for (AbstractVizResource rp : rList) {
-//        		if( rp.getResourceData() instanceof IAreaProviderCapable ) {
-//        			rscList.add( (IAreaProviderCapable) rp.getResourceData() );
-//        			String areaName = ((IAreaProviderCapable) rp.getResourceData()).getAreaName();
-//        			
-//        			/*
-//        			 * Only add item if it's not loaded already
-//        			 */
-//        			ManagedMapScale mms = MapScalesManager.getInstance().getScaleByName(areaName);
-//					
-//					for (ManagedMapScale scale : MapScalesManager.getInstance().getScales()) {
-//						if (scale.getDisplayName().equals(areaName) ) {
-//
-//							if (scale.getAreaScale()) {
-//				            	
-//				                Map<String, String> parms = new HashMap<String, String>();
-//				                parms.put(MapScaleHandler.SCALE_NAME_ID, scale.getDisplayName());
-//				                CommandContributionItem item = new CommandContributionItem(
-//				                        new CommandContributionItemParameter(
-//				                                PlatformUI.getWorkbench(), null,
-//				                                MapScaleHandler.SET_SCALE_COMMAND_ID, parms,
-//				                                null, null, null, scale.getDisplayName(), null,
-//				                                null, CommandContributionItem.STYLE_PUSH, null,
-//				                                true));
-//				                menuMgr.add(item);
-//							}
-//						}
-//		            }
-//					
-//				}
-//			}
-//        	/*
-//        	 * if rList.size() = 0 (no SatResource loaded to display), clear custom scales.
-//        	 */
-//        	if (rList.size() == 0) {
-//        		MapScalesManager.getInstance().clearCustomScales();
-//        	}
 	    }
         
         return menuMgr.getItems();
