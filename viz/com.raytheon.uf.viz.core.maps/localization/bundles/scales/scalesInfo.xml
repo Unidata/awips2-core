@@ -46,7 +46,7 @@
 	</mapScale>
 	<mapScale displayName="Regional - Arctic" fileName="Arctic.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Australia/New Zealand" fileName="AustraliaNZ.xml" areaScale="false">
+	<mapScale displayName="Regional - Australia,New Zealand" fileName="AustraliaNZ.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="Regional - Europe" fileName="Europe.xml" areaScale="false">
 	</mapScale>
@@ -60,5 +60,244 @@
 	</mapScale>
 	<mapScale displayName="Regional - South America" fileName="SouthAmerica.xml" areaScale="true">
 	</mapScale>
-
+        <mapScale displayName="WFO/ABQ" fileName="WFO/ABQ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ABR" fileName="WFO/ABR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/AFC" fileName="WFO/AFC.xml">
+        </mapScale>
+        <mapScale displayName="WFO/AFG" fileName="WFO/AFG.xml">
+        </mapScale>
+        <mapScale displayName="WFO/AJK" fileName="WFO/AJK.xml">
+        </mapScale>
+        <mapScale displayName="WFO/AKQ" fileName="WFO/AKQ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ALY" fileName="WFO/ALY.xml">
+        </mapScale>
+        <mapScale displayName="WFO/AMA" fileName="WFO/AMA.xml">
+        </mapScale>
+        <mapScale displayName="WFO/APX" fileName="WFO/APX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ARX" fileName="WFO/ARX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BGM" fileName="WFO/BGM.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BIS" fileName="WFO/BIS.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BMX" fileName="WFO/BMX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BOI" fileName="WFO/BOI.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BOU" fileName="WFO/BOU.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BOX" fileName="WFO/BOX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BRO" fileName="WFO/BRO.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BTV" fileName="WFO/BTV.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BUF" fileName="WFO/BUF.xml">
+        </mapScale>
+        <mapScale displayName="WFO/BYZ" fileName="WFO/BYZ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CAE" fileName="WFO/CAE.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CAR" fileName="WFO/CAR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CHS" fileName="WFO/CHS.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CLE" fileName="WFO/CLE.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CRP" fileName="WFO/CRP.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CTP" fileName="WFO/CTP.xml">
+        </mapScale>
+        <mapScale displayName="WFO/CYS" fileName="WFO/CYS.xml">
+        </mapScale>
+        <mapScale displayName="WFO/DDC" fileName="WFO/DDC.xml">
+        </mapScale>
+        <mapScale displayName="WFO/DLH" fileName="WFO/DLH.xml">
+        </mapScale>
+        <mapScale displayName="WFO/DMX" fileName="WFO/DMX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/DTX" fileName="WFO/DTX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/DVN" fileName="WFO/DVN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/EAX" fileName="WFO/EAX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/EKA" fileName="WFO/EKA.xml">
+        </mapScale>
+        <mapScale displayName="WFO/EPZ" fileName="WFO/EPZ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/EWX" fileName="WFO/EWX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/EYW" fileName="WFO/EYW.xml">
+        </mapScale>
+        <mapScale displayName="WFO/FFC" fileName="WFO/FFC.xml">
+        </mapScale>
+        <mapScale displayName="WFO/FGF" fileName="WFO/FGF.xml">
+        </mapScale>
+        <mapScale displayName="WFO/FGZ" fileName="WFO/FGZ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/FSD" fileName="WFO/FSD.xml">
+        </mapScale>
+        <mapScale displayName="WFO/FWD" fileName="WFO/FWD.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GGW" fileName="WFO/GGW.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GID" fileName="WFO/GID.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GJT" fileName="WFO/GJT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GLD" fileName="WFO/GLD.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GRB" fileName="WFO/GRB.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GRR" fileName="WFO/GRR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GSP" fileName="WFO/GSP.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GUA" fileName="WFO/GUA.xml">
+        </mapScale>
+        <mapScale displayName="WFO/GYX" fileName="WFO/GYX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/HFO" fileName="WFO/HFO.xml">
+        </mapScale>
+        <mapScale displayName="WFO/HGX" fileName="WFO/HGX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/HNX" fileName="WFO/HNX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/HUN" fileName="WFO/HUN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ICT" fileName="WFO/ICT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ILM" fileName="WFO/ILM.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ILN" fileName="WFO/ILN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/ILX" fileName="WFO/ILX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/IND" fileName="WFO/IND.xml">
+        </mapScale>
+        <mapScale displayName="WFO/IWX" fileName="WFO/IWX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/JAN" fileName="WFO/JAN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/JAX" fileName="WFO/JAX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/JKL" fileName="WFO/JKL.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LBF" fileName="WFO/LBF.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LCH" fileName="WFO/LCH.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LIX" fileName="WFO/LIX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LKN" fileName="WFO/LKN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LMK" fileName="WFO/LMK.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LOT" fileName="WFO/LOT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LOX" fileName="WFO/LOX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LSX" fileName="WFO/LSX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LUB" fileName="WFO/LUB.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LWX" fileName="WFO/LWX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/LZK" fileName="WFO/LZK.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MAF" fileName="WFO/MAF.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MEG" fileName="WFO/MEG.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MFL" fileName="WFO/MFL.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MFR" fileName="WFO/MFR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MHX" fileName="WFO/MHX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MKX" fileName="WFO/MKX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MLB" fileName="WFO/MLB.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MOB" fileName="WFO/MOB.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MPX" fileName="WFO/MPX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MQT" fileName="WFO/MQT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MRX" fileName="WFO/MRX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MSO" fileName="WFO/MSO.xml">
+        </mapScale>
+        <mapScale displayName="WFO/MTR" fileName="WFO/MTR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/OHX" fileName="WFO/OHX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/OKX" fileName="WFO/OKX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/OTX" fileName="WFO/OTX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/OUN" fileName="WFO/OUN.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PAH" fileName="WFO/PAH.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PBZ" fileName="WFO/PBZ.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PDT" fileName="WFO/PDT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PHI" fileName="WFO/PHI.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PIH" fileName="WFO/PIH.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PQR" fileName="WFO/PQR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PSR" fileName="WFO/PSR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/PUB" fileName="WFO/PUB.xml">
+        </mapScale>
+        <mapScale displayName="WFO/RAH" fileName="WFO/RAH.xml">
+        </mapScale>
+        <mapScale displayName="WFO/REV" fileName="WFO/REV.xml">
+        </mapScale>
+        <mapScale displayName="WFO/RIW" fileName="WFO/RIW.xml">
+        </mapScale>
+        <mapScale displayName="WFO/RLX" fileName="WFO/RLX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/RNK" fileName="WFO/RNK.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SEW" fileName="WFO/SEW.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SGF" fileName="WFO/SGF.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SGX" fileName="WFO/SGX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SHV" fileName="WFO/SHV.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SJT" fileName="WFO/SJT.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SJU" fileName="WFO/SJU.xml">
+        </mapScale>
+        <mapScale displayName="WFO/SLC" fileName="WFO/SLC.xml">
+        </mapScale>
+        <mapScale displayName="WFO/STO" fileName="WFO/STO.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TAE" fileName="WFO/TAE.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TFX" fileName="WFO/TFX.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TOP" fileName="WFO/TOP.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TSA" fileName="WFO/TSA.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TWC" fileName="WFO/TWC.xml">
+        </mapScale>
+        <mapScale displayName="WFO/UNR" fileName="WFO/UNR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/VEF" fileName="WFO/VEF.xml">
+        </mapScale>
 </mapScales>

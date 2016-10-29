@@ -77,6 +77,9 @@ public class MapScalePopulator extends CompoundContributionItem {
         MenuManager menuMgr = new MenuManager("Scales", "mapControls");
         IDisplayPaneContainer cont = EditorUtil.getActiveVizContainer();
         
+        MenuManager wfoSubMenu = new MenuManager("WFO", null);
+        MenuManager radarSubMenu = new MenuManager("WSR-88D", null);
+        
         if ((cont != null )
                 || EditorUtil.getActiveEditor() == null) {
 
@@ -85,9 +88,26 @@ public class MapScalePopulator extends CompoundContributionItem {
              * this method doesn't use event listeners, the commands are inserted to
              * CommandContributionItem/CommandContributionItemParameter
              */
+        	
             for (ManagedMapScale scale : MapScalesManager.getInstance()
                     .getScales()) {
-            	//if (!scale.getAreaScale()) {
+        		String[] displayName = scale.getDisplayName().split("/");
+        		if (displayName.length > 1) {
+
+	                Map<String, String> parms = new HashMap<String, String>();
+	                parms.put(MapScaleHandler.SCALE_NAME_ID, scale.getDisplayName());
+	                CommandContributionItem item = new CommandContributionItem(
+	                        new CommandContributionItemParameter(
+	                                PlatformUI.getWorkbench(), null,
+	                                MapScaleHandler.SET_SCALE_COMMAND_ID, parms,
+	                                null, null, null,  displayName[1], null,
+	                                null, CommandContributionItem.STYLE_PUSH, null,
+	                                true));
+	                wfoSubMenu.add(item);
+	                
+	                
+        		} else {
+
 	                Map<String, String> parms = new HashMap<String, String>();
 	                parms.put(MapScaleHandler.SCALE_NAME_ID, scale.getDisplayName());
 	                CommandContributionItem item = new CommandContributionItem(
@@ -97,9 +117,11 @@ public class MapScalePopulator extends CompoundContributionItem {
 	                                null, null, null, scale.getDisplayName(), null,
 	                                null, CommandContributionItem.STYLE_PUSH, null,
 	                                true));
-	                menuMgr.add(item);		
-	        	//}
+	                menuMgr.add(item);
+        		}
             }
+            
+            menuMgr.add(wfoSubMenu);
 
 //            /*
 //             * Contribute scales from loaded resources which provide an area (pre-rendered).
