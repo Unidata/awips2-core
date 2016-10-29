@@ -77,30 +77,23 @@
    <extension
        point="com.raytheon.uf.viz.localization.localizationpath">
        <path
-          application="CAVE"
+          application="D2D"
           localizationType="COMMON_STATIC"
           name="Style Rules"
           value="styleRules" 
           recursive="true">
        </path>
        <path
-          application="CAVE"
+          application="D2D"
           localizationType="CAVE_STATIC"
-          name="Bundles"
+          name="Menu Bundles"
           value="bundles" 
           recursive="true">
        </path>
        <path
-          application="CAVE"
-          localizationType="CAVE_STATIC"
-          name="Basemaps"
-          value="basemaps" 
-          recursive="true">
-       </path>
-       <path
-          application="CAVE"
+          application="D2D"
           localizationType="COMMON_STATIC"
-          name="Perspective Displays"
+          name="Saved Bundles"
           value="perspectives"
           recursive="true">
        </path>
