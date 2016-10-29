@@ -25,6 +25,7 @@
 		<exclude>pointset-netcdf.*</exclude>
 		<exclude>ncscat.*</exclude>
 		<exclude>ccfp.*</exclude>
+		<exclude>profiler.*</exclude>
 		<exclude>bufrobs.*</exclude>
 		<exclude>bufrmthdw.*</exclude>
 		<exclude>sgwh.*</exclude>
