@@ -205,10 +205,7 @@ public class MapScalesManager {
                 try {
                     return ProcedureXmlManager.getInstance().unmarshal(
                             Bundle.class, bundleXml);
-                } finally {
-                    System.out.println("Time to create " + getDisplayName() + ": "
-                            + (System.currentTimeMillis() - t0) + "ms");
-                }
+                } finally {}
             } else {
                 throw new SerializationException(
                         "Scale Bundle XML could not be read");
