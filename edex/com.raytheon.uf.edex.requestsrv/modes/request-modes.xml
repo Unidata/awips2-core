@@ -42,7 +42,6 @@
 		<exclude>retrieval.*</exclude>
 		<exclude>regionalsat.*</exclude>
 		<exclude>ncscat.*</exclude>
-		<exclude>ccfp.*</exclude>
 		<exclude>bufrobs.*</exclude>
 		<exclude>bufrmthdw.*</exclude>
 		<exclude>sgwh.*</exclude>
