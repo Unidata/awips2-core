@@ -1,4 +1,5 @@
 package com.raytheon.uf.common.comm;
+
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -18,21 +19,20 @@ package com.raytheon.uf.common.comm;
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-import java.security.InvalidKeyException;
 import java.security.KeyStore;
 import java.security.KeyStoreException;
-import java.security.NoSuchAlgorithmException;
-import java.security.NoSuchProviderException;
-import java.security.SignatureException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 import java.util.Enumeration;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.apache.http.conn.ssl.TrustStrategy;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.Pair;
 
 /**
  * AWIPS implementation of TrustStrategy
@@ -45,38 +45,40 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 15, 2014 3757      dhladky      Initial Implementation.
- * May 08, 2015 4435      dhladky      Updated logging of cert validation.
- * Oct 22. 2015 5031      dhladky      Added some more informative logging when using external CA's.
- * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 15, 2014  3757     dhladky   Initial Implementation.
+ * May 08, 2015  4435     dhladky   Updated logging of cert validation.
+ * Oct 22. 2015  5031     dhladky   Added some more informative logging when
+ *                                  using external CA's.
+ * Aug 16, 2016  5659     rjpeter   Fix infinite loop and checking of certs.
  * 
  * </pre>
  * 
  * @author dhladky
- * @version 1.0
  * */
 
 public class LocalTrustStrategy implements TrustStrategy {
-    
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalTrustStrategy.class);
 
     private KeyStore truststore = null;
-    
-    /** Keeps track of whether the isTrusted call has been made or not.
-     *  Setup to prevent log spamming as every HTTPS connections attempted 
-     *  will print the same information needlessly. **/
+
+    /**
+     * Keeps track of whether the isTrusted call has been made or not. Setup to
+     * prevent log spamming as every HTTPS connections attempted will print the
+     * same information needlessly.
+     **/
     private static boolean isTrustedChecked = false;
-    
+
     public LocalTrustStrategy(KeyStore truststore) {
-         this.truststore = truststore;
+        this.truststore = truststore;
     }
-    
+
     @Override
-    public boolean isTrusted(X509Certificate[] chain,
-            String authType) throws CertificateException {
+    public boolean isTrusted(X509Certificate[] chain, String authType)
+            throws CertificateException {
         /**
          * Compare with the loaded truststore certificates first. Even if this
          * returns false, it will still compare with the default java loaded CA
@@ -111,61 +113,73 @@ public class LocalTrustStrategy implements TrustStrategy {
         try {
             // loop over the different aliases for this authority
             Enumeration<String> aliases = truststore.aliases();
+            boolean foundPublicKey = false;
+            List<Pair<String, Exception>> issueList = new LinkedList<>();
 
-            for (String caAlias = aliases.nextElement(); aliases
-                    .hasMoreElements();) {
+            while (aliases.hasMoreElements() && !isTrust) {
+                String caAlias = aliases.nextElement();
 
-                statusHandler.handle(Priority.INFO, "Verifying alias: "
-                        + caAlias);
+                if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                    statusHandler.handle(Priority.DEBUG,
+                            "Verifying cert against alias: " + caAlias);
+                }
 
                 // Certifying Authority to check with
                 X509Certificate caCert = (X509Certificate) truststore
                         .getCertificate(caAlias);
 
-                statusHandler.handle(Priority.INFO, "Retrieved CA certifcate: "
-                        + caCert.toString());
-
                 // If one works we claim victory and return true;
                 for (X509Certificate cert : chain) {
-
                     try {
-                        caCert.verify(cert.getPublicKey());
-                        isTrust = true;
-                        statusHandler.handle(Priority.INFO, "Verified! "
-                                + caAlias + " Cert Good!");
-                        break;
-
-                    } catch (InvalidKeyException e) {
-                        statusHandler.handle(Priority.WARN,
-                                "Invalid key: cert: " + cert.getPublicKey()
-                                        + "\n CA cert: " + caCert.getPublicKey());
-                    } catch (NoSuchAlgorithmException e) {
-                        statusHandler.handle(Priority.WARN,
-                                "No such algorithm: cert: " + cert.getSigAlgName()
-                                        + "\n CA cert: " + caCert.getSigAlgName());
-                    } catch (NoSuchProviderException e) {
-                        statusHandler.handle(Priority.WARN,
-                                "No such Provider: cert: " + cert.toString()
-                                        + "\n CA cert: " + caCert.toString());
-                    } catch (SignatureException e) {
-                        statusHandler.handle(Priority.WARN,
-                                "Signature Failure: cert: " + cert.getSignature()
-                                        + "\n CA cert: " + caCert.getSignature());
+                        if (caCert.getPublicKey().equals(cert.getPublicKey())) {
+                            foundPublicKey = true;
+                            caCert.verify(cert.getPublicKey());
+                            isTrust = true;
+                            if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
+                                statusHandler.handle(Priority.DEBUG,
+                                        "Verified! " + caAlias + " Cert Good!");
+                            }
+                            break;
+                        }
+                    } catch (Exception e) {
+                        /*
+                         * Save off any errors in case a later alias validates
+                         * the chain
+                         */
+                        issueList
+                                .add(new Pair<>(
+                                        "Error verifying incoming certificate. Alias: "
+                                                + caAlias + ", CA Cert: ["
+                                                + caCert
+                                                + "] incoming cert: [" + cert
+                                                + "]", e));
                     }
-                }
-
-                if (isTrust) {
-                    break;
                 }
             }
 
+            if (!isTrust) {
+                /* certificate invalid, print any previous messages */
+                for (Pair<String, Exception> issue : issueList) {
+                    statusHandler.error(issue.getFirst(), issue.getSecond());
+                }
+            }
+            if (!foundPublicKey) {
+                StringBuilder msg = new StringBuilder(
+                        "No Public Key in trust store matched for incoming certificate chain: ");
+                for (X509Certificate cert : chain) {
+                    msg.append(cert);
+                    msg.append(", ");
+                }
+                msg.delete(msg.length() - 2, msg.length());
+                statusHandler.warn(msg.toString());
+            }
         } catch (KeyStoreException e) {
             statusHandler.handle(
                     Priority.PROBLEM,
                     "Key(trust) store loaded is invalid, "
                             + truststore.toString(), e);
         }
-        
+
         isTrustedChecked = true;
 
         return isTrust;

@@ -111,6 +111,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                  closing.
  * Jul 11, 2016  5751     bsteffen  Fix timing of tool activation when a part is
  *                                  opened.
+ * Sep 01, 2016 5854        bsteffen    Fix closing saved editor in hidden
+ *                                      perspective when workbench is closing.
  * Oct 25, 2016  5929     bsteffen  Ensure compatibility layer listeners fire
  *                                  when editors swap
  * 
@@ -290,18 +292,18 @@ public abstract class AbstractVizPerspectiveManager
      * the perspective context is disposed because the perspective context will
      * dispose of the editor context without disposing of the model elements.
      * The {@link #close()} method is called after the perspective context is
-     * disposed so it is too late. This handler triggers when the "PerspClosing"
-     * tag is added to the perspective which happens before the context is
+     * disposed so it is too late. This handler triggers when the widget is
+     * removed from the perspective which happens before the context is
      * disposed.
      */
     private final EventHandler closeHandler = new EventHandler() {
 
         @Override
         public void handleEvent(Event event) {
-            if (!UIEvents.isADD(event)) {
+            if (savedEditorAreaUI.isEmpty()) {
                 return;
             }
-            if (savedEditorAreaUI.isEmpty()) {
+            if (event.getProperty(UIEvents.EventTags.NEW_VALUE) != null) {
                 return;
             }
             Object element = event.getProperty(UIEvents.EventTags.ELEMENT);
@@ -310,9 +312,6 @@ public abstract class AbstractVizPerspectiveManager
             }
             MPerspective perspective = (MPerspective) element;
             if (!perspective.getElementId().equals(perspectiveId)) {
-                return;
-            }
-            if (!perspective.getTags().contains("PerspClosing")) {
                 return;
             }
             IPresentationEngine presentation = perspectiveWindow
@@ -393,8 +392,8 @@ public abstract class AbstractVizPerspectiveManager
                     .getInstance(page.getPerspective());
             backgroundColor.addListener(BGColorMode.GLOBAL, this);
             open();
-            perspectiveWindow.getService(IEventBroker.class).subscribe(
-                    UIEvents.ApplicationElement.TOPIC_TAGS, closeHandler);
+            perspectiveWindow.getService(IEventBroker.class)
+                    .subscribe(UIEvents.UIElement.TOPIC_WIDGET, closeHandler);
             closeNonRestorableViews();
             opened = true;
         } else {
