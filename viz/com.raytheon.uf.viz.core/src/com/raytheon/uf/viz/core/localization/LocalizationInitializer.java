@@ -110,7 +110,7 @@ public class LocalizationInitializer {
     protected void setupServers() throws VizException {
         if (promptUI) {
             ConnectivityPreferenceDialog dlg = new ConnectivityPreferenceDialog(
-                    checkAlertviz, "AWIPS II Connectivity Preferences");
+                    checkAlertviz, "Unidata AWIPS");
             if (dlg.open() == true) {
                 System.exit(0);
             }
