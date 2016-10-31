@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,14 +27,12 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.graphics.Point;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Layout;
 import org.eclipse.swt.widgets.Listener;
-import org.eclipse.swt.widgets.Monitor;
 import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
@@ -42,34 +40,41 @@ import com.raytheon.viz.ui.perspectives.IPerspectiveSpecificDialog;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
- * 
+ *
  * Base class for Cave SWT-based dialogs.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 2, 2010             mschenke    Initial creation
- * Sep 12, 2012 #1165      lvenable    Update for the initial process
- *                                     of removing the dialog blocking capability.
- * Oct 11, 2012  1229      jkorman     Factored out "mustCreate" method from subclasses.
- * Oct 28, 2015  5054      randerso    Moved fields that were only used by a subclass
- *                                     from this class to the subclass.
- * Jan 12, 2016  5055      randerso    Made independent dialogs preserve location relative to 
- *                                     parent when hidden and restored.
- * Jan 18, 2016  5054      randerso    Merged CaveSWTDialog and CaveSWTDialogBase to eliminate confusion
- *                                     Fixed VizPersectiveListener to not NPE when running without 
- *                                     a workbench (like when prototyping dialogs).
- * Jan 25, 2016  5054      randerso    CaveSWTDialog no longer extends SWT Dialog.
- *                                     Added constructors with Display as parent for dialogs with
- *                                     no parent shell.
- * Mar 30, 2016  5513      randerso    Allowed hide/restore to work for non-independent dialogs
- * Apr 20, 2016  5541      dgilling    Fix issues with hide/restore and perspective switching.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 02, 2010           mschenke  Initial creation
+ * Sep 12, 2012  1165     lvenable  Update for the initial process of removing
+ *                                  the dialog blocking capability.
+ * Oct 11, 2012  1229     jkorman   Factored out "mustCreate" method from
+ *                                  subclasses.
+ * Oct 28, 2015  5054     randerso  Moved fields that were only used by a
+ *                                  subclass from this class to the subclass.
+ * Jan 12, 2016  5055     randerso  Made independent dialogs preserve location
+ *                                  relative to parent when hidden and restored.
+ * Jan 18, 2016  5054     randerso  Merged CaveSWTDialog and CaveSWTDialogBase
+ *                                  to eliminate confusion Fixed
+ *                                  VizPersectiveListener to not NPE when
+ *                                  running without a workbench (like when
+ *                                  prototyping dialogs).
+ * Jan 25, 2016  5054     randerso  CaveSWTDialog no longer extends SWT Dialog.
+ *                                  Added constructors with Display as parent
+ *                                  for dialogs with no parent shell.
+ * Mar 30, 2016  5513     randerso  Allowed hide/restore to work for
+ *                                  non-independent dialogs
+ * Apr 20, 2016  5541     dgilling  Fix issues with hide/restore and perspective
+ *                                  switching.
+ * Sep 21, 2016  5901     randerso  Fix dialog centering issue introduced in
+ *                                  Eclipse 4
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  * @version 1.0
  */
@@ -167,7 +172,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct default cave dialog
-     * 
+     *
      * @param parent
      */
     protected CaveSWTDialog(Shell parent) {
@@ -176,7 +181,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct dialog with parent shell and specific swt style
-     * 
+     *
      * @param parent
      * @param swtStyle
      */
@@ -186,9 +191,10 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct dialog with parent shell and swt style and cave style
-     * 
+     *
      * @param parent
      * @param style
+     * @param caveStyle
      */
     protected CaveSWTDialog(Shell parent, int style, int caveStyle) {
         if (parent == null) {
@@ -217,7 +223,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct top level cave dialog
-     * 
+     *
      * @param display
      */
     protected CaveSWTDialog(Display display) {
@@ -226,7 +232,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct top level dialog with specific swt style
-     * 
+     *
      * @param display
      * @param swtStyle
      */
@@ -236,9 +242,10 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct top level dialog with swt style and cave style
-     * 
+     *
      * @param display
      * @param style
+     * @param caveStyle
      */
     protected CaveSWTDialog(Display display, int style, int caveStyle) {
         this.display = display;
@@ -260,7 +267,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      * Open method used to display the dialog. Once open is called, it cannot be
      * called again until it has been closed. Subsequent open calls will give
      * the dialog focus and return null
-     * 
+     *
      * @return Dialog specific object
      */
     public final Object open() {
@@ -329,31 +336,11 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
         }
         listenersToAdd.clear();
 
-        if (hasAttribute(CAVE.INDEPENDENT_SHELL)) {
-            Rectangle bounds;
-            if (parent != null) {
-                // center dialog on parent
-                bounds = parent.getBounds();
-            } else {
-                // center dialog on monitor containing cursor
-                Monitor[] monitors = display.getMonitors();
-                int monitor = 0;
-
-                Point cursor = display.getCursorLocation();
-                for (int i = 0; i < monitors.length; i++) {
-                    if (monitors[i].getBounds().contains(cursor)) {
-                        monitor = i;
-                        break;
-                    }
-                }
-                bounds = monitors[monitor].getBounds();
-            }
-
-            Point size = shell.getSize();
-            int x = bounds.x + ((bounds.width - size.x) / 2);
-            int y = bounds.y + ((bounds.height - size.y) / 2);
-
-            shell.setLocation(x, y);
+        // center dialog on either parent or display containing cursor
+        if (parent != null) {
+            DialogUtil.centerOnParentShell(parent, shell);
+        } else {
+            DialogUtil.centerOnCurrentMonitor(shell);
         }
 
         if (doesNotHaveAttribute(CAVE.PERSPECTIVE_INDEPENDENT)) {
@@ -363,7 +350,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
                 public void widgetDisposed(DisposeEvent e) {
                     if (perspectiveManager != null) {
                         perspectiveManager
-                                .removePespectiveDialog(CaveSWTDialog.this);
+                        .removePespectiveDialog(CaveSWTDialog.this);
                     }
                 }
             });
@@ -436,7 +423,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /**
      * Construct the layout for the shell. Defaults to a GridLayout with one
      * column and margins set to 3
-     * 
+     *
      * @return the shell layout
      */
     protected Layout constructShellLayout() {
@@ -448,8 +435,8 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Construct the shell layout data, default to null
-     * 
-     * @return
+     *
+     * @return the layout data
      */
     protected Object constructShellLayoutData() {
         return null;
@@ -457,14 +444,14 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Subclasses must implement this method to initialize the dialog components
-     * 
+     *
      * @param shell
      */
     protected abstract void initializeComponents(Shell shell);
 
     /**
      * Closes the shell.
-     * 
+     *
      */
     @Override
     public final boolean close() {
@@ -476,7 +463,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Returns the parent shell or null if top level dialog
-     * 
+     *
      * @return parent shell
      */
     public final Shell getParent() {
@@ -492,7 +479,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Get the display object.
-     * 
+     *
      * @return The display object.
      */
     public final Display getDisplay() {
@@ -506,7 +493,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      * not match</em> the value which was provided to the constructor when the
      * receiver was created.
      * </p>
-     * 
+     *
      * @return the style bits
      */
     public final int getStyle() {
@@ -517,7 +504,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      * Returns the shell's text, which is the string that the window manager
      * will typically display as the shell's <em>title</em>. If the text has not
      * previously been set, returns an empty string.
-     * 
+     *
      * @return the text
      */
     public String getText() {
@@ -526,7 +513,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Set the return value, should be used by subclasses only
-     * 
+     *
      * @param returnValue
      */
     protected final void setReturnValue(Object returnValue) {
@@ -535,19 +522,25 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Get the return value to return from open()
-     * 
+     *
      * @return the return value
      */
     public final Object getReturnValue() {
         return returnValue;
     }
 
+    /**
+     * @return the perspective manager
+     */
     protected AbstractVizPerspectiveManager getPerspectiveManager() {
         return perspectiveManager;
     }
 
     /**
      * Set the dialog title.
+     *
+     * @param string
+     *            the title
      */
     public final void setText(String string) {
         if (string == null) {
@@ -562,7 +555,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Returns whether the dialog has been opened yet or not
-     * 
+     *
      * @return true if dialog is open
      */
     public final boolean isOpen() {
@@ -572,7 +565,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /**
      * Returns if the dialog is disposed, a null dialog will not mean it is
      * disposed as it may not have been opened yet.
-     * 
+     *
      * @return boolean
      */
     public final boolean isDisposed() {
@@ -582,7 +575,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /**
      * Can be overridden by the subclass to determine if the dialog should open
      * or not.
-     * 
+     *
      * @return True if the dialog is to be opened, false otherwise.
      */
     protected boolean shouldOpen() {
@@ -591,7 +584,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Check if the caveStyle contains a specified attribute.
-     * 
+     *
      * @param attribute
      *            Attribute to check for.
      * @return True if caveStyle contains the attribute. False if it doesn't.
@@ -602,7 +595,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Check if the caveStyle does not contain a specified attribute.
-     * 
+     *
      * @param attribute
      *            Attribute to check for.
      * @return True if caveStyle does not contain the attribute. False if it
@@ -614,7 +607,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Add a listener to the dialog's shell for the specified event type
-     * 
+     *
      * @param eventType
      * @param listener
      */
@@ -629,7 +622,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /**
      * Recursively set the enabled flag on the control. Will set on children if
      * control is a composite
-     * 
+     *
      * @param control
      * @param enable
      */
@@ -647,19 +640,22 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      * Add a callback to the dialog. This callback will be called when the
      * dialog is disposed. Also, the caveStyle is updated to include
      * DO_NOT_BLOCK.
-     * 
+     *
      * @param callback
      *            Callback to be called when the dialog is disposed.
-     * @throws Throws
-     *             a RejectedExecutionException with a message indicating that
-     *             this method needs to be called before the open method.
+     * @throws RejectedExecutionException
+     *             with a message indicating that this method needs to be called
+     *             before the open method.
      */
-    public void setCloseCallback(ICloseCallback callback) {
+    public void setCloseCallback(ICloseCallback callback)
+            throws RejectedExecutionException {
 
         if (isOpen()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("The method addCloseCallback() needs to be called before the open().  ");
-            sb.append("This is due to addCloseCallback setting the caveStyle to DO_NOT_BLOCK");
+            sb.append(
+                    "The method setCloseCallback() needs to be called before the open().  ");
+            sb.append(
+                    "This is due to setCloseCallback setting the caveStyle to DO_NOT_BLOCK");
             throw new RejectedExecutionException(sb.toString());
         }
 
@@ -670,7 +666,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     /**
      * Determines if the supplied reference should be created.
-     * 
+     *
      * @param dialog
      *            A dialog reference.
      * @return Should the supplied reference should be created.

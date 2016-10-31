@@ -3,6 +3,10 @@ CTabItem.highlighted {
 }
 
 .MPartStack {
+    swt-selected-tabs-background: COLOR-WIDGET-BACKGROUND COLOR-WIDGET-BACKGROUND 100%;    
+}
+
+.MPartStack.active {
     swt-selected-tabs-background: #E5EDFC #99BAF3 100%;
 }
 
