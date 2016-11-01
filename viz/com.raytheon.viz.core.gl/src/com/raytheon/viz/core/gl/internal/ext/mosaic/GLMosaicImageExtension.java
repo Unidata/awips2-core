@@ -64,6 +64,8 @@ import com.raytheon.viz.core.gl.images.GLOffscreenColormappedImage;
  * Apr 18, 2014  2947     bsteffen    Fix mosaicing of datamapped images.
  * Jan 26, 2015  3980     bsteffen    Fix mosaicing without luminance.
  * Mar 12, 2015  4273     njensen     Fix mosaicing without luminance
+ * Sep 28, 2016  5902     bsteffen    add extra push/pop to fix FBO not fully
+ *                                    clearing
  * 
  * </pre>
  * 
@@ -115,12 +117,23 @@ public abstract class GLMosaicImageExtension extends
                         extension.beginOffscreenRendering(mosaicImage,
                                 mosaicImage.getImageExtent());
 
+                        /*
+                         * In beginOffscreenRendering the target image is
+                         * cleared. This push/pop fixes a bug where sometimes
+                         * the clear may not take affect until after the first
+                         * image is rendered.
+                         */
+                        target.pushGLState();
+                        target.popGLState();
+
                         boolean allPainted = true;
-                        // Each image needs to draw separately due to gl issues
-                        // when zoomed in very far, rendered parts near the
-                        // corners don't show all the pixels for each image.
-                        // Pushing and popping GL_TEXTURE_BIT before/after each
-                        // render fixes this issue
+                        /*
+                         * Each image needs to draw separately due to gl issues
+                         * when zoomed in very far, rendered parts near the
+                         * corners don't show all the pixels for each image.
+                         * Pushing and popping GL_TEXTURE_BIT before/after each
+                         * render fixes this issue
+                         */
                         for (DrawableImage di : imagesToMosaic) {
                             allPainted &= drawRasters(paintProps, di);
                         }

@@ -6,7 +6,7 @@
    <extension
          point="com.raytheon.uf.viz.localization.localizationpath">
       <path
-            application="CAVE"
+            application="D2D"
             localizationType="CAVE_STATIC,COMMON_STATIC"
             name="Menus"
             value="menus"

@@ -90,9 +90,9 @@ public class MapScalesManager {
     private static final String DEFAULT_SCALES_FILE = "scalesInfo.xml";
 
     // TODO would be better to fall back to a worldwide display
-    private static final String LAST_RESORT_NAME = "Northern Hemisphere";
+    private static final String LAST_RESORT_NAME = "CONUS";
 
-    private static final String LAST_RESORT_FILENAME = "NHemisphere.xml";
+    private static final String LAST_RESORT_FILENAME = "CONUS.xml";
 
     /**
      * Manager class for a single {@link MapScale}. Is able to create a Bundle
@@ -205,10 +205,7 @@ public class MapScalesManager {
                 try {
                     return ProcedureXmlManager.getInstance().unmarshal(
                             Bundle.class, bundleXml);
-                } finally {
-                    System.out.println("Time to create " + getDisplayName() + ": "
-                            + (System.currentTimeMillis() - t0) + "ms");
-                }
+                } finally {}
             } else {
                 throw new SerializationException(
                         "Scale Bundle XML could not be read");
@@ -239,7 +236,7 @@ public class MapScalesManager {
 
     }
 
-    private static SingleTypeJAXBManager<MapScales> jaxbManager;
+	private static SingleTypeJAXBManager<MapScales> jaxbManager;
 
     private static MapScalesManager DEFAULT_MANAGER;
 
