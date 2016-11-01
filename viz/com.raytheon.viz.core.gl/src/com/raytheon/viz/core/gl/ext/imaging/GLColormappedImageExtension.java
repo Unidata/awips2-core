@@ -64,13 +64,12 @@ import com.raytheon.viz.core.gl.objects.GLTextureObject;
  *                                    Added support for colormapping in non-data unit.
  * Nov 20, 2013  2492     bsteffen    Mosaic in image units.
  * Aug 21, 2014  DR 17313 jgerth      Support for true color 
+ * Nov 01, 2016  5957     bsteffen    Do not interpolate alpha
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         implements IColormappedImageExtension {
 
@@ -168,6 +167,11 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         if (maskData.loadTexture(gl)) {
             gl.glBindTexture(maskData.getTextureStorageType(),
                     maskData.getTexId());
+
+            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MIN_FILTER,
+                    GL.GL_NEAREST);
+            gl.glTexParameteri(GL.GL_TEXTURE_1D, GL.GL_TEXTURE_MAG_FILTER,
+                    GL.GL_NEAREST);
         } else {
             maskData.dispose();
             maskData = null;
