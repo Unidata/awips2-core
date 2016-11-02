@@ -56,13 +56,12 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Apr 22, 2014 2996       dgilling    Rewrite colorMap() to output images with
  *                                     proper transparency for GFE data.
  * Apr 27, 2015 4425       nabowle     Handle ColorMapDataType.DOUBLE.
+ * Nov 02, 2016 5957       bsteffen    Fix indexing to include last color more.
  *
  * </pre>
  *
  * @author mschenke
- * @version 1.0
  */
-
 public class Colormapper {
 
     public static final int COLOR_MODEL_NUMBER_BITS = 8;
@@ -124,7 +123,9 @@ public class Colormapper {
                 }
 
                 double index = getColorMappingIndex(cmapValue, parameters);
-                int cmapIndex = (int) (capIndex(index) * (numColors - 1));
+                index = capIndex(index);
+                int cmapIndex = (int) Math.min(index * numColors,
+                        numColors - 1);
                 rgbValue = indexedColors[cmapIndex];
             }
 
@@ -373,9 +374,9 @@ public class Colormapper {
             double index, ColorMapParameters colorMapParameters) {
         index = capIndex(index);
         IColorMap colorMap = colorMapParameters.getColorMap();
+        int numColors = colorMap.getSize();
         if (colorMapParameters.isInterpolate()) {
-            index = 0.5f;
-            index = (index * (colorMap.getSize() - 1));
+            index = Math.min(index * numColors, numColors - 1);
             int lowIndex = (int) Math.floor(index);
             int highIndex = (int) Math.ceil(index);
             double lowWeight = highIndex - index;
@@ -384,24 +385,17 @@ public class Colormapper {
                     .get(lowIndex);
             com.raytheon.uf.common.colormap.Color high = colorMap.getColors()
                     .get(highIndex);
-            float r = (float) (lowWeight * low.getRed() + highWeight
-                    * high.getRed());
-            float g = (float) (lowWeight * low.getGreen() + highWeight
-                    * high.getGreen());
-            float b = (float) (lowWeight * low.getBlue() + highWeight
-                    * high.getBlue());
-            float a = (float) (lowWeight * low.getAlpha() + highWeight
-                    * high.getAlpha());
+            float r = (float) (lowWeight * low.getRed()
+                    + highWeight * high.getRed());
+            float g = (float) (lowWeight * low.getGreen()
+                    + highWeight * high.getGreen());
+            float b = (float) (lowWeight * low.getBlue()
+                    + highWeight * high.getBlue());
+            float a = (float) (lowWeight * low.getAlpha()
+                    + highWeight * high.getAlpha());
             return new com.raytheon.uf.common.colormap.Color(r, g, b, a);
         } else {
-            int colorIndex = (int) (index * colorMap.getSize());
-
-            if (colorIndex < 0) {
-                colorIndex = 0;
-            } else if (colorIndex >= colorMap.getSize()) {
-                colorIndex = colorMap.getSize() - 1;
-            }
-
+            int colorIndex = (int) Math.min(index * numColors, numColors - 1);
             return colorMap.getColors().get(colorIndex);
         }
     }
