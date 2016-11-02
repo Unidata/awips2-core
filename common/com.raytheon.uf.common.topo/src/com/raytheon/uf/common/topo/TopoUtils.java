@@ -53,11 +53,11 @@ import com.raytheon.uf.common.geospatial.CRSCache;
  * Aug  2, 2013            bsteffen    Initial creation
  * Feb 10, 2014     #2788  randerso    Changed default topo file name
  * Jul 17, 2015      4608  nabowle     Add public default topo file constant.
+ * Nov 02, 2016      5979  njensen     Cast to Number where applicable
  *
  * </pre>
  *
  * @author bsteffen
- * @version 1.0
  */
 
 public class TopoUtils {
@@ -82,12 +82,12 @@ public class TopoUtils {
 
         IDataRecord record = topoDataStore.retrieve("/", dataset, request);
         Map<String, Object> attributes = record.getDataAttributes();
-        int width = (Integer) attributes.get("Width");
-        int height = (Integer) attributes.get("Height");
-        double ulLat = (Double) attributes.get("ulLat");
-        double ulLon = (Double) attributes.get("ulLon");
-        double lrLat = (Double) attributes.get("lrLat");
-        double lrLon = (Double) attributes.get("lrLon");
+        int width = ((Number) attributes.get("Width")).intValue();
+        int height = ((Number) attributes.get("Height")).intValue();
+        double ulLat = ((Number) attributes.get("ulLat")).doubleValue();
+        double ulLon = ((Number) attributes.get("ulLon")).doubleValue();
+        double lrLat = ((Number) attributes.get("lrLat")).doubleValue();
+        double lrLon = ((Number) attributes.get("lrLon")).doubleValue();
         String crsString = (String) attributes.get("CRS");
 
         // Construct CRS for topo data
@@ -118,9 +118,9 @@ public class TopoUtils {
     public static String getDatasetForLevel(int level) {
         if (level == 0) {
             return FULL_TOPO_DATASET;
-        } else {
-            return INTERPOLATED_DATASET_PREFIX + level;
         }
+
+        return INTERPOLATED_DATASET_PREFIX + level;
     }
 
     public static File getDefaultTopoFile() {

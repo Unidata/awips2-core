@@ -25,6 +25,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Hashtable;
+import java.util.List;
 import java.util.Map;
 
 import org.geotools.coverage.grid.GeneralGridEnvelope;
@@ -96,11 +97,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                     math transform when creating GridGeometry2D
  * Oct 27, 2014 3795       randerso    Changed to allow topoLimit to be overridden by system property
  * Nov 04, 2015 4961       randerso    Fix topoQueryMap to cache both the file and level
+ * Nov 02, 2016 5979       njensen     Cast to Number where applicable
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
 
 public class TopoQuery {
@@ -141,13 +142,12 @@ public class TopoQuery {
     public static synchronized TopoQuery getInstance(File hdf5File,
             int topoLevel) throws TopoException {
         if (topoQueryMap == null) {
-            topoQueryMap = new Hashtable<Pair<File, Integer>, TopoQuery>();
+            topoQueryMap = new Hashtable<>();
         }
         TopoQuery query = topoQueryMap.get(topoLevel);
         if (query == null) {
             query = new TopoQuery(hdf5File, topoLevel);
-            topoQueryMap.put(new Pair<File, Integer>(hdf5File, topoLevel),
-                    query);
+            topoQueryMap.put(new Pair<>(hdf5File, topoLevel), query);
         }
         return query;
     }
@@ -208,12 +208,12 @@ public class TopoQuery {
 
             IDataRecord record = dataStore.retrieve("", dataset, request);
             Map<String, Object> attributes = record.getDataAttributes();
-            int width = (Integer) attributes.get("Width");
-            int height = (Integer) attributes.get("Height");
-            double ulLat = (Double) attributes.get("ulLat");
-            double ulLon = (Double) attributes.get("ulLon");
-            double lrLat = (Double) attributes.get("lrLat");
-            double lrLon = (Double) attributes.get("lrLon");
+            int width = ((Number) attributes.get("Width")).intValue();
+            int height = ((Number) attributes.get("Height")).intValue();
+            double ulLat = ((Number) attributes.get("ulLat")).doubleValue();
+            double ulLon = ((Number) attributes.get("ulLon")).doubleValue();
+            double lrLat = ((Number) attributes.get("lrLat")).doubleValue();
+            double lrLon = ((Number) attributes.get("lrLon")).doubleValue();
             String crsString = (String) attributes.get("CRS");
 
             worldRect = new Rectangle(0, 0, width, height);
@@ -668,10 +668,9 @@ public class TopoQuery {
                         + ") exceeds topo.size.limit (" + TOPO_LIMIT
                         + "). Switching to interpolation level " + level);
                 return getInstance(hdf5File, level).getHeight(targetGeom);
-            } else {
-                throw new IllegalArgumentException(
-                        "Grid requires too much memory to interpolate");
             }
+            throw new IllegalArgumentException(
+                    "Grid requires too much memory to interpolate");
         }
         float[][] topoValues = new float[height][width];
 
@@ -740,9 +739,9 @@ public class TopoQuery {
         float[] output = new float[targetWidth * targetHeight];
         Arrays.fill(output, Float.NaN);
 
-        ArrayList<MathTransform> transforms = new ArrayList<MathTransform>();
-        ArrayList<MathTransform> toGeoXforms = new ArrayList<MathTransform>();
-        ArrayList<MathTransform> sourceToGeoXforms = new ArrayList<MathTransform>();
+        List<MathTransform> transforms = new ArrayList<>();
+        List<MathTransform> toGeoXforms = new ArrayList<>();
+        List<MathTransform> sourceToGeoXforms = new ArrayList<>();
 
         MathTransform targetGtoCRS = targetGG
                 .getGridToCRS(PixelInCell.CELL_CENTER);
@@ -819,7 +818,7 @@ public class TopoQuery {
     }
 
     private static MathTransform concatenateTransforms(
-            ArrayList<MathTransform> transforms) throws FactoryException {
+            List<MathTransform> transforms) throws FactoryException {
         Hints hints = new Hints();
         final CoordinateOperationFactory factory = ReferencingFactoryFinder
                 .getCoordinateOperationFactory(hints);

@@ -59,11 +59,11 @@ import jep.JepException;
  * Jun 26, 2012   #776     dgilling    Fix leaking of global names.
  * Sep 05, 2013   #2307    dgilling    Remove constructor without explicit
  *                                     ClassLoader.
+ * Nov 02, 2016    5979    njensen     Cast to Number where applicable
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class PythonScript extends PythonInterpreter {
@@ -198,7 +198,7 @@ public class PythonScript extends PythonInterpreter {
         }
         sb.append(methodName);
         sb.append("(");
-        List<String> uniqueNames = new ArrayList<String>();
+        List<String> uniqueNames = new ArrayList<>();
         if (args != null && args.size() > 0) {
             Set<Entry<String, Object>> entries = args.entrySet();
             Iterator<Entry<String, Object>> itr = entries.iterator();
@@ -310,8 +310,9 @@ public class PythonScript extends PythonInterpreter {
         if (instanceName != null) {
             instStart = instanceName + ".";
         }
-        int argcount = (Integer) jep.getValue(instStart + methodName
-                + ".func_code.co_argcount");
+        int argcount = ((Number) jep
+                .getValue(instStart + methodName + ".func_code.co_argcount"))
+                        .intValue();
         String args = (String) jep.getValue(instStart + methodName
                 + ".func_code.co_varnames");
         String[] split = args.split(",");

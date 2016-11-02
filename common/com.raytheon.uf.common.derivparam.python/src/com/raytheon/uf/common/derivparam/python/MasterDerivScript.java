@@ -56,6 +56,7 @@ import jep.NDArray;
  * May 01, 2014  3101     njensen   Safe cast result shape values to Number
  * Apr 20, 2015  4259     njensen   Updated for new Jep API
  * Oct 05, 2016  5891     bsteffen  Allow functions in subdirectories
+ * Nov 02, 2016  5979     njensen   Cast to Number where applicable
  * 
  * </pre>
  * 
@@ -285,7 +286,7 @@ public class MasterDerivScript extends PythonInterpreter {
                 + ",tuple)");
         if (isTuple) {
             // figure out how long the tuple is
-            int lenTuple = ((Integer) jep.getValue("len(" + RESULT + ")"))
+            int lenTuple = ((Number) jep.getValue("len(" + RESULT + ")"))
                     .intValue();
             // create result as a list of arrays
             result = new ArrayList<>(lenTuple);
