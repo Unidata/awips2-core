@@ -959,6 +959,9 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     @Override
     public InterrogateMap interrogate(ReferencedCoordinate coordinate,
             DataTime time, InterrogationKey<?>... keys) {
+        if (time == null) {
+            return null;
+        }
         List<GeneralGridData> dataList = requestData(time);
         if (dataList == null) {
             return null;
