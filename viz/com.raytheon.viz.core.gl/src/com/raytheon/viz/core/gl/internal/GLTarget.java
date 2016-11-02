@@ -158,11 +158,11 @@ import com.sun.opengl.util.j2d.TextRenderer;
  * Jan 20, 2016  5274     randerso    Increased size of POINT to 2x2 pixels
  * Mar 08, 2016  5318     randerso    Removed unnecessary rounding of font size
  * Mar 23, 2015  5506     randerso    Fix NPE when initializing offscreen targets
+ * Nov 01, 2016  5957     bsteffen    Do not interpolate colormap alpha
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  * 
  */
 public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
@@ -552,6 +552,10 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
                 if (alphaMaskTexture.loadTexture(gl)) {
                     gl.glBindTexture(alphaMaskTexture.getTextureStorageType(),
                             alphaMaskTexture.getTexId());
+                    gl.glTexParameteri(GL.GL_TEXTURE_1D,
+                            GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
+                    gl.glTexParameteri(GL.GL_TEXTURE_1D,
+                            GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
                 } else {
                     alphaMaskTexture.dispose();
                 }
