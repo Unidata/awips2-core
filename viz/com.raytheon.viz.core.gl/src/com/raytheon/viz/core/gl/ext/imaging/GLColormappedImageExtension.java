@@ -77,14 +77,6 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         public GLCMTextureData alphaMask;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.ext.IColormappedImageExtension#
-     * initializeRaster
-     * (com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback,
-     * com.raytheon.uf.viz.core.drawables.ColorMapParameters)
-     */
     @Override
     public GLColormappedImage initializeRaster(
             IColorMapDataRetrievalCallback dataCallback,
@@ -93,14 +85,6 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
                 GLColormappedImageExtension.class);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.ext.AbstractGLImagingExtension#preImageRender
-     * (com.raytheon.uf.viz.core.drawables.PaintProperties,
-     * com.raytheon.viz.core.gl.images.AbstractGLImage)
-     */
     @Override
     public Object preImageRender(PaintProperties paintProps,
             AbstractGLImage image, PixelCoverage coverage) throws VizException {
@@ -251,14 +235,6 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.ext.AbstractGLImagingExtension#postImageRender
-     * (com.raytheon.uf.viz.core.drawables.PaintProperties,
-     * com.raytheon.viz.core.gl.images.AbstractGLImage, java.lang.Object)
-     */
     @Override
     public void postImageRender(PaintProperties paintProps,
             AbstractGLImage image, Object data) throws VizException {
@@ -282,27 +258,11 @@ public class GLColormappedImageExtension extends AbstractGLSLImagingExtension
         gl.glBindTexture(GL.GL_TEXTURE_1D, 0);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.ext.AbstractGLImagingExtension#getShaderProgramName
-     * ()
-     */
     @Override
     public String getShaderProgramName() {
         return "colormapRaster";
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.ext.AbstractGLImagingExtension#loadShaderData
-     * (com.raytheon.viz.core.gl.glsl.GLShaderProgram,
-     * com.raytheon.uf.viz.core.drawables.IImage,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     public void loadShaderData(GLShaderProgram program, IImage iimage,
             PaintProperties paintProps) throws VizException {
