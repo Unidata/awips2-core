@@ -26,23 +26,23 @@ import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
- * Handles basic variable substitutions in strings
- * 
- * Variables should be in ${variable} format.
+ * Use {@link VariableSubstitutor} instead
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 31, 2009            chammack    Split from Bundle class.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Mar 31, 2009           chammack  Split from Bundle class.
+ * Nov 03, 2016  5976     bsteffen  Deprecate
  * 
  * </pre>
  * 
+ * @deprecated
  * @author chammack
- * @version 1.0
  */
-
+@Deprecated
 public class VariableSubstitutionUtil {
 
     private VariableSubstitutionUtil() {

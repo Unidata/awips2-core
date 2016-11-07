@@ -26,38 +26,30 @@ package com.raytheon.uf.viz.core;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 02, 2013 1449       djohnson     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Jan 02, 2013  1449     djohnson  Initial creation
+ * Nov 03, 2016  5976     bsteffen  Deprecate
  * 
  * </pre>
  * 
  * @author djohnson
  * @version 1.0
  */
-
+@Deprecated
 public class VizAppTaskExecutor implements IGuiThreadTaskExecutor {
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    @Deprecated
     public void runAsync(Runnable aTask) {
         VizApp.runAsync(aTask);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    @Deprecated
     public void runSync(Runnable task) {
         VizApp.runSync(task);
     }
 
-    /**
-     * {@inheritDoc}
-     */
-    @Override
+    @Deprecated
     public void runSyncIfWorkbench(Runnable task) {
         VizApp.runSyncIfWorkbench(task);
     }

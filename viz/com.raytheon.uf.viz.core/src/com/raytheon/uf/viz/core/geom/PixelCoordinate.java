@@ -19,22 +19,27 @@
  **/
 package com.raytheon.uf.viz.core.geom;
 
+import org.opengis.geometry.DirectPosition;
+
+import com.vividsolutions.jts.geom.Coordinate;
+
 /**
- * This class implements an x, y, z pixel space coordinate.
+ * Use {@link Coordinate} or {@link DirectPosition} instead.
  * 
  * <pre>
  * 
- *                 SOFTWARE HISTORY
- *                
- *                 Date            Ticket#     Engineer    Description
- *                 ------------ ----------  ----------- --------------------------
- *                 8/08/08                     bgonzale    Initial Creation.
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------
+ * Aug 08, 2008           bgonzale  Initial Creation.
+ * Nov 03, 2016  5976     bsteffen  Deprecate
  * 
  * </pre>
  * 
  * @author bgonzale
- * @version 1
  */
+@Deprecated
 public class PixelCoordinate {
 
     private static final int XIndex = 0;

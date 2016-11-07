@@ -43,15 +43,17 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 13, 2012            mschenke     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Mar 13, 2012           mschenke  Initial creation
+ * Nov 03, 2016  5976     bsteffen  Deprecate
  * 
  * </pre>
  * 
  * @author mschenke
  * @version 1.0
  */
+@Deprecated
 public class ImageTile {
 
     public GridGeometry2D imageGeometry;

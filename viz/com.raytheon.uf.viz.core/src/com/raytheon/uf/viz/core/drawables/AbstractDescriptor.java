@@ -53,9 +53,7 @@ import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.VizConstants;
-import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.raytheon.uf.viz.core.exception.WrongProjectionException;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.IResourceGroup;
@@ -80,11 +78,11 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  * Apr 09, 2014  2997     randerso    Stopped printing stack trace for 
  *                                    otherwise ignored exception
  * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
+ * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractDescriptor extends ResourceGroup implements
@@ -108,7 +106,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         }
     }
 
-    protected Set<IFrameChangedListener> listeners = new HashSet<IFrameChangedListener>();
+    protected Set<IFrameChangedListener> listeners = new HashSet<>();
 
     protected TimeManager timeManager = new TimeManager();
 
@@ -150,7 +148,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
     public AbstractDescriptor() {
         super();
         frameCoordinator = new FrameCoordinator(this);
-        timeMatchingMap = new ConcurrentHashMap<AbstractVizResource<?, ?>, DataTime[]>();
+        timeMatchingMap = new ConcurrentHashMap<>();
         resourceList.addPreAddListener(new ResourceList.AddListener() {
 
             @Override
@@ -218,8 +216,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
     }
 
     @SuppressWarnings("unchecked")
-    protected void preAddListener(ResourcePair rp)
-            throws WrongProjectionException {
+    protected void preAddListener(ResourcePair rp) {
 
         AbstractVizResource<?, AbstractDescriptor> resource = (AbstractVizResource<?, AbstractDescriptor>) rp
                 .getResource();
@@ -285,34 +282,12 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return getFramesInfo().frameTimes;
     }
 
-    /**
-     * Use setFramesInfo(...) for thread safe use!
-     * 
-     * The times of the frames
-     * 
-     * @return
-     */
-    @Deprecated
-    public void setFrameTimes(DataTime[] dataTime) {
-        setFramesInfo(new FramesInfo(dataTime));
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getCurrentTimeFrame()
-     */
     @Override
     @Deprecated
     public int getCurrentFrame() {
         return getFramesInfo().getFrameIndex();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getNumberOfFrames()
-     */
     @Override
     public int getNumberOfFrames() {
         return Math.min(timeManager.numberOfFrames, limitedNumberOfFrames);
@@ -349,12 +324,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         setFramesInfo(new FramesInfo(frame));
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#setNumberOfFrames(int)
-     */
     @Override
     public void setNumberOfFrames(int frameCount) {
         timeManager.numberOfFrames = frameCount;
@@ -393,16 +362,11 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#finalize()
-     */
     @Override
     protected void finalize() throws Throwable {
         super.finalize();
         // Remove all the resources so that the removal handlers execute
-        List<AbstractVizResource<?, ?>> rscs = new ArrayList<AbstractVizResource<?, ?>>();
+        List<AbstractVizResource<?, ?>> rscs = new ArrayList<>();
         for (ResourcePair rp : resourceList) {
             rscs.add(rp.getResource());
         }
@@ -420,24 +384,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return timeManager;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getDataTimes()
-     */
-    @Override
-    @Deprecated
-    public DataTime[] getDataTimes() {
-        return getFramesInfo().getFrameTimes();
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#setDataTimes(com.raytheon
-     * .uf.common.time.DataTime[])
-     */
     @Override
     @Deprecated
     public void setDataTimes(DataTime[] dataTimes) {
@@ -472,11 +418,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         this.timeManager.timeMatcher = timeMatcher;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#redoTimeMatching()
-     */
     @Override
     public void redoTimeMatching() throws VizException {
         if (timeManager.timeMatcher != null) {
@@ -549,13 +490,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#loadCompatible(com.raytheon
-     * .uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public boolean isCompatible(IDescriptor other) {
         return this.getClass() == other.getClass();
@@ -614,7 +548,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
                 setFrameInternal(info.frameIndex);
             }
             if (info.setMap) {
-                timeMatchingMap = new ConcurrentHashMap<AbstractVizResource<?, ?>, DataTime[]>(
+                timeMatchingMap = new ConcurrentHashMap<>(
                         info.timeMap);
             }
             FramesInfo currInfo = getFramesInfo();
@@ -649,7 +583,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
                 // index and frames are out of sync.
                 idx = -1;
             }
-            Map<AbstractVizResource<?, ?>, DataTime[]> timeMap = new HashMap<AbstractVizResource<?, ?>, DataTime[]>(
+            Map<AbstractVizResource<?, ?>, DataTime[]> timeMap = new HashMap<>(
                     timeMatchingMap);
             return new FramesInfo(frames, idx, timeMap);
         }
@@ -685,11 +619,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getFrameCoordinator()
-     */
     @Override
     public IFrameCoordinator getFrameCoordinator() {
         return frameCoordinator;
@@ -705,7 +634,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
             setupTransforms();
 
             // reproject all resources contained in this descriptor
-            ArrayList<ResourcePair> unProjectable = new ArrayList<ResourcePair>();
+            ArrayList<ResourcePair> unProjectable = new ArrayList<>();
             for (ResourcePair rp : this.resourceList) {
                 AbstractVizResource<?, ?> rsc = rp.getResource();
                 if (rsc == null) {
@@ -735,11 +664,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         pixelToWorld = (worldToPixel != null ? worldToPixel.inverse() : null);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getCRS()
-     */
     @Override
     public final CoordinateReferenceSystem getCRS() {
         if ((gridGeometry != null) && (gridGeometry.getEnvelope() != null)) {
@@ -749,11 +673,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IDescriptor#getGridGeometry()
-     */
     @Override
     @XmlElement
     @XmlJavaTypeAdapter(value = GridGeometryAdapter.class)
@@ -761,13 +680,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return gridGeometry;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#setGridGeometry(org.geotools
-     * .coverage.grid.GeneralGridGeometry)
-     */
     @Override
     public void setGridGeometry(GeneralGridGeometry geometry)
             throws VizException {
@@ -775,12 +687,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         init();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#pixelToWorld(double[])
-     */
     @Override
     public final double[] pixelToWorld(double[] pixel) {
         double[] output = new double[3];
@@ -804,12 +710,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return output;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#worldToPixel(double[])
-     */
     @Override
     public final double[] worldToPixel(double[] world) {
         double[] output = new double[3];
@@ -831,14 +731,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         return output;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IDescriptor#changeFrame(com.raytheon
-     * .uf.viz.core.drawables.IFrameCoordinator.FrameChangeOperation,
-     * com.raytheon.uf.viz.core.drawables.IFrameCoordinator.FrameChangeMode)
-     */
     @Override
     @Deprecated
     public void changeFrame(FrameChangeOperation operation, FrameChangeMode mode) {
@@ -847,17 +739,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         IFrameCoordinator.FrameChangeMode fmode = IFrameCoordinator.FrameChangeMode
                 .valueOf(mode.name());
         getFrameCoordinator().changeFrame(fop, fmode);
-    }
-
-    /**
-     * DEPRECATED: Use getFrameCoordinator().changeFrame(...) instead! This
-     * function is no longer called by the DrawCoordinatedPane
-     * 
-     * @param loopProperties
-     */
-    @Deprecated
-    public void checkDrawTime(LoopProperties loopProperties) {
-        getFrameCoordinator().changeFrame(loopProperties);
     }
 
     protected static GeneralGridGeometry createGridGeometry(IExtent extent,

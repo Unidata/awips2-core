@@ -28,15 +28,14 @@ import org.eclipse.swt.graphics.Rectangle;
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
+ * ------------ ---------- ----------- ------------------------
+ * Nov 03, 2016 5976       bsteffen    Deprecate extent method
  * 
  * 
  * </pre>
  * 
  * @author estrabal
- * @version 1.0
  */
-
 public interface IView {
 
     /**
@@ -112,11 +111,9 @@ public interface IView {
             IGraphicsTarget target);
 
     /**
-     * Create a specific extent for this type of view
-     * 
-     * @param pc
-     * @return
+     * @deprecated Use {@link PixelExtent} constructors instead
      */
+    @Deprecated
     abstract public IExtent createExtent(PixelCoverage pc);
 
     /**

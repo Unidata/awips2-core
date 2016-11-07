@@ -23,24 +23,25 @@ package com.raytheon.uf.viz.core.rsc.capabilities;
 import org.eclipse.swt.graphics.RGB;
 
 /**
- * Any IVizResource which can have its color set should implement this interface
- * 
- * Also, any colorable resource has the ability to have blinking set.
+ * Use {@link ColorableCapability} to handle resource colors.
  * 
  * <pre>
  * 
  *   
  *    SOFTWARE HISTORY
- *   
- *    Date          Ticket#     Engineer    Description
- *    ------------	----------	-----------	--------------------------
- *    7/1/06                    chammack    Initial Creation.
- *    
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Jul 01, 2006           chammack  Initial Creation.
+ * Nov 03, 2016  5976     bsteffen  Deprecate
+ * 
  * </pre>
  * 
+ * @deprecated
  * @author chammack
  * 
  */
+@Deprecated
 public interface IColorableResource {
 
     /**

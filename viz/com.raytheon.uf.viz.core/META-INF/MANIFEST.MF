@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core;singleton:=true
-Bundle-Version: 1.16.0.qualifier
+Bundle-Version: 1.16.1.qualifier
 Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
@@ -57,7 +57,6 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.drawables.ext.colormap,
  com.raytheon.uf.viz.core.drawables.ext.point,
  com.raytheon.uf.viz.core.exception,
- com.raytheon.uf.viz.core.font,
  com.raytheon.uf.viz.core.geom,
  com.raytheon.uf.viz.core.globals,
  com.raytheon.uf.viz.core.icon,
@@ -69,7 +68,6 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.map,
  com.raytheon.uf.viz.core.notification,
  com.raytheon.uf.viz.core.notification.jobs,
- com.raytheon.uf.viz.core.notification.observers,
  com.raytheon.uf.viz.core.preferences,
  com.raytheon.uf.viz.core.procedures,
  com.raytheon.uf.viz.core.reflect,

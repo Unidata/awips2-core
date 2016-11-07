@@ -19,12 +19,7 @@
  **/
 package com.raytheon.uf.viz.core;
 
-import javax.vecmath.Vector3d;
-
 import org.eclipse.swt.graphics.Rectangle;
-
-import com.raytheon.uf.viz.core.geom.Plane;
-import com.raytheon.uf.viz.core.geom.Ray;
 
 /**
  * 
@@ -34,18 +29,16 @@ import com.raytheon.uf.viz.core.geom.Ray;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 25, 2012            bsteffen     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Jun 25, 2012           bsteffen  Initial creation
+ * Nov 03, 2016  5976     bsteffen  Remove unused 3D support
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public abstract class AbstractView implements IView {
-
-    private static final Plane mapPlane = new Plane(0.0, 0.0, 1.0, 0.0, false);
 
     protected IExtent extent;
 
@@ -101,41 +94,11 @@ public abstract class AbstractView implements IView {
     @Override
     public double[] getDisplayCoords(double[] screenCoordinate,
             IGraphicsTarget target) {
-
-        Ray r = computeRay(screenCoordinate, target);
-        if (r == null) {
-            return null;
-        }
-
-        Vector3d i = mapPlane.intersection(r);
-        if (i == null) {
-            return null;
-        }
-        return new double[] { i.x, i.y, i.z };
+        return screenToGrid(screenCoordinate[0], screenCoordinate[1], 0,
+                target);
     }
 
-    /**
-     * Create a Ray starting a the near plane with direction towards the far
-     * 
-     * @param mouse
-     *            mouse x,y
-     * @return Ray
-     */
-    public Ray computeRay(double[] mouse, IGraphicsTarget target) {
-        Vector3d far = new Vector3d(screenToGrid(mouse[0], mouse[1], 1, target));
-        Vector3d near = new Vector3d(
-                screenToGrid(mouse[0], mouse[1], 0, target));
-        if (near == null || far == null) {
-            return null;
-        }
-
-        far.sub(near);
-        far.normalize();
-
-        return new Ray(near, far);
-    }
-
-    @Override
+    @Deprecated
     public IExtent createExtent(PixelCoverage pc) {
         return new PixelExtent(pc.getMinX(), pc.getMaxX(), pc.getMinY(),
                 pc.getMaxY());
@@ -186,8 +149,7 @@ public abstract class AbstractView implements IView {
         double correctedY = (y * (extent.getMaxY() - extent.getMinY()) / getCanvasBounds(target).height)
                 + extent.getMinY();
         // z bounds are 0 to 1
-        double correctedZ = (depth * (extent.getMax().z - extent.getMin().z))
-                + extent.getMin().z;
+        double correctedZ = (depth * 2) - 1;
         return new double[] { correctedX, correctedY, correctedZ };
     }
 
@@ -198,8 +160,7 @@ public abstract class AbstractView implements IView {
         double y = ((grid[1] - extent.getMinY()) * getCanvasBounds(target).height)
                 / (extent.getMaxY() - extent.getMinY());
         // z bounds are 0 to 1
-        double z = (grid[2] - extent.getMin().z)
-                / (extent.getMax().z - extent.getMin().z);
+        double z = (grid[2] + 1) / 2;
 
         return new double[] { x, y, z };
     }

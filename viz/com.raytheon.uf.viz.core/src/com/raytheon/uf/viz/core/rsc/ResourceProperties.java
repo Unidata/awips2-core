@@ -39,6 +39,7 @@ import com.raytheon.uf.viz.core.rsc.RenderingOrderFactory.ResourceOrder;
  * Jul 01, 2006           chammack    Initial Creation.
  * Mar 05, 2008  2032     jsanchez    Initialized pdProps.
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
+ * Nov 03, 2016  5976     bsteffen    Remove isHoverOn
  * 
  * </pre>
  * 
@@ -51,10 +52,6 @@ public class ResourceProperties {
     /** is the layer isVisible */
     @XmlAttribute
     private boolean isVisible = true;
-
-    /** Is hover turned on? */
-    @XmlAttribute
-    private boolean isHoverOn;
 
     /** Is the resource a map layer? */
     @XmlAttribute
@@ -107,22 +104,6 @@ public class ResourceProperties {
      */
     public void setVisible(boolean visible) {
         this.isVisible = visible;
-        notifyResource();
-    }
-
-    /**
-     * @return the isHoverOn
-     */
-    public boolean isHoverOn() {
-        return isHoverOn;
-    }
-
-    /**
-     * @param isHoverOn
-     *            the isHoverOn to set
-     */
-    public void setHoverOn(boolean isHoverOn) {
-        this.isHoverOn = isHoverOn;
         notifyResource();
     }
 
@@ -222,7 +203,6 @@ public class ResourceProperties {
     public String toString() {
         StringBuffer s = new StringBuffer("[");
         s.append(isBlinking() ? "Blinking, " : "");
-        s.append(isHoverOn() ? "HoverOn, " : "");
         s.append(isMapLayer() ? "MapLayer, " : "");
         s.append(isSystemResource() ? "System, " : "");
         s.append(isVisible() ? "Visible, " : "");
@@ -250,7 +230,6 @@ public class ResourceProperties {
     public ResourceProperties clone() {
         ResourceProperties rp = new ResourceProperties();
         rp.isBlinking = isBlinking;
-        rp.isHoverOn = isHoverOn;
         rp.isMapLayer = isMapLayer;
         rp.isSystemResource = isSystemResource;
         rp.isVisible = isVisible;

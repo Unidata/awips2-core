@@ -41,16 +41,18 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * 
  * 
  *    SOFTWARE HISTORY
- *   
- *    Date          Ticket#     Engineer    Description
- *    ------------	----------	-----------	--------------------------
- *    7/1/06                    chammack    Initial Creation.
- *    Sep 12, 2012  1167        djohnson    Add datadelivery servers.
- *    Jan 14, 2013  1469        bkowal      Removed the hdf5 data directory.
- *    Aug 27, 2013  2295        bkowal      Removed the jms server property; added
- *                                          jms connection string
- *    Feb 17, 2014  2812        njensen     getHostName() now uses getWsId()'s hostname
- *    Mar 20, 2014  2726        rjpeter     Moved host processing to SystemUtil.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 01, 2006           chammack  Initial Creation.
+ * Sep 12, 2012  1167     djohnson  Add datadelivery servers.
+ * Jan 14, 2013  1469     bkowal    Removed the hdf5 data directory.
+ * Aug 27, 2013  2295     bkowal    Removed the jms server property; added jms
+ *                                  connection string
+ * Feb 17, 2014  2812     njensen   getHostName() now uses getWsId()'s hostname
+ * Mar 20, 2014  2726     rjpeter   Moved host processing to SystemUtil.
+ * Nov 03, 2016  5976     bsteffen  Remove logWithoutAlert
+ * 
  * </pre>
  * 
  * @author chammack
@@ -207,22 +209,6 @@ public final class VizApp {
 
         StatusManager.getManager().handle(s);
 
-    }
-
-    /**
-     * Use UFStatus instead.
-     * 
-     * @param severity
-     * @param t
-     * @param message
-     * @param activator
-     * @param pluginId
-     */
-    @Deprecated
-    public static void logWithoutAlert(int severity, Throwable t,
-            final String message, AbstractUIPlugin activator, String pluginId) {
-        final Status s = new Status(severity, pluginId, message, t);
-        StatusManager.getManager().handle(s);
     }
 
     public static String getHttpServer() {

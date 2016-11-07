@@ -20,22 +20,22 @@
 package com.raytheon.uf.viz.core.datastructure;
 
 /**
- * TODO Add Description
+ * TODO Delete
  * 
  * <pre>
  *
  * SOFTWARE HISTORY
- *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 9, 2009            njensen     Initial creation
- *
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Feb 09, 2009  1960     njensen   Initial creation
+ * Nov 03, 2016  5976     bsteffen  Deprecate
+ * 
  * </pre>
  *
  * @author njensen
- * @version 1.0	
  */
-
+@Deprecated
 public abstract class PerspectiveSpecificProperties {
 
 }
