@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
  * Aug 21, 2014 3541       mschenke    Initial creation
  * Jan 06, 2015 3789       bclement    added getContentType(), execute throws UnsupportedFormatException
  * Jun 17, 2015 4561       njensen     Log serialization exception to two logs
+ * Oct 24, 2016 5951       dgilling    Log all incoming requests.
  * 
  * </pre>
  * 
@@ -59,9 +60,9 @@ import com.raytheon.uf.edex.requestsrv.RequestServiceExecutor;
  * @version 1.0
  */
 
-public class SerializingStreamExecutor extends
-        GenericRegistry<String, StreamSerializer> implements
-        ISerializingStreamExecutor {
+public class SerializingStreamExecutor
+        extends GenericRegistry<String, StreamSerializer>
+        implements ISerializingStreamExecutor {
 
     private static final IUFStatusHandler requestLog = UFStatus
             .getNamedHandler("ThriftSrvRequestLogger");
@@ -89,9 +90,8 @@ public class SerializingStreamExecutor extends
      * java.io.OutputStream)
      */
     @Override
-    public void execute(String inputFormat, InputStream in,
-            String outputFormat, OutputStream out)
-            throws UnsupportedFormatException {
+    public void execute(String inputFormat, InputStream in, String outputFormat,
+            OutputStream out) throws UnsupportedFormatException {
         long startTime = System.currentTimeMillis();
         boolean success = false;
         IServerRequest request = null;
@@ -111,12 +111,24 @@ public class SerializingStreamExecutor extends
             resp.setUpdatedData(e.getUpdatedData());
             resp.setException(ExceptionWrapper.wrapThrowable(e));
             response = resp;
-            requestLog.error("Authorization issue with service request", e);
+
+            StringBuilder errorMsg = new StringBuilder();
+            errorMsg.append("Authorization issue with request: ");
+            if (request != null) {
+                errorMsg.append(request).append(':');
+            }
+            requestLog.error(errorMsg.toString(), e);
         } catch (Throwable t) {
             ServerErrorResponse resp = new ServerErrorResponse();
             resp.setException(ExceptionWrapper.wrapThrowable(t));
             response = resp;
-            requestLog.error("Error executing request", t);
+
+            StringBuilder errorMsg = new StringBuilder();
+            errorMsg.append("Error executing request: ");
+            if (request != null) {
+                errorMsg.append(request).append(':');
+            }
+            requestLog.error(errorMsg.toString(), t);
         }
 
         // Get serializer for output format
@@ -156,10 +168,10 @@ public class SerializingStreamExecutor extends
              * this in multiple locations so if someone checks the server logs
              * they will hopefully see the problem.
              */
-            LoggerFactory.getLogger("root").error(
-                    "Failed to format response object: " + response, t);
-            requestLog
+            LoggerFactory.getLogger("root")
                     .error("Failed to format response object: " + response, t);
+            requestLog.error("Failed to format response object: " + response,
+                    t);
         }
     }
 
