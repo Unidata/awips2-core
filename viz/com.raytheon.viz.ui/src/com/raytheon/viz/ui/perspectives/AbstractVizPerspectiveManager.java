@@ -24,9 +24,7 @@ import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.e4.core.services.events.IEventBroker;
@@ -111,8 +109,8 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                  closing.
  * Jul 11, 2016  5751     bsteffen  Fix timing of tool activation when a part is
  *                                  opened.
- * Sep 01, 2016 5854        bsteffen    Fix closing saved editor in hidden
- *                                      perspective when workbench is closing.
+ * Sep 01, 2016  5854     bsteffen  Fix closing saved editor in hidden
+ *                                  perspective when workbench is closing.
  * Oct 25, 2016  5929     bsteffen  Ensure compatibility layer listeners fire
  *                                  when editors swap
  * 
@@ -254,8 +252,6 @@ public abstract class AbstractVizPerspectiveManager
 
     protected IWorkbenchPage page;
 
-    protected Map<IEditorReference, String> layoutMap = new HashMap<IEditorReference, String>();
-
     /** Saved editors for the perspective */
     protected List<MPartSashContainerElement> savedEditorAreaUI = new ArrayList<>();
 
@@ -316,7 +312,14 @@ public abstract class AbstractVizPerspectiveManager
             }
             IPresentationEngine presentation = perspectiveWindow
                     .getService(IPresentationEngine.class);
+            EModelService modelService = perspectiveWindow
+                    .getService(EModelService.class);
             for (MUIElement saved : savedEditorAreaUI) {
+                List<MPart> covers = modelService.findElements(saved, "cover",
+                        MPart.class, null);
+                for (MPart cover : covers) {
+                    cover.getParent().getChildren().remove(cover);
+                }
                 presentation.removeGui(saved);
             }
             savedEditorAreaUI.clear();
