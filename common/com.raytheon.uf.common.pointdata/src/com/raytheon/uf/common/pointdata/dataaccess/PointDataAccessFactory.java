@@ -21,7 +21,6 @@ package com.raytheon.uf.common.pointdata.dataaccess;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -61,11 +60,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
 
 /**
  * Data Access Factory for retrieving point data as a geometry.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Oct 31, 2013  2502     bsteffen  Initial creation
@@ -83,9 +82,11 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Jun 13, 2016  5574     tgurney   Support RequestConstraint as identifier
  *                                  value
  * Jul 22, 2016  2416     tgurney   Add dataURI as optional identifier
- * 
+ * Nov 08, 2016  5986     tgurney   Handle reftime stored in seconds and
+ *                                  forecast time stored in hours
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  */
 public class PointDataAccessFactory extends AbstractDataPluginFactory {
@@ -162,7 +163,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         } catch (Exception e) {
             throw new DataRetrievalException(
                     "Failed to retrieve available parameters for request: "
-                            + serverRequestString, e);
+                            + serverRequestString,
+                    e);
         }
 
         return response.getValues();
@@ -177,8 +179,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
          * the DbQueryRequest can be converted to a PointDataServerRequest
          */
         validateRequest(request);
-        DbQueryRequest dbQueryRequest = this
-                .buildDbQueryRequest(request, times);
+        DbQueryRequest dbQueryRequest = this.buildDbQueryRequest(request,
+                times);
         return getGeometryData(request, dbQueryRequest);
     }
 
@@ -204,8 +206,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     @Override
     public String[] getIdentifierValues(IDataRequest request,
             String identifierKey) {
-        if (!Arrays.asList(getOptionalIdentifiers(request)).contains(
-                identifierKey)) {
+        if (!Arrays.asList(getOptionalIdentifiers(request))
+                .contains(identifierKey)) {
             throw new InvalidIdentifiersException(request.getDatatype(), null,
                     Arrays.asList(new String[] { identifierKey }));
         }
@@ -243,8 +245,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         if (envelope != null) {
             String minLon = Double.toString(envelope.getMinX());
             String maxLon = Double.toString(envelope.getMaxX());
-            rcMap.put(longitudeDatabaseKey, new RequestConstraint(minLon,
-                    maxLon));
+            rcMap.put(longitudeDatabaseKey,
+                    new RequestConstraint(minLon, maxLon));
             String minLat = Double.toString(envelope.getMinY());
             String maxLat = Double.toString(envelope.getMaxY());
             rcMap.put(latitudeDatabaseKey,
@@ -254,9 +256,9 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     }
 
     /**
-     * 
+     *
      * Request point data from the server and convert to {@link IGeometryData}
-     * 
+     *
      * @param request
      *            the original request from the {@link DataAccessLayer}
      * @param dbQueryRequest
@@ -275,7 +277,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         } catch (Exception e) {
             throw new DataRetrievalException(
                     "Unable to complete the PointDataRequestMessage for request: "
-                            + request, e);
+                            + request,
+                    e);
         }
         if (pdc == null) {
             return new IGeometryData[0];
@@ -326,7 +329,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      * {@link PointDataServerRequest}. This is done because
      * {@link AbstractDataPluginFactory} makes really nice DbQueryRequests but
      * we can't use them for point data.
-     * 
+     *
      * @param request
      * @param dbQueryRequest
      * @return
@@ -376,7 +379,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Pull out location and time data from a {@link PointDataView} to build a
      * {@link DefaultGeometryData}.
-     * 
+     *
      * @param pdv
      *            view for a single record
      * @return {@link DefaultGeometryData} with locationName, time, and geometry
@@ -385,13 +388,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     private DefaultGeometryData createNewGeometryData(PointDataView pdv) {
         DefaultGeometryData data = new DefaultGeometryData();
         data.setLocationName(pdv.getString(locationPointDataKey));
-        long refTime = pdv.getNumber(refTimePointDataKey).longValue();
-        if (fcstHrPointDataKey != null) {
-            int fcstTime = pdv.getNumber(fcstHrPointDataKey).intValue();
-            data.setDataTime(new DataTime(new Date(refTime), fcstTime));
-        } else {
-            data.setDataTime(new DataTime(new Date(refTime)));
-        }
+        data.setDataTime(pdv.getDataTime(false));
         Coordinate c = new Coordinate(pdv.getFloat(longitudePointDataKey),
                 pdv.getFloat(latitudePointDataKey));
         data.setGeometry(new GeometryFactory().createPoint(c));
@@ -401,7 +398,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Make a {@link IGeometryData} object for each level in a 2 dimensional
      * data set.
-     * 
+     *
      * @param request
      *            the original request
      * @param p2d
@@ -459,8 +456,8 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
                  * need have this level backed by the database.
                  */
                 Level level = new Level();
-                double levelValue = levelUnitConverter.convert(levelValues[j]
-                        .doubleValue());
+                double levelValue = levelUnitConverter
+                        .convert(levelValues[j].doubleValue());
                 level.setMasterLevel(masterLevel);
                 level.setLevelonevalue(levelValue);
                 leveldata.setLevel(level);
@@ -493,7 +490,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Get the maximum number of values for all requested values of the 2d
      * parameter group.
-     * 
+     *
      * @param requestParameters
      *            The requested parameters.
      * @param p2d
@@ -524,7 +521,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     /**
      * Point data types with 2 dimensions need to register so the 2d parameters
      * can be grouped appropriately
-     * 
+     *
      * @param countParameter
      *            parameter name of an integer parameter identifying the number
      *            of valid levels.
@@ -622,7 +619,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
     }
 
     /**
-     * 
+     *
      * @param optionalIdentifiers
      *            The hibernate field names of any fields that can be used as
      *            identifiers.
@@ -632,15 +629,18 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         if (optionalIdentifiers != null) {
             this.optionalIdentifiers = optionalIdentifiers;
 
-            if (!Arrays.asList(optionalIdentifiers).contains(
-                    PluginDataObject.DATAURI_ID)) {
-                this.optionalIdentifiers = new String[optionalIdentifiers.length + 1];
+            if (!Arrays.asList(optionalIdentifiers)
+                    .contains(PluginDataObject.DATAURI_ID)) {
+                this.optionalIdentifiers = new String[optionalIdentifiers.length
+                        + 1];
                 System.arraycopy(optionalIdentifiers, 0,
-                        this.optionalIdentifiers, 0, optionalIdentifiers.length);
+                        this.optionalIdentifiers, 0,
+                        optionalIdentifiers.length);
                 this.optionalIdentifiers[optionalIdentifiers.length] = PluginDataObject.DATAURI_ID;
             }
         } else {
-            this.optionalIdentifiers = new String[] { PluginDataObject.DATAURI_ID };
+            this.optionalIdentifiers = new String[] {
+                    PluginDataObject.DATAURI_ID };
         }
     }
 }

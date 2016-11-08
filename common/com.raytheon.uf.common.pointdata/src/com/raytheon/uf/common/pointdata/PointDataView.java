@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,13 +36,14 @@ import com.raytheon.uf.common.pointdata.elements.LongPointDataObject;
 import com.raytheon.uf.common.pointdata.elements.StringPointDataObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Convenience class that provides a view of the data for a single observation
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
@@ -50,11 +51,11 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Dec 20, 2013  2537     bsteffen    add getFloat on a specified level.
  * Jul 23, 2014  3410     bclement    added getCalendar() and getDate()
  * Dec 05, 2014  3873     skorolev    Added conversion of units in the getDate().
- * 
+ * Nov 09, 2016  5986     tgurney     Add getDataTime from PointDataTimeSeriesAdapter
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 @Embeddable
 @DynamicSerialize
@@ -118,8 +119,8 @@ public class PointDataView {
         Number[] lvl = new Number[p.getDescription().getDimensionAsInt()];
 
         if (p.getDimensions() != 2) {
-            throw new IllegalArgumentException("Parameter " + parameter
-                    + " is not two-dimensional");
+            throw new IllegalArgumentException(
+                    "Parameter " + parameter + " is not two-dimensional");
         }
 
         for (int i = 0; i < lvl.length; i++) {
@@ -134,8 +135,8 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
         String[] lvl = new String[p.getDescription().getDimensionAsInt()];
         if (p.getDimensions() != 2) {
-            throw new IllegalArgumentException("Parameter " + parameter
-                    + " is not two-dimensional");
+            throw new IllegalArgumentException(
+                    "Parameter " + parameter + " is not two-dimensional");
         }
 
         for (int i = 0; i < lvl.length; i++) {
@@ -151,9 +152,10 @@ public class PointDataView {
 
     protected AbstractPointDataObject<?> getParamSafe(String parameter) {
         AbstractPointDataObject<?> p = container.pointDataTypes.get(parameter);
-        if (p == null)
-            throw new IllegalArgumentException("Parameter not present: "
-                    + parameter);
+        if (p == null) {
+            throw new IllegalArgumentException(
+                    "Parameter not present: " + parameter);
+        }
 
         return p;
     }
@@ -172,10 +174,8 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof IntPointDataObject)) {
-            throw new IllegalArgumentException(
-                    "Parameter "
-                            + parameter
-                            + " is not natively an int type.  Use getNumber(), getString() or another primitive type");
+            throw new IllegalArgumentException("Parameter " + parameter
+                    + " is not natively an int type.  Use getNumber(), getString() or another primitive type");
         }
         return ((IntPointDataObject) p).getInt(getIndex(p));
     }
@@ -184,13 +184,11 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof IntPointDataObject)) {
-            throw new IllegalArgumentException(
-                    "Parameter "
-                            + parameter
-                            + " is not natively an int type.  Use getNumber(), getString() or another primitive type");
-        } else if (p.getDimensions() != 2) {
             throw new IllegalArgumentException("Parameter " + parameter
-                    + " is not two-dimensional");
+                    + " is not natively an int type.  Use getNumber(), getString() or another primitive type");
+        } else if (p.getDimensions() != 2) {
+            throw new IllegalArgumentException(
+                    "Parameter " + parameter + " is not two-dimensional");
         }
 
         int[] lvl = new int[p.getDescription().getDimensionAsInt()];
@@ -214,9 +212,9 @@ public class PointDataView {
             if (level == 0) {
                 ((IntPointDataObject) p).setInt(getIndex(p), val);
             } else if (level >= p.getDescription().getDimensionAsInt()) {
-                throw new IllegalArgumentException("Level  " + level
-                        + " exceeds maxLevel size "
-                        + p.getDescription().getDimensionAsInt());
+                throw new IllegalArgumentException(
+                        "Level  " + level + " exceeds maxLevel size "
+                                + p.getDescription().getDimensionAsInt());
             } else if (p.getDimensions() != 2) {
                 throw new IllegalArgumentException(
                         "Data is not two dimensional");
@@ -230,10 +228,8 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof FloatPointDataObject)) {
-            throw new IllegalArgumentException(
-                    "Parameter "
-                            + parameter
-                            + " is not natively a float type.  Use getNumber(), getString() or another primitive type");
+            throw new IllegalArgumentException("Parameter " + parameter
+                    + " is not natively a float type.  Use getNumber(), getString() or another primitive type");
         }
         return ((FloatPointDataObject) p).getFloat(getIndex(p));
     }
@@ -251,9 +247,9 @@ public class PointDataView {
             if (level == 0) {
                 ((FloatPointDataObject) p).setFloat(getIndex(p), val);
             } else if (level >= p.getDescription().getDimensionAsInt()) {
-                throw new IllegalArgumentException("Level  " + level
-                        + " exceeds maxLevel size "
-                        + p.getDescription().getDimensionAsInt());
+                throw new IllegalArgumentException(
+                        "Level  " + level + " exceeds maxLevel size "
+                                + p.getDescription().getDimensionAsInt());
             } else if (p.getDimensions() != 2) {
                 throw new IllegalArgumentException(
                         "Data is not two dimensional");
@@ -271,9 +267,9 @@ public class PointDataView {
         } else if (level == 0) {
             return ((FloatPointDataObject) p).getFloat(getIndex(p));
         } else if (level >= p.getDescription().getDimensionAsInt()) {
-            throw new IllegalArgumentException("Level  " + level
-                    + " exceeds maxLevel size "
-                    + p.getDescription().getDimensionAsInt());
+            throw new IllegalArgumentException(
+                    "Level  " + level + " exceeds maxLevel size "
+                            + p.getDescription().getDimensionAsInt());
         } else if (p.getDimensions() != 2) {
             throw new IllegalArgumentException("Data is not two dimensional");
         } else {
@@ -285,10 +281,8 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof LongPointDataObject)) {
-            throw new IllegalArgumentException(
-                    "Parameter "
-                            + parameter
-                            + " is not natively a long type.  Use getNumber(), getString() or another primitive type");
+            throw new IllegalArgumentException("Parameter " + parameter
+                    + " is not natively a long type.  Use getNumber(), getString() or another primitive type");
         }
         return ((LongPointDataObject) p).getLong(getIndex(p));
     }
@@ -306,9 +300,9 @@ public class PointDataView {
             if (level == 0) {
                 ((LongPointDataObject) p).setLong(getIndex(p), val);
             } else if (level >= p.getDescription().getDimensionAsInt()) {
-                throw new IllegalArgumentException("Level  " + level
-                        + " exceeds maxLevel size "
-                        + p.getDescription().getDimensionAsInt());
+                throw new IllegalArgumentException(
+                        "Level  " + level + " exceeds maxLevel size "
+                                + p.getDescription().getDimensionAsInt());
             } else if (p.getDimensions() != 2) {
                 throw new IllegalArgumentException(
                         "Data is not two dimensional");
@@ -326,14 +320,15 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof StringPointDataObject)) {
-            throw new IllegalArgumentException("Parameter is not a string type");
+            throw new IllegalArgumentException(
+                    "Parameter is not a string type");
         } else {
             if (level == 0) {
                 ((StringPointDataObject) p).setString(getIndex(p), val);
             } else if (level >= p.getDescription().getDimensionAsInt()) {
-                throw new IllegalArgumentException("Level  " + level
-                        + " exceeds maxLevel size "
-                        + p.getDescription().getDimensionAsInt());
+                throw new IllegalArgumentException(
+                        "Level  " + level + " exceeds maxLevel size "
+                                + p.getDescription().getDimensionAsInt());
             } else if (p.getDimensions() != 2) {
                 throw new IllegalArgumentException(
                         "Data is not two dimensional");
@@ -347,7 +342,8 @@ public class PointDataView {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
 
         if (!(p instanceof StringPointDataObject)) {
-            throw new IllegalArgumentException("Parameter is not a string type");
+            throw new IllegalArgumentException(
+                    "Parameter is not a string type");
         } else {
             return ((StringPointDataObject) p).getString(getIndex(p));
         }
@@ -359,22 +355,23 @@ public class PointDataView {
 
     public Type getType(String parameter) {
         AbstractPointDataObject<?> p = getParamSafe(parameter);
-        if (p instanceof StringPointDataObject)
+        if (p instanceof StringPointDataObject) {
             return Type.STRING;
-        else if (p instanceof IntPointDataObject)
+        } else if (p instanceof IntPointDataObject) {
             return Type.INT;
-        else if (p instanceof LongPointDataObject)
+        } else if (p instanceof LongPointDataObject) {
             return Type.LONG;
-        else if (p instanceof FloatPointDataObject)
+        } else if (p instanceof FloatPointDataObject) {
             return Type.FLOAT;
+        }
 
         return null;
     }
 
     private int getIndex(AbstractPointDataObject<?> p) {
-        if (p.getDimensions() == 1)
+        if (p.getDimensions() == 1) {
             return this.curIdx;
-        else {
+        } else {
             this.curIdx2d = this.curIdx
                     * p.getDescription().getDimensionAsInt();
         }
@@ -385,7 +382,7 @@ public class PointDataView {
 
     /**
      * Do not call directly. Required for serialization.
-     * 
+     *
      * @return
      */
     public int getCurIdx() {
@@ -394,10 +391,35 @@ public class PointDataView {
 
     /**
      * Do not call directly. Required for serialization.
-     * 
+     *
      * @param curIdx
      */
     public void setCurIdx(int curIdx) {
         this.curIdx = curIdx;
+    }
+
+    public DataTime getDataTime(boolean refTimeOnly) {
+        long refTime = getNumber(PointDataConstants.DATASET_REFTIME)
+                .longValue();
+        Unit<?> refUnit = getUnit(PointDataConstants.DATASET_REFTIME);
+        if (refUnit != null && !refUnit.equals(SI.MILLI(SI.SECOND))
+                && refUnit.isCompatible(SI.SECOND)) {
+            refTime = (long) refUnit.getConverterTo(SI.MILLI(SI.SECOND))
+                    .convert(refTime);
+        }
+        if (refTimeOnly) {
+            return new DataTime(new Date(refTime));
+        }
+
+        int forecastTime = getNumber(PointDataConstants.DATASET_FORECASTHR)
+                .intValue();
+        Unit<?> forecastUnit = getUnit(PointDataConstants.DATASET_FORECASTHR);
+        if (forecastUnit != null && !forecastUnit.equals(SI.SECOND)
+                && forecastUnit.isCompatible(SI.SECOND)) {
+            forecastTime = (int) forecastUnit.getConverterTo(SI.SECOND)
+                    .convert(forecastTime);
+        }
+
+        return new DataTime(new Date(refTime), forecastTime);
     }
 }
