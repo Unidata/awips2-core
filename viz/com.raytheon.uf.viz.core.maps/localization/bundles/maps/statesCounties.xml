@@ -18,143 +18,181 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an absolute override file, indicating that a higher priority version
+        of the file will completely replace a lower priority version of the file. 
+    -->
 <bundle>
-	<displayList>
-		<displays xsi:type="mapRenderableDisplay"
-			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-			<descriptor xsi:type="mapDescriptor">
-				<resource>
-					<loadProperties>
-						<capabilities>
-							<capability xsi:type="outlineCapability" lineStyle="SOLID"
-								outlineOn="true" outlineWidth="1" />
-							<capability xsi:type="colorableCapability"
-								colorAsString="#9b9b9b" />
-						</capabilities>
-						<resourceType>PLAN_VIEW</resourceType>
-					</loadProperties>
-					<properties isSystemResource="false" isBlinking="false"
-						isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true" />
-					<resourceData xsi:type="mapResourceGroupData">
-						<resource>
-							<loadProperties>
-								<capabilities>
-									<capability xsi:type="outlineCapability" lineStyle="SOLID"
-										outlineOn="true" outlineWidth="1" />
-									<capability xsi:type="colorableCapability"
-										colorAsString="#9b9b9b" />
-								</capabilities>
-								<resourceType>PLAN_VIEW</resourceType>
-							</loadProperties>
-							<properties isSystemResource="false" isBlinking="false"
-								isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-								<pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
-							</properties>
-							<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.world</table>
-								<mapName>World</mapName>
-								<constraint>name not in ('CANADA', 'MEXICO', 'UNITED STATES')</constraint>
-							</resourceData>
-						</resource>
-						<resource>
-							<loadProperties>
-								<capabilities>
-									<capability xsi:type="outlineCapability" lineStyle="SOLID"
-										outlineOn="true" outlineWidth="1" />
-									<capability xsi:type="colorableCapability"
-										colorAsString="#9b9b9b" />
-								</capabilities>
-								<resourceType>PLAN_VIEW</resourceType>
-							</loadProperties>
-							<properties isSystemResource="false" isBlinking="false"
-								isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-								<pdProps maxDisplayWidth="100000000" minDisplayWidth="750000" />
-							</properties>
-							<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.states</table>
-								<mapName>State Boundaries</mapName>
-							</resourceData>
-						</resource>
-						<resource>
-							<loadProperties>
-								<capabilities>
-									<capability xsi:type="outlineCapability" lineStyle="SOLID"
-										outlineOn="true" outlineWidth="1" />
-									<capability xsi:type="colorableCapability"
-										colorAsString="#9b9b9b" />
-								</capabilities>
-								<resourceType>PLAN_VIEW</resourceType>
-							</loadProperties>
-							<properties isSystemResource="false" isBlinking="false"
-								isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-								<pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
-							</properties>
-							<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.canada</table>
-								<mapName>Canada</mapName>
-							</resourceData>
-						</resource>
-						<resource>
-							<loadProperties>
-								<capabilities>
-									<capability xsi:type="outlineCapability" lineStyle="SOLID"
-										outlineOn="true" outlineWidth="1" />
-									<capability xsi:type="colorableCapability"
-										colorAsString="#9b9b9b" />
-								</capabilities>
-								<resourceType>PLAN_VIEW</resourceType>
-							</loadProperties>
-							<properties isSystemResource="false" isBlinking="false"
-								isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-								<pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
-							</properties>
-							<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.mexico</table>
-								<mapName>Mexico</mapName>
-							</resourceData>
-						</resource>
-						<resource>
-							<loadProperties>
-								<capabilities>
-									<capability xsi:type="outlineCapability" lineStyle="SOLID"
-										outlineOn="true" outlineWidth="1" />
-									<capability xsi:type="colorableCapability"
-										colorAsString="#9b9b9b" />
-								</capabilities>
-								<resourceType>PLAN_VIEW</resourceType>
-							</loadProperties>
-							<properties isSystemResource="false" isBlinking="false"
-								isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-								<pdProps maxDisplayWidth="750000" minDisplayWidth="0" />
-							</properties>
-							<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.county</table>
-								<mapName>County Boundaries</mapName>
-							</resourceData>
-						</resource>
-						<resource>
-                            <loadProperties loadWithoutData="false">
+    <displayList>
+        <displays xsi:type="mapRenderableDisplay"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <descriptor xsi:type="mapDescriptor">
+                <resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability"
+                                lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#9b9b9b" />
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false"
+                        isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        opacity="1.0" isVisible="true" />
+                    <resourceData xsi:type="mapResourceGroupData">
+                        <resource>
+                            <loadProperties>
                                 <capabilities>
-                                    <capability xsi:type="shadeableCapability" shaded="false"/>
-                                    <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1"/>
-                                    <capability xsi:type="colorableCapability" colorAsString="#9b9b9b"/>
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
                                 </capabilities>
                                 <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000" minDisplayWidth="0"/>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="100000000"
+                                    minDisplayWidth="0" />
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <table>mapdata.world</table>
+                                <mapName>World</mapName>
+                                <constraint>name not in ('CANADA',
+                                    'MEXICO', 'UNITED STATES')
+                                </constraint>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties>
+                                <capabilities>
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="100000000"
+                                    minDisplayWidth="750000" />
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <table>mapdata.states</table>
+                                <mapName>State Boundaries</mapName>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties>
+                                <capabilities>
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="100000000"
+                                    minDisplayWidth="0" />
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <table>mapdata.canada</table>
+                                <mapName>Canada</mapName>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties>
+                                <capabilities>
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="100000000"
+                                    minDisplayWidth="0" />
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <table>mapdata.mexico</table>
+                                <mapName>Mexico</mapName>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties>
+                                <capabilities>
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="750000"
+                                    minDisplayWidth="0" />
+                            </properties>
+                            <resourceData xsi:type="dbMapResourceData">
+                                <table>mapdata.county</table>
+                                <mapName>County Boundaries</mapName>
+                            </resourceData>
+                        </resource>
+                        <resource>
+                            <loadProperties
+                                loadWithoutData="false">
+                                <capabilities>
+                                    <capability xsi:type="shadeableCapability"
+                                        shaded="false" />
+                                    <capability xsi:type="outlineCapability"
+                                        lineStyle="SOLID" outlineOn="true"
+                                        outlineWidth="1" />
+                                    <capability xsi:type="colorableCapability"
+                                        colorAsString="#9b9b9b" />
+                                </capabilities>
+                                <resourceType>PLAN_VIEW</resourceType>
+                            </loadProperties>
+                            <properties isSystemResource="false"
+                                isBlinking="false" isMapLayer="true"
+                                isHoverOn="false" opacity="1.0"
+                                isVisible="true">
+                                <pdProps maxDisplayWidth="100000000"
+                                    minDisplayWidth="0" />
                             </properties>
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>two lakes</mapName>
                                 <table>mapdata.lake</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name in ('Great Salt Lake', 'Lake Winnepeg')</constraint>
+                                <constraint>name in ('Great Salt Lake',
+                                    'Lake Winnepeg')</constraint>
                             </resourceData>
                         </resource>
-						<mapName>State/County Boundaries</mapName>
-					</resourceData>
-				</resource>
-			</descriptor>
-		</displays>
-	</displayList>
+                        <mapName>State/County Boundaries</mapName>
+                    </resourceData>
+                </resource>
+            </descriptor>
+        </displays>
+    </displayList>
 </bundle>

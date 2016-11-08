@@ -18,6 +18,10 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an absolute override file, indicating that a higher priority version
+        of the file will completely replace a lower priority version of the file. 
+    -->
 <mapScales>
     <mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml">
         <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1" />
@@ -31,7 +35,6 @@
     <mapScale displayName="Regional" fileName="Regional.xml">
         <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3" />
     </mapScale>
-
     <mapScale displayName="State(s)" fileName="States.xml">
         <partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4" />
     </mapScale>

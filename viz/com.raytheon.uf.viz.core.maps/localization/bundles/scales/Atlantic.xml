@@ -18,6 +18,10 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an absolute override file, indicating that a higher priority version
+        of the file will completely replace a lower priority version of the file. 
+    -->
 <bundle>
     <displayList>
         <displays xsi:type="d2DMapRenderableDisplay" scale="N. Hemisphere"
@@ -250,23 +254,21 @@
                     envelopeMinX="-1.1026966741467461E7" rangeY="0 9999"
                     rangeX="0 9999">
                     <CRS>PROJCS["Lambert_Conformal_Conic_1SP",
-                        GEOGCS["WGS84(DD)",
-                        DATUM["WGS84",
+                        GEOGCS["WGS84(DD)", DATUM["WGS84",
                         SPHEROID["WGS84", 6378137.0, 298.257223563]],
-                        PRIMEM["Greenwich", 0.0],
-                        UNIT["degree", 0.017453292519943295],
-                        AXIS["Geodetic longitude", EAST],
-                        AXIS["Geodetic latitude", NORTH]],
+                        PRIMEM["Greenwich", 0.0], UNIT["degree",
+                        0.017453292519943295], AXIS["Geodetic
+                        longitude", EAST], AXIS["Geodetic latitude",
+                        NORTH]],
                         PROJECTION["Lambert_Conformal_Conic_1SP"],
                         PARAMETER["semi_major", 6371200.0],
                         PARAMETER["semi_minor", 6371200.0],
                         PARAMETER["central_meridian", -50.0],
                         PARAMETER["latitude_of_origin", 10.0],
                         PARAMETER["false_easting", 0.0],
-                        PARAMETER["false_northing", 0.0],
-                        UNIT["m", 1.0],
-                        AXIS["Easting", EAST],
-                        AXIS["Northing", NORTH]]
+                        PARAMETER["false_northing", 0.0], UNIT["m",
+                        1.0], AXIS["Easting", EAST], AXIS["Northing",
+                        NORTH]]
                     </CRS>
                 </gridGeometry>
             </descriptor>
