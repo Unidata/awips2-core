@@ -20,47 +20,41 @@
 package com.raytheon.uf.viz.core;
 
 /**
- * Executor service that runs tasks asynchronously or synchronously on the GUI
- * thread.
+ * Deprecated: Use the methods on VizApp instead.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 02, 2013 1449       djohnson     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Jan 02, 2013  1449     djohnson  Initial creation
+ * Nov 03, 2016  5976     bsteffen  Deprecate
  * 
  * </pre>
  * 
+ * @deprecated
+ * 
  * @author djohnson
- * @version 1.0
  */
-
+@Deprecated
 public interface IGuiThreadTaskExecutor {
 
     /**
-     * Run a task asynchronously on the UI thread
-     * 
-     * @param aTask
-     *            the task to run
+     * @deprecated Use {@link VizApp#runAsync(Runnable)}
      */
+    @Deprecated
     void runAsync(Runnable aTask);
 
     /**
-     * Run a task synchronously on the UI thread
-     * 
-     * @param task
-     *            the task to run
+     * @deprecated Use {@link VizApp#runSync(Runnable)}
      */
+    @Deprecated
     void runSync(Runnable task);
 
     /**
-     * Run a task synchronously on the UI thread if a workbench is running,
-     * otherwise just runs the task
-     * 
-     * @param task
-     *            the task to run
+     * @deprecated USe {@link VizApp#runSyncIfWorkbench(Runnable)}
      */
+    @Deprecated
     void runSyncIfWorkbench(Runnable task);
 }

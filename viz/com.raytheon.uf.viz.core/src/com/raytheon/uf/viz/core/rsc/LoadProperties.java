@@ -37,17 +37,17 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * <pre>
  * 
  *    SOFTWARE HISTORY
- *   
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Aug 15, 2007           chammack    Initial Creation.
- * Feb 26, 2009	 2032     jsanchez	  Added a loadWithoutData.
- * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Aug 15, 2007           chammack  Initial Creation.
+ * Feb 26, 2009  2032     jsanchez  Added a loadWithoutData.
+ * Oct 22, 2013  2491     bsteffen  Remove ISerializableObject
+ * Nov 03, 2016  5976     bsteffen  Remove recordLimit
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlType(name = "loadProperties")
 @XmlAccessorType(XmlAccessType.NONE)
@@ -57,9 +57,6 @@ public class LoadProperties {
 
     @XmlElement
     private ResourceType resourceType;
-
-    @XmlAttribute
-    private Integer recordLimit;
 
     @XmlAttribute
     private boolean loadWithoutData = false;
@@ -131,21 +128,6 @@ public class LoadProperties {
      */
     public void setResourceType(ResourceType resourceType) {
         this.resourceType = resourceType;
-    }
-
-    /**
-     * @return the recordLimit
-     */
-    public Integer getRecordLimit() {
-        return recordLimit;
-    }
-
-    /**
-     * @param recordLimit
-     *            the recordLimit to set
-     */
-    public void setRecordLimit(Integer recordLimit) {
-        this.recordLimit = recordLimit;
     }
 
     /**

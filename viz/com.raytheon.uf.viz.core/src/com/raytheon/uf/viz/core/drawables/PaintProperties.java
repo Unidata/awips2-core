@@ -41,6 +41,7 @@ import com.raytheon.uf.viz.core.drawables.IDescriptor.FramesInfo;
  * Jun 3, 2008             chammack    Added zooming property that indicates whether zoom is in progress
  * Jul 19, 2010 #5952      bkowal      We will now clone PaintProperties in the constructor that accepts
  *                                     PaintProperties as an argument.
+ * Nov 03, 2016 5976       bsteffen    Remove unused fields.
  * 
  * </pre>
  * 
@@ -60,13 +61,7 @@ public class PaintProperties {
 
     protected boolean isZooming;
 
-    protected boolean occlusionTest = false;
-
-    protected int level;
-
     protected IExtent clippingPane;
-
-    protected PerspectiveSpecificProperties perspectiveProps;
 
     protected DataTime dataTime;
 
@@ -99,7 +94,7 @@ public class PaintProperties {
      *            the properties to copy
      */
     public PaintProperties(PaintProperties props) {
-        this(props, (IView) props.getView().clone());
+        this(props, props.getView().clone());
     }
 
     /**
@@ -116,10 +111,7 @@ public class PaintProperties {
         this.canvasBounds = props.canvasBounds;
         this.loopProperties = props.getLoopProperties();
         this.isZooming = props.isZooming();
-        this.level = props.level;
         this.clippingPane = props.clippingPane;
-        this.perspectiveProps = props.perspectiveProps;
-        this.occlusionTest = props.occlusionTest;
         this.dataTime = props.dataTime;
         this.framesInfo = props.framesInfo;
     }
@@ -208,38 +200,6 @@ public class PaintProperties {
     }
 
     /**
-     * @return the occlusionTest
-     */
-    public boolean isOcclusionTest() {
-        return occlusionTest;
-    }
-
-    /**
-     * @param occlusionTest
-     *            the occlusionTest to set
-     */
-    public void setOcclusionTest(boolean occlusionTest) {
-        this.occlusionTest = occlusionTest;
-    }
-
-    /**
-     * @return the level
-     */
-    public int getLevel() {
-        return level;
-    }
-
-    /**
-     * Set the displayed level index
-     * 
-     * @param level
-     *            the level to set
-     */
-    public void setLevel(int level) {
-        this.level = level;
-    }
-
-    /**
      * @return the clippingPane
      */
     public IExtent getClippingPane() {
@@ -254,20 +214,14 @@ public class PaintProperties {
         this.clippingPane = clippingPane;
     }
 
-    /**
-     * @return the perspectiveProps
-     */
-    public PerspectiveSpecificProperties getPerspectiveProps() {
-        return perspectiveProps;
-    }
 
     /**
-     * @param perspectiveProps
-     *            the perspectiveProps to set
+     * This does nothing and only exists to support compatibility with older
+     * version.
      */
+    @Deprecated
     public void setPerspectiveProps(
             PerspectiveSpecificProperties perspectiveProps) {
-        this.perspectiveProps = perspectiveProps;
     }
 
     /**

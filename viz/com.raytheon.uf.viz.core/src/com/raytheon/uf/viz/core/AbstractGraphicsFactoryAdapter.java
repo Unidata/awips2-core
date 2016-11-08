@@ -33,84 +33,57 @@ import com.vividsolutions.jts.geom.Coordinate;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 19, 2010            mschenke     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Jun 19, 2010  3190     mschenke  Initial creation
+ * Nov 03, 2016  5976     bsteffen  Deprecate extent methods
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 public abstract class AbstractGraphicsFactoryAdapter {
 
-    /**
-     * Construct the view
-     * 
-     * @return the view
-     */
     public abstract IView constructView();
 
-    /**
-     * Create a graphics target
-     * 
-     * @param canvas
-     *            TODO
-     * @param width
-     *            TODO
-     * @param height
-     *            TODO
-     * @return
-     * @throws UnsupportedOperationException
-     * @throws VizException
-     */
     public abstract IGraphicsTarget constructTarget(Canvas canvas, float width,
             float height) throws VizException;
 
     /**
-     * Create an extent
-     * 
-     * @param coords
-     * @return
-     * @throws VizException
+     * @Deprecated Use #link {@link PixelExtent#PixelExtent(Coordinate[])}
      */
-    public abstract IExtent constructExtent(Coordinate[] coords)
-            throws VizException;
+    @Deprecated
+    public IExtent constructExtent(Coordinate[] coords) throws VizException {
+        return new PixelExtent(coords);
+    }
 
     /**
-     * Create an extent.
-     * 
-     * @param aMinX
-     * @param aMaxX
-     * @param aMinY
-     * @param aMaxY
+     * @Deprecated Use #link
+     *             {@link PixelExtent#PixelExtent(double, double, double, double)}
      */
-    public abstract IExtent constructExtent(double aMinX, double aMaxX,
-            double aMinY, double aMaxY) throws VizException;
+    @Deprecated
+    public IExtent constructExtent(double aMinX, double aMaxX, double aMinY,
+            double aMaxY) throws VizException {
+        return new PixelExtent(aMinX, aMaxX, aMinY, aMaxY);
+    }
 
     /**
-     * Create an extent.
-     * 
-     * @param rect
-     *            a rectangle to build the extent from
+     * @Deprecated Use #link {@link PixelExtent#PixelExtent(Rectangle)}
      */
-    public abstract IExtent constructExtent(Rectangle rect) throws VizException;
+    @Deprecated
+    public IExtent constructExtent(Rectangle rect) throws VizException {
+        return new PixelExtent(rect);
+    }
 
     /**
-     * Create an extent.
-     * 
-     * @param range
-     *            a grid range to build the extent from
+     * @Deprecated Use #link {@link PixelExtent#PixelExtent(GridEnvelope)};
      */
-    public abstract IExtent constructExtent(GridEnvelope range)
-            throws VizException;
+    @Deprecated
+    public IExtent constructExtent(GridEnvelope range) throws VizException {
+        return new PixelExtent(range);
+    }
 
-    /**
-     * Construct a new canvas to be used with the graphics context
-     * 
-     * @param canvasComp
-     * @throws VizException
-     */
     public abstract Canvas constrcutCanvas(Composite canvasComp)
             throws VizException;
 

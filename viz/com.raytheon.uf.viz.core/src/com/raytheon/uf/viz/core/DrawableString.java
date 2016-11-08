@@ -47,13 +47,12 @@ import com.raytheon.uf.viz.core.drawables.IFont;
  * Aug 05, 2014  3489     mapeters    Add constructors whose only parameter is 
  *                                    text for use by {@link IGraphicsTarget
  *                                    #getStringsBounds(DrawableString)}.
+ * Nov 03, 2016  5976     bsteffen    Remove shadowColor
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class DrawableString extends AbstractDrawableObject {
 
     /** The font to draw in */
@@ -85,12 +84,7 @@ public class DrawableString extends AbstractDrawableObject {
     @Deprecated
     public TextStyle textStyle = TextStyle.NORMAL;
 
-    private EnumMap<TextStyle, RGB> textStyles = new EnumMap<TextStyle, RGB>(
-            TextStyle.class);
-
-    /** @deprecated use {@link #addTextStyle(TextStyle, RGB)} */
-    @Deprecated
-    public RGB shadowColor = new RGB(0, 0, 0);
+    private EnumMap<TextStyle, RGB> textStyles = new EnumMap<>(TextStyle.class);
 
     /** @deprecated use {@link #addTextStyle(TextStyle, RGB)} */
     @Deprecated
@@ -114,9 +108,8 @@ public class DrawableString extends AbstractDrawableObject {
         this.verticallAlignment = that.verticallAlignment;
         this.magnification = that.magnification;
         this.rotation = that.rotation;
-        this.textStyles = new EnumMap<TextStyle, RGB>(that.textStyles);
+        this.textStyles = new EnumMap<>(that.textStyles);
         this.textStyle = that.textStyle;
-        this.shadowColor = that.shadowColor;
         this.boxColor = that.boxColor;
     }
 
@@ -254,9 +247,6 @@ public class DrawableString extends AbstractDrawableObject {
         if (this.textStyle == null || this.textStyle == TextStyle.NORMAL) {
             this.textStyle = textStyle;
         }
-        if (textStyle == TextStyle.DROP_SHADOW && color != null) {
-            this.shadowColor = color;
-        }
     }
 
     /**
@@ -321,10 +311,6 @@ public class DrawableString extends AbstractDrawableObject {
                     && this.textStyles.containsKey(TextStyle.BLANKED) == false) {
                 this.textStyles.put(TextStyle.BLANKED, this.boxColor);
             }
-        }
-        if (this.shadowColor != null
-                && textStyles.containsKey(TextStyle.DROP_SHADOW)) {
-            textStyles.put(TextStyle.DROP_SHADOW, this.shadowColor);
         }
         return textStyles;
     }

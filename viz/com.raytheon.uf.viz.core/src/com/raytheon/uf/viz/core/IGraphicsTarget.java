@@ -52,27 +52,31 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jul 01, 2006           chammack    Initial Creation.
- * Jul 19, 2010  5952     bkowal      Created a new member and method that could
- *                                    track any needed updates to the Target extents.
- *                                    This functionality is primarily used by the
- *                                    Feature Following Zoom Tool at this time.
- * Jul 18, 2013  2189     mschenke    Added ability to specify font type
- * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
- * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
- * Jun 30, 2014  3165     njensen     Removed deprecated buildColorMap()
- * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() functions that take in spatialChopFlag
- * Aug 07, 2014  3492     mapeters    Removed setUseBuiltinColorbar() and drawFilledCircle() methods.
- * Aug 13, 2014  3492     mapeters    Deprecated createWireframeShape() functions that take in
- *                                    a float simplificationLevel.
- * Jan 26, 2015  3974     njensen     Deprecated usage of tesselate on createShadedShape()
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 01, 2006           chammack  Initial Creation.
+ * Jul 19, 2010  5952     bkowal    Created a new member and method that could
+ *                                  track any needed updates to the Target
+ *                                  extents. This functionality is primarily
+ *                                  used by the Feature Following Zoom Tool at
+ *                                  this time.
+ * Jul 18, 2013  2189     mschenke  Added ability to specify font type
+ * Apr 04, 2014  2920     bsteffen  Allow strings to use mulitple styles.
+ * Jun 17, 2014  2903     bclement  added PIPE to PointStyle
+ * Jun 30, 2014  3165     njensen   Removed deprecated buildColorMap()
+ * Jul 28, 2014  3397     bclement  deprecated createWireframeShape() functions
+ *                                  that take in spatialChopFlag
+ * Aug 07, 2014  3492     mapeters  Removed setUseBuiltinColorbar() and
+ *                                  drawFilledCircle() methods.
+ * Aug 13, 2014  3492     mapeters  Deprecated createWireframeShape() functions
+ *                                  that take in a float simplificationLevel.
+ * Jan 26, 2015  3974     njensen   Deprecated usage of tesselate on
+ *                                  createShadedShape()
+ * Nov 03, 2016  5976     bsteffen  Remove WORD_WRAP TextStyle
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public interface IGraphicsTarget extends IImagingExtension {
 
@@ -93,15 +97,6 @@ public interface IGraphicsTarget extends IImagingExtension {
          */
         @Deprecated
         NORMAL,
-
-        /**
-         * @deprecated Word Wrap is not supported in all targets, not fully
-         *             supported by any target, and rarely used. Wrapping should
-         *             now be performed before rendering.
-         * 
-         */
-        @Deprecated
-        WORD_WRAP,
 
         /**
          * Draw a filled rectangle behind text.
@@ -188,7 +183,7 @@ public interface IGraphicsTarget extends IImagingExtension {
             if (this.factor == 0 || this.pattern == 0) {
                 return null;
             } else {
-                List<Integer> dashPattern = new ArrayList<Integer>();
+                List<Integer> dashPattern = new ArrayList<>();
 
                 int p = this.pattern & 0xFFFF;
 

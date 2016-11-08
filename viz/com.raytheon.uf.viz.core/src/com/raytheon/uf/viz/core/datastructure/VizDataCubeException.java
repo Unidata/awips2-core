@@ -19,23 +19,25 @@
  **/
 package com.raytheon.uf.viz.core.datastructure;
 
+import com.raytheon.uf.common.inventory.exception.DataCubeException;
 import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
- * Exception for data cubes
+ * @deprecated Use {@link VizException} or {@link DataCubeException} instead.
  * 
- * <pre>
+ *             <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 28, 2007            njensen     Initial creation	
+ * Nov 28, 2007            njensen     Initial creation
+ * Nov 03, 2016 5976       bsteffen    Deprecate extent methods
  * 
- * </pre>
+ *             </pre>
+ * 
  * 
  * @author njensen
- * @version 1.0
  */
-
+@Deprecated
 public class VizDataCubeException extends VizException {
     
     private static final long serialVersionUID = 1L;

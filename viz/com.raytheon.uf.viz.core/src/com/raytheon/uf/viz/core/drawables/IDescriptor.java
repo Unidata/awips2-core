@@ -40,7 +40,8 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * <li>Frames information (times to display)</li>
  * <li>Grid geometry of the render space (see below)</li>
  * <li>ResourceList of resources on the display</li>
- * <li>Time Matcher (matches the differing times of resources to shared frames)</li>
+ * <li>Time Matcher (matches the differing times of resources to shared frames)
+ * </li>
  * </ul>
  * 
  * Within Viz displays there are typically four different spaces (areas)
@@ -81,11 +82,11 @@ import com.raytheon.uf.viz.core.rsc.IResourceGroup;
  * Oct 22, 2009  3348     bsteffen  added ability to limit number of frames
  * Feb 10, 2015  3974     njensen   Improved javadoc
  * May 13, 2015  4461     bsteffen  Add another FramesInfo constructor.
+ * Nov 03, 2016  5976     bsteffen  Remove unused deprecated methods.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public interface IDescriptor extends IResourceGroup {
 
@@ -350,15 +351,6 @@ public interface IDescriptor extends IResourceGroup {
      *         redo time matching)
      */
     public abstract boolean unlimitNumberOfFrames();
-
-    /**
-     * Get the DataTimes of all of the frames of the display
-     * 
-     * @return the dataTimes
-     * @deprecated Use getFramesInfo() for thread safe use!
-     */
-    @Deprecated
-    public DataTime[] getDataTimes();
 
     /**
      * Set the data times

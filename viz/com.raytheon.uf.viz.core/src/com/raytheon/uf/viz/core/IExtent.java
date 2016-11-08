@@ -19,25 +19,22 @@
  **/
 package com.raytheon.uf.viz.core;
 
-import javax.vecmath.Vector3d;
-
-import com.raytheon.uf.viz.core.geom.Ray;
-
+/**
+ * 
+ * Defines a rectangular area of the display.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Nov 03, 2016  5976     bsteffen  Remove unused 3D support
+ * 
+ * </pre>
+ * 
+ */
 public interface IExtent extends Cloneable {
-
-    /**
-     * Get the min coordinate for the extent
-     * 
-     * @return
-     */
-    public Vector3d getMin();
-
-    /**
-     * Get the max coordinate for the extent
-     * 
-     * @return
-     */
-    public Vector3d getMax();
 
     public double getMaxX();
 
@@ -77,13 +74,6 @@ public interface IExtent extends Cloneable {
     public void shift(double shiftX, double shiftY);
 
     /**
-     * 
-     * @param start
-     * @param end
-     */
-    public void shift(Ray start, Ray end);
-
-    /**
      * Determine if the two extents intersect
      * 
      * @param e
@@ -106,13 +96,6 @@ public interface IExtent extends Cloneable {
      * @return
      */
     public boolean contains(double[] pixel);
-
-    /**
-     * Get the enclosing radius
-     * 
-     * @return
-     */
-    public double getRadius();
 
     /**
      * Reset the extent to previous state
