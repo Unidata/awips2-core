@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.xml;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -31,7 +32,7 @@ import org.eclipse.ui.menus.CommandContributionItemParameter;
 import com.raytheon.uf.common.menus.xml.CommonAbstractMenuContribution;
 import com.raytheon.uf.common.menus.xml.CommonCommandContribution;
 import com.raytheon.uf.common.menus.xml.VariableSubstitution;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.exception.VizException;
 
 /**
@@ -40,26 +41,19 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 28, 2009            chammack     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------------
+ * May 28, 2009           chammack  Initial creation
+ * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 public class CommandContribution extends
         AbstractMenuContributionItem<CommonCommandContribution> {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.ui.menus.xml.IContribItemProvider#getContributionItems
-     * (com.raytheon.uf.viz.ui.menus.xml.VariableSubstitution[], java.util.Set)
-     */
     @Override
     public IContributionItem[] getContributionItems(
             CommonAbstractMenuContribution items, VariableSubstitution[] subs,
@@ -74,8 +68,13 @@ public class CommandContribution extends
         if (item.parameters != null) {
             Map<String, String> s = VariableSubstitution.toMap(subs);
             for (VariableSubstitution sub : item.parameters) {
-                sub.value = VariableSubstitutionUtil.processVariables(
-                        sub.value, s);
+                try {
+                    sub.value = VariableSubstitutor.processVariables(sub.value,
+                            s);
+                } catch (ParseException e) {
+                    throw new VizException(
+                            "Error processing variable substitution", e);
+                }
                 parms.put(sub.key, sub.value);
             }
 

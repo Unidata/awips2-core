@@ -28,8 +28,6 @@
    <extension-point id="classContext" name="classContext" schema="schema/classContext.exsd"/>
    <extension-point id="userManager" name="userManager" schema="schema/userManager.exsd"/>
    <extension-point id="graphicsExtension" name="graphicsExtension" schema="schema/graphicsExtension.exsd"/>
-   <extension-point id="alterBundle" name="alterBundle" schema="schema/alterBundle.exsd"/>
-
 
    <extension
          point="org.eclipse.ui.preferencePages">

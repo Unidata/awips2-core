@@ -50,7 +50,7 @@ import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.ISimulatedTimeChangeListener;
 import com.raytheon.uf.common.time.SimulatedTime;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.jobs.JobPool;
@@ -92,13 +92,12 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  *                                  text.
  * Jun 09, 2014  3266     njensen   Removed useless code
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
+ * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 public class BundleContributionItem extends ContributionItem {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(BundleContributionItem.class);
@@ -187,8 +186,7 @@ public class BundleContributionItem extends ContributionItem {
      */
     private BundleContributionItem(CommonBundleMenuContribution contribution,
             Map<String, String> substitutions) throws VizException {
-        super(VariableSubstitutionUtil.processVariables(contribution.id,
-                substitutions));
+        super(processVariables(contribution.id, substitutions));
         this.performQuery = contribution.timeQuery;
         this.menuContribution = new BundleMenuContribution();
         this.menuContribution.xml = contribution;
@@ -211,7 +209,7 @@ public class BundleContributionItem extends ContributionItem {
                     + menuContribution.xml.id);
         }
 
-        this.menuText = VariableSubstitutionUtil.processVariables(
+        this.menuText = processVariables(
                 menuContribution.xml.text, this.substitutions);
 
         // The bundle persists for the life of CAVE; no need to remove the
@@ -232,6 +230,15 @@ public class BundleContributionItem extends ContributionItem {
             }
         };
         SimulatedTime.getSystemTime().addSimulatedTimeChangeListener(stcl);
+    }
+
+    private static String processVariables(String string,
+            Map<String, String> variables) throws VizException {
+        try {
+            return VariableSubstitutor.processVariables(string, variables);
+        } catch (ParseException e) {
+            throw new VizException("Error processing variable substitution", e);
+        }
     }
 
     /*

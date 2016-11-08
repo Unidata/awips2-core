@@ -47,6 +47,7 @@ import com.raytheon.uf.viz.core.comm.JMSConnection;
  *                                    to complete initialization before connecting to JMS.
  * Oct 15, 2013  2389     rjpeter     Updated synchronization to remove session leaks.
  * Jul 21, 2014  3390     bsteffen    Extracted logic to the JmsNotificationLogic
+ * Nov 08, 2016  5976     bsteffen    Remove deprecated methods
  * 
  * </pre>
  * 
@@ -120,33 +121,10 @@ public class NotificationManagerJob implements IDisposable {
             com.raytheon.uf.common.jms.notification.INotificationObserver obs) {
         getInstance().getManager().addQueueObserver(queue, obs);
     }
-
-    /**
-     * @deprecated use
-     *             {@link #addQueueObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver)}
-     */
-    @Deprecated
-    public static void addQueueObserver(String queue,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs) {
-        addQueueObserver(queue, new DeprecatedObserverAdapter(obs));
-    }
-
     public static void addQueueObserver(String queue,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs,
             String queryString) {
         getInstance().getManager().addQueueObserver(queue, obs, queryString);
-    }
-
-    /**
-     * @deprecated use
-     *             {@link #addQueueObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver, String)}
-     */
-    @Deprecated
-    public static void addQueueObserver(String queue,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs,
-            String queryString) {
-        addQueueObserver(queue, new DeprecatedObserverAdapter(obs),
-                queryString);
     }
 
     /**
@@ -162,31 +140,10 @@ public class NotificationManagerJob implements IDisposable {
         getInstance().getManager().addObserver(topic, obs);
     }
 
-    /**
-     * @deprecated use
-     *             {@link #addObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver)}
-     */
-    @Deprecated
-    public static void addObserver(String topic,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs) {
-        addObserver(topic, new DeprecatedObserverAdapter(obs));
-    }
-
     public static void addObserver(String topic,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs,
             String queryString) {
         getInstance().getManager().addObserver(topic, obs, queryString);
-    }
-
-    /**
-     * @deprecated use
-     *             {@link #addObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver, String)}
-     */
-    @Deprecated
-    public static void addObserver(String topic,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs,
-            String queryString) {
-        addObserver(topic, new DeprecatedObserverAdapter(obs), queryString);
     }
 
     /**
@@ -201,16 +158,6 @@ public class NotificationManagerJob implements IDisposable {
     public static void removeObserver(String topic,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs) {
         getInstance().getManager().removeObserver(topic, obs);
-    }
-
-    /**
-     * @deprecated use
-     *             {@link #removeObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver)}
-     */
-    @Deprecated
-    public static void removeObserver(String topic,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs) {
-        removeObserver(topic, new DeprecatedObserverAdapter(obs));
     }
 
     /**
@@ -230,17 +177,6 @@ public class NotificationManagerJob implements IDisposable {
     }
 
     /**
-     * @deprecated use
-     *             {@link #removeObserver(String, com.raytheon.uf.common.jms.notification.INotificationObserver, String)}
-     */
-    @Deprecated
-    public static void removeObserver(String topic,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs,
-            String queryString) {
-        removeObserver(topic, new DeprecatedObserverAdapter(obs), queryString);
-    }
-
-    /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
      * 
@@ -252,17 +188,6 @@ public class NotificationManagerJob implements IDisposable {
     public static void removeQueueObserver(String queue, String queryString,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs) {
         getInstance().getManager().removeQueueObserver(queue, queryString, obs);
-    }
-
-    /**
-     * @deprecated use
-     *             {@link #removeQueueObserver(String, String, com.raytheon.uf.common.jms.notification.INotificationObserver)}
-     */
-    @Deprecated
-    public static void removeQueueObserver(String queue, String queryString,
-            com.raytheon.uf.viz.core.notification.INotificationObserver obs) {
-        removeQueueObserver(queue, queryString, new DeprecatedObserverAdapter(
-                obs));
     }
 
     /**
@@ -279,59 +204,8 @@ public class NotificationManagerJob implements IDisposable {
         getInstance().disconnect(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.services.IDisposable#dispose()
-     */
     @Override
     public void dispose() {
         manager.close();
-    }
-
-    private static class DeprecatedObserverAdapter implements
-            com.raytheon.uf.common.jms.notification.INotificationObserver {
-
-        private final com.raytheon.uf.viz.core.notification.INotificationObserver delegate;
-
-        public DeprecatedObserverAdapter(
-                com.raytheon.uf.viz.core.notification.INotificationObserver delegate) {
-            this.delegate = delegate;
-        }
-
-        @Override
-        public void notificationArrived(
-                com.raytheon.uf.common.jms.notification.NotificationMessage[] messages) {
-            com.raytheon.uf.viz.core.notification.NotificationMessage[] deprecatedMessages = new com.raytheon.uf.viz.core.notification.NotificationMessage[messages.length];
-            for (int i = 0; i < messages.length; i += 1) {
-                deprecatedMessages[i] = new com.raytheon.uf.viz.core.notification.NotificationMessage(
-                        messages[i]);
-            }
-            delegate.notificationArrived(deprecatedMessages);
-        }
-
-        @Override
-        public int hashCode() {
-            return delegate.hashCode();
-        }
-
-        @Override
-        public boolean equals(Object obj) {
-            if (this == obj)
-                return true;
-            if (obj == null)
-                return false;
-            if (getClass() != obj.getClass())
-                return false;
-            DeprecatedObserverAdapter other = (DeprecatedObserverAdapter) obj;
-            if (delegate == null) {
-                if (other.delegate != null)
-                    return false;
-            } else if (!delegate.equals(other.delegate))
-                return false;
-            return true;
-        }
-        
-        
     }
 }

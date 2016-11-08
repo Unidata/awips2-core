@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets;
 
+import java.text.ParseException;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -29,10 +30,24 @@ import org.eclipse.swt.widgets.MenuItem;
 
 import com.raytheon.uf.common.menus.xml.CommonTitleContribution;
 import com.raytheon.uf.common.menus.xml.VariableSubstitution;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.ui.menus.xml.TitleContribution;
 
+/**
+ * Provides a contribution for a title in a menu.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------------
+ * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
+ * 
+ * </pre>
+ * 
+ */
 public class TitleContributionItem extends ContributionItem {
 
     protected MenuItem widget;
@@ -49,9 +64,13 @@ public class TitleContributionItem extends ContributionItem {
         this.substitutions = VariableSubstitution.toMap(substitutions);
         HashMap<String, String> includeSubstitutionsMap = VariableSubstitution
                 .toMap(substitutions);
-        commonTitleContribution.titleText = VariableSubstitutionUtil
+        try {
+        commonTitleContribution.titleText = VariableSubstitutor
                 .processVariables(commonTitleContribution.titleText,
                         includeSubstitutionsMap);
+        } catch (ParseException e) {
+            throw new VizException("Error processing variable substitution", e);
+        }
         this.commonTitleContribution = commonTitleContribution;
         this.titleContribution = titleContribution;
     }

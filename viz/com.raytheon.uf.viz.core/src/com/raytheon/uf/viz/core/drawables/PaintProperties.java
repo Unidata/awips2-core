@@ -26,7 +26,6 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IView;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
-import com.raytheon.uf.viz.core.datastructure.PerspectiveSpecificProperties;
 import com.raytheon.uf.viz.core.drawables.IDescriptor.FramesInfo;
 
 /**
@@ -212,16 +211,6 @@ public class PaintProperties {
      */
     public void setClippingPane(IExtent clippingPane) {
         this.clippingPane = clippingPane;
-    }
-
-
-    /**
-     * This does nothing and only exists to support compatibility with older
-     * version.
-     */
-    @Deprecated
-    public void setPerspectiveProps(
-            PerspectiveSpecificProperties perspectiveProps) {
     }
 
     /**

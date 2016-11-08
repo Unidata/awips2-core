@@ -21,13 +21,11 @@ package com.raytheon.viz.ui.tools.nav;
 
 import org.eclipse.swt.graphics.Rectangle;
 
-import com.raytheon.uf.viz.core.GraphicsFactory;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
-import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.ui.input.InputAdapter;
 import com.raytheon.viz.ui.tools.nav.rsc.ZoomToolResourceData;
 
@@ -38,16 +36,15 @@ import com.raytheon.viz.ui.tools.nav.rsc.ZoomToolResourceData;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 20, 2010            mschenke     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Dec 20, 2010           mschenke  Initial creation
+ * Nov 08, 2016  5976     bsteffen  Construct PixelExtent directly
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class ZoomHandler extends InputAdapter {
 
     private static final ZoomHandler instance = new ZoomHandler();
@@ -193,20 +190,9 @@ public class ZoomHandler extends InputAdapter {
 
         int centerX = this.zoomRect.x + this.zoomRect.width / 2;
         int centerY = this.zoomRect.y + this.zoomRect.height / 2;
-        IExtent extent = null;
-
-        try {
-            extent = GraphicsFactory.getGraphicsAdapter().constructExtent(
+        IExtent extent = new PixelExtent(
                     centerX - wd / 2, centerX + wd / 2, centerY - ht / 2,
                     centerY + ht / 2);
-        } catch (VizException e) {
-            /*
-             * Failed to construct extent with the factory. Default to
-             * PixelExtent type.
-             */
-            extent = new PixelExtent(centerX - wd / 2, centerX + wd / 2,
-                    centerY - ht / 2, centerY + ht / 2);
-        }
 
         pane.getRenderableDisplay().setExtent(extent);
         pane.setZoomLevel(pane.getRenderableDisplay().recalcZoomLevel(
