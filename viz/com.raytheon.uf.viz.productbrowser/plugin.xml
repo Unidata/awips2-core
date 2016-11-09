@@ -55,6 +55,17 @@
       <handler
             class="com.raytheon.uf.viz.productbrowser.actions.ProductBrowserAction"
             commandId="com.raytheon.uf.viz.productbrowser.productBrowser">
+            <activeWhen>
+	 		<with
+	               variable="activeContexts">
+	            <iterate
+	                  operator="or">
+	               <equals
+	                     value="com.raytheon.viz.ui.context">
+	               </equals>
+	            </iterate>
+	         </with>
+ 		</activeWhen>
       </handler>
    </extension>
    <extension
