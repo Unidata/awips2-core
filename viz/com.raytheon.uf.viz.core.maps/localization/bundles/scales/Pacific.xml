@@ -18,6 +18,10 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an absolute override file, indicating that a higher priority version
+        of the file will completely replace a lower priority version of the file. 
+    -->
 <bundle>
     <displayList>
         <displays xsi:type="d2DMapRenderableDisplay" scale="N. Hemisphere"
@@ -252,11 +256,11 @@
                         GEOGCS[&quot;WGS84(DD)&quot;,
                         DATUM[&quot;WGS84&quot;,
                         SPHEROID[&quot;WGS84&quot;, 6378137.0,
-                        298.257223563]],
-                        PRIMEM[&quot;Greenwich&quot;, 0.0],
-                        UNIT[&quot;degree&quot;, 0.017453292519943295],
-                        AXIS[&quot;Geodetic longitude&quot;, EAST],
-                        AXIS[&quot;Geodetic latitude&quot;, NORTH]],
+                        298.257223563]], PRIMEM[&quot;Greenwich&quot;,
+                        0.0], UNIT[&quot;degree&quot;,
+                        0.017453292519943295], AXIS[&quot;Geodetic
+                        longitude&quot;, EAST], AXIS[&quot;Geodetic
+                        latitude&quot;, NORTH]],
                         PROJECTION[&quot;Lambert_Conformal_Conic_1SP&quot;],
                         PARAMETER[&quot;semi_major&quot;, 6371229.0],
                         PARAMETER[&quot;semi_minor&quot;, 6371229.0],
