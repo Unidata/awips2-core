@@ -23,11 +23,8 @@ package com.raytheon.uf.viz.core;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.core.runtime.Platform;
-import org.eclipse.core.runtime.Status;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.plugin.AbstractUIPlugin;
-import org.eclipse.ui.statushandlers.StatusManager;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.message.WsId;
@@ -51,7 +48,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  *                                  connection string
  * Feb 17, 2014  2812     njensen   getHostName() now uses getWsId()'s hostname
  * Mar 20, 2014  2726     rjpeter   Moved host processing to SystemUtil.
- * Nov 03, 2016  5976     bsteffen  Remove logWithoutAlert
+ * Nov 03, 2016  5976     bsteffen  Remove logging methods
  * 
  * </pre>
  * 
@@ -189,26 +186,6 @@ public final class VizApp {
 
     public static String getCorePreferenceString(String pref) {
         return Activator.getDefault().getPreferenceStore().getString(pref);
-    }
-
-    /**
-     * Use UFStatus instead
-     * 
-     * @param severity
-     * @param t
-     * @param title
-     * @param message
-     * @param activator
-     * @param pluginId
-     */
-    @Deprecated
-    public static void logAndAlert(int severity, Throwable t,
-            final String title, final String message,
-            AbstractUIPlugin activator, String pluginId) {
-        final Status s = new Status(severity, pluginId, message, t);
-
-        StatusManager.getManager().handle(s);
-
     }
 
     public static String getHttpServer() {

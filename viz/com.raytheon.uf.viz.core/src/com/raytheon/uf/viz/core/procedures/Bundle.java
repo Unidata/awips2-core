@@ -31,7 +31,7 @@ import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -42,17 +42,16 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * <pre>
  * 
  *    SOFTWARE HISTORY
- *   
- *    Date       Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Aug 30, 2007           chammack    Initial Creation.
- * Oct 22, 2013  2491     bsteffen    Switch serialization to 
- *                                    ProcedureXmlManager
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 30, 2007           chammack  Initial Creation.
+ * Oct 22, 2013  2491     bsteffen  Switch serialization to ProcedureXmlManager
+ * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlRootElement
 @XmlAccessorType(XmlAccessType.NONE)
@@ -219,11 +218,9 @@ public class Bundle {
             Map<String, String> variables) throws VizException {
 
         String s = null;
-        try {
-            FileReader fr = new FileReader(fileName);
+        try (FileReader fr = new FileReader(fileName)) {
             char[] b = new char[(int) fileName.length()];
             fr.read(b);
-            fr.close();
             s = new String(b);
 
         } catch (Exception e) {
@@ -272,7 +269,7 @@ public class Bundle {
             Map<String, String> variables) throws VizException {
 
         try {
-            String substStr = VariableSubstitutionUtil.processVariables(
+            String substStr = VariableSubstitutor.processVariables(
                     bundleStr, variables);
 
             Bundle b = ProcedureXmlManager.getInstance().unmarshal(

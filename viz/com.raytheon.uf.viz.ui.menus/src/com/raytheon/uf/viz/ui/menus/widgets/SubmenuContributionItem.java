@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets;
 
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -37,7 +38,7 @@ import com.raytheon.uf.common.menus.xml.VariableSubstitution;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.jobs.JobPool;
 import com.raytheon.uf.viz.ui.menus.xml.IContribItemProvider;
@@ -54,17 +55,19 @@ import com.raytheon.uf.viz.ui.menus.xml.MenuXMLMap;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- -----------------------------------------
- * Mar 26, 2009           chammack    Initial creation
- * May 08, 2013  1978     bsteffen    Perform variable substitution on subMenu
- *                                    IDs.
- * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
- * Dec 21, 2015  5194     bsteffen    Restructure threading
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 26, 2009           chammack  Initial creation
+ * May 08, 2013  1978     bsteffen  Perform variable substitution on subMenu
+ *                                  IDs.
+ * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
+ * Dec 21, 2015  5194     bsteffen  Restructure threading
+ * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public class SubmenuContributionItem extends MenuManager {
     private static final transient IUFStatusHandler statusHandler = UFStatus
@@ -125,8 +128,8 @@ public class SubmenuContributionItem extends MenuManager {
             Map<String, String> map = VariableSubstitution
                     .toMap(includeSubstitutions);
             try {
-                name = VariableSubstitutionUtil.processVariables(name, map);
-            } catch (VizException e) {
+                name = VariableSubstitutor.processVariables(name, map);
+            } catch (ParseException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Error during menu substitution", e);
             }

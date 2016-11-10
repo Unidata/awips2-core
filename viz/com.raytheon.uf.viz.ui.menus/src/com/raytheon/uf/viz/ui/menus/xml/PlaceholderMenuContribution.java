@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.xml;
 
+import java.text.ParseException;
 import java.util.Map;
 import java.util.Set;
 
@@ -32,7 +33,7 @@ import org.eclipse.jface.action.IContributionItem;
 import com.raytheon.uf.common.menus.xml.CommonAbstractMenuContribution;
 import com.raytheon.uf.common.menus.xml.CommonPlaceholderMenuContribution;
 import com.raytheon.uf.common.menus.xml.VariableSubstitution;
-import com.raytheon.uf.viz.core.VariableSubstitutionUtil;
+import com.raytheon.uf.common.util.VariableSubstitutor;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.ui.actions.NotImplementedAction;
 
@@ -45,24 +46,16 @@ import com.raytheon.viz.ui.actions.NotImplementedAction;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 2, 2009            chammack     Initial creation
+ * Nov 08, 2016 5976       bsteffen    Use VariableSubstitutor directly
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 @XmlAccessorType(XmlAccessType.NONE)
 public class PlaceholderMenuContribution extends
         AbstractMenuContributionItem<CommonPlaceholderMenuContribution> {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.ui.menus.xml.IContribItemProvider#getContributionItems
-     * (com.raytheon.uf.viz.ui.menus.xml.VariableSubstitution[], java.util.Set)
-     */
     @Override
     public IContributionItem[] getContributionItems(
             CommonAbstractMenuContribution items, VariableSubstitution[] subs,
@@ -74,28 +67,23 @@ public class PlaceholderMenuContribution extends
         String text = item.menuText;
         if (subs != null && subs.length > 0) {
             Map<String, String> s = VariableSubstitution.toMap(subs);
-            text = VariableSubstitutionUtil.processVariables(text, s);
+            try {
+                text = VariableSubstitutor.processVariables(text, s);
+            } catch (ParseException e) {
+                throw new VizException("Error processing variable substitution",
+                        e);
+            }
         }
 
         final String fText = text;
 
         ActionContributionItem aci = new ActionContributionItem(new Action() {
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.jface.action.Action#run()
-             */
             @Override
             public void run() {
                 NotImplementedAction.displayNotImplemented();
             }
 
-            /*
-             * (non-Javadoc)
-             * 
-             * @see org.eclipse.jface.action.Action#getText()
-             */
             @Override
             public String getText() {
                 return fText;
