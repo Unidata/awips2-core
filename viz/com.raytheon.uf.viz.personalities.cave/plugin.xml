@@ -408,6 +408,12 @@
                   value="19">
             </parameter>
       </key>
+      <key
+            commandId="com.raytheon.viz.ui.file.exit"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="com.raytheon.viz.ui.cave.scheme"
+            sequence="M1+Q">
+      </key>
    </extension>
    <extension
    		point="com.raytheon.uf.viz.core.component">
