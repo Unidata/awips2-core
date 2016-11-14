@@ -29,7 +29,7 @@ import org.eclipse.swt.graphics.Rectangle;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- ------------------------
- * Nov 03, 2016 5976       bsteffen    Deprecate extent method
+ * Nov 03, 2016 5976       bsteffen    Remove createExtent
  * 
  * 
  * </pre>
@@ -109,12 +109,6 @@ public interface IView {
      */
     public abstract double[] getDisplayCoords(double[] screenCoordinate,
             IGraphicsTarget target);
-
-    /**
-     * @deprecated Use {@link PixelExtent} constructors instead
-     */
-    @Deprecated
-    abstract public IExtent createExtent(PixelCoverage pc);
 
     /**
      * Shift the extent by the delta

@@ -72,7 +72,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  *                                  that take in a float simplificationLevel.
  * Jan 26, 2015  3974     njensen   Deprecated usage of tesselate on
  *                                  createShadedShape()
- * Nov 03, 2016  5976     bsteffen  Remove WORD_WRAP TextStyle
+ * Nov 03, 2016  5976     bsteffen  Remove deprecated functionality.
  * 
  * </pre>
  * 
@@ -279,24 +279,6 @@ public interface IGraphicsTarget extends IImagingExtension {
      * @return a prepared font reference
      */
     public abstract IFont initializeFont(String fontName, float size,
-            IFont.Style[] styles);
-
-    /**
-     * Create a font object from a truetype font file
-     * 
-     * @deprecated {@link #initializeFont(File, com.raytheon.uf.viz.core.drawables.IFont.FontType, float, com.raytheon.uf.viz.core.drawables.IFont.Style[])}
-     *             should be used instead
-     * 
-     * @param fontFile
-     *            the truetype font
-     * @param size
-     *            the size in points
-     * @param styles
-     *            the font styles
-     * @return a prepared font reference
-     */
-    @Deprecated
-    public abstract IFont initializeFont(File fontFile, float size,
             IFont.Style[] styles);
 
     /**
@@ -649,44 +631,6 @@ public interface IGraphicsTarget extends IImagingExtension {
     public abstract IWireframeShape createWireframeShape(boolean mutable,
             IDescriptor descriptor, float simplificationLevel);
 
-    /**
-     * Create a wireframe shape object
-     * 
-     * @param mutable
-     *            whether the shape changes after creation
-     * @param geom
-     *            the geometry for the shape
-     * @param simplificationLevel
-     *            the simplification level
-     * @return a wireframe shape object
-     * @deprecated use
-     *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
-     */
-    @Deprecated
-    public abstract IWireframeShape createWireframeShape(boolean mutable,
-            GeneralGridGeometry geom, float simplificationLevel);
-
-    /**
-     * Create a wireframe shape object with options
-     * 
-     * @param mutable
-     *            whether the shape changes after creation
-     * @param descriptor
-     *            the map descriptor
-     * @param simplificationLevel
-     *            the simplification level
-     * @param spatialChopFlag
-     *            whether to enable spatial chopping
-     * @param extent
-     *            the extent over which the features exist (enables spatial
-     *            chopping)
-     * @return
-     * @deprecated use {@link #createWireframeShape(boolean, IDescriptor)}
-     */
-    @Deprecated
-    public abstract IWireframeShape createWireframeShape(boolean mutable,
-            IDescriptor descriptor, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent);
 
     /**
      * @param mutableFlag
@@ -697,21 +641,6 @@ public interface IGraphicsTarget extends IImagingExtension {
      */
     public abstract IWireframeShape createWireframeShape(boolean mutableFlag,
             GeneralGridGeometry geom);
-
-    /**
-     * @param mutable
-     * @param geom
-     * @param simplificationLevel
-     * @param spatialChopFlag
-     * @param extent
-     * @return
-     * @deprecated use
-     *             {@link #createWireframeShape(boolean, GeneralGridGeometry)}
-     */
-    @Deprecated
-    public abstract IWireframeShape createWireframeShape(boolean mutable,
-            GeneralGridGeometry geom, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent);
 
     /**
      * DEPRECATED: Use

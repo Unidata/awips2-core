@@ -98,12 +98,6 @@ public abstract class AbstractView implements IView {
                 target);
     }
 
-    @Deprecated
-    public IExtent createExtent(PixelCoverage pc) {
-        return new PixelExtent(pc.getMinX(), pc.getMaxX(), pc.getMinY(),
-                pc.getMaxY());
-    }
-
     @Override
     public void shiftExtent(double[] startScreen, double[] endScreen,
             IGraphicsTarget target) {

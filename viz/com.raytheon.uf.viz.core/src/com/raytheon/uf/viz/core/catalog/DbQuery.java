@@ -39,16 +39,20 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 06/05/08     #875       bphillip    Initial Creation.
- * 06/12/08                M. Duff     Added ordering and convenience methods.
- * 10/13/08                chammack    Improve error handling on server-side exceptions
- * Mar 20, 2013 #1638      mschenke    Rewrote to use DbQueryRequest under the hood to remove use of ScriptCreator
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 05, 2008  875      bphillip  Initial Creation.
+ * Jun 12, 2008           M. Duff   Added ordering and convenience methods.
+ * Oct 13, 2008           chammack  Improve error handling on server-side
+ *                                  exceptions
+ * Mar 20, 2013  1638     mschenke  Rewrote to use DbQueryRequest under the hood
+ *                                  to remove use of ScriptCreator
+ * Nov 14, 2016  5976     bsteffen  Remove deprecated method
+ * 
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class DbQuery {
 
@@ -76,14 +80,14 @@ public class DbQuery {
                 .sendRequest(request);
         List<RequestField> fields = request.getFields();
         if (fields == null || fields.size() == 0) {
-            fields = new ArrayList<RequestField>();
+            fields = new ArrayList<>();
             RequestField entity = new RequestField();
             entity.setField(DbQueryResponse.ENTITY_RESULT_KEY);
             fields.add(entity);
         }
 
         List<Map<String, Object>> results = response.getResults();
-        List<Object[]> rval = new ArrayList<Object[]>(results.size());
+        List<Object[]> rval = new ArrayList<>(results.size());
 
         for (Map<String, Object> result : results) {
             Object[] objs = new Object[fields.size()];
@@ -160,12 +164,6 @@ public class DbQuery {
                 order == ResultOrder.ASC ? OrderMode.ASC : OrderMode.DESC);
     }
 
-    @Deprecated
-    public void addOrderBy(String columnName, ResultOrder order,
-            String className) {
-        addOrderBy(columnName, order);
-    }
-
     /**
      * Adds a column to the list
      * 
@@ -173,7 +171,7 @@ public class DbQuery {
      *            A column name
      */
     public void addOrderBy(String columnName) {
-        addOrderBy(columnName, ascending, null);
+        addOrderBy(columnName, ascending);
     }
 
     /**

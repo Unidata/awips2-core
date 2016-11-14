@@ -20,8 +20,6 @@
 package com.raytheon.uf.viz.core;
 
 import java.awt.geom.Rectangle2D;
-import java.awt.image.RenderedImage;
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -35,13 +33,9 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
 import com.raytheon.uf.viz.core.data.IColormappedDataPreparer;
 import com.raytheon.uf.viz.core.data.IDataPreparer;
-import com.raytheon.uf.viz.core.data.IImageDataPreparer;
-import com.raytheon.uf.viz.core.data.IRenderedImageCallback;
 import com.raytheon.uf.viz.core.data.resp.NumericImageData;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IFont;
-import com.raytheon.uf.viz.core.drawables.IFont.FontType;
-import com.raytheon.uf.viz.core.drawables.IFont.Style;
 import com.raytheon.uf.viz.core.drawables.IImage;
 import com.raytheon.uf.viz.core.drawables.IShadedShape;
 import com.raytheon.uf.viz.core.drawables.IWireframeShape;
@@ -60,26 +54,30 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jun 25, 2012           bsteffen    Initial creation
- * Jul 18, 2013  2189     mschenke    Added ability to specify font type
- * Apr 04, 2014  2920     bsteffen    Allow strings to use mulitple styles.
- * Jun 17, 2014  2903     bclement    added PIPE to PointStyle
- * Jun 30, 2014  3165     njensen     Remove deprecated buildColorMap()
- * Jul 28, 2014  3397     bclement    deprecated createWireframeShape() that takes in spatialChopFlag
- * Jul 30, 2014  3465     mapeters    Updated deprecated drawString() and drawLine() calls.
- * Aug 07, 2014  3492     mapeters    Updated deprecated createWireframeShape() calls and removed
- *                                    setUseBuiltinColorbar() and drawFilledCircle() methods.
- * Aug 14, 2014  3523     mapeters    Updated deprecated DrawableString.textStyle assignments.
- * Jan 26, 2015  3974     njensen     Deprecated createShadedShape(boolean, Object, boolean)
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 25, 2012           bsteffen  Initial creation
+ * Jul 18, 2013  2189     mschenke  Added ability to specify font type
+ * Apr 04, 2014  2920     bsteffen  Allow strings to use mulitple styles.
+ * Jun 17, 2014  2903     bclement  added PIPE to PointStyle
+ * Jun 30, 2014  3165     njensen   Remove deprecated buildColorMap()
+ * Jul 28, 2014  3397     bclement  deprecated createWireframeShape() that takes
+ *                                  in spatialChopFlag
+ * Jul 30, 2014  3465     mapeters  Updated deprecated drawString() and
+ *                                  drawLine() calls.
+ * Aug 07, 2014  3492     mapeters  Updated deprecated createWireframeShape()
+ *                                  calls and removed setUseBuiltinColorbar()
+ *                                  and drawFilledCircle() methods.
+ * Aug 14, 2014  3523     mapeters  Updated deprecated DrawableString.textStyle
+ *                                  assignments.
+ * Jan 26, 2015  3974     njensen   Deprecated createShadedShape(boolean,
+ *                                  Object, boolean)
+ * Nov 14, 2016  5976     bsteffen  Remove deprecated methods
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
-
 public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
 
     /** Does a refresh need to be performed? */
@@ -94,11 +92,6 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     }
 
     @Override
-    public IFont initializeFont(File fontFile, float size, Style[] styles) {
-        return initializeFont(fontFile, FontType.TRUETYPE, size, styles);
-    }
-
-    @Override
     public boolean drawRasters(PaintProperties paintProps,
             DrawableImage... images) throws VizException {
         return ImagingSupport.drawRasters(this, paintProps, images);
@@ -109,16 +102,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     public IImage initializeRaster(IDataPreparer preparer,
             ColorMapParameters optionalParams) {
         IImage rval = null;
-        if (optionalParams == null) {
-            // Assume IImageDataPreparer
-            final IImageDataPreparer imagePreparer = (IImageDataPreparer) preparer;
-            rval = initializeRaster(new IRenderedImageCallback() {
-                @Override
-                public RenderedImage getImage() throws VizException {
-                    return imagePreparer.prepareData().getImage();
-                }
-            });
-        } else if (preparer instanceof IColormappedDataPreparer) {
+        if (preparer instanceof IColormappedDataPreparer) {
             try {
                 IColormappedImageExtension cmapExt = getExtension(IColormappedImageExtension.class);
                 final IColormappedDataPreparer cmapPreparer = (IColormappedDataPreparer) preparer;
@@ -186,8 +170,9 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         }
 
         if (bounds != null) {
-            if (parameters.getTextStyles().contains(TextStyle.BOXED)
-                    || parameters.getTextStyles().contains(TextStyle.BLANKED)) {
+            if (parameters.getTextStyleColorMap().containsKey(TextStyle.BOXED)
+                    || parameters.getTextStyleColorMap()
+                            .containsKey(TextStyle.BLANKED)) {
                 maxWidth += 1.0f;
             }
             bounds.setRect(0, 0, maxWidth, totalHeight);
@@ -274,28 +259,6 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     }
 
     @Override
-    public IWireframeShape createWireframeShape(boolean mutable,
-            GeneralGridGeometry geom, float simplificationLevel) {
-        return createWireframeShape(mutable, geom);
-    }
-
-    @Override
-    @Deprecated
-    public IWireframeShape createWireframeShape(boolean mutable,
-            IDescriptor descriptor, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent) {
-        return createWireframeShape(mutable, descriptor.getGridGeometry());
-    }
-
-    @Override
-    @Deprecated
-    public IWireframeShape createWireframeShape(boolean mutable,
-            GeneralGridGeometry geom, float simplificationLevel,
-            boolean spatialChopFlag, IExtent extent) {
-        return createWireframeShape(mutable, geom);
-    }
-
-    @Override
     @Deprecated
     public IShadedShape createShadedShape(boolean mutable,
             IDescriptor descriptor, boolean tesselate) {
@@ -348,7 +311,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
     @Override
     public void drawPoints(Collection<double[]> locations, RGB color,
             PointStyle pointStyle, float magnification) throws VizException {
-        List<DrawableString> dstrings = new ArrayList<DrawableString>();
+        List<DrawableString> dstrings = new ArrayList<>();
         for (double[] location : locations) {
             String text = null;
             switch (pointStyle) {

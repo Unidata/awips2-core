@@ -19,13 +19,10 @@
  **/
 package com.raytheon.uf.viz.core;
 
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.opengis.coverage.grid.GridEnvelope;
 
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Graphics Factory adapter for constructing graphics types
@@ -37,7 +34,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -------------------------
  * Jun 19, 2010  3190     mschenke  Initial creation
- * Nov 03, 2016  5976     bsteffen  Deprecate extent methods
+ * Nov 03, 2016  5976     bsteffen  Remove extent methods
  * 
  * </pre>
  * 
@@ -49,40 +46,6 @@ public abstract class AbstractGraphicsFactoryAdapter {
 
     public abstract IGraphicsTarget constructTarget(Canvas canvas, float width,
             float height) throws VizException;
-
-    /**
-     * @Deprecated Use #link {@link PixelExtent#PixelExtent(Coordinate[])}
-     */
-    @Deprecated
-    public IExtent constructExtent(Coordinate[] coords) throws VizException {
-        return new PixelExtent(coords);
-    }
-
-    /**
-     * @Deprecated Use #link
-     *             {@link PixelExtent#PixelExtent(double, double, double, double)}
-     */
-    @Deprecated
-    public IExtent constructExtent(double aMinX, double aMaxX, double aMinY,
-            double aMaxY) throws VizException {
-        return new PixelExtent(aMinX, aMaxX, aMinY, aMaxY);
-    }
-
-    /**
-     * @Deprecated Use #link {@link PixelExtent#PixelExtent(Rectangle)}
-     */
-    @Deprecated
-    public IExtent constructExtent(Rectangle rect) throws VizException {
-        return new PixelExtent(rect);
-    }
-
-    /**
-     * @Deprecated Use #link {@link PixelExtent#PixelExtent(GridEnvelope)};
-     */
-    @Deprecated
-    public IExtent constructExtent(GridEnvelope range) throws VizException {
-        return new PixelExtent(range);
-    }
 
     public abstract Canvas constrcutCanvas(Composite canvasComp)
             throws VizException;

@@ -20,23 +20,18 @@
 package com.raytheon.viz.core.gl;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.opengl.GLCanvas;
 import org.eclipse.swt.opengl.GLData;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
-import org.opengis.coverage.grid.GridEnvelope;
 
 import com.raytheon.uf.viz.core.AbstractGraphicsFactoryAdapter;
-import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IView;
-import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.internal.GLTarget;
 import com.raytheon.viz.core.gl.internal.GLView2D;
-import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * 
@@ -48,11 +43,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 19, 2010            mschenke     Initial creation
+ * Nov 14, 2016 5976       bsteffen    Remove deprecated methods
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 public class GLFactoryAdapter extends AbstractGraphicsFactoryAdapter {
 
@@ -60,87 +55,17 @@ public class GLFactoryAdapter extends AbstractGraphicsFactoryAdapter {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructTarget(java.lang
-     * .String)
-     */
     @Override
     public IGraphicsTarget constructTarget(Canvas canvas, float width,
             float height) throws VizException {
         return new GLTarget(canvas, width, height);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructView(java.lang
-     * .String)
-     */
     @Override
     public IView constructView() {
         return new GLView2D();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructExtent(double,
-     * double, double, double)
-     */
-    @Override
-    public IExtent constructExtent(double minX, double maxX, double minY,
-            double maxY) throws VizException {
-        return new PixelExtent(minX, maxX, minY, maxY);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructExtent(java.lang
-     * .String, com.vividsolutions.jts.geom.Coordinate[])
-     */
-    @Override
-    public IExtent constructExtent(Coordinate[] coords) throws VizException {
-        return new PixelExtent(coords);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructExtent(org.eclipse
-     * .swt.graphics.Rectangle)
-     */
-    @Override
-    public IExtent constructExtent(Rectangle rect) throws VizException {
-        return new PixelExtent(rect);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.IGraphicsFactoryAdapter#constructExtent(org.opengis
-     * .coverage.grid.GridRange)
-     */
-    @Override
-    public IExtent constructExtent(GridEnvelope range) throws VizException {
-        return new PixelExtent(range);
-    }
-
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.AbstractGraphicsFactoryAdapter#constrcutCanvas
-     * (org.eclipse.swt.widgets.Composite)
-     */
     @Override
     public Canvas constrcutCanvas(Composite canvasComp) throws VizException {
         GLCanvas canvas;
