@@ -173,27 +173,30 @@
                 <gridGeometry rangeX="0 15103" rangeY="0 9999"
                     envelopeMinX="-2550582.914325001" envelopeMaxX="1901660.3306867934"
                     envelopeMinY="-1003783.068588979" envelopeMaxY="1943886.285496164">
-                    <CRS>PROJCS[&quot;Albers_Conic_Equal_Area&quot;,
-                        GEOGCS[&quot;WGS84(DD)&quot;,
-                        DATUM[&quot;WGS84&quot;,
-                        SPHEROID[&quot;WGS84&quot;, 6378137.0,
-                        298.257223563]], PRIMEM[&quot;Greenwich&quot;,
-                        0.0], UNIT[&quot;degree&quot;,
-                        0.017453292519943295], AXIS[&quot;Geodetic
-                        longitude&quot;, EAST], AXIS[&quot;Geodetic
-                        latitude&quot;, NORTH]],
-                        PROJECTION[&quot;Albers_Conic_Equal_Area&quot;],
-                        PARAMETER[&quot;semi_major&quot;, 6371229.0],
-                        PARAMETER[&quot;semi_minor&quot;, 6371229.0],
-                        PARAMETER[&quot;central_meridian&quot;, -150.0],
-                        PARAMETER[&quot;latitude_of_origin&quot;, 60.0],
-                        PARAMETER[&quot;standard_parallel_1&quot;,
-                        60.0], PARAMETER[&quot;false_easting&quot;,
-                        0.0], PARAMETER[&quot;false_northing&quot;,
-                        0.0], PARAMETER[&quot;standard_parallel_2&quot;,
-                        60.0], UNIT[&quot;m&quot;, 1.0],
-                        AXIS[&quot;Easting&quot;, EAST],
-                        AXIS[&quot;Northing&quot;, NORTH]]</CRS>
+                    <CRS>
+                        <![CDATA[
+                            PROJCS["Albers_Conic_Equal_Area",
+                                GEOGCS["WGS84(DD)",
+                                    DATUM["WGS84",
+                                        SPHEROID["WGS84", 6378137.0, 298.257223563]], 
+                                    PRIMEM["Greenwich", 0.0], 
+                                    UNIT["degree", 0.017453292519943295], 
+                                    AXIS["Geodetic longitude", EAST], 
+                                    AXIS["Geodetic latitude", NORTH]],
+                                PROJECTION["Albers_Conic_Equal_Area"],
+                                PARAMETER["semi_major", 6371229.0],
+                                PARAMETER["semi_minor", 6371229.0],
+                                PARAMETER["central_meridian", -150.0],
+                                PARAMETER["latitude_of_origin", 60.0],
+                                PARAMETER["standard_parallel_1", 60.0], 
+                                PARAMETER["false_easting", 0.0], 
+                                PARAMETER["false_northing",0.0], 
+                                PARAMETER["standard_parallel_2", 60.0], 
+                                UNIT["m", 1.0],
+                                AXIS["Easting", EAST],
+                                AXIS["Northing", NORTH]]
+                        ]]>
+                    </CRS>
                 </gridGeometry>
             </descriptor>
         </displays>
