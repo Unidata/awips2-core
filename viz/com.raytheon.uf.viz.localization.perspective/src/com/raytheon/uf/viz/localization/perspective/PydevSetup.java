@@ -62,6 +62,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * May 01, 2013  1967     njensen     Initial creation
  * Oct 11, 2013  2441     bsteffen    Make initialize async.
  * May 09, 2014  3075     njensen     Updates for pydev 3.4.1
+ * Nov 08, 2016  5958     dlovely     Updates for pydev 5.3.1
  * 
  * </pre>
  * 
@@ -233,8 +234,8 @@ public class PydevSetup {
     public static void preventFundingPopup() {
         IPreferenceStore pydevPrefStore = PydevPlugin.getDefault()
                 .getPreferenceStore();
-        pydevPrefStore.setValue(PydevShowBrowserMessage.PYDEV_FUNDING_SHOWN,
-                "true");
+        pydevPrefStore.setValue(PydevShowBrowserMessage.PYDEV_FUNDING_SHOW_AT_TIME,
+                System.currentTimeMillis() + (PydevShowBrowserMessage.ONE_DAY_IN_MILLIS * 365));
     }
 
     /**
