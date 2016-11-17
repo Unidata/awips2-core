@@ -1,34 +1,36 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
-  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">           
-    
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+  http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
+
     <bean id="serializingStreamExecutor" class="com.raytheon.uf.edex.requestsrv.serialization.SerializingStreamExecutor"
           factory-method="getInstance"/>
 
-	<bean id="thriftStreamSerializer" class="com.raytheon.uf.edex.requestsrv.serialization.thrift.ThriftStreamSerializer"/>
+    <bean id="thriftStreamSerializer" class="com.raytheon.uf.edex.requestsrv.serialization.thrift.ThriftStreamSerializer"/>
 
-	<bean factory-bean="serializingStreamExecutor" factory-method="registerMultiple">
-		<constructor-arg ref="thriftStreamSerializer" />
-		<constructor-arg>
-			<list>
-				<value>thrift</value>
-				<value>application/thrift</value>
-			</list>
-		</constructor-arg>
-	</bean>
-    
+    <bean factory-bean="serializingStreamExecutor" factory-method="registerMultiple">
+        <constructor-arg ref="thriftStreamSerializer" />
+        <constructor-arg>
+            <list>
+                <value>thrift</value>
+                <value>application/thrift</value>
+            </list>
+        </constructor-arg>
+    </bean>
+
     <bean id="limitingStreamExecutor" class="com.raytheon.uf.edex.requestsrv.serialization.ByteLimitingStreamExecutor">
-    	<constructor-arg ref="serializingStreamExecutor"/>
-    	<constructor-arg value="${edex.requestsrv.byteLimitInMB}"/>
-    	<property name="limitOutput" value="${edex.requestsrv.limitOutput}"/>
+        <constructor-arg ref="serializingStreamExecutor"/>
+        <constructor-arg value="${edex.requestsrv.byteLimitInMB}"/>
+        <property name="limitOutput" value="${edex.requestsrv.limitOutput}"/>
         <property name="limitInput" value="${edex.requestsrv.limitInput}"/>
     </bean>
-            
-	<bean id="httpServiceExecutor" class="com.raytheon.uf.edex.requestsrv.http.HttpRequestServiceExecutor">
-		<constructor-arg ref="limitingStreamExecutor"/>
-	</bean>
-	
-  	<bean id="serviceInterfaceHandler" class="com.raytheon.uf.edex.requestsrv.request.RemoteServiceRequestHandler"/>
+
+    <bean id="httpServiceExecutor" class="com.raytheon.uf.edex.requestsrv.http.HttpRequestServiceExecutor">
+        <constructor-arg ref="limitingStreamExecutor"/>
+    </bean>
+
+    <bean id="serviceInterfaceHandler" class="com.raytheon.uf.edex.requestsrv.request.RemoteServiceRequestHandler"/>
+
+    <bean id="deflatedRequestHandler" class="com.raytheon.uf.edex.backupsvc.handlers.DeflatedRequestHandler" />
 
 </beans>

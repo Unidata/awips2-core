@@ -1,15 +1,15 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
+xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd
   http://camel.apache.org/schema/spring http://camel.apache.org/schema/spring/camel-spring.xsd">
-    
+
     <camelContext id="request-service-camel"
         xmlns="http://camel.apache.org/schema/spring"
         errorHandlerRef="errorHandler">
-        
+
         <propertyPlaceholder id="requestServiceProperties"
                              location="classpath:edex-requestsrv.properties"/>
-        
+
         <restConfiguration component="jetty" host="0.0.0.0" port="{{env:HTTP_PORT}}" >
             <endpointProperty key="disableStreamCache" value="{{edex.requestsrv.http.disableStreamCache}}" />
             <endpointProperty key="chunked" value="{{edex.requestsrv.http.chunked}}" />
@@ -25,11 +25,16 @@
         </rest>
     </camelContext>
 
-	<bean factory-bean="handlerRegistry" factory-method="register">
-	  	<constructor-arg value="com.raytheon.uf.common.serialization.comm.RemoteServiceRequest"/>
-	  	<constructor-arg ref="serviceInterfaceHandler"/>
-  	</bean>
-    
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg value="com.raytheon.uf.common.serialization.comm.RemoteServiceRequest"/>
+        <constructor-arg ref="serviceInterfaceHandler"/>
+    </bean>
+
+    <bean factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg value="com.raytheon.uf.common.serialization.comm.DeflatedRequest"/>
+        <constructor-arg ref="deflatedRequestHandler"/>
+    </bean>
+
     <bean factory-bean="serverLocationRegistry" factory-method="register">
         <constructor-arg ref="requestServerKey" />
         <constructor-arg value="${HTTP_SERVER}" />
