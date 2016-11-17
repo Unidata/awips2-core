@@ -232,26 +232,30 @@
                     envelopeMinY="-437131.4829939018" envelopeMaxX="1055293.170981392"
                     envelopeMinX="-518563.0768586744" rangeY="0 9999"
                     rangeX="0 10812">
-                    <CRS>PROJCS["Lambert_Conformal_Conic_2SP",
-                        GEOGCS["WGS84(DD)", DATUM["WGS84",
-                        SPHEROID["WGS84", 6378137.0, 298.257223563]],
-                        PRIMEM["Greenwich", 0.0], UNIT["degree",
-                        0.017453292519943295], AXIS["Geodetic
-                        longitude", EAST], AXIS["Geodetic latitude",
-                        NORTH]],
-                        PROJECTION["Lambert_Conformal_Conic_2SP"],
-                        PARAMETER["semi_major", 6371229.0],
-                        PARAMETER["semi_minor", 6371229.0],
-                        PARAMETER["central_meridian",
-                        -66.43333300000002],
-                        PARAMETER["latitude_of_origin", 17.833333],
-                        PARAMETER["standard_parallel_1", 18.433333],
-                        PARAMETER["false_easting", 200000.0],
-                        PARAMETER["false_northing", 200000.0],
-                        PARAMETER["scale_factor", 1.0],
-                        PARAMETER["standard_parallel_2", 18.433333],
-                        UNIT["m", 1.0], AXIS["Easting", EAST],
-                        AXIS["Northing", NORTH]]</CRS>
+                    <CRS>
+                        <![CDATA[
+                            PROJCS["Lambert_Conformal_Conic_2SP",
+                                GEOGCS["WGS84(DD)", 
+                                    DATUM["WGS84",
+                                        SPHEROID["WGS84", 6378137.0, 298.257223563]],
+                                    PRIMEM["Greenwich", 0.0], 
+                                    UNIT["degree", 0.017453292519943295], 
+                                    AXIS["Geodetic longitude", EAST], 
+                                    AXIS["Geodetic latitude", NORTH]],
+                                PROJECTION["Lambert_Conformal_Conic_2SP"],
+                                PARAMETER["semi_major", 6371229.0],
+                                PARAMETER["semi_minor", 6371229.0],
+                                PARAMETER["central_meridian", -66.43333300000002],
+                                PARAMETER["latitude_of_origin", 17.833333],
+                                PARAMETER["standard_parallel_1", 18.433333],
+                                PARAMETER["false_easting", 200000.0],
+                                PARAMETER["false_northing", 200000.0],
+                                PARAMETER["scale_factor", 1.0],
+                                PARAMETER["standard_parallel_2", 18.433333],
+                                UNIT["m", 1.0], AXIS["Easting", EAST],
+                                AXIS["Northing", NORTH]]
+                        ]]>
+                    </CRS>
                 </gridGeometry>
             </descriptor>
         </displays>

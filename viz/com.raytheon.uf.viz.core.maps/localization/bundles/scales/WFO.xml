@@ -220,21 +220,28 @@
                     envelopeMinY="-230041.72068797084" envelopeMaxX="230042.41692510553"
                     envelopeMinX="-230048.3123174316" rangeY="0 9999"
                     rangeX="0 9999">
-                    <CRS>PROJCS["Stereographic", GEOGCS["WGS84(DD)",
-                        DATUM["WGS84", SPHEROID["WGS84", 6378137.0,
-                        298.257223563]], PRIMEM["Greenwich", 0.0],
-                        UNIT["degree", 0.017453292519943295],
-                        AXIS["Geodetic longitude", EAST], AXIS["Geodetic
-                        latitude", NORTH]], PROJECTION["Stereographic"],
-                        PARAMETER["semi_major", 6371200.0],
-                        PARAMETER["semi_minor", 6371200.0],
-                        PARAMETER["central_meridian", -96.590057],
-                        PARAMETER["latitude_of_origin",
-                        41.44434699999999], PARAMETER["scale_factor",
-                        1.0], PARAMETER["false_easting", 0.0],
-                        PARAMETER["false_northing", 0.0], UNIT["m",
-                        1.0], AXIS["Easting", EAST], AXIS["Northing",
-                        NORTH]]
+                    <CRS>
+                        <![CDATA[
+                            PROJCS["Stereographic", 
+                                GEOGCS["WGS84(DD)",
+                                    DATUM["WGS84", 
+                                        SPHEROID["WGS84", 6378137.0, 298.257223563]], 
+                                    PRIMEM["Greenwich", 0.0],
+                                    UNIT["degree", 0.017453292519943295],
+                                    AXIS["Geodetic longitude", EAST], 
+                                    AXIS["Geodetic latitude", NORTH]], 
+                                PROJECTION["Stereographic"],
+                                PARAMETER["semi_major", 6371200.0],
+                                PARAMETER["semi_minor", 6371200.0],
+                                PARAMETER["central_meridian", -96.590057],
+                                PARAMETER["latitude_of_origin", 41.44434699999999], 
+                                PARAMETER["scale_factor", 1.0], 
+                                PARAMETER["false_easting", 0.0],
+                                PARAMETER["false_northing", 0.0], 
+                                UNIT["m", 1.0], 
+                                AXIS["Easting", EAST], 
+                                AXIS["Northing", NORTH]]
+                        ]]>
                     </CRS>
                 </gridGeometry>
             </descriptor>
