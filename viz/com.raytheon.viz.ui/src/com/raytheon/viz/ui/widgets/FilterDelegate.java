@@ -66,11 +66,11 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
  * Aug 26, 2015 4800       bkowal      Prevent NPE if all required properties are
  *                                     not set in time before the first filter.
  * Dec 18, 2015 5216       dgilling    Use ModifyListener instead of KeyListener.
+ * Nov 21, 2016 6006       njensen     Eclipse 4.6 Replace gif with png
  * 
  * </pre>
  * 
  * @author bkowal
- * @version 1.0
  */
 
 @SuppressWarnings("restriction")
@@ -124,10 +124,10 @@ public class FilterDelegate {
 
     private void createImages() {
         inactiveImage = AbstractUIPlugin.imageDescriptorFromPlugin(
-                PlatformUI.PLUGIN_ID, "$nl$/icons/full/dtool16/clear_co.gif")
+                PlatformUI.PLUGIN_ID, "$nl$/icons/full/dtool16/clear_co.png")
                 .createImage();
         activeImage = AbstractUIPlugin.imageDescriptorFromPlugin(
-                PlatformUI.PLUGIN_ID, "$nl$/icons/full/etool16/clear_co.gif")
+                PlatformUI.PLUGIN_ID, "$nl$/icons/full/etool16/clear_co.png")
                 .createImage();
         pressedImage = new Image(Display.getCurrent(), activeImage,
                 SWT.IMAGE_GRAY);
