@@ -36,13 +36,13 @@ import JUtil
 #    10/14/13         2250         mnash          Initial creation of JUtil handler
 #    02/06/14                      mnash          Fixed fallbacks by using OrderedDict,
 #                                                 fixed exception by declaring a size
-#    Apr 23, 2015    4259          njensen        Updated for new JEP API
+#    Apr 23, 2015    4259          njensen        Updated for new Jep API
+#    Nov 21. 2016    5959          njensen        Removed primitive conversions for Jep 3.6
 #
 #
 
 from collections import OrderedDict
 
-from java.lang import Integer, Float, Long, Boolean, String, Double, Number
 from java.util import Date
 from com.raytheon.uf.common.python import PyJavaUtil
 import datetime
@@ -58,42 +58,7 @@ def javaBasicsToPyBasics(obj, customConverter=None):
         classname = obj.java_name
         if classname in javaBasics :
             return True, javaBasics[classname](obj)
-        else :
-            for javaClass in fallbackBasics :
-                if PyJavaUtil.isSubclass(obj, javaClass) :
-                    return True, fallbackBasics[javaClass](obj, customConverter)
     return False, obj
-
-def _toPythonInt(obj, customConverter=None):
-    '''
-    Turns a Java Integer to a Python int
-    '''
-    return obj.intValue()
-
-def _toPythonLong(obj, customConverter=None):
-    '''
-    Turns a Java Long to a Python long, or int, 
-    depending on the architecture
-    '''
-    return obj.longValue()
-
-def _toPythonFloat(obj, customConverter=None):
-    '''
-    Turns a Java Float to a Python float
-    '''
-    return obj.floatValue()
-
-def _toPythonDouble(obj, customConverter=None):
-    '''
-    Turns a Java Double to a Python float
-    '''
-    return obj.doubleValue()
-
-def _toPythonBool(obj, customConverter=None):
-    '''
-    Turns a Java Boolean to a Python bool
-    '''
-    return bool(obj.booleanValue())
 
 def _toPythonString(obj, customConverter=None):
     '''
@@ -119,36 +84,6 @@ def pyBasicsToJavaBasics(val):
         return True, pythonBasics[valtype](val)
     return False, str(val)
 
-def _toJavaInt(val):
-    '''
-    Turns a Python int to a Java Integer, or a Long, depending the range
-    of the value.
-    '''
-    # since Python on 64 bit has larger ints, we need to do a check
-    # for compatibility with Java Integers
-    if val <= Integer.MAX_VALUE and val >= Integer.MIN_VALUE :
-        return Integer(val)
-    # outside the Java bounds for Integer, so make it a Java Long
-    return Long(val)
-
-def _toJavaFloat(val):
-    '''
-    Turns a Python float to a Java Float
-    '''
-    return Float(val)
-
-def _toJavaLong(val):
-    '''
-    Turns a Python long to a Java Long
-    '''
-    return Long(val)
-
-def _toJavaBoolean(val):
-    '''
-    Turns a Python bool to a Java Boolean
-    '''
-    return Boolean(val)
-
 def _toJavaString(val):
     '''
     Turns a Python str to a Java String
@@ -164,10 +99,10 @@ def _toJavaDate(val):
     return Date(long(delta.total_seconds()) * 1000)
 
 # the dict that registers the Python data type to the method for conversion
-pythonBasics = OrderedDict({int:_toJavaInt, float:_toJavaFloat, long:_toJavaLong, bool:_toJavaBoolean, str:_toJavaString, unicode:_toJavaString, datetime.datetime:_toJavaDate})
+pythonBasics = OrderedDict({unicode:_toJavaString, datetime.datetime:_toJavaDate})
 # the dict that registers the Java String of type to the method for conversion
-javaBasics = OrderedDict({'java.lang.Integer':_toPythonInt, 'java.lang.Float':_toPythonFloat, 'java.lang.Double':_toPythonDouble, 'java.lang.Long':_toPythonLong, 'java.lang.Boolean':_toPythonBool, 'java.lang.String':_toPythonString, 'java.util.Date':_toPythonDatetime})
-fallbackBasics = OrderedDict({Number:_toPythonFloat})
+javaBasics = OrderedDict({'java.util.Date':_toPythonDatetime})
+
 '''
 The following methods will handle Python and Java collection conversion.
 '''
@@ -186,8 +121,8 @@ JEP_ARRAY_TYPE = type(jep.jarray(0, Object))
 
 def javaCollectionToPyCollection(obj, customConverter=None):
     '''
-    Main method to register with JUtil for conversion of Java
-    collections to Python collections.
+    Method registered with JUtil for conversion of Java collections to Python
+    collections.
     '''
     if hasattr(obj, 'java_name'):
         classname = obj.java_name
@@ -282,8 +217,8 @@ def __toPythonDictInternal(javaMap, pyDict, customConverter=None):
     
 def pyCollectionToJavaCollection(val):
     '''
-    Main method registered with JUtil for conversion of collections in Python
-    to Java collections.
+    Method registered with JUtil for conversion of collections in Python to
+    Java collections.
     '''
     valtype = type(val)
     if valtype in pythonCollections :
@@ -359,18 +294,22 @@ fallbackCollections = OrderedDict({ List:_toPythonList, Map:_toPythonDict, Set:_
 Handles other types of Java to Python conversion and back.
 '''
 
-def javaClassToPyClass(obj, customConverter=None):
+def javaObjectToPyObject(obj, customConverter=None):
     '''
-    Main method to convert Java classes to Python classes that aren't already defined above.
-    Registers with JUtil
+    Method registered with JUtil to convert Java objects to Python objects
+    that aren't already defined above.
     '''
-    if customConverter is not None :
-        return True, customConverter(obj)
-    return False, obj
+    if hasattr(obj, 'java_name'):
+        if customConverter is not None:
+            return True, customConverter(obj)
+        # couldn't convert to pure Python object, let it be a PyJObject
+        return False, obj
+    # assume it's already a Python object
+    return True, obj
 
-def pyClassToJavaClass(val):
+def pyObjectToJavaObject(val):
     '''
-    Main method that registers with JUtil to convert Python classes to Java classes.
+    Method registered with JUtil to convert Python objects to Java objects.
     '''
     valtype = type(val)
     for pyType in pythonClasses :
