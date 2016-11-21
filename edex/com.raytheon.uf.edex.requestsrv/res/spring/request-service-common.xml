@@ -31,6 +31,6 @@
 
     <bean id="serviceInterfaceHandler" class="com.raytheon.uf.edex.requestsrv.request.RemoteServiceRequestHandler"/>
 
-    <bean id="deflatedRequestHandler" class="com.raytheon.uf.edex.backupsvc.handlers.DeflatedRequestHandler" />
+    <bean id="deflatedRequestHandler" class="com.raytheon.uf.edex.requestsrv.request.DeflatedRequestHandler" />
 
 </beans>
