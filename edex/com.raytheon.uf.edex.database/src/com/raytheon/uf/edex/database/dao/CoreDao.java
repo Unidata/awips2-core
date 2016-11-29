@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -72,14 +72,14 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * <p>
  * NOTE: Direct instantiation of this class is discouraged. Use
  * DaoPool.getInstance().borrowObject() for retrieving all data access objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
- * 7/24/07      353         bphillip    Initial Check in   
+ * 7/24/07      353         bphillip    Initial Check in
  * 5/14/08      1076        brockwoo    Fix for distinct with multiple properties
  * Oct 10, 2012 1261        djohnson    Incorporate changes to DaoConfig, add generic to {@link IPersistableDataObject}.
  * Apr 15, 2013 1868        bsteffen    Rewrite mergeAll in PluginDao.
@@ -95,19 +95,19 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Aug 18, 2015 4758        rjpeter     Update MAPPED_SQL_PATTERN to work with multiline sql queries.
  * Aug 19, 2015 4763        rjpeter     Update mappedSql to remove distinct and function definitions from name mapping.
  * Nov 20, 2015 5140        bsteffen    Update mappedSql to ignore comma in function argument lists.
- * 
+ * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
+ *
  * </pre>
- * 
+ *
  * @author bphillip
- * @version 1
  */
 public class CoreDao {
 
     protected final IUFStatusHandler logger = UFStatus.getHandler(getClass());
 
     protected static final Pattern MAPPED_SQL_PATTERN = Pattern.compile(
-            "select (.+?) FROM .*", Pattern.CASE_INSENSITIVE
-                    | Pattern.MULTILINE | Pattern.DOTALL);
+            "select (.+?) FROM .*",
+            Pattern.CASE_INSENSITIVE | Pattern.MULTILINE | Pattern.DOTALL);
 
     /* Pattern used by postgis that need to be escaped */
     protected static final Pattern COLONS = Pattern.compile("::");
@@ -145,7 +145,7 @@ public class CoreDao {
     /**
      * Persists an object to the database using the provided Hibernate mapping
      * file for the object
-     * 
+     *
      * @param obj
      *            The object to be persisted to the database
      */
@@ -161,7 +161,7 @@ public class CoreDao {
     /**
      * Persists or updates an object to the database using the provided
      * Hibernate mapping file for the object
-     * 
+     *
      * @param obj
      *            The object to be persisted to the database
      */
@@ -176,7 +176,7 @@ public class CoreDao {
 
     /**
      * Creates the object entry in the database
-     * 
+     *
      * @param obj
      *            The object to be created in the database
      */
@@ -192,7 +192,7 @@ public class CoreDao {
     /**
      * Updates an object in the database using the provided Hibernate mapping
      * file for the object
-     * 
+     *
      * @param obj
      *            The object to be persisted to the database
      */
@@ -207,7 +207,7 @@ public class CoreDao {
 
     /**
      * Persists all objects in collection using a single transaction.
-     * 
+     *
      * @param obj
      *            The object to be persisted to the database
      */
@@ -225,7 +225,7 @@ public class CoreDao {
 
     /**
      * Deletes an object from the database
-     * 
+     *
      * @param obj
      *            The object to delete
      */
@@ -241,7 +241,7 @@ public class CoreDao {
     /**
      * Retrieves a unique object based on the id field specified in the
      * Hibernate mapping file for the specified object
-     * 
+     *
      * @param id
      *            The id value of the object
      * @return The object with the matching id.<br>
@@ -263,7 +263,7 @@ public class CoreDao {
 
     /**
      * Retrieves a persitant object based on the given id
-     * 
+     *
      * @param id
      *            The id
      * @return The object
@@ -275,12 +275,13 @@ public class CoreDao {
                     @SuppressWarnings("unchecked")
                     public PersistableDataObject<T> doInTransaction(
                             TransactionStatus status) {
-                        DetachedCriteria criteria = DetachedCriteria.forClass(
-                                id.getClass())
-                                .add(Property.forName("dataURI").eq(
-                                        id.getDataURI()));
-                        List<?> list = criteria.getExecutableCriteria(
-                                getCurrentSession()).list();
+                        DetachedCriteria criteria = DetachedCriteria
+                                .forClass(id.getClass())
+                                .add(Property.forName("dataURI")
+                                        .eq(id.getDataURI()));
+                        List<?> list = criteria
+                                .getExecutableCriteria(getCurrentSession())
+                                .list();
                         if (list.size() > 0) {
                             return (PluginDataObject) list.get(0);
                         } else {
@@ -296,7 +297,7 @@ public class CoreDao {
      * Hibernate will find objects similar to the partially populated object
      * passed in. This method places a limit on the maximum number of results
      * returned.
-     * 
+     *
      * @param obj
      *            The partially populated object
      * @param maxResults
@@ -305,8 +306,8 @@ public class CoreDao {
      */
     public <T> List<PersistableDataObject<T>> queryByExample(
             final PersistableDataObject<T> obj, final int maxResults) {
-        List<PersistableDataObject<T>> retVal = txTemplate
-                .execute(new TransactionCallback<List<PersistableDataObject<T>>>() {
+        List<PersistableDataObject<T>> retVal = txTemplate.execute(
+                new TransactionCallback<List<PersistableDataObject<T>>>() {
                     @Override
                     @SuppressWarnings("unchecked")
                     public List<PersistableDataObject<T>> doInTransaction(
@@ -324,7 +325,7 @@ public class CoreDao {
      * Hibernate will find objects similar to the partially populated object
      * passed in. This method does not place a limit on the maximum number of
      * results returned.
-     * 
+     *
      * @param obj
      *            The partially populated object
      * @return A list of similar objects
@@ -336,7 +337,7 @@ public class CoreDao {
 
     /**
      * Deletes data from the database using a DatabaseQuery object
-     * 
+     *
      * @param query
      *            The query object
      * @return The results of the query
@@ -351,10 +352,11 @@ public class CoreDao {
             rowsDeleted = txTemplate
                     .execute(new TransactionCallback<Integer>() {
                         @Override
-                        public Integer doInTransaction(TransactionStatus status) {
+                        public Integer doInTransaction(
+                                TransactionStatus status) {
                             String queryString = query.createHQLDelete();
-                            Query hibQuery = getCurrentSession().createQuery(
-                                    queryString);
+                            Query hibQuery = getCurrentSession()
+                                    .createQuery(queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
                                         getSessionFactory());
@@ -373,7 +375,7 @@ public class CoreDao {
 
     /**
      * Queries the database using a DatabaseQuery object
-     * 
+     *
      * @param query
      *            The query object
      * @return The results of the query
@@ -388,10 +390,11 @@ public class CoreDao {
             queryResult = txTemplate
                     .execute(new TransactionCallback<List<?>>() {
                         @Override
-                        public List<?> doInTransaction(TransactionStatus status) {
+                        public List<?> doInTransaction(
+                                TransactionStatus status) {
                             String queryString = query.createHQLQuery();
-                            Query hibQuery = getCurrentSession().createQuery(
-                                    queryString);
+                            Query hibQuery = getCurrentSession()
+                                    .createQuery(queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
                                         getSessionFactory());
@@ -418,7 +421,7 @@ public class CoreDao {
     /**
      * Queries the database in batches using a DatabaseQuery object and send
      * each batch to processor.
-     * 
+     *
      * @param query
      *            The query object
      * @param processor
@@ -437,10 +440,11 @@ public class CoreDao {
                     .execute(new TransactionCallback<Integer>() {
                         @SuppressWarnings("unchecked")
                         @Override
-                        public Integer doInTransaction(TransactionStatus status) {
+                        public Integer doInTransaction(
+                                TransactionStatus status) {
                             String queryString = query.createHQLQuery();
-                            Query hibQuery = getCurrentSession().createQuery(
-                                    queryString);
+                            Query hibQuery = getCurrentSession()
+                                    .createQuery(queryString);
                             try {
                                 query.populateHQLQuery(hibQuery,
                                         getSessionFactory());
@@ -469,7 +473,7 @@ public class CoreDao {
                                                 .process((T) row[0]);
                                     }
                                     count++;
-                                    if ((count % batchSize) == 0) {
+                                    if (count % batchSize == 0) {
                                         getCurrentSession().clear();
                                     }
                                 }
@@ -507,7 +511,7 @@ public class CoreDao {
     }
 
     /**
-     * 
+     *
      * @param fields
      * @param values
      * @param operands
@@ -539,9 +543,10 @@ public class CoreDao {
     }
 
     /**
-     * Retrieves a list of objects based on field names, values, and operands.<br>
+     * Retrieves a list of objects based on field names, values, and
+     * operands.<br>
      * This method is the core query method.
-     * 
+     *
      * @param parameterMap
      *            A map containing <fieldName,value> pairs
      * @param operandMap
@@ -570,7 +575,7 @@ public class CoreDao {
 
     /**
      * Convenience method if result limiting is not necessary.
-     * 
+     *
      * @param fields
      *            The fields to query against
      * @param values
@@ -595,7 +600,7 @@ public class CoreDao {
 
     /**
      * Convenience method if sorting of results is not necessary
-     * 
+     *
      * @param fields
      *            The fields to query against
      * @param values
@@ -612,7 +617,7 @@ public class CoreDao {
     /**
      * Convenience method if sorting of results and equality is assumed for all
      * operands is not necessary
-     * 
+     *
      * @param fields
      *            The fields to query against
      * @param values
@@ -628,7 +633,7 @@ public class CoreDao {
 
     /**
      * Retrieves a list of objects based on a single field, value, and operand.
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -648,7 +653,7 @@ public class CoreDao {
     /**
      * Retrieves a list of objects based on a single field/value pair.
      * Convenience method assuming equality operand is used.
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -662,7 +667,7 @@ public class CoreDao {
 
     /**
      * Executes a catalog query
-     * 
+     *
      * @param parameterMap
      *            The parameters names and values to query against
      * @param operandMap
@@ -674,22 +679,22 @@ public class CoreDao {
     public List<?> queryCatalog(final List<String> fields,
             final List<Object> values, final List<String> operands,
             final String distinctName) throws DataAccessLayerException {
-        ArrayList<String> distinctProperties = new ArrayList<String>();
+        ArrayList<String> distinctProperties = new ArrayList<>();
         distinctProperties.add(distinctName);
-        return this.queryByCriteria(fields, values, operands, null, null,
-                false, distinctProperties);
+        return this.queryByCriteria(fields, values, operands, null, null, false,
+                distinctProperties);
     }
 
     public List<?> queryCatalog(final List<String> fields,
             final List<Object> values, final List<String> operands,
             final List<String> distinctNames) throws DataAccessLayerException {
-        return this.queryByCriteria(fields, values, operands, null, null,
-                false, distinctNames);
+        return this.queryByCriteria(fields, values, operands, null, null, false,
+                distinctNames);
     }
 
     /**
      * Executes an HQL query
-     * 
+     *
      * @param hqlQuery
      *            The HQL query string
      * @return The list of objects returned by the query
@@ -700,7 +705,7 @@ public class CoreDao {
 
     /**
      * Executes an HQL query
-     * 
+     *
      * @param hqlQuery
      *            The HQL query string
      * @return The list of objects returned by the query
@@ -710,9 +715,10 @@ public class CoreDao {
         QueryResult result = txTemplate
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
-                    public QueryResult doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getCurrentSession().createQuery(
-                                hqlQuery);
+                    public QueryResult doInTransaction(
+                            TransactionStatus status) {
+                        Query hibQuery = getCurrentSession()
+                                .createQuery(hqlQuery);
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         hibQuery.setCacheable(true);
@@ -733,7 +739,8 @@ public class CoreDao {
                             } else {
                                 for (int i = 0; i < queryResult.size(); i++) {
                                     QueryResultRow row = new QueryResultRow(
-                                            new Object[] { queryResult.get(i) });
+                                            new Object[] {
+                                                    queryResult.get(i) });
                                     rows[i] = row;
                                 }
                             }
@@ -756,7 +763,7 @@ public class CoreDao {
 
     /**
      * Executes an HQL statement
-     * 
+     *
      * @param hqlStmt
      *            The HQL statement string
      * @return The results of the statement
@@ -767,7 +774,7 @@ public class CoreDao {
 
     /**
      * Executes an HQL statement
-     * 
+     *
      * @param hqlStmt
      *            The HQL statement string
      * @return The results of the statement
@@ -779,8 +786,8 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        Query hibQuery = getCurrentSession().createQuery(
-                                hqlStmt);
+                        Query hibQuery = getCurrentSession()
+                                .createQuery(hqlStmt);
                         addParamsToQuery(hibQuery, paramMap);
                         return hibQuery.executeUpdate();
                     }
@@ -793,7 +800,7 @@ public class CoreDao {
      * Executes a single SQL query. NOTE: Do not use String building to put
      * values in to a query. Use the parameterized method to prevent SQL
      * Injection.
-     * 
+     *
      * @param sql
      *            An SQL query to execute
      * @return An array objects (multiple rows are returned as Object [ Object
@@ -804,41 +811,95 @@ public class CoreDao {
     }
 
     /**
-     * Executes a single parameterized SQL query.
-     * 
+     * Executes a single SQL query. NOTE: Do not use String building to put
+     * values in to a query. Use the parameterized method to prevent SQL
+     * Injection.
+     *
      * @param sql
      *            An SQL query to execute
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql, int maxRowCount) {
+        return executeSQLQuery(sql, null, maxRowCount);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     *
+     * @param sql
+     *            An SQL query to execute
+     * @param param
+     * @param val
      * @return An array objects (multiple rows are returned as Object [ Object
      *         [] ]
      */
     public Object[] executeSQLQuery(final String sql, final String param,
             final Object val) {
-        Map<String, Object> paramMap = new HashMap<>(1, 1);
-        paramMap.put(param, val);
-        return executeSQLQuery(sql, paramMap);
+        return executeSQLQuery(sql, param, val, 0);
     }
 
     /**
      * Executes a single parameterized SQL query.
-     * 
+     *
      * @param sql
      *            An SQL query to execute
+     * @param param
+     * @param val
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql, final String param,
+            final Object val, int maxRowCount) {
+        Map<String, Object> paramMap = new HashMap<>(1, 1);
+        paramMap.put(param, val);
+        return executeSQLQuery(sql, paramMap, maxRowCount);
+    }
+
+    /**
+     * Executes a single parameterized SQL query.
+     *
+     * @param sql
+     *            An SQL query to execute
+     * @param paramMap
+     *            Map of parameter names to values
      * @return An array objects (multiple rows are returned as Object [ Object
      *         [] ]
      */
     public Object[] executeSQLQuery(final String sql,
             final Map<String, Object> paramMap) {
+        return executeSQLQuery(sql, paramMap, 0);
+    }
 
+    /**
+     * Executes a single parameterized SQL query.
+     *
+     * @param sql
+     *            An SQL query to execute
+     * @param paramMap
+     *            Map of parameter names to values
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return An array objects (multiple rows are returned as Object [ Object
+     *         [] ]
+     */
+    public Object[] executeSQLQuery(final String sql,
+            final Map<String, Object> paramMap, int maxRowCount) {
         long start = System.currentTimeMillis();
         List<?> queryResult = txTemplate
                 .execute(new TransactionCallback<List<?>>() {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
-                        String replaced = COLONS.matcher(sql).replaceAll(
-                                COLON_REPLACEMENT);
-                        SQLQuery query = getCurrentSession().createSQLQuery(
-                                replaced);
+                        String replaced = COLONS.matcher(sql)
+                                .replaceAll(COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(replaced);
                         addParamsToQuery(query, paramMap);
+                        query.setMaxResults(maxRowCount);
                         return query.list();
                     }
                 });
@@ -851,7 +912,7 @@ public class CoreDao {
      * Executes a single SQL query. NOTE: Do not use String building to put
      * values in to a query. Use the parameterized method to prevent SQL
      * Injection.
-     * 
+     *
      * @param sql
      *            An SQL query to execute
      * @return An array objects (multiple rows are returned as Object [ Object
@@ -864,7 +925,7 @@ public class CoreDao {
 
     /**
      * Executes a single parameterized SQL query.
-     * 
+     *
      * @param sql
      *            An SQL query to execute
      * @return An array objects (multiple rows are returned as Object [ Object
@@ -880,7 +941,7 @@ public class CoreDao {
 
     /**
      * Executes a single parameterized SQL query.
-     * 
+     *
      * @param sql
      *            An SQL query to execute
      * @return An array objects (multiple rows are returned as Object [ Object
@@ -957,7 +1018,10 @@ public class CoreDao {
                 if (asIndex > 0) {
                     col = col.substring(asIndex + 4);
                 } else {
-                    /* check for function and remove function definition if present */
+                    /*
+                     * check for function and remove function definition if
+                     * present
+                     */
                     int parenIndex = col.indexOf('(');
 
                     if (parenIndex > 0) {
@@ -982,8 +1046,8 @@ public class CoreDao {
                     @Override
                     public List<?> doInTransaction(TransactionStatus status) {
 
-                        Criteria crit = getCurrentSession().createCriteria(
-                                daoClass);
+                        Criteria crit = getCurrentSession()
+                                .createCriteria(daoClass);
                         for (Criterion cr : criterion) {
                             crit.add(cr);
                         }
@@ -996,7 +1060,7 @@ public class CoreDao {
     }
 
     public List<?> executeCriteriaQuery(final Criterion criterion) {
-        ArrayList<Criterion> criterionList = new ArrayList<Criterion>();
+        ArrayList<Criterion> criterionList = new ArrayList<>();
         criterionList.add(criterion);
         return executeCriteriaQuery(criterionList);
     }
@@ -1005,7 +1069,7 @@ public class CoreDao {
      * Executes a single SQL statement. The SQL should not be a select
      * statement. NOTE: Do not use String building to put values in to a
      * statement. Use the parameterized method to prevent SQL Injection.
-     * 
+     *
      * @param sql
      *            An SQL statement to execute
      * @return Number of rows affected.
@@ -1017,7 +1081,7 @@ public class CoreDao {
     /**
      * Executes a single SQL statement. The SQL should not be a select
      * statement.
-     * 
+     *
      * @param sql
      *            An SQL statement to execute
      * @param param
@@ -1036,7 +1100,7 @@ public class CoreDao {
     /**
      * Executes a single SQL statement. The SQL should not be a select
      * statement.
-     * 
+     *
      * @param sql
      *            An SQL statement to execute
      * @param paramMap
@@ -1050,10 +1114,10 @@ public class CoreDao {
                 .execute(new TransactionCallback<Integer>() {
                     @Override
                     public Integer doInTransaction(TransactionStatus status) {
-                        String replaced = COLONS.matcher(sql).replaceAll(
-                                COLON_REPLACEMENT);
-                        SQLQuery query = getCurrentSession().createSQLQuery(
-                                replaced);
+                        String replaced = COLONS.matcher(sql)
+                                .replaceAll(COLON_REPLACEMENT);
+                        SQLQuery query = getCurrentSession()
+                                .createSQLQuery(replaced);
                         addParamsToQuery(query, paramMap);
                         return query.executeUpdate();
                     }
@@ -1066,14 +1130,14 @@ public class CoreDao {
     /**
      * Adds the specified parameter to the query. Checks for Collection an Array
      * types for use with in lists.
-     * 
+     *
      * @param query
      * @param paramName
      * @param paramValue
      */
     protected static void addParamsToQuery(Query query,
             Map<String, Object> paramMap) {
-        if ((paramMap != null) && !paramMap.isEmpty()) {
+        if (paramMap != null && !paramMap.isEmpty()) {
             for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
                 String paramName = entry.getKey();
                 Object paramValue = entry.getValue();
@@ -1091,7 +1155,7 @@ public class CoreDao {
 
     /**
      * Gets the object class associated with this dao
-     * 
+     *
      * @return The object class associated with this dao
      */
     public Class<?> getDaoClass() {
@@ -1100,7 +1164,7 @@ public class CoreDao {
 
     /**
      * Sets the object class associated with this dao
-     * 
+     *
      * @param daoClass
      *            The object class to assign to this dao
      */
@@ -1118,7 +1182,7 @@ public class CoreDao {
 
     /**
      * Sets the dao class given a fully qualified class name
-     * 
+     *
      * @param fqn
      *            The fully qualified class name
      */
@@ -1141,7 +1205,7 @@ public class CoreDao {
     /**
      * Updates/saves a set of records and deletes a set of records in the
      * database in a single transaction.
-     * 
+     *
      * @param updates
      *            Records to update or add.
      * @param deletes
@@ -1167,7 +1231,7 @@ public class CoreDao {
     /**
      * Gets the session associated with the current thread. This method does not
      * create a new session if one does not exist
-     * 
+     *
      * @return The current thread-bound session
      */
     public Session getCurrentSession() {
@@ -1177,7 +1241,7 @@ public class CoreDao {
     /**
      * Creates a new Hibernate session. Sessions returned by this method must be
      * explicitly closed
-     * 
+     *
      * @return
      */
     public Session getSession() {
@@ -1188,7 +1252,7 @@ public class CoreDao {
      * Gets a Hibernate session. If allowCreate is true, a new session is
      * opened, and therefore must be explicitly closed. If allowCreate is false,
      * this method will attempt to retrieve the current thread-bound session
-     * 
+     *
      * @param allowCreate
      * @return
      */
