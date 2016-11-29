@@ -32,6 +32,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorInput;
 import org.eclipse.ui.IEditorSite;
+import org.eclipse.ui.ISaveablePart;
 import org.eclipse.ui.ISaveablePart2;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
@@ -43,6 +44,7 @@ import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener.DisplayChangeType;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
@@ -67,18 +69,21 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Oct 10, 2006           chammack    Initial Creation.
- * Jun 12, 2014  3264     bsteffen    Make listeners thread safe.
- * Mar 02, 2015  4204     njensen     Deprecated setTabTitle and overrode setPartName
- * Jan 13, 2016  DR 18480 D. Friedman Synchronize time matching before initializing displays.
- * Jun 24, 2016  5708     bsteffen    Notify listeners when dirty status changes.
+ * 
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -------------------------------------------
+ * Oct 10, 2006           chammack   Initial Creation.
+ * Jun 12, 2014  3264     bsteffen   Make listeners thread safe.
+ * Mar 02, 2015  4204     njensen    Deprecated setTabTitle and overrode
+ *                                   setPartName
+ * Jan 13, 2016  18480    dfriedman  Synchronize time matching before
+ *                                   initializing displays.
+ * Jun 24, 2016  5708     bsteffen   Notify listeners when dirty status changes.
+ * Nov 29, 2016  6014     bsteffen   Update dirty state on UI thread.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public abstract class AbstractEditor extends EditorPart implements
         IDisplayPaneContainer, IBackgroundColorChangedListener, ISaveablePart2,
@@ -649,17 +654,27 @@ public abstract class AbstractEditor extends EditorPart implements
                 resourceList.removePostRemoveListener(this);
                 break;
             }
+            fireDirtyPropertyChange();
         }
 
         @Override
         public void notifyAdd(ResourcePair rp) throws VizException {
-            firePropertyChange(ISaveablePart2.PROP_DIRTY);
+            fireDirtyPropertyChange();
         }
 
         @Override
         public void notifyRemove(ResourcePair rp) throws VizException {
-            firePropertyChange(ISaveablePart2.PROP_DIRTY);
+            fireDirtyPropertyChange();
+        }
 
+        protected void fireDirtyPropertyChange() {
+            VizApp.runAsync(new Runnable() {
+
+                @Override
+                public void run() {
+                    firePropertyChange(ISaveablePart.PROP_DIRTY);
+                }
+            });
         }
 
     }
