@@ -46,12 +46,13 @@ from java.lang import String
 #
 #    Date            Ticket#       Engineer       Description
 #    ------------    ----------    -----------    --------------------------
-#    05/01/08                      njensen       Initial Creation.
-#    03/12/13         1759         dgilling      Extend Java List types handled
-#                                                by javaObjToPyVal().
-#    08/20/13         2250         mnash         Handle Dates, doubles, and arrays
-#    10/15/13                      mnash         Refactor to reduce dependencies and clean up
+#    05/01/08                      njensen        Initial Creation.
+#    03/12/13         1759         dgilling       Extend Java List types handled
+#                                                 by javaObjToPyVal().
+#    08/20/13         2250         mnash          Handle Dates, doubles, and arrays
+#    10/15/13                      mnash          Refactor to reduce dependencies and clean up
 #    Apr 23, 2015     4259         njensen        Updated for new JEP API
+#    Nov 28, 2016     5959         njensen        Renamed methods for clarity
 #
 #
 
@@ -157,7 +158,7 @@ class JavaWrapperClass(object):
 
 # this initializes the basic handlers for Java->Python conversion and Python->Java conversion
 
-from JUtilHandler import javaBasicsToPyBasics, pyBasicsToJavaBasics, javaCollectionToPyCollection, pyCollectionToJavaCollection, javaClassToPyClass, pyClassToJavaClass
+from JUtilHandler import javaBasicsToPyBasics, pyBasicsToJavaBasics, javaCollectionToPyCollection, pyCollectionToJavaCollection, javaObjectToPyObject, pyObjectToJavaObject
 
-pythonHandlers = [pyBasicsToJavaBasics, pyCollectionToJavaCollection, pyClassToJavaClass]
-javaHandlers = [javaBasicsToPyBasics, javaCollectionToPyCollection, javaClassToPyClass]
+pythonHandlers = [pyBasicsToJavaBasics, pyCollectionToJavaCollection, pyObjectToJavaObject]
+javaHandlers = [javaBasicsToPyBasics, javaCollectionToPyCollection, javaObjectToPyObject]
