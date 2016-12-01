@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -66,15 +66,16 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
+import com.raytheon.uf.common.util.rate.TokenBucket;
 
 /**
- * 
+ *
  * Provides connectivity to HTTP services
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#     Engineer    Description
  * ------------  ----------  ----------- --------------------------
  * 7/1/06        #1088       chammack    Initial Creation.
@@ -107,11 +108,11 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * Dec 07, 2015  4834        njensen     Return http headers with HttpClientResponse
  * Jan 27, 2016  5070        tjensen     Added comment noting stats stored here but logged elsewhere
  * Feb 22, 2016  5306        njensen     Get new HttpClientContext if host or port change
- * 
+ * Nov 29, 2016  5937        tgurney     Add optional rate limiting to postDynamicSerialize
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 public class HttpClient {
 
@@ -158,8 +159,8 @@ public class HttpClient {
      */
     private int retryCount = 1;
 
-    private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
-            HttpClient.class, "DEFAULT");
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(HttpClient.class, "DEFAULT");
 
     /**
      * Stores networks statistics to be accessible by other plugins where stats
@@ -195,7 +196,7 @@ public class HttpClient {
 
     /**
      * Checks if the http status code is considered a success
-     * 
+     *
      * @param statusCode
      * @return
      */
@@ -205,7 +206,7 @@ public class HttpClient {
 
     /**
      * Public constructor.
-     * 
+     *
      * @param config
      */
     public HttpClient(HttpClientConfig config) {
@@ -224,8 +225,8 @@ public class HttpClient {
                                 "Https configuration required.");
                     }
                     try {
-                        sslClient = ApacheHttpClientCreator.createSslClient(
-                                config, stats);
+                        sslClient = ApacheHttpClientCreator
+                                .createSslClient(config, stats);
                     } catch (Exception e) {
                         String msg = "Error setting up SSL Client: "
                                 + e.getLocalizedMessage();
@@ -263,7 +264,7 @@ public class HttpClient {
     /**
      * Sets whether or not to compress the outgoing requests to reduce bandwidth
      * sent by the client.
-     * 
+     *
      * @param compress
      */
     public void setCompressRequests(boolean compress) {
@@ -272,7 +273,7 @@ public class HttpClient {
 
     /**
      * Get global instance of this class
-     * 
+     *
      * @return instance
      */
     public static final HttpClient getInstance() {
@@ -292,15 +293,15 @@ public class HttpClient {
      * Set configuration for global HTTP client instance. Overrides any previous
      * configuration. This should only be called by top level configuration code
      * at startup.
-     * 
+     *
      * @param config
      * @return
      */
     public static final HttpClient configureGlobalInstance(
             HttpClientConfig config) {
         synchronized (HttpClient.class) {
-            if (instance != null
-                    && (instance.sslClient != null || instance.client != null)) {
+            if (instance != null && (instance.sslClient != null
+                    || instance.client != null)) {
                 /*
                  * This indicates that the startup configuration order is wrong
                  * or that configureGlobalInstance() is being called after
@@ -316,8 +317,8 @@ public class HttpClient {
 
     /**
      * Post a message to an http address, and return the result as a string.
-     * 
-     * 
+     *
+     *
      * @param address
      * @param message
      * @return
@@ -330,8 +331,8 @@ public class HttpClient {
 
     /**
      * Post a message to an http address, and return the result as a byte array.
-     * 
-     * 
+     *
+     *
      * @param address
      * @param message
      * @return
@@ -348,15 +349,15 @@ public class HttpClient {
     /**
      * Sends the request to the server, checks the status code (in case of 404,
      * 403, etc), and returns the response if there was no error code.
-     * 
+     *
      * @param put
      *            the request to send
      * @return the response from the server
      * @throws IOException
      * @throws CommunicationException
      */
-    private HttpResponse postRequest(HttpUriRequest put) throws IOException,
-            CommunicationException {
+    private HttpResponse postRequest(HttpUriRequest put)
+            throws IOException, CommunicationException {
         HttpResponse resp = null;
 
         /*
@@ -430,7 +431,7 @@ public class HttpClient {
      * Posts the request to the server and passes the response stream to the
      * handler callback. Will also retry the request if it fails due to a
      * timeout or IO problem.
-     * 
+     *
      * @param put
      *            the request to post
      * @param handlerCallback
@@ -448,8 +449,8 @@ public class HttpClient {
         try {
             String host = put.getURI().getHost();
             if (host == null) {
-                throw new InvalidURIException("Invalid URI: "
-                        + put.getURI().toString());
+                throw new InvalidURIException(
+                        "Invalid URI: " + put.getURI().toString());
             }
             ongoing = currentRequestsCount.get(host);
             if (ongoing == null) {
@@ -459,8 +460,7 @@ public class HttpClient {
             int currentCount = ongoing.incrementAndGet();
             if (currentCount > getMaxConnectionsPerHost()) {
                 if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
-                    String msg = currentCount
-                            + " ongoing http requests to "
+                    String msg = currentCount + " ongoing http requests to "
                             + host
                             + ".  Likely waiting for free connection from pool.";
                     statusHandler.debug(msg);
@@ -489,7 +489,7 @@ public class HttpClient {
                     exc = e;
                 }
 
-                if ((errorMsg != null) && (exc != null)) {
+                if (errorMsg != null && exc != null) {
                     if (tries > retryCount) {
                         previousConnectionFailed = true;
                         // close/abort connection
@@ -548,7 +548,7 @@ public class HttpClient {
     /**
      * Streams the response content to the handler callback and closes the http
      * connection once finished.
-     * 
+     *
      * @param resp
      *            the http response to stream
      * @param handlerCallback
@@ -557,7 +557,7 @@ public class HttpClient {
      */
     private void processResponse(HttpResponse resp,
             IStreamHandler handlerCallback) throws CommunicationException {
-        if ((resp != null) && (resp.getEntity() != null)) {
+        if (resp != null && resp.getEntity() != null) {
             try (InputStream is = resp.getEntity().getContent()) {
                 handlerCallback.handleStream(is);
             } catch (IOException e) {
@@ -585,7 +585,7 @@ public class HttpClient {
     /**
      * Posts the request and uses a DefaultInternalStreamHandler to
      * automatically stream the response into a byte[].
-     * 
+     *
      * @param put
      *            the post to send to the server
      * @return the byte[] of the response
@@ -601,8 +601,8 @@ public class HttpClient {
 
     /**
      * Post a message to an http address, and return the result as a byte array.
-     * 
-     * 
+     *
+     *
      * @param address
      * @param message
      * @return
@@ -637,23 +637,29 @@ public class HttpClient {
      * address. If gzip requests are enabled the object will be transformed into
      * a byte[] and then gzipped before sending. Streams the response back
      * through DynamicSerialize.
-     * 
+     *
      * @param address
      *            the address to post to
      * @param obj
      *            the object to transform and send
      * @param stream
      *            if the request should be streamed if possible
+     * @param rateLimiter
+     *            if not null, will be used to limit the output rate by
+     *            consuming one token per byte sent.
      * @return the deserialized object response
      * @throws CommunicationException
      * @throws Exception
      */
     public Object postDynamicSerialize(String address, Object obj,
-            boolean stream) throws CommunicationException, Exception {
+            boolean stream, TokenBucket rateLimiter)
+            throws CommunicationException, Exception {
         HttpPost put = new HttpPost(address);
         DynamicSerializeEntity dse = new DynamicSerializeEntity(obj, stream,
                 gzipRequests);
-
+        if (rateLimiter != null) {
+            dse.setRateLimiter(rateLimiter);
+        }
         put.setEntity(dse);
         if (gzipRequests) {
             put.setHeader("Content-Encoding", "gzip");
@@ -667,13 +673,34 @@ public class HttpClient {
     }
 
     /**
+     * Transforms the object into bytes and posts it to the server at the
+     * address. If gzip requests are enabled the object will be transformed into
+     * a byte[] and then gzipped before sending. Streams the response back
+     * through DynamicSerialize.
+     *
+     * @param address
+     *            the address to post to
+     * @param obj
+     *            the object to transform and send
+     * @param stream
+     *            if the request should be streamed if possible
+     * @return the deserialized object response
+     * @throws CommunicationException
+     * @throws Exception
+     */
+    public Object postDynamicSerialize(String address, Object obj,
+            boolean stream) throws CommunicationException, Exception {
+        return postDynamicSerialize(address, obj, stream, null);
+    }
+
+    /**
      * Post a message to an http address, and return the result as a byte array.
      * <p>
      * Implementation note: The given stream handler will be used at least
      * twice: Once to determine the length, another to actually send the
      * content. This is done because pypies does not accept chunked requests
      * bodies.
-     * 
+     *
      * @param address
      * @param handler
      *            the handler responsible for generating the message to be
@@ -692,9 +719,9 @@ public class HttpClient {
 
     /**
      * Post a string to an endpoint and stream the result back.
-     * 
+     *
      * The result should be handled inside of the handlerCallback
-     * 
+     *
      * @param address
      *            the http address
      * @param message
@@ -713,7 +740,7 @@ public class HttpClient {
     /**
      * Executes an HttpUriRequest and returns a response with the byte[] and
      * http status code.
-     * 
+     *
      * @param request
      *            the request to execute
      * @return the byte[] result and status code
@@ -729,7 +756,7 @@ public class HttpClient {
      * AFTER the IStreamHandler has processed the response body. Therefore, it
      * is unlikely that the response will contain the actual response body, with
      * the response body being consumed by the IStreamHandler.
-     * 
+     *
      * @param request
      *            the request to execute
      * @return a response with a status code
@@ -742,9 +769,9 @@ public class HttpClient {
 
     /**
      * Post a string to an endpoint and stream the result back.
-     * 
+     *
      * The result should be handled inside of the handlerCallback
-     * 
+     *
      * @param address
      *            the http address
      * @param message
@@ -756,9 +783,10 @@ public class HttpClient {
      */
     @Deprecated
     public void postStreamingString(String address, String message,
-            IStreamHandler handlerCallback) throws CommunicationException,
-            UnsupportedEncodingException {
-        postStreamingEntity(address, new StringEntity(message), handlerCallback);
+            IStreamHandler handlerCallback)
+            throws CommunicationException, UnsupportedEncodingException {
+        postStreamingEntity(address, new StringEntity(message),
+                handlerCallback);
     }
 
     /**
@@ -772,13 +800,13 @@ public class HttpClient {
             throw new CommunicationException(
                     "Error reading server response.  Got error message: "
                             + response.data != null ? new String(response.data)
-                            : null);
+                                    : null);
         }
     }
 
     /**
      * Posts an entity to the address and stream the result back.
-     * 
+     *
      * @param address
      *            the http address to post to
      * @param entity
@@ -797,7 +825,7 @@ public class HttpClient {
 
     /**
      * Get the maximum number of connections.
-     * 
+     *
      * @return the max connections
      */
     public int getMaxConnectionsPerHost() {
@@ -806,7 +834,7 @@ public class HttpClient {
 
     /**
      * Get the socket timeout
-     * 
+     *
      * @return the socket timeout
      */
     public int getSocketTimeout() {
@@ -815,7 +843,7 @@ public class HttpClient {
 
     /**
      * Get the connection timeout
-     * 
+     *
      * @return the connection timeout
      */
     public int getConnectionTimeout() {
@@ -833,7 +861,7 @@ public class HttpClient {
     /**
      * Number of times to retry in the event of a socket exception. Default is
      * 1.
-     * 
+     *
      * @param retryCount
      */
     public void setRetryCount(int retryCount) {
@@ -844,7 +872,7 @@ public class HttpClient {
      * Gets the network statistics for http traffic for other plugins where
      * stats logging is performed. No logging of stats is done by HttpClient
      * directly.
-     * 
+     *
      * @return network stats
      */
     public NetworkStatistics getStats() {
@@ -854,11 +882,11 @@ public class HttpClient {
     /**
      * Provides a safe interface callback for implementing stream behavior with
      * http
-     * 
+     *
      * The lifetime of the stream is only guaranteed inside the scope of the
      * handleScope method. A user should not close the stream, it will be closed
      * for them after the method completes.
-     * 
+     *
      * @author chammack
      * @version 1.0
      */
@@ -866,11 +894,11 @@ public class HttpClient {
 
         /**
          * Implementation method for stream callbacks
-         * 
+         *
          * A user should NOT close the stream, it will be done for them after
          * the method terminates. A user should NOT store off copies of the
          * input stream for later use.
-         * 
+         *
          * @param is
          * @throws CommunicationException
          */
@@ -892,9 +920,10 @@ public class HttpClient {
      * Automatically reads a stream into a byte array and stores the byte array
      * in byteResult. Should only be used internally in HttpClient with
      * convenience methods that do not take an IStreamHandler as an argument.
-     * 
+     *
      */
-    private static class DefaultInternalStreamHandler implements IStreamHandler {
+    private static class DefaultInternalStreamHandler
+            implements IStreamHandler {
 
         private byte[] byteResult;
 
@@ -942,7 +971,7 @@ public class HttpClient {
 
     /**
      * Setup the credentials for SSL.
-     * 
+     *
      * @param host
      *            The host
      * @param port
@@ -959,26 +988,27 @@ public class HttpClient {
             credentialsProvider = new BasicCredentialsProvider();
             credentialsMap.put(host, credentialsProvider);
         }
-        credentialsProvider.setCredentials(new AuthScope(host, port,
-                AuthScope.ANY_REALM, AuthSchemes.BASIC),
+        credentialsProvider.setCredentials(
+                new AuthScope(host, port, AuthScope.ANY_REALM,
+                        AuthSchemes.BASIC),
                 new UsernamePasswordCredentials(username, password));
     }
 
     /**
      * Gets a thread local HttpContext to use for an http or https request.
-     * 
+     *
      * @param protocol
      *            the protocol, either http or https
      * @param host
      *            the hostname
      * @param port
      *            the port
-     * 
-     * 
+     *
+     *
      * @return a safe context containing http or https credential and auth info
      */
-    private HttpClientContext getHttpClientContext(String protocol,
-            String host, int port) {
+    private HttpClientContext getHttpClientContext(String protocol, String host,
+            int port) {
         HttpClientContext context = httpClientContext.get();
         HttpHost targetHost = context.getTargetHost();
         if (targetHost == null || !host.equals(targetHost.getHostName())
@@ -991,7 +1021,7 @@ public class HttpClient {
             context = HttpClientContext.create();
             httpClientContext.set(context);
         }
-        
+
         CredentialsProvider credentialsProvider = credentialsMap.get(host);
         if (context.getCredentialsProvider() != credentialsProvider) {
             context.setCredentialsProvider(credentialsProvider);

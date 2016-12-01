@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -32,23 +32,25 @@ import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
+import com.raytheon.uf.common.util.rate.TokenBucket;
+import com.raytheon.uf.common.util.stream.RateLimitingOutputStream;
 
 /**
  * An Http Entity that serializes an object through dynamic serialize.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 22, 2013            njensen     Initial creation
  * Oct 30, 2015 4710       bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
- * 
+ * Nov 29, 2016 5937       tgurney     Add optional rate limiting
+ *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
  */
 
 public class DynamicSerializeEntity extends AbstractHttpEntity {
@@ -61,9 +63,11 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
 
     private byte[] objAsBytes;
 
+    private TokenBucket rateLimiter;
+
     /**
      * Constructor
-     * 
+     *
      * @param obj
      *            the object to be sent over http
      * @param stream
@@ -85,22 +89,12 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.http.HttpEntity#getContent()
-     */
     @Override
     public InputStream getContent() throws IOException, IllegalStateException {
         throw new UnsupportedOperationException(
                 "DynamicSerializeEntity does not support getContent()");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.http.HttpEntity#getContentLength()
-     */
     @Override
     public long getContentLength() {
         if (isStreaming()) {
@@ -118,38 +112,31 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.http.HttpEntity#isRepeatable()
-     */
     @Override
     public boolean isRepeatable() {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.http.HttpEntity#isStreaming()
-     */
     @Override
     public boolean isStreaming() {
         return stream;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.apache.http.HttpEntity#writeTo(java.io.OutputStream)
-     */
     @Override
     public void writeTo(OutputStream os) throws IOException {
         if (isStreaming()) {
             try {
-                DynamicSerializationManager
-                        .getManager(SerializationType.Thrift)
-                        .serialize(obj, os);
+                if (rateLimiter != null) {
+                    RateLimitingOutputStream ros = new RateLimitingOutputStream(
+                            os, rateLimiter);
+                    DynamicSerializationManager
+                            .getManager(SerializationType.Thrift)
+                            .serialize(obj, ros);
+                } else {
+                    DynamicSerializationManager
+                            .getManager(SerializationType.Thrift)
+                            .serialize(obj, os);
+                }
             } catch (SerializationException e) {
                 throw new IOException("Error serializing "
                         + (obj != null ? obj.getClass() : null) + " to stream",
@@ -159,13 +146,19 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
             if (objAsBytes == null) {
                 objAsBytes = convertObjToBytes();
             }
-            os.write(objAsBytes);
+            if (rateLimiter != null) {
+                RateLimitingOutputStream ros = new RateLimitingOutputStream(os,
+                        rateLimiter);
+                ros.write(objAsBytes);
+            } else {
+                os.write(objAsBytes);
+            }
         }
     }
 
     /**
      * Converts the object to bytes, and gzips those bytes if gzip is true.
-     * 
+     *
      * @return the DynamicSerialize bytes representing the object
      * @throws IOException
      */
@@ -187,6 +180,10 @@ public class DynamicSerializeEntity extends AbstractHttpEntity {
             gzipStream.close();
         }
         return bytes;
+    }
+
+    public void setRateLimiter(TokenBucket rateLimiter) {
+        this.rateLimiter = rateLimiter;
     }
 
 }
