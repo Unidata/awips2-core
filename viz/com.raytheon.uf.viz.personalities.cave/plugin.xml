@@ -23,70 +23,14 @@
 <extension
          point="org.eclipse.ui.menus">
       <menuContribution
-            locationURI="menu:org.eclipse.ui.main.menu">
+            locationURI="menu:d2dFile?after=group1">
          <menu
-               id="CAVE"
-               label="CAVE">
-            <menu
-                  id="perspectives"
-                  label="Perspective">
-               <dynamic
-                     class="com.raytheon.uf.viz.personalities.cave.menu.OpenPerspectiveMenu"
-                     id="com.raytheon.uf.viz.personalities.cave.openPerspective">
-               </dynamic>
-            </menu>
-            <menu
-                  id="browsers"
-                  label="Data Browsers">
-            </menu>
-            <separator
-                  name="afterNewGroup"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group1"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group2"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group3"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group4"
-                  visible="true">
-            </separator>
-            <separator
-                  name="group5"
-                  visible="true">
-            </separator>
-            <separator
-                  name="preferenceGroup"
-                  visible="true">
-            </separator>
-            <command
-                  commandId="org.eclipse.ui.window.preferences"
-                  label="Preferences"
-                  style="push">
-            </command>
-            <command
-                  commandId="org.eclipse.ui.help.aboutAction"
-                  label="About CAVE"
-                  mnemonic="A"
-                  style="push">
-            </command>
-            <separator
-                  name="beforeExitGroup"
-                  visible="true">
-            </separator>
-            <command
-                  commandId="com.raytheon.viz.ui.file.exit"
-                  label="Exit"
-                  style="push">
-            </command>
+               id="perspectives"
+               label="Perspective">
+            <dynamic
+                  class="com.raytheon.uf.viz.personalities.cave.menu.OpenPerspectiveMenu"
+                  id="com.raytheon.uf.viz.personalities.cave.openPerspective">
+            </dynamic>
          </menu>
       </menuContribution>
    </extension>
