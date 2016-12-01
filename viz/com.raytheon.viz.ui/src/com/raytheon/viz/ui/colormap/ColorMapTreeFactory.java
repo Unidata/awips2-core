@@ -20,18 +20,11 @@
 package com.raytheon.viz.ui.colormap;
 
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import org.eclipse.core.runtime.IProgressMonitor;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.core.runtime.jobs.Job;
+import java.util.Optional;
 
 import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -48,20 +41,18 @@ import com.raytheon.uf.viz.core.VizApp;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Sep 18, 2013  2421     bsteffen    Initial creation
- * Aug 28, 2014  3516     rferrel     Getting treesByLevel no longer
- *                                     on the UI thread.
- *                                    Converted to singleton.
- *                                    Added localized file observer.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 18, 2013  2421     bsteffen  Initial creation
+ * Aug 28, 2014  3516     rferrel   Getting treesByLevel no longer on the UI
+ *                                  thread. Converted to singleton. Added
+ *                                  localized file observer.
+ * Dec 01, 2016  5990     bsteffen  Ensure menu population does not pause UI
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
-
 public class ColorMapTreeFactory {
 
     /**
@@ -85,24 +76,10 @@ public class ColorMapTreeFactory {
     private ColorMapTree baseTree;
 
     /**
-     * Lock when working on baseTree.
-     */
-    private Object baseTreeLock = new Object();
-
-    /**
      * Trees for non-BASE localization levels.
      */
-    private final Map<LocalizationLevel, ColorMapTree> treesByLevel = new HashMap<LocalizationLevel, ColorMapTree>();
-
-    /**
-     * Listeners needing treesByLevel information
-     */
-    private List<ILevelMapsCallback> tlcListeners = new ArrayList<ILevelMapsCallback>();
-
-    /**
-     * Non-BASE localization levels.
-     */
-    private final LocalizationLevel[] treesLevelLocalization;
+    private final Map<LocalizationLevel, ColorMapTree> treesByLevel = Collections
+            .synchronizedMap(new HashMap<>());
 
     /**
      * Thread safe list of listeners to notify when localized colormaps
@@ -111,27 +88,29 @@ public class ColorMapTreeFactory {
      * 
      */
     private final List<IRefreshColorMapTreeListener> refreshListeners = Collections
-            .synchronizedList(new ArrayList<IRefreshColorMapTreeListener>());
-
-    /**
-     * Job to perform tree's optimizeIsEmpty.
-     */
-    private final OptimizeTreeJob optmizeTreeJob = new OptimizeTreeJob();
-
-    /**
-     * Flag to kick off initTreeByLevel the first time the trees are needed.
-     */
-    private boolean startInitTreeByLevel = true;
+            .synchronizedList(new ArrayList<>());
 
     /**
      * Singleton constructor.
      */
     private ColorMapTreeFactory() {
         IPathManager pm = PathManagerFactory.getPathManager();
-        LocalizationLevel[] allLevels = pm.getAvailableLevels();
-        // Remove BASE
-        treesLevelLocalization = Arrays.copyOfRange(allLevels, 1,
-                allLevels.length);
+        LocalizationContext baseContext = pm.getContext(
+                LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
+        baseTree = new ColorMapTree(pm, baseContext, ColorMapLoader.DIR_NAME);
+        baseTree.prepareAsync(Optional.empty());
+
+        LocalizationLevel[] levels = pm.getAvailableLevels();
+        /* Start at 1 to skip base. */
+        for (int i = 1; i < levels.length; i += 1) {
+            LocalizationLevel level = levels[i];
+            ColorMapTree tree = new ColorMapTree(pm, level,
+                    ColorMapLoader.DIR_NAME);
+            treesByLevel.put(level, tree);
+            tree.prepareAsync(Optional.empty());
+        }
+        pm.addLocalizationPathObserver(ColorMapLoader.DIR_NAME,
+                (file) -> refresh(file.getContext().getLocalizationLevel()));
     }
 
     /**
@@ -141,73 +120,7 @@ public class ColorMapTreeFactory {
      * their own pop up menu.
      */
     public ColorMapTree getBaseTree() {
-        synchronized (baseTreeLock) {
-            if (baseTree == null) {
-                IPathManager pm = PathManagerFactory.getPathManager();
-                LocalizationContext baseContext = pm.getContext(
-                        LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
-
-                /*
-                 * Useful for testing delay in getting base tree.
-                 */
-                // try {
-                // baseTreeLock.wait(8000L);
-                // } catch (InterruptedException e) {
-                // e.printStackTrace();
-                // }
-
-                baseTree = new ColorMapTree(pm, baseContext,
-                        ColorMapLoader.DIR_NAME);
-                optimizeTree(baseTree);
-            }
-            return baseTree;
-        }
-    }
-
-    /**
-     * This immediately performs the call back for each non-BASE localization
-     * level sending a null tree when a level's tree has not yet been created.
-     * This allows the call back to generate a place holder for the level. When
-     * needed the call back routine will be called as any missing trees are
-     * generated.
-     * 
-     * @param listener
-     */
-    public void updateLevelMapsCallack(ILevelMapsCallback listener) {
-        synchronized (treesByLevel) {
-            if (startInitTreeByLevel) {
-                startInitTreeByLevel = false;
-                initTreeByLevel();
-            }
-
-            /*
-             * Immediately perform the action for all levels. When treeByLevel
-             * entry is null the tree for the level has not yet been created;
-             * invoke the listener with a null tree. This allows a listener
-             * creating menu items to generate a place holder entry such as
-             * "USER ???".
-             */
-            for (LocalizationLevel level : getTreesLevelLocalization()) {
-                ColorMapTree tree = treesByLevel.get(level);
-                listener.treeCreated(level, tree);
-            }
-
-            /*
-             * Still missing trees. Must call the callback again as each missing
-             * tree is created.
-             */
-            if (isMissingLevelTrees()) {
-                tlcListeners.add(listener);
-            }
-        }
-    }
-
-    /**
-     * 
-     * @return true if still generating trees
-     */
-    private boolean isMissingLevelTrees() {
-        return tlcListeners != null;
+        return baseTree;
     }
 
     /**
@@ -228,81 +141,27 @@ public class ColorMapTreeFactory {
     }
 
     /**
-     * 
-     * @return treesLevelLocalization
-     */
-    public LocalizationLevel[] getTreesLevelLocalization() {
-        return treesLevelLocalization;
-    }
-
-    /**
-     * This creates the trees for treesByLevel off of the UI thread. It informs
-     * all listeners when a tree is created.
-     */
-    private void initTreeByLevel() {
-        synchronized (treesByLevel) {
-            treesByLevel.clear();
-
-            Job job = new Job("Finding Colormaps") {
-
-                @Override
-                protected IStatus run(IProgressMonitor monitor) {
-                    IPathManager pm = PathManagerFactory.getPathManager();
-                    LocalizationLevel[] levels = getTreesLevelLocalization();
-                    for (final LocalizationLevel level : levels) {
-                        ColorMapTree tree = new ColorMapTree(pm, level,
-                                ColorMapLoader.DIR_NAME);
-                        optimizeTree(tree);
-
-                        synchronized (treesByLevel) {
-                            /*
-                             * Use for debugging. Simulates a long delay in
-                             * getting tree level's color map. Allows testing to
-                             * see if menu items for the tree levels are
-                             * properly handled.
-                             */
-                            // try {
-                            // treesByLevel.wait(3000L);
-                            // } catch (InterruptedException e) {
-                            // e.printStackTrace();
-                            // }
-
-                            treesByLevel.put(level, tree);
-                            for (ILevelMapsCallback listener : tlcListeners) {
-                                listener.treeCreated(level, tree);
-                            }
-                        }
-                    }
-
-                    synchronized (treesByLevel) {
-                        /*
-                         * Free up tlcListeners space and indicate all level
-                         * trees are now generated.
-                         */
-                        tlcListeners.clear();
-                        tlcListeners = null;
-                    }
-                    return Status.OK_STATUS;
-                }
-            };
-            job.schedule();
-        }
-    }
-
-    /**
      * Method used to inform listeners of any changes to any ColorMapTree.
      */
-    public void refresh() {
-
-        VizApp.runAsync(new Runnable() {
-
-            @Override
-            public void run() {
-                IRefreshColorMapTreeListener[] rListeners = refreshListeners
-                        .toArray(new IRefreshColorMapTreeListener[0]);
-                for (IRefreshColorMapTreeListener listener : rListeners) {
-                    listener.refreshColorMapTree();
-                }
+    protected void refresh(LocalizationLevel level) {
+        IPathManager pm = PathManagerFactory.getPathManager();
+        if (level == LocalizationLevel.BASE) {
+            LocalizationContext baseContext = pm.getContext(
+                    LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
+            baseTree = new ColorMapTree(pm, baseContext,
+                    ColorMapLoader.DIR_NAME);
+            baseTree.prepareAsync(Optional.empty());
+        } else {
+            ColorMapTree tree = new ColorMapTree(pm, level,
+                    ColorMapLoader.DIR_NAME);
+            tree.prepareAsync(Optional.empty());
+            treesByLevel.put(level, tree);
+        }
+        VizApp.runAsync(() -> {
+            IRefreshColorMapTreeListener[] rListeners = refreshListeners
+                    .toArray(new IRefreshColorMapTreeListener[0]);
+            for (IRefreshColorMapTreeListener listener : rListeners) {
+                listener.refreshColorMapTree();
             }
         });
     }
@@ -312,7 +171,8 @@ public class ColorMapTreeFactory {
      * 
      * @param listener
      */
-    public void removeRefreshItemsListener(IRefreshColorMapTreeListener listener) {
+    public void removeRefreshItemsListener(
+            IRefreshColorMapTreeListener listener) {
         refreshListeners.remove(listener);
     }
 
@@ -323,66 +183,5 @@ public class ColorMapTreeFactory {
      */
     public void addRefreshItemsListener(IRefreshColorMapTreeListener listener) {
         refreshListeners.add(listener);
-    }
-
-    /**
-     * Queue tree for optimizeIsEmpty.
-     * 
-     * @param tree
-     */
-    public void optimizeTree(ColorMapTree tree) {
-        optmizeTreeJob.add(tree);
-    }
-
-    /**
-     * Job to perform empty optimization of color map trees.
-     */
-    private static class OptimizeTreeJob extends Job {
-
-        private final LinkedList<ColorMapTree> queue = new LinkedList<ColorMapTree>();
-
-        private final AtomicBoolean shutdown = new AtomicBoolean(false);
-
-        public OptimizeTreeJob() {
-            super("ColorMapTree isEmptyOptimize");
-            setSystem(true);
-        }
-
-        @Override
-        protected IStatus run(IProgressMonitor monitor) {
-            if (monitor.isCanceled()) {
-                return Status.OK_STATUS;
-            }
-
-            ColorMapTree tree = null;
-
-            while (shutdown.get() == false) {
-                synchronized (queue) {
-                    if (queue.isEmpty()) {
-                        return Status.OK_STATUS;
-                    }
-                    tree = queue.pop();
-                }
-                System.out.println(Thread.currentThread().getName()
-                        + " A job is optimizing " + tree.getName());
-                tree.optimizeIsEmpty();
-            }
-            return Status.OK_STATUS;
-        }
-
-        @Override
-        protected void canceling() {
-            queue.clear();
-            shutdown.set(true);
-        }
-
-        public void add(ColorMapTree tree) {
-            synchronized (queue) {
-                queue.add(tree);
-                if (getState() == NONE) {
-                    schedule();
-                }
-            }
-        }
     }
 }
