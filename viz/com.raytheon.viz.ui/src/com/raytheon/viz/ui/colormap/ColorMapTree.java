@@ -19,45 +19,54 @@
  **/
 package com.raytheon.viz.ui.colormap;
 
-import java.lang.ref.Reference;
-import java.lang.ref.WeakReference;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 
 import com.raytheon.uf.common.colormap.ColorMapLoader;
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.ILocalizationFile;
-import com.raytheon.uf.common.localization.ILocalizationFileObserver;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.viz.core.VizApp;
 
 /**
  * ColorMapTree represents the directory structure of colormaps directory. The
  * levels of a Tree can represent a {@link LocalizationLevel}, a
  * {@link LocalizationContext} or a localization directory.
  * 
+ * Many of the methods require information about {@link ILocalizationFile}s and
+ * might need to get information from a remote server. After the information is
+ * loaded it is kept within the tree and future uses of the tree will be fast.
+ * When ever accessing the tree on the UI thread it may be necessary to use
+ * {@link #isReady()} and {@link #prepareAsync(Optional)} to ensure that UI is
+ * not paused waiting on a remote server.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Sep 18, 2013  2421     bsteffen    Initial creation
- * Sep 11, 2014  3516     rferrel     file updates now inform the factory.
- *                                      getName() no longer returns a null.
- *                                      FileChangeListener now only gets colormaps changes.
- * Aug 24, 2015  4393     njensen     Updates for observer changes
- * Nov 18, 2015  4834     njensen     API updates due to removal of LocalizationNotificationObserver
- * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 18, 2013  2421     bsteffen  Initial creation
+ * Sep 11, 2014  3516     rferrel   file updates now inform the factory.
+ *                                  getName() no longer returns a null.
+ *                                  FileChangeListener now only gets colormaps
+ *                                  changes.
+ * Aug 24, 2015  4393     njensen   Updates for observer changes
+ * Nov 18, 2015  4834     njensen   API updates due to removal of
+ *                                  LocalizationNotificationObserver
+ * Jan 13, 2016  5242     kbisanz   Replaced calls to deprecated
+ *                                  LocalizationFile methods
+ * Dec 01, 2016  5990     bsteffen  Ensure menu population does not pause UI
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class ColorMapTree {
 
@@ -76,6 +85,10 @@ public class ColorMapTree {
     private final Object subTreesLock = new Object();
 
     private List<ColorMapTree> subTrees;
+
+    private boolean ready = false;
+
+    private List<Runnable> prepareCallbacks = new ArrayList<>();
 
     /**
      * Create a tree for the given path and context. The tree will represent the
@@ -101,11 +114,6 @@ public class ColorMapTree {
         this.pathManager = pathManager;
         this.level = level;
         this.context = null;
-
-        LocalizationFile dir = pathManager.getLocalizationFile(
-                pathManager.getContext(LocalizationType.COMMON_STATIC, level),
-                path);
-        dir.addFileUpdatedObserver(new FileChangeListener(this));
     }
 
     /**
@@ -130,6 +138,10 @@ public class ColorMapTree {
         }
     }
 
+    public boolean isLevel() {
+        return level != null;
+    }
+
     /**
      * For a tree based on a {@link LocalizationLevel} this returns a tree for
      * each context at the level. Otherwise it returns a tree for each
@@ -148,14 +160,15 @@ public class ColorMapTree {
                     }
                 } else {
                     for (ILocalizationFile file : requestFiles()) {
-                        if (file.isDirectory() && !path.equals(file.getPath())) {
+                        if (file.isDirectory()
+                                && !path.equals(file.getPath())) {
                             subTrees.add(new ColorMapTree(pathManager, context,
                                     file.getPath()));
                         }
                     }
                 }
             }
-            return new ArrayList<ColorMapTree>(subTrees);
+            return new ArrayList<>(subTrees);
         }
     }
 
@@ -184,6 +197,10 @@ public class ColorMapTree {
      */
     public boolean isEmpty() {
         if (getColorMapFiles().isEmpty()) {
+            ColorMapTree optimistic = getOptimisticSubtree();
+            if (optimistic != null && !optimistic.isEmpty()) {
+                return false;
+            }
             for (ColorMapTree tree : getSubTrees()) {
                 if (!tree.isEmpty()) {
                     return false;
@@ -195,92 +212,156 @@ public class ColorMapTree {
     }
 
     /**
-     * Recursively optimize the internal structure so future {@link #isEmpty()}
-     * calls are fast. isEmpty() is a slow operations on trees with many empty
-     * subtrees, so this can be called in the background to enable faster calls
-     * to isEmpty when it is needed. In cases where isEmpty does not need extra
-     * data or is already optimized this call should complete very quickly.
-     * Intended for use on non-UI thread.
+     * Optimize the internal structure so future calls to {@link #getSubTrees()}
+     * , {@link #getColorMapFiles()}, and {@link #isEmpty()} are fast. isEmpty()
+     * in particular is a slow operation on trees with many empty subtrees, so
+     * this can be called in the background to enable faster calls to isEmpty
+     * when it is needed. In cases where isEmpty does not need extra data or is
+     * already optimized this call should complete very quickly. Intended for
+     * use on non-UI thread.
      */
-    public void optimizeIsEmpty() {
-        System.out.println(Thread.currentThread().getName() + " Optimizing "
-                + getName());
-        isEmpty();
+    public void prepare() {
+        if (context == null) {
+            ColorMapTree optimistic = getOptimisticSubtree();
+            if (optimistic == null || optimistic.isEmpty()) {
+                requestFilesForLevel();
+            }
+        }
 
         /*
-         * isEmpty() may not check all sub trees. Force check of all sub trees.
+         * Simplest way to ensure isEmpty() is fast is just to call isEmpty, it
+         *  will load whatever it needs.
          */
-        for (ColorMapTree subTree : getSubTrees()) {
-            subTree.optimizeIsEmpty();
+        isEmpty();
+
+        synchronized (prepareCallbacks) {
+            ready = true;
+            prepareCallbacks.forEach(VizApp::runAsync);
+            prepareCallbacks.clear();
         }
     }
 
     /**
-     * This method will receive a message for every localization file in all
-     * contexts. It must filter by path and by level and/or context.
+     * If the tree {@link #isReady()} and the callback is present then it will
+     * be called immediately. Otherwise the tree will be scheduled to
+     * {@link #prepare()} itself and the callback will be run on the UI thread
+     * when the tree becomes ready.
+     * 
+     * @param callback
      */
-    protected void handleUpdate(FileUpdatedMessage message) {
-        if (message.getFileName().startsWith(path)) {
-            LocalizationContext context = message.getContext();
-            if (context.getLocalizationLevel().equals(level)) {
-                synchronized (subTreesLock) {
-                    if (subTrees != null) {
-                        for (ColorMapTree subTree : subTrees) {
-                            if (subTree.getName().equals(
-                                    context.getContextName())) {
-                                subTree.handleUpdate(message);
-                                return;
-                            }
-                        }
-                        subTrees.add(new ColorMapTree(pathManager, context,
-                                path));
-                    }
-                }
-            } else if (context.equals(this.context)) {
-                synchronized (filesLock) {
-                    files = null;
-                }
-                synchronized (subTreesLock) {
-                    subTrees = null;
+    public void prepareAsync(Optional<Runnable> callback) {
+        synchronized (prepareCallbacks) {
+            if (ready) {
+                callback.ifPresent(VizApp::runSync);
+            } else {
+                callback.ifPresent(prepareCallbacks::add);
+                PrepareColorMapTreeJob.add(this, callback.isPresent());
+            }
+        }
+    }
+
+    /**
+     * @return true if all data is loaded for {@link #getSubTrees()},
+     *         {@link #getColorMapFiles()}, and {@link #isEmpty()} so that no
+     *         Localization requests are necessary.
+     * 
+     */
+    public boolean isReady() {
+        return ready;
+    }
+
+    /**
+     * For a level based tree this will return the subtree for the currently
+     * active context for the level. This level is the most likely to be not
+     * empty so checking this subtree first can speed up {@link #isEmpty()}
+     */
+    private ColorMapTree getOptimisticSubtree() {
+        if (context == null) {
+            LocalizationContext context = pathManager
+                    .getContext(LocalizationType.COMMON_STATIC, level);
+            for (ColorMapTree tree : getSubTrees()) {
+                if (tree.getName().equals(context.getContextName())) {
+                    return tree;
                 }
             }
         }
+        return null;
     }
 
     private ILocalizationFile[] requestFiles() {
         synchronized (filesLock) {
             if (files == null) {
-                files = pathManager
-                        .listFiles(context, path,
-                                new String[] { ColorMapLoader.EXTENSION },
-                                false, false);
+                files = pathManager.listFiles(context, path,
+                        new String[] { ColorMapLoader.EXTENSION }, false,
+                        false);
             }
             return files;
         }
     }
 
     /**
-     * {@link WeakReference} based listener which automatically removes itself
-     * when a notification arrives and the {@link ColorMapTree} has been garbage
-     * collected.
+     * Many levels have alot of contexts that they must check and most of those
+     * contexts tend to be empty. To avoid making too many separate localization
+     * requests for each context this will query all the contexts at once.
      */
-    private class FileChangeListener implements ILocalizationFileObserver {
-
-        private final Reference<ColorMapTree> treeRef;
-
-        private FileChangeListener(ColorMapTree tree) {
-            treeRef = new WeakReference<>(tree);
-        }
-
-        @Override
-        public void fileUpdated(FileUpdatedMessage message) {
-            ColorMapTree tree = treeRef.get();
-            if (tree != null) {
-                tree.handleUpdate(message);
-                ColorMapTreeFactory factory = ColorMapTreeFactory.getInstance();
-                factory.optimizeTree(tree);
-                factory.refresh();
+    private void requestFilesForLevel() {
+        synchronized (filesLock) {
+            Map<LocalizationContext, ColorMapTree> sortedTrees = new HashMap<>();
+            for (ColorMapTree tree : getSubTrees()) {
+                if (!tree.hasFiles()) {
+                    LocalizationContext context = pathManager
+                            .getContext(LocalizationType.COMMON_STATIC, level);
+                    context.setContextName(tree.getName());
+                    sortedTrees.put(context, tree);
+                }
+            }
+            if (sortedTrees.isEmpty()) {
+                return;
+            }
+            LocalizationContext[] contexts = sortedTrees.keySet()
+                    .toArray(new LocalizationContext[0]);
+            ILocalizationFile[] files = pathManager.listFiles(contexts, path,
+                    new String[] { ColorMapLoader.EXTENSION }, false, false);
+            Map<LocalizationContext, List<ILocalizationFile>> sortedFiles = new HashMap<>();
+            for (ILocalizationFile file : files) {
+                LocalizationContext context = file.getContext();
+                List<ILocalizationFile> fileList = sortedFiles.get(context);
+                if (fileList == null) {
+                    fileList = new ArrayList<>();
+                    sortedFiles.put(context, fileList);
+                }
+                fileList.add(file);
+            }
+            for (LocalizationContext context : sortedTrees.keySet()) {
+                ColorMapTree tree = sortedTrees.get(context);
+                List<ILocalizationFile> fileList = sortedFiles.get(context);
+                if (fileList == null) {
+                    fileList = Collections.emptyList();
+                }
+                tree.setFiles(fileList.toArray(new ILocalizationFile[0]));
             }
         }
     }
+
+    /**
+     * 
+     * @return true if the tree already has localization files and does not need
+     *         them to be requested again.
+     */
+    protected boolean hasFiles() {
+        return files != null;
+    }
+
+    /**
+     * This will be called by the parent tree if the context is requested along
+     * with other contexts in {@link #requestFilesForLevel()}
+     */
+    protected void setFiles(ILocalizationFile[] files) {
+        synchronized (filesLock) {
+            if (this.files == null) {
+                this.files = files;
+            }
+        }
+    }
+
 }
