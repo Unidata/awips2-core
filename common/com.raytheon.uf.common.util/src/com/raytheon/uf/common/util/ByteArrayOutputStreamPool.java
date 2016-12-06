@@ -21,6 +21,8 @@ package com.raytheon.uf.common.util;
 
 import java.util.concurrent.ArrayBlockingQueue;
 
+import com.raytheon.uf.common.util.format.BytesFormat;
+
 /**
  * Pools ByteArrayOutputStream objects. The lookup of a ByteArrayOutputStream
  * will always return without blocking. Will instead discard excessive objects
@@ -37,14 +39,14 @@ import java.util.concurrent.ArrayBlockingQueue;
  * Dec 06, 2010            rjpeter     Initial creation
  * Oct 30, 2015 4710       bclement    moved ByteArrayOutputStream subclass to ResizeableByteArrayOutputStream
  *                                      now returns PooledByteArrayOutputStream objects to protected pooled streams
+ * Nov 15, 2016 5992       bsteffen    Create new stream when minimum request is larger than max size.
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class ByteArrayOutputStreamPool {
-    private static final int MEGABYTE = 1024 * 1024;
+    private static final int MEBIBYTE = 1024 * 1024;
 
     private static final ByteArrayOutputStreamPool instance = new ByteArrayOutputStreamPool();
 
@@ -53,9 +55,11 @@ public class ByteArrayOutputStreamPool {
 
     private int maxPoolSize = 8;
 
-    private int initStreamSize = MEGABYTE;
+    private int initStreamSize = (int) BytesFormat
+            .parseSystemProperty("byteoutputstream.initsize", "1MiB");
 
-    private int maxStreamSize = (int) (5.5 * MEGABYTE);
+    private int maxStreamSize = (int) BytesFormat
+            .parseSystemProperty("byteoutputstream.initsize", "5.5MiB");
 
     public static ByteArrayOutputStreamPool getInstance() {
         return instance;
@@ -86,6 +90,10 @@ public class ByteArrayOutputStreamPool {
      * @return
      */
     public PooledByteArrayOutputStream getStream(int minInitialSize) {
+        if (minInitialSize > maxStreamSize) {
+            return new PooledByteArrayOutputStream(this,
+                    new ResizeableByteArrayOutputStream(minInitialSize));
+        }
         ResizeableByteArrayOutputStream stream = streams.poll();
         if (stream == null) {
             stream = new ResizeableByteArrayOutputStream(minInitialSize);
@@ -113,7 +121,7 @@ public class ByteArrayOutputStreamPool {
      * @param streamInitSize
      */
     public void setInitStreamSize(double initStreamSize) {
-        this.initStreamSize = (int) (initStreamSize * MEGABYTE);
+        this.initStreamSize = (int) (initStreamSize * MEBIBYTE);
     }
 
     /**
@@ -121,7 +129,7 @@ public class ByteArrayOutputStreamPool {
      * @param streamMaxSize
      */
     public void setMaxStreamSize(double maxStreamSize) {
-        this.maxStreamSize = (int) (maxStreamSize * MEGABYTE);
+        this.maxStreamSize = (int) (maxStreamSize * MEBIBYTE);
     }
 
     /**
