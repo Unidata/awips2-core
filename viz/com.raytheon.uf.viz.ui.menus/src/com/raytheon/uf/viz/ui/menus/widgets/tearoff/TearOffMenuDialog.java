@@ -44,6 +44,7 @@ import org.eclipse.ui.services.IServiceLocator;
 import com.raytheon.uf.common.time.ISimulatedTimeChangeListener;
 import com.raytheon.uf.common.time.SimulatedTime;
 import com.raytheon.uf.viz.core.ContextManager;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.ui.menus.widgets.BundleContributionItem;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
@@ -62,6 +63,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Apr 10, 2013 DR 15185   D. Friedman Preserve tear-offs over perspective switches.
  * Aug 21, 2014 15664      snaples     Updated dispose method to fix issue when closing perspective with tear offs open.
  * Oct 28, 2015 5054       randerso    Changed to use getter for perspective manager.
+ * Nov 30, 2016 6016       randerso    Change timeChanged to call updateTimes on the UI thread
  * 
  * </pre>
  * 
@@ -203,7 +205,13 @@ public class TearOffMenuDialog extends CaveSWTDialog {
 
             @Override
             public void timechanged() {
-                updateItems();
+                VizApp.runAsync(new Runnable() {
+                    
+                    @Override
+                    public void run() {
+                        updateItems();
+                    }
+                });
             }
         };
         SimulatedTime.getSystemTime().addSimulatedTimeChangeListener(stcl);
