@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.pypies.records;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
@@ -177,12 +176,13 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         CompressedDataRecord compressedRecord = cloneMetadata(byteRecord);
 
         PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
-                .getInstance().getStream(
-                byteRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+                .getInstance().getStream(byteRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             stream.write(byteRecord.getByteData());
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.BYTE);
 
         return compressedRecord;
@@ -200,9 +200,10 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
         ShortBuffer shorts = ByteBuffer.wrap(bytes).asShortBuffer();
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(
-                shortRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+        PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream(shortRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             for (int i = 0; i < fullChunkSize; i += shortChunkSize) {
                 shorts.put(shortArr, i, shortChunkSize);
                 stream.write(bytes, 0, ARRAY_CHUNK_SIZE);
@@ -212,8 +213,9 @@ public class CompressedDataRecord extends AbstractStorageRecord {
                 shorts.put(shortArr, fullChunkSize, remainder);
                 stream.write(bytes, 0, remainder * 2);
             }
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.SHORT);
 
         return compressedRecord;
@@ -231,9 +233,10 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
         IntBuffer ints = ByteBuffer.wrap(bytes).asIntBuffer();
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(
-                intRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+        PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream(intRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             for (int i = 0; i < fullChunkSize; i += intChunkSize) {
                 ints.put(intArr, i, intChunkSize);
                 stream.write(bytes, 0, ARRAY_CHUNK_SIZE);
@@ -243,8 +246,9 @@ public class CompressedDataRecord extends AbstractStorageRecord {
                 ints.put(intArr, fullChunkSize, remainder);
                 stream.write(bytes, 0, remainder * 4);
             }
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.INT);
 
         return compressedRecord;
@@ -262,9 +266,10 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
         LongBuffer longs = ByteBuffer.wrap(bytes).asLongBuffer();
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(
-                longRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+        PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream(longRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             for (int i = 0; i < fullChunkSize; i += longChunkSize) {
                 longs.put(longArr, i, longChunkSize);
                 stream.write(bytes, 0, ARRAY_CHUNK_SIZE);
@@ -274,8 +279,9 @@ public class CompressedDataRecord extends AbstractStorageRecord {
                 longs.put(longArr, fullChunkSize, remainder);
                 stream.write(bytes, 0, remainder * 8);
             }
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.LONG);
 
         return compressedRecord;
@@ -293,9 +299,10 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
         FloatBuffer floats = ByteBuffer.wrap(bytes).asFloatBuffer();
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(
-                floatRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+        PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream(floatRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             for (int i = 0; i < fullChunkSize; i += floatChunkSize) {
                 floats.put(floatArr, i, floatChunkSize);
                 stream.write(bytes, 0, ARRAY_CHUNK_SIZE);
@@ -305,8 +312,9 @@ public class CompressedDataRecord extends AbstractStorageRecord {
                 floats.put(floatArr, fullChunkSize, remainder);
                 stream.write(bytes, 0, remainder * 4);
             }
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.FLOAT);
 
         return compressedRecord;
@@ -324,9 +332,10 @@ public class CompressedDataRecord extends AbstractStorageRecord {
         byte[] bytes = new byte[ARRAY_CHUNK_SIZE];
         DoubleBuffer doubles = ByteBuffer.wrap(bytes).asDoubleBuffer();
 
-        ByteArrayOutputStream byteStream = new ByteArrayOutputStream(
-                doubleRecord.getSizeInBytes() / COMPRESSION_RATIO_ASSUMPTION);
-        try (OutputStream stream = createGZIPStream(byteStream)) {
+        PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream(doubleRecord.getSizeInBytes()
+                        / COMPRESSION_RATIO_ASSUMPTION);
+        try (GZIPOutputStream stream = createGZIPStream(byteStream)) {
             for (int i = 0; i < fullChunkSize; i += doubleChunkSize) {
                 doubles.put(doubleArr, i, doubleChunkSize);
                 stream.write(bytes, 0, ARRAY_CHUNK_SIZE);
@@ -336,8 +345,9 @@ public class CompressedDataRecord extends AbstractStorageRecord {
                 doubles.put(doubleArr, fullChunkSize, remainder);
                 stream.write(bytes, 0, remainder * 8);
             }
+            stream.finish();
+            compressedRecord.setCompressedData(byteStream.toByteArray());
         }
-        compressedRecord.setCompressedData(byteStream.toByteArray());
         compressedRecord.setType(Type.FLOAT);
 
         return compressedRecord;
