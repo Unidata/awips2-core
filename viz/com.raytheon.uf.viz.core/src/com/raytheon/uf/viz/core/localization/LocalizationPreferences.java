@@ -68,6 +68,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Dec 01, 2014  3236     njensen     Fix checking alert service
  * Jun 24, 2015           mjames@ucar Formatting changes
  * Sep 12, 2016           mjames@ucar Restart button enabled on apply/ok after changes
+ * Dec 09, 2016           mjames@ucar Restart button enabled always
  * 
  * </pre>
  * 
@@ -246,7 +247,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             	PlatformUI.getWorkbench().restart();
             }
         });
-        restart.setEnabled(false);
+        restart.setEnabled(true);
     }
 
     
@@ -314,14 +315,11 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         if (prefsModified) {
             MessageBox warning = new MessageBox(getShell(), SWT.ICON_WARNING
                     | SWT.OK | SWT.CANCEL);
-            warning.setText("CAVE Localization preferences changed");
+            warning.setText("CAVE Localization Preferences Changed");
             warning.setMessage("Localization preferences have changed "
-                    + "and CAVE needs to be restarted to use the new "
-                    + "settings. \n"
-                    + "Click OK to save your changes. You MUST restart CAVE "
-                    + "after closing this window or errors will occur in your "
-                    + "current CAVE session. \n"
-                    + "Click Cancel if you do not wish to save these new preferences.");
+                    + "and CAVE needs to be restarted. \n"
+                    + "Click OK to save your changes. You must restart CAVE "
+                    + "after closing this window.");
 
             int retVal = warning.open();
             if (retVal == SWT.CANCEL) {
@@ -329,12 +327,11 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             }
             if (retVal == SWT.OK) {
             	prefsModified = false;
-                restart.setEnabled(true);
             }
         }
         return super.performOk();
     }
-
+    
     /*
      * (non-Javadoc)
      * 
