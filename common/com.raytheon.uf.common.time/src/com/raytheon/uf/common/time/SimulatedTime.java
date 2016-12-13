@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,15 +23,18 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Simulated time clock with offset and scale capabilities.
- * 
+ *
  * Provides a simulated time which can be offset from real time, frozen, and/or
  * accelerated/decelerated.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 16, 2008            randerso    Initial creation
@@ -39,14 +42,20 @@ import java.util.List;
  * Nov 02, 2012 1302       djohnson    Change mistakenly public constructor to private.
  * Jan 07, 2013 1442       rferrel     Changes to add/remove/notify Simulated Time Change Listeners.
  *                                      Use SimulatedTimeTest for unit testing.
- * 
+ * Nov 30, 2016 6016       randerso    Added exception handling in fireTimeChangeListeners
+ *                                     Added getOffset and setTimeOffset methods
+ *                                     Improved thread safety when modifying the listener list
+ *
  * </pre>
- * 
+ *
  * @author randerso
  * @version 1.0
  */
 
 public final class SimulatedTime {
+    private final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(SimulatedTime.class);
+
     /**
      * The system global simulated time instance
      */
@@ -58,7 +67,7 @@ public final class SimulatedTime {
 
     /**
      * Retrieve the system global simulate time instance
-     * 
+     *
      * @return
      */
     public static SimulatedTime getSystemTime() {
@@ -92,7 +101,7 @@ public final class SimulatedTime {
 
     /**
      * Convenience method for getting current time
-     * 
+     *
      * @return
      */
     private long now() {
@@ -101,27 +110,31 @@ public final class SimulatedTime {
 
     /**
      * Creates a simulated time that matches real time.
-     * 
+     *
      */
     private SimulatedTime() {
-        this.listeners = new ArrayList<ISimulatedTimeChangeListener>();
+        this.listeners = new ArrayList<>();
         this.doNotify = true;
         setRealTime();
     }
 
-    public synchronized void addSimulatedTimeChangeListener(
+    public void addSimulatedTimeChangeListener(
             ISimulatedTimeChangeListener listener) {
-        listeners.add(listener);
+        synchronized (listeners) {
+            listeners.add(listener);
+        }
     }
 
-    public synchronized void removeSimulatedTimeChangeListener(
+    public void removeSimulatedTimeChangeListener(
             ISimulatedTimeChangeListener listener) {
-        listeners.remove(listener);
+        synchronized (listeners) {
+            listeners.remove(listener);
+        }
     }
 
     /**
      * Determine is simulated time = real time
-     * 
+     *
      * @return true if simulated time = real time
      */
     public boolean isRealTime() {
@@ -141,7 +154,7 @@ public final class SimulatedTime {
 
     /**
      * Get the current simulated time
-     * 
+     *
      * @return current simulated time
      */
     public Date getTime() {
@@ -158,7 +171,7 @@ public final class SimulatedTime {
 
     /**
      * Set the current simulated time
-     * 
+     *
      * @param date
      */
     public void setTime(Date date) {
@@ -167,7 +180,7 @@ public final class SimulatedTime {
 
     /**
      * Set the current simulated time
-     * 
+     *
      * @param millis
      */
     public void setTime(long millis) {
@@ -180,9 +193,23 @@ public final class SimulatedTime {
         fireTimeChangeListeners();
     }
 
+    public long getOffset() {
+        return offset;
+    }
+
+    /**
+     * Set the current simulated time using offset from real time
+     *
+     * @param offset
+     *            from real time in milliseconds
+     */
+    public void setTimeOffset(long offset) {
+        setTime(now() + offset);
+    }
+
     /**
      * Get the simulated time scale (acceleration/deceleration)
-     * 
+     *
      * @return 1.0 for normal time rate, >1.0 for accelerated time < 1.0 for
      *         decelerated time. If negative time will run backward.
      */
@@ -192,7 +219,7 @@ public final class SimulatedTime {
 
     /**
      * Set the simulated time scale (acceleration/deceleration)
-     * 
+     *
      * @param scale
      *            1.0 for normal time rate, >1.0 for accelerated time < 1.0 for
      *            decelerated time. If negative time will run backward.
@@ -206,7 +233,7 @@ public final class SimulatedTime {
 
     /**
      * Get the simulated time frozen state
-     * 
+     *
      * @return true if time is frozen
      */
     public boolean isFrozen() {
@@ -215,7 +242,7 @@ public final class SimulatedTime {
 
     /**
      * Freeze/unfreeze simulated time
-     * 
+     *
      * @param isFrozen
      *            true to freeze, false to unfreeze
      */
@@ -238,7 +265,7 @@ public final class SimulatedTime {
      * Allows turning off notification of listeners when making several updates
      * at the same time. Changing to false turns off notification. Changing to
      * true allows notification and triggers a notification.
-     * 
+     *
      * @param doNotify
      */
     public void notifyListeners(boolean doNotify) {
@@ -254,10 +281,18 @@ public final class SimulatedTime {
     private void fireTimeChangeListeners() {
         if (doNotify) {
             // Copy to make thread safe.
-            List<ISimulatedTimeChangeListener> list = new ArrayList<ISimulatedTimeChangeListener>(
-                    listeners);
+            List<ISimulatedTimeChangeListener> list;
+            synchronized (listeners) {
+                list = new ArrayList<>(listeners);
+            }
+            
             for (ISimulatedTimeChangeListener listener : list) {
-                listener.timechanged();
+                try {
+                    listener.timechanged();
+                } catch (Exception e) {
+                    statusHandler.error(
+                            "Exception occurred in simulated time listener", e);
+                }
             }
         }
     }
