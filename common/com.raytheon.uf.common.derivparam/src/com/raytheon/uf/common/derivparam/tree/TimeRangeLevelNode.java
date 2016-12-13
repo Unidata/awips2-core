@@ -27,18 +27,18 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
-import com.raytheon.uf.common.inventory.data.AggregateRequestableData;
-import com.raytheon.uf.common.inventory.exception.DataCubeException;
-import com.raytheon.uf.common.inventory.TimeAndSpace;
-import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher;
-import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher.MatchResult;
-import com.raytheon.uf.common.inventory.tree.AbstractRequestableNode;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.derivparam.inv.AvailabilityContainer;
 import com.raytheon.uf.common.derivparam.library.DerivParamDesc;
 import com.raytheon.uf.common.derivparam.library.DerivParamMethod;
 import com.raytheon.uf.common.derivparam.library.DerivParamMethod.FrameworkMethod;
+import com.raytheon.uf.common.inventory.TimeAndSpace;
+import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher;
+import com.raytheon.uf.common.inventory.TimeAndSpaceMatcher.MatchResult;
+import com.raytheon.uf.common.inventory.data.AbstractRequestableData;
+import com.raytheon.uf.common.inventory.data.AggregateRequestableData;
+import com.raytheon.uf.common.inventory.exception.DataCubeException;
+import com.raytheon.uf.common.inventory.tree.AbstractRequestableNode;
 import com.raytheon.uf.common.time.DataTime;
 
 /**
@@ -49,17 +49,20 @@ import com.raytheon.uf.common.time.DataTime;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 8, 2010            bsteffen     Initial creation
- * Feb 13, 2013 1621      bsteffen     update getDataDependency to correctly handle sources with time ranges.
- * Aug 4, 2015  DR 17615  M Porricelli Added less strict requirements for
- *                                     needed data time steps for ModelRun method
+ * 
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- ------------------------------------------
+ * Feb 08, 2010           bsteffen    Initial creation
+ * Feb 13, 2013  1621     bsteffen    update getDataDependency to correctly
+ *                                    handle sources with time ranges.
+ * Aug 04, 2015  17615    Porricelli  Added less strict requirements for needed
+ *                                    data time steps for ModelRun method
+ * Nov 17, 2016  6000     bsteffen    Do not bother calculating availability
+ *                                    when source is time agnostic.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class TimeRangeLevelNode extends AbstractAliasLevelNode {
 
@@ -137,6 +140,13 @@ public class TimeRangeLevelNode extends AbstractAliasLevelNode {
         Set<TimeAndSpace> allAvail = availability.get(sourceNode);
         Set<TimeAndSpace> goodAvail = new HashSet<TimeAndSpace>();
         for (TimeAndSpace ast : allAvail) {
+            if (ast.isTimeAgnostic()) {
+                /*
+                 * Its not possible to aggregate a parameter that does not have
+                 * specific times available.
+                 */
+                continue;
+            }
             Set<TimeAndSpace> needed = calculateNeededAvailability(ast);
             if (!needed.isEmpty()) {
                 Set<TimeAndSpace> matchedNeeded = TimeAndSpaceMatcher
