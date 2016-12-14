@@ -68,6 +68,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
  * Feb 06, 2009           bgonzale    Initial creation
  * Jun 24, 2013  2140     randerso    Added paintResource method
  * Oct 22, 2013  2491     bsteffen    Switch clone to ProcedureXmlManager
+ * Dec 09, 2016  6027     bsteffen    Copy bounds in clone
  * 
  * </pre>
  * 
@@ -534,6 +535,9 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
                     AbstractRenderableDisplay.class, jaxb.marshal(this));
             if (getExtent() != null) {
                 clonedDisplay.setExtent(this.getExtent().clone());
+            }
+            if (getBounds() != null) {
+                clonedDisplay.setBounds(getBounds());
             }
             return clonedDisplay;
         } catch (SerializationException e) {
