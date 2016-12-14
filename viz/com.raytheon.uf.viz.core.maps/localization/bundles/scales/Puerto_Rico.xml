@@ -22,7 +22,7 @@
         This is an absolute override file, indicating that a higher priority version
         of the file will completely replace a lower priority version of the file. 
     -->
-<bundle xmlns:ns2="group">
+<bundle>
     <displayList>
         <displays xsi:type="d2DMapRenderableDisplay" scale="Puerto Rico"
             density="1.0" magnification="1.0" zoomLevel="1.0"
