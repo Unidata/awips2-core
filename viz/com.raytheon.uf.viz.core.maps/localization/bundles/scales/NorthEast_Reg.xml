@@ -25,78 +25,50 @@
 <bundle>
     <displayList>
         <displays xsi:type="d2DMapRenderableDisplay" scale="Regional"
-            density="1.0" magnification="1.0" zoomLevel="1.0"
             mapCenter="-96.32976618771008 38.412854856637814 0.0"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
-                    <loadProperties loadWithoutData="false">
+                    <loadProperties>
                         <capabilities>
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
                             <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
-                            <capability xsi:type="timeMatchBasisCapability" />
+                                lineStyle="SOLID" />
                         </capabilities>
-                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
                     <properties renderingOrderId="MAP_OUTLINE"
-                        isSystemResource="false" isBlinking="false"
-                        isMapLayer="true" isHoverOn="false" isVisible="true">
-                        <pdProps maxDisplayWidth="100000000"
-                            minDisplayWidth="0" />
-                    </properties>
+                        isMapLayer="true" />
                     <resourceData xsi:type="mapResourceGroupData">
                         <resource>
-                            <loadProperties
-                                loadWithoutData="false">
+                            <loadProperties>
                                 <capabilities>
                                     <capability xsi:type="colorableCapability"
                                         colorAsString="#9b9b9b" />
-                                    <capability xsi:type="labelableCapability" />
-                                    <capability xsi:type="shadeableCapability" />
                                     <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" outlineOn="true"
-                                        outlineWidth="1" />
-                                    <capability
-                                        xsi:type="timeMatchBasisCapability" />
+                                        lineStyle="SOLID" />
                                 </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false"
-                                isBlinking="false" isMapLayer="true"
-                                isHoverOn="false" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000"
-                                    minDisplayWidth="0" />
-                            </properties>
+                            <properties isMapLayer="true" />
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
                                 <constraint>name not in ('Canada',
-                                    'Mexico', 'United States')</constraint>
+                                    'Mexico', 'United States')
+                                </constraint>
                                 <geomField>the_geom</geomField>
                             </resourceData>
                         </resource>
                         <resource>
-                            <loadProperties
-                                loadWithoutData="false">
+                            <loadProperties>
                                 <capabilities>
                                     <capability xsi:type="colorableCapability"
                                         colorAsString="#9b9b9b" />
-                                    <capability xsi:type="labelableCapability" />
-                                    <capability xsi:type="shadeableCapability" />
                                     <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" outlineOn="true"
-                                        outlineWidth="1" />
-                                    <capability
-                                        xsi:type="timeMatchBasisCapability" />
+                                        lineStyle="SOLID" />
                                 </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false"
-                                isBlinking="false" isMapLayer="true"
-                                isHoverOn="false" isVisible="true">
+                            <properties isMapLayer="true">
                                 <pdProps maxDisplayWidth="100000000"
                                     minDisplayWidth="750000" />
                             </properties>
@@ -107,27 +79,15 @@
                             </resourceData>
                         </resource>
                         <resource>
-                            <loadProperties
-                                loadWithoutData="false">
+                            <loadProperties>
                                 <capabilities>
                                     <capability xsi:type="colorableCapability"
                                         colorAsString="#9b9b9b" />
-                                    <capability xsi:type="labelableCapability" />
-                                    <capability xsi:type="shadeableCapability" />
                                     <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" outlineOn="true"
-                                        outlineWidth="1" />
-                                    <capability
-                                        xsi:type="timeMatchBasisCapability" />
+                                        lineStyle="SOLID" />
                                 </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false"
-                                isBlinking="false" isMapLayer="true"
-                                isHoverOn="false" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000"
-                                    minDisplayWidth="0" />
-                            </properties>
+                            <properties isMapLayer="true" />
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>Canada</mapName>
                                 <table>mapdata.canada</table>
@@ -135,27 +95,15 @@
                             </resourceData>
                         </resource>
                         <resource>
-                            <loadProperties
-                                loadWithoutData="false">
+                            <loadProperties>
                                 <capabilities>
                                     <capability xsi:type="colorableCapability"
                                         colorAsString="#9b9b9b" />
-                                    <capability xsi:type="labelableCapability" />
-                                    <capability xsi:type="shadeableCapability" />
                                     <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" outlineOn="true"
-                                        outlineWidth="1" />
-                                    <capability
-                                        xsi:type="timeMatchBasisCapability" />
+                                        lineStyle="SOLID" />
                                 </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false"
-                                isBlinking="false" isMapLayer="true"
-                                isHoverOn="false" isVisible="true">
-                                <pdProps maxDisplayWidth="100000000"
-                                    minDisplayWidth="0" />
-                            </properties>
+                            <properties isMapLayer="true" />
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>Mexico</mapName>
                                 <table>mapdata.mexico</table>
@@ -163,24 +111,15 @@
                             </resourceData>
                         </resource>
                         <resource>
-                            <loadProperties
-                                loadWithoutData="false">
+                            <loadProperties>
                                 <capabilities>
                                     <capability xsi:type="colorableCapability"
                                         colorAsString="#9b9b9b" />
-                                    <capability xsi:type="labelableCapability" />
-                                    <capability xsi:type="shadeableCapability" />
                                     <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" outlineOn="true"
-                                        outlineWidth="1" />
-                                    <capability
-                                        xsi:type="timeMatchBasisCapability" />
+                                        lineStyle="SOLID" />
                                 </capabilities>
-                                <resourceType>PLAN_VIEW</resourceType>
                             </loadProperties>
-                            <properties isSystemResource="false"
-                                isBlinking="false" isMapLayer="true"
-                                isHoverOn="false" isVisible="true">
+                            <properties isMapLayer="true">
                                 <pdProps maxDisplayWidth="750000"
                                     minDisplayWidth="0" />
                             </properties>
@@ -194,10 +133,8 @@
                     </resourceData>
                 </resource>
                 <timeMatcher xsi:type="d2DTimeMatcher"
-                    loadMode="VALID_TIME_SEQ" deltaFilter="0"
-                    forecastFilter="0" />
+                    loadMode="VALID_TIME_SEQ" />
                 <numberOfFrames>12</numberOfFrames>
-                <limitedNumberOfFrames>2147483647</limitedNumberOfFrames>
                 <gridGeometry envelopeMaxY="850000.0"
                     envelopeMinY="-850000.0" envelopeMaxX="850000.0"
                     envelopeMinX="-850000.0" rangeY="0 9999" rangeX="0 9999">

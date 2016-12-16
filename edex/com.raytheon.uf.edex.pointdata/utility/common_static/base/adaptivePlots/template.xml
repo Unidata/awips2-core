@@ -24,14 +24,16 @@
         version of the file will completely replace a lower priority version
         of the file.
     -->
-<bundle xmlns:ns2="http://www.example.org/productType" xmlns:ns3="group">
+<bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
-                    <loadProperties loadWithoutData="true"/>
-                    <properties isSystemResource="false" isBlinking="false" isMapLayer="false" isHoverOn="false" isVisible="true"/>
-                    <resourceData xsi:type="adaptivePlotResourceData" filePath="${filePath}" name="${name}" plotName="${description}"/>
+                    <loadProperties loadWithoutData="true" />
+                    <properties />
+                    <resourceData xsi:type="adaptivePlotResourceData"
+                        filePath="${filePath}" name="${name}" plotName="${description}" />
                 </resource>
             </descriptor>
         </displays>

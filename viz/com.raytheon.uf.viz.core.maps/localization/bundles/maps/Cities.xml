@@ -35,17 +35,10 @@
                             <capability xsi:type="labelableCapability"
                                 labelField="name" />
                             <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
+                                lineStyle="SOLID" />
                         </capabilities>
-                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isSystemResource="false"
-                        isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
-                        <pdProps maxDisplayWidth="100000000"
-                            minDisplayWidth="0" />
-                    </properties>
+                    <properties isMapLayer="true" />
                     <resourceData xsi:type="dbPointMapResourceData">
                         <table>mapdata.city</table>
                         <goodnessField>prog_disc</goodnessField>

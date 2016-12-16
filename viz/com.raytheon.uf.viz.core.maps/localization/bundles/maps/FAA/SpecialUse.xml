@@ -31,19 +31,12 @@
                     <loadProperties>
                         <capabilities>
                             <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
+                                lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
                         </capabilities>
-                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isSystemResource="false"
-                        isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
-                        <pdProps maxDisplayWidth="100000000"
-                            minDisplayWidth="0" />
-                    </properties>
+                    <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
                         <table>mapdata.specialuse</table>
                         <mapName>Special Use Airways</mapName>

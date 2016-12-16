@@ -39,11 +39,8 @@
                             <capability xsi:type="densityCapability"
                                 density="9999" />
                         </capabilities>
-                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isSystemResource="false"
-                        isBlinking="false" isMapLayer="true" isHoverOn="false"
-                        isVisible="true">
+                    <properties isMapLayer="true">
                         <pdProps maxDisplayWidth="750000"
                             minDisplayWidth="0" />
                     </properties>
