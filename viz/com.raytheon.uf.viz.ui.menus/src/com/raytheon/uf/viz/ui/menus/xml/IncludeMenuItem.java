@@ -19,7 +19,8 @@
  **/
 package com.raytheon.uf.viz.ui.menus.xml;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -33,7 +34,9 @@ import javax.xml.bind.Unmarshaller;
 
 import org.eclipse.jface.action.IContributionItem;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.MenuSerialization;
 import com.raytheon.uf.common.menus.xml.CommonAbstractMenuContribution;
 import com.raytheon.uf.common.menus.xml.CommonIncludeMenuItem;
@@ -54,19 +57,18 @@ import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------------
+ * ------------- -------- --------- ------------------------------------------
  * Mar 12, 2009  2214     chammack  Initial creation
  * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
  * May 04, 2015  4284     bsteffen  Use subMenuId
- * Dec 21, 2015  5194     bsteffen    Match changes in SubmenuContributionItem.
+ * Dec 21, 2015  5194     bsteffen  Match changes in SubmenuContributionItem.
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
+ * Dec 16, 2016  5976     bsteffen  Use localization file streams
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 public class IncludeMenuItem extends CommonIncludeMenuItem implements
         IContribItemProvider {
     static final transient IUFStatusHandler statusHandler = UFStatus
@@ -74,13 +76,6 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
 
     private SubmenuContributionItem submenuCont = null;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.ui.menus.xml.IContribItemProvider#getContributionItems
-     * (com.raytheon.uf.viz.ui.menus.xml.VariableSubstitution[], java.util.Set)
-     */
     @Override
     public IContributionItem[] getContributionItems(
             final CommonAbstractMenuContribution items,
@@ -126,19 +121,23 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
             Unmarshaller um = ctx.createUnmarshaller();
             um.setSchema(DiscoverMenuContributions.schema);
 
-            File file = PathManagerFactory.getPathManager().getStaticFile(
+            ILocalizationFile file = PathManagerFactory.getPathManager()
+                    .getStaticLocalizationFile(
                     fileName.getPath());
             if (file == null || !file.exists())
                 throw new VizException("File does not exist: "
                         + fileName.getPath());
 
-            final MenuTemplateFile mtf = (MenuTemplateFile) um.unmarshal(file);
+            MenuTemplateFile mtf;
+            try (InputStream stream = file.openInputStream()) {
+                mtf = (MenuTemplateFile) um.unmarshal(stream);
+            }
 
             // Create aggregated list of subs
             VariableSubstitution[] combinedSub = VariableSubstitution
                     .substituteAndCombine(incomingSubs, substitutions);
 
-            Set<String> removalsSet = new HashSet<String>();
+            Set<String> removalsSet = new HashSet<>();
             if (removals != null) {
                 removalsSet.addAll(Arrays.asList(removals));
             }
@@ -151,14 +150,17 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
                         continue;
 
                     if (amc == null) {
-                        System.out.println("There is no xml mapping for "
+                        statusHandler.warn(
+                                "There is no xml mapping for "
                                 + c.getClass());
-                    }
-                    IContributionItem[] contribItems = amc
-                            .getContributionItems(c, combinedSub, removalsSet);
+                    } else {
+                        IContributionItem[] contribItems = amc
+                                .getContributionItems(c, combinedSub,
+                                        removalsSet);
 
-                    if (contribItems != null && contribItems.length > 0) {
-                        contribList.addAll(Arrays.asList(contribItems));
+                        if (contribItems != null && contribItems.length > 0) {
+                            contribList.addAll(Arrays.asList(contribItems));
+                        }
                     }
                 }
             }
@@ -166,7 +168,7 @@ public class IncludeMenuItem extends CommonIncludeMenuItem implements
             IContributionItem[] ciArray = contribList
                     .toArray(new IContributionItem[contribList.size()]);
             return ciArray;
-        } catch (ParseException e) {
+        } catch (ParseException | IOException | LocalizationException e) {
             throw new VizException("Unable to process menu substitutions: "
                     + fileName, e);
         } catch (JAXBException e) {

@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.util.Date;
@@ -40,7 +42,9 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.xml.CommonBundleMenuContribution;
 import com.raytheon.uf.common.menus.xml.VariableSubstitution;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -93,6 +97,7 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Jun 09, 2014  3266     njensen   Removed useless code
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
+ * Dec 16, 2016  5976     bsteffen  Use localization file streams
  * 
  * </pre>
  * 
@@ -146,7 +151,8 @@ public class BundleContributionItem extends ContributionItem {
          * Combine the substitutions and pass the result off to the private
          * constructor.
          */
-        this(contribution, getSubstitutions(contribution, includeSubstitutions));
+        this(contribution,
+                getSubstitutions(contribution, includeSubstitutions));
     }
 
     /**
@@ -159,13 +165,14 @@ public class BundleContributionItem extends ContributionItem {
             CommonBundleMenuContribution contribution,
             VariableSubstitution[] includeSubstitutions) throws VizException {
         try {
-            return VariableSubstitution.toMap(VariableSubstitution
-                    .substituteAndCombine(includeSubstitutions,
-                            contribution.substitutions));
+            return VariableSubstitution
+                    .toMap(VariableSubstitution.substituteAndCombine(
+                            includeSubstitutions, contribution.substitutions));
         } catch (ParseException e) {
             throw new VizException(
                     "Error processing substitutions for menu item "
-                            + contribution.id, e);
+                            + contribution.id,
+                    e);
         }
     }
 
@@ -209,8 +216,8 @@ public class BundleContributionItem extends ContributionItem {
                     + menuContribution.xml.id);
         }
 
-        this.menuText = processVariables(
-                menuContribution.xml.text, this.substitutions);
+        this.menuText = processVariables(menuContribution.xml.text,
+                this.substitutions);
 
         // The bundle persists for the life of CAVE; no need to remove the
         // listener.
@@ -460,12 +467,14 @@ public class BundleContributionItem extends ContributionItem {
                     }
                     Command command = service
                             .getCommand(this.menuContribution.xml.command);
-                    command.executeWithChecks(new ExecutionEvent(command,
-                            parms, null, null));
+                    command.executeWithChecks(
+                            new ExecutionEvent(command, parms, null, null));
                 } catch (Exception e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Failed to execute command: "
-                                    + this.menuContribution.xml.command, e);
+                    statusHandler
+                            .handle(Priority.PROBLEM,
+                                    "Failed to execute command: "
+                                            + this.menuContribution.xml.command,
+                                    e);
                 }
             }
 
@@ -478,15 +487,17 @@ public class BundleContributionItem extends ContributionItem {
 
     private Set<BundleDataItem> loadBundleFromXml() {
         try {
-            Bundle b = Bundle.unmarshalBundle(
-                    PathManagerFactory.getPathManager().getStaticFile(
-                            this.menuContribution.xml.bundleFile),
-                    substitutions);
-
+            ILocalizationFile file = PathManagerFactory.getPathManager()
+                    .getStaticLocalizationFile(
+                            this.menuContribution.xml.bundleFile);
+            Bundle b;
+            try (InputStream stream = file.openInputStream()) {
+                b = Bundle.unmarshalBundle(stream, substitutions);
+            }
             return BundleUtil.extractMetadata(b);
-        } catch (VizException e1) {
-            e1.printStackTrace();
-            return new HashSet<BundleDataItem>();
+        } catch (VizException | LocalizationException | IOException e) {
+            statusHandler.error(e.getLocalizedMessage(), e);
+            return new HashSet<>();
         }
     }
 

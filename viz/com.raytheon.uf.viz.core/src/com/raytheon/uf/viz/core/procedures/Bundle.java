@@ -21,6 +21,10 @@ package com.raytheon.uf.viz.core.procedures;
 
 import java.io.File;
 import java.io.FileReader;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.io.Reader;
 import java.util.Map;
 
 import javax.xml.bind.annotation.XmlAccessType;
@@ -48,6 +52,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Aug 30, 2007           chammack  Initial Creation.
  * Oct 22, 2013  2491     bsteffen  Switch serialization to ProcedureXmlManager
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
+ * Dec 16, 2016  5976     bsteffen  Support for streams.
  * 
  * </pre>
  * 
@@ -232,6 +237,36 @@ public class Bundle {
     }
 
     /**
+     * Read a bundle from a stream. The caller is responsible for closing the
+     * stream.
+     */
+    public static Bundle unmarshalBundle(InputStream stream)
+            throws VizException {
+        return unmarshalBundle(stream, null);
+    }
+
+    /**
+     * Read a bundle from a stream with variable substitution. The caller is
+     * responsible for closing the stream.
+     */
+    public static Bundle unmarshalBundle(InputStream stream,
+            Map<String, String> variables) throws VizException {
+        char[] buffer = new char[4096];
+        StringBuilder builder = new StringBuilder();
+        try {
+            Reader reader = new InputStreamReader(stream, "UTF-8");
+            int count = reader.read(buffer, 0, buffer.length);
+            while (count > 0) {
+                builder.append(buffer, 0, count);
+                count = reader.read(buffer, 0, buffer.length);
+            }
+        } catch (IOException e) {
+            throw new VizException(e);
+        }
+        return unmarshalBundle(builder.toString(), variables);
+    }
+
+    /**
      * Unmarshal a bundle
      * 
      * @param bundle
@@ -269,11 +304,11 @@ public class Bundle {
             Map<String, String> variables) throws VizException {
 
         try {
-            String substStr = VariableSubstitutor.processVariables(
-                    bundleStr, variables);
+            String substStr = VariableSubstitutor.processVariables(bundleStr,
+                    variables);
 
-            Bundle b = ProcedureXmlManager.getInstance().unmarshal(
-                    Bundle.class, substStr);
+            Bundle b = ProcedureXmlManager.getInstance().unmarshal(Bundle.class,
+                    substStr);
 
             return b;
         } catch (Exception e) {

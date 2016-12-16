@@ -19,7 +19,8 @@
  **/
 package com.raytheon.uf.viz.ui.menus.xml;
 
-import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.text.ParseException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -32,7 +33,9 @@ import javax.xml.bind.Unmarshaller;
 
 import org.eclipse.jface.action.IContributionItem;
 
+import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.MenuSerialization;
 import com.raytheon.uf.common.menus.xml.CommonAbstractMenuContribution;
 import com.raytheon.uf.common.menus.xml.CommonIncludeMenuContribution;
@@ -54,13 +57,12 @@ import com.raytheon.uf.viz.ui.menus.widgets.SubmenuContributionItem;
  * Apr 27, 2009  2214     chammack  Initial creation
  * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
+ * Dec 16, 2016  5976     bsteffen  Use localization file streams
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 public class IncludeMenuContribution extends
         AbstractMenuContributionItem<CommonIncludeMenuContribution> {
 
@@ -94,13 +96,16 @@ public class IncludeMenuContribution extends
             Unmarshaller um = ctx.createUnmarshaller();
             um.setSchema(DiscoverMenuContributions.schema);
 
-            File file = PathManagerFactory.getPathManager().getStaticFile(
+            ILocalizationFile file = PathManagerFactory.getPathManager().getStaticLocalizationFile(
                     item.fileName.getPath());
             if (file == null || !file.exists())
                 throw new VizException("File does not exist: "
                         + item.fileName.getPath());
 
-            final MenuTemplateFile mtf = (MenuTemplateFile) um.unmarshal(file);
+            MenuTemplateFile mtf;
+            try (InputStream stream = file.openInputStream()) {
+                mtf = (MenuTemplateFile) um.unmarshal(stream);
+            }
 
             VariableSubstitution[] combinedSub = VariableSubstitution
                     .substituteAndCombine(
@@ -117,7 +122,7 @@ public class IncludeMenuContribution extends
                     }
                 }
             }
-        } catch (ParseException e) {
+        } catch (ParseException | IOException | LocalizationException e) {
             throw new VizException("Unable to process menu substitutions: "
                     + item.fileName, e);
         } catch (JAXBException e) {
