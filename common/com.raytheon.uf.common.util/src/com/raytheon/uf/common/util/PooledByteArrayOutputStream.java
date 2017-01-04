@@ -29,14 +29,14 @@ import java.io.OutputStream;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 30, 2015 4710       bclement     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Oct 30, 2015  4710     bclement  Initial creation
+ * Jan 04, 2017  6041     bsteffen  Allow close() to be called more than once
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public class PooledByteArrayOutputStream extends OutputStream {
 
@@ -68,7 +68,6 @@ public class PooledByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * @return
      * @see com.raytheon.uf.common.util.ResizeableByteArrayOutputStream#getCapacity()
      */
     public int getCapacity() {
@@ -76,7 +75,6 @@ public class PooledByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * @param length
      * @see com.raytheon.uf.common.util.ResizeableByteArrayOutputStream#setCapacity(int)
      */
     public void setCapacity(int length) {
@@ -84,58 +82,40 @@ public class PooledByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * @return
      * @see com.raytheon.uf.common.util.ResizeableByteArrayOutputStream#getUnderlyingArray()
      */
     public byte[] getUnderlyingArray() {
         return getDelegate().getUnderlyingArray();
     }
 
-    /**
-     * @param b
-     * @throws IOException
-     * @see java.io.OutputStream#write(byte[])
-     */
+    @Override
     public void write(byte[] b) throws IOException {
         getDelegate().write(b);
     }
 
     /**
-     * @param count
      * @see com.raytheon.uf.common.util.ResizeableByteArrayOutputStream#setCount(int)
      */
     public void setCount(int count) {
         getDelegate().setCount(count);
     }
 
-    /**
-     * @param b
-     * @see java.io.ByteArrayOutputStream#write(int)
-     */
+    @Override
     public void write(int b) {
         getDelegate().write(b);
     }
 
-    /**
-     * @param b
-     * @param off
-     * @param len
-     * @see java.io.ByteArrayOutputStream#write(byte[], int, int)
-     */
+    @Override
     public void write(byte[] b, int off, int len) {
         getDelegate().write(b, off, len);
     }
 
-    /**
-     * @throws IOException
-     * @see java.io.OutputStream#flush()
-     */
+    @Override
     public void flush() throws IOException {
         getDelegate().flush();
     }
 
     /**
-     * 
      * @see java.io.ByteArrayOutputStream#reset()
      */
     public void reset() {
@@ -143,35 +123,29 @@ public class PooledByteArrayOutputStream extends OutputStream {
     }
 
     /**
-     * @return
      * @see java.io.ByteArrayOutputStream#size()
      */
     public int size() {
         return getDelegate().size();
     }
 
-    /**
-     * @throws IOException
-     * @see java.io.ByteArrayOutputStream#close()
-     */
+    @Override
     public void close() throws IOException {
-        getDelegate().close();
+        if (_delegate != null) {
+            _delegate.close();
+        }
         if (autoReturn) {
             returnToPool();
         }
     }
 
     /**
-     * @return
      * @see java.io.ByteArrayOutputStream#toByteArray()
      */
     public byte[] toByteArray() {
         return getDelegate().toByteArray();
     }
 
-    /**
-     * @return the autoReturn
-     */
     public boolean isAutoReturn() {
         return autoReturn;
     }
