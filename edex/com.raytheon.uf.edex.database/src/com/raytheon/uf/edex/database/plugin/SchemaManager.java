@@ -72,11 +72,11 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Jul 13, 2015  4500     rjpeter      Fix SQL Injection concerns.
  * Dec 17, 2015  5166     kbisanz      Update logging to use SLF4J
  * Jun 20, 2016  5679     rjpeter      Add admin database account.
+ * Dec 08, 2016  3440     njensen      Cleanup error message
  * 
  * </pre>
  * 
  * @author bphillip
- * @version 1.0
  */
 public class SchemaManager implements IDatabasePluginRegistryChanged {
 
@@ -98,9 +98,9 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
 
     private final DatabasePluginRegistry dbPluginRegistry;
 
-    private final Map<String, ArrayList<String>> pluginCreateSql = new HashMap<String, ArrayList<String>>();
+    private final Map<String, ArrayList<String>> pluginCreateSql = new HashMap<>();
 
-    private final Map<String, ArrayList<String>> pluginDropSql = new HashMap<String, ArrayList<String>>();
+    private final Map<String, ArrayList<String>> pluginDropSql = new HashMap<>();
 
     private final Pattern createResourceNamePattern = Pattern
             .compile("^create (?:table |index |sequence )(?:[A-Za-z_0-9]*\\.)?(.+?)(?: .*)?$");
@@ -164,7 +164,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     case FAILED: {
                         failedCount++;
                         if (failedCount > 5) {
-                            logger.error("Unabled to grab cluster for plugin versioning plugin: "
+                            logger.error(
+                                    "Unable to grab cluster lock for plugin versioning plugin: "
                                     + pluginName);
                             return;
                         }
@@ -237,7 +238,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             String[] sqlArray = sessFactory
                     .getCreateSql(getTablesAndDependencies(props,
                             sessFactory.getAnnotatedClasses()));
-            createSql = new ArrayList<String>(sqlArray.length);
+            createSql = new ArrayList<>(sqlArray.length);
             for (String sql : sqlArray) {
                 createSql.add(sql.toLowerCase());
             }
@@ -282,7 +283,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             String[] sqlArray = sessFactory
                     .getDropSql(getTablesAndDependencies(props,
                             sessFactory.getAnnotatedClasses()));
-            dropSql = new ArrayList<String>(sqlArray.length);
+            dropSql = new ArrayList<>(sqlArray.length);
             for (String sql : sqlArray) {
                 dropSql.add(sql);
             }
@@ -310,7 +311,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
      */
     protected Set<Class<?>> getTablesAndDependencies(
             DatabasePluginProperties props, Class<?>[] allPossibleClasses) {
-        Set<Class<?>> result = new HashSet<Class<?>>();
+        Set<Class<?>> result = new HashSet<>();
         // add a . to the end to ensure the package name exactly matches
         // and we don't pick up incorrect packages,
         // e.g. common.dataplugin.cwa. vs common.dataplugin.cwat.

@@ -39,11 +39,11 @@ import com.raytheon.uf.edex.database.cluster.ClusterTask;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
+ * Dec 08, 2016 3440       njensen     Improved check in stopContext()
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class ClusteredContextStateManager extends DependencyContextStateManager {
 
@@ -79,13 +79,6 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
         return context.getName() + ClusterLockUtils.CLUSTER_SUFFIX;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.DependencyContextStateManager#
-     * isContextStartable(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean isContextStartable(CamelContext context) throws Exception {
         boolean canStartContext = super.isContextStartable(context);
@@ -122,20 +115,13 @@ public class ClusteredContextStateManager extends DependencyContextStateManager 
         return canStartContext;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.DependencyContextStateManager#
-     * stopContext(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean stopContext(CamelContext context) throws Exception {
         // on stop, unlock the cluster lock if we own it
         String contextName = context.getName()
                 + ClusterLockUtils.CLUSTER_SUFFIX;
         ClusterTask lock = ClusterLockUtils.lookupLock(taskName, contextName);
-        if (lock.getExtraInfo().equals(myName) && lock.isRunning()) {
+        if (myName.equals(lock.getExtraInfo()) && lock.isRunning()) {
             ClusterLockUtils.unlock(taskName, contextName);
         }
 
