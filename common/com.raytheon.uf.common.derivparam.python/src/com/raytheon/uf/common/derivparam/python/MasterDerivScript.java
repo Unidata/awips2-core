@@ -35,6 +35,7 @@ import com.raytheon.uf.common.inventory.tree.CubeLevel;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.python.PythonInterpreter;
 
+import jep.JepConfig;
 import jep.JepException;
 import jep.NDArray;
 
@@ -57,6 +58,7 @@ import jep.NDArray;
  * Apr 20, 2015  4259     njensen   Updated for new Jep API
  * Oct 05, 2016  5891     bsteffen  Allow functions in subdirectories
  * Nov 02, 2016  5979     njensen   Cast to Number where applicable
+ * Jan 04, 2017  5959     njensen   Use JepConfig in constructor
  * 
  * </pre>
  * 
@@ -73,9 +75,9 @@ public class MasterDerivScript extends PythonInterpreter {
     /**
      * Constructor
      * 
-     * @param anIncludePath
+     * @param includePath
      *            the python include path
-     * @param aClassLoader
+     * @param classLoader
      *            the java classloader
      * @param preEvals
      *            python statements to be executed before the script of
@@ -84,9 +86,10 @@ public class MasterDerivScript extends PythonInterpreter {
      *            parameter scripts
      * @throws JepException
      */
-    public MasterDerivScript(String anIncludePath, ClassLoader aClassLoader,
+    public MasterDerivScript(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
-        super(anIncludePath, aClassLoader, preEvals);
+        super(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), preEvals);
     }
 
     public Object executeFunction(String name, List<Object> args)
@@ -294,15 +297,14 @@ public class MasterDerivScript extends PythonInterpreter {
 
             // get each array and put it in the list
             jep.eval(RESULT + " = __tmp[0]");
-            getExecutionResult(result, null);
-            long[] shape = result.get(0).getSizes();
+            getExecutionResult(result);
             for (int tupleElem = 1; tupleElem < lenTuple; tupleElem++) {
                 jep.eval(RESULT + " = __tmp[" + tupleElem + "]");
-                getExecutionResult(result, shape);
+                getExecutionResult(result);
             }
         } else {
             result = new ArrayList<>(1);
-            getExecutionResult(result, null);
+            getExecutionResult(result);
         }
         jep.eval("del globals()['" + RESULT + "']");
         return result;
@@ -360,7 +362,7 @@ public class MasterDerivScript extends PythonInterpreter {
     }
 
     @SuppressWarnings("unchecked")
-    protected void getExecutionResult(List<IDataRecord> result, long[] shape)
+    protected void getExecutionResult(List<IDataRecord> result)
             throws JepException {
         filterResult();
         // create result as a list with a single float array

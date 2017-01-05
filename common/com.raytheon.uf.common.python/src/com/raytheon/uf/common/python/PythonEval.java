@@ -21,10 +21,11 @@ package com.raytheon.uf.common.python;
 
 import java.util.List;
 
+import jep.JepConfig;
 import jep.JepException;
 
 /**
- * TODO Add Description
+ * A PythonScript for evaluating python statements.
  * 
  * <pre>
  * 
@@ -32,27 +33,76 @@ import jep.JepException;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Oct  5, 2011            njensen     Initial creation
+ * Oct 05, 2011            njensen     Initial creation
  * Sep 19, 2012      #1091 randerso    Changed to extend PythonScript to 
  *                                     allow access to both eval and execute
  *                                     methods
+ * Jan 05, 2017       5959 njensen     Use JepConfig in constructor
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class PythonEval extends PythonScript {
 
-    public PythonEval(String anIncludePath, ClassLoader aClassLoader)
-            throws JepException {
-        super(anIncludePath, aClassLoader);
+    /**
+     * Constructor
+     * 
+     * @param config
+     *            the jep config to use with the interpreter
+     * @throws JepException
+     */
+    public PythonEval(JepConfig config) throws JepException {
+        super(config);
     }
 
-    public PythonEval(String anIncludePath, ClassLoader aClassLoader,
+    /**
+     * Constructor
+     * 
+     * @param config
+     *            the jep config to use with the interpreter
+     * @param preEvals
+     *            String statements to be run by the python interpreter
+     *            immediately
+     * @throws JepException
+     */
+    public PythonEval(JepConfig config, List<String> preEvals)
+            throws JepException {
+        super(config, preEvals);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @deprecated use PythonEval(JepConfig) instead
+     * 
+     * @param includePath
+     * @param classLoader
+     * @throws JepException
+     */
+    @Deprecated
+    public PythonEval(String includePath, ClassLoader classLoader)
+            throws JepException {
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader));
+    }
+
+    /**
+     * Constructor
+     * 
+     * @deprecated Use PythonEval(JepConfig, List<String) instead
+     * 
+     * @param includePath
+     * @param classLoader
+     * @param preEvals
+     * @throws JepException
+     */
+    @Deprecated
+    public PythonEval(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
-        super(anIncludePath, aClassLoader, preEvals);
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), preEvals);
     }
 
     public void eval(String eval) throws JepException {

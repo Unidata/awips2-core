@@ -2,12 +2,12 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Python Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.python
-Bundle-Version: 1.12.1174.qualifier
+Bundle-Version: 1.17.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.jep;bundle-version="1.0.0";visibility:=reexport,
- com.raytheon.uf.common.status;bundle-version="1.12.1174",
- com.raytheon.uf.common.localization;bundle-version="1.12.1174"
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: org.jep;visibility:=reexport,
+ com.raytheon.uf.common.status,
+ com.raytheon.uf.common.localization
 Export-Package: com.raytheon.uf.common.python,
  com.raytheon.uf.common.python.controller,
  com.raytheon.uf.common.python.multiprocessing,

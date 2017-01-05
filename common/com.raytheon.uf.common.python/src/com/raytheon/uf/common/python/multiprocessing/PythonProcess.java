@@ -23,9 +23,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import jep.JepException;
-
 import com.raytheon.uf.common.python.PythonInterpreter;
+
+import jep.JepConfig;
+import jep.JepException;
 
 /**
  * A PythonScript with support for multiprocessing. NOTE: If you want to do
@@ -48,11 +49,11 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Dec 07, 2009            njensen     Initial creation
  * Mar 29, 2011 8774       rferrel     Clean up process when execute halted.
  * Apr 26, 2015 4259       njensen     Updated for new JEP API
+ * Jan 04, 2017 5959       njensen     Use JepConfig in constructor
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class PythonProcess extends PythonInterpreter {
@@ -90,14 +91,40 @@ public class PythonProcess extends PythonInterpreter {
 
     final ErrorMessage errorMessage = new ErrorMessage();
 
-    public PythonProcess(String filePath, String anIncludePath,
-            ClassLoader classLoader) throws JepException {
-        super(filePath, anIncludePath, classLoader);
+    /**
+     * Constructor
+     * 
+     * @param config
+     *            the jep config to use with the interpreter
+     * @param filePath
+     *            the path to the python script
+     * @throws JepException
+     */
+    public PythonProcess(JepConfig config, String filePath)
+            throws JepException {
+        super(config, filePath);
         jep.eval("from multiprocessing import Queue, Process");
         jep.eval("from Queue import Empty");
         jep.eval("import time");
         jep.eval("import JUtil");
         jep.eval("import os, signal");
+    }
+
+    /**
+     * Constructor
+     * 
+     * @deprecated use PythonProcess(JepConfig, String) instead
+     * 
+     * @param filePath
+     * @param includePath
+     * @param classLoader
+     * @throws JepException
+     */
+    @Deprecated
+    public PythonProcess(String filePath, String includePath,
+            ClassLoader classLoader) throws JepException {
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), filePath);
     }
 
     protected void internalExecute(String methodName, Map<String, Object> args,
@@ -146,9 +173,8 @@ public class PythonProcess extends PythonInterpreter {
         if (errorMessage.getMessage() != null) {
             if (errorMessage.getMessage().startsWith("Error")) {
                 throw new JepException(errorMessage.getMessage());
-            } else {
-                System.out.println(errorMessage.getMessage());
             }
+            System.out.println(errorMessage.getMessage());
         }
     }
 
