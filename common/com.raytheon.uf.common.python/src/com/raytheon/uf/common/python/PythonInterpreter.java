@@ -19,7 +19,9 @@
  **/
 package com.raytheon.uf.common.python;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import jep.Jep;
 import jep.JepConfig;
@@ -27,7 +29,7 @@ import jep.JepException;
 import jep.NamingConventionClassEnquirer;
 
 /**
- * Interfaces to a native python interpreter with JEP.
+ * Interfaces to a native Python interpreter with Jep.
  * 
  * <pre>
  * 
@@ -39,6 +41,8 @@ import jep.NamingConventionClassEnquirer;
  *                                     ClassLoader.
  * Apr 27, 2015   4259     njensen     Update for new JEP API
  * Apr 28, 2016   5236     njensen     Use Jep redirectOutput for python prints
+ * Jan 04, 2017   5959     njensen     All constructors now use JepConfig
+ *                                     Add numpy as a shared module
  * 
  * </pre>
  * 
@@ -57,91 +61,82 @@ public abstract class PythonInterpreter implements AutoCloseable {
     /**
      * Constructor
      * 
-     * @param includePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param classLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
+     * @param config
+     *            the jep config to use with the interpreter
      * @throws JepException
      */
-    public PythonInterpreter(String includePath, ClassLoader classLoader)
-            throws JepException {
-        this(null, includePath, classLoader);
+    public PythonInterpreter(JepConfig config) throws JepException {
+        this(config, null, null);
     }
 
     /**
      * Constructor
      * 
+     * @param config
+     *            the jep config to use with the interpreter
      * @param filePath
-     *            the path to the python script
-     * @param includePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param classLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
+     *            the path to a python script to run immediately after
+     *            interpreter initialization
      * @throws JepException
      */
-    public PythonInterpreter(String filePath, String includePath,
-            ClassLoader classLoader) throws JepException {
-        this(filePath, includePath, classLoader, null);
+    public PythonInterpreter(JepConfig config, String filePath)
+            throws JepException {
+        this(config, filePath, null);
     }
 
     /**
      * Constructor
      * 
-     * @param includePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param classLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
+     * @param config
+     *            the jep config to use with the interpreter
      * @param preEvals
      *            String statements to be run by the python interpreter
-     *            immediately. This is generally used to create global vars in
-     *            the python interpreter.
+     *            immediately
      * @throws JepException
      */
-    public PythonInterpreter(String includePath, ClassLoader classLoader,
-            List<String> preEvals) throws JepException {
-        this(null, includePath, classLoader, preEvals);
+    public PythonInterpreter(JepConfig config, List<String> preEvals)
+            throws JepException {
+        this(config, null, preEvals);
     }
 
     /**
      * Constructor
      * 
+     * @param config
+     *            the jep config to use with the interpreter
      * @param filePath
-     *            the path to the python script
-     * @param includePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param classLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
+     *            the path to a python script to run immediately after
+     *            interpreter initialization
      * @param preEvals
      *            String statements to be run by the python interpreter before
-     *            the file at aFilePath. This is generally used to create global
-     *            vars in the python interpreter.
+     *            the file at filePath
      * @throws JepException
      */
-    public PythonInterpreter(String filePath, String includePath,
-            ClassLoader classLoader, List<String> preEvals) throws JepException {
-        JepConfig config = new JepConfig().setInteractive(false)
-                .setIncludePath(includePath).setClassLoader(classLoader)
-                .setClassEnquirer(new NamingConventionClassEnquirer())
+    public PythonInterpreter(JepConfig config, String filePath,
+            List<String> preEvals) throws JepException {
+        config.setClassEnquirer(new NamingConventionClassEnquirer())
                 .setRedirectOutputStreams(true);
+
+        /*
+         * prevent issues when disposing interpreters that are using numpy
+         */
+        Set<String> sharedModules = new HashSet<>();
+        sharedModules.add("numpy");
+        config.setSharedModules(sharedModules);
+
         jep = new Jep(config);
         initializeJep(filePath, preEvals);
     }
 
     /**
-     * Initializes the jep instance, enabling java imports and running the
-     * script (if provided)
+     * Runs the preEvals and the script if provided
      * 
      * @param filePath
      *            the path to the python script or null if no script is to be
      *            run
+     * @param preEvals
+     *            String statements to be run by the python interpreter before
+     *            the file at filePath
      * 
      * @throws JepException
      * 

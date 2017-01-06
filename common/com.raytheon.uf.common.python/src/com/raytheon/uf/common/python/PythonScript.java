@@ -28,24 +28,20 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.UUID;
 
+import jep.JepConfig;
 import jep.JepException;
 
 /**
- * Generic interface for executing Python scripts natively from Java. All
- * interfacing with Python should go through this class. If custom behavior is
- * needed, the recommended course of action is to extend this class.
+ * Primary implementation for executing Python scripts natively from Java.
+ * Interacting with Python from Java usually goes through this class. If custom
+ * behavior is needed, the recommended course of action is to extend this class
+ * or its parent PythonInterpreter.
  * 
  * Due to JNI, the thread that creates an instance of PythonScript must be the
  * same thread for any actions on that script.
  * 
- * dispose() should be called when the script is no longer needed to help ensure
- * memory is cleaned up.
- * 
- * The profile option uses Python's built-in cProfiler and if enabled, will run
- * whatever method is sent to internalExecute() through cProfiler, dumping the
- * results to a file in the /tmp/ directory with the name of the method being
- * executed. This should never be enabled in a deployed/production system and is
- * only used for improving the performance of code.
+ * dispose() (or close()) should be called when the script is no longer needed
+ * to ensure memory is cleaned up.
  * 
  * <pre>
  * SOFTWARE HISTORY
@@ -60,6 +56,7 @@ import jep.JepException;
  * Sep 05, 2013   #2307    dgilling    Remove constructor without explicit
  *                                     ClassLoader.
  * Nov 02, 2016    5979    njensen     Cast to Number where applicable
+ * Jan 04, 2017    5959    njensen     Added JepConfig constructors, deprecated all others
  * 
  * </pre>
  * 
@@ -75,30 +72,96 @@ public class PythonScript extends PythonInterpreter {
     /**
      * Constructor
      * 
-     * @param aFilePath
-     *            the path to the python script
-     * @param anIncludePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
+     * @param config
+     *            the jep config to use with the interpreter
      * @throws JepException
      */
-    public PythonScript(String aFilePath, String anIncludePath,
-            ClassLoader aClassLoader) throws JepException {
-        super(aFilePath, anIncludePath, aClassLoader);
+    public PythonScript(JepConfig config) throws JepException {
+        super(config);
     }
 
     /**
      * Constructor
      * 
-     * @param aFilePath
+     * @param config
+     *            the jep config to use with the interpreter
+     * @param filePath
+     *            the path to a python script to run immediately after
+     *            interpreter initialization
+     * @throws JepException
+     */
+    public PythonScript(JepConfig config, String filePath)
+            throws JepException {
+        super(config, filePath);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @param config
+     *            the jep config to use with the interpreter
+     * @param preEvals
+     *            String statements to be run by the python interpreter
+     *            immediately
+     * @throws JepException
+     */
+    public PythonScript(JepConfig config, List<String> preEvals)
+            throws JepException {
+        super(config, preEvals);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @param config
+     *            the jep config to use with the interpreter
+     * @param filePath
+     *            the path to a python script to run immediately after
+     *            interpreter initialization
+     * @param preEvals
+     *            String statements to be run by the python interpreter before
+     *            the file at filePath
+     * @throws JepException
+     */
+    public PythonScript(JepConfig config, String filePath,
+            List<String> preEvals) throws JepException {
+        super(config, filePath, preEvals);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @deprecated Use PythonScript(JepConfig, String) instead
+     * 
+     * @param filePath
      *            the path to the python script
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
+     *            separated by File.pathSeparator
+     * @param classLoader
+     *            the java classloader to use for importing java classes inside
+     *            python
+     * @throws JepException
+     */
+    @Deprecated
+    public PythonScript(String filePath, String includePath,
+            ClassLoader classLoader) throws JepException {
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), filePath);
+    }
+
+    /**
+     * Constructor
+     * 
+     * @deprecated This was only for testing performance in developer
+     *             environments and may be considered obsolete.
+     * 
+     * @param filePath
+     *            the path to the python script
+     * @param includePath
+     *            the python include path, with multiple directories being
+     *            separated by File.pathSeparator
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @param profile
@@ -106,69 +169,61 @@ public class PythonScript extends PythonInterpreter {
      *            true for development purposes, not production code.
      * @throws JepException
      */
-    public PythonScript(String aFilePath, String anIncludePath,
-            ClassLoader aClassLoader, boolean profile) throws JepException {
-        this(aFilePath, anIncludePath, aClassLoader);
+    @Deprecated
+    public PythonScript(String filePath, String includePath,
+            ClassLoader classLoader, boolean profile) throws JepException {
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), filePath);
         this.profile = profile;
     }
 
     /**
      * Constructor
      * 
-     * @param anIncludePath
-     *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
-     *            the java classloader to use for importing java classes inside
-     *            python
-     * @throws JepException
-     */
-    protected PythonScript(String anIncludePath, ClassLoader aClassLoader)
-            throws JepException {
-        super(anIncludePath, aClassLoader);
-    }
-
-    /**
-     * Constructor
+     * @deprecated Use PythonScript(JepConfig, String, List<String>) instead
      * 
-     * @param aFilePath
+     * @param filePath
      *            the path to the python script
-     * @param anIncludePath
+     * @param includePath
      *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
+     *            separated by File.pathSeparator
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @param preEvals
      *            String statements to be run by the python interpreter before
-     *            the file at aFilePath. This is generally used to create global
-     *            vars in the python interpreter.
+     *            the file at filePath
      * @throws JepException
      */
-    public PythonScript(String aFilePath, String anIncludePath,
-            ClassLoader aClassLoader, List<String> preEvals)
+    @Deprecated
+    public PythonScript(String filePath, String includePath,
+            ClassLoader classLoader, List<String> preEvals)
             throws JepException {
-        super(aFilePath, anIncludePath, aClassLoader, preEvals);
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), filePath, preEvals);
     }
 
     /**
      * Constructor
      * 
-     * @param anIncludePath
+     * @deprecated Use PythonScript(JepConfig, List<String) instead
+     * 
+     * @param includePath
      *            the python include path, with multiple directories being
-     *            separated by :
-     * @param aClassLoader
+     *            separated by File.pathSeparator
+     * @param classLoader
      *            the java classloader to use for importing java classes inside
      *            python
      * @param preEvals
      *            String statements to be run by the python interpreter
-     *            immediately. This is generally used to create global vars in
-     *            the python interpreter.
+     *            immediately
      * @throws JepException
      */
-    public PythonScript(String anIncludePath, ClassLoader aClassLoader,
+    @Deprecated
+    public PythonScript(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
-        super(anIncludePath, aClassLoader, preEvals);
+        this(new JepConfig().setIncludePath(includePath)
+                .setClassLoader(classLoader), preEvals);
     }
 
     /**
