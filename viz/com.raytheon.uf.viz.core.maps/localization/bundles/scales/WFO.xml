@@ -54,9 +54,7 @@
                             <resourceData xsi:type="dbMapResourceData">
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
-                                <constraint>name not in ('CANADA',
-                                    'MEXICO', 'UNITED STATES')
-                                </constraint>
+                                <constraint>name not in ('CANADA', 'MEXICO', 'UNITED STATES')</constraint>
                                 <geomField>the_geom</geomField>
                             </resourceData>
                         </resource>

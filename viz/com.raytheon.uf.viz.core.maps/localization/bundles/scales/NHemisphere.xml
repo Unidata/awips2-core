@@ -53,9 +53,7 @@
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name not in ('CANADA',
-                                    'MEXICO', 'UNITED STATES')
-                                </constraint>
+                                <constraint>name not in ('CANADA', 'MEXICO', 'UNITED STATES')</constraint>
                             </resourceData>
                         </resource>
                         <resource>

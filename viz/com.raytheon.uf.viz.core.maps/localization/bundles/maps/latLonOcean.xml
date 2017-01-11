@@ -36,8 +36,7 @@
                                 lineStyle="SOLID" />
                         </capabilities>
                     </loadProperties>
-                    <properties isMapLayer="true">
-                    </properties>
+                    <properties isMapLayer="true"/>
                     <resourceData xsi:type="mapResourceGroupData">
                         <resource>
                             <loadProperties>

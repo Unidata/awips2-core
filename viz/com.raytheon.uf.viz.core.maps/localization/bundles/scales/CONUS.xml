@@ -55,9 +55,7 @@
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name not in ('CANADA',
-                                    'MEXICO', 'UNITED STATES')
-                                </constraint>
+                                <constraint>name not in ('CANADA', 'MEXICO', 'UNITED STATES')</constraint>
                             </resourceData>
                         </resource>
                         <resource>
@@ -151,9 +149,7 @@
                                 <mapName>two lakes</mapName>
                                 <table>mapdata.lake</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name in ('Great Salt Lake',
-                                    'Lake Winnepeg')
-                                </constraint>
+                                <constraint>name in ('Great Salt Lake', 'Lake Winnepeg')</constraint>
                             </resourceData>
                         </resource>
                         <mapName>State/County Boundaries</mapName>
