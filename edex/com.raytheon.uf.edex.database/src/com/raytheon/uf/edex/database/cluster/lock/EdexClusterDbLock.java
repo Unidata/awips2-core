@@ -111,6 +111,15 @@ public class EdexClusterDbLock implements Lock, Serializable {
         this.leasingThread = Objects.requireNonNull(leasingThread);
     }
 
+    /**
+     * Constructor for Hibernate usage only. Do not call this.
+     */
+    protected EdexClusterDbLock() {
+        this.name = null;
+        this.config = null;
+        this.leasingThread = null;
+    }
+
     @Override
     public void lock() {
         while (!lockTheLock()) {
@@ -197,7 +206,7 @@ public class EdexClusterDbLock implements Lock, Serializable {
              * get the current state of the lock in the database as it may have
              * changed state since the lock in memory was originally retrieved
              */
-            dbLock = (EdexClusterDbLock) s.get(name, EdexClusterDbLock.class,
+            dbLock = (EdexClusterDbLock) s.get(EdexClusterDbLock.class, name,
                     LockMode.PESSIMISTIC_WRITE);
             if (dbLock == null) {
                 // lock does not exist in database
@@ -217,9 +226,8 @@ public class EdexClusterDbLock implements Lock, Serializable {
                     // most likely another cluster node made the lock row
                     tx.rollback();
                     tx = s.beginTransaction();
-                    dbLock = (EdexClusterDbLock) s.get(name,
-                            EdexClusterDbLock.class,
-                            LockMode.PESSIMISTIC_WRITE);
+                    dbLock = (EdexClusterDbLock) s.get(EdexClusterDbLock.class,
+                            name, LockMode.PESSIMISTIC_WRITE);
                     if (dbLock == null) {
                         throw new ClusterLockException(
                                 "Error getting cluster lock for name " + name,
@@ -301,7 +309,7 @@ public class EdexClusterDbLock implements Lock, Serializable {
              * get the current state of the lock in the database as it may have
              * changed state since the lock in memory was originally retrieved
              */
-            dbLock = (EdexClusterDbLock) s.get(name, EdexClusterDbLock.class,
+            dbLock = (EdexClusterDbLock) s.get(EdexClusterDbLock.class, name,
                     LockMode.PESSIMISTIC_WRITE);
 
             if (dbLock == null) {

@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.database.cluster.lock;
 import java.util.Objects;
 import java.util.concurrent.locks.Lock;
 
+import com.raytheon.uf.common.util.SystemUtil;
+import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 
@@ -33,6 +35,9 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * There is no fairness policy, i.e. locks are not granted in order, if multiple
  * cluster nodes are going for the same lock, it is non-deterministic as to
  * which cluster node will acquire the lock.
+ * 
+ * This class is intended to be injected into other classes through Spring. You
+ * should not create a new instance through code.
  * 
  * <pre>
  *
@@ -82,18 +87,20 @@ public class EdexClusterDbLockMgr implements EdexClusterLockMgr {
 
     protected final LeasingThread leasingThread;
 
-    /*
-     * TODO Spring should make this class with a custom beanId, we should inject
-     * it where it is desirable to use
-     */
-
     /**
-     * Constructor
+     * Constructor: Should only be called from Spring.
      * 
      * @param selfIdentifier
+     *            a unique name for this JVM instance
      * @param dbName
+     *            the database for the cluster lock table
      * @param sleepTime
+     *            the time to sleep in milliseconds before attempting to get the
+     *            lock again
      * @param leaseTime
+     *            the time to lease in milliseconds before another cluster node
+     *            can take the lock. Lock lease time will be extended until the
+     *            JVM stops or the lock is released.
      */
     public EdexClusterDbLockMgr(String selfIdentifier, String dbName,
             long sleepTime, long leaseTime) {
@@ -113,6 +120,27 @@ public class EdexClusterDbLockMgr implements EdexClusterLockMgr {
 
         leasingThread = new LeasingThread(this.config);
         leasingThread.start();
+    }
+
+    /**
+     * Constructor: Should only be called from Spring.
+     * 
+     * @param info
+     *            info used to build a unique name for this JVM instance
+     * @param dbName
+     *            the database for the cluster lock table
+     * @param sleepTime
+     *            the time to sleep in milliseconds before attempting to get the
+     *            lock again
+     * @param leaseTime
+     *            the time to lease in milliseconds before another cluster node
+     *            can take the lock. Lock lease time will be extended until the
+     *            JVM stops or the lock is released.
+     */
+    public EdexClusterDbLockMgr(AppInfo info, String dbName, long sleepTime,
+            long leaseTime) {
+        this(info.getName() + "-" + info.getMode() + "-"
+                + SystemUtil.getHostName(), dbName, sleepTime, leaseTime);
     }
 
     @Override
