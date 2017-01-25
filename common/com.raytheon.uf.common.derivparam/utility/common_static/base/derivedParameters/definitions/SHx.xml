@@ -18,46 +18,50 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="g/kg" name="Spec Humidity" abbreviation="SHx" xmlns:ns2="group">
-      <Method levels="TEMP,S" name="Slice">
-        <Field level="3D" abbreviation="T"/>
-        <Field level="3D" abbreviation="SHx"/>
-        <Field abbreviation="TEMP"/>
-        <ConstantField value="-1"/>
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="g/kg" name="Spec Humidity" abbreviation="SHx">
+    <Method levels="TEMP,S" name="Slice">
+        <Field level="3D" abbreviation="T" />
+        <Field level="3D" abbreviation="SHx" />
+        <Field abbreviation="TEMP" />
+        <ConstantField value="-1" />
     </Method>
     <Method models="modelsounding" levels="Surface" name="Alias">
-        <Field level="Station" abbreviation="q2"/>
+        <Field level="Station" abbreviation="q2" />
     </Method>
     <Method name="Multiply">
-        <Field abbreviation="SH"/>
-        <ConstantField value="1000.0"/>
+        <Field abbreviation="SH" />
+        <ConstantField value="1000.0" />
     </Method>
     <Method name="SpecHum">
-        <Field abbreviation="P"/>
-        <Field abbreviation="T"/>
-        <Field abbreviation="RH"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="T" />
+        <Field abbreviation="RH" />
     </Method>
     <Method name="SpecHum">
-        <Field abbreviation="P"/>
-        <Field abbreviation="VAPP"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="VAPP" />
     </Method>
     <Method levels="0.5kmAgl&gt;10kmAgl" name="Slice">
-        <Field level="3D" abbreviation="SHx"/>
-        <Field abbreviation="P"/>
-        <ConstantField value="-1.0"/>
+        <Field level="3D" abbreviation="SHx" />
+        <Field abbreviation="P" />
+        <ConstantField value="-1.0" />
     </Method>
     <Method levels="0FHAG" name="Alias">
-        <Field level="Surface" abbreviation="SHx"/>
+        <Field level="Surface" abbreviation="SHx" />
     </Method>
     <Method models="modelsounding" levels="S,MB" name="Interp">
-        <Field level="Station" abbreviation="specHum"/>
-        <Field unit="hPa" level="Station" abbreviation="pressure"/>
-        <Field level="Station" abbreviation="numProfLvls"/>
-        <Field abbreviation="P"/>
-        <ConstantField value="50.0"/>
+        <Field level="Station" abbreviation="specHum" />
+        <Field unit="hPa" level="Station" abbreviation="pressure" />
+        <Field level="Station" abbreviation="numProfLvls" />
+        <Field abbreviation="P" />
+        <ConstantField value="50.0" />
     </Method>
     <Method name="SHx">
-        <Field abbreviation="specHum"/>
-        <Field abbreviation="q2"/>
+        <Field abbreviation="specHum" />
+        <Field abbreviation="q2" />
     </Method>
 </DerivedParameter>

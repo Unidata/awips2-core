@@ -18,42 +18,46 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="WD" name="Wind direction" unit="deg">
     <Method name="RaobParam" models="bufrua">
-    	<Field abbreviation="Raob"/>
-    	<ConstantField value="5"/>
+        <Field abbreviation="Raob" />
+        <ConstantField value="5" />
     </Method>
-        <Method name="Interp" levels="S,MB" models="acarssounding bufrua">
-    	<Field abbreviation="WD" level="Station"/>
-    	<Field abbreviation="P" level="Station"/>
-    	<Field abbreviation="numLevels" level="Station"/>
-    	<Field abbreviation="MB"/>
-    	<ConstantField value="50"/>
+    <Method name="Interp" levels="S,MB" models="acarssounding bufrua">
+        <Field abbreviation="WD" level="Station" />
+        <Field abbreviation="P" level="Station" />
+        <Field abbreviation="numLevels" level="Station" />
+        <Field abbreviation="MB" />
+        <ConstantField value="50" />
     </Method>
     <Method name="Interp" levels="S,TILT" models="bufrua">
-    	<Field abbreviation="WD" level="Station"/>
-    	<Field abbreviation="GH" level="Station"/>
-    	<Field abbreviation="numLevels" level="Station"/>
-    	<Field abbreviation="GH"/>
-    	<ConstantField value="1000"/>
+        <Field abbreviation="WD" level="Station" />
+        <Field abbreviation="GH" level="Station" />
+        <Field abbreviation="numLevels" level="Station" />
+        <Field abbreviation="GH" />
+        <ConstantField value="1000" />
     </Method>
     <Method levels="Surface" name="Alias" models="bufrmosLAMP obs">
-        <Field abbreviation="windDir" level="Station"/>
+        <Field abbreviation="windDir" level="Station" />
     </Method>
     <Method name="Alias" levels="Surface">
-    	<Field abbreviation="WD" level="10FHAG"/>
+        <Field abbreviation="WD" level="10FHAG" />
     </Method>
     <Method name="Alias" levels="BLyr">
-    	<Field abbreviation="WD" level="0BLD"/>
+        <Field abbreviation="WD" level="0BLD" />
     </Method>
     <Method name="Direction">
-    	<Field abbreviation="uW"/>
-    	<Field abbreviation="vW"/>
+        <Field abbreviation="uW" />
+        <Field abbreviation="vW" />
     </Method>
     <Method name="Alias" levels="Surface">
-    	<Field abbreviation="MaxWindSpeed" level="Station"/>
+        <Field abbreviation="MaxWindSpeed" level="Station" />
     </Method>
     <Method name="Alias" models="profiler" levels="Surface">
-    	<Field abbreviation="windDirSfc" level="Station"/>
+        <Field abbreviation="windDirSfc" level="Station" />
     </Method>
 </DerivedParameter>

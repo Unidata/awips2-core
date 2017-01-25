@@ -18,32 +18,36 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="mm" name="6 Hr Accum Precip" abbreviation="TP6hr" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="mm" name="6 Hr Accum Precip" abbreviation="TP6hr">
     <Method models="SREF212" name="Alias">
-        <Field abbreviation="TP6mean"/>
+        <Field abbreviation="TP6mean" />
     </Method>
     <Method name="Alias" models="RFCqpf HPCqpf">
-        <Field abbreviation="tpHPC"/>
+        <Field abbreviation="tpHPC" />
     </Method>
     <Method name="Alias" models="HPCqpfNDFD">
-        <Field abbreviation="tpHPCndfd"/>
+        <Field abbreviation="tpHPCndfd" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="QPE06"/>
+        <Field abbreviation="QPE06" />
     </Method>
     <Method models="ETA GFS212" name="Supplement">
-        <Field abbreviation="TPx12x6"/>
+        <Field abbreviation="TPx12x6" />
     </Method>
     <Method name="Add">
-        <Field abbreviation="St-Pr6hr"/>
-        <Field abbreviation="CP6hr"/>
+        <Field abbreviation="St-Pr6hr" />
+        <Field abbreviation="CP6hr" />
     </Method>
     <Method levels="Surface" name="Zero">
-        <Field level="Station" abbreviation="precip6Hour"/>
-        <ConstantField value="0"/>
+        <Field level="Station" abbreviation="precip6Hour" />
+        <ConstantField value="0" />
     </Method>
     <Method dtime="true" levels="Surface" name="TP6hr">
-        <Field timeShift="0" abbreviation="TP3hr"/>
-        <Field timeShift="-10800" abbreviation="TP3hr"/>
+        <Field timeShift="0" abbreviation="TP3hr" />
+        <Field timeShift="-10800" abbreviation="TP3hr" />
     </Method>
 </DerivedParameter>

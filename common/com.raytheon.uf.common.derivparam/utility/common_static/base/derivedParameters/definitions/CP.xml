@@ -18,31 +18,35 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter unit="mm" name="Conv Precip" abbreviation="CP">
     <Method name="Alias" levels="Surface" models="modelsounding">
-        <Field abbreviation="convPrecip" level="Station"/>
+        <Field abbreviation="convPrecip" level="Station" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="CP1hr"/>
+        <Field abbreviation="CP1hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="CP2hr"/>
+        <Field abbreviation="CP2hr" />
     </Method>
     <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
-        <Field abbreviation="CP3hr"/>
-        <Field abbreviation="CP6hr"/>
+        <Field abbreviation="CP3hr" />
+        <Field abbreviation="CP6hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="CP3hr"/>
+        <Field abbreviation="CP3hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="CP6hr"/>
+        <Field abbreviation="CP6hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="CP12hr"/>
+        <Field abbreviation="CP12hr" />
     </Method>
     <Method name="Difference">
-        <Field abbreviation="TP"/>
-        <Field abbreviation="St-Pr"/>
+        <Field abbreviation="TP" />
+        <Field abbreviation="St-Pr" />
     </Method>
 </DerivedParameter>

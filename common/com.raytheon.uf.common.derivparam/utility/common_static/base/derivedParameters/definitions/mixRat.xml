@@ -18,23 +18,27 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="g/kg" name="Mixing Ratio" abbreviation="mixRat" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="g/kg" name="Mixing Ratio" abbreviation="mixRat">
     <Method levels="MaxR" name="Slice">
-        <Field level="3D" abbreviation="mixRat"/>
-        <Field level="3D" abbreviation="mixRat"/>
-        <ConstantField value="1e35"/>
-        <ConstantField value="-1"/>
+        <Field level="3D" abbreviation="mixRat" />
+        <Field level="3D" abbreviation="mixRat" />
+        <ConstantField value="1e35" />
+        <ConstantField value="-1" />
     </Method>
     <Method models="acarssounding" levels="MB" name="Interp">
-        <Field level="Station" abbreviation="mixRat"/>
-        <Field level="Station" abbreviation="P"/>
-        <Field level="Station" abbreviation="numLevels"/>
-        <Field abbreviation="MB"/>
-        <ConstantField value="50.0"/>
+        <Field level="Station" abbreviation="mixRat" />
+        <Field level="Station" abbreviation="P" />
+        <Field level="Station" abbreviation="numLevels" />
+        <Field abbreviation="MB" />
+        <ConstantField value="50.0" />
     </Method>
     <Method name="mixRat">
-    	<Field abbreviation="P"/>
-        <Field abbreviation="T"/>
-        <Field abbreviation="RH"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="T" />
+        <Field abbreviation="RH" />
     </Method>
 </DerivedParameter>

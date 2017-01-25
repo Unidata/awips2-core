@@ -18,25 +18,29 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="mm" name="24 Hr Accum Precip" abbreviation="TP24hr" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="mm" name="24 Hr Accum Precip" abbreviation="TP24hr">
     <Method models="SREF212" name="Alias">
-        <Field abbreviation="TP24mean"/>
+        <Field abbreviation="TP24mean" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="QPE24"/>
+        <Field abbreviation="QPE24" />
     </Method>
     <Method levels="Surface" name="Zero">
-        <Field unit="mm" level="Station" abbreviation="precip1Hour"/>
-        <ConstantField value="0"/>
+        <Field unit="mm" level="Station" abbreviation="precip1Hour" />
+        <ConstantField value="0" />
     </Method>
     <Method dtime="true" levels="Surface" name="Add">
-        <Field timeShift="0" abbreviation="TP6hr"/>
-        <Field timeShift="-21600" abbreviation="TP6hr"/>
-        <Field timeShift="-43200" abbreviation="TP6hr"/>
-        <Field timeShift="-64800" abbreviation="TP6hr"/>
+        <Field timeShift="0" abbreviation="TP6hr" />
+        <Field timeShift="-21600" abbreviation="TP6hr" />
+        <Field timeShift="-43200" abbreviation="TP6hr" />
+        <Field timeShift="-64800" abbreviation="TP6hr" />
     </Method>
     <Method dtime="true" levels="Surface" name="Add">
-        <Field timeShift="0" abbreviation="TP12hr"/>
-        <Field timeShift="-43200" abbreviation="TP12hr"/>
+        <Field timeShift="0" abbreviation="TP12hr" />
+        <Field timeShift="-43200" abbreviation="TP12hr" />
     </Method>
 </DerivedParameter>

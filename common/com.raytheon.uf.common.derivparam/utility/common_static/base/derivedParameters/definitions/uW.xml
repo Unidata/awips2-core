@@ -18,7 +18,11 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="m/s" name="u Component of Wind" abbreviation="uW" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="m/s" name="u Component of Wind" abbreviation="uW">
     <Method levels="PV5" name="Slice">
         <Field level="3D" abbreviation="pV"/>
         <Field level="3D" abbreviation="uW"/>
@@ -84,7 +88,7 @@
     </Method>
     <Method models="profiler" levels="Station" name="QcFilter">
         <Field abbreviation="uComponent"/>
-		<Field abbreviation="uvQualityCode"/>
+        <Field abbreviation="uvQualityCode"/>
     </Method>
     <Method models="profiler" levels="MB,FHAG" name="ColumnSample">
         <Field level="Station" abbreviation="uW"/>
@@ -92,7 +96,7 @@
         <Field level="Station" abbreviation="numProfLvls"/>
         <Field abbreviation="GH"/>
         <Field abbreviation="uW" level="Surface"/>
-    	<Field abbreviation="GH" level="Surface"/>
+        <Field abbreviation="GH" level="Surface"/>
     </Method>
     <Method models="modelsounding" levels="MB" name="Interp">
         <Field level="Station" abbreviation="uComp"/>
@@ -116,6 +120,6 @@
     </Method>
     <Method name="U">
         <Field abbreviation="wSp"/>
-		<Field abbreviation="WD"/>
+        <Field abbreviation="WD"/>
     </Method>
 </DerivedParameter>

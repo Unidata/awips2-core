@@ -18,34 +18,38 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter unit="m/s" name="Wind" abbreviation="Wind">
     <Method models="SREF212" name="Alias">
-        <Field abbreviation="Windmean"/>
+        <Field abbreviation="Windmean" />
     </Method>
     <Method name="Vector">
-    	<Field abbreviation="uW" unit="m/s"/>
-    	<Field abbreviation="vW" unit="m/s"/>
+        <Field abbreviation="uW" unit="m/s" />
+        <Field abbreviation="vW" unit="m/s" />
     </Method>
     <Method name="Vector">
-        <Field abbreviation="wSp" unit="m/s"/>
-        <Field abbreviation="WD" unit="deg"/>
-        <ConstantField value="1.0"/>
+        <Field abbreviation="wSp" unit="m/s" />
+        <Field abbreviation="WD" unit="deg" />
+        <ConstantField value="1.0" />
     </Method>
     <!-- TODO this should be an auto-generated average however 
          auto-generated averages are currently pulling in kftAgl levels -->
     <Method name="Average" levels="0-6kmAgl">
-        <Field abbreviation="Wind" level="0FHAG"/>
-        <Field abbreviation="Wind" level="0.5kmAgl"/>
-        <Field abbreviation="Wind" level="1kmAgl"/>
-        <Field abbreviation="Wind" level="1.5kmAgl"/>
-        <Field abbreviation="Wind" level="2kmAgl"/>
-        <Field abbreviation="Wind" level="2.5kmAgl"/>
-        <Field abbreviation="Wind" level="3kmAgl"/>
-        <Field abbreviation="Wind" level="3.5kmAgl"/>
-        <Field abbreviation="Wind" level="4kmAgl"/>
-        <Field abbreviation="Wind" level="4.5kmAgl"/>
-        <Field abbreviation="Wind" level="5kmAgl"/>
-        <Field abbreviation="Wind" level="5.5kmAgl"/>
-        <Field abbreviation="Wind" level="6kmAgl"/>
+        <Field abbreviation="Wind" level="0FHAG" />
+        <Field abbreviation="Wind" level="0.5kmAgl" />
+        <Field abbreviation="Wind" level="1kmAgl" />
+        <Field abbreviation="Wind" level="1.5kmAgl" />
+        <Field abbreviation="Wind" level="2kmAgl" />
+        <Field abbreviation="Wind" level="2.5kmAgl" />
+        <Field abbreviation="Wind" level="3kmAgl" />
+        <Field abbreviation="Wind" level="3.5kmAgl" />
+        <Field abbreviation="Wind" level="4kmAgl" />
+        <Field abbreviation="Wind" level="4.5kmAgl" />
+        <Field abbreviation="Wind" level="5kmAgl" />
+        <Field abbreviation="Wind" level="5.5kmAgl" />
+        <Field abbreviation="Wind" level="6kmAgl" />
     </Method>
 </DerivedParameter>

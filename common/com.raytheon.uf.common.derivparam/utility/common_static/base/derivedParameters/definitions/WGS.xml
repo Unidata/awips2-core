@@ -18,17 +18,21 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="WGS" name="Wind Gust Speed" unit="m/s">
-	<Method levels="Surface" name="Alias">
-		<Field abbreviation="wgs" level="2FHAG" />
-	</Method>
+    <Method levels="Surface" name="Alias">
+        <Field abbreviation="wgs" level="2FHAG" />
+    </Method>
     <Method name="Alias" levels="Surface">
-    	<Field abbreviation="WGS" level="10FHAG"/>
+        <Field abbreviation="WGS" level="10FHAG" />
     </Method>
     <Method name="Magnitude">
-    	<Field abbreviation="Gust"/>
+        <Field abbreviation="Gust" />
     </Method>
     <Method name="Alias" levels="Surface">
-    	<Field abbreviation="MaxWindSpeed" level="Station"/>
+        <Field abbreviation="MaxWindSpeed" level="Station" />
     </Method>
 </DerivedParameter>

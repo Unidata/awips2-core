@@ -18,61 +18,65 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="K" name="Dewpoint temperature" abbreviation="DpT" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="K" name="Dewpoint temperature" abbreviation="DpT">
     <Method name="Dewpoint">
-        <Field abbreviation="T"/>
-        <Field abbreviation="RH"/>
+        <Field abbreviation="T" />
+        <Field abbreviation="RH" />
     </Method>
     <Method models="SREF212" name="Alias">
-        <Field abbreviation="DpTmean"/>
+        <Field abbreviation="DpTmean" />
     </Method>
     <Method levels="Surface" name="Alias">
-        <Field level="Station" abbreviation="dewpoint"/>
+        <Field level="Station" abbreviation="dewpoint" />
     </Method>
     <Method levels="Surface" name="Alias">
-        <Field level="2FHAG" abbreviation="DpT"/>
+        <Field level="2FHAG" abbreviation="DpT" />
     </Method>
     <Method name="Difference">
-        <Field abbreviation="T"/>
-        <Field abbreviation="DpD"/>
+        <Field abbreviation="T" />
+        <Field abbreviation="DpD" />
     </Method>
     <Method models="acarssounding bufrua" levels="S,MB" name="Interp">
-        <Field level="Station" abbreviation="DpT"/>
-        <Field level="Station" abbreviation="P"/>
-        <Field level="Station" abbreviation="numLevels"/>
-        <Field abbreviation="MB"/>
-        <ConstantField value="50.0"/>
+        <Field level="Station" abbreviation="DpT" />
+        <Field level="Station" abbreviation="P" />
+        <Field level="Station" abbreviation="numLevels" />
+        <Field abbreviation="MB" />
+        <ConstantField value="50.0" />
     </Method>
     <Method models="bufrua" levels="S,TILT" name="Interp">
-        <Field level="Station" abbreviation="DpT"/>
-        <Field level="Station" abbreviation="GH"/>
-        <Field level="Station" abbreviation="numLevels"/>
-        <Field abbreviation="GH"/>
-        <ConstantField value="1000.0"/>
+        <Field level="Station" abbreviation="DpT" />
+        <Field level="Station" abbreviation="GH" />
+        <Field level="Station" abbreviation="numLevels" />
+        <Field abbreviation="GH" />
+        <ConstantField value="1000.0" />
     </Method>
     <Method models="bufrua" name="RaobParam">
-        <Field abbreviation="Raob"/>
-        <ConstantField value="4.0"/>
+        <Field abbreviation="Raob" />
+        <ConstantField value="4.0" />
     </Method>
     <Method name="DpT.execute1">
-        <Field abbreviation="T"/>
-        <Field abbreviation="RH"/>
+        <Field abbreviation="T" />
+        <Field abbreviation="RH" />
     </Method>
     <Method levels="Surface" name="Alias" model="obs">
-        <Field level="Station" abbreviation="dewpoint"/>
+        <Field level="Station" abbreviation="dewpoint" />
     </Method>
     <Method name="DpT.execute3">
-        <Field abbreviation="P"/>
-        <Field abbreviation="T"/>
-        <Field abbreviation="SHx"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="T" />
+        <Field abbreviation="SHx" />
     </Method>
     <Method name="DpT.execute4">
-        <Field abbreviation="dewpoint"/>
-        <Field abbreviation="dpFromTenths"/>
+        <Field abbreviation="dewpoint" />
+        <Field abbreviation="dpFromTenths" />
     </Method>
     <Method name="DpT.execute5">
-        <Field abbreviation="dewpoint"/>
-        <Field abbreviation="temperature"/>
-        <Field abbreviation="relHumidity" unit="%"/>
+        <Field abbreviation="dewpoint" />
+        <Field abbreviation="temperature" />
+        <Field abbreviation="relHumidity" unit="%" />
     </Method>
 </DerivedParameter>

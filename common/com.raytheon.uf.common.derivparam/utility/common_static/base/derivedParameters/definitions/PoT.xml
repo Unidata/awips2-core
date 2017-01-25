@@ -18,30 +18,34 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="K" name="Potential Temp" abbreviation="PoT" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="K" name="Potential Temp" abbreviation="PoT">
     <Method levels="TEMP,S" name="Slice">
-        <Field level="3D" abbreviation="T"/>
-        <Field level="3D" abbreviation="PoT"/>
-        <Field abbreviation="TEMP"/>
-        <ConstantField value="-1"/>
+        <Field level="3D" abbreviation="T" />
+        <Field level="3D" abbreviation="PoT" />
+        <Field abbreviation="TEMP" />
+        <ConstantField value="-1" />
     </Method>
     <Method models="SREF212" name="Theta">
-        <Field abbreviation="P"/>
-        <Field abbreviation="Tmean"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="Tmean" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="K"/>
+        <Field abbreviation="K" />
     </Method>
     <Method levels="0.5kmAgl&gt;10kmAgl" name="Slice">
-        <Field level="3D" abbreviation="PoT"/>
-        <Field abbreviation="P"/>
-        <ConstantField value="-1.0"/>
+        <Field level="3D" abbreviation="PoT" />
+        <Field abbreviation="P" />
+        <ConstantField value="-1.0" />
     </Method>
     <Method levels="0FHAG" name="Alias">
-        <Field level="Surface" abbreviation="PoT"/>
+        <Field level="Surface" abbreviation="PoT" />
     </Method>
     <Method name="PoT">
-        <Field abbreviation="P"/>
-        <Field abbreviation="T"/>
+        <Field abbreviation="P" />
+        <Field abbreviation="T" />
     </Method>
 </DerivedParameter>

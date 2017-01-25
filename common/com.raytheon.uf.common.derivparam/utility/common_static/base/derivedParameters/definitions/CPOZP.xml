@@ -18,9 +18,13 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="CPOZP" name="Probability of Freezing Precip" unit="%">
     <Method name="Alias">
-        <Field abbreviation="CPOZP3hr"/>
+        <Field abbreviation="CPOZP3hr" />
     </Method>
     <Method name="Alias" levels="Surface" models="bufrmosLAMP">
         <Field abbreviation="precipFreezing" level="Station" />

@@ -18,12 +18,16 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="/s" name="Shear Magnitude" abbreviation="ShrMag" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="/s" name="Shear Magnitude" abbreviation="ShrMag">
     <Method name="Magnitude">
-        <Field abbreviation="Shear"/>
+        <Field abbreviation="Shear" />
     </Method>
     <Method levels="LowLyr" name="Divide">
-        <Field level="Station" abbreviation="ll_shear"/>
-        <ConstantField value="1000.0"/>
+        <Field level="Station" abbreviation="ll_shear" />
+        <ConstantField value="1000.0" />
     </Method>
 </DerivedParameter>

@@ -18,64 +18,64 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="%" name="Cloud Cover" abbreviation="CCP" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="%" name="Cloud Cover" abbreviation="CCP">
     <Method name="Alias">
-        <Field abbreviation="CCOV"/>
+        <Field abbreviation="CCOV" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="TCC"/>
+        <Field abbreviation="TCC" />
     </Method>
     <Method name="Alias" levels="HiLyr">
-        <Field abbreviation="HCDC" level="HiLyr"/>
-    </Method>    
+        <Field abbreviation="HCDC" level="HiLyr" />
+    </Method>
     <Method name="Alias" levels="MidLyr">
-        <Field abbreviation="MCDC" level="MidLyr"/>
+        <Field abbreviation="MCDC" level="MidLyr" />
     </Method>
     <Method name="Alias" levels="LowLyr">
-        <Field abbreviation="LCDC" level="LowLyr"/>
+        <Field abbreviation="LCDC" level="LowLyr" />
     </Method>
     <Method models="HPCGuide" displayName="Total Cloud Cover" name="Multiply">
-        <Field abbreviation="TCC"/>
-        <ConstantField value="100.0"/>
+        <Field abbreviation="TCC" />
+        <ConstantField value="100.0" />
     </Method>
     <Method models="RTMA" displayName="GOES Effective Cloud Amount" name="Multiply">
-        <Field abbreviation="TCC"/>
-        <ConstantField value="100.0"/>
+        <Field abbreviation="TCC" />
+        <ConstantField value="100.0" />
     </Method>
     <Method name="Multiply">
-        <Field abbreviation="TCC"/>
-        <ConstantField value="100.0"/>
+        <Field abbreviation="TCC" />
+        <ConstantField value="100.0" />
     </Method>
     <Method levels="Surface" name="Mapping">
-        <Field level="Station" abbreviation="clouds_bestCat"/>
+        <Field level="Station" abbreviation="clouds_bestCat" />
         <!--  Mapping information -->
-        <ConstantField value="0"/>
-        <ConstantField value="0"/>
-        
-        <ConstantField value="8"/>
-        <ConstantField value="1.0"/>
-        
-        <ConstantField value="12"/>
-        <ConstantField value=".80"/>
-        
-        <ConstantField value="11"/>
-        <ConstantField value=".30"/>
-        
-        <ConstantField value="13"/>
-        <ConstantField value=".10"/>
+        <ConstantField value="0" />
+        <ConstantField value="0" />
+        <ConstantField value="8" />
+        <ConstantField value="1.0" />
+        <ConstantField value="12" />
+        <ConstantField value=".80" />
+        <ConstantField value="11" />
+        <ConstantField value=".30" />
+        <ConstantField value="13" />
+        <ConstantField value=".10" />
     </Method>
     <Method levels="Surface" name="Max" models="modelsounding">
-        <Field level="HiLyr" abbreviation="CCP"/>
-        <Field level="MidLyr" abbreviation="CCP"/>
-        <Field level="LowLyr" abbreviation="CCP"/>
+        <Field level="HiLyr" abbreviation="CCP" />
+        <Field level="MidLyr" abbreviation="CCP" />
+        <Field level="LowLyr" abbreviation="CCP" />
     </Method>
     <Method levels="LowLyr" name="Alias" models="modelsounding">
-        <Field level="Station" abbreviation="lowCld"/>
+        <Field level="Station" abbreviation="lowCld" />
     </Method>
     <Method levels="MidLyr" name="Alias" models="modelsounding">
-        <Field level="Station" abbreviation="midCld"/>
+        <Field level="Station" abbreviation="midCld" />
     </Method>
     <Method levels="HiLyr" name="Alias" models="modelsounding">
-        <Field level="Station" abbreviation="hiCld"/>
+        <Field level="Station" abbreviation="hiCld" />
     </Method>
 </DerivedParameter>

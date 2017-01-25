@@ -18,11 +18,15 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="accum_GH12" name="accum_GH12" unit="m">
     <Method model="bufrua" name="Interp" levels="S,MB">
-        <Field abbreviation="accum_htMan12" level="Station"/>
-        <Field abbreviation="accum_prMan12" level="Station" unit="hPa"/>
-        <Field abbreviation="accum_numMand12" level="Station"/>
-        <Field abbreviation="P"/>
+        <Field abbreviation="accum_htMan12" level="Station" />
+        <Field abbreviation="accum_prMan12" level="Station" unit="hPa" />
+        <Field abbreviation="accum_numMand12" level="Station" />
+        <Field abbreviation="P" />
     </Method>
 </DerivedParameter>

@@ -18,11 +18,15 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter name="qc value of profiler winds" abbreviation="uvQC" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter name="qc value of profiler winds" abbreviation="uvQC">
     <Method models="profiler" levels="MB,FHAG" name="ColumnSample">
-        <Field level="Station" abbreviation="uvQualityCode"/>
-        <Field level="Station" abbreviation="height"/>
-        <Field level="Station" abbreviation="numProfLvls"/>
-        <Field abbreviation="GH"/>
+        <Field level="Station" abbreviation="uvQualityCode" />
+        <Field level="Station" abbreviation="height" />
+        <Field level="Station" abbreviation="numProfLvls" />
+        <Field abbreviation="GH" />
     </Method>
 </DerivedParameter>

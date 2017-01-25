@@ -18,62 +18,68 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="mm" name="Precipitation" abbreviation="TP" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="mm" name="Precipitation" abbreviation="TP">
     <Method name="Alias" models="obs" levels="Surface,Station">
-        <Field abbreviation="precip1Hour" level="Station"/>
+        <Field abbreviation="precip1Hour" level="Station" />
     </Method>
     <Method name="Divide" levels="Surface" models="modelsounding">
-		<Field abbreviation="totPrecip" level="Station"/>
-		<ConstantField value="10"/>
-    </Method>    
+        <Field abbreviation="totPrecip" level="Station" />
+        <ConstantField value="10" />
+    </Method>
     <Method name="Alias" models="MOSGuide">
-        <Field abbreviation="TP6hr"/>
+        <Field abbreviation="TP6hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="QPE01"/>
+        <Field abbreviation="QPE01" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="PAcc"/>
+        <Field abbreviation="PAcc" />
     </Method>
     <Method name="Alias" models="RUC130 HRRR">
-        <Field abbreviation="TP1hr"/>
+        <Field abbreviation="TP1hr" />
     </Method>
     <Method name="Add">
-        <Field abbreviation="St-Pr"/>
-        <Field abbreviation="CP"/>
+        <Field abbreviation="St-Pr" />
+        <Field abbreviation="CP" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="PC"/>
+        <Field abbreviation="PC" />
     </Method>
     <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
-        <Field abbreviation="TP3hr"/>
-        <Field abbreviation="TP6hr"/>
+        <Field abbreviation="TP3hr" />
+        <Field abbreviation="TP6hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="TP1hr"/>
+        <Field abbreviation="TP1hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="TP2hr"/>
+        <Field abbreviation="TP2hr" />
     </Method>
     <Method name="Supplement" models="mesoEta212 mesoEta215">
-        <Field abbreviation="TP3hr"/>
+        <Field abbreviation="TP3hr" />
     </Method>
-    <Method name="Supplement" models="HiResW-ARW-East HiResW-ARW-West HiResW-ARW-AK HiResW-ARW-SJU HiResW-ARW-HI HiResW-ARW-GU">
-        <Field abbreviation="TP3hr"/>
+    <Method name="Supplement"
+        models="HiResW-ARW-East HiResW-ARW-West HiResW-ARW-AK HiResW-ARW-SJU HiResW-ARW-HI HiResW-ARW-GU">
+        <Field abbreviation="TP3hr" />
     </Method>
-    <Method name="Supplement" models="HiResW-NMM-East HiResW-NMM-West HiResW-NMM-AK HiResW-NMM-SJU HiResW-NMM-HI HiResW-NMM-GU">
-        <Field abbreviation="TP3hr"/>
-    </Method>
-    <Method name="Alias">
-        <Field abbreviation="TP3hr"/>
-    </Method>
-    <Method name="Alias">
-        <Field abbreviation="TP6hr"/>
+    <Method name="Supplement"
+        models="HiResW-NMM-East HiResW-NMM-West HiResW-NMM-AK HiResW-NMM-SJU HiResW-NMM-HI HiResW-NMM-GU">
+        <Field abbreviation="TP3hr" />
     </Method>
     <Method name="Alias">
-        <Field abbreviation="TP12hr"/>
+        <Field abbreviation="TP3hr" />
+    </Method>
+    <Method name="Alias">
+        <Field abbreviation="TP6hr" />
+    </Method>
+    <Method name="Alias">
+        <Field abbreviation="TP12hr" />
     </Method>
     <Method name="Alias" models="LAPS">
-        <Field abbreviation="PC"/>
+        <Field abbreviation="PC" />
     </Method>
 </DerivedParameter>

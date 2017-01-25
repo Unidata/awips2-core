@@ -18,7 +18,11 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-<DerivedParameter unit="%" name="Rel Humidity" abbreviation="RH" xmlns:ns2="group">
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="%" name="Rel Humidity" abbreviation="RH">
     <Method models="GFS212,GFS213" levels="Surface" name="Alias">
         <Field level="BLyr" abbreviation="RH"/>
     </Method>
@@ -78,6 +82,6 @@
         <Field abbreviation="SHx"/>
     </Method>
     <Method name="Alias" levels="BLyr">
-		<Field abbreviation="RH" level="0BLD"/>
-	</Method>		    
+        <Field abbreviation="RH" level="0BLD"/>
+    </Method>            
 </DerivedParameter>
