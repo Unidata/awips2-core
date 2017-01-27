@@ -1,0 +1,95 @@
+<configuration debug="false" scan="true" packagingData="false">
+
+   <!-- Keep viz packagingData set to false so logback does not attempt
+        to determine jars from classes in the stacktrace.  In some scenarios
+        the determination of the packaging data can spend an inordinate
+        amount of time in the OSGi classloader trying to find classes. -->
+
+   <!-- Only define when not wanting to use the UF Standard.
+   <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
+   -->
+   <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />
+   
+   <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+      <directory>${user.home}/${LOGDIR}</directory>
+      <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_logs.log</name>
+   </define>
+
+   <define name="consoleLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+       <directory>${user.home}/${LOGDIR}</directory>
+       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_console.log</name>
+   </define>
+
+   <define name="performanceLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
+       <directory>${user.home}/${LOGDIR}</directory>
+       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_perf.log</name>
+   </define>
+
+  <!-- this appender will log the messages to a file -->
+   <appender name="CaveLogAppender" class="ch.qos.logback.core.FileAppender">
+      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+      <file>${caveLogFile}</file>
+   </appender>
+
+   <!-- this appender will log any System.out and System.err printouts to a
+         file while also allowing them through to System.out and System.err -->   
+   <appender name="consoleLog" class="com.raytheon.uf.common.logback.appender.ConsoleFileAppender">
+      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+      <file>${consoleLogFile}</file> 
+   </appender>
+
+   <appender name="PerformanceLogAppender" class="ch.qos.logback.core.FileAppender">
+      <file>${performanceLogFile}</file>
+      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+   </appender>    
+   
+   <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>500</queueSize>
+      <appender-ref ref="CaveLogAppender"/>      
+   </appender>
+   
+   <appender name="AsyncPerfLogAppender" class="ch.qos.logback.classic.AsyncAppender">
+      <queueSize>500</queueSize>
+      <appender-ref ref="PerformanceLogAppender"/>
+   </appender> 
+
+   <logger name="CaveLogger" additivity="false">
+      <level value="ALL"/>
+      <appender-ref ref="AsyncCaveLogAppender"/>
+   </logger>
+
+   <logger name="PerformanceLogger" additivity="false">
+      <level value="ALL"/>
+      <appender-ref ref="AsyncPerfLogAppender"/>
+   </logger>
+
+   <logger name="com.raytheon">
+      <level value="INFO"/>
+   </logger>
+
+   <logger name="mx4j">
+      <level value="ERROR"/>
+   </logger>
+   <logger name="org.apache">
+      <level value="INFO"/>
+   </logger>
+   <logger name="org.apache.commons.beanutils">
+      <level value="WARN"/>
+   </logger>
+   <logger name="org.apache.qpid">
+      <level value="WARN"/>
+   </logger>
+   <logger name="org.geotools">
+      <level value="WARN"/>
+   </logger>
+   <logger name="org.apache.xbean.spring">
+      <level value="WARN"/>
+   </logger>
+   <logger name="org.springframework">
+      <level value="ERROR"/>
+   </logger>
+   <root> 
+      <level value="INFO"/> 
+      <appender-ref ref="consoleLog"/>
+    </root> 
+</configuration> 

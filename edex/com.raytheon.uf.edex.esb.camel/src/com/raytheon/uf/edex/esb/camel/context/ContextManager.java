@@ -59,23 +59,24 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * context and its associated routes so that only one context in the cluster is
  * running. This should mainly be used for reading from topics so that only box
  * is processing the topic data in the cluster for singleton type events.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 10, 2010 5050       rjpeter     Initial creation.
  * May 13, 2013 1989       njensen     Camel 2.11 compatibility.
  * Mar 11, 2014 2726       rjpeter     Implemented graceful shutdown.
  * Oct 27, 2016 5860       njensen     Contexts setAllowOriginalMessage to false
- * 
+ * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
  */
-public class ContextManager implements ApplicationContextAware,
-        BeanFactoryPostProcessor {
+public class ContextManager
+        implements ApplicationContextAware, BeanFactoryPostProcessor {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(ContextManager.class);
 
@@ -124,7 +125,7 @@ public class ContextManager implements ApplicationContextAware,
      * Map of context processors that have been registered for a given context.
      * Used to allow contexts to do custom worn on startup/shutdown.
      */
-    private final Map<CamelContext, IContextStateProcessor> contextProcessors = new HashMap<>();
+    private final Map<CamelContext, List<IContextStateProcessor>> contextProcessors = new HashMap<>();
 
     /**
      * Cluster lock timeout for clustered contexts.
@@ -161,6 +162,9 @@ public class ContextManager implements ApplicationContextAware,
      */
     private final Set<EdexAsyncStartupBean> asyncStartupBeans = new HashSet<>();
 
+    /**
+     * @return the singleton ContextManager instance
+     */
     public static ContextManager getInstance() {
         return instance;
     }
@@ -174,8 +178,8 @@ public class ContextManager implements ApplicationContextAware,
     /**
      * Returns a set of endpoint types that are considered internal for routing
      * purposes.
-     * 
-     * @return
+     *
+     * @return the internal endpoint types
      */
     public Set<String> getInternalEndpointTypes() {
         return INTERNAL_ENDPOINT_TYPES;
@@ -183,8 +187,8 @@ public class ContextManager implements ApplicationContextAware,
 
     /**
      * Gets the context data.
-     * 
-     * @return
+     *
+     * @return the context data
      * @throws ConfigurationException
      */
     public ContextData getContextData() throws ConfigurationException {
@@ -202,7 +206,7 @@ public class ContextManager implements ApplicationContextAware,
 
     /**
      * Get the {@link IContextStateManager} for the passed {@code CamelContext}.
-     * 
+     *
      * @param context
      * @return
      */
@@ -215,21 +219,23 @@ public class ContextManager implements ApplicationContextAware,
     }
 
     /**
-     * Get the {@link IContextStateProcessor} for the passed
+     * Get the list of {@link IContextStateProcessor} for the specified
      * {@code CamelContext}.
-     * 
+     *
      * @param context
-     * @return
+     *            the CamelContext
+     * @return this list of IContextStateProcessors
      */
-    public IContextStateProcessor getStateProcessor(CamelContext context) {
+    public List<IContextStateProcessor> getStateProcessor(
+            CamelContext context) {
         return contextProcessors.get(context);
     }
 
     /**
      * Get the {@link ContextDependencyMapping} for all contexts.
-     * 
+     *
      * @param suppressExceptions
-     * @return
+     * @return the ContextDependencyMapping
      * @throws ConfigurationException
      */
     public ContextDependencyMapping getDependencyMapping(
@@ -240,8 +246,8 @@ public class ContextManager implements ApplicationContextAware,
          */
         synchronized (this) {
             long millis = System.currentTimeMillis();
-            if ((dependencyMapping == null)
-                    || (millis > (lastDependencyTime + (3 * TimeUtil.MILLIS_PER_MINUTE)))) {
+            if ((dependencyMapping == null) || (millis > (lastDependencyTime
+                    + (3 * TimeUtil.MILLIS_PER_MINUTE)))) {
                 lastDependencyTime = millis;
                 dependencyMapping = new ContextDependencyMapping(
                         getContextData(), suppressExceptions);
@@ -282,50 +288,50 @@ public class ContextManager implements ApplicationContextAware,
                     RouteDefinition def = route.getRouteContext().getRoute();
 
                     if (INTERNAL_ENDPOINT_TYPES.contains(type)) {
-                        def.setStartupOrder(internalCount--);
+                        def.setStartupOrder(internalCount);
+                        internalCount--;
                     } else {
-                        def.setStartupOrder(externalCount--);
+                        def.setStartupOrder(externalCount);
+                        externalCount--;
                     }
                 }
             }
 
             List<Future<Pair<CamelContext, Boolean>>> callbacks = new LinkedList<>();
             for (final CamelContext context : cxtData.getContexts()) {
-                final IContextStateManager stateManager = getStateManager(context);
+                final IContextStateManager stateManager = getStateManager(
+                        context);
                 if (stateManager.isContextStartable(context)) {
                     /*
                      * Have the ExecutorService start the context to allow for
                      * quicker startup.
                      */
-                    callbacks
-                            .add(service
-                                    .submit(new Callable<Pair<CamelContext, Boolean>>() {
-                                        @Override
-                                        public Pair<CamelContext, Boolean> call()
-                                                throws Exception {
-                                            boolean rval = false;
-                                            try {
-                                                rval = stateManager
-                                                        .startContext(context);
+                    callbacks.add(service.submit(
+                            new Callable<Pair<CamelContext, Boolean>>() {
+                                @Override
+                                public Pair<CamelContext, Boolean> call()
+                                        throws Exception {
+                                    boolean rval = false;
+                                    try {
+                                        rval = stateManager
+                                                .startContext(context);
 
-                                                if (!rval) {
-                                                    statusHandler.error("Context ["
-                                                            + context.getName()
-                                                            + "] failed to start, shutting down");
-                                                    System.exit(1);
-                                                }
-                                            } catch (Throwable e) {
-                                                statusHandler.fatal(
-                                                        "Error occurred starting context: "
-                                                                + context
-                                                                        .getName(),
-                                                        e);
-                                                System.exit(1);
-                                            }
+                                        if (!rval) {
+                                            statusHandler.error("Context ["
+                                                    + context.getName()
+                                                    + "] failed to start, shutting down");
+                                            System.exit(1);
+                                        }
+                                    } catch (Throwable e) {
+                                        statusHandler
+                                                .fatal("Error occurred starting context: "
+                                                        + context.getName(), e);
+                                        System.exit(1);
+                                    }
 
                                     return new Pair<>(context, rval);
-                                        }
-                                    }));
+                                }
+                            }));
                 }
             }
 
@@ -352,9 +358,10 @@ public class ContextManager implements ApplicationContextAware,
     /**
      * Register a clustered context that is meant to run as a singleton in the
      * cluster.
-     * 
+     *
      * @param context
-     * @return
+     *            the clustered context to be registered
+     * @return this ContextManager
      */
     public ContextManager registerClusteredContext(final CamelContext context) {
         clusteredContexts.add(context);
@@ -364,14 +371,25 @@ public class ContextManager implements ApplicationContextAware,
     /**
      * Register a context state processor to be called on start/stop of the
      * context.
-     * 
+     *
      * @param context
      * @param processor
-     * @return
+     * @return this ContrextManager
      */
     public ContextManager registerContextStateProcessor(
-            final CamelContext context, final IContextStateProcessor processor) {
-        contextProcessors.put(context, processor);
+            final CamelContext context,
+            final IContextStateProcessor processor) {
+
+        List<IContextStateProcessor> processorList = contextProcessors
+                .get(context);
+
+        if (processorList == null) {
+            processorList = new LinkedList<>();
+            contextProcessors.put(context, processorList);
+        }
+
+        processorList.add(processor);
+
         return this;
     }
 
@@ -387,8 +405,8 @@ public class ContextManager implements ApplicationContextAware,
          */
         if (shuttingDown.compareAndSet(false, true)) {
             if (springCtx == null) {
-                statusHandler
-                        .info("Spring Context not set.  Start up never completed, cannot orderly shutdown");
+                statusHandler.info(
+                        "Spring Context not set.  Start up never completed, cannot orderly shutdown");
             }
 
             statusHandler.info("Context Manager stopping contexts");
@@ -420,7 +438,7 @@ public class ContextManager implements ApplicationContextAware,
      * stoppable will instead shutdown external routes first.
      */
     private class StopContext implements Callable<Pair<CamelContext, Boolean>> {
-        final CamelContext context;
+        private final CamelContext context;
 
         private StopContext(CamelContext context) {
             this.context = context;
@@ -433,8 +451,8 @@ public class ContextManager implements ApplicationContextAware,
 
             if (stateManager.isContextStoppable(context)) {
                 try {
-                    statusHandler.info("Stopping context [" + context.getName()
-                            + "]");
+                    statusHandler.info(
+                            "Stopping context [" + context.getName() + "]");
                     rval = stateManager.stopContext(context);
 
                     if (!rval) {
@@ -460,12 +478,12 @@ public class ContextManager implements ApplicationContextAware,
                     String type = typeAndName.getFirst();
                     if (!INTERNAL_ENDPOINT_TYPES.contains(type)) {
                         try {
-                            statusHandler.info("Stopping route ["
-                                    + route.getId() + "]");
+                            statusHandler.info(
+                                    "Stopping route [" + route.getId() + "]");
                             rval &= stateManager.stopRoute(route);
                         } catch (Exception e) {
-                            statusHandler.error(
-                                    "Error occurred Stopping route: "
+                            statusHandler
+                                    .error("Error occurred Stopping route: "
                                             + route.getId(), e);
                         }
                     }
@@ -480,15 +498,15 @@ public class ContextManager implements ApplicationContextAware,
      * Waits for all callbacks to finish printing a periodic message with number
      * of remaining callbacks. Returns a list of contexts that had a failure
      * status.
-     * 
+     *
      * @param callbacks
      * @param message
      * @param sleepInterval
      * @return
      */
     private static List<CamelContext> waitForCallbacks(
-            List<Future<Pair<CamelContext, Boolean>>> callbacks,
-            String message, long sleepInterval) {
+            List<Future<Pair<CamelContext, Boolean>>> callbacks, String message,
+            long sleepInterval) {
         statusHandler.info(message + callbacks.size() + " remaining");
         List<CamelContext> failures = new LinkedList<>();
 
@@ -518,7 +536,7 @@ public class ContextManager implements ApplicationContextAware,
                 statusHandler.info(message + callbacks.size() + " remaining");
                 try {
                     Thread.sleep(sleepInterval);
-                } catch (Exception e) {
+                } catch (InterruptedException e) {
                     // ignore
                 }
             }
@@ -536,7 +554,8 @@ public class ContextManager implements ApplicationContextAware,
             for (CamelContext camelContext : clusteredContexts) {
                 boolean activateRoute = true;
                 try {
-                    IContextStateManager stateManager = getStateManager(camelContext);
+                    IContextStateManager stateManager = getStateManager(
+                            camelContext);
 
                     if (stateManager.isContextStartable(camelContext)) {
                         stateManager.startContext(camelContext);
@@ -566,14 +585,26 @@ public class ContextManager implements ApplicationContextAware,
         springCtx = context;
     }
 
+    /**
+     * @return the timeout in milliseconds
+     */
     public int getTimeOutMillis() {
         return timeOutMillis;
     }
 
+    /**
+     * Sets the time out
+     *
+     * @param timeOutMillis
+     *            the time out in milliseconds
+     */
     public void setTimeOutMillis(int timeOutMillis) {
         this.timeOutMillis = timeOutMillis;
     }
 
+    /**
+     * @return true if shutting down
+     */
     public boolean isShuttingDown() {
         return shuttingDown.get();
     }
@@ -605,7 +636,7 @@ public class ContextManager implements ApplicationContextAware,
      * Register the provided bean as an {@link EdexAsyncStartupBean}. EDEX will
      * not start its contexts until all registered async startup beans have
      * completed initialization.
-     * 
+     *
      * @param asyncBean
      *            {@code EdexAsyncStartupBean} instance to register
      * @return Reference to this {@code ContextManager} instance.
@@ -619,7 +650,7 @@ public class ContextManager implements ApplicationContextAware,
     /**
      * Poll all the async startup beans and determine if they've all completed
      * their initialization or not.
-     * 
+     *
      * @return {@code true} if all beans have completed initialization,
      *         {@code false} if they have not.
      */

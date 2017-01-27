@@ -29,6 +29,7 @@ import org.geotools.feature.FeatureCollection;
 import org.opengis.feature.simple.SimpleFeature;
 import org.opengis.feature.simple.SimpleFeatureType;
 
+import com.raytheon.uf.common.json.BasicJsonService;
 import com.raytheon.uf.common.json.JsonException;
 import com.raytheon.uf.common.json.JsonService;
 import com.vividsolutions.jts.geom.Geometry;
@@ -36,20 +37,21 @@ import com.vividsolutions.jts.geom.Geometry;
 /**
  * Simple implementation of {@code IGeoJsonService}. Uses {@code Map}s as
  * intermediate representations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 10, 2011            bclement     Initial creation
- * Apr 27, 2015  #4354     dgilling     Renamed to SimpleGeoJsonService.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 10, 2011           bclement  Initial creation
+ * Apr 27, 2015  4354     dgilling  Renamed to SimpleGeoJsonService.
+ * Jan 26, 2017  6092     randerso  Moved BasicJsonService to
+ *                                  com.raytheon.uf.common.json
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public class SimpleGeoJsonService implements IGeoJsonService {
 
@@ -75,7 +77,8 @@ public class SimpleGeoJsonService implements IGeoJsonService {
     }
 
     @Override
-    public void serialize(Geometry geom, OutputStream out) throws JsonException {
+    public void serialize(Geometry geom, OutputStream out)
+            throws JsonException {
         JsonService service = getJsonService();
         Map<String, Object> map = mapUtil.extract(geom);
         service.serialize(map, out, pretty);

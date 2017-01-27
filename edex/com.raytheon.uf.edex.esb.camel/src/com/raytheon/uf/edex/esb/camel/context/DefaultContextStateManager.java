@@ -36,30 +36,30 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Implementation of IContextStateManager that does basic validation of context
  * status as well as handling IContextStateProcessor for startup/shutdown of
  * contexts.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
  * Mar 14, 2016 DR 18533   D. Friedman Resume instead of starting suspended contexts.
  * Mar 21, 2016 3290       tgurney     Enforce startup order on manual route
  *                                     startup
- * 
+ * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class DefaultContextStateManager implements IContextStateManager {
     private static final Set<ServiceStatus> STARTABLE_STATES = EnumSet.of(
             ServiceStatus.Stopped, ServiceStatus.Suspended,
             ServiceStatus.Suspending);
 
-    private static final Set<ServiceStatus> SUSPENDABLE_STATES = EnumSet.of(
-            ServiceStatus.Starting, ServiceStatus.Started);
+    private static final Set<ServiceStatus> SUSPENDABLE_STATES = EnumSet
+            .of(ServiceStatus.Starting, ServiceStatus.Started);
 
     private static final Set<ServiceStatus> STOPPABLE_STATES = EnumSet.of(
             ServiceStatus.Starting, ServiceStatus.Started,
@@ -84,11 +84,15 @@ public class DefaultContextStateManager implements IContextStateManager {
         }
 
         if (!rval) {
-            IContextStateProcessor processor = ContextManager.getInstance()
-                    .getStateProcessor(context);
-            if (processor != null) {
-                processor.preStart();
+            List<IContextStateProcessor> processorList = ContextManager
+                    .getInstance().getStateProcessor(context);
+
+            if (processorList != null) {
+                for (IContextStateProcessor processor : processorList) {
+                    processor.preStart();
+                }
             }
+
             if (status == ServiceStatus.Suspended) {
                 context.resume();
             } else {
@@ -127,8 +131,10 @@ public class DefaultContextStateManager implements IContextStateManager {
                 context.setAutoStartup(true);
             }
 
-            if (processor != null) {
-                processor.postStart();
+            if (processorList != null) {
+                for (IContextStateProcessor processor : processorList) {
+                    processor.postStart();
+                }
             }
         }
 
@@ -160,10 +166,13 @@ public class DefaultContextStateManager implements IContextStateManager {
     public boolean stopContext(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
         if (isContextStoppable(context)) {
-            IContextStateProcessor processor = ContextManager.getInstance()
-                    .getStateProcessor(context);
-            if (processor != null) {
-                processor.preStop();
+            List<IContextStateProcessor> processorList = ContextManager
+                    .getInstance().getStateProcessor(context);
+
+            if (processorList != null) {
+                for (IContextStateProcessor processor : processorList) {
+                    processor.preStop();
+                }
             }
 
             // a context will automatically stop all its routes
@@ -173,8 +182,10 @@ public class DefaultContextStateManager implements IContextStateManager {
                 context.suspend();
             }
 
-            if (processor != null) {
-                processor.postStop();
+            if (processorList != null) {
+                for (IContextStateProcessor processor : processorList) {
+                    processor.postStop();
+                }
             }
 
             status = context.getStatus();
