@@ -40,14 +40,14 @@ import com.raytheon.uf.common.time.TimeRange;
 import com.raytheon.uf.common.util.SizeUtil;
 
 /**
- * 
+ *
  * An abstract data factory that can be used by implementing IGridDataFactories
  * or IGeometryDataFactories.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Nov 13, 2012           njensen   Initial creation
@@ -69,8 +69,9 @@ import com.raytheon.uf.common.util.SizeUtil;
  *                                  IDataRequest
  * Aug 04, 2016  2416     tgurney   Prevent dataURI constraint being combined
  *                                  with other constraints.
+ * Jan 20, 2017  6095     tgurney   Fix NPE in validateRequest
  * </pre>
- * 
+ *
  * @author njensen
  */
 
@@ -88,7 +89,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
      * Returns the identifiers that must be set on a request for the request to
      * be processed. If a subclass does not override this, it will return an
      * array of size zero.
-     * 
+     *
      * @return the required identifiers
      */
     @Override
@@ -99,7 +100,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
     /**
      * Return the set of optional identifiers for a request. If a subclass does
      * not override this, it will return an array of size zero.
-     * 
+     *
      * @return the valid identifiers.
      */
     @Override
@@ -110,7 +111,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
     /**
      * Validates that a request is compatible with the factory, including
      * validating existence of parameters
-     * 
+     *
      * @param request
      *            the request to validate
      */
@@ -120,13 +121,14 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Validate that a request is compatible with the factory
-     * 
+     *
      * @param request
      *            the request to validate
      * @param validateParameters
      *            true if request must have parameters, false otherwise
      */
-    public void validateRequest(IDataRequest request, boolean validateParameters) {
+    public void validateRequest(IDataRequest request,
+            boolean validateParameters) {
         if (validateParameters) {
             validateParameters(request);
         }
@@ -136,7 +138,9 @@ public abstract class AbstractDataFactory implements IDataFactory {
             throw new InvalidIdentifiersException(request.getDatatype(),
                     missing, invalid);
         }
-        if (request.getIdentifiers().containsKey(PluginDataObject.DATAURI_ID)
+        if (request.getIdentifiers() != null
+                && request.getIdentifiers()
+                        .containsKey(PluginDataObject.DATAURI_ID)
                 && request.getIdentifiers().size() > 1) {
             throw new IncompatibleRequestException("Cannot specify "
                     + PluginDataObject.DATAURI_ID + " with other identifiers");
@@ -145,11 +149,12 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Checks for missing identifiers that are required to be on the request
-     * 
+     *
      * @param request
      * @return a collection of missing identifiers
      */
-    protected Collection<String> checkForMissingIdentifiers(IDataRequest request) {
+    protected Collection<String> checkForMissingIdentifiers(
+            IDataRequest request) {
         String[] required = getRequiredIdentifiers(request);
         Collection<String> missing = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
@@ -166,18 +171,19 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Checks for invalid identifiers that are not compatible with the request
-     * 
+     *
      * @param request
      * @return a collection of invalid identifiers
      */
-    protected Collection<String> checkForInvalidIdentifiers(IDataRequest request) {
+    protected Collection<String> checkForInvalidIdentifiers(
+            IDataRequest request) {
         Collection<String> invalid = Collections.emptySet();
         Map<String, Object> identifiers = request.getIdentifiers();
         if (identifiers != null && !identifiers.isEmpty()) {
             String[] optional = getOptionalIdentifiers(request);
             String[] required = getRequiredIdentifiers(request);
-            if (optional != null && optional.length > 0 || required != null
-                    && required.length > 0) {
+            if (optional != null && optional.length > 0
+                    || required != null && required.length > 0) {
                 invalid = new HashSet<>(identifiers.keySet());
                 if (optional != null) {
                     invalid.removeAll(Arrays.asList(optional));
@@ -192,7 +198,7 @@ public abstract class AbstractDataFactory implements IDataFactory {
 
     /**
      * Validates that the parameters are ok
-     * 
+     *
      * @param request
      */
     protected void validateParameters(IDataRequest request)
@@ -250,9 +256,8 @@ public abstract class AbstractDataFactory implements IDataFactory {
      */
     @Override
     public String[] getAvailableParameters(IDataRequest request) {
-        throw new MethodNotSupportedYetException(
-                request.getDatatype()
-                        + " data requests do not yet support getting available parameters");
+        throw new MethodNotSupportedYetException(request.getDatatype()
+                + " data requests do not yet support getting available parameters");
     }
 
     /**
