@@ -19,16 +19,21 @@
  **/
 package com.raytheon.uf.edex.esb.camel.jms;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 
+import com.raytheon.uf.common.comm.ApacheHttpClientCreator;
 import com.raytheon.uf.common.comm.CommunicationException;
-import com.raytheon.uf.common.comm.HttpClient;
-import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
+import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpServerException;
 import com.raytheon.uf.common.json.BasicJsonService;
 import com.raytheon.uf.common.json.JsonException;
@@ -44,6 +49,7 @@ import com.raytheon.uf.common.json.JsonException;
  * ------------- -------- --------- ----------------------------------------
  * Apr 04, 2014  2694     randerso  Converted python implementation to Java
  * Jan 25, 2017  6092     randerso  Renamed and added queueReady method
+ * Jan 31, 2017  6083     bsteffen  Add https support
  *
  * </pre>
  *
@@ -54,6 +60,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
     private static final String JMS_CONNECTIONS_URL = "JMS_CONNECTIONS_URL";
 
     private static final String JMS_QUEUE_URL = "JMS_QUEUE_URL";
+
+    private CloseableHttpClient client = null;
 
     @Override
     public List<String> getConnections() throws CommunicationException,
@@ -70,35 +78,39 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
         }
 
         HttpGet request = new HttpGet(url);
-        HttpClientResponse response = HttpClient.getInstance()
-                .executeRequest(request);
-        if (!response.isSuccess()) {
-            String msg = String.format("Broker returned %d %s", response.code,
-                    new String(response.data));
+        try (CloseableHttpResponse response = getHttpClient()
+                .execute(request)) {
 
-            throw new HttpServerException(msg, response.code);
-        }
+            if (!isSuccess(response)) {
+                String msg = String.format("Broker returned %d",
+                        response.getStatusLine().getStatusCode());
 
-        List<String> resultSet = new ArrayList<>();
-        String jsonStr = new String(response.data);
-        try {
-            BasicJsonService json = new BasicJsonService();
-
-            @SuppressWarnings("unchecked")
-            List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
-                    .deserialize(jsonStr, Object.class);
-
-            for (Map<String, Object> statDict : jsonObjList) {
-                String clientId = (String) statDict.get("clientId");
-                if (clientId != null) {
-                    resultSet.add(clientId);
-                }
+                throw new HttpServerException(msg,
+                        response.getStatusLine().getStatusCode());
             }
-        } catch (JsonException e) {
-            throw new CommunicationException(
-                    "Unable to parse response " + jsonStr, e);
+
+            List<String> resultSet = new ArrayList<>();
+            try (InputStream content = response.getEntity().getContent()) {
+                BasicJsonService json = new BasicJsonService();
+
+                @SuppressWarnings("unchecked")
+                List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
+                        .deserialize(content, Object.class);
+
+                for (Map<String, Object> statDict : jsonObjList) {
+                    String clientId = (String) statDict.get("clientId");
+                    if (clientId != null) {
+                        resultSet.add(clientId);
+                    }
+                }
+            } catch (JsonException e) {
+                throw new CommunicationException("Unable to parse response", e);
+            }
+            return resultSet;
+
+        } catch (IOException e) {
+            throw new CommunicationException(e);
         }
-        return resultSet;
     }
 
     @Override
@@ -115,29 +127,31 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
         String url = String.join("/", urlPrefix, queue);
         HttpGet request = new HttpGet(url);
-        HttpClientResponse response = HttpClient.getInstance()
-                .executeRequest(request);
+        try (CloseableHttpResponse response = getHttpClient()
+                .execute(request)) {
 
-        if (response.isSuccess()) {
-            String jsonStr = new String(response.data);
-            try {
-                BasicJsonService json = new BasicJsonService();
+            if (isSuccess(response)) {
+                try (InputStream content = response.getEntity().getContent()) {
+                    BasicJsonService json = new BasicJsonService();
 
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
-                        .deserialize(jsonStr, Object.class);
+                    @SuppressWarnings("unchecked")
+                    List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
+                            .deserialize(content, Object.class);
 
-                @SuppressWarnings("unchecked")
-                Map<String, Integer> statistics = (Map<String, Integer>) jsonObjList
-                        .get(0).get("statistics");
-                int bindingCount = statistics.get("bindingCount");
-                int consumerCount = statistics.get("consumerCount");
-                return (bindingCount > 0) && (consumerCount > 0);
+                    @SuppressWarnings("unchecked")
+                    Map<String, Integer> statistics = (Map<String, Integer>) jsonObjList
+                            .get(0).get("statistics");
+                    int bindingCount = statistics.get("bindingCount");
+                    int consumerCount = statistics.get("consumerCount");
+                    return (bindingCount > 0) && (consumerCount > 0);
 
-            } catch (JsonException e) {
-                throw new CommunicationException(
-                        "Unable to parse response " + jsonStr, e);
+                } catch (JsonException | IOException e) {
+                    throw new CommunicationException("Unable to parse response",
+                            e);
+                }
             }
+        } catch (IOException e) {
+            throw new CommunicationException(e);
         }
         return false;
     }
@@ -155,13 +169,60 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
         String url = String.join("/", urlPrefix, queue);
         HttpDelete request = new HttpDelete(url);
-        HttpClientResponse response = HttpClient.getInstance()
-                .executeRequest(request);
-        if (!response.isSuccess()) {
-            String msg = String.format("Broker returned %d %s", response.code,
-                    new String(response.data));
+        try (CloseableHttpResponse response = getHttpClient()
+                .execute(request)) {
 
-            throw new HttpServerException(msg, response.code);
+            if (!isSuccess(response)) {
+                String msg = String.format("Broker returned %d",
+                        response.getStatusLine().getStatusCode());
+
+                throw new HttpServerException(msg,
+                        response.getStatusLine().getStatusCode());
+            }
+        } catch (IOException e) {
+            throw new CommunicationException(e);
         }
     }
+
+    private boolean isSuccess(CloseableHttpResponse response) {
+        int statusCode = response.getStatusLine().getStatusCode();
+        return statusCode >= 200 && statusCode < 300;
+    }
+
+    private synchronized CloseableHttpClient getHttpClient()
+            throws JMSConfigurationException {
+
+        if (client == null) {
+            boolean https = false;
+            String connectionUrl = System.getenv(JMS_CONNECTIONS_URL);
+            String queueUrl = System.getenv(JMS_QUEUE_URL);
+            if (connectionUrl != null) {
+                https = connectionUrl.startsWith("https://");
+                if (queueUrl != null
+                        && queueUrl.startsWith("https://") != https) {
+                    throw new JMSConfigurationException(
+                            JMS_QUEUE_URL + " and " + JMS_CONNECTIONS_URL
+                                    + " must use the same protocol.");
+                }
+            } else if (queueUrl != null) {
+                https = queueUrl.startsWith("https://");
+            }
+            HttpClientConfigBuilder config = new HttpClientConfigBuilder();
+            config.setMaxConnections(1);
+            if (https) {
+                config.setHttpAuthHandler(new QpidCertificateAuthHandler());
+                try {
+                    client = ApacheHttpClientCreator
+                            .createSslClient(config.build());
+                } catch (GeneralSecurityException e) {
+                    throw new JMSConfigurationException(
+                            "Failed to load ssl configuration.", e);
+                }
+            } else {
+                client = ApacheHttpClientCreator.createClient(config.build());
+            }
+        }
+        return client;
+    }
+
 }

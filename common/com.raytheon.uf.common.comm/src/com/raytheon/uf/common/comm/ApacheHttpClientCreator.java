@@ -68,11 +68,11 @@ import com.raytheon.uf.common.util.app.AppInfo;
  * Dec 07, 2015  4834      njensen      Changes for rename of IHttpsHandler to HttpAuthHandler
  * Jan 27, 2016  5170      tjensen      Removed log interceptors. Logging moved to methods where 
  *                                       message type is known.
+ * Jan 31, 2017  6083      bsteffen     Remove local trust strategy
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public class ApacheHttpClientCreator {
 
@@ -126,9 +126,7 @@ public class ApacheHttpClientCreator {
         if (handler.isValidateCertificates()) {
 
             final KeyStore truststore = handler.getTruststore();
-            // Load a local TrustStrategy for submitted cert validation
-            TrustStrategy trustStrategy = new LocalTrustStrategy(truststore);
-            sslCtxBuilder.loadTrustMaterial(truststore, trustStrategy);
+            sslCtxBuilder.loadTrustMaterial(truststore);
 
             if (handler.getKeystore() != null) {
                 /*
