@@ -22,6 +22,7 @@ package com.raytheon.uf.edex.esb.camel.jms;
 import java.util.List;
 
 import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.comm.HttpServerException;
 
 /**
  * Provides an interface the JMS broker's REST API
@@ -47,8 +48,8 @@ public interface IBrokerRestProvider {
      * @throws CommunicationException
      * @throws JMSConfigurationException
      */
-    public List<String> getConnections()
-            throws CommunicationException, JMSConfigurationException;
+    public List<String> getConnections() throws CommunicationException,
+            JMSConfigurationException, HttpServerException;
 
     /**
      * Determine if the specified queue exists and is ready to receive messages
@@ -72,6 +73,6 @@ public interface IBrokerRestProvider {
      * @throws CommunicationException
      * @throws JMSConfigurationException
      */
-    public void deleteQueue(String queue)
-            throws CommunicationException, JMSConfigurationException;
+    public void deleteQueue(String queue) throws CommunicationException,
+            JMSConfigurationException, HttpServerException;
 }

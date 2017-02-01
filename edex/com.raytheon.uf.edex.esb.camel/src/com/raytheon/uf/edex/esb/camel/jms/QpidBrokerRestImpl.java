@@ -56,8 +56,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
     private static final String JMS_QUEUE_URL = "JMS_QUEUE_URL";
 
     @Override
-    public List<String> getConnections()
-            throws CommunicationException, JMSConfigurationException {
+    public List<String> getConnections() throws CommunicationException,
+            JMSConfigurationException, HttpServerException {
         // Use rest services to pull connection clientId
         // http://brokerHost:port/rest/connection/edex
         // port needs to be passed as a parameter
@@ -143,8 +143,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
     }
 
     @Override
-    public void deleteQueue(String queue)
-            throws CommunicationException, JMSConfigurationException {
+    public void deleteQueue(String queue) throws CommunicationException,
+            JMSConfigurationException, HttpServerException {
         // Use the Qpid rest service to delete the queue
 
         String urlPrefix = System.getenv(JMS_QUEUE_URL);
