@@ -48,11 +48,11 @@ import com.raytheon.uf.viz.core.comm.JMSConnection;
  * Oct 15, 2013  2389     rjpeter     Updated synchronization to remove session leaks.
  * Jul 21, 2014  3390     bsteffen    Extracted logic to the JmsNotificationLogic
  * Nov 08, 2016  5976     bsteffen    Remove deprecated methods
+ * Feb 02, 2017  6085     bsteffen    Do not NPE after problems in JMSConnection
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1
  */
 public class NotificationManagerJob implements IDisposable {
 
@@ -91,14 +91,22 @@ public class NotificationManagerJob implements IDisposable {
             @Override
             public Connection createConnection(String arg0, String arg1)
                     throws JMSException {
-                return JMSConnection.getInstance()
-                        .getFactory().createConnection(arg0, arg1);
+                ConnectionFactory factory = JMSConnection.getInstance()
+                        .getFactory();
+                if (factory == null) {
+                    throw new JMSException("Failed to load ConnectionFactory");
                 }
-            
+                return factory.createConnection(arg0, arg1);
+            }
+
             @Override
             public Connection createConnection() throws JMSException {
-                return JMSConnection.getInstance()
-                        .getFactory().createConnection();
+                ConnectionFactory factory = JMSConnection.getInstance()
+                        .getFactory();
+                if (factory == null) {
+                    throw new JMSException("Failed to load ConnectionFactory");
+                }
+                return factory.createConnection();
             }
         };
         manager = new JmsNotificationManager(delegateFactory);
@@ -112,15 +120,16 @@ public class NotificationManagerJob implements IDisposable {
     protected void connect(boolean notifyError) {
         manager.connect(notifyError);
     }
-    
+
     protected void disconnect(boolean notifyError) {
         manager.disconnect(notifyError);
     }
-    
+
     public static void addQueueObserver(String queue,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs) {
         getInstance().getManager().addQueueObserver(queue, obs);
     }
+
     public static void addQueueObserver(String queue,
             com.raytheon.uf.common.jms.notification.INotificationObserver obs,
             String queryString) {

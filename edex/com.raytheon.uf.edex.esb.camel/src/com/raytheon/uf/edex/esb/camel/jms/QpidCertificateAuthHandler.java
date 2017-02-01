@@ -27,8 +27,6 @@ import java.io.StringReader;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.security.GeneralSecurityException;
 import java.security.KeyFactory;
 import java.security.KeyStore;
@@ -44,6 +42,7 @@ import java.util.List;
 import javax.xml.bind.DatatypeConverter;
 
 import com.raytheon.uf.common.comm.HttpAuthHandler;
+import com.raytheon.uf.common.jms.JmsSslConfiguration;
 
 /**
  * 
@@ -57,6 +56,7 @@ import com.raytheon.uf.common.comm.HttpAuthHandler;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Jan 31, 2017  6083     bsteffen    Initial creation
+ * Feb 02, 2017  6085     bsteffen    Extract certificate lookup to JmsSslConfiguration
  *
  * </pre>
  *
@@ -64,63 +64,40 @@ import com.raytheon.uf.common.comm.HttpAuthHandler;
  */
 public class QpidCertificateAuthHandler implements HttpAuthHandler {
 
-    private static final String CERTIFICATE_DIR = "QPID_SSL_CERT_DB";
-
-    private static final String CERTIFICATE_NAME = "QPID_SSL_CERT_NAME";
-
     private final KeyStore keyStore;
 
     private final KeyStore trustStore;
 
     public QpidCertificateAuthHandler() throws JMSConfigurationException {
-        Path certDB = null;
-        String certDir = System.getenv(CERTIFICATE_DIR);
-        if (certDir == null) {
-            String userHome = System.getProperty("user.home");
-            if (userHome != null) {
-                certDB = Paths.get(userHome).resolve(".qpid");
-                if (!Files.isDirectory(certDB)) {
-                    certDB = null;
-                }
-            }
-            if (certDB == null) {
-                throw new JMSConfigurationException(
-                        "Cannot load KeyStore. Need to set " + CERTIFICATE_DIR);
-            }
-        } else {
-            certDB = Paths.get(certDir);
-        }
-        String certName = System.getenv(CERTIFICATE_NAME);
-        if (certName == null) {
-            certName = "guest";
-        }
-        keyStore = loadKeyStore(certDB, certName);
-        trustStore = loadTrustStore(certDB);
+        JmsSslConfiguration sslConfig = new JmsSslConfiguration("guest");
+        keyStore = loadKeyStore(sslConfig);
+        trustStore = loadTrustStore(sslConfig);
 
     }
 
-    private static KeyStore loadKeyStore(Path certDB, String certName)
+    private static KeyStore loadKeyStore(JmsSslConfiguration sslConfig)
             throws JMSConfigurationException {
-        Path keyPath = certDB.resolve(certName + ".key");
-        Path crtPath = certDB.resolve(certName + ".crt");
 
-        try (InputStream keyStream = Files.newInputStream(keyPath);
-                InputStream crtStream = Files.newInputStream(crtPath)) {
+        try (InputStream keyStream = Files
+                .newInputStream(sslConfig.getClientKey());
+                InputStream crtStream = Files
+                        .newInputStream(sslConfig.getClientCert())) {
             PrivateKey privateKey = readPrivateKey(keyStream);
             X509Certificate[] certs = readCertificates(crtStream);
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null, null);
-            keyStore.setKeyEntry(certName, privateKey, new char[0], certs);
+            keyStore.setKeyEntry(sslConfig.getClientName(), privateKey,
+                    new char[0], certs);
             return keyStore;
         } catch (GeneralSecurityException | IOException e) {
             throw new JMSConfigurationException("Error loading KeyStore", e);
         }
     }
 
-    private static KeyStore loadTrustStore(Path certDB)
+    private static KeyStore loadTrustStore(JmsSslConfiguration sslConfig)
             throws JMSConfigurationException {
         try (InputStream crtStream = Files
-                .newInputStream(certDB.resolve("root.crt"))) {
+                .newInputStream(sslConfig.getRootCert())) {
             X509Certificate[] certs = readCertificates(crtStream);
             KeyStore keyStore = KeyStore.getInstance(KeyStore.getDefaultType());
             keyStore.load(null, null);

@@ -46,13 +46,12 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
  * Aug 27, 2013 2295      bkowal       Return the entire jms connection url in
  *                                     the response.
  * Dec 17, 2015 5166      kbisanz      Update logging to use SLF4J
+ * Feb 02, 2017 6085      bsteffen     Enable ssl in the JMS connection.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class GetServersHandler extends GenericRegistry<String, String>
         implements IRequestHandler<GetServersRequest> {
 
@@ -67,8 +66,8 @@ public class GetServersHandler extends GenericRegistry<String, String>
         String jmsServer = System.getenv("JMS_SERVER");
         String jmsVirtualHost = System.getenv("JMS_VIRTUALHOST");
         String pypiesServer = System.getenv("PYPIES_SERVER");
-        String jmsConnectionString = this.constructJMSConnectionString(
-                jmsServer, jmsVirtualHost);
+        String jmsConnectionString = this
+                .constructJMSConnectionString(jmsServer, jmsVirtualHost);
 
         logger.info("http.server=" + httpServer);
         logger.info("jms.server=" + jmsServer);
@@ -89,7 +88,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
     // and cave/text workstation will just act like they are hung
     // up to each individual component that opens a connection to handle
     // reconnect
-    private String constructJMSConnectionString(String jmsServer,
+    private static String constructJMSConnectionString(String jmsServer,
             String jmsVirtualHost) {
         /* build the connection String that CAVE will use. */
         StringBuilder stringBuilder = new StringBuilder(
@@ -97,8 +96,11 @@ public class GetServersHandler extends GenericRegistry<String, String>
         stringBuilder.append(jmsVirtualHost);
         stringBuilder.append("?brokerlist='");
         stringBuilder.append(jmsServer);
-        stringBuilder
-                .append("?connecttimeout='5000'&heartbeat='0''&maxprefetch='10'&sync_publish='all'&failover='nofailover'&sync_ack='true'");
+        stringBuilder.append(
+                "?connecttimeout='5000'&heartbeat='0''&maxprefetch='10'&sync_publish='all'&failover='nofailover'&sync_ack='true'");
+        if (Boolean.getBoolean("JMS_SSL_ENABLED")) {
+            stringBuilder.append("&ssl='true'");
+        }
 
         return stringBuilder.toString();
     }

@@ -23,10 +23,13 @@ package com.raytheon.uf.viz.core.comm;
 import java.net.URLEncoder;
 
 import javax.jms.ConnectionFactory;
-import org.apache.qpid.client.AMQConnectionFactory;
+import javax.jms.JMSException;
 
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
+import org.apache.qpid.client.AMQConnectionFactory;
+import org.apache.qpid.client.AMQConnectionURL;
+import org.apache.qpid.jms.ConnectionURL;
+
+import com.raytheon.uf.common.jms.JmsSslConfiguration;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
@@ -46,24 +49,19 @@ import com.raytheon.uf.viz.core.VizApp;
  * Aug 27, 2013 2295       bkowal      The entire connection string is now provided by EDEX; so, it
  *                                     no longer needs to be constructed. Replaced stacktrace
  *                                     printing with UFStatus.
+ * Feb 02, 2017 6085       bsteffen    Enable ssl in the JMS connection.
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public class JMSConnection {
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(JMSConnection.class);
-
-    private static final String WSID_PLACEHOLDER = "__WSID__";
 
     private static JMSConnection instance;
 
-    private final String connectionUrl;
-
     private AMQConnectionFactory factory;
 
-    public static synchronized JMSConnection getInstance() {
+    public static synchronized JMSConnection getInstance() throws JMSException {
         if (instance == null) {
             instance = new JMSConnection();
         }
@@ -71,19 +69,25 @@ public class JMSConnection {
         return instance;
     }
 
-    public JMSConnection() {
+    public JMSConnection() throws JMSException {
         this(VizApp.getJmsConnectionString());
     }
 
-    public JMSConnection(String connectionUrl) {
-        this.connectionUrl = connectionUrl;
+    public JMSConnection(String connectionUrl) throws JMSException {
         try {
             String wsid = URLEncoder.encode(VizApp.getWsId().toString(),
                     "UTF-8");
-            this.factory = new AMQConnectionFactory(this.connectionUrl.replace(
-                    WSID_PLACEHOLDER, wsid));
+            ConnectionURL url = new AMQConnectionURL(connectionUrl);
+            url.setClientName(wsid);
+
+            JmsSslConfiguration.configureURL(url);
+
+            this.factory = new AMQConnectionFactory(url);
         } catch (Exception e) {
-            statusHandler.fatal("Failed to connect to the JMS Server!", e);
+            JMSException wrapper = new JMSException(
+                    "Failed to connect to the JMS Server!");
+            wrapper.initCause(e);
+            throw wrapper;
         }
     }
 
@@ -92,7 +96,7 @@ public class JMSConnection {
      * @return the jms connection url
      */
     public String getConnectionUrl() {
-        return connectionUrl;
+        return factory.getConnectionURLString();
     }
 
     /**
