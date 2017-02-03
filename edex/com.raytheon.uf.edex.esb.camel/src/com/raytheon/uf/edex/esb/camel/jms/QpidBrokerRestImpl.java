@@ -37,6 +37,8 @@ import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpServerException;
 import com.raytheon.uf.common.json.BasicJsonService;
 import com.raytheon.uf.common.json.JsonException;
+import com.raytheon.uf.common.util.FileUtil;
+import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * Qpid implementation of IBrokerRestProvider
@@ -50,12 +52,14 @@ import com.raytheon.uf.common.json.JsonException;
  * Apr 04, 2014  2694     randerso  Converted python implementation to Java
  * Jan 25, 2017  6092     randerso  Renamed and added queueReady method
  * Jan 31, 2017  6083     bsteffen  Add https support
+ * Feb 02, 2017  6104     randerso  Add checking for empty client list which
+ *                                  indicates an issue with the
+ *                                  JMS_CONNECTIONS_URL
  *
  * </pre>
  *
  * @author randerso
  */
-
 public class QpidBrokerRestImpl implements IBrokerRestProvider {
     private static final String JMS_CONNECTIONS_URL = "JMS_CONNECTIONS_URL";
 
@@ -96,6 +100,18 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
                 @SuppressWarnings("unchecked")
                 List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
                         .deserialize(content, Object.class);
+
+                /*
+                 * if there are no connections then we are probably not using
+                 * the correct REST URL
+                 */
+                if (jsonObjList.isEmpty()) {
+                    throw new JMSConfigurationException(
+                            "Connection list is empty. Check "
+                                    + JMS_CONNECTIONS_URL + " in "
+                                    + FileUtil.join(EDEXUtil.getEdexBin(),
+                                            "setup.env"));
+                }
 
                 for (Map<String, Object> statDict : jsonObjList) {
                     String clientId = (String) statDict.get("clientId");
