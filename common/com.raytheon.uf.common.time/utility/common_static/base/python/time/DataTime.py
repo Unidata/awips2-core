@@ -23,13 +23,14 @@
 # Python wrapper class that wraps a Java DataTime behind familiar python objects.
 #  
 #    
-#     SOFTWARE HISTORY
-#    
-#    Date            Ticket#       Engineer       Description
-#    ------------    ----------    -----------    --------------------------
-#    12/12/12                      njensen       Initial Creation.
-#    05/01/14        3095          bsteffen      Don't default fcstTime to 0 in init.
-#    06/24/14         3096         mnash         Fix pieces of implementation to better match native python version
+# SOFTWARE HISTORY
+#
+# Date          Ticket#  Engineer  Description
+# ------------- -------- --------- ---------------------------------------------
+# Dec 12, 2012           njensen   Initial Creation.
+# May 01, 2014  3095     bsteffen  Don't default fcstTime to 0 in init.
+# Jun 24, 2014  3096     mnash     Fix pieces of implementation to better match native python version
+# Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
 #    
 # 
 #
@@ -101,10 +102,10 @@ class DataTime(JUtil.JavaWrapperClass):
         return self.__dt.compareTo(other.toJavaObj()) >= 0
     
     def __str__(self):
-        return str(self.__dt.toString())
+        return str(self.__dt)
 
     def __repr__(self):
-        return str(self.__dt.toString())
+        return str(self.__dt)
     
     def toJavaObj(self):
         return self.__dt

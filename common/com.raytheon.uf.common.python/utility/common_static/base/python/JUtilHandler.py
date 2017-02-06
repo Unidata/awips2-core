@@ -29,15 +29,16 @@ import JUtil
 #
 #
 #
-#     SOFTWARE HISTORY
+# SOFTWARE HISTORY
 #
-#    Date            Ticket#       Engineer       Description
-#    ------------    ----------    -----------    --------------------------
-#    10/14/13         2250         mnash          Initial creation of JUtil handler
-#    02/06/14                      mnash          Fixed fallbacks by using OrderedDict,
-#                                                 fixed exception by declaring a size
-#    Apr 23, 2015    4259          njensen        Updated for new Jep API
-#    Nov 21. 2016    5959          njensen        Removed primitive conversions for Jep 3.6
+# Date          Ticket#  Engineer  Description
+# ------------- -------- --------- ---------------------------------------------
+# Oct 14, 2013  2250     mnash     Initial creation of JUtil handler
+# Feb 06, 2014           mnash     Fixed fallbacks by using OrderedDict, fixed 
+#                                  exception by declaring a size
+# Apr 23, 2015  4259     njensen   Updated for new Jep API
+# Nov 21, 2016  5959     njensen   Removed primitive conversions for Jep 3.6
+# Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
 #
 #
 
@@ -64,7 +65,7 @@ def _toPythonString(obj, customConverter=None):
     '''
     Turns a Java String to a Python str
     '''
-    return obj.toString()
+    return str(obj)
 
 def _toPythonDatetime(obj, customConverter=None):
     '''
