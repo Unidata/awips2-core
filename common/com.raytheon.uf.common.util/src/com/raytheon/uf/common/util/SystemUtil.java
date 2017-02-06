@@ -21,8 +21,11 @@ package com.raytheon.uf.common.util;
 
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
 import java.net.UnknownHostException;
 import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Map;
 
 import com.raytheon.uf.common.util.collections.BoundedMap;
@@ -38,12 +41,14 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  * ------------ ---------- ----------- --------------------------
  * Sep 26, 2011            rjpeter     Initial creation
  * Apr 10, 2014 2726       rjpeter     Moved hostName caching logic from WsId to here.
+ * Feb 06, 2017 6113       njensen     Updated getLocalAddress() to loop over NetworkInterfaces
+ * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public class SystemUtil {
+
     private static final Map<InetAddress, String> hostNameCache = Collections
             .synchronizedMap(new BoundedMap<InetAddress, String>(100));
 
@@ -74,19 +79,50 @@ public class SystemUtil {
     }
 
     /**
-     * Returns the local INetAddress.
+     * Returns the local InetAddress, attempting to find one that is not the
+     * link local address, the site local address, or the loopback address. If
+     * that cannot be found, it will try to find the localhost address. If all
+     * else fails, it will return 0.0.0.0.
      * 
      * @return
      */
     public static InetAddress getLocalAddress() {
         if (addr == null) {
+            InetAddress addrToUse = null;
             try {
-                addr = InetAddress.getLocalHost();
-            } catch (UnknownHostException e) {
-                try {
-                    return InetAddress.getByAddress(new byte[] { 0, 0, 0, 0 });
-                } catch (UnknownHostException e1) {
-                    // won't happen
+                Enumeration<NetworkInterface> nis = NetworkInterface
+                        .getNetworkInterfaces();
+                while (nis.hasMoreElements()) {
+                    NetworkInterface ni = nis.nextElement();
+                    Enumeration<InetAddress> addrs = ni.getInetAddresses();
+                    while (addrs.hasMoreElements()) {
+                        InetAddress addr = addrs.nextElement();
+                        if (!addr.isLinkLocalAddress()
+                                && !addr.isSiteLocalAddress()
+                                && !addr.isLoopbackAddress()) {
+                            addrToUse = addr;
+                            break;
+                        }
+                    }
+                }
+
+                if (addrToUse != null) {
+                    addr = addrToUse;
+                }
+            } catch (SocketException e) {
+                // ignore
+            } finally {
+                if (addr == null) {
+                    try {
+                        addr = InetAddress.getLocalHost();
+                    } catch (UnknownHostException e) {
+                        try {
+                            return InetAddress
+                                    .getByAddress(new byte[] { 0, 0, 0, 0 });
+                        } catch (UnknownHostException e1) {
+                            // won't happen
+                        }
+                    }
                 }
             }
         }
