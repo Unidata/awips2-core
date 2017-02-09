@@ -19,11 +19,35 @@
  **/
 package com.raytheon.uf.common.jms;
 
+import java.io.BufferedReader;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.io.StringReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.GeneralSecurityException;
+import java.security.KeyFactory;
+import java.security.KeyStore;
+import java.security.PrivateKey;
+import java.security.cert.Certificate;
+import java.security.cert.CertificateException;
+import java.security.cert.CertificateFactory;
+import java.security.cert.X509Certificate;
+import java.security.spec.PKCS8EncodedKeySpec;
+import java.util.ArrayList;
+import java.util.List;
 
+import javax.xml.bind.DatatypeConverter;
+
+import org.apache.qpid.jms.BrokerDetails;
 import org.apache.qpid.jms.ConnectionURL;
+
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * 
@@ -44,9 +68,14 @@ import org.apache.qpid.jms.ConnectionURL;
  */
 public class JmsSslConfiguration {
 
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(JmsPooledConnection.class);
+
     private static final String CERTIFICATE_DIR = "QPID_SSL_CERT_DB";
 
     private static final String CERTIFICATE_NAME = "QPID_SSL_CERT_NAME";
+
+    private static final String CERTIFICATE_PASSWORD = "QPID_SSL_CERT_PASSWORD";
 
     private final String clientName;
 
@@ -116,6 +145,74 @@ public class JmsSslConfiguration {
         return rootCert;
     }
 
+    public KeyStore loadKeyStore()
+            throws GeneralSecurityException, IOException {
+        try (InputStream keyStream = Files.newInputStream(getClientKey());
+                InputStream crtStream = Files.newInputStream(getClientCert())) {
+            PrivateKey privateKey = readPrivateKey(keyStream);
+            X509Certificate[] certs = readCertificates(crtStream);
+            KeyStore keyStore = KeyStore.getInstance("jks");
+            keyStore.load(null, null);
+            keyStore.setKeyEntry(getClientName(), privateKey,
+                    getPassword().toCharArray(), certs);
+            return keyStore;
+        }
+    }
+
+    public KeyStore loadTrustStore()
+            throws GeneralSecurityException, IOException {
+        try (InputStream crtStream = Files.newInputStream(getRootCert())) {
+            X509Certificate[] certs = readCertificates(crtStream);
+            KeyStore keyStore = KeyStore.getInstance("jks");
+            keyStore.load(null, null);
+            int alias = 1;
+            for (Certificate cert : certs) {
+                keyStore.setCertificateEntry(Integer.toString(alias), cert);
+                alias += 1;
+            }
+            return keyStore;
+        }
+    }
+
+    public Path getJavaTrustStoreFile() {
+        Path path = clientKey.resolveSibling(clientName + ".jks");
+        if (!Files.exists(path)) {
+            try {
+                KeyStore trustStore = loadTrustStore();
+                try (OutputStream out = Files.newOutputStream(path)) {
+                    trustStore.store(out, getPassword().toCharArray());
+                }
+            } catch (GeneralSecurityException | IOException e) {
+                statusHandler.error("Failed to create java trust store file.",
+                        e);
+            }
+        }
+        return path;
+    }
+
+    public Path getJavaKeyStoreFile() {
+        Path path = rootCert.resolveSibling("root.jks");
+        if (!Files.exists(path)) {
+            try {
+                KeyStore keyStore = loadKeyStore();
+                try (OutputStream out = Files.newOutputStream(path)) {
+                    keyStore.store(out, getPassword().toCharArray());
+                }
+            } catch (GeneralSecurityException | IOException e) {
+                statusHandler.error("Failed to create java key store file.", e);
+            }
+        }
+        return path;
+    }
+
+    public String getPassword() {
+        String password = System.getenv(CERTIFICATE_PASSWORD);
+        if (password == null) {
+            password = "password";
+        }
+        return password;
+    }
+
     /**
      * If the url passed in has the ssl option set to true then this will find
      * the correct ssl certificates based off the environmental variables and
@@ -126,21 +223,112 @@ public class JmsSslConfiguration {
      * @param url
      *            The url, which may need to be modified to add ssl
      *            certificates.
-     * @return THe same URL that was passed in.
+     * @return The same URL that was passed in.
      */
     public static ConnectionURL configureURL(ConnectionURL url) {
+
         String ssl = url.getOption("ssl");
         if (ssl != null && Boolean.parseBoolean(ssl)) {
             JmsSslConfiguration config = new JmsSslConfiguration(
                     url.getUsername());
-            url.setOption("client_cert_path",
-                    config.getClientCert().toString());
-            url.setOption("client_cert_priv_key_path",
-                    config.getClientKey().toString());
-            url.setOption("trusted_certs_path",
-                    config.getRootCert().toString());
+            boolean newerQpidLibrary = false;
+            /*
+             * TODO in newer version of qpid it is simpler to use the
+             * certificate files directly instead of creating jks files.
+             */
+            if (newerQpidLibrary) {
+                url.setOption("client_cert_path",
+                        config.getClientCert().toString());
+                url.setOption("client_cert_priv_key_path",
+                        config.getClientKey().toString());
+                url.setOption("trusted_certs_path",
+                        config.getRootCert().toString());
+            } else {
+                for (BrokerDetails details : url.getAllBrokerDetails()) {
+                    details.setProperty("ssl", "true");
+                    details.setProperty("trust_store",
+                            config.getJavaTrustStoreFile().toString());
+                    details.setProperty("trust_store_password",
+                            config.getPassword());
+                    details.setProperty("key_store",
+                            config.getJavaKeyStoreFile().toString());
+                    details.setProperty("key_store_password",
+                            config.getPassword());
+                    // Avoid extra output from
+                    // https://issues.apache.org/jira/browse/QPID-6743
+                    details.setProperty("ssl_verify_hostname", "false");
+                }
+            }
+
         }
         return url;
+    }
+
+    /**
+     * TODO Upgrade to a newer version of qpid and use
+     * org.apache.qpid.transport.network.security.ssl.SSLUtil.readCertificates
+     */
+    private static X509Certificate[] readCertificates(InputStream input)
+            throws IOException, GeneralSecurityException {
+        List<X509Certificate> crt = new ArrayList<>();
+        try {
+            do {
+                CertificateFactory cf = CertificateFactory.getInstance("X.509");
+                crt.add((X509Certificate) cf.generateCertificate(input));
+            } while (input.available() != 0);
+        } catch (CertificateException e) {
+            if (crt.isEmpty()) {
+                throw e;
+            }
+        }
+        return crt.toArray(new X509Certificate[crt.size()]);
+    }
+
+    /**
+     * TODO Upgrade to a newer version of qpid and use
+     * org.apache.qpid.transport.network.security.ssl.SSLUtil.readPrivateKey
+     */
+    private static PrivateKey readPrivateKey(InputStream input)
+            throws IOException, GeneralSecurityException {
+        ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+
+        byte[] tmp = new byte[1024];
+        int read;
+        while ((read = input.read(tmp)) != -1) {
+            buffer.write(tmp, 0, read);
+        }
+
+        byte[] content = buffer.toByteArray();
+        String contentAsString = new String(content, StandardCharsets.US_ASCII);
+        if (contentAsString.contains("-----BEGIN ")
+                && contentAsString.contains(" PRIVATE KEY-----")) {
+            BufferedReader lineReader = new BufferedReader(
+                    new StringReader(contentAsString));
+
+            String line;
+            do {
+                line = lineReader.readLine();
+            } while (line != null && !(line.startsWith("-----BEGIN ")
+                    && line.endsWith(" PRIVATE KEY-----")));
+
+            if (line != null) {
+                StringBuilder keyBuilder = new StringBuilder();
+
+                while ((line = lineReader.readLine()) != null) {
+                    if (line.startsWith("-----END ")
+                            && line.endsWith(" PRIVATE KEY-----")) {
+                        break;
+                    }
+                    keyBuilder.append(line);
+                }
+
+                content = DatatypeConverter
+                        .parseBase64Binary(keyBuilder.toString());
+            }
+        }
+        PKCS8EncodedKeySpec keySpec = new PKCS8EncodedKeySpec(content);
+        KeyFactory kf = KeyFactory.getInstance("RSA");
+        return kf.generatePrivate(keySpec);
     }
 
 }
