@@ -19,12 +19,10 @@
  **/
 package com.raytheon.uf.common.jms;
 
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
 import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.client.BrokerDetails;
 import org.apache.qpid.url.URLSyntaxException;
 
 /**
@@ -55,14 +53,6 @@ public class AMQConnectionURLBean extends AMQConnectionURL {
         for (Entry<String, String> option : options.entrySet()) {
             setOption(option.getKey(), option.getValue());
         }
-    }
-
-    @Override
-    public void setBrokerDetails(List<BrokerDetails> brokers) {
-        for (BrokerDetails broker : brokers) {
-            broker.setConnectionUrl(this);
-        }
-        super.setBrokerDetails(brokers);
     }
 
 }
