@@ -4,7 +4,7 @@ Bundle-Name: Units
 Bundle-SymbolicName: com.raytheon.uf.common.units
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: javax.measure;visibility:=reexport,
  com.raytheon.uf.common.util,
  org.apache.commons.beanutils,

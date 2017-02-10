@@ -12,5 +12,5 @@ Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.viz.alerts,
  com.raytheon.viz.alerts.jobs,
  com.raytheon.viz.alerts.observers
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 

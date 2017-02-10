@@ -4,7 +4,7 @@ Bundle-Name: Camel Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.esb.camel
 Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: Raytheon
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.apache.camel;bundle-version="2.16.0",
  javax.jms,
  com.raytheon.edex.common;bundle-version="1.10.7",

@@ -4,7 +4,7 @@ Bundle-Name: Utility Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.util
 Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: com.raytheon.uf.common.util,
  com.raytheon.uf.common.util.algorithm,
  com.raytheon.uf.common.util.app,

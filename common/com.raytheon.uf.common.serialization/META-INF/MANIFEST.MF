@@ -17,4 +17,4 @@ Export-Package: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.jaxb,
  com.raytheon.uf.common.serialization.reflect,
  com.raytheon.uf.common.serialization.thrift
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
