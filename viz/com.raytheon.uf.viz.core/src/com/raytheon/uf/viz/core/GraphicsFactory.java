@@ -82,14 +82,14 @@ public class GraphicsFactory {
                         statusHandler.handle(Priority.PROBLEM,
                                 "Could not instantiate graphics adapter: "
                                         + ele.getAttribute("factoryClass"));
-
+                        statusHandler.handle(Priority.PROBLEM,
+                                "String id = " + id);
                     }
                 }
             }
-
             if (adapters.containsKey(DEFAULT) == false) {
                 statusHandler.handle(Priority.PROBLEM,
-                        "No default graphics factory adapter found");
+                        "No default graphics factory adapter found" + adapters);
             }
 
         }
