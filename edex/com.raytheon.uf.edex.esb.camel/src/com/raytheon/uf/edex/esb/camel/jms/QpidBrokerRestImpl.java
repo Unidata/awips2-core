@@ -55,6 +55,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Feb 02, 2017  6104     randerso  Add checking for empty client list which
  *                                  indicates an issue with the
  *                                  JMS_CONNECTIONS_URL
+ * Feb 08, 2017  6092     randerso  Add additional error checking in
+ *                                  queueReady.
  *
  * </pre>
  *
@@ -154,12 +156,14 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
                     List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
                             .deserialize(content, Object.class);
 
-                    @SuppressWarnings("unchecked")
-                    Map<String, Integer> statistics = (Map<String, Integer>) jsonObjList
-                            .get(0).get("statistics");
-                    int bindingCount = statistics.get("bindingCount");
-                    int consumerCount = statistics.get("consumerCount");
-                    return (bindingCount > 0) && (consumerCount > 0);
+                    if (!jsonObjList.isEmpty()) {
+                        @SuppressWarnings("unchecked")
+                        Map<String, Integer> statistics = (Map<String, Integer>) jsonObjList
+                                .get(0).get("statistics");
+                        int bindingCount = statistics.get("bindingCount");
+                        int consumerCount = statistics.get("consumerCount");
+                        return (bindingCount > 0) && (consumerCount > 0);
+                    }
 
                 } catch (JsonException | IOException e) {
                     throw new CommunicationException("Unable to parse response",
@@ -202,7 +206,7 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private boolean isSuccess(CloseableHttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
-        return statusCode >= 200 && statusCode < 300;
+        return (statusCode >= 200) && (statusCode < 300);
     }
 
     private synchronized CloseableHttpClient getHttpClient()
@@ -214,8 +218,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
             String queueUrl = System.getenv(JMS_QUEUE_URL);
             if (connectionUrl != null) {
                 https = connectionUrl.startsWith("https://");
-                if (queueUrl != null
-                        && queueUrl.startsWith("https://") != https) {
+                if ((queueUrl != null)
+                        && (queueUrl.startsWith("https://") != https)) {
                     throw new JMSConfigurationException(
                             JMS_QUEUE_URL + " and " + JMS_CONNECTIONS_URL
                                     + " must use the same protocol.");
