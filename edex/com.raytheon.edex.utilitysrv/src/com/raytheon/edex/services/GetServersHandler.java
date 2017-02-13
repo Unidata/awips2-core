@@ -100,7 +100,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
         stringBuilder.append(jmsServer);
         stringBuilder.append(
                 "?connecttimeout='5000'&heartbeat='0''&maxprefetch='10'&sync_publish='all'&failover='nofailover'&sync_ack='true'");
-        if (Boolean.getBoolean("JMS_SSL_ENABLED")) {
+        if (Boolean.parseBoolean(System.getenv("JMS_SSL_ENABLED"))) {
             stringBuilder.append("&ssl='true'");
         }
 
