@@ -8,46 +8,20 @@
   <bean id="queryDataSet" class="com.raytheon.uf.edex.database.handlers.DbQueryHandlerSet"/>
 
   <bean id="spatialQueryRegistered" factory-bean="handlerRegistry" factory-method="register">
-  	<constructor-arg value="com.raytheon.uf.common.geospatial.request.SpatialDbQueryRequest"/>
-  	<constructor-arg ref="querySpatialData"/>
+     <constructor-arg value="com.raytheon.uf.common.geospatial.request.SpatialDbQueryRequest"/>
+     <constructor-arg ref="querySpatialData"/>
   </bean>
   <bean id="queryDataRegistered" factory-bean="handlerRegistry" factory-method="register">
-  	<constructor-arg value="com.raytheon.uf.common.dataquery.requests.DbQueryRequest"/>
-  	<constructor-arg ref="queryData"/>
-  </bean>
-  <bean factory-bean="handlerRegistry" factory-method="register">
-  	<constructor-arg value="com.raytheon.uf.common.dataquery.requests.DbQueryRequestSet"/>
-  	<constructor-arg ref="queryDataSet"/>
+     <constructor-arg value="com.raytheon.uf.common.dataquery.requests.DbQueryRequest"/>
+     <constructor-arg ref="queryData"/>
   </bean>
   
   <bean id="qlServerRequestHandler" class="com.raytheon.uf.edex.database.QlServerRequestHandler" />
-  <bean factory-bean="handlerRegistry" factory-method="register">
-   	<constructor-arg value="com.raytheon.uf.common.dataquery.requests.QlServerRequest"/>
-  	<constructor-arg ref="qlServerRequestHandler"/>
-  </bean>
-  
   <bean id="dataRecordRequestHandler" class="com.raytheon.uf.edex.database.handlers.DataRecordRequestHandler" />
-  <bean factory-bean="handlerRegistry" factory-method="register">
-     <constructor-arg value="com.raytheon.uf.common.dataplugin.request.DataRecordRequest" />
-     <constructor-arg ref="dataRecordRequestHandler"/>
-  </bean>
-  
   <bean id="timeQueryHandler" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandler" />
-  <bean id="timeQueryHandlerSet" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandlerSet" />
-  <bean factory-bean="handlerRegistry" factory-method="register">
-   	<constructor-arg value="com.raytheon.uf.common.dataquery.requests.TimeQueryRequest"/>
-  	<constructor-arg ref="timeQueryHandler"/>
-  </bean>
-  <bean factory-bean="handlerRegistry" factory-method="register">
-   	<constructor-arg value="com.raytheon.uf.common.dataquery.requests.TimeQueryRequestSet"/>
-  	<constructor-arg ref="timeQueryHandlerSet"/>
-  </bean>
-  
+  <bean id="timeQueryHandlerSet" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandlerSet" />  
   <bean id="saveOrUpdateHandler" class="com.raytheon.uf.edex.database.handlers.SaveOrUpdateHandler" />
-  <bean factory-bean="handlerRegistry" factory-method="register">
-    <constructor-arg value="com.raytheon.uf.common.dataquery.requests.SaveOrUpdateRequest"/>
-    <constructor-arg ref="saveOrUpdateHandler"/>
-  </bean>    
+    
   
   <bean id="pluginFactory" class="com.raytheon.uf.edex.database.plugin.PluginFactory" factory-method="getInstance">
     <property name="defaultPathProvider" ref="defaultPathProvider"/>
