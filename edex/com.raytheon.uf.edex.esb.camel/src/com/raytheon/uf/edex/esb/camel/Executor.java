@@ -64,10 +64,11 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Mar 19, 2014  2726      rjpeter      Added graceful shutdown.
  * May 21, 2014  3195      bclement     system now prints available modes and exits if runmode not specified
  * Dec 22, 2015  4262      dgilling     Wait for async startup beans before starting routes.
+ * Feb 08, 2017  6111      njensen      Initialize Spring ApplicationContext more explicitly
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 public class Executor {
@@ -116,9 +117,9 @@ public class Executor {
             }
         });
 
-        List<String> xmlFiles = new ArrayList<String>();
+        List<String> xmlFiles = new ArrayList<>();
 
-        List<File> propertiesFiles = new ArrayList<File>();
+        List<File> propertiesFiles = new ArrayList<>();
         File confDir = new File(EDEXModesUtil.CONF_DIR);
         File resourcesDir = new File(confDir, "resources");
         propertiesFiles.addAll(Arrays.asList(findFiles(resourcesDir,
@@ -140,7 +141,7 @@ public class Executor {
         File springDir = new File(confDir, "spring");
         File[] springFiles = findFiles(springDir, EDEXModesUtil.XML);
 
-        List<String> springList = new ArrayList<String>();
+        List<String> springList = new ArrayList<>();
         for (File f : springFiles) {
             String name = f.getName();
 
@@ -178,8 +179,11 @@ public class Executor {
          * any spring beans may attempt to use it
          */
         PathManagerFactory.setAdapter(new EDEXLocalizationAdapter());
-        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext(
+
+        ClassPathXmlApplicationContext context = new ClassPathXmlApplicationContext();
+        context.setConfigLocations(
                 xmlFiles.toArray(new String[xmlFiles.size()]));
+        context.refresh();
 
         ContextManager ctxMgr = (ContextManager) context
                 .getBean("contextManager");
@@ -232,7 +236,7 @@ public class Executor {
     }
 
     private static String printList(List<String> components) {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
 
         Collections.sort(components);
         Iterator<String> iterator = components.iterator();

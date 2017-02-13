@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.requestsrv;
 
+import java.util.Collection;
+
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
 import com.raytheon.uf.common.util.registry.GenericRegistry;
@@ -26,29 +28,25 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
 /**
  * Class used for registering {@link IRequestHandler}s for the
  * {@link IServerRequest} objects they handle. Registry is used by service
- * executors to look up the handler to execute the request
- * 
- * TODO: Once {@link RemoteRequestServer} is deleted and replaced by
- * {@link RequestServiceExecutor}, no longer implement the
- * {@link IHandlerRegistry} interface. Only implement so legacy code will still
- * work with registry in this project
+ * executors to look up the handler to execute the request.
  * 
  * <pre>
  * 
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug  6, 2009            mschenke    Initial creation
+ * Aug 06, 2009            mschenke    Initial creation
  * Aug 15, 2014 3541       mschenke    Moved from auth to services plugin
  * Sep 16, 2014 3356       njensen     DefaultHandler throws IllegalState, not ClassNotFound
+ * Feb 09, 2017 6111       njensen     Added getRegisteredValues()
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
-public class HandlerRegistry extends GenericRegistry<String, Object> {
+public class HandlerRegistry
+        extends GenericRegistry<String, IRequestHandler<?>> {
 
     private static final HandlerRegistry instance = new HandlerRegistry(
             new DefaultHandler());
@@ -73,7 +71,7 @@ public class HandlerRegistry extends GenericRegistry<String, Object> {
     }
 
     /**
-     * @param object
+     * @param objectType
      * @return The {@link IRequestHandler} registered to handle requests with
      *         class name passed in
      */
@@ -92,6 +90,15 @@ public class HandlerRegistry extends GenericRegistry<String, Object> {
      */
     public IRequestHandler<?> getDefaultHandler() {
         return defaultHandler;
+    }
+
+    /**
+     * Gets the values registered (without the keys)
+     * 
+     * @return
+     */
+    public Collection<IRequestHandler<?>> getRegisteredValues() {
+        return registry.values();
     }
 
 }

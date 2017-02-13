@@ -28,6 +28,7 @@ import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.util.registry.GenericRegistry;
+import com.raytheon.uf.common.util.registry.RegistryException;
 
 /**
  * Handler class for retrieving the http and jms servers from the
@@ -47,6 +48,7 @@ import com.raytheon.uf.common.util.registry.GenericRegistry;
  *                                     the response.
  * Dec 17, 2015 5166      kbisanz      Update logging to use SLF4J
  * Feb 02, 2017 6085      bsteffen     Enable ssl in the JMS connection.
+ * Feb 09, 2017 6111      njensen      Overrode register to not return this
  * 
  * </pre>
  * 
@@ -74,7 +76,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
         logger.info("jms.virtualhost=" + jmsVirtualHost);
         logger.info("pypies.server=" + pypiesServer);
         logger.info("server locations=" + registry);
-        ;
+
         response.setHttpServer(httpServer);
         response.setJmsConnectionString(jmsConnectionString);
         response.setPypiesServer(pypiesServer);
@@ -103,5 +105,11 @@ public class GetServersHandler extends GenericRegistry<String, String>
         }
 
         return stringBuilder.toString();
+    }
+
+    @Override
+    public Object register(String key, String value) throws RegistryException {
+        registry.put(key, value);
+        return value;
     }
 }
