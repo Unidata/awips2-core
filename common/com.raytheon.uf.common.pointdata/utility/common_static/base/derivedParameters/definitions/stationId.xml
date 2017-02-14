@@ -18,11 +18,15 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="stationId" name="Station Id" unit="C">
     <Method name="Alias" models="bufrua">
-    	<Field abbreviation="wmoStaNum"/>
+        <Field abbreviation="wmoStaNum" />
     </Method>
     <Method name="Alias" models="modelsounding" levels="Surface">
-    	<Field abbreviation="stationId" level="Station"/>
+        <Field abbreviation="stationId" level="Station" />
     </Method>
 </DerivedParameter>

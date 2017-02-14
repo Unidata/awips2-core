@@ -18,13 +18,17 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <DerivedParameter abbreviation="numLevels" name="Number of Levels">
     <Method name="Add" models="bufrua">
-        <Field abbreviation="numMand"/>
-        <Field abbreviation="numSigT"/>
-        <Field abbreviation="numSigW"/>
+        <Field abbreviation="numMand" />
+        <Field abbreviation="numSigT" />
+        <Field abbreviation="numSigW" />
     </Method>
     <Method name="Alias" models="modelsounding">
-        <Field abbreviation="numProfLvls"/>
+        <Field abbreviation="numProfLvls" />
     </Method>
 </DerivedParameter>

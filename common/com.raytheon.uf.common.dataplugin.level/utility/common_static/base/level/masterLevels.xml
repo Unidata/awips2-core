@@ -1,33 +1,38 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
     <!--
         This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
         pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
-        
+
         U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
         This_software_product_contains_export-restricted_data_whose
         export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
         to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
         an_export_license_or_other_authorization.
-        
+
         Contractor_Name:________Raytheon_Company
         Contractor_Address:_____6825_Pine_Street,_Suite_340
         ________________________Mail_Stop_B8
         ________________________Omaha,_NE_68106
         ________________________402.291.0100
-        
+
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
 <masterLevelContainer>
-    <masterLevel type="" unitString="" description="Maximum Temperature Speed Level" name="MAXT"/>
-    <masterLevel type="" unitString="" description="Maximum Mixing Ratio level" name="MAXR"/>
-    <masterLevel type="" unitString="" description="Maximum Wet Bulb Tmperature level" name="MAXTW"/>
-    <masterLevel type="" unitString="" description="Maximum Omega level" name="MAXOMEGA"/>
+    <masterLevel type="" unitString="" description="Maximum Temperature Speed Level" name="MAXT" />
+    <masterLevel type="" unitString="" description="Maximum Mixing Ratio level" name="MAXR" />
+    <masterLevel type="" unitString="" description="Maximum Wet Bulb Tmperature level" name="MAXTW" />
+    <masterLevel type="" unitString="" description="Maximum Omega level" name="MAXOMEGA" />
     <masterLevel name="MB" type="DEC" unitString="hPa" description="Isobaric Surface" />
     <masterLevel name="LYRMB" type="MB" unitString="" description="Layer between two Isobaric Surfaces" />
     <masterLevel name="K" type="INC" unitString="K" description="Isentropic (theta) level - Potential Temperature" />
     <masterLevel name="LYRK" type="INC" unitString="K" description="Layer between two Isentropic (theta) levels" />
-    <masterLevel name="Ke" type="INC" unitString="K" description="Isentropic (theta-E) level - Equivalent Potential Temperature" />
+    <masterLevel name="Ke" type="INC" unitString="K"
+        description="Isentropic (theta-E) level - Equivalent Potential Temperature" />
     <masterLevel name="LYRKe" type="INC" unitString="K" description="Layer between two Isentropic (theta-E) levels" />
     <masterLevel name="TMPL" type="INC" unitString="K" description="Isothermal Level" />
     <masterLevel name="KFT" type="INC" unitString="ft" description="Height in feet" />
@@ -46,7 +51,8 @@
     <masterLevel name="EA" type="" unitString="" description="Entire Atmosphere as a single layer" />
     <masterLevel name="VPT" type="INC" unitString="" description="Virtual Potential Temperature level" />
     <masterLevel name="LYRFHAG" type="FHAG" unitString="" description="Layer between two Fixed Heights Above Ground" />
-    <masterLevel name="LYRBL" type="BL" unitString="" description="Layer between two levels at specified pressure differences" />
+    <masterLevel name="LYRBL" type="BL" unitString=""
+        description="Layer between two levels at specified pressure differences" />
     <masterLevel name="MEPT" type="" unitString="" description="Maximum Equivalent Potential Temperature Level" />
     <masterLevel name="HTFL" type="" unitString="" description="Highest Tropospheric Freezing Level" />
     <masterLevel name="EL" type="" unitString="" description="Equilibrium Level" />
