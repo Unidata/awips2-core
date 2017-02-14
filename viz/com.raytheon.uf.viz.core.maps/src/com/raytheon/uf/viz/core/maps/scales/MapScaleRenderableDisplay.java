@@ -30,6 +30,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.VizConstants;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
@@ -167,6 +168,7 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
                         descriptor.getResourceList().addAll(
                                 ard.getDescriptor().getResourceList());
                         ard.getDescriptor().getResourceList().clear();
+                        ard.refresh();
                         break;
                     } catch (VizException e) {
                         statusHandler.handle(Priority.PROBLEM,
@@ -176,10 +178,12 @@ public class MapScaleRenderableDisplay extends PlainMapRenderableDisplay
                 descriptor.getResourceList().instantiateResources(descriptor,
                         true);
                 scaleToClientArea(getBounds());
+              
             } catch (SerializationException e) {
                 statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
                         e);
             }
+            
             setScaleName(scale.getDisplayName());
         }
     }

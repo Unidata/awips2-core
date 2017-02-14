@@ -41,6 +41,7 @@ import org.eclipse.swt.widgets.MessageBox;
 import org.eclipse.swt.widgets.Text;
 import org.eclipse.ui.IWorkbench;
 import org.eclipse.ui.IWorkbenchPreferencePage;
+import org.eclipse.ui.PlatformUI;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.PathManagerFactory;
@@ -65,6 +66,9 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 26, 2014  3236     njensen     LocalizationEditor can be text or combo
  * Dec 01, 2014  3236     njensen     Fix checking alert service
+ * Jun 24, 2015           mjames@ucar Formatting changes
+ * Sep 12, 2016           mjames@ucar Restart button enabled on apply/ok after changes
+ * Dec 09, 2016           mjames@ucar Restart button enabled always
  * 
  * </pre>
  * 
@@ -80,6 +84,8 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
     private StringFieldEditor alertEditor;
 
     private boolean prefsModified;
+    
+    private Button restart;
 
     /**
      * Constructor
@@ -88,7 +94,6 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         super(GRID);
         setPreferenceStore(LocalizationManager.getInstance()
                 .getLocalizationStore());
-        setDescription("Specify localization settings (requires a CAVE restart)");
         prefsModified = false;
     }
 
@@ -140,7 +145,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         FieldEditor site;
         if (!LocalizationManager.getInstance().isOverrideSite()) {
             site = new ComboFieldEditor(
-                    LocalizationConstants.P_LOCALIZATION_SITE_NAME, "&Site: ",
+                    LocalizationConstants.P_LOCALIZATION_SITE_NAME, "&Site",
                     entryNamesAndValues, getFieldEditorParent());
         } else {
             Composite note = createNoteComposite(
@@ -169,7 +174,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
                     getPreferenceStore(),
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER,
                     LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS,
-                    "&Localization Server: ");
+                    "&EDEX Server");
         } else {
             Composite note = createNoteComposite(
                     getFont(),
@@ -189,7 +194,7 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             localizationEditor.setEnabled(false, getFieldEditorParent());
         }
         localizationEditor
-                .setErrorMessage("Unable to connect to localization server");
+                .setErrorMessage("Unable to connect to EDEX server");
         localizationEditor.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -206,6 +211,8 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             this.addField(alertEditor);
         }
         addConnectivityButton();
+        
+        addRestartButton();
     }
 
     /**
@@ -225,6 +232,25 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         });
     }
 
+    /**
+     * Add button to restart CAVE
+     */
+    private void addRestartButton() {
+        restart = new Button(getFieldEditorParent(), SWT.PUSH);
+        GridData gd = new GridData(SWT.RIGHT, SWT.TOP, false, true);
+        gd.horizontalSpan = 2;
+        restart.setLayoutData(gd);
+        restart.setText("   Restart Now   ");
+        restart.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+            	PlatformUI.getWorkbench().restart();
+            }
+        });
+        restart.setEnabled(true);
+    }
+
+    
     /**
      * Check the connectivity of the server field editors
      */
@@ -289,24 +315,23 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
         if (prefsModified) {
             MessageBox warning = new MessageBox(getShell(), SWT.ICON_WARNING
                     | SWT.OK | SWT.CANCEL);
-            warning.setText("CAVE Localization preferences changed");
+            warning.setText("CAVE Localization Preferences Changed");
             warning.setMessage("Localization preferences have changed "
-                    + "and CAVE needs to be restarted to use the new "
-                    + "settings. \n"
-                    + "Click OK to save your changes. You MUST restart CAVE "
-                    + "after closing this window or errors will occur in your "
-                    + "current CAVE session. \n"
-                    + "Click Cancel if you do not wish to save these new preferences.");
+                    + "and CAVE needs to be restarted. \n"
+                    + "Click OK to save your changes. You must restart CAVE "
+                    + "after closing this window.");
 
             int retVal = warning.open();
             if (retVal == SWT.CANCEL) {
                 return false;
             }
+            if (retVal == SWT.OK) {
+            	prefsModified = false;
+            }
         }
-
         return super.performOk();
     }
-
+    
     /*
      * (non-Javadoc)
      * 

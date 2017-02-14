@@ -85,7 +85,7 @@ public class GeneralCanvasRenderingExtension extends
                 mapString
                         .addTextStyle(textStyle.getKey(), textStyle.getValue());
             }
-            mapString.verticallAlignment = screenString.verticallAlignment;
+            mapString.verticalAlignment = screenString.verticalAlignment;
             mapString.basics.alpha = screenString.basics.alpha;
             mapString.basics.xOrColors = screenString.basics.xOrColors;
             mapString.basics.color = screenString.basics.color;

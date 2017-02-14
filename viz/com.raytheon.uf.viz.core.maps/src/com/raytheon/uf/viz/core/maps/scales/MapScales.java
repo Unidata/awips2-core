@@ -82,6 +82,12 @@ public class MapScales {
         @XmlAttribute
         private String fileName;
 
+        @XmlAttribute
+        private Boolean isCustom;
+        
+        @XmlAttribute
+        private Boolean areaScale;
+        
         private PartId[] partIds;
 
         public MapScale() {
@@ -103,6 +109,14 @@ public class MapScales {
         public void setFileName(String fileName) {
             this.fileName = fileName;
         }
+        
+        public Boolean isCustom() {
+            return isCustom;
+        }
+
+        public void setIsCustom(Boolean isCustom) {
+            this.isCustom = isCustom;
+        }
 
         @XmlElement(name = "partId")
         public PartId[] getPartIds() {
@@ -112,6 +126,11 @@ public class MapScales {
         public void setPartIds(PartId[] partIds) {
             this.partIds = partIds;
         }
+
+		public Boolean getAreaScale() {
+			return areaScale;
+		}
+	
     }
 
     private MapScale[] scales;

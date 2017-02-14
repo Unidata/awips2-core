@@ -43,7 +43,7 @@
         <ConstantField value="0.000020"/>
         <ConstantField value="-2"/>
     </Method>
-    <Method models="SREF212" name="Alias">
+    <Method models="SREF40" name="Alias">
         <Field abbreviation="vWmean"/>
     </Method>
     <Method models="modelsounding" levels="Surface" name="Alias">
@@ -55,8 +55,8 @@
     <Method levels="Surface" name="Alias">
         <Field level="BLyr" abbreviation="vW"/>
     </Method>
-    <Method models="mesoEta212" levels="Surface" name="Import">
-        <Field level="10FHAG" model="mesoEta215" abbreviation="vW"/>
+    <Method models="NAM40" levels="Surface" name="Import">
+        <Field level="10FHAG" model="NAM20" abbreviation="vW"/>
     </Method>
     <Method levels="925MB" name="Average">
         <Field level="950MB" abbreviation="vW"/>
