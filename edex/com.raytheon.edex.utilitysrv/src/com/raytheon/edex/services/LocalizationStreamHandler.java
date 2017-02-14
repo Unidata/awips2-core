@@ -20,29 +20,16 @@
 package com.raytheon.edex.services;
 
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.Arrays;
 
-import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
 import com.raytheon.uf.common.auth.user.IUser;
-import com.raytheon.uf.common.localization.FileLocker;
-import com.raytheon.uf.common.localization.FileLocker.Type;
-import com.raytheon.uf.common.localization.FileUpdatedMessage;
-import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.stream.AbstractLocalizationStreamRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamGetRequest;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
-import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
  * Base handler for localization streaming requests. Delegates work off to a
@@ -62,20 +49,19 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Feb 17, 2015 4137       reblum       fixed timestamp on put requests
  * Nov 16, 2015 4834       njensen      Send updated checksum as part of notification after put
  * Dec 03, 2015 4834       njensen      Deprecated
+ * Feb 14, 2017 6111       njensen      Split handling of get and put requests into subclasses
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 @Deprecated
-public class LocalizationStreamHandler
+public abstract class LocalizationStreamHandler<T extends AbstractLocalizationStreamRequest>
         extends
-        AbstractPrivilegedLocalizationRequestHandler<AbstractLocalizationStreamRequest> {
+        AbstractPrivilegedLocalizationRequestHandler<T> {
 
-    @Override
-    public Object handleRequest(AbstractLocalizationStreamRequest request)
-            throws Exception {
+    public File validate(AbstractLocalizationStreamRequest request)
+            throws LocalizationException {
         File file = PathManagerFactory.getPathManager().getFile(
                 request.getContext(), request.getFileName());
         if (file == null) {
@@ -84,152 +70,7 @@ public class LocalizationStreamHandler
                     + String.valueOf(request.getContext())
                     + ", could not be found");
         }
-
-        if (request instanceof LocalizationStreamGetRequest) {
-            return handleStreamingGet((LocalizationStreamGetRequest) request,
-                    file);
-        } else if (request instanceof LocalizationStreamPutRequest) {
-            LocalizationStreamPutRequest req = (LocalizationStreamPutRequest) request;
-            LocalizationLevel protectedLevel = ProtectedFiles
-                    .getProtectedLevel(req.getLocalizedSite(), request
-                            .getContext().getLocalizationType(), request
-                            .getFileName());
-            if (protectedLevel != null
-                    && protectedLevel != request.getContext()
-                            .getLocalizationLevel()) {
-                throw new LocalizationException("File: "
-                        + request.getContext().getLocalizationType().toString()
-                                .toLowerCase() + File.separator
-                        + request.getFileName()
-                        + " is protected and cannot be overridden");
-            }
-            return handleStreamingPut((LocalizationStreamPutRequest) request,
-                    file);
-        } else {
-            throw new LocalizationException("Request type of "
-                    + request.getClass() + " is not recognized");
-        }
-    }
-
-    private Object handleStreamingGet(LocalizationStreamGetRequest request,
-            File file) throws Exception {
-        // TODO: Copy file to tmp location named from request unique id and
-        // stream that file for the request to avoid put/delete/read issues
-        FileInputStream inputStream = null;
-        try {
-            inputStream = new FileInputStream(file);
-            int bytesSkipped = 0;
-            int toSkip = request.getOffset();
-
-            // we are done if we the toSkip is 0, or toSkip increased in size
-            while ((toSkip != 0) && (toSkip <= request.getOffset())) {
-                bytesSkipped += inputStream.skip(toSkip);
-                toSkip = request.getOffset() - bytesSkipped;
-            }
-
-            if (toSkip != 0) {
-                throw new LocalizationException("Error skipping through file");
-            }
-
-            LocalizationStreamPutRequest response = new LocalizationStreamPutRequest();
-            byte[] bytes = new byte[request.getNumBytes()];
-            int bytesRead = inputStream.read(bytes, 0, request.getNumBytes());
-
-            if (bytesRead == -1) {
-                response.setBytes(new byte[0]);
-                response.setEnd(true);
-            } else {
-                if (bytesRead != bytes.length) {
-                    bytes = Arrays.copyOf(bytes, bytesRead);
-                }
-
-                response.setBytes(bytes);
-                response.setEnd(request.getOffset() + bytesRead == file
-                        .length());
-            }
-            return response;
-        } finally {
-            if (inputStream != null) {
-                inputStream.close();
-            }
-        }
-    }
-
-    private Object handleStreamingPut(LocalizationStreamPutRequest request,
-            File file) throws Exception {
-        if (file.getParentFile().exists() == false) {
-            file.getParentFile().mkdirs();
-        }
-
-        /*
-         * TODO Verify file's pre-modification checksum is the non-existent file
-         * checksum or matches the server file's current checksum. If not, throw
-         * LocalizationFileChangedOutFromUnderYouException.
-         */
-
-        File tmpFile = new File(file.getParentFile(), "." + file.getName()
-                + "." + request.getId());
-        if ((tmpFile.exists() == false) && (request.getOffset() != 0)) {
-            throw new LocalizationException(
-                    "Illegal state, request has offset set but file "
-                            + "has not begun being written to yet.");
-        } else if (tmpFile.exists()
-                && (tmpFile.length() != request.getOffset())) {
-            throw new LocalizationException(
-                    "Illegal state, request's offset does not match size of file, size = "
-                            + tmpFile.length() + " offset = "
-                            + request.getOffset());
-        }
-
-        // if start of request, delete existing temporary file
-        if (request.getOffset() == 0) {
-            tmpFile.delete();
-        }
-
-        // if (
-        if (tmpFile.exists() == false) {
-            tmpFile.createNewFile();
-        }
-        FileOutputStream outputStream = null;
-
-        try {
-            outputStream = new FileOutputStream(tmpFile, true);
-            byte[] bytes = request.getBytes();
-            outputStream.write(bytes);
-        } finally {
-            if (outputStream != null) {
-                outputStream.flush();
-                outputStream.close();
-            }
-        }
-        if (request.isEnd()) {
-            try {
-                FileLocker.lock(this, file, Type.WRITE);
-                FileChangeType changeType = FileChangeType.UPDATED;
-                if (!file.exists()) {
-                    changeType = FileChangeType.ADDED;
-                }
-
-                Files.move(tmpFile.toPath(), file.toPath(),
-                        StandardCopyOption.REPLACE_EXISTING);
-
-                // generate checksum after change
-                String checksum = ChecksumIO.writeChecksum(file);
-                long timeStamp = file.lastModified();
-
-                EDEXUtil.getMessageProducer()
-                        .sendAsync(
-                                UtilityManager.NOTIFY_ID,
-                                new FileUpdatedMessage(request.getContext(),
-                                        request.getFileName(), changeType,
-                                        timeStamp, checksum));
-                return timeStamp;
-            } finally {
-                FileLocker.unlock(this, file);
-            }
-        }
-
-        return tmpFile.lastModified();
+        return file;
     }
 
     @Override

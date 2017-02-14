@@ -23,13 +23,13 @@ import com.raytheon.uf.edex.core.EdexException;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 3, 2010            rgeorge     Initial creation
- * Jul 10, 2014 2914      garmendariz Remove EnvProperties
+ * Jun 03, 2010            rgeorge     Initial creation
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
+ * Feb 14, 2017 6111       njensen     Overrode getRequestType()
  * 
  * </pre>
  * 
  * @author rgeorge
- * @version 1.0
  */
 public class PrivilegedUtilityHandler
         extends
@@ -41,7 +41,7 @@ public class PrivilegedUtilityHandler
     public UtilityResponseMessage handleRequest(
             PrivilegedUtilityRequestMessage msg) throws Exception {
         // Service each command
-        List<AbstractUtilityResponse> responses = new ArrayList<AbstractUtilityResponse>();
+        List<AbstractUtilityResponse> responses = new ArrayList<>();
         AbstractPrivilegedUtilityCommand[] cmds = msg.getCommands();
         for (AbstractPrivilegedUtilityCommand cmd : cmds) {
             LocalizationContext context = cmd.getContext();
@@ -75,11 +75,16 @@ public class PrivilegedUtilityHandler
             AuthorizationResponse resp = getAuthorizationResponse(user,
                     context, filename,
                     abstractUtilityCommand.getMyContextName());
-            if (resp.isAuthorized() == false) {
+            if (!resp.isAuthorized()) {
                 // If we are not authorized for any of the commands, break early
                 return resp;
             }
         }
         return new AuthorizationResponse(true);
+    }
+
+    @Override
+    public Class<?> getRequestType() {
+        return PrivilegedUtilityRequestMessage.class;
     }
 }
