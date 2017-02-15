@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -47,18 +47,19 @@ import com.raytheon.viz.ui.statusline.StatusStore.IStatusListener;
 
 /**
  * TODO Add Description
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * Jul 14, 2008		#1223	randerso	Initial creation
- * Oct 22, 2012 #1229       rferrel     Changes for non-blocking ViewMessageDialog.
- * 
+ * Date          Ticket#     Engineer    Description
+ * ------------- ----------  ----------- --------------------------
+ * Jul 14, 2008  1223        randerso    Initial creation
+ * Oct 22, 2012  1229        rferrel     Changes for non-blocking ViewMessageDialog.
+ * Feb 13, 2017  6118        mapeters    Use SWT.ARROW for message dialog button,
+ *                                       don't hardcode its size
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class StatBar extends ContributionItem implements IStatusListener {
@@ -126,10 +127,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
         this.statusLabel.setText(this.getId() + ":");
 
         // Add the button to display past messages
-        this.pastButton = new Button(comp, SWT.PUSH);
-        this.pastButton.setLayoutData(new GridData(20, 20));
-        this.pastButton.setFont(font);
-        this.pastButton.setText("^");
+        this.pastButton = new Button(comp, SWT.ARROW | SWT.UP);
         this.pastButton.addSelectionListener(new SelectionAdapter() {
 
             @Override
@@ -142,7 +140,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
         // Now the message text
         this.msgText = new Label(comp, SWT.BORDER);
         this.msgText.setFont(font);
-        GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         gridData.minimumWidth = 0;
         this.msgText.setLayoutData(gridData);
         this.msgText.addMouseListener(new MouseAdapter() {
@@ -155,7 +153,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
             }
         });
 
-        if (statusStore.getMessageBuffer().size() > 0) {
+        if (!statusStore.getMessageBuffer().isEmpty()) {
             update(statusStore.getMessageBuffer().getFirst());
         }
 
