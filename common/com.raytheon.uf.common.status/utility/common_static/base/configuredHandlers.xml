@@ -18,19 +18,20 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
+    <!-- This is a base file that is not intended to be overridden. -->
 <filterPatterns>
-	<filterPattern name="RADAR">
-		<include>.*\.radar.*</include>
-	</filterPattern>
-	<filterPattern name="AVNFPS">
-		<include>.*\.aviation.*</include>
+    <filterPattern name="RADAR">
+        <include>.*\.radar.*</include>
+    </filterPattern>
+    <filterPattern name="AVNFPS">
+        <include>.*\.aviation.*</include>
         <exclude>.*\.aviation.monitor.*</exclude>
         <exclude>.*\.aviation.guidance.*</exclude>
         <exclude>.*\.aviation.climatedata.*</exclude>
         <exclude>.*\.aviation.climatology.*</exclude>
         <exclude>.*\.aviation.editor.*Taf</exclude>
         <exclude>.*\.aviation.utility.*Taf</exclude>
-	</filterPattern>
+    </filterPattern>
     <filterPattern name="Monitor">
         <include>.*\.aviation.monitor.*</include>
     </filterPattern>
@@ -45,103 +46,103 @@
         <include>.*\.aviation.editor.*Taf</include>
         <include>.*\.aviation.utility.*Taf</include>
     </filterPattern>
-	<filterPattern name="ISC">
-		<include>.*\.isc.*</include>
+    <filterPattern name="ISC">
+        <include>.*\.isc.*</include>
         <include>.*Isc.*</include>
         <include>.*ISC.*</include>
-	</filterPattern>
-	<filterPattern name="GFE">
-		<include>.*GFE.*</include>
+    </filterPattern>
+    <filterPattern name="GFE">
+        <include>.*GFE.*</include>
         <include>.*gfe.*</include>
         <exclude>.*\.isc.*</exclude>
         <exclude>.*Isc.*</exclude>
         <exclude>.*ISC.*</exclude>
         <exclude>.*\.smartinit.*</exclude>
-	</filterPattern>
-	<filterPattern name="NDFD">
+    </filterPattern>
+    <filterPattern name="NDFD">
         <include></include>
-	</filterPattern>
-	<filterPattern name="ANNOUNCER">
-		<include></include>
-	</filterPattern>
-	<filterPattern name="MPE">
-		<include>.*\.mpe.*</include>
+    </filterPattern>
+    <filterPattern name="ANNOUNCER">
+        <include></include>
+    </filterPattern>
+    <filterPattern name="MPE">
+        <include>.*\.mpe.*</include>
         <include>.*MPE.*</include>
-	</filterPattern>
-	<filterPattern name="GHG">
-		<include>.*\.ghg.*</include>
+    </filterPattern>
+    <filterPattern name="GHG">
+        <include>.*\.ghg.*</include>
         <include>.*GHG.*</include>
-	</filterPattern>
-	<filterPattern name="WORKSTATION">
-		<include></include>
-	</filterPattern>
-	<filterPattern name="DEFAULT">
-		<include></include>
-	</filterPattern>
-	<filterPattern name="SNOW">
-		<include>.*\.snow.*</include>
+    </filterPattern>
+    <filterPattern name="WORKSTATION">
+        <include></include>
+    </filterPattern>
+    <filterPattern name="DEFAULT">
+        <include></include>
+    </filterPattern>
+    <filterPattern name="SNOW">
+        <include>.*\.snow.*</include>
         <include>.*\.Snow.*</include>
-	</filterPattern>
-	<filterPattern name="FOG">
-		<include>.*\.fog.*</include>
-	</filterPattern>
-	<filterPattern name="FFMP">
-		<include>.*\.ffmp.*</include>
-	</filterPattern>
-	<filterPattern name="SCAN">
-		<include>.*\.scan.*</include>
-	</filterPattern>
-	<filterPattern name="SAFESEAS">
-		<include>.*\.safeseas.*</include>
+    </filterPattern>
+    <filterPattern name="FOG">
+        <include>.*\.fog.*</include>
+    </filterPattern>
+    <filterPattern name="FFMP">
+        <include>.*\.ffmp.*</include>
+    </filterPattern>
+    <filterPattern name="SCAN">
+        <include>.*\.scan.*</include>
+    </filterPattern>
+    <filterPattern name="SAFESEAS">
+        <include>.*\.safeseas.*</include>
         <include>.*\.Safeseas.*</include>
         <include>.*\.SafeSeas.*</include>
-	</filterPattern>
-	<filterPattern name="NWRWAVES">
-		<include>.*nwr.*</include>
+    </filterPattern>
+    <filterPattern name="NWRWAVES">
+        <include>.*nwr.*</include>
         <include>.*Nwr.*</include>
         <include>.*NWR.*</include>
-	</filterPattern>
-	<filterPattern name="SMARTINIT">
-		<include>.*\.smartinit.*</include>
-	</filterPattern>
-	<filterPattern name="GDN_ADMIN">
-		<include>.*\.alertviz.*</include>
-	</filterPattern>
-	<filterPattern name="RPGEnvData">
-		<include>.*\.rpgenvdata.*</include>
-	</filterPattern>
-	<filterPattern name="GRIB">
-		<include>.*\.grib.*</include>
-	</filterPattern>
-	<filterPattern name="Localization">
-		<include>.*\.localization\..*</include>
-	</filterPattern>
-	<filterPattern name="ActiveTable">
-		<include>.*\.activetable\..*</include>
-	</filterPattern>
-	<filterPattern name="PURGE">
-		<exclude>.*\.edex.purgesrv\..*</exclude>
+    </filterPattern>
+    <filterPattern name="SMARTINIT">
+        <include>.*\.smartinit.*</include>
+    </filterPattern>
+    <filterPattern name="GDN_ADMIN">
+        <include>.*\.alertviz.*</include>
+    </filterPattern>
+    <filterPattern name="RPGEnvData">
+        <include>.*\.rpgenvdata.*</include>
+    </filterPattern>
+    <filterPattern name="GRIB">
+        <include>.*\.grib.*</include>
+    </filterPattern>
+    <filterPattern name="Localization">
+        <include>.*\.localization\..*</include>
+    </filterPattern>
+    <filterPattern name="ActiveTable">
+        <include>.*\.activetable\..*</include>
+    </filterPattern>
+    <filterPattern name="PURGE">
+        <exclude>.*\.edex.purgesrv\..*</exclude>
         <exclude>.*\.database.purge\..*</exclude>
-	</filterPattern>
-	<filterPattern name="HandleOUP">
-		<include>.*\.dissemination\..*</include>
-	</filterPattern>
-	<filterPattern name="Management">
-		<include>.*\.management\..*</include>
-	</filterPattern>
-	<filterPattern name="Storage">
-		<include>.*\.nwsauth\..*</include>
+    </filterPattern>
+    <filterPattern name="HandleOUP">
+        <include>.*\.dissemination\..*</include>
+    </filterPattern>
+    <filterPattern name="Management">
+        <include>.*\.management\..*</include>
+    </filterPattern>
+    <filterPattern name="Storage">
+        <include>.*\.nwsauth\..*</include>
         <include>.*\.persist\..*</include>
-	</filterPattern>
-	<filterPattern name="TOPO">
-		<include>.*request.*</include>
-	</filterPattern>
+    </filterPattern>
+    <filterPattern name="TOPO">
+        <include>.*request.*</include>
+    </filterPattern>
     <filterPattern name="EDEX">
         <include>.*\.edex.*</include>
     </filterPattern>
-	<filterPattern name="D2D">
-		<include>.*d2d.*</include>
-	</filterPattern>
+    <filterPattern name="D2D">
+        <include>.*d2d.*</include>
+    </filterPattern>
     <filterPattern name="CAVE">
         <include>.*\.viz.*</include>
     </filterPattern>
