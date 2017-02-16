@@ -1,6 +1,6 @@
-<beans xmlns="http://www.springframework.org/schema/beans"	
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans http://www.springframework.org/schema/beans/spring-beans-3.1.xsd">
 
     <bean id="obStationDataFactory" class="com.raytheon.uf.common.dataaccess.impl.StationGeometryTimeAgnosticDatabaseFactory">
         <constructor-arg value="awips" />
@@ -10,9 +10,8 @@
         <constructor-arg value="icao" />
     </bean>
 
-    <bean factory-bean="dataAccessRegistry" factory-method="register" 
-    depends-on="obStationDataFactory">
+    <bean factory-bean="dataAccessRegistry" factory-method="register" >
         <constructor-arg value="common_obs_spatial" />
         <constructor-arg ref="obStationDataFactory" />
-    </bean>	
+    </bean>
 </beans>
