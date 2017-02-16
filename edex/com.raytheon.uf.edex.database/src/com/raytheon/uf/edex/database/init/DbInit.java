@@ -29,14 +29,16 @@ import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.hibernate.HibernateException;
 import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.jdbc.Work;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 
 /**
@@ -61,16 +63,20 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  * May 19, 2016  5666     tjensen   Fix isDbValid check
  * Aug 18, 2016  5810     tjensen   Added additional logging if going to drop
  *                                  tables
+ * Feb 13, 2017  5899     rjpeter   Don't allow regeneration of tables by
+ *                                  default.
  * 
  * </pre>
  * 
  * @author djohnson
  */
 public abstract class DbInit {
-
-    /** The logger */
-    private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DbInit.class);
+    /**
+     * Check system property if table regeneration allowed. On production
+     * systems it should NOT be enabled
+     */
+    private static final boolean DEBUG_ALLOW_TABLE_REGENERATION = Boolean
+            .getBoolean("DbInit.allowTableRegeneration");
 
     /** Constant used for table regeneration */
     private static final Pattern DROP_TABLE_PATTERN = Pattern
@@ -106,8 +112,11 @@ public abstract class DbInit {
     /** The logging application db name **/
     private final String application;
 
+    /** The logger */
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
+
     /** The dao for executing database commands **/
-    private SessionManagedDao<?, ?> dao;
+    protected SessionManagedDao<?, ?> dao;
 
     /**
      * Constructor.
@@ -140,34 +149,61 @@ public abstract class DbInit {
         /*
          * Check to see if the database is valid.
          */
-        boolean dbIsValid = isDbValid(aConfig);
+        logger.info("Verifying the database for application [" + application
+                + "] against entity classes...");
 
-        if (dbIsValid) {
+        List<String> definedTables = getDefinedTables(aConfig);
+        List<String> existingTables = getExistingTables(aConfig);
+
+        if (existingTables.size() == definedTables.size()
+                && existingTables.containsAll(definedTables)) {
             // Database is valid.
-            statusHandler.info("Database for application [" + application
+            logger.info("Database for application [" + application
                     + "] is up to date!");
-        } else {
+        } else if (existingTables.isEmpty() && !definedTables.isEmpty()) {
+            logger.info("Database for application [" + application
+                    + "] has no tables.  Generating default database tables...");
+            createTablesForApplication(aConfig);
+        } else if (DEBUG_ALLOW_TABLE_REGENERATION) {
             /*
              * Database is not valid. Drop and regenerate the tables defined by
              * Hibernate
              */
-            statusHandler
-                    .warn("Database for application ["
-                            + application
-                            + "] is out of sync with defined java classes.  Regenerating default database tables...");
-            statusHandler.info("Dropping existing tables...");
+            logger.warn("Database for application [" + application
+                    + "] is out of sync with defined java classes. DbInit.allowTableRegeneration property true, regenerating default database tables...");
+            logger.info("Dropping tables...");
             dropTables(aConfig);
-
-            statusHandler.info("Recreating tables...");
-            createTables(aConfig);
-
-            statusHandler.info("Executing additional SQL...");
-
-            executeAdditionalSql();
-
-            statusHandler.info("Database tables for application ["
-                    + application + "] have been successfully regenerated!");
+            createTablesForApplication(aConfig);
+        } else {
+            StringBuilder msg = new StringBuilder(1000);
+            msg.append("Database for application [").append(application).append(
+                    "] is out of sync with defined java classes. Upgrade script required to synchronize database tables. Existing tables [");
+            msg.append(String.join(", ", existingTables));
+            msg.append("] Expected tables [");
+            msg.append(String.join(", ", definedTables));
+            msg.append(']');
+            throw new DataAccessLayerException(msg.toString());
         }
+    }
+
+    /**
+     * Creates all tables and runs any additional sql for the application.
+     * 
+     * @param aConfig
+     *            The Hibernate annotation configuration holding the metadata
+     *            for all Hibernate-aware classes
+     * @throws Exception
+     */
+    protected void createTablesForApplication(Configuration aConfig)
+            throws Exception {
+        logger.info("Creating tables...");
+        createTables(aConfig);
+
+        logger.info("Executing additional SQL...");
+        executeAdditionalSql();
+
+        logger.info("Database tables for application [" + application
+                + "] have been successfully generated!");
     }
 
     /**
@@ -197,12 +233,12 @@ public abstract class DbInit {
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
-                Statement stmt = connection.createStatement();
-                for (String sql : createSqls) {
-                    stmt.execute(sql);
+                try (Statement stmt = connection.createStatement()) {
+                    for (String sql : createSqls) {
+                        stmt.execute(sql);
+                    }
                     connection.commit();
                 }
-
             }
         };
 
@@ -210,23 +246,48 @@ public abstract class DbInit {
     }
 
     /**
-     * Checks to see if the database is valid. The RegRep database is considered
-     * to be valid if the set of tables defined by Hibernate contains the set of
-     * tables already in existance in the database
+     * Returns the tables that currently exist in the database based on results
+     * of getTableCheckQuery.
+     *
+     * @param aConfig
+     *            The Hibernate annotation configuration holding the metadata
+     *            for all Hibernate-aware classes
+     * @return
+     * @throws SQLException
+     */
+    protected List<String> getExistingTables(Configuration aConfig)
+            throws SQLException {
+        final List<String> existingTables = new ArrayList<>();
+        final Work work = new Work() {
+            @Override
+            public void execute(Connection connection) throws SQLException {
+                try (Statement stmt = connection.createStatement();
+                        ResultSet results = stmt
+                                .executeQuery(getTableCheckQuery())) {
+                    while (results.next()) {
+                        existingTables.add(results.getString(1));
+                    }
+                }
+            }
+        };
+        executeWork(work);
+
+        return existingTables;
+    }
+
+    /**
+     * Returns the tables that are defined in the Hibernate configuration.
      * 
      * @param aConfig
      *            The Hibernate annotation configuration holding the metadata
      *            for all Hibernate-aware classes
-     * @return True if the database is valid, else false
-     * @throws SQLException
-     *             If the drop sql strings cannot be executed
-     * @throws EbxmlRegistryException
+     * @return
+     * @throws HibernateException
      */
-    private boolean isDbValid(Configuration aConfig) throws SQLException {
-        statusHandler.info("Verifying the database for application ["
-                + application + "] against entity classes...");
-
+    protected List<String> getDefinedTables(Configuration aConfig)
+            throws HibernateException {
         final List<String> definedTables = new ArrayList<>();
+
         final String[] dropSqls = aConfig
                 .generateDropSchemaScript(getDialect());
         for (String sql : dropSqls) {
@@ -244,62 +305,17 @@ public abstract class DbInit {
                     sql = cascadeMatcher.replaceFirst("");
                 }
 
+                // check for schema definition
+                if (sql.indexOf('.') < 0) {
+                    // no schema definition, add default
+                    sql = "awips." + sql;
+                }
+
                 definedTables.add(sql);
             }
         }
 
-        final String schemaPrefix = generateSchemaPrefix(definedTables);
-        final List<String> existingTables = new ArrayList<>();
-        final Work work = new Work() {
-            @Override
-            public void execute(Connection connection) throws SQLException {
-                Statement stmt = connection.createStatement();
-                ResultSet results = stmt.executeQuery(getTableCheckQuery());
-                while (results.next()) {
-                    existingTables.add(schemaPrefix + results.getString(1));
-                }
-            }
-        };
-        executeWork(work);
-
-        /*
-         * Check if the table set defined by Hibernate matches the table set
-         * defined in the database already
-         */
-        if (existingTables.size() != definedTables.size()
-                || !existingTables.containsAll(definedTables)) {
-            statusHandler
-                    .warn("Existing tables do not match the expected list of tables!");
-            statusHandler.warn("Existing tables: " + existingTables);
-            statusHandler.warn("Expected tables: " + definedTables);
-            return false;
-        }
-        return true;
-    }
-
-    /**
-     * Generates a schema prefix if required.
-     * 
-     * @param definedTables
-     *            the defined tables
-     * @return
-     */
-    private String generateSchemaPrefix(List<String> definedTables) {
-        String schema = "";
-        if (!definedTables.isEmpty()) {
-            final String table = definedTables.iterator().next();
-            final int indexOfPeriod = table.indexOf(".");
-            if (indexOfPeriod != -1) {
-                // Returns the <schema>. if present
-                schema = table.substring(0, indexOfPeriod + 1);
-                final int lastIndexOfSpace = schema.lastIndexOf(" ");
-                // Trim any thing else that may come before the schema
-                if (lastIndexOfSpace != -1) {
-                    schema = schema.substring(lastIndexOfSpace + 1);
-                }
-            }
-        }
-        return schema;
+        return definedTables;
     }
 
     /**
@@ -320,18 +336,21 @@ public abstract class DbInit {
             public void execute(Connection connection) throws SQLException {
                 final String[] dropSqls = aConfig
                         .generateDropSchemaScript(getDialect());
-                Statement stmt = connection.createStatement();
-                for (String sql : dropSqls) {
-                    Matcher dropTableMatcher = DROP_TABLE_PATTERN.matcher(sql);
-                    if (dropTableMatcher.find()) {
-                        executeDropSql(sql, dropTableMatcher,
-                                DROP_TABLE_IF_EXISTS, stmt, connection);
-                    } else {
-                        Matcher dropSequenceMatcher = DROP_SEQUENCE_PATTERN
+                try (Statement stmt = connection.createStatement()) {
+                    for (String sql : dropSqls) {
+                        Matcher dropTableMatcher = DROP_TABLE_PATTERN
                                 .matcher(sql);
-                        if (dropSequenceMatcher.find()) {
-                            executeDropSql(sql, dropSequenceMatcher,
-                                    DROP_SEQUENCE_IF_EXISTS, stmt, connection);
+                        if (dropTableMatcher.find()) {
+                            executeDropSql(sql, dropTableMatcher,
+                                    DROP_TABLE_IF_EXISTS, stmt, connection);
+                        } else {
+                            Matcher dropSequenceMatcher = DROP_SEQUENCE_PATTERN
+                                    .matcher(sql);
+                            if (dropSequenceMatcher.find()) {
+                                executeDropSql(sql, dropSequenceMatcher,
+                                        DROP_SEQUENCE_IF_EXISTS, stmt,
+                                        connection);
+                            }
                         }
                     }
                 }
@@ -351,7 +370,7 @@ public abstract class DbInit {
      * @param connection
      * @throws SQLException
      */
-    private void executeDropSql(String sql, Matcher dropTextMatcher,
+    private static void executeDropSql(String sql, Matcher dropTextMatcher,
             String replacementText, Statement stmt, Connection connection)
             throws SQLException {
         /*
@@ -393,7 +412,8 @@ public abstract class DbInit {
 
     /**
      * Get the query that will return the list of current table names used for
-     * this db init.
+     * this db init. Query should return table names in format of
+     * schemaname.tablename
      * 
      * @return the query
      */
