@@ -55,7 +55,7 @@ import com.raytheon.viz.ui.statusline.StatusStore.IStatusListener;
  * Jul 14, 2008  1223        randerso    Initial creation
  * Oct 22, 2012  1229        rferrel     Changes for non-blocking ViewMessageDialog.
  * Feb 13, 2017  6118        mapeters    Use SWT.ARROW for message dialog button,
- *                                       don't hardcode its size
+ *                                       don't hardcode its size, add getFont()
  *
  * </pre>
  *
@@ -63,17 +63,12 @@ import com.raytheon.viz.ui.statusline.StatusStore.IStatusListener;
  */
 
 public class StatBar extends ContributionItem implements IStatusListener {
-    private StatusStore statusStore;
 
-    private Composite comp;
+    private StatusStore statusStore;
 
     private Device device;
 
     private NewMessageIndicator indicator;
-
-    private Label statusLabel;
-
-    private Button pastButton;
 
     private Label msgText;
 
@@ -105,7 +100,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
         // create controls
         device = parent.getDisplay();
 
-        comp = new Composite(parent, SWT.NONE);
+        Composite comp = new Composite(parent, SWT.NONE);
         EdgeLayoutData layoutData = new EdgeLayoutData();
         layoutData.edgeAffinity = EdgeAffinity.LEFT;
         layoutData.grabExcessHorizontalSpace = true;
@@ -115,20 +110,20 @@ public class StatBar extends ContributionItem implements IStatusListener {
 
         // Default
         setGray(RGBColors.getRGBColor("Gray80"));
-        font = new Font(comp.getDisplay(), "Monospace", 8, SWT.NORMAL);
+        font = new Font(device, "Monospace", 8, SWT.NORMAL);
 
         // Add the new message indicator
         this.indicator = new NewMessageIndicator(comp);
         this.indicator.setLayoutData(new GridData(20, 12));
 
         // Add the "Status" label
-        this.statusLabel = new Label(comp, SWT.NONE);
-        this.statusLabel.setFont(font);
-        this.statusLabel.setText(this.getId() + ":");
+        Label statusLabel = new Label(comp, SWT.NONE);
+        statusLabel.setFont(font);
+        statusLabel.setText(this.getId() + ":");
 
         // Add the button to display past messages
-        this.pastButton = new Button(comp, SWT.ARROW | SWT.UP);
-        this.pastButton.addSelectionListener(new SelectionAdapter() {
+        Button pastButton = new Button(comp, SWT.ARROW);
+        pastButton.addSelectionListener(new SelectionAdapter() {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -276,5 +271,15 @@ public class StatBar extends ContributionItem implements IStatusListener {
 
     private void viewMessages() {
         statusStore.openViewMessagesDialog();
+    }
+
+    /**
+     * Get the font used by this status bar. Note that the font will be null
+     * until { @link #fill(Composite) } is called.
+     *
+     * @return this status bar's font
+     */
+    public Font getFont() {
+        return font;
     }
 }
