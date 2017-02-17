@@ -43,6 +43,7 @@ import jep.NamingConventionClassEnquirer;
  * Apr 28, 2016   5236     njensen     Use Jep redirectOutput for python prints
  * Jan 04, 2017   5959     njensen     All constructors now use JepConfig
  *                                     Add numpy as a shared module
+ * Feb 17, 2017   5959     njensen     Add scipy modules as shared modules                                    
  * 
  * </pre>
  * 
@@ -118,10 +119,13 @@ public abstract class PythonInterpreter implements AutoCloseable {
                 .setRedirectOutputStreams(true);
 
         /*
-         * prevent issues when disposing interpreters that are using numpy
+         * prevent issues when disposing interpreters that are using numpy or
+         * scipy
          */
         Set<String> sharedModules = new HashSet<>();
         sharedModules.add("numpy");
+        sharedModules.add("scipy");
+        sharedModules.add("scipy.interpolate");
         config.setSharedModules(sharedModules);
 
         jep = new Jep(config);
