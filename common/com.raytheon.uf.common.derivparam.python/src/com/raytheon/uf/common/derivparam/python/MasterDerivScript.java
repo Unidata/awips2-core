@@ -125,7 +125,7 @@ public class MasterDerivScript extends PythonInterpreter {
         functionCall.append(")");
 
         if (name.contains(".")) {
-            int lastIdx = name.lastIndexOf(".");
+            int lastIdx = name.lastIndexOf('.');
             String functionName = name.substring(lastIdx + 1);
             String path = name.substring(0, lastIdx);
             /* Translate directory into a python submodule */
@@ -409,7 +409,7 @@ public class MasterDerivScript extends PythonInterpreter {
                 jep.eval(RESULT + " = float(" + RESULT + ")");
                 valObj = jep.getValue(RESULT);
             }
-            oneVal[0] = ((Float) valObj).floatValue();
+            oneVal[0] = ((Number) valObj).floatValue();
             result.add(new FloatDataRecord(DATA_NAME, "", oneVal, 1,
                     new long[] { 1 }));
         }
