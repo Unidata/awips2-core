@@ -37,7 +37,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.apache.commons.lang3.Validate;
 
-import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationAdapter.ListResponse;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
@@ -72,11 +71,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 14, 2015 4410       bsteffen    listStaticFiles will now merge different types.
  * Nov 12, 2015 4834       njensen     PathManager takeover of watching for localization file changes
  * Jan 28, 2016 4834       njensen     Pass along FileChangeType to old style observers
- * Jun 21, 2016 5695       njensen     Clear parent directories from cache on file add
  * 
  * </pre>
  * 
  * @author chammack
+ * @version 1.0
  */
 public class PathManager implements IPathManager {
 
@@ -729,28 +728,6 @@ public class PathManager implements IPathManager {
                 parent.append(s);
                 pathsToCheck.add(parent.toString());
                 parent.append(SEPARATOR);
-            }
-        }
-
-        /*
-         * If a file was added, it's possible mkdirs() was called to create
-         * parent directories. If those parent directories were in the
-         * fileCache, we need to clear them out as we may not get notifications
-         * about them.
-         */
-        if (fum.getChangeType() == FileChangeType.ADDED
-                && pathsToCheck.size() > 1) {
-            for (int i = 1; i < pathsToCheck.size() - 1; i++) {
-                String parentName = pathsToCheck.get(i);
-                LocalizationFileKey parentKey = new LocalizationFileKey(
-                        parentName,
-                        fum.getContext());
-                LocalizationFile parentFile = fileCache.get(parentKey);
-                if (parentFile != null
-                        && ILocalizationFile.NON_EXISTENT_CHECKSUM
-                                .equals(parentFile.getCheckSum())) {
-                    fileCache.remove(parentKey);
-                }
             }
         }
 

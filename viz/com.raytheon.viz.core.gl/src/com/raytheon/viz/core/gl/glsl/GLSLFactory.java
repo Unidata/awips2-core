@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.glsl;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.glsl.internal.GLProgramManager;
@@ -74,7 +74,7 @@ public class GLSLFactory {
      * @return
      * @throws VizException
      */
-    public GLShaderProgram getShaderProgram(GL gl, String vertexName,
+    public GLShaderProgram getShaderProgram(GL2 gl, String vertexName,
             String fragName) throws VizException {
         if (vertexName == null) {
             vertexName = DEFAULT_VERTEX;

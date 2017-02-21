@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.maps.scales;
 
+//import gov.noaa.nws.ncep.viz.common.area.AreaMenusMngr;
+
 import org.eclipse.core.commands.AbstractHandler;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
@@ -35,6 +37,9 @@ import com.raytheon.uf.viz.core.maps.scales.MapScales.MapScale;
  * Handler of setScale command that looks for a {@link MapScale} by name of
  * attribute scale and sets on any {@link IMapScaleDisplay}s on the current
  * editor
+ * 
+ * Edit: This isn't the functional handler for the D2D scale menu, 
+ * see ScaleHandler.java (com.raytheon.uf.viz.d2d.ui) instead.
  * 
  * <pre>
  * 
@@ -66,6 +71,8 @@ public class MapScaleHandler extends AbstractHandler {
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
         String scaleName = event.getParameter(SCALE_NAME_ID);
+		System.out.println(" MapScaleHandler: scaleName (SCALE_NAME_ID) = "
+				+scaleName);
         if (scaleName != null) {
             IEditorPart part = HandlerUtil.getActiveEditor(event);
             if (part instanceof IDisplayPaneContainer) {

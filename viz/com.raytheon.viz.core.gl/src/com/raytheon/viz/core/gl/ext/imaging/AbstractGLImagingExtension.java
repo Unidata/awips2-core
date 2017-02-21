@@ -26,7 +26,7 @@ import java.nio.IntBuffer;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -46,7 +46,7 @@ import com.raytheon.viz.core.gl.IGLTarget;
 import com.raytheon.viz.core.gl.glsl.GLSLFactory;
 import com.raytheon.viz.core.gl.glsl.GLShaderProgram;
 import com.raytheon.viz.core.gl.images.AbstractGLImage;
-import com.sun.opengl.util.texture.TextureCoords;
+import com.jogamp.opengl.util.texture.TextureCoords;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
@@ -94,13 +94,13 @@ public abstract class AbstractGLImagingExtension extends
     @Override
     public final boolean drawRasters(PaintProperties paintProps,
             DrawableImage... images) throws VizException {
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         boolean rval = true;
         gl.glGetError();
 
         target.pushGLState();
         try {
-            gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
+            gl.glPolygonMode(GL2.GL_FRONT_AND_BACK, GL2.GL_FILL);
             rval = drawRastersInternal(paintProps, images);
             disableBlending(gl);
         } finally {
@@ -113,7 +113,7 @@ public abstract class AbstractGLImagingExtension extends
 
     protected boolean drawRastersInternal(PaintProperties paintProps,
             DrawableImage... images) throws VizException {
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         GLCapabilities capabilities = GLCapabilities.getInstance(gl);
         // Get shader program extension uses
         String shaderProgram = getShaderProgramName();
@@ -179,9 +179,9 @@ public abstract class AbstractGLImagingExtension extends
                             loadShaderData(program, glImage, paintProps);
                         }
                     } else {
-                        gl.glEnable(GL.GL_BLEND);
-                        gl.glBlendFunc(GL.GL_SRC_ALPHA,
-                                GL.GL_ONE_MINUS_SRC_ALPHA);
+                        gl.glEnable(GL2.GL_BLEND);
+                        gl.glBlendFunc(GL2.GL_SRC_ALPHA,
+                                GL2.GL_ONE_MINUS_SRC_ALPHA);
                         gl.glColor4f(1.0f, 1.0f, 1.0f, paintProps.getAlpha());
                     }
 
@@ -191,7 +191,7 @@ public abstract class AbstractGLImagingExtension extends
                         ++repaints;
                     }
 
-                    gl.glActiveTexture(GL.GL_TEXTURE0);
+                    gl.glActiveTexture(GL2.GL_TEXTURE0);
                     gl.glBindTexture(textureType, 0);
 
                     // Notify extension image has been rendered
@@ -202,13 +202,13 @@ public abstract class AbstractGLImagingExtension extends
                         if (program != null) {
                             program.endShader();
                         }
-                        gl.glDisable(GL.GL_BLEND);
+                        gl.glDisable(GL2.GL_BLEND);
                         gl.glColor3f(0.0f, 1.0f, 0.0f);
-                        gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_LINE);
+                        gl.glPolygonMode(GL2.GL_FRONT_AND_BACK, GL2.GL_LINE);
                         drawCoverage(paintProps, extent,
                                 glImage.getTextureCoords(), 0);
-                        gl.glPolygonMode(GL.GL_FRONT_AND_BACK, GL.GL_FILL);
-                        gl.glEnable(GL.GL_BLEND);
+                        gl.glPolygonMode(GL2.GL_FRONT_AND_BACK, GL2.GL_FILL);
+                        gl.glEnable(GL2.GL_BLEND);
                         if (program != null) {
                             program.startShader();
                         }
@@ -258,11 +258,11 @@ public abstract class AbstractGLImagingExtension extends
     protected PaintStatus drawCoverage(PaintProperties paintProps,
             PixelCoverage pc, TextureCoords coords, float corrFactor)
             throws VizException {
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         if (pc == null) {
             return PaintStatus.ERROR;
         }
-        // gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+        // gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
         // gl.glColor3d(1.0, 0.0, 0.0);
         // }
 
@@ -295,36 +295,36 @@ public abstract class AbstractGLImagingExtension extends
             texCoords.put(coords.right()).put(coords.top());
 
             /* Enable array types */
-            gl.glEnableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glEnableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+            gl.glEnableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glEnableClientState(GL2.GL_TEXTURE_COORD_ARRAY);
 
             /* allocate 2 vertex buffers */
             IntBuffer vboIds = IntBuffer.allocate(2);
             gl.glGenBuffers(2, vboIds);
             /*  Upload the vertex coordiantes */
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboIds.get(0));
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, 8 * 4, vertices.rewind(),
-                    GL.GL_STREAM_DRAW);
-            gl.glVertexPointer(2, GL.GL_FLOAT, 0, 0);
+            gl.glBindBuffer(GL2.GL_ARRAY_BUFFER, vboIds.get(0));
+            gl.glBufferData(GL2.GL_ARRAY_BUFFER, 8 * 4, vertices.rewind(),
+                    GL2.GL_STREAM_DRAW);
+            gl.glVertexPointer(2, GL2.GL_FLOAT, 0, 0);
             /*  Upload the texture coordiantes */
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboIds.get(1));
-            gl.glBufferData(GL.GL_ARRAY_BUFFER, 8 * 4, texCoords.rewind(),
-                    GL.GL_STREAM_DRAW);
-            gl.glTexCoordPointer(2, GL.GL_FLOAT, 0, 0);
+            gl.glBindBuffer(GL2.GL_ARRAY_BUFFER, vboIds.get(1));
+            gl.glBufferData(GL2.GL_ARRAY_BUFFER, 8 * 4, texCoords.rewind(),
+                    GL2.GL_STREAM_DRAW);
+            gl.glTexCoordPointer(2, GL2.GL_FLOAT, 0, 0);
 
             /*  Unbind */
-            gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
+            gl.glBindBuffer(GL2.GL_ARRAY_BUFFER, 0);
 
             /*  Do the actual draw */
-            gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4);
+            gl.glDrawArrays(GL2.GL_TRIANGLE_STRIP, 0, 4);
 
             /* Delete vertex buffers. */
             vboIds.rewind();
             gl.glDeleteBuffers(2, vboIds);
 
             /* Disable array types */
-            gl.glDisableClientState(GL.GL_VERTEX_ARRAY);
-            gl.glDisableClientState(GL.GL_TEXTURE_COORD_ARRAY);
+            gl.glDisableClientState(GL2.GL_VERTEX_ARRAY);
+            gl.glDisableClientState(GL2.GL_TEXTURE_COORD_ARRAY);
 
             return PaintStatus.PAINTED;
         }
@@ -336,11 +336,11 @@ public abstract class AbstractGLImagingExtension extends
      * 
      * @param gl
      */
-    protected void enableBlending(GL gl) {
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_ADD);
-        gl.glEnable(GL.GL_BLEND);
-        gl.glTexEnvi(GL.GL_TEXTURE_ENV, GL.GL_TEXTURE_ENV_MODE, GL.GL_BLEND);
-        gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
+    protected void enableBlending(GL2 gl) {
+        gl.glTexEnvi(GL2.GL_TEXTURE_ENV, GL2.GL_TEXTURE_ENV_MODE, GL2.GL_ADD);
+        gl.glEnable(GL2.GL_BLEND);
+        gl.glTexEnvi(GL2.GL_TEXTURE_ENV, GL2.GL_TEXTURE_ENV_MODE, GL2.GL_BLEND);
+        gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
     }
 
     /**
@@ -348,8 +348,8 @@ public abstract class AbstractGLImagingExtension extends
      * 
      * @param gl
      */
-    protected void disableBlending(GL gl) {
-        gl.glDisable(GL.GL_BLEND);
+    protected void disableBlending(GL2 gl) {
+        gl.glDisable(GL2.GL_BLEND);
     }
 
     /**

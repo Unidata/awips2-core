@@ -24,16 +24,6 @@
     	<graphicsFactory id="default" factoryClass="com.raytheon.viz.core.gl.GLFactoryAdapter"/>            
    </extension>
       <extension
-       point="com.raytheon.uf.viz.localization.perspective.localizationpath">
-	       <path
-	          application="CAVE"
-	          localizationType="CAVE_STATIC"
-	          name="Shader"
-	          value="glsl" 
-	          recursive="true">
-	       </path>
-       </extension>
-      <extension
             point="com.raytheon.uf.viz.core.graphicsExtension">
          <graphicsExtension
                class="com.raytheon.viz.core.gl.ext.GLColormapShadedShapeExtension">

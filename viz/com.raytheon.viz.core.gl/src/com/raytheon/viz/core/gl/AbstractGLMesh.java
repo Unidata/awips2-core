@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -189,22 +189,22 @@ public abstract class AbstractGLMesh implements IGridMesh {
             if (internalState == State.CALCULATED) {
                 // We finished calculating the mesh, compile it
                 sharedTextureCoords = SharedCoordMap.get(key, glTarget);
-                vertexCoords.compile(glTarget.getGl());
+                vertexCoords.compile(glTarget.getGl().getGL2());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {
-                    wwcTextureCoords.compile(glTarget.getGl());
-                    wwcVertexCoords.compile(glTarget.getGl());
+                    wwcTextureCoords.compile(glTarget.getGl().getGL2());
+                    wwcVertexCoords.compile(glTarget.getGl().getGL2());
                 }
                 this.internalState = internalState = State.COMPILED;
             }
 
             if (internalState == State.COMPILED) {
-                GLGeometryPainter.paintGeometries(glTarget.getGl(),
+                GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                         vertexCoords, sharedTextureCoords.getTextureCoords());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {
-                    glTarget.getGl().glColor3f(1.0f, 0.0f, 0.0f);
-                    GLGeometryPainter.paintGeometries(glTarget.getGl(),
+                    ((GL2) glTarget.getGl()).glColor3f(1.0f, 0.0f, 0.0f);
+                    GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                             wwcVertexCoords, wwcTextureCoords);
-                    glTarget.getGl().glColor3f(0.0f, 1.0f, 0.0f);
+                    ((GL2) glTarget.getGl()).glColor3f(0.0f, 1.0f, 0.0f);
                 }
                 return PaintStatus.PAINTED;
             } else if (internalState == State.CALCULATING) {
@@ -260,7 +260,7 @@ public abstract class AbstractGLMesh implements IGridMesh {
             double[][][] worldCoordinates = generateWorldCoords(imageGeometry,
                     imageCRSToLatLon);
             vertexCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    geometryType, GL.GL_VERTEX_ARRAY));
+                    geometryType, GL2.GL_VERTEX_ARRAY));
             vertexCoords.allocate(worldCoordinates.length
                     * worldCoordinates[0].length);
             // Check for world wrapping
@@ -348,9 +348,9 @@ public abstract class AbstractGLMesh implements IGridMesh {
         }
         if (wwcTextureCoords == null || wwcVertexCoords == null) {
             wwcVertexCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_VERTEX_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_VERTEX_ARRAY));
             wwcTextureCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_TEXTURE_COORD_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_TEXTURE_COORD_ARRAY));
         }
         // at this point triangle abc is a triangle in which sides ab and ac
         // are cut by the inverse central meridian. We need to find the two

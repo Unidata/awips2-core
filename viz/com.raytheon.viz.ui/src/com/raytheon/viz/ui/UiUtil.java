@@ -74,6 +74,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Dec 21, 2015 5191       bsteffen    Updated layoutId for Eclipse 4.
  * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
  * May 03, 2016 3292       bsteffen    Preserve editor order in getActiveDisplayMap.
+ * Aug 31, 2016 ----       mjames@ucar Force open new editor if bundle is multipane.
  * 
  * </pre>
  * 
@@ -389,7 +390,7 @@ public class UiUtil {
         }
         // Check the current editor first
         IEditorPart ep = EditorUtil.getActiveEditor(windowToLoadTo);
-        if (ep instanceof AbstractEditor) {
+        if (ep instanceof AbstractEditor && displays.length < 2) {
             AbstractEditor currentEditor = (AbstractEditor) ep;
             if (currentEditor != null
                     && currentEditor.getEditorSite().getId().equals(editorName)) {
@@ -407,7 +408,7 @@ public class UiUtil {
         }
 
         for (IEditorReference ref : references) {
-            if (editorName.equals(ref.getId())) {
+            if (editorName.equals(ref.getId()) && displays.length < 2) {
                 IEditorPart editorPart = ref.getEditor(false);
                 if (editorPart instanceof AbstractEditor) {
                     AbstractEditor aEditor = (AbstractEditor) editorPart;
