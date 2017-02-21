@@ -65,11 +65,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdap
  * Oct 01, 2013 2361       njensen     Removed XML annotations and methods
  * Feb 06, 2014 2761       mnash       Add region localization level
  * Aug 08, 2016 5744       mapeters    Deprecate LocalizationType.EDEX_STATIC
+ * Feb 21, 2017 3440       njensen     Safely synchronize on LocalizationLevel.typeMap
  * 
  * </pre>
  * 
  * @author chammack
  */
+
 @DynamicSerialize
 public class LocalizationContext implements Cloneable {
 
@@ -145,13 +147,13 @@ public class LocalizationContext implements Cloneable {
         private static Map<String, LocalizationType> typeMap = new HashMap<>();
 
         // STANDARD TYPES, OTHERS SHOULD BE ADDED IN CUSTOM CODE
-        public static LocalizationType UNKNOWN = valueOf("UNKNOWN");
+        public static final LocalizationType UNKNOWN = valueOf("UNKNOWN");
 
-        public static LocalizationType CAVE_STATIC = valueOf("CAVE_STATIC");
+        public static final LocalizationType CAVE_STATIC = valueOf("CAVE_STATIC");
 
-        public static LocalizationType CAVE_CONFIG = valueOf("CAVE_CONFIG");
+        public static final LocalizationType CAVE_CONFIG = valueOf("CAVE_CONFIG");
 
-        public static LocalizationType COMMON_STATIC = valueOf("COMMON_STATIC");
+        public static final LocalizationType COMMON_STATIC = valueOf("COMMON_STATIC");
 
         /**
          * Use {@link #COMMON_STATIC} instead to simplify the code and to allow
@@ -160,7 +162,8 @@ public class LocalizationContext implements Cloneable {
          * @deprecated
          */
         @Deprecated
-        public static LocalizationType EDEX_STATIC = valueOf("EDEX_STATIC");
+        public static final LocalizationType EDEX_STATIC = valueOf(
+                "EDEX_STATIC");
 
         public static LocalizationType[] values() {
             return typeMap.values().toArray(
@@ -236,31 +239,36 @@ public class LocalizationContext implements Cloneable {
     public static class LocalizationLevel implements
             Comparable<LocalizationLevel> {
 
-        public static Comparator<LocalizationLevel> REVERSE_COMPARATOR = new Comparator<LocalizationLevel>() {
+        public static final Comparator<LocalizationLevel> REVERSE_COMPARATOR = new Comparator<LocalizationLevel>() {
             @Override
             public int compare(LocalizationLevel o1, LocalizationLevel o2) {
                 return o2.compareTo(o1);
             }
         };
 
-        private static Map<String, LocalizationLevel> typeMap = new HashMap<>();
+        private static final Object typeMapLock = new Object();
+        
+        private static Map<String, LocalizationLevel> typeMap = new HashMap<>();       
 
-        public static LocalizationLevel UNKNOWN = new LocalizationLevel(
+        public static final LocalizationLevel UNKNOWN = new LocalizationLevel(
                 "UNKNOWN");
 
-        public static LocalizationLevel BASE = createLevel("BASE", 0, true);
+        public static final LocalizationLevel BASE = createLevel("BASE", 0,
+                true);
 
-        public static LocalizationLevel REGION = createLevel("REGION", 150);
+        public static final LocalizationLevel REGION = createLevel("REGION",
+                150);
 
-        public static LocalizationLevel CONFIGURED = createLevel("CONFIGURED",
+        public static final LocalizationLevel CONFIGURED = createLevel(
+                "CONFIGURED",
                 250, true);
 
-        public static LocalizationLevel SITE = createLevel("SITE", 500);
+        public static final LocalizationLevel SITE = createLevel("SITE", 500);
 
-        public static LocalizationLevel WORKSTATION = createLevel(
+        public static final LocalizationLevel WORKSTATION = createLevel(
                 "WORKSTATION", 750);
 
-        public static LocalizationLevel USER = createLevel("USER", 1000);
+        public static final LocalizationLevel USER = createLevel("USER", 1000);
 
         static {
             UNKNOWN.order = -1;
@@ -281,10 +289,19 @@ public class LocalizationContext implements Cloneable {
 
         public static LocalizationLevel valueOf(String text) {
             text = String.valueOf(text).toUpperCase();
+            /*
+             * TODO valueOf(String) should either not be creating levels or
+             * should be calling createLevel(...)
+             */
             LocalizationLevel type = typeMap.get(text);
             if (type == null) {
-                type = new LocalizationLevel(text);
-                typeMap.put(text, type);
+                synchronized (typeMapLock) {
+                    Map<String, LocalizationLevel> newMap = new HashMap<>(
+                            typeMap);
+                    type = new LocalizationLevel(text);
+                    newMap.put(text, type);
+                    typeMap = newMap;
+                }
             }
             return type;
         }
@@ -315,10 +332,15 @@ public class LocalizationContext implements Cloneable {
             LocalizationLevel level = typeMap.get(text);
             // Only create level and set order if not already created
             if (level == null) {
-                level = new LocalizationLevel(text);
-                level.systemLevel = systemLevel;
-                level.order = order;
-                typeMap.put(text, level);
+                synchronized (typeMapLock) {
+                    Map<String, LocalizationLevel> newMap = new HashMap<>(
+                            typeMap);
+                    level = new LocalizationLevel(text);
+                    level.systemLevel = systemLevel;
+                    level.order = order;
+                    newMap.put(text, level);
+                    typeMap = newMap;
+                }
             }
             return level;
         }
@@ -573,7 +595,7 @@ public class LocalizationContext implements Cloneable {
      * Retrieves the context name.
      * 
      * @return the context name
-     * @see #setContextName()
+     * @see #setContextName(String)
      */
     public String getContextName() {
         return contextName;
@@ -600,7 +622,7 @@ public class LocalizationContext implements Cloneable {
     }
 
     private String convertToDelimitedString(char delimiter) {
-        StringBuffer buf = new StringBuffer();
+        StringBuilder buf = new StringBuilder();
         buf.append(localizationType.toString().toLowerCase());
         buf.append(delimiter);
         buf.append(localizationLevel.toString().toLowerCase());
