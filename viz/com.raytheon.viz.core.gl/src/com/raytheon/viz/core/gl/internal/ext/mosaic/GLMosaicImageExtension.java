@@ -66,6 +66,7 @@ import com.raytheon.viz.core.gl.images.GLOffscreenColormappedImage;
  * Mar 12, 2015  4273     njensen     Fix mosaicing without luminance
  * Sep 28, 2016  5902     bsteffen    add extra push/pop to fix FBO not fully
  *                                    clearing
+ * Feb 23, 2017           mjames      Refactored for jogamp GL2.
  * 
  * </pre>
  * 

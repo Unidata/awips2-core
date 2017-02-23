@@ -35,10 +35,10 @@ import com.raytheon.uf.viz.core.ProgramArguments;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ----------	----------	-----------	--------------------------
- * 12/20/07     561         Dan Fitch    Initial Creation.
- *  5/31/16                 mjames@ucar  Always run in practice mode.
+ * Date        Ticket#   Engineer    Description
+ * ---------- ---------- ----------- --------------------------
+ * 12/20/07     561      Dan Fitch   Initial Creation.
+ * 01/15/2016   5054     randerso    Improve error message
  * </pre>
  * 
  * @author Dan Fitch
@@ -64,30 +64,106 @@ public enum CAVEMode {
         return this.displayString;
     }
 
-    private static Color CAVE_BG_COLOR;
+    private static Color PRACTICE_BG_COLOR;
 
-    private static Color CAVE_FG_COLOR;
+    private static Color TEST_BG_COLOR;
 
-    private static CAVEMode modeAtStartup = CAVEMode.PRACTICE;
+    private static Color OPERATIONAL_BG_COLOR;
+
+    private static Color PRACTICE_FG_COLOR;
+
+    private static Color TEST_FG_COLOR;
+
+    private static Color OPERATIONAL_FG_COLOR;
+
+    private static CAVEMode modeAtStartup = CAVEMode.OPERATIONAL;
 
     public static CAVEMode getMode() {
         return modeAtStartup;
     }
 
-    public static Color getBackgroundColor() {
-    	if (CAVE_BG_COLOR == null) {
-            CAVE_BG_COLOR = Display.getDefault().getSystemColor(
-                    SWT.COLOR_WIDGET_BACKGROUND);
+    /**
+     * This should NOT be called by end users
+     */
+    public static void performStartupDuties() {
+        String operatingMode = "OPERATIONAL";
+        String test = ProgramArguments.getInstance().getString("-mode");
+        if (test != null && test.equals("") == false) {
+            operatingMode = test;
         }
-        return CAVE_BG_COLOR;
+        try {
+            modeAtStartup = CAVEMode.valueOf(operatingMode.toUpperCase());
+        } catch (Throwable e2) {
+            MessageDialog.openError(new Shell(), "Error starting CAVE",
+                    "CAVE cannot start in unknown mode: " + operatingMode);
+            System.exit(0);
+        }
+
+    }
+
+    public static Color getBackgroundColor() {
+        return getBackgroundColor(getMode());
+    }
+
+    public static Color getBackgroundColor(CAVEMode mode) {
+        switch (mode) {
+        case PRACTICE:
+            if (PRACTICE_BG_COLOR == null) {
+                PRACTICE_BG_COLOR = new Color(Display.getDefault(), 255, 165, 0);
+            }
+            return PRACTICE_BG_COLOR;
+
+        case TEST:
+            if (TEST_BG_COLOR == null) {
+                TEST_BG_COLOR = Display.getDefault().getSystemColor(
+                        SWT.COLOR_BLACK);
+            }
+            return TEST_BG_COLOR;
+
+        case OPERATIONAL:
+            if (OPERATIONAL_BG_COLOR == null) {
+                OPERATIONAL_BG_COLOR = Display.getDefault().getSystemColor(
+                        SWT.COLOR_WIDGET_BACKGROUND);
+            }
+            return OPERATIONAL_BG_COLOR;
+
+        default:
+            throw new IllegalArgumentException("\"" + mode.name()
+                    + "\" is an unrecognized CAVE mode.");
+        }
     }
 
     public static Color getForegroundColor() {
-    	if (CAVE_FG_COLOR == null) {
-            CAVE_FG_COLOR = Display.getDefault().getSystemColor(
-                    SWT.COLOR_WIDGET_FOREGROUND);
+        return getForegroundColor(getMode());
+    }
+
+    public static Color getForegroundColor(CAVEMode mode) {
+        switch (mode) {
+        case PRACTICE:
+            if (PRACTICE_FG_COLOR == null) {
+                PRACTICE_FG_COLOR = Display.getDefault().getSystemColor(
+                        SWT.COLOR_BLACK);
+            }
+            return PRACTICE_FG_COLOR;
+
+        case TEST:
+            if (TEST_FG_COLOR == null) {
+                TEST_FG_COLOR = Display.getDefault().getSystemColor(
+                        SWT.COLOR_WHITE);
+            }
+            return TEST_FG_COLOR;
+
+        case OPERATIONAL:
+            if (OPERATIONAL_FG_COLOR == null) {
+                OPERATIONAL_FG_COLOR = Display.getDefault().getSystemColor(
+                        SWT.COLOR_WIDGET_FOREGROUND);
+            }
+            return OPERATIONAL_FG_COLOR;
+
+        default:
+            throw new IllegalArgumentException("\"" + mode.name()
+                    + "\" is an unrecognized CAVE mode.");
         }
-        return CAVE_FG_COLOR;
     }
 
 }

@@ -70,7 +70,6 @@ import com.raytheon.viz.ui.colormap.IRefreshColorMapTreeListener;
  * Aug 28, 2014  3616     rferrel     Display ColorMapTree status while creating off
  *                                      the UI thread; and added refresh item.
  * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
- * Jan 16, 2016	 ----     mjames@ucar Add USER level again.
  * 
  * </pre>
  * 
@@ -306,7 +305,7 @@ public class ColormapComp {
             for (ILocalizationFile file : files) {
                 addFile(file, index++);
             }
-            
+
             if (menu == cmapPopupMenu) {
                 new MenuItem(menu, SWT.SEPARATOR, index++);
                 final int startLevelIndex = index;
