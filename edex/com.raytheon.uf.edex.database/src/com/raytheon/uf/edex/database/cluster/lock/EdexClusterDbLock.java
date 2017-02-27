@@ -59,6 +59,8 @@ import com.raytheon.uf.edex.database.cluster.lock.EdexClusterDbLockMgr.DbLockCon
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 01, 2016  3440      njensen     Initial creation
+ * Feb 27, 2017  3440      njensen     Return false in lockTheLock() whenever
+ *                                      the lock is not acquired
  *
  * </pre>
  *
@@ -71,7 +73,7 @@ public class EdexClusterDbLock implements Lock, Serializable {
 
     private static final long serialVersionUID = 1L;
 
-    protected static transient final Logger logger = LoggerFactory
+    protected static final Logger logger = LoggerFactory
             .getLogger(EdexClusterDbLock.class);
 
     /** the name of the lock */
@@ -93,10 +95,10 @@ public class EdexClusterDbLock implements Lock, Serializable {
     protected String owner;
 
     @Transient
-    protected transient final DbLockConfig config;
+    protected final DbLockConfig config;
 
     @Transient
-    protected transient final LeasingThread leasingThread;
+    protected final LeasingThread leasingThread;
 
     /**
      * Constructor
@@ -225,14 +227,9 @@ public class EdexClusterDbLock implements Lock, Serializable {
                 } catch (Exception e) {
                     // most likely another cluster node made the lock row
                     tx.rollback();
-                    tx = s.beginTransaction();
-                    dbLock = (EdexClusterDbLock) s.get(EdexClusterDbLock.class,
-                            name, LockMode.PESSIMISTIC_WRITE);
-                    if (dbLock == null) {
-                        throw new ClusterLockException(
-                                "Error getting cluster lock for name " + name,
-                                e);
-                    }
+                    logger.debug(
+                            "Could not acquire cluster lock [" + name + "]", e);
+                    return false;
                 }
             }
 
@@ -363,9 +360,6 @@ public class EdexClusterDbLock implements Lock, Serializable {
                 } catch (HibernateException he) {
                     logger.error("Error rolling back unlock transaction", he);
                 }
-            }
-            if (e instanceof ClusterLockException) {
-                throw e;
             }
             throw new ClusterLockException(
                     "Error unlocking cluster lock [" + name + "]", e);
