@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,8 +34,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.core.runtime.preferences.InstanceScope;
@@ -85,7 +83,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
 /**
  * Manages the localization settings of the viz process and handles the
  * communication with the localization service for downloading/uploading files.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -110,9 +108,9 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
- * 
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class LocalizationManager implements IPropertyChangeListener {
@@ -120,8 +118,14 @@ public class LocalizationManager implements IPropertyChangeListener {
     private static transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationManager.class, "CAVE");
 
+    /**
+     * User context
+     */
     public static final String USER_CONTEXT = LocalizationConstants.P_LOCALIZATION_USER_NAME;
 
+    /**
+     * Site context
+     */
     public static final String SITE_CONTEXT = LocalizationConstants.P_LOCALIZATION_SITE_NAME;
 
     private static final String PREINSTALLED_DIR = "utility"
@@ -160,8 +164,8 @@ public class LocalizationManager implements IPropertyChangeListener {
     private final LocalizationRestConnector restConnect;
 
     /** Was the alert server launched within cave? */
-    public static boolean internalAlertServer = ProgramArguments.getInstance()
-            .getBoolean("-alertviz");
+    public static final boolean internalAlertServer = ProgramArguments
+            .getInstance().getBoolean("-alertviz");
 
     private static Map<LocalizationLevel, String> contextMap = new HashMap<>();
 
@@ -184,14 +188,15 @@ public class LocalizationManager implements IPropertyChangeListener {
                     "Error initializing localization store", e);
         }
         registerContextName(LocalizationLevel.USER, getCurrentUser());
-        registerContextName(LocalizationLevel.WORKSTATION, VizApp.getHostName());
+        registerContextName(LocalizationLevel.WORKSTATION,
+                VizApp.getHostName());
         registerContextName(LocalizationLevel.BASE, null);
         /*
          * look for current site, only do site/region/configured if current site
          * is available
          */
         String currentSite = getCurrentSite();
-        if (currentSite != null && currentSite.isEmpty() == false) {
+        if ((currentSite != null) && (!currentSite.isEmpty())) {
             registerContextName(LocalizationLevel.SITE, currentSite);
             registerContextName(LocalizationLevel.CONFIGURED, currentSite);
             String region = RegionLookup.getWfoRegion(getCurrentSite());
@@ -208,7 +213,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Singleton: get the localization manager
-     * 
+     *
      * @return the localization manager singleton
      */
     public static synchronized LocalizationManager getInstance() {
@@ -219,10 +224,26 @@ public class LocalizationManager implements IPropertyChangeListener {
         return instance;
     }
 
-    public static void registerContextName(LocalizationLevel level, String name) {
+    /**
+     * Register a context name for a localization level
+     *
+     * @param level
+     *            the localization level
+     * @param name
+     *            the name
+     */
+    public static void registerContextName(LocalizationLevel level,
+            String name) {
         contextMap.put(level, name);
     }
 
+    /**
+     * Get context name
+     *
+     * @param level
+     *            desired level
+     * @return context name for desired level
+     */
     public static String getContextName(LocalizationLevel level) {
         return contextMap.get(level);
     }
@@ -234,6 +255,11 @@ public class LocalizationManager implements IPropertyChangeListener {
         return this.currentSite;
     }
 
+    /**
+     * Set the current site
+     *
+     * @param currentSite
+     */
     public void setCurrentSite(String currentSite) {
         if (!this.currentSite.equals(currentSite)) {
             this.currentSite = currentSite;
@@ -258,7 +284,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Sets the localization server and saves the setting
-     * 
+     *
      * @param currentServer
      *            the localization URI
      */
@@ -268,7 +294,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Sets the localization server
-     * 
+     *
      * @param currentServer
      *            the localization URI
      * @param save
@@ -292,8 +318,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                 VizApp.setHttpServer(resp.getHttpServer());
                 VizApp.setJmsConnectionString(resp.getJmsConnectionString());
                 VizApp.setPypiesServer(resp.getPypiesServer());
-                VizServers.getInstance().setServerLocations(
-                        resp.getServerLocations());
+                VizServers.getInstance()
+                        .setServerLocations(resp.getServerLocations());
             } catch (VizException e) {
                 statusHandler.handle(UFStatus.Priority.SIGNIFICANT,
                         "Error connecting to localization server", e);
@@ -316,35 +342,13 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     /**
-     * Sets a base directory
-     * 
-     * Not intended to be called outside of JUnit test cases!!!
-     * 
-     * @param dir
-     */
-    public static void setBaseDir(String dir) {
-        baseDir = dir;
-    }
-
-    /**
-     * Sets a user directory
-     * 
-     * Not intended to be called outside of JUnit test cases!!!
-     * 
-     * @param dir
-     */
-    public static void setUserDir(String dir) {
-        userDir = dir;
-    }
-
-    /**
      * Return the base installation directory
-     * 
+     *
      * This should be used rather than absolute paths
-     * 
+     *
      * @return the installation directory
      */
-    public static String getBaseDir() {
+    public static synchronized String getBaseDir() {
         if (baseDir == null) {
             baseDir = System.getenv("VIZ_HOME");
         }
@@ -353,8 +357,9 @@ public class LocalizationManager implements IPropertyChangeListener {
             baseDir = Platform.getInstallLocation().getURL().getPath();
             // Win32 URLS start with "/" but also may contain a drive letter
             // if so, then remove the "/" because it's improper for a path
-            if (baseDir.startsWith("/") && baseDir.charAt(2) == ':')
+            if (baseDir.startsWith("/") && (baseDir.charAt(2) == ':')) {
                 baseDir = baseDir.substring(1);
+            }
         }
 
         return baseDir;
@@ -362,29 +367,30 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Return the user installation directory
-     * 
+     *
      * This should be used rather than absolute paths
-     * 
+     *
      * @return the user directory
      */
-    public static String getUserDir() {
+    public static synchronized String getUserDir() {
 
         if (userDir == null) {
             userDir = Platform.getUserLocation().getURL().getPath();
             // Win32 URLS start with "/" but also may contain a drive letter
             // if so, then remove the "/" because it's improper for a path
-            if (userDir.startsWith("/") && userDir.charAt(2) == ':')
+            if (userDir.startsWith("/") && (userDir.charAt(2) == ':')) {
                 userDir = userDir.substring(1);
+            }
         }
 
         return userDir;
     }
 
-    private static File getOrphanedFileDir() {
+    private static synchronized File getOrphanedFileDir() {
         if (orphanFileDir == null) {
-            orphanFileDir = new File(getUserDir() + File.separator
-                    + "orphanFiles");
-            if (orphanFileDir.exists() == false) {
+            orphanFileDir = new File(
+                    getUserDir() + File.separator + "orphanFiles");
+            if (!orphanFileDir.exists()) {
                 orphanFileDir.mkdirs();
             }
         }
@@ -393,7 +399,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Get the current localization server
-     * 
+     *
      * @return the current server
      */
     public String getLocalizationServer() {
@@ -402,7 +408,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Get the current site
-     * 
+     *
      * @return the current site
      */
     public String getSite() {
@@ -417,7 +423,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             localizationStore.save();
         } catch (IOException e) {
             statusHandler.handle(Priority.PROBLEM,
-                    "Error saving localization store");
+                    "Error saving localization store", e);
         }
     }
 
@@ -435,8 +441,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                     LocalizationConstants.DEFAULT_LOCALIZATION_SERVER);
             applyChanges();
         } else {
-            currentServer = localizationStore
-                    .getString(LocalizationConstants.P_LOCALIZATION_HTTP_SERVER);
+            currentServer = localizationStore.getString(
+                    LocalizationConstants.P_LOCALIZATION_HTTP_SERVER);
         }
         checkForServerOverride();
     }
@@ -458,37 +464,33 @@ public class LocalizationManager implements IPropertyChangeListener {
             this.currentSite = this.localizationStore
                     .getString(LocalizationConstants.P_LOCALIZATION_SITE_NAME);
         } else {
-            this.currentSite = ProgramArguments.getInstance()
-                    .getString("-site").toUpperCase();
+            this.currentSite = ProgramArguments.getInstance().getString("-site")
+                    .toUpperCase();
             this.overrideSite = true;
         }
     }
 
     private void checkForServerOverride() {
         if (ProgramArguments.getInstance().getString("-server") != null) {
-            String serverOverride = ProgramArguments.getInstance().getString(
-                    "-server");
-            Pattern pat = Pattern.compile("http://(\\p{Graph}{1,50})");
-            Matcher match = pat.matcher(currentServer);
-            if (match.find()) {
-                currentServer = currentServer.replace(match.group(1),
-                        serverOverride);
-                this.overrideServer = true;
-                System.out.println("Server overridden to: " + currentServer);
-            }
+            String serverOverride = ProgramArguments.getInstance()
+                    .getString("-server");
+            currentServer = serverOverride;
+            this.overrideServer = true;
+            statusHandler.debug("Server overridden to: " + currentServer);
         }
     }
 
     @Override
-    public void propertyChange(org.eclipse.jface.util.PropertyChangeEvent event) {
+    public void propertyChange(
+            org.eclipse.jface.util.PropertyChangeEvent event) {
         // Listen for localization server and personality changes
-        if (LocalizationConstants.P_LOCALIZATION_HTTP_SERVER.equals(event
-                .getProperty())) {
+        if (LocalizationConstants.P_LOCALIZATION_HTTP_SERVER
+                .equals(event.getProperty())) {
             // Server changed, grab
             String newServer = (String) event.getNewValue();
             setCurrentServer(newServer);
-        } else if (LocalizationConstants.P_LOCALIZATION_SITE_NAME.equals(event
-                .getProperty())) {
+        } else if (LocalizationConstants.P_LOCALIZATION_SITE_NAME
+                .equals(event.getProperty())) {
             String site = (String) event.getNewValue();
             setCurrentSite(site);
         }
@@ -496,11 +498,12 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Retrieves the files from the localization service
-     * 
+     *
      * @param commands
      * @param fileStamps
      */
-    private void retrieveFiles(GetUtilityCommand[] commands, Date[] fileStamps) {
+    private void retrieveFiles(GetUtilityCommand[] commands,
+            Date[] fileStamps) {
         for (int i = 0; i < commands.length; ++i) {
             GetUtilityCommand command = commands[i];
             File file = buildFileLocation(command.getContext(),
@@ -519,7 +522,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                 }
 
                 // Mark as read only if the file is a system level
-                if (command.getContext().getLocalizationLevel().isSystemLevel()) {
+                if (command.getContext().getLocalizationLevel()
+                        .isSystemLevel()) {
                     file.setReadOnly();
                 }
             } catch (Exception e) {
@@ -543,7 +547,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         UtilityRequestMessage localizationRequest = new UtilityRequestMessage(
                 cmds);
 
-        AbstractUtilityResponse[] responseList = makeRequest(localizationRequest);
+        AbstractUtilityResponse[] responseList = makeRequest(
+                localizationRequest);
         if (responseList.length != contexts.length) {
             throw new LocalizationException(
                     "Server returned more or less results than requested.  Requested "
@@ -575,7 +580,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     /**
      * Retrieves the LocalizationFile contents from the localization server.
      * Locks on the file
-     * 
+     *
      * @param file
      * @throws LocalizationException
      */
@@ -595,8 +600,9 @@ public class LocalizationManager implements IPropertyChangeListener {
              * wrong.
              */
             if (needDownload(localFile, file.getCheckSum())) {
-                retrieveFiles(new GetUtilityCommand[] { new GetUtilityCommand(
-                        file.getContext(), file.getPath()) },
+                retrieveFiles(
+                        new GetUtilityCommand[] { new GetUtilityCommand(
+                                file.getContext(), file.getPath()) },
                         new Date[] { file.getTimeStamp() });
             }
         }
@@ -605,7 +611,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     /**
      * Retrieves the LocalizationFile contents from the server to the given
      * outputFile.
-     * 
+     *
      * @param locFile
      *            the localization file to retrieve
      * @param outputFile
@@ -627,7 +633,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     /**
      * Retrieval which recursively downloads files for the path given the name.
      * Should be used for directories
-     * 
+     *
      * @param context
      * @param fileName
      * @throws LocalizationException
@@ -639,7 +645,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         List<File> toCheck = new ArrayList<>();
         Set<File> available = new TreeSet<>();
-        if (entriesList.size() > 0) {
+        if (!entriesList.isEmpty()) {
             ListResponseEntry[] entries = entriesList.get(0);
 
             List<GetUtilityCommand> commands = new ArrayList<>();
@@ -663,14 +669,14 @@ public class LocalizationManager implements IPropertyChangeListener {
                     File[] list = file.listFiles(new FileFilter() {
                         @Override
                         public boolean accept(File pathname) {
-                            return pathname.isDirectory() == false;
+                            return !pathname.isDirectory();
                         }
                     });
 
                     if (list != null) {
                         toCheck.addAll(Arrays.asList(list));
                     } else {
-                        System.err.println("ERROR READING DIRECTORY: "
+                        statusHandler.debug("ERROR READING DIRECTORY: "
                                 + file.getAbsolutePath());
                     }
                 }
@@ -685,21 +691,22 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (File check : toCheck) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             // hidden files are not returned from server so ignore those
-            if (check.isHidden() == false && available.contains(check) == false) {
+            if ((!check.isHidden()) && (!available.contains(check))) {
                 String name = check.getName();
                 // Make sure python object files don't get removed when
                 // .py file is still available
                 if (name.endsWith(".pyo") || name.endsWith(".pyc")) {
                     String pyName = name.substring(0, name.length() - 1);
-                    if (available.contains(new File(check.getParent(), pyName))) {
+                    if (available
+                            .contains(new File(check.getParent(), pyName))) {
                         continue;
                     }
                 }
 
                 File newFile = new File(getOrphanedFileDir(), name + "_"
                         + sdf.format(Calendar.getInstance().getTime()));
-                System.err.println("MOVING OLD FILE: " + check + " to "
-                        + newFile);
+                statusHandler
+                        .debug("MOVING OLD FILE: " + check + " to " + newFile);
                 check.renameTo(newFile);
             }
         }
@@ -723,24 +730,25 @@ public class LocalizationManager implements IPropertyChangeListener {
      * userDir. This speeds up performance with a fresh install by getting the
      * files locally where available instead of downloading them from the
      * server.
-     * 
+     *
      * The checksum will still be checked by the needDownload() method, so this
      * should be called before needDownload(). If by chance the local viz
      * install is very out of date, this will be copying files into the userDir
      * that will then be immediately replaced when needDownload() recognizes the
      * checksum is incorrect.
      */
-    private void checkPreinstalled(LocalizationContext context,
-            String filename, File localFile) {
+    private void checkPreinstalled(LocalizationContext context, String filename,
+            File localFile) {
         if (LocalizationLevel.BASE.equals(context.getLocalizationLevel())
-                && LocalizationType.COMMON_STATIC.equals(context
-                        .getLocalizationType()) && !localFile.exists()) {
+                && LocalizationType.COMMON_STATIC.equals(
+                        context.getLocalizationType())
+                && !localFile.exists()) {
             Collection<String> bundles = BundleScanner
                     .getListOfBundles(PREINSTALLED_DIR);
             for (String b : bundles) {
                 File foundFile = BundleScanner.searchInBundle(b,
                         PREINSTALLED_DIR, filename);
-                if (foundFile != null && foundFile.exists()) {
+                if ((foundFile != null) && foundFile.exists()) {
                     try {
                         if (FileLocker.lock(this, localFile, Type.WRITE)) {
                             /*
@@ -761,7 +769,9 @@ public class LocalizationManager implements IPropertyChangeListener {
                     } finally {
                         FileLocker.unlock(this, localFile);
                     }
-                    break; // file found, break out of for loop
+
+                    // file found, break out of for loop
+                    break;
                 }
             }
         }
@@ -769,7 +779,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Need to download files?
-     * 
+     *
      * @param context
      * @param listResponseEntry
      * @return true if file needs to be downloaded
@@ -793,7 +803,7 @@ public class LocalizationManager implements IPropertyChangeListener {
      * Checks if the file needs downloaded based on if it exists locally and the
      * checksum. This method does no locking and if reading the file for the
      * checksum goes wrong in any way, it will return true.
-     * 
+     *
      * @param file
      * @param remoteChecksum
      * @return
@@ -811,6 +821,9 @@ public class LocalizationManager implements IPropertyChangeListener {
                 String localChecksum = Checksum.getMD5Checksum(file);
                 return !localChecksum.equals(remoteChecksum);
             } catch (Throwable t) {
+                statusHandler.handle(Priority.DEBUG,
+                        "Exception computing MD5 checksum", t);
+
                 // something went wrong, just re-download the file
                 return true;
             }
@@ -819,7 +832,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Uploads a file to the localization service.
-     * 
+     *
      * @param file
      *            the localization file
      * @param fileToUpload
@@ -829,8 +842,8 @@ public class LocalizationManager implements IPropertyChangeListener {
     protected void upload(ILocalizationFile file, File fileToUpload)
             throws LocalizationException {
         try {
-            FileUpdatedMessage fum = restConnect
-                    .restPutFile(file, fileToUpload);
+            FileUpdatedMessage fum = restConnect.restPutFile(file,
+                    fileToUpload);
 
             // notify our JVM of the update
             for (PathManager pm : PathManagerFactory.getActivePathManagers()) {
@@ -844,7 +857,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Deletes a localization file from localization server
-     * 
+     *
      * @param context
      *            the context to the file
      * @param filename
@@ -856,8 +869,8 @@ public class LocalizationManager implements IPropertyChangeListener {
             throws LocalizationException {
         PrivilegedUtilityRequestMessage request;
         try {
-            request = PrivilegedRequestFactory
-                    .constructPrivilegedRequest(PrivilegedUtilityRequestMessage.class);
+            request = PrivilegedRequestFactory.constructPrivilegedRequest(
+                    PrivilegedUtilityRequestMessage.class);
         } catch (VizException e) {
             throw new LocalizationException(
                     "Could not construct privileged utility request", e);
@@ -865,8 +878,10 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         DeleteUtilityCommand command = new DeleteUtilityCommand(context,
                 filename);
-        command.setMyContextName(getContextName(context.getLocalizationLevel()));
-        AbstractPrivilegedUtilityCommand[] commands = new AbstractPrivilegedUtilityCommand[] { command };
+        command.setMyContextName(
+                getContextName(context.getLocalizationLevel()));
+        AbstractPrivilegedUtilityCommand[] commands = new AbstractPrivilegedUtilityCommand[] {
+                command };
         request.setCommands(commands);
         try {
             UtilityResponseMessage response = (UtilityResponseMessage) ThriftClient
@@ -876,11 +891,12 @@ public class LocalizationManager implements IPropertyChangeListener {
                         "No response received for delete command");
             }
             AbstractUtilityResponse[] responses = response.getResponses();
-            if (responses == null || responses.length != commands.length) {
+            if ((responses == null) || (responses.length != commands.length)) {
                 throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + commands.length + " responses, received "
-                                + (responses != null ? responses.length : null));
+                                + (responses != null ? responses.length
+                                        : null));
             }
             AbstractUtilityResponse rsp = responses[0];
             if (rsp instanceof DeleteUtilityResponse) {
@@ -906,7 +922,7 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     /**
      * Makes a request to the UtilitySrv
-     * 
+     *
      * @param request
      *            the request to make
      * @return the responses from the request
@@ -937,6 +953,13 @@ public class LocalizationManager implements IPropertyChangeListener {
         return responseList;
     }
 
+    /**
+     * Get context list for a localization level
+     *
+     * @param level
+     * @return the context list
+     * @throws LocalizationException
+     */
     public List<ListResponseEntry[]> getContextList(LocalizationLevel level)
             throws LocalizationException {
         ListContextCommand cmd = new ListContextCommand();
@@ -945,7 +968,8 @@ public class LocalizationManager implements IPropertyChangeListener {
         UtilityRequestMessage localizationRequest = new UtilityRequestMessage(
                 new ListContextCommand[] { cmd });
 
-        AbstractUtilityResponse[] responseList = makeRequest(localizationRequest);
+        AbstractUtilityResponse[] responseList = makeRequest(
+                localizationRequest);
 
         List<ListResponseEntry[]> responses = new ArrayList<>();
 
@@ -965,10 +989,16 @@ public class LocalizationManager implements IPropertyChangeListener {
         return responses;
     }
 
+    /**
+     * @return true if server is overridden
+     */
     public boolean isOverrideServer() {
         return overrideServer;
     }
 
+    /**
+     * @return true if user is overridden
+     */
     public boolean isOverrideSite() {
         return overrideSite;
     }
