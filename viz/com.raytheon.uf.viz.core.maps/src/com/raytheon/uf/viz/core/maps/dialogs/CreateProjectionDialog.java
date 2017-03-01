@@ -19,6 +19,10 @@
  **/
 package com.raytheon.uf.viz.core.maps.dialogs;
 
+import java.io.BufferedReader;
+import java.io.FileOutputStream;
+import java.io.FileReader;
+import java.io.PrintStream;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -83,14 +87,13 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Jan 16, 2008  783      randerso  Initial Creation
- * Jan 29, 2013  15567    snaples   Remove Orthographic projection from list
- *                                  temporarily
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Jan 16, 2008 783        randerso    Initial Creation
+ * Jan 29, 2013 15567      snaples     Remove Orthographic projection from list temporarily
  * Apr 21, 2016  5579     bsteffen  Default to match current display. Add Import
  *                                  Extent From Display. Add tooltips.
+ * Aug 30, 2016 ----       mjames@ucar Generate WFO site envelopes + design updates.
  * 
  * </pre>
  * 
@@ -253,7 +256,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         // End of mods
         Arrays.sort(projections);
 
-        new Label(projComp, SWT.NONE).setText("Projection:");
+        new Label(projComp, SWT.NONE).setText("Projection");
         projList = new Combo(projComp, SWT.DROP_DOWN | SWT.READ_ONLY);
         projList.setItems(projections);
         projList.addSelectionListener(new SelectionAdapter() {
@@ -265,17 +268,11 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         });
         projList.setText(projections[0]);
 
-        new Label(projComp, SWT.NONE).setText("Name:");
+        new Label(projComp, SWT.NONE).setText("Name");
         projNameText = new Text(projComp, SWT.BORDER);
         projNameText
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         setProjectionNameText(projList.getText());
-
-        paramGroup = new Group(dlgComp, SWT.BORDER);
-        paramGroup.setText("Parameters");
-        layout = new GridLayout(2, false);
-        paramGroup.setLayout(layout);
-        paramGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         Group defineByGroup = new Group(dlgComp, SWT.BORDER_SOLID);
         defineByGroup.setText("Define Extent by ");
@@ -284,12 +281,12 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         defineByGroup.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL));
 
-        cornersBtn = new Button(defineByGroup, SWT.RADIO);
-        cornersBtn.setText("Corners");
-        cornersBtn.setSelection(true);
-
         centerBtn = new Button(defineByGroup, SWT.RADIO);
         centerBtn.setText("Center");
+        centerBtn.setSelection(true);
+        
+        cornersBtn = new Button(defineByGroup, SWT.RADIO);
+        cornersBtn.setText("Corners");
 
         importExtentButton = new Button(dlgComp, SWT.PUSH);
         importExtentButton.setText("Import Extent From Display");
@@ -310,16 +307,19 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                 | GridData.GRAB_HORIZONTAL));
 
         new Label(cornersGroup, SWT.NONE).setText("");
-        new Label(cornersGroup, SWT.NONE).setText("Latitude:");
-        new Label(cornersGroup, SWT.NONE).setText("Longitude:");
+        new Label(cornersGroup, SWT.NONE).setText("Latitude");
+        new Label(cornersGroup, SWT.NONE).setText("Longitude");
 
-        new Label(cornersGroup, SWT.NONE).setText("Lower Left:");
+        new Label(cornersGroup, SWT.NONE).setText("Lower Left");
         llLatText = new Text(cornersGroup, SWT.BORDER);
         llLonText = new Text(cornersGroup, SWT.BORDER);
 
-        new Label(cornersGroup, SWT.NONE).setText("Upper Right:");
+        new Label(cornersGroup, SWT.NONE).setText("Upper Right");
         urLatText = new Text(cornersGroup, SWT.BORDER);
         urLonText = new Text(cornersGroup, SWT.BORDER);
+        
+        cornersGroup.setVisible(false);
+        ((GridData) cornersGroup.getLayoutData()).exclude = true;
 
         centerGroup = new Group(dlgComp, SWT.BORDER);
         centerGroup.setText("Extent");
@@ -329,27 +329,26 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                 | GridData.GRAB_HORIZONTAL));
 
         new Label(centerGroup, SWT.NONE).setText("");
-        new Label(centerGroup, SWT.NONE).setText("Latitude:");
-        new Label(centerGroup, SWT.NONE).setText("Longitude:");
+        new Label(centerGroup, SWT.NONE).setText("Latitude");
+        new Label(centerGroup, SWT.NONE).setText("Longitude");
 
-        new Label(centerGroup, SWT.NONE).setText("Center:");
+        new Label(centerGroup, SWT.NONE).setText("Center");
         centerLatText = new Text(centerGroup, SWT.BORDER);
         centerLonText = new Text(centerGroup, SWT.BORDER);
 
-        new Label(centerGroup, SWT.NONE).setText("Width:");
+        new Label(centerGroup, SWT.NONE).setText("Width");
         widthText = new Text(centerGroup, SWT.BORDER);
         widthUnit = new Label(centerGroup, SWT.NONE);
         widthUnit.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL));
 
-        new Label(centerGroup, SWT.NONE).setText("Height:");
+        new Label(centerGroup, SWT.NONE).setText("Height");
         heightText = new Text(centerGroup, SWT.BORDER);
         heightUnit = new Label(centerGroup, SWT.NONE);
         heightUnit.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_FILL
                 | GridData.GRAB_HORIZONTAL));
 
-        centerGroup.setVisible(false);
-        ((GridData) centerGroup.getLayoutData()).exclude = true;
+        
 
         centerBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -384,6 +383,12 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
                 }
             }
         });
+
+        paramGroup = new Group(dlgComp, SWT.BORDER);
+        paramGroup.setText("Parameters");
+        layout = new GridLayout(2, false);
+        paramGroup.setLayout(layout);
+        paramGroup.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
         Group validGroup = new Group(dlgComp, SWT.BORDER);
         layout = new GridLayout(2, false);
@@ -517,7 +522,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
         setEnabledGroup(cornersGroup, true);
         setEnabledGroup(centerGroup, true);
-
+        
         validateExtent();
         if (newMapGeom == null) {
             return;
@@ -534,6 +539,92 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         }
     }
 
+    private void generateWFOExtents() {
+    	
+    	try{
+            BufferedReader buf = new BufferedReader(
+            	new FileReader("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/wfo.dat"));
+            
+            String lineJustFetched = null;
+            String[] wfoCSV;
+            
+            PrintStream out = new PrintStream(new FileOutputStream("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/coords_regional.dat"));
+            System.setOut(out);
+
+            while(true){
+                lineJustFetched = buf.readLine();
+                if(lineJustFetched == null){  
+                    break; 
+                }else{
+                    wfoCSV = lineJustFetched.split("\t");
+                    
+                    Coordinate cent = new Coordinate();
+                    cent.y = validateDouble(wfoCSV[8], -90, 90);
+                    cent.x = validateDouble(wfoCSV[9], -180, 180);
+                    GeneralGridGeometry siteGeom = MapDescriptor.createGridGeometry(crs, cent,
+                            2700000., 2100000.);
+                    String siteID = wfoCSV[0];
+                    Envelope siteEnvelope = siteGeom.getEnvelope();
+                    GridEnvelope siteRange = siteGeom.getGridRange();
+                    
+                    System.out.println(siteID + ", " + cent.y + ", " + cent.x 
+                    		+ ", " + siteRange.getLow(0) + ", " + siteRange.getHigh(0) 
+                    		+ ", " + siteRange.getLow(1) + ", " + siteRange.getHigh(1)
+		                    + ", " + siteEnvelope.getMinimum(0) + ", " + siteEnvelope.getMaximum(0)
+		                    + ", " + siteEnvelope.getMinimum(1) + ", " + siteEnvelope.getMaximum(1));
+                }
+            }
+         
+            buf.close();
+
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+    }
+    
+private void generateRadarExtents() {
+    	
+    	try{
+            BufferedReader buf = new BufferedReader(
+            		new FileReader("/home/awips/awips2-core/viz/com.raytheon.uf.viz.core.maps/localization/basemaps/88D.lpi"));
+            String lineJustFetched = null;
+            String[] wfoCSV;
+
+            PrintStream out = new PrintStream(new FileOutputStream("/home/awips/awips2-builds/rpms/awips2.core/Installer.localization/coords_wsr88d.dat"));
+            System.setOut(out);
+            
+            while(true){
+                lineJustFetched = buf.readLine();
+                if(lineJustFetched == null){  
+                    break; 
+                }else{
+                    wfoCSV = lineJustFetched.split("\\s+");
+                    
+                    Coordinate cent = new Coordinate();
+                    cent.y = validateDouble(wfoCSV[1], -90, 90);
+                    cent.x = validateDouble(wfoCSV[2], -180, 180);
+                    GeneralGridGeometry siteGeom = MapDescriptor.createGridGeometry(crs, cent,
+                    		750000., 750000.);
+                    String siteID = wfoCSV[4];
+                    Envelope siteEnvelope = siteGeom.getEnvelope();
+                    GridEnvelope siteRange = siteGeom.getGridRange();
+                    
+                    System.out.println(siteID + ", " + cent.y + ", " + cent.x 
+                    		+ ", " + siteRange.getLow(0) + ", " + siteRange.getHigh(0) 
+                    		+ ", " + siteRange.getLow(1) + ", " + siteRange.getHigh(1)
+		                    + ", " + siteEnvelope.getMinimum(0) + ", " + siteEnvelope.getMaximum(0)
+		                    + ", " + siteEnvelope.getMinimum(1) + ", " + siteEnvelope.getMaximum(1));
+                }
+            }
+            buf.close();
+
+        }catch(Exception e){
+            e.printStackTrace();
+        }
+
+    }
+    
     private void validateExtent() {
         newMapGeom = null;
 
@@ -542,7 +633,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
         }
 
         CoordinateSystem cs = crs.getCoordinateSystem();
-
+        
         Coordinate ll = null;
         Coordinate ur = null;
         Coordinate center = null;
@@ -768,6 +859,10 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
     @Override
     protected void okPressed() {
+    	
+    	//generateWFOExtents();
+    	//generateRadarExtents();
+    	
         validateParameters();
 
         if (newMapGeom == null) {

@@ -34,7 +34,7 @@
             locationURI="toolbar:mapControls">
                <command
                      commandId="com.raytheon.viz.ui.tools.nav.PanTool"
-                     icon="icons/pan.gif"
+                     icon="icons/arrows-alt.png"
                      label="Pan"
                      style="toggle">
                 <visibleWhen>
@@ -45,7 +45,7 @@
                </command>
                <command
                      commandId="com.raytheon.viz.ui.tools.nav.ZoomTool"
-                     icon="icons/zoom.gif"
+                     icon="icons/zoom.png"
                      label="Zoom"
                      style="toggle">
                  <visibleWhen>

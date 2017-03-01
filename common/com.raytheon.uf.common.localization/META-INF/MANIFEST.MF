@@ -17,6 +17,6 @@ Export-Package: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.localization.overrides,
  com.raytheon.uf.common.localization.region,
  com.raytheon.uf.common.localization.stream
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: resources/,
  .

@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl.images;
 import java.nio.Buffer;
 
 import javax.measure.unit.Unit;
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.viz.core.gl.dataformat.AbstractGLColorMapDataFormat;
@@ -90,7 +90,7 @@ public class GLBufferCMTextureData extends GLCMTextureData {
      * .media.opengl.GL, int, int, int)
      */
     @Override
-    protected void createTexture2D(GL gl, int type, int w, int h) {
+    protected void createTexture2D(GL2 gl, int type, int w, int h) {
         gl.glTexImage2D(type, 0, getTextureInternalFormat(), w, h, 0,
                 getTextureFormat(), getTextureType(), getDataObject().getData()
                         .rewind());
@@ -104,7 +104,7 @@ public class GLBufferCMTextureData extends GLCMTextureData {
      * .media.opengl.GL, int, int)
      */
     @Override
-    protected void createTexture1D(GL gl, int type, int w) {
+    protected void createTexture1D(GL2 gl, int type, int w) {
         gl.glTexImage1D(type, 0, getTextureInternalFormat(), w, 0,
                 getTextureFormat(), getTextureType(), getDataObject().getData()
                         .rewind());

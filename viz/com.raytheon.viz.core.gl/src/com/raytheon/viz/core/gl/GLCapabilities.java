@@ -21,7 +21,7 @@ package com.raytheon.viz.core.gl;
 
 import java.nio.IntBuffer;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import com.raytheon.viz.core.gl.internal.GLTarget;
 
@@ -37,6 +37,7 @@ import com.raytheon.viz.core.gl.internal.GLTarget;
  * ------------- -------- ----------- --------------------------
  * Jun 06, 2011           mschenke    Initial creation
  * Apr 08, 2014  2950     bsteffen    Add max texture size.
+ * May 07, 2015           mjames      Refactor GL for jogamp 2
  * 
  * </pre>
  * 
@@ -48,7 +49,7 @@ public class GLCapabilities {
 
     private static GLCapabilities caps = null;
 
-    public static synchronized GLCapabilities getInstance(GL gl) {
+    public static synchronized GLCapabilities getInstance(GL2 gl) {
         if (caps == null) {
             caps = new GLCapabilities(gl);
         }
@@ -65,8 +66,8 @@ public class GLCapabilities {
 
     public final int maxTextureSize;
 
-    private GLCapabilities(GL gl) {
-        String openGlVersion = gl.glGetString(GL.GL_VERSION);
+    private GLCapabilities(GL2 gl) {
+        String openGlVersion = gl.glGetString(GL2.GL_VERSION);
         float glVersion = Float.parseFloat(openGlVersion.substring(0, 3));
 
         if (glVersion >= 1.4f) {
@@ -84,16 +85,16 @@ public class GLCapabilities {
             cardSupportsShaders = true;
 
             if (this.textureRectangleSupported) {
-                gl.glEnable(GL.GL_TEXTURE_RECTANGLE_ARB);
+                gl.glEnable(GL2.GL_TEXTURE_RECTANGLE_ARB);
             }
 
             if (this.textureRectangleSupported) {
-                gl.glDisable(GL.GL_TEXTURE_RECTANGLE_ARB);
+                gl.glDisable(GL2.GL_TEXTURE_RECTANGLE_ARB);
             }
         }
         System.out.println("Shader supported: " + cardSupportsShaders);
         IntBuffer ib = IntBuffer.allocate(1);
-        gl.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE, ib);
+        gl.glGetIntegerv(GL2.GL_MAX_TEXTURE_SIZE, ib);
         ib.rewind();
         maxTextureSize = ib.get();
     }

@@ -32,6 +32,7 @@ package com.raytheon.uf.common.comm;
  * Sep 03, 2014  3570      bclement     Initial creation
  * Nov 15, 2014  3757      dhladky      General HTTPS handler
  * Jan 26, 2015  3952      njensen      gzip handled by default
+ * Jun 30, 2015            mjames@ucar  maxConnections increased from 10 to 1000
  * Jul 06, 2015  4614      njensen      Add gzipEnabled
  * Dec 07, 2015  4834      njensen      Changed for rename of IHttpsHandler to HttpAuthHandler
  * 
@@ -46,7 +47,7 @@ public class HttpClientConfigBuilder {
 
     private int connectionTimeout = 10000;
 
-    private int maxConnections = 10;
+    private int maxConnections = 1000;
 
     private HttpAuthHandler httpAuthHandler;
 

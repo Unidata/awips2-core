@@ -48,9 +48,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
-import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.util.ITimer;
@@ -91,9 +89,6 @@ public class PluginNotifier implements IContextStateProcessor {
 
     private static final IUFStatusHandler theHandler = UFStatus
             .getHandler(PluginNotifier.class);
-
-    private final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("Notification:");
 
     private static final int DEFAULT_TIME_TO_LIVE = 300000;
 
@@ -430,8 +425,6 @@ public class PluginNotifier implements IContextStateProcessor {
                     }
                 }
                 timer.stop();
-                perfLog.logDuration("Processed " + pdos.length + " pdos",
-                        timer.getElapsedTime());
             }
         } finally {
             lock.readLock().unlock();

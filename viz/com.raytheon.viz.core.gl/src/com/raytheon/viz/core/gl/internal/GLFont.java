@@ -27,7 +27,7 @@ import org.eclipse.swt.graphics.Point;
 import com.raytheon.uf.viz.core.drawables.AbstractAWTDeviceFont;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.viz.core.gl.IGLFont;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * 

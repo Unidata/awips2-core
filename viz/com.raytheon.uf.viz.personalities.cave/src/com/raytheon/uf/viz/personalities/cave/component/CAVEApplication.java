@@ -90,6 +90,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
  * Jan 11, 2016 5232       njensen     Apply css style at startup
+ * May 31, 2016            mjames@ucar Mute CAVEMode.performStartupDuties()
  * 
  * </pre>
  * 
@@ -138,7 +139,7 @@ public class CAVEApplication implements IStandaloneComponent {
         // verify Spring successfully initialized, otherwise stop CAVE
         if (!com.raytheon.uf.viz.spring.dm.Activator.getDefault()
                 .isSpringInitSuccessful()) {
-            return handleSpringFailure();
+            return handleSpringFailure(componentName);
         }
 
         try {
@@ -282,8 +283,8 @@ public class CAVEApplication implements IStandaloneComponent {
      * @return An {@link IApplication} exit value depending on action that
      *         should be taken due to spring initialization failure
      */
-    protected int handleSpringFailure() {
-        String msg = "CAVE's Spring container did not initialize correctly and CAVE must shut down.";
+    protected int handleSpringFailure(String componentName) {
+        String msg = componentName + " not found! CAVE's Spring container did not initialize correctly and CAVE must shut down.";
         boolean restart = false;
         if (isNonUIComponent() == false) {
             msg += " Attempt to restart CAVE?";

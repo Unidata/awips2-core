@@ -115,25 +115,7 @@
       	  </classContext>
    </extension>
    <extension
-         point="com.raytheon.uf.viz.localization.perspective.localizationpath">
-      <path
-            application="CAVE"
-            localizationType="CAVE_STATIC"
-            name="Map Styles"
-            recursive="false"
-            value="mapStyles">
-      </path>
-   </extension>
-   <extension
          point="org.eclipse.ui.menus">
-        <menuContribution
-           locationURI="menu:file.new">
-	       <command
-	            commandId="com.raytheon.viz.ui.maps.createProjection"
-	            label="Map Projection..."
-	            style="push">
-	       </command>
-        </menuContribution>
    		<menuContribution
                locationURI="menu:com.raytheon.viz.ui.scale">
            <dynamic

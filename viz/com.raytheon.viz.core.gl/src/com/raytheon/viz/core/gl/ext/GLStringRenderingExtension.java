@@ -25,7 +25,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.GL2GL3;
 
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -42,7 +43,7 @@ import com.raytheon.uf.viz.core.drawables.ext.GraphicsExtension.IGraphicsExtensi
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.viz.core.gl.IGLFont;
 import com.raytheon.viz.core.gl.internal.GLTarget;
-import com.sun.opengl.util.j2d.TextRenderer;
+import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
  * Extension which handles all String rendering
@@ -85,17 +86,17 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         double glScaleX = extent.getWidth() / bounds.width;
         double glScaleY = extent.getHeight() / bounds.height;
 
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         /* Save state */
         target.pushGLState();
         /* Save modelview matrix and set to canvas */
-        gl.glMatrixMode(GL.GL_MODELVIEW);
+        gl.glMatrixMode(GL2.GL_MODELVIEW);
         gl.glPushMatrix();
         try {
             /* Enable needed rendering capabilities. */
-            gl.glEnable(GL.GL_BLEND);
-            gl.glBlendFunc(GL.GL_SRC_ALPHA, GL.GL_ONE_MINUS_SRC_ALPHA);
-            gl.glEnable(GL.GL_TEXTURE_2D);
+            gl.glEnable(GL2.GL_BLEND);
+            gl.glBlendFunc(GL2.GL_SRC_ALPHA, GL2.GL_ONE_MINUS_SRC_ALPHA);
+            gl.glEnable(GL2.GL_TEXTURE_2D);
 
             gl.glTranslated(extent.getMinX(), extent.getMinY(), 0);
             gl.glScaled(glScaleX, -glScaleY, 1.0);
@@ -112,12 +113,12 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             }
         } finally {
             /* Restore the matrix */
-            gl.glMatrixMode(GL.GL_MODELVIEW);
+            gl.glMatrixMode(GL2.GL_MODELVIEW);
             gl.glPopMatrix();
             /* Disable rendering capabilities */
-            gl.glDisable(GL.GL_TEXTURE_2D);
-            gl.glDisable(GL.GL_BLEND);
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+            gl.glDisable(GL2.GL_TEXTURE_2D);
+            gl.glDisable(GL2.GL_BLEND);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
             /* Restore state */
             target.popGLState();
         }
@@ -155,16 +156,16 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 throw new VizException("Font was not prepared using GLTarget");
             }
             /* Switch multi-line vertical middle to top and shift y. */
-            if (string.verticallAlignment != VerticalAlignment.TOP
+            if (string.verticalAlignment != VerticalAlignment.TOP
                     && string.getText().length > 1) {
                 Rectangle2D totalBounds = target.getStringsBounds(string);
                 double totalHeight = totalBounds.getHeight();
-                if (string.verticallAlignment == VerticalAlignment.MIDDLE) {
+                if (string.verticalAlignment == VerticalAlignment.MIDDLE) {
                     string.basics.y -= totalHeight * .5;
-                } else if (string.verticallAlignment == VerticalAlignment.BOTTOM) {
+                } else if (string.verticalAlignment == VerticalAlignment.BOTTOM) {
                     string.basics.y -= totalHeight;
                 }
-                string.verticallAlignment = VerticalAlignment.TOP;
+                string.verticalAlignment = VerticalAlignment.TOP;
             }
             copy.add(string);
         }
@@ -190,7 +191,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         float alpha = Math.min(string.basics.alpha, 1.0f);
 
         float[] rotatedPoint = rotate(string);
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         if (boxed) {
             /* Draw a big box around everything */
             Rectangle2D bounds = target.getStringsBounds(string);
@@ -198,7 +199,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             bounds.setFrame(0, 0, bounds.getWidth() - 1, bounds.getHeight());
             shiftRectangle(string, bounds, string.basics.y);
             if (blanked) {
-                gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+                gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
                 setGlColor(gl, blankColor, alpha);
                 gl.glRectd(bounds.getMinX(), bounds.getMaxY(),
                         bounds.getMaxX(), bounds.getMinY());
@@ -212,7 +213,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 }
             }
             gl.glLineWidth(2);
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
             setGlColor(gl, boxColor, alpha);
             gl.glRectd(bounds.getMinX(), bounds.getMaxY(), bounds.getMaxX(),
                     bounds.getMinY());
@@ -220,7 +221,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             /* Draw a separate box over each line. */
             double yPos = string.basics.y;
 
-            gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+            gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
             for (int c = 0; c < string.getText().length; c++) {
                 Rectangle2D bounds = target.getStringsBounds(string,
                         string.getText()[c]);
@@ -254,7 +255,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
     protected void shiftRectangle(DrawableString string, Rectangle2D bounds,
             double yPos) {
         float[] xy = getUpdatedCoordinates(bounds, string.horizontalAlignment,
-                string.verticallAlignment, string.basics.x, yPos);
+                string.verticalAlignment, string.basics.x, yPos);
         double x = xy[0] - 1;
         double y = xy[1] - (bounds.getHeight() + bounds.getY()) - 1;
         double w = bounds.getWidth() + 2;
@@ -270,8 +271,8 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
      * @param strings
      */
     protected void renderStrings(Collection<DrawableString> strings) {
-        GL gl = target.getGl();
-        gl.glPolygonMode(GL.GL_BACK, GL.GL_FILL);
+        GL2 gl = target.getGl();
+        gl.glPolygonMode(GL2.GL_BACK, GL2.GL_FILL);
         IFont font = null;
         double magnification = -1.0;
         float fontPercentage = -1.0f;
@@ -317,10 +318,10 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                     lastXOr = string.basics.xOrColors;
                     textRenderer.flush();
                     if (lastXOr) {
-                        gl.glEnable(GL.GL_COLOR_LOGIC_OP);
-                        gl.glLogicOp(GL.GL_XOR);
+                        gl.glEnable(GL2.GL_COLOR_LOGIC_OP);
+                        gl.glLogicOp(GL2.GL_XOR);
                     } else {
-                        gl.glDisable(GL.GL_COLOR_LOGIC_OP);
+                        gl.glDisable(GL2.GL_COLOR_LOGIC_OP);
                     }
                 }
 
@@ -337,7 +338,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
 
                     float[] xy = getUpdatedCoordinates(textBounds,
                             string.horizontalAlignment,
-                            string.verticallAlignment, string.basics.x, yPos);
+                            string.verticalAlignment, string.basics.x, yPos);
 
                     if (color != lastColor) {
                         lastColor = color;
@@ -382,7 +383,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
                 textRenderer.end3DRendering();
             }
             if (lastXOr) {
-                gl.glDisable(GL.GL_COLOR_LOGIC_OP);
+                gl.glDisable(GL2.GL_COLOR_LOGIC_OP);
             }
         }
     }
@@ -407,9 +408,9 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         double scaleY = 1.0f;
 
         float[] rotatedPoint = rotate(string);
-        GL gl = target.getGl();
+        GL2 gl = target.getGl().getGL2();
         Map<TextStyle, RGB> textStyles = string.getTextStyleColorMap();
-        gl.glPolygonMode(GL.GL_BACK, GL.GL_LINE);
+        ((GL2GL3) gl).glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
         gl.glLineWidth(1);
         for (int c = 0; c < string.getText().length; c++) {
             String str = string.getText()[c];
@@ -417,7 +418,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             Rectangle2D textBounds = target.getStringsBounds(string, str);
 
             float[] xy = getUpdatedCoordinates(textBounds,
-                    string.horizontalAlignment, string.verticallAlignment,
+                    string.horizontalAlignment, string.verticalAlignment,
                     string.basics.x, yPos);
 
             double width = textBounds.getWidth();
@@ -429,7 +430,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
             double x2 = xy[0] + width + scaleX;
             double y2 = (xy[1] - diff) + height + scaleY;
 
-            gl.glBegin(GL.GL_LINES);
+            gl.glBegin(GL2.GL_LINES);
             if (underline) {
                 RGB lineColor = textStyles.get(TextStyle.UNDERLINE);
                 if (lineColor == null) {
@@ -487,7 +488,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
      */
     protected float[] rotate(DrawableString string) {
         if (string.rotation != 0.0) {
-            GL gl = target.getGl();
+            GL2 gl = target.getGl().getGL2();
             float[] rotatedPoint = getUpdatedCoordinates(
                     new java.awt.Rectangle(0, 0, 0, 0),
                     HorizontalAlignment.LEFT, VerticalAlignment.BOTTOM,
@@ -508,7 +509,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
      */
     protected void unrotate(DrawableString string, float[] rotatedPoint) {
         if (rotatedPoint != null) {
-            GL gl = target.getGl();
+            GL2 gl = target.getGl();
             gl.glTranslated(rotatedPoint[0], rotatedPoint[1], 0.0);
             gl.glRotated(-string.rotation, 0.0, 0.0, 1.0);
             gl.glTranslated(-rotatedPoint[0], -rotatedPoint[1], 0.0);
@@ -558,7 +559,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         return new float[] { (float) canvasX1, (float) canvasY1 };
     }
 
-    private static void setGlColor(GL gl, RGB color, double alpha) {
+    private static void setGlColor(GL2 gl, RGB color, double alpha) {
         gl.glColor4d(color.red / 255.0, color.green / 255.0,
                 color.blue / 255.0, alpha);
     }

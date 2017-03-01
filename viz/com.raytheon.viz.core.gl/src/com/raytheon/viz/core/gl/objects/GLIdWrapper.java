@@ -19,8 +19,8 @@
  **/
 package com.raytheon.viz.core.gl.objects;
 
-import javax.media.opengl.GL;
-import javax.media.opengl.glu.GLU;
+import com.jogamp.opengl.GL2;
+import com.jogamp.opengl.glu.GLU;
 
 import com.raytheon.viz.core.gl.GLDisposalManager;
 import com.raytheon.viz.core.gl.GLDisposalManager.GLDisposer;
@@ -55,7 +55,7 @@ public abstract class GLIdWrapper extends GLDisposer {
 
     public GLIdWrapper() {
         int[] arr = new int[1];
-        genId(GLU.getCurrentGL(), arr);
+        genId(GLU.getCurrentGL().getGL2(), arr);
         this.id = arr[0];
     }
 
@@ -68,7 +68,7 @@ public abstract class GLIdWrapper extends GLDisposer {
     }
 
     @Override
-    protected void dispose(GL gl) {
+    protected void dispose(GL2 gl) {
         if (id != -1) {
             deleteId(gl, new int[] { id });
         }
@@ -82,7 +82,7 @@ public abstract class GLIdWrapper extends GLDisposer {
      * @param gl
      * @param arr
      */
-    protected abstract void genId(GL gl, int[] arr);
+    protected abstract void genId(GL2 gl, int[] arr);
 
     /**
      * Delete an id for this object, arr is an array of length 1 and will
@@ -91,6 +91,7 @@ public abstract class GLIdWrapper extends GLDisposer {
      * @param gl
      * @param arr
      */
-    protected abstract void deleteId(GL gl, int[] arr);
+    protected abstract void deleteId(GL2 gl, int[] arr);
+
 
 }

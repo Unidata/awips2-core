@@ -75,6 +75,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  that causes problems when switching windows.
  * Feb 11, 2016  5351     bsteffen  Use only visible panes as active panes when
  *                                  possible
+ * Apr 20, 2016           mjames    Add two-column configuration.
  * 
  * </pre>
  * 
@@ -356,6 +357,10 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
         int numColums = (int) Math.sqrt(displayedPaneCount);
         int numRows = (int) Math.ceil(displayedPaneCount / (double) numColums);
+        if (displayedPaneCount == 2){
+               numColums = displayedPaneCount;
+            numRows = 1;
+        }
 
         BufferedImage[] screens = screenshots();
         BufferedImage retval = new BufferedImage(screens[0].getWidth()

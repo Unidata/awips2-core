@@ -114,7 +114,7 @@ public class ProcedureXmlManager {
         Class<?>[] jaxbClasses = new Class<?>[classes.size() + 1];
         classes.toArray(jaxbClasses);
         /*
-         * Add JaxbDummyObject at the begining so properties are loaded
+         * Add JaxbDummyObject at the beginning so properties are loaded
          * correctly
          */
         jaxbClasses[jaxbClasses.length - 1] = jaxbClasses[0];
