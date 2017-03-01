@@ -201,10 +201,10 @@ public abstract class AbstractGLMesh implements IGridMesh {
                 GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                         vertexCoords, sharedTextureCoords.getTextureCoords());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {
-                    ((GL2) glTarget.getGl()).glColor3f(1.0f, 0.0f, 0.0f);
+                    glTarget.getGl().getGL2().glColor3f(1.0f, 0.0f, 0.0f);
                     GLGeometryPainter.paintGeometries(glTarget.getGl().getGL2(),
                             wwcVertexCoords, wwcTextureCoords);
-                    ((GL2) glTarget.getGl()).glColor3f(0.0f, 1.0f, 0.0f);
+                    glTarget.getGl().getGL2().glColor3f(0.0f, 1.0f, 0.0f);
                 }
                 return PaintStatus.PAINTED;
             } else if (internalState == State.CALCULATING) {

@@ -37,6 +37,7 @@ import com.raytheon.viz.core.gl.internal.GLTarget;
  * ------------- -------- ----------- --------------------------
  * Jun 06, 2011           mschenke    Initial creation
  * Apr 08, 2014  2950     bsteffen    Add max texture size.
+ * May 07, 2015           mjames      Refactor GL for jogamp 2
  * 
  * </pre>
  * 
