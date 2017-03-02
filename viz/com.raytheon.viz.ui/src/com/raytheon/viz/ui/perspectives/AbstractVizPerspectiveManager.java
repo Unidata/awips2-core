@@ -110,6 +110,7 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                      part is opened.
  * Sep 01, 2016 5854        bsteffen    Fix closing saved editor in hidden
  *                                      perspective when workbench is closing.
+ * Mar 02, 2017 6162        bsteffen    activate/deactivate tools when changing perspectives.
  * 
  * </pre>
  * 
@@ -396,6 +397,9 @@ public abstract class AbstractVizPerspectiveManager
             activateInternal();
         }
         activateContexts();
+        for (AbstractModalTool tool : toolManager.getSelectedModalTools()) {
+            tool.activate();
+        }
         contributeToStatusLine();
 
         perspectiveWindow.getShell().setText(getTitle(title));
@@ -583,6 +587,9 @@ public abstract class AbstractVizPerspectiveManager
         }
 
         deactivateDialogs();
+        for (AbstractModalTool tool : toolManager.getSelectedModalTools()) {
+            tool.deactivate();
+        }
         deactivateContexts();
         removeFromStatusLine();
     }
