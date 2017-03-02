@@ -220,8 +220,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         if (composite == null || composite.isDisposed()) {
             return;
         }
-        int numColums = (int) Math.sqrt(paneCount);
-        int numRows = (int) Math.ceil(paneCount / (double) numColums);
+        int numRows = (int) Math.sqrt(paneCount);
+        int numColums = (int) Math.ceil(paneCount / (double) numRows);
         GridLayout gl = new GridLayout(numColums, true);
         int width = composite.getBounds().width;
         int height = composite.getBounds().height;
