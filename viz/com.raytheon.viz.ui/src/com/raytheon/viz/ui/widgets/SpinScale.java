@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,18 +31,18 @@ import org.eclipse.swt.widgets.Spinner;
 
 /**
  * Provides linked Scale and Spinner controls
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 24, 2009            randerso     Initial creation
- * 
+ * Mar 06, 2017 6116       mapeters     Center spinner in case scale is larger than it
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class SpinScale extends Composite {
@@ -54,7 +54,7 @@ public class SpinScale extends Composite {
 
     /**
      * Constructs a SpinScale
-     * 
+     *
      * @param parent
      *            parent shell
      * @param style
@@ -79,7 +79,7 @@ public class SpinScale extends Composite {
         scale.setLayoutData(layoutData);
 
         spinner = new Spinner(this, SWT.BORDER);
-        layoutData = new GridData(SWT.DEFAULT, SWT.DEFAULT);
+        layoutData = new GridData(SWT.CENTER, SWT.CENTER, false, false);
         layoutData.minimumWidth = 30;
         spinner.setLayoutData(layoutData);
 
@@ -102,7 +102,7 @@ public class SpinScale extends Composite {
      * Sets the selection, which is the receiver's position, to the argument. If
      * the argument is not within the range specified by minimum and maximum, it
      * will be adjusted to fall within this range.
-     * 
+     *
      * @param value
      *            the selection
      */
@@ -113,7 +113,7 @@ public class SpinScale extends Composite {
 
     /**
      * Returns the selection, which is the receiver's position.
-     * 
+     *
      * @return the selection
      */
     public int getSelection() {
@@ -125,7 +125,7 @@ public class SpinScale extends Composite {
      * be ignored if it is not less than the receiver's current maximum value.
      * If the new minimum is applied then the receiver's selection value will be
      * adjusted if necessary to fall within its new range.
-     * 
+     *
      * @param value
      *            the new minimum, which must be less than the current maximum
      */
@@ -143,7 +143,7 @@ public class SpinScale extends Composite {
 
     /**
      * Returns the minimum value which the receiver will allow.
-     * 
+     *
      * @return the minimum
      */
     public int getMinimum() {
@@ -155,7 +155,7 @@ public class SpinScale extends Composite {
      * be ignored if it is not greater than the receiver's current minimum
      * value. If the new maximum is applied then the receiver's selection value
      * will be adjusted if necessary to fall within its new range.
-     * 
+     *
      * @param value
      *            the new maximum, which must be greater than the current
      *            minimum
@@ -167,7 +167,7 @@ public class SpinScale extends Composite {
 
     /**
      * Returns the maximum value which the receiver will allow.
-     * 
+     *
      * @return the maximum
      */
     public int getMaximum() {
@@ -177,7 +177,7 @@ public class SpinScale extends Composite {
     /**
      * Sets the amount that the receiver's value will be modified by when the
      * up/down arrows are pressed to the argument, which must be at least one.
-     * 
+     *
      * @param value
      *            the new increment (must be greater than zero)
      */
@@ -189,7 +189,7 @@ public class SpinScale extends Composite {
     /**
      * Returns the amount that the receiver's value will be modified by when the
      * up/down arrows are pressed.
-     * 
+     *
      * @return the increment
      */
     public int getIncrement() {
@@ -198,14 +198,14 @@ public class SpinScale extends Composite {
 
     /**
      * Sets the number of decimal places used by the receiver.
-     * 
+     *
      * The digit setting is used to allow for floating point values in the
      * receiver. For example, to set the selection to a floating point value of
      * 1.37 call setDigits() with a value of 2 and setSelection() with a value
      * of 137. Similarly, if getDigits() has a value of 2 and getSelection()
      * returns 137 this should be interpreted as 1.37. This applies to all
      * numeric APIs.
-     * 
+     *
      * @param value
      *            the new digits (must be greater than or equal to zero)
      */
@@ -215,7 +215,7 @@ public class SpinScale extends Composite {
 
     /**
      * Returns the number of decimal places used by the receiver.
-     * 
+     *
      * @return the digits
      */
     public int getDigits() {
@@ -226,7 +226,7 @@ public class SpinScale extends Composite {
      * Returns the maximum number of characters that the receiver's text field
      * is capable of holding. If this has not been changed by setTextLimit(), it
      * will be the constant Spinner.LIMIT.
-     * 
+     *
      * @return the text limit
      */
     public int getTextLimit() {
@@ -240,7 +240,7 @@ public class SpinScale extends Composite {
      * To reset this value to the default, use setTextLimit(Spinner.LIMIT).
      * Specifying a limit value larger than Spinner.LIMIT sets the receiver's
      * limit to Spinner.LIMIT.
-     * 
+     *
      * @param limit
      *            new text limit
      */
@@ -255,7 +255,7 @@ public class SpinScale extends Composite {
      * Note: This is similar to setting the values individually using the
      * appropriate methods, but may be implemented in a more efficient fashion
      * on some platforms.
-     * 
+     *
      * @param selection
      *            the new selection value
      * @param minimum
@@ -297,7 +297,7 @@ public class SpinScale extends Composite {
      * Sets the amount that the receiver's position will be modified by when the
      * page up/down keys are pressed to the argument, which must be at least
      * one.
-     * 
+     *
      * @param value
      *            the page increment (must be greater than zero)
      */
@@ -309,7 +309,7 @@ public class SpinScale extends Composite {
     /**
      * Returns the amount that the receiver's position will be modified by when
      * the page up/down keys are pressed.
-     * 
+     *
      * @return the page increment
      */
     public int getPageIncrement() {
@@ -320,10 +320,10 @@ public class SpinScale extends Composite {
      * Adds the listener to the collection of listeners who will be notified
      * when the control is selected by the user, by sending it one of the
      * messages defined in the SelectionListener interface.
-     * 
+     *
      * widgetSelected is not called for texts. widgetDefaultSelected is
      * typically called when ENTER is pressed in a single-line text.
-     * 
+     *
      * @param listener
      *            the listener which should be notified when the control is
      *            selected by the user
@@ -336,7 +336,7 @@ public class SpinScale extends Composite {
     /**
      * Removes the listener from the collection of listeners who will be
      * notified when the control is selected by the user.
-     * 
+     *
      * @param listener
      *            the listener which should no longer be notified
      */
