@@ -39,6 +39,7 @@ import com.raytheon.uf.common.dataplugin.annotations.NullString;
  * Aug 20, 2015 4360       rferrel     Created {@link #checkForNullValueReplacement(String, String)} to determine value to use in place of null.
  * Sep 21, 2015 4486       rjpeter     Update checkForNullValueReplacement to handle null classname.
  * Jun 30, 2016 5725       tgurney     Add NOT IN
+ * Mar 06, 2017 6142       bsteffen    Support isNull with null replacement.
  * </pre>
  * 
  * @author bphillip
@@ -47,7 +48,19 @@ public class QueryParam {
 
     /** Enumeration containing the logic operands */
     public enum QueryOperand {
-        EQUALS, NOTEQUALS, LESSTHAN, LESSTHANEQUALS, GREATERTHAN, GREATERTHANEQUALS, IN, LIKE, ILIKE, BETWEEN, ISNULL, ISNOTNULL, NOTIN
+        EQUALS,
+        NOTEQUALS,
+        LESSTHAN,
+        LESSTHANEQUALS,
+        GREATERTHAN,
+        GREATERTHANEQUALS,
+        IN,
+        LIKE,
+        ILIKE,
+        BETWEEN,
+        ISNULL,
+        ISNOTNULL,
+        NOTIN
     };
 
     /**
@@ -124,7 +137,8 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && "=".equals(operand)) {
+        if ("isNull".equals(operand)
+                || (value == null && "=".equals(operand))) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = operand;
@@ -159,7 +173,8 @@ public class QueryParam {
         this.field = field;
         this.value = value;
 
-        if (value == null && QueryOperand.EQUALS.equals(operand)) {
+        if (QueryOperand.ISNULL.equals(operand)
+                || (value == null && QueryOperand.EQUALS.equals(operand))) {
             checkForNullValueReplacement(field, className);
         } else {
             this.operand = QueryParam.reverseTranslateOperand(operand);
@@ -182,7 +197,8 @@ public class QueryParam {
 
     public static String reverseTranslateOperand(QueryOperand operand) {
         String key = null;
-        for (Iterator<String> it = operandMap.keySet().iterator(); it.hasNext();) {
+        for (Iterator<String> it = operandMap.keySet().iterator(); it
+                .hasNext();) {
             key = it.next();
             if (operandMap.get(key).equals(operand)) {
                 return key;
@@ -193,8 +209,8 @@ public class QueryParam {
 
     @Override
     public String toString() {
-        return new StringBuffer().append(field).append(" ")
-                .append(this.operand).append(" ").append(this.value).toString();
+        return new StringBuffer().append(field).append(" ").append(this.operand)
+                .append(" ").append(this.value).toString();
     }
 
     public String getField() {
@@ -236,7 +252,8 @@ public class QueryParam {
      * @param fieldStr
      * @param className
      */
-    private void checkForNullValueReplacement(String fieldStr, String className) {
+    private void checkForNullValueReplacement(String fieldStr,
+            String className) {
         if (className == null) {
             this.operand = "isNull";
             return;
