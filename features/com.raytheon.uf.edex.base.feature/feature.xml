@@ -174,7 +174,7 @@
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="9.2.14.v20151106"/>
+         version="9.2.19.v20160908"/>
 
    <plugin
          id="com.raytheon.uf.common.json"
