@@ -10,26 +10,29 @@ import java.nio.ShortBuffer;
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TField;
+import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TTransport;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -44,15 +47,16 @@ import org.apache.thrift.transport.TTransport;
  * <LI>Fields have their names encoded in the header
  * <LI>float types are supported
  * </UL>
- * 
- * 
+ *
+ *
  * <BR>
- * 
- * 
+ *
+ *
  * <pre>
  * SOFTWARE HISTORY
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Aug 07, 2008           chammack  Initial creation
  * Jun 17, 2010  5091     njensen   Added primitive list methods
  * Jun 12, 2013  2102     njensen   Added max read length to prevent out of
@@ -61,11 +65,11 @@ import org.apache.thrift.transport.TTransport;
  * Aug 06, 2013  2228     njensen   Overrode readBinary() to ensure it doesn't
  *                                  read too much
  * Jul 13, 2015  4589     bsteffen  Copy arrays in chunks to save memory.
- * 
+ * Mar 08, 2017  6167     nabowle   Updated for thrift 0.10.0
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
 public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
@@ -85,6 +89,9 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     public static final byte FLOAT = 64;
 
+    protected static final Logger log = LoggerFactory
+            .getLogger(SelfDescribingBinaryProtocol.class);
+
     /**
      * This is to ensure a safety check because if the stream has bad bytes at
      * the start, thrift may try to allocate something huge, such as GBs of
@@ -94,13 +101,13 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     static {
         try {
-            int sizeInMB = Integer.parseInt(System
-                    .getProperty("thrift.stream.maxsize"));
+            int sizeInMB = Integer
+                    .parseInt(System.getProperty("thrift.stream.maxsize"));
             MAX_READ_LENGTH = sizeInMB * 1024 * 1024;
         } catch (Throwable t) {
-            System.err
-                    .println("Error reading property thrift.stream.maxsize - falling back to default of 200 MB");
-            t.printStackTrace();
+            log.error(
+                    "Error reading property thrift.stream.maxsize - falling back to default of 200 MB",
+                    t);
             MAX_READ_LENGTH = 200 * 1024 * 1024;
         }
     }
@@ -111,8 +118,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     public SelfDescribingBinaryProtocol(TTransport trans, boolean strictRead,
             boolean strictWrite) {
-        super(trans, strictRead, strictWrite);
-        this.setReadLength(MAX_READ_LENGTH);
+        super(trans, MAX_READ_LENGTH, MAX_READ_LENGTH, strictRead, strictWrite);
     }
 
     @Override
@@ -124,14 +130,9 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
         return ByteBuffer.wrap(buf);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.facebook.thrift.protocol.TBinaryProtocol#readFieldBegin()
-     */
     @Override
     public TField readFieldBegin() throws TException {
-        // This method was overriden to make the structs more self describing
+        // This method was overridden to make the structs more self describing
         Byte type = readByte();
         String name = "";
         short id = (short) 0;
@@ -142,29 +143,17 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
         return new TField(name, type, id);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.facebook.thrift.protocol.TBinaryProtocol#writeFieldBegin(com.facebook
-     * .thrift.protocol.TField)
-     */
     @Override
     public void writeFieldBegin(TField field) throws TException {
-        // This method was overriden to make the structs more self describing
+        // This method was overridden to make the structs more self describing
         writeByte(field.type);
         writeString(field.name);
         writeI16(field.id);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.facebook.thrift.protocol.TBinaryProtocol#readStructBegin()
-     */
     @Override
     public TStruct readStructBegin() {
-        // This method was overriden to make the structs more self describing
+        // This method was overridden to make the structs more self describing
         String name;
         try {
             name = readString();
@@ -176,16 +165,9 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
         return new TStruct(name);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.facebook.thrift.protocol.TBinaryProtocol#writeStructBegin(com.facebook
-     * .thrift.protocol.TStruct)
-     */
     @Override
     public void writeStructBegin(TStruct struct) {
-        // This method was overriden to make the structs more self describing
+        // This method was overridden to make the structs more self describing
         try {
             writeString(struct.name);
         } catch (TException e) {
@@ -197,7 +179,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a float
-     * 
+     *
      * @param flt
      * @throws TException
      */
@@ -207,7 +189,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a float
-     * 
+     *
      * @return float
      * @throws TException
      */
@@ -217,7 +199,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of floats
-     * 
+     *
      * @param sz
      * @return data as floats
      * @throws TException
@@ -253,7 +235,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of floats
-     * 
+     *
      * @param arr
      * @throws TException
      */
@@ -285,7 +267,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of ints
-     * 
+     *
      * @param sz
      * @return data as ints
      * @throws TException
@@ -321,7 +303,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of ints
-     * 
+     *
      * @param arr
      * @throws TException
      */
@@ -353,7 +335,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of doubles
-     * 
+     *
      * @param sz
      * @return data as doubles
      * @throws TException
@@ -375,7 +357,8 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
                 doubleBuffer.rewind();
                 offset = bytesRead % 8;
                 if (offset > 0) {
-                    System.arraycopy(buffer, doublesRead * 8, buffer, 0, offset);
+                    System.arraycopy(buffer, doublesRead * 8, buffer, 0,
+                            offset);
                 }
             } else if (bytesRead <= offset) {
                 throw new TException("Failed to read any data.");
@@ -389,7 +372,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of doubles
-     * 
+     *
      * @param arr
      * @throws TException
      */
@@ -421,7 +404,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of longs
-     * 
+     *
      * @param sz
      * @return data as longs
      * @throws TException
@@ -457,7 +440,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of longs
-     * 
+     *
      * @param arr
      * @throws TException
      */
@@ -489,7 +472,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of shorts
-     * 
+     *
      * @param sz
      * @return data as shorts
      * @throws TException
@@ -525,7 +508,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of doubles
-     * 
+     *
      * @param arr
      * @throws TException
      */
@@ -557,7 +540,7 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Read a list of bytes
-     * 
+     *
      * @param sz
      * @return data as bytes
      * @throws TException
@@ -573,12 +556,34 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
 
     /**
      * Write a list of bytes
-     * 
+     *
      * @param arr
      * @throws TException
      */
     public void writeI8List(byte[] arr) throws TException {
         this.trans_.write(arr);
+    }
+
+    /**
+     * Verifies that the given length is non-negative and less than
+     * {@link #MAX_READ_LENGTH}.
+     *
+     * @param length
+     *            The incoming length.
+     * @throws TException
+     *             if the length is negative or exceeds {@link #MAX_READ_LENGTH}
+     */
+    private void checkReadLength(int length) throws TException {
+        if (length < 0) {
+            throw new TProtocolException(TProtocolException.NEGATIVE_SIZE,
+                    "Negative length: " + length);
+        }
+
+        if (length > MAX_READ_LENGTH) {
+            throw new TProtocolException(TProtocolException.SIZE_LIMIT,
+                    "Incoming length " + length + " exceeds limit of "
+                            + MAX_READ_LENGTH);
+        }
     }
 
 }
