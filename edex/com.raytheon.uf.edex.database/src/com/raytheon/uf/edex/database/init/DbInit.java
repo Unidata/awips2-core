@@ -24,8 +24,8 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -152,11 +152,14 @@ public abstract class DbInit {
         logger.info("Verifying the database for application [" + application
                 + "] against entity classes...");
 
-        List<String> definedTables = getDefinedTables(aConfig);
-        List<String> existingTables = getExistingTables(aConfig);
+        Set<String> definedTables = getDefinedTables(aConfig);
+        Set<String> existingTables = getExistingTables();
+        Set<String> missingTables = new HashSet<>(definedTables);
+        missingTables.removeAll(existingTables);
+        Set<String> unexpectedTables = new HashSet<>(existingTables);
+        unexpectedTables.removeAll(definedTables);
 
-        if (existingTables.size() == definedTables.size()
-                && existingTables.containsAll(definedTables)) {
+        if (missingTables.isEmpty() && unexpectedTables.isEmpty()) {
             // Database is valid.
             logger.info("Database for application [" + application
                     + "] is up to date!");
@@ -177,10 +180,10 @@ public abstract class DbInit {
         } else {
             StringBuilder msg = new StringBuilder(1000);
             msg.append("Database for application [").append(application).append(
-                    "] is out of sync with defined java classes. Upgrade script required to synchronize database tables. Existing tables [");
-            msg.append(String.join(", ", existingTables));
-            msg.append("] Expected tables [");
-            msg.append(String.join(", ", definedTables));
+                    "] is out of sync with defined java classes. Upgrade script required to synchronize database tables. Missing tables [");
+            msg.append(String.join(", ", missingTables));
+            msg.append("], Unexpected tables [");
+            msg.append(String.join(", ", unexpectedTables));
             msg.append(']');
             throw new DataAccessLayerException(msg.toString());
         }
@@ -249,15 +252,11 @@ public abstract class DbInit {
      * Returns the tables that currently exist in the database based on results
      * of getTableCheckQuery.
      *
-     * @param aConfig
-     *            The Hibernate annotation configuration holding the metadata
-     *            for all Hibernate-aware classes
      * @return
      * @throws SQLException
      */
-    protected List<String> getExistingTables(Configuration aConfig)
-            throws SQLException {
-        final List<String> existingTables = new ArrayList<>();
+    protected Set<String> getExistingTables() throws SQLException {
+        final Set<String> existingTables = new HashSet<>();
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
@@ -284,9 +283,9 @@ public abstract class DbInit {
      * @return
      * @throws HibernateException
      */
-    protected List<String> getDefinedTables(Configuration aConfig)
+    protected Set<String> getDefinedTables(Configuration aConfig)
             throws HibernateException {
-        final List<String> definedTables = new ArrayList<>();
+        final Set<String> definedTables = new HashSet<>();
 
         final String[] dropSqls = aConfig
                 .generateDropSchemaScript(getDialect());
