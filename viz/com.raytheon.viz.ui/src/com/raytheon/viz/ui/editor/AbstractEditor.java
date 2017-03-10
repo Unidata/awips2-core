@@ -106,7 +106,7 @@ public abstract class AbstractEditor extends EditorPart implements
      */
     public AbstractEditor() {
         renderableDisplayListeners = new CopyOnWriteArraySet<IRenderableDisplayChangedListener>();
-        renderableDisplayListeners.add(new DirtyListener());
+        //renderableDisplayListeners.add(new DirtyListener());
     }
 
     private IRenderableDisplay[] getRenderableDisplays() {

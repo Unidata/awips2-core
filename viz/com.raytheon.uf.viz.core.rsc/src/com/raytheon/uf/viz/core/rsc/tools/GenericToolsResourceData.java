@@ -196,7 +196,7 @@ public class GenericToolsResourceData<T extends AbstractVizResource<?, ?>>
             this.classT = (Class<? extends T>) Class.forName(classT);
         } catch (ClassNotFoundException e) {
             statusHandler
-                    .handle(Priority.PROBLEM, "Error gettings resource class: "
+                    .handle(Priority.PROBLEM, "Error getting resource class: "
                             + e.getLocalizedMessage(), e);
         }
     }

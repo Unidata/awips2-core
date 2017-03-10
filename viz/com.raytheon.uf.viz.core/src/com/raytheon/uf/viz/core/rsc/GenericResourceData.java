@@ -114,7 +114,7 @@ public final class GenericResourceData extends AbstractResourceData {
         } catch (ClassNotFoundException e) {
             statusHandler.handle(
                     Priority.PROBLEM,
-                    "Error gettings resource class: " + e.getLocalizedMessage(),
+                    "Error getting resource class: " + e.getLocalizedMessage(),
                     e);
         }
     }
