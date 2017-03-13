@@ -20,8 +20,6 @@
 
 package com.raytheon.uf.viz.core.comm;
 
-import java.net.URLEncoder;
-
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
@@ -75,10 +73,8 @@ public class JMSConnection {
 
     public JMSConnection(String connectionUrl) throws JMSException {
         try {
-            String wsid = URLEncoder.encode(VizApp.getWsId().toString(),
-                    "UTF-8");
             ConnectionURL url = new AMQConnectionURL(connectionUrl);
-            url.setClientName(wsid);
+            url.setClientName(VizApp.getWsId().toString());
 
             JmsSslConfiguration.configureURL(url);
 
