@@ -15,7 +15,8 @@ SITE:cave_static/aviation/avnwatch/aviationForecasterConfig.xml
 BASE:cave_static/derivedParameters/DerivedParameterInterface.py
 
 # GFE protected files
-BASE:cave_static/gfe/userPython/textproducts/MultipleElementTable.py
+BASE:cave_static/gfe/userPython/textProducts/HLSTCV_Common.py
+BASE:cave_static/gfe/userPython/textProducts/MultipleElementTable.py
 
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py
@@ -52,6 +53,8 @@ BASE:common_static/gfe/textproducts/templates/product/Hazard_CFW_MultiPil.py
 BASE:common_static/gfe/textproducts/templates/product/Hazard_WCN_MultiPil.py
 BASE:common_static/gfe/textproducts/templates/product/Hazard_HWO_MultiPil.py
 BASE:common_static/gfe/textproducts/templates/product/Hazard_MWW_MultiPil.py
+BASE:common_static/gfe/textproducts/templates/product/Hazard_TCV.py
+BASE:common_static/gfe/textproducts/templates/product/HLS.py
 BASE:common_static/gfe/textproducts/templates/product/GenericReport.py
 BASE:common_static/gfe/textproducts/templates/product/CivilEmerg.py
 BASE:common_static/gfe/textproducts/templates/product/GenericHazards.py
