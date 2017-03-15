@@ -39,7 +39,6 @@ import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.impl.AbstractDataPluginFactory;
 import com.raytheon.uf.common.dataaccess.impl.DefaultGeometryData;
-import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
@@ -84,6 +83,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Jul 22, 2016  2416     tgurney   Add dataURI as optional identifier
  * Nov 08, 2016  5986     tgurney   Handle reftime stored in seconds and
  *                                  forecast time stored in hours
+ * Mar 06, 2017  6142     bsteffen  Remove dataURI as optional identifier
  *
  * </pre>
  *
@@ -130,7 +130,7 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
     private final Map<String, TwoDimensionalParameterGroup> parameters2D = new HashMap<>();
 
-    private String[] optionalIdentifiers = { PluginDataObject.DATAURI_ID };
+    private String[] optionalIdentifiers = {};
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
@@ -625,22 +625,6 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
      *            identifiers.
      */
     public void setOptionalIdentifiers(String[] optionalIdentifiers) {
-        // dataURI is always an option
-        if (optionalIdentifiers != null) {
-            this.optionalIdentifiers = optionalIdentifiers;
-
-            if (!Arrays.asList(optionalIdentifiers)
-                    .contains(PluginDataObject.DATAURI_ID)) {
-                this.optionalIdentifiers = new String[optionalIdentifiers.length
-                        + 1];
-                System.arraycopy(optionalIdentifiers, 0,
-                        this.optionalIdentifiers, 0,
-                        optionalIdentifiers.length);
-                this.optionalIdentifiers[optionalIdentifiers.length] = PluginDataObject.DATAURI_ID;
-            }
-        } else {
-            this.optionalIdentifiers = new String[] {
-                    PluginDataObject.DATAURI_ID };
-        }
+        this.optionalIdentifiers = optionalIdentifiers;
     }
 }

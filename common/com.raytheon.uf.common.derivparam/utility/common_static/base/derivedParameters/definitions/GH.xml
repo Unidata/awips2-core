@@ -117,6 +117,9 @@
         <ConstantField value="1.0E10" />
         <ConstantField value="1.0E37" />
     </Method>
+    <Method levels="CloudBase" name="Alias" models="NationalBlend">
+        <Field abbreviation="CC" level=""/>
+    </Method>
     <Method levels="CloudCeiling" name="Alias">
         <Field abbreviation="CC" />
     </Method>
