@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -53,22 +53,22 @@ import com.raytheon.viz.ui.widgets.SpinScale;
 /**
  * Composite containing the color wheel and the scales used to adjust the color
  * value.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 20 JUN 2007  933        lvenable    Initial creation
  * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
- * 
+ * Feb 27, 2017 6116       mapeters    Don't hardcode scale height
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
- * 
+ *
  */
-public class ColorWheelComp extends Composite implements MouseListener,
-        MouseMoveListener {
+public class ColorWheelComp extends Composite
+        implements MouseListener, MouseMoveListener {
     /**
      * Radius of the color wheel.
      */
@@ -98,11 +98,6 @@ public class ColorWheelComp extends Composite implements MouseListener,
      * Width of the scales.
      */
     private final int SCALE_WIDTH = 250;
-
-    /**
-     * Height of the scales.
-     */
-    private final int SCALE_HEIGHT = 30;
 
     /**
      * Parent shell.
@@ -290,7 +285,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
      * @param title
@@ -298,7 +293,8 @@ public class ColorWheelComp extends Composite implements MouseListener,
      * @param hideControls
      *            Flag indicating if certain controls should be hidden.
      */
-    public ColorWheelComp(Composite parent, String title, boolean hideControls) {
+    public ColorWheelComp(Composite parent, String title,
+            boolean hideControls) {
         super(parent, SWT.NONE);
 
         this.hideControls = hideControls;
@@ -310,7 +306,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
      * @param callback
@@ -329,10 +325,10 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
-     * @param callback
+     * @param changeCallback
      *            Callback used when updates are needed.
      * @param title
      *            Group title.
@@ -349,7 +345,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Initialize the components.
-     * 
+     *
      * @param title
      *            Group title.
      */
@@ -400,6 +396,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
         colorWheel = new Canvas(colorWheelComp, SWT.DOUBLE_BUFFERED);
         colorWheel.setLayoutData(new GridData(imageSize, imageSize));
         colorWheel.addPaintListener(new PaintListener() {
+            @Override
             public void paintControl(PaintEvent event) {
                 if (colorWheelImage != null) {
                     colorWheelImage.dispose();
@@ -410,11 +407,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
                     event.gc.drawImage(colorWheelImage, 0, 0);
                     event.gc.setForeground(cursorColor);
                     event.gc.setLineWidth(2);
-                    event.gc.drawOval(cursorPos.x - cursorRadius, cursorPos.y
-                            - cursorRadius, cursorRadius * 2, cursorRadius * 2);
+                    event.gc.drawOval(cursorPos.x - cursorRadius,
+                            cursorPos.y - cursorRadius, cursorRadius * 2,
+                            cursorRadius * 2);
                 } else {
-                    event.gc.setBackground(getDisplay().getSystemColor(
-                            SWT.COLOR_BLACK));
+                    event.gc.setBackground(
+                            getDisplay().getSystemColor(SWT.COLOR_BLACK));
                     event.gc.fillRectangle(0, 0, imageSize, imageSize);
                 }
             }
@@ -423,7 +421,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Add a dispose listener to the color wheel so when the control is
         // disposed objects will get cleaned up.
         colorWheel.addDisposeListener(new DisposeListener() {
-            // @Override
+            @Override
             public void widgetDisposed(DisposeEvent arg0) {
                 currentColor.dispose();
                 cursorColor.dispose();
@@ -456,7 +454,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create the color preview canvas.
         GridData gd;
 
-        if (hideControls == false) {
+        if (!hideControls) {
             gd = new GridData(45, 35);
         } else {
             gd = new GridData(SWT.DEFAULT, SWT.FILL, false, true);
@@ -466,9 +464,11 @@ public class ColorWheelComp extends Composite implements MouseListener,
             previewCanvasHeight = 102;
         }
 
-        colorPreview = new Canvas(buttonsComp, SWT.DOUBLE_BUFFERED | SWT.BORDER);
+        colorPreview = new Canvas(buttonsComp,
+                SWT.DOUBLE_BUFFERED | SWT.BORDER);
         colorPreview.setLayoutData(gd);
         colorPreview.addPaintListener(new PaintListener() {
+            @Override
             public void paintControl(PaintEvent event) {
                 if (previewImage != null) {
                     previewImage.dispose();
@@ -486,8 +486,8 @@ public class ColorWheelComp extends Composite implements MouseListener,
                                 mainGroupComposite.getText());
                     }
                 } else {
-                    event.gc.setBackground(getDisplay().getSystemColor(
-                            SWT.COLOR_BLACK));
+                    event.gc.setBackground(
+                            getDisplay().getSystemColor(SWT.COLOR_BLACK));
                     event.gc.fillRectangle(0, 0, previewCanvasWidth,
                             previewCanvasHeight);
                 }
@@ -498,15 +498,16 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // canvas is disposed the preview image is disposed.
         colorPreview.addDisposeListener(new DisposeListener() {
             // @Override
+            @Override
             public void widgetDisposed(DisposeEvent arg0) {
-                if (previewImage != null && previewImage.isDisposed() == false) {
+                if (previewImage != null && !previewImage.isDisposed()) {
                     previewImage.dispose();
                 }
             }
         });
 
         // Check if the Set and Fill button should be created.
-        if (hideControls == false) {
+        if (!hideControls) {
             // Create the Set button.
             gd = new GridData(44, 28);
             setButton = new Button(buttonsComp, SWT.PUSH);
@@ -550,7 +551,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
     /**
      * Set the color wheel, and RGB/HSB controls to the specified color and
      * alpha value.
-     * 
+     *
      * @param colorData
      *            Color data containing the RGB color and the alpha value.
      */
@@ -562,7 +563,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
     /**
      * Use the specified color to update all of the color controls and the color
      * wheel cursor to reflect the new color.
-     * 
+     *
      * @param rgb
      */
     public void setColor(RGB rgb) {
@@ -603,7 +604,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
         brightScale.setSelection(brightness);
 
         // Check if the RGB alpha controls need to be initialized.
-        if (hideControls == false) {
+        if (!hideControls) {
 
             // Update the RGB & HSB alpha scales and spinners
             rgbAlphaScale.setSelection(alphaValue);
@@ -618,7 +619,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Get the current color and alpha value.
-     * 
+     *
      * @return ColorData object containing the RGB and alpha values.
      */
     public ColorData getColorData() {
@@ -655,7 +656,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Redraw the color wheel with the updated brightness level.
-     * 
+     *
      * @param brightness
      *            Brightness level.
      */
@@ -671,13 +672,16 @@ public class ColorWheelComp extends Composite implements MouseListener,
                     rgb = new RGB((float) hue, saturation, brightness);
                     pix = palette.getPixel(rgb);
                     colorWheelImageData.setPixel(xCenter + x, yCenter - y, pix);
-                    rgb = new RGB((float) (180.0 - hue), saturation, brightness);
+                    rgb = new RGB((float) (180.0 - hue), saturation,
+                            brightness);
                     pix = palette.getPixel(rgb);
                     colorWheelImageData.setPixel(xCenter + x, yCenter + y, pix);
-                    rgb = new RGB((float) (180.0 + hue), saturation, brightness);
+                    rgb = new RGB((float) (180.0 + hue), saturation,
+                            brightness);
                     pix = palette.getPixel(rgb);
                     colorWheelImageData.setPixel(xCenter - x, yCenter + y, pix);
-                    rgb = new RGB((float) (360.0 - hue), saturation, brightness);
+                    rgb = new RGB((float) (360.0 - hue), saturation,
+                            brightness);
                     pix = palette.getPixel(rgb);
                     colorWheelImageData.setPixel(xCenter - x, yCenter - y, pix);
                 }
@@ -706,7 +710,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Create the RGB controls.
-     * 
+     *
      * @param stackComposite
      *            Stack composite where the controls will reside.
      */
@@ -720,9 +724,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create the Red label.
         Label redLbl = new Label(rgbComposite, SWT.NONE);
         redLbl.setText("Red:");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        redLbl.setLayoutData(gd);
 
         // Create the Red scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         redScale = new SpinScale(rgbComposite, SWT.HORIZONTAL);
         redScale.setMinimum(0);
         redScale.setMaximum(255);
@@ -741,9 +748,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create the Green label.
         Label greenLbl = new Label(rgbComposite, SWT.NONE);
         greenLbl.setText("Green:");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        greenLbl.setLayoutData(gd);
 
         // Create the Green scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         greenScale = new SpinScale(rgbComposite, SWT.HORIZONTAL);
         greenScale.setMinimum(0);
         greenScale.setMaximum(255);
@@ -762,9 +772,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create the Blue label.
         Label blueLbl = new Label(rgbComposite, SWT.NONE);
         blueLbl.setText("Blue :  ");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        blueLbl.setLayoutData(gd);
 
         // Create the Blue scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         blueScale = new SpinScale(rgbComposite, SWT.HORIZONTAL);
         blueScale.setMinimum(0);
         blueScale.setMaximum(255);
@@ -781,13 +794,16 @@ public class ColorWheelComp extends Composite implements MouseListener,
         });
 
         // Check if the RGB alpha controls need to be initialized.
-        if (hideControls == false) {
+        if (!hideControls) {
             // Create the RGB alpha label.
             Label alphaLbl = new Label(rgbComposite, SWT.NONE);
             alphaLbl.setText("Alpha :  ");
+            gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+            alphaLbl.setLayoutData(gd);
 
             // Create the alpha RGB scale.
-            gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+            gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+            gd.widthHint = SCALE_WIDTH;
             rgbAlphaScale = new SpinScale(rgbComposite, SWT.HORIZONTAL);
             rgbAlphaScale.setMinimum(0);
             rgbAlphaScale.setMaximum(255);
@@ -808,7 +824,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Create the HSB controls.
-     * 
+     *
      * @param stackComposite
      *            Stack composite where the controls will reside.
      */
@@ -822,6 +838,8 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create Hue label.
         Label hueLbl = new Label(hsbComposite, SWT.NONE);
         hueLbl.setText("Hue:");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        hueLbl.setLayoutData(gd);
 
         SelectionListener commonHSBListener = new SelectionAdapter() {
             @Override
@@ -843,7 +861,8 @@ public class ColorWheelComp extends Composite implements MouseListener,
         };
 
         // Create Hue scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         hueScale = new SpinScale(hsbComposite, SWT.HORIZONTAL);
         hueScale.setMinimum(0);
         hueScale.setMaximum(359);
@@ -855,9 +874,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create Saturation label.
         Label satLbl = new Label(hsbComposite, SWT.NONE);
         satLbl.setText("Saturation:");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        satLbl.setLayoutData(gd);
 
         // Create saturation scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         satScale = new SpinScale(hsbComposite, SWT.HORIZONTAL);
         satScale.setMinimum(0);
         satScale.setMaximum(100);
@@ -869,9 +891,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
         // Create Brightness label.
         Label brightLbl = new Label(hsbComposite, SWT.NONE);
         brightLbl.setText("Brightness:");
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        brightLbl.setLayoutData(gd);
 
         // Create Brightness scale.
-        gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+        gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+        gd.widthHint = SCALE_WIDTH;
         brightScale = new SpinScale(hsbComposite, SWT.HORIZONTAL);
         brightScale.setMinimum(0);
         brightScale.setMaximum(100);
@@ -881,13 +906,16 @@ public class ColorWheelComp extends Composite implements MouseListener,
         brightScale.addSelectionListener(commonHSBListener);
 
         // Check if the HSB alpha controls need to be initialized.
-        if (hideControls == false) {
+        if (!hideControls) {
             // Create the HSB alpha label.
             Label alphaLbl = new Label(hsbComposite, SWT.NONE);
             alphaLbl.setText("Alpha :  ");
+            gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+            alphaLbl.setLayoutData(gd);
 
             // Create the HSB alpha scale.
-            gd = new GridData(SCALE_WIDTH, SCALE_HEIGHT);
+            gd = new GridData(SWT.DEFAULT, SWT.CENTER, true, true);
+            gd.widthHint = SCALE_WIDTH;
             hsbAlphaScale = new SpinScale(hsbComposite, SWT.HORIZONTAL);
             hsbAlphaScale.setMinimum(0);
             hsbAlphaScale.setMaximum(255);
@@ -908,9 +936,9 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Enables or disables the alpha sliders only
-     * 
+     *
      * @param enabled
-     *          true to enable, false to disable
+     *            true to enable, false to disable
      */
     public void enableAlphaOnly(boolean enabled) {
         setEnabled(enabled);
@@ -922,12 +950,12 @@ public class ColorWheelComp extends Composite implements MouseListener,
     /**
      * Shows the RGB controls if the flag passed in is true, otherwise the HSB
      * controls are shown.
-     * 
+     *
      * @param showRgbFlag
      *            If true show the RGB controls, if false show the HSB controls.
      */
     public void showRgbSliders(boolean showRgbFlag) {
-        if (showRgbFlag == true) {
+        if (showRgbFlag) {
             // Set the stack layout to the RGB composite and then have
             // the stack composite show the RGB layer.
             stackLayout.topControl = rgbComposite;
@@ -942,10 +970,11 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Method called when the mouse is moved over the color wheel. *
-     * 
+     *
      * @param e
      *            Mouse event.
      */
+    @Override
     public void mouseMove(MouseEvent e) {
         // If the mouse button is down then adjust the current color
         // according to the position of the mouse pointer.
@@ -954,18 +983,18 @@ public class ColorWheelComp extends Composite implements MouseListener,
         }
     }
 
-    /**
-     * NOT USED
-     */
+    @Override
     public void mouseDoubleClick(MouseEvent e) {
+        // No op
     }
 
     /**
      * Method called when the mouse button is pressed.
-     * 
+     *
      * @param e
      *            Mouse event.
      */
+    @Override
     public void mouseDown(MouseEvent e) {
         // If the left mouse button is not pressed then return.
         if (e.button != 1) {
@@ -981,10 +1010,11 @@ public class ColorWheelComp extends Composite implements MouseListener,
     /**
      * Method called when the mouse button is released. The mouse button down
      * flag is reset to false.
-     * 
+     *
      * @param e
      *            Mouse event.
      */
+    @Override
     public void mouseUp(MouseEvent e) {
         mouseIsDown = false;
     }
@@ -992,7 +1022,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
     /**
      * Get the color on the color wheel where the mouse is pointing at and then
      * have the RGB and HSB controls adjusted to reflect the selected color.
-     * 
+     *
      * @param e
      *            Mouse event.
      */
@@ -1019,7 +1049,7 @@ public class ColorWheelComp extends Composite implements MouseListener,
 
     /**
      * Move the cursor to the selected color.
-     * 
+     *
      * @param rgb
      */
     private void moveCursor(RGB rgb) {
