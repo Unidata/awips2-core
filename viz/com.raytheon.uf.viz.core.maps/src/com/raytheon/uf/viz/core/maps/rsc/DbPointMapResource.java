@@ -234,7 +234,7 @@ public class DbPointMapResource extends
                     columns.add(column.toString());
                 }
             }
-            columns.add("AsBinary(" + resourceData.getGeomField() + ") as "
+            columns.add("ST_AsBinary(" + resourceData.getGeomField() + ") as "
                     + resourceData.getGeomField());
 
             List<String> constraints = null;
