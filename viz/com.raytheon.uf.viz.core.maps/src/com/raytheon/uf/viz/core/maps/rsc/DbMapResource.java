@@ -55,9 +55,9 @@ import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IShadedShape;
 import com.raytheon.uf.viz.core.drawables.IWireframeShape;
 import com.raytheon.uf.viz.core.drawables.JTSCompiler;
-import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.JTSCompiler.JTSGeometryData;
 import com.raytheon.uf.viz.core.drawables.JTSCompiler.PointStyle;
+import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
@@ -318,7 +318,7 @@ public class DbMapResource extends
             if (toRequest.size() > 0) {
                 WKBReader wkbReader = new WKBReader();
                 StringBuilder geomQuery = new StringBuilder();
-                geomQuery.append("SELECT ").append(GID).append(", AsBinary(")
+                geomQuery.append("SELECT ").append(GID).append(", ST_AsBinary(")
                         .append(req.geomField).append(") as ")
                         .append(req.geomField).append(" FROM ").append(table)
                         .append(" WHERE ").append(GID).append(" IN (");

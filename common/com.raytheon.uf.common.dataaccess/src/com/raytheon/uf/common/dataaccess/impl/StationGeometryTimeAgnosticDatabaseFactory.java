@@ -136,7 +136,7 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
 
         // the first column will always be the geometry.
         if (dataQuery) {
-            query.append("AsBinary(").append(geometryColumn).append("), ");
+            query.append("ST_AsBinary(").append(geometryColumn).append("), ");
         }
 
         // location field

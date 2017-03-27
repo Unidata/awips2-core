@@ -137,7 +137,7 @@ public class SpatialDbQueryHandler implements
         int i = 0;
         if (returnGeom) {
             fieldNames[i++] = geometryField;
-            query.append("AsBinary(").append(geometryField).append(") as ")
+            query.append("ST_AsBinary(").append(geometryField).append(") as ")
                     .append(geometryField);
             first = false;
         }

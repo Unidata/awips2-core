@@ -192,7 +192,7 @@ public class MapsQueryAssembler {
              * alias it because it can't be requested as a parameter since it
              * must be converted to binary.
              */
-            columns.add("AsBinary(" + geomField + ")");
+            columns.add("ST_AsBinary(" + geomField + ")");
         }
 
         String locationField = null;
