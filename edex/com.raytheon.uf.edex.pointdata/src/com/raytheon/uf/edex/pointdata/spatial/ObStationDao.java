@@ -168,7 +168,7 @@ public class ObStationDao extends CoreDao {
 			 */
 			StringBuffer sql = new StringBuffer();
 			sql
-					.append("SELECT icao,wmoindex FROM awips.spatial_obs_stations WHERE stationgeom && GeomFromText('POLYGON((");
+					.append("SELECT icao,wmoindex FROM awips.spatial_obs_stations WHERE stationgeom && ST_GeomFromText('POLYGON((");
 
 			Coordinate currentCoord = null;
 			for (int i = 0; i < coords.size(); i++) {
