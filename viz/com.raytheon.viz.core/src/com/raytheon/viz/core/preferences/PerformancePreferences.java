@@ -31,6 +31,7 @@ import org.eclipse.ui.IWorkbenchPreferencePage;
 
 import com.raytheon.uf.common.util.SizeUtil;
 import com.raytheon.uf.viz.core.Activator;
+import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
 
 /**
  * Specifies performance preferences
@@ -43,14 +44,15 @@ import com.raytheon.uf.viz.core.Activator;
  * ------------- -------- --------- --------------------------------
  * Jul 01, 2006           chammack  Initial Creation.
  * Mar 29, 2016  5523     bsteffen  Add Larger texture cache sizes.
+ * Mar 29, 2017  6202     bsteffen  Add pixel density preference.
  * 
  * </pre>
  * 
  * @author chammack
  * 
  */
-public class PerformancePreferences extends FieldEditorPreferencePage implements
-        IWorkbenchPreferencePage {
+public class PerformancePreferences extends FieldEditorPreferencePage
+        implements IWorkbenchPreferencePage {
 
     /** Must be sorted, these values are in MB. */
     private static final int[] TEXTURE_SIZE_CHOICES = { 128, 256, 512, 1024,
@@ -59,7 +61,8 @@ public class PerformancePreferences extends FieldEditorPreferencePage implements
     public PerformancePreferences() {
         super(GRID);
         setPreferenceStore(Activator.getDefault().getPreferenceStore());
-        setDescription("Specify performance settings (Requires restart of Viz)");
+        setDescription(
+                "Specify performance settings (Requires restart of Viz)");
     }
 
     /**
@@ -69,8 +72,8 @@ public class PerformancePreferences extends FieldEditorPreferencePage implements
     private String[][] getTextureSizeEntries() {
         int[] textureChoices = TEXTURE_SIZE_CHOICES;
 
-        int currentTextureValue = getPreferenceStore()
-                .getInt(com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_TEXTURES_CARD);
+        int currentTextureValue = getPreferenceStore().getInt(
+                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_TEXTURES_CARD);
         if (currentTextureValue > 0) {
             if (Arrays.binarySearch(textureChoices, currentTextureValue) < 0) {
                 textureChoices = Arrays.copyOf(textureChoices,
@@ -82,8 +85,8 @@ public class PerformancePreferences extends FieldEditorPreferencePage implements
 
         String[][] values = new String[textureChoices.length][2];
         for (int i = 0; i < textureChoices.length; i += 1) {
-            values[i][0] = SizeUtil.prettyByteSize(textureChoices[i]
-                    * SizeUtil.BYTES_PER_MB);
+            values[i][0] = SizeUtil
+                    .prettyByteSize(textureChoices[i] * SizeUtil.BYTES_PER_MB);
             values[i][1] = Integer.toString(textureChoices[i]);
         }
         return values;
@@ -92,18 +95,31 @@ public class PerformancePreferences extends FieldEditorPreferencePage implements
     @Override
     public void createFieldEditors() {
         ComboFieldEditor gpuEditor = new ComboFieldEditor(
-                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_TEXTURES_CARD,
+                PreferenceConstants.P_TEXTURES_CARD,
                 "&Video Card Texture Cache Size:", getTextureSizeEntries(),
                 getFieldEditorParent());
 
         addField(gpuEditor);
-        addField(new IntegerFieldEditor(
-                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_FPS,
+        addField(new IntegerFieldEditor(PreferenceConstants.P_FPS,
                 "&Frames Per Second:", getFieldEditorParent()));
 
-        addField(new BooleanFieldEditor(
-                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_LOG_PERF,
+        addField(new BooleanFieldEditor(PreferenceConstants.P_LOG_PERF,
                 "&Log CAVE performance", getFieldEditorParent()));
+
+        SpinnerFieldEditor pixelDensity = new SpinnerFieldEditor(
+                PreferenceConstants.P_PIXEL_DENSITY, "&Tileset Pixel Density",
+                getFieldEditorParent());
+
+        pixelDensity.setDigits(2);
+        pixelDensity.setMinimum(75);
+        pixelDensity.setMaximum(800);
+        pixelDensity.setIncrement(5);
+        pixelDensity.setPageIncrement(25);
+        pixelDensity.setTextLimit(4);
+        pixelDensity.setToolTipText(
+                "Smaller numbers improve image quality.\nLarger numbers improve performance.");
+
+        addField(pixelDensity);
 
     }
 

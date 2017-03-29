@@ -34,6 +34,9 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.util.EnvelopeIntersection;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 
@@ -54,12 +57,16 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                  descriptor CRS.
  * Aug 08, 2016  5806     bsteffen  Fix when tile center is not valid in
  *                                  descriptor CRS and throws an Exception.
+ * Mar 29, 2017  6202     bsteffen  Adjust pixel density calculation.
  * 
  * </pre>
  * 
  * @author mschenke
  */
 public class TileLevel {
+
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(TileLevel.class);
 
     /** Tile level's GridGeometry */
     private GridGeometry2D levelGeometry;
@@ -69,10 +76,6 @@ public class TileLevel {
 
     // Cached MathTransforms
     private MathTransform crsToGrid;
-
-    private MathTransform gridToCRS;
-
-    private MathTransform tileCRSToTargetGrid;
 
     /** Level of this TileLevel */
     private int tileLevel;
@@ -116,16 +119,20 @@ public class TileLevel {
         tiles = new Tile[totalTilesY][totalTilesX];
 
         try {
-            gridToCRS = levelGeometry.getGridToCRS(PixelInCell.CELL_CORNER);
+            MathTransform gridToCRS = levelGeometry
+                    .getGridToCRS(PixelInCell.CELL_CORNER);
             crsToGrid = gridToCRS.inverse();
 
             DefaultMathTransformFactory factory = new DefaultMathTransformFactory();
-            tileCRSToTargetGrid = factory.createConcatenatedTransform(
-                    CRSCache.getInstance().findMathTransform(
-                            levelGeometry.getCoordinateReferenceSystem(),
-                            targetGeometry.getCoordinateReferenceSystem()),
-                    targetGeometry.getGridToCRS(PixelInCell.CELL_CORNER)
-                            .inverse());
+            MathTransform tileCRSToTargetGrid = factory
+                    .createConcatenatedTransform(
+                            CRSCache.getInstance().findMathTransform(
+                                    levelGeometry
+                                            .getCoordinateReferenceSystem(),
+                                    targetGeometry
+                                            .getCoordinateReferenceSystem()),
+                            targetGeometry.getGridToCRS(PixelInCell.CELL_CORNER)
+                                    .inverse());
 
             Envelope levelEnv = levelGeometry.getEnvelope();
             double[] in = new double[] {
@@ -164,9 +171,25 @@ public class TileLevel {
                     tileCRSPoints, 0, 2);
             crsToGrid.transform(tileCRSPoints, 0, tileGridPoints, 0, 2);
 
-            pixelDensity = 1.0 / Math.abs(new Coordinate(tileGridPoints[0],
-                    tileGridPoints[1], 0.0).distance(new Coordinate(
-                    tileGridPoints[2], tileGridPoints[3], 0.0)));
+            /*
+             * The pixelDensity is a ratio used to compare the size of an image
+             * pixel to the size of a screen pixel. The ratio is calculated
+             * using the diagonal distances across a single pixel, the distances
+             * are calculated in the screen grid.
+             * 
+             * The numerator is the diagonal distance across a screen pixel.
+             * Since the distances are defined in the screen grid, all screen
+             * pixels have a height and width of 1 and the diagonal distance is
+             * constant and is √2.
+             * 
+             * The denominator is the distance between the two test points. The
+             * test points are diagonal points across an image pixel that have
+             * been projected into the screen grid.
+             */
+            pixelDensity = Math.sqrt(2) / Math.abs(
+                    new Coordinate(tileGridPoints[0], tileGridPoints[1], 0.0)
+                            .distance(new Coordinate(tileGridPoints[2],
+                                    tileGridPoints[3], 0.0)));
         } catch (Exception e) {
             throw new RuntimeException(
                     "Cannot tranform tile CRS into target CRS", e);
@@ -308,19 +331,21 @@ public class TileLevel {
                 pixelDensity = 1.0;
             }
             // Convert grid pixel density into CRS pixel density
-            pixelDensity *= (targetGeometry.getEnvelope().getSpan(0) / targetGeometry
-                    .getGridRange().getSpan(0));
+            pixelDensity *= (targetGeometry.getEnvelope().getSpan(0)
+                    / targetGeometry.getGridRange().getSpan(0));
             // Compute border and convert into target grid space from crs
-            border = JTS.transform(EnvelopeIntersection
-                    .createEnvelopeIntersection(tileGridGeom.getEnvelope(),
+            border = JTS.transform(
+                    EnvelopeIntersection.createEnvelopeIntersection(
+                            tileGridGeom.getEnvelope(),
                             targetGeometry.getEnvelope(), pixelDensity,
                             Math.max(range.getSpan(0) / 4, 1),
-                            Math.max(range.getSpan(1) / 4, 1)), targetGeometry
-                    .getGridToCRS(PixelInCell.CELL_CENTER).inverse());
-        } catch (TransformException e) {
+                            Math.max(range.getSpan(1) / 4, 1)),
+                    targetGeometry.getGridToCRS(PixelInCell.CELL_CENTER)
+                            .inverse());
+        } catch (FactoryException | TransformException e) {
             // Invalid geometry, don't add a border
-        } catch (FactoryException e) {
-            // Invalid transforms, don't add border
+            statusHandler.handle(Priority.DEBUG,
+                    "Failed to create TileLevel border.", e);
         }
 
         // Create the Tile object
