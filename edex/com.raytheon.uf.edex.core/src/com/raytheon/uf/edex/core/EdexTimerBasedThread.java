@@ -21,10 +21,9 @@ package com.raytheon.uf.edex.core;
 
 import java.util.LinkedList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Base class for Timer based threading. Allows previous thread based paradigms
@@ -37,22 +36,20 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 19, 2014 2826       rjpeter     Initial creation.
- * 
+ * Mar 30, 2017 5937       rjpeter     Updated EdexTimerBasedThread to manage its own threads.
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 public abstract class EdexTimerBasedThread implements IContextStateProcessor {
-    /**
-     * Number of threads that have been started.
-     */
-    protected final AtomicInteger threadCount = new AtomicInteger(0);
+    protected final Logger logger = LoggerFactory.getLogger(getClass());
 
     /**
      * Current active threads.
      */
     protected final List<Thread> threads = new LinkedList<Thread>();
+
+    protected int threadCount = 1;
 
     /**
      * Whether the container is running or not.
@@ -91,20 +88,12 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
      * shutdown.
      */
     public void run() {
-        synchronized (threads) {
-            threads.add(Thread.currentThread());
-        }
-
         try {
-            Thread.currentThread().setName(
-                    getThreadGroupName() + "-" + threadCount.incrementAndGet());
-
             while (running) {
                 try {
                     process();
                 } catch (Exception e) {
-                    UFStatus.getHandler().error(
-                            "Error occurred during processing", e);
+                    logger.error("Error occurred during processing", e);
                 }
 
                 if (running) {
@@ -126,6 +115,7 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
                 threads.remove(Thread.currentThread());
                 threads.notify();
             }
+
             dispose();
         }
     }
@@ -136,11 +126,28 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
 
     @Override
     public void postStart() {
+        logger.info("Launching " + threadCount + " " + getThreadGroupName()
+                + " threads");
+
+        synchronized (threads) {
+            for (int i = 1; i <= threadCount; i++) {
+                String threadName = getThreadGroupName()
+                        + (threadCount > 1 ? "-" + i : "");
+                Thread t = new Thread(threadName) {
+                    public void run() {
+                        EdexTimerBasedThread.this.run();
+                    }
+                };
+                threads.add(t);
+                t.start();
+            }
+        }
     }
 
     @Override
     public void preStop() {
         running = false;
+
         synchronized (threads) {
             threads.notifyAll();
         }
@@ -148,13 +155,11 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
 
     @Override
     public void postStop() {
-        IUFStatusHandler statusHandler = UFStatus.getHandler();
-        String msg = "Waiting for " + getThreadGroupName()
-                + " threads to finish";
-
         synchronized (threads) {
             while (!threads.isEmpty()) {
-                statusHandler.info(msg);
+                logger.info("Waiting for " + threads.size() + " "
+                        + getThreadGroupName() + " threads to finish");
+
                 try {
                     threads.wait(10000);
                 } catch (Exception e) {
@@ -170,5 +175,13 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
 
     public void setThreadSleepInterval(int threadSleepInterval) {
         this.threadSleepInterval = threadSleepInterval;
+    }
+
+    public int getThreadCount() {
+        return threadCount;
+    }
+
+    public void setThreadCount(int threadCount) {
+        this.threadCount = threadCount;
     }
 }
