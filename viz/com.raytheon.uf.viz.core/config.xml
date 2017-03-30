@@ -19,16 +19,17 @@
         further_licensing_information.
     -->
 <configuration>
-<jmsServerAddress>tcp://localhost:61616</jmsServerAddress>
-<httpServerAddress>http://localhost:9581/services</httpServerAddress>
-<dataDirectory>/awips2/edex/data/share</dataDirectory>
-<textureCardPreference>1024</textureCardPreference>
-<tearoffmenus>true</tearoffmenus>
-<framesPerSecondPreference>25</framesPerSecondPreference>
-<tileBoundaries>false</tileBoundaries>
-<fontMagnification>1.0</fontMagnification>
-<qpid>
-	<max_count>1000</max_count>
-	<policy_type>ring</policy_type>
-</qpid>
+  <jmsServerAddress>tcp://localhost:61616</jmsServerAddress>
+  <httpServerAddress>http://localhost:9581/services</httpServerAddress>
+  <dataDirectory>/awips2/edex/data/share</dataDirectory>
+  <textureCardPreference>1024</textureCardPreference>
+  <tearoffmenus>true</tearoffmenus>
+  <framesPerSecondPreference>25</framesPerSecondPreference>
+  <tileBoundaries>false</tileBoundaries>
+  <fontMagnification>1.0</fontMagnification>
+  <qpid>
+    <max_count>1000</max_count>
+    <policy_type>ring</policy_type>
+  </qpid>
+  <tileSetPixelDensity>1.9</tileSetPixelDensity>
 </configuration>

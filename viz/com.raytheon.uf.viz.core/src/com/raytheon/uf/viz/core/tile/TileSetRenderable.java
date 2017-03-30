@@ -30,6 +30,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.measure.unit.Unit;
 import javax.measure.unit.UnitFormat;
 
+import org.eclipse.jface.util.IPropertyChangeListener;
+import org.eclipse.jface.util.PropertyChangeEvent;
 import org.eclipse.swt.graphics.Rectangle;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -42,6 +44,7 @@ import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.Activator;
 import com.raytheon.uf.viz.core.DrawableImage;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -53,6 +56,8 @@ import com.raytheon.uf.viz.core.drawables.IRenderable;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.jobs.JobPool;
+import com.raytheon.uf.viz.core.localization.HierarchicalPreferenceStore;
+import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.vividsolutions.jts.geom.Coordinate;
 
@@ -77,6 +82,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Feb 07, 2014  2211     bsteffen  Fix sampling units when data mapping is
  *                                  enabled.
  * Aug 03, 2016  5786     bsteffen  Add method for scheduling tile loading
+ * Mar 29, 2017  6202     bsteffen  Add pixel density preference.
  * 
  * </pre>
  * 
@@ -125,8 +131,10 @@ public class TileSetRenderable implements IRenderable {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(TileSetRenderable.class);
 
-    /** Screen pixel to image pixel threshold at which we change levels */
-    protected static final double LEVEL_CHANGE_THRESHOLD = 1.75;
+    /** Screen pixel to image pixel threshold at which we change tile levels */
+    protected double levelChangeThreshold;
+
+    private IPropertyChangeListener levelChangeThresholdListener;
 
     /** Job pool for tile creation */
     protected static final JobPool tileCreationPool = new JobPool(
@@ -197,6 +205,20 @@ public class TileSetRenderable implements IRenderable {
             throw new IllegalArgumentException(
                     "Could not get tranform from tile crs to lat/lon", e);
         }
+        HierarchicalPreferenceStore prefStore = Activator.getDefault()
+                .getPreferenceStore();
+        levelChangeThreshold = prefStore
+                .getFloat(PreferenceConstants.P_PIXEL_DENSITY);
+        levelChangeThresholdListener = new IPropertyChangeListener() {
+
+            @Override
+            public void propertyChange(PropertyChangeEvent event) {
+                levelChangeThreshold = prefStore
+                        .getFloat(PreferenceConstants.P_PIXEL_DENSITY);
+            }
+        };
+        prefStore.addPropertyChangeListener(levelChangeThresholdListener);
+
     }
 
     /**
@@ -219,8 +241,8 @@ public class TileSetRenderable implements IRenderable {
                 IMesh currentMesh = di.getCoverage().getMesh();
                 if (currentMesh != null) {
                     try {
-                        di.getCoverage().setMesh(
-                                currentMesh.clone(targetGeometry));
+                        di.getCoverage()
+                                .setMesh(currentMesh.clone(targetGeometry));
                     } catch (VizException e) {
                         statusHandler.handle(Priority.PROBLEM,
                                 e.getLocalizedMessage(), e);
@@ -257,18 +279,11 @@ public class TileSetRenderable implements IRenderable {
         return tileSetGeometry;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderable#paint(com.raytheon.uf.
-     * viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     public void paint(IGraphicsTarget target, PaintProperties paintProps)
             throws VizException {
-        Collection<DrawableImage> images = getImagesToRender(target, paintProps);
+        Collection<DrawableImage> images = getImagesToRender(target,
+                paintProps);
         target.drawRasters(paintProps,
                 images.toArray(new DrawableImage[images.size()]));
     }
@@ -296,6 +311,14 @@ public class TileSetRenderable implements IRenderable {
             }
         }
         imageMap.clear();
+
+        if (levelChangeThresholdListener != null) {
+            HierarchicalPreferenceStore prefStore = Activator.getDefault()
+                    .getPreferenceStore();
+            prefStore
+                    .removePropertyChangeListener(levelChangeThresholdListener);
+            levelChangeThresholdListener = null;
+        }
     }
 
     /**
@@ -351,7 +374,8 @@ public class TileSetRenderable implements IRenderable {
          * there are less than LEVEL_CHANGE_THRESHOLD canvas pixels per image
          * pixel
          */
-        while ((pixelWidth[usedTileLevel] * screenToWorldRatio > LEVEL_CHANGE_THRESHOLD)
+        while ((pixelWidth[usedTileLevel]
+                * screenToWorldRatio > levelChangeThreshold)
                 && usedTileLevel > 0) {
             usedTileLevel--;
         }
@@ -575,9 +599,8 @@ public class TileSetRenderable implements IRenderable {
         double[] grid = null;
         try {
             double[] local = new double[2];
-            llToLocalProj
-                    .transform(new double[] { coordinate.x, coordinate.y }, 0,
-                            local, 0, 1);
+            llToLocalProj.transform(new double[] { coordinate.x, coordinate.y },
+                    0, local, 0, 1);
             grid = level.crsToGrid(local[0], local[1]);
         } catch (TransformException e) {
             throw new VizException("Error interrogating ", e);
@@ -613,16 +636,15 @@ public class TileSetRenderable implements IRenderable {
                     dataUnit = parameters.getColorMapUnit();
                 }
                 if (resultUnit != null && dataUnit != null
-                        && dataUnit.equals(resultUnit) == false) {
+                        && !dataUnit.equals(resultUnit)) {
                     if (resultUnit.isCompatible(dataUnit)) {
                         dataValue = dataUnit.getConverterTo(resultUnit)
                                 .convert(dataValue);
                     } else {
                         UnitFormat uf = UnitFormat.getUCUMInstance();
-                        String message = String
-                                .format("Unable to interrogate tile set.  Desired unit (%s) is not compatible with data unit (%s).",
-                                        uf.format(resultUnit),
-                                        uf.format(dataUnit));
+                        String message = String.format(
+                                "Unable to interrogate tile set.  Desired unit (%s) is not compatible with data unit (%s).",
+                                uf.format(resultUnit), uf.format(dataUnit));
                         throw new IllegalArgumentException(message);
                     }
                 }
@@ -631,4 +653,16 @@ public class TileSetRenderable implements IRenderable {
 
         return dataValue;
     }
+
+    public void setLevelChangeThreshold(double levelChangeThreshold) {
+        if (levelChangeThresholdListener != null) {
+            HierarchicalPreferenceStore prefStore = Activator.getDefault()
+                    .getPreferenceStore();
+            prefStore
+                    .removePropertyChangeListener(levelChangeThresholdListener);
+            levelChangeThresholdListener = null;
+        }
+        this.levelChangeThreshold = levelChangeThreshold;
+    }
+
 }

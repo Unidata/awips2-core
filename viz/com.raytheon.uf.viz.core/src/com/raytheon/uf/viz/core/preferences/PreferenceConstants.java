@@ -24,15 +24,17 @@ package com.raytheon.uf.viz.core.preferences;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 24, 2008            chammack     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------
+ * Sep 24, 2008           chammack  Initial creation
+ * Mar 29, 2017  6202     bsteffen  Add pixel density preference.
+ * 
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 public class PreferenceConstants {
 
     public static final String P_DATA_DIRECTORY = "dataDirectory";
@@ -50,6 +52,8 @@ public class PreferenceConstants {
     public static final String P_FONT_MAGNIFICATION = "fontMagnification";
 
     public static final String P_LOG_PERF = "logPerformance";
+
+    public static final String P_PIXEL_DENSITY = "tileSetPixelDensity";
 
     // public static final String P_DATA_RETENTION = "dataRetentionTime";
 
