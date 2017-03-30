@@ -30,8 +30,7 @@
 #    Date            Ticket#       Engineer       Description
 #    ------------    ----------    -----------    --------------------------
 #    12/20/10                      njensen        Initial creation
-#    06/20/16        5439          bsteffen       import directly from localization files.
-#    10/05/16        5891          bsteffen       Treat all directories as modules, even without __init___.py.
+#    06/20/16        5439          bsteffen       import derivtly from files.
 #    
 # 
 #
@@ -59,17 +58,12 @@ class DerivParamImporter(object):
     
     def __getPackageFiles(self, name):
         return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + sep + name + sep + '__init__.py')
-
-    def __getDirectoryFiles(self, name):
-        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + sep + name)
     
     def __isDerivParam(self, name):
         files = self.__getRegularFiles(name)
         if files.isEmpty():
             files = self.__getPackageFiles(name)
-            if files.isEmpty():
-                files = self.__getDirectoryFiles(name)
-                return not files.isEmpty()
+            return not files.isEmpty()
         return True
     
     def find_module(self, fullname, path=None):

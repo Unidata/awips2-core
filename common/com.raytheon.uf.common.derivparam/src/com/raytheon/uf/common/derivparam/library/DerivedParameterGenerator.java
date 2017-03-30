@@ -82,7 +82,6 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                    startup.
  * Mar 24, 2016  5439     bsteffen    Do not throw exceptions after logging
  *                                    error that adapter is not registered
- * Oct 05, 2016  5891     bsteffen    Allow functions in subdirectories
  * 
  * </pre>
  * 
@@ -249,10 +248,13 @@ public class DerivedParameterGenerator implements ILocalizationPathObserver {
             }
 
             ILocalizationFile[] functions = pm.listStaticFiles(FUNCTIONS_DIR,
-                    new String[] { "." + extension }, true, true);
+                    new String[] { "." + extension }, false, true);
             for (ILocalizationFile file : functions) {
                 String path = file.getPath();
-                path = path.substring(FUNCTIONS_DIR.length() + 1);
+                int index = path.lastIndexOf(IPathManager.SEPARATOR);
+                if (index > 1) {
+                    path = path.substring(index + 1);
+                }
                 derivParamFiles.add("func:" + path);
             }
 
