@@ -68,10 +68,8 @@ public enum CAVEMode {
 
     private static Color CAVE_FG_COLOR;
 
-    private static CAVEMode modeAtStartup = CAVEMode.PRACTICE;
-
     public static CAVEMode getMode() {
-        return modeAtStartup;
+        return CAVEMode.PRACTICE;
     }
 
     public static Color getBackgroundColor() {

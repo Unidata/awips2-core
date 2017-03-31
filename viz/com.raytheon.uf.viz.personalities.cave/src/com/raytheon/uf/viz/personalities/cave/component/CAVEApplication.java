@@ -393,20 +393,8 @@ public class CAVEApplication implements IStandaloneComponent {
     
     @SuppressWarnings("restriction")
     protected void applyCssStyle(Display display) throws IOException {
-        CAVEMode mode = CAVEMode.getMode();
         CSSEngine cssEngine = new CSSSWTEngineImpl(this.applicationDisplay);
-        String cssFile = "css" + File.separator;
-        switch (mode) {
-        case PRACTICE:
-            cssFile += "practicemode.css";
-            break;
-        case TEST:
-            cssFile += "testmode.css";
-            break;
-        default:
-            cssFile += "viz.css";
-            break;
-        }
+        String cssFile = "css" + File.separator + "viz.css";
         Bundle b = FrameworkUtil.getBundle(CAVEApplication.class);
         IPath path = new Path(cssFile);
         try (InputStream is = FileLocator.openStream(b, path, false)) {
