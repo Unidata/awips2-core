@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -47,32 +47,28 @@ import com.raytheon.viz.ui.statusline.StatusStore.IStatusListener;
 
 /**
  * TODO Add Description
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date			Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
- * Jul 14, 2008		#1223	randerso	Initial creation
- * Oct 22, 2012 #1229       rferrel     Changes for non-blocking ViewMessageDialog.
- * 
+ * Date          Ticket#     Engineer    Description
+ * ------------- ----------  ----------- --------------------------
+ * Jul 14, 2008  1223        randerso    Initial creation
+ * Oct 22, 2012  1229        rferrel     Changes for non-blocking ViewMessageDialog.
+ * Feb 13, 2017  6118        mapeters    Use SWT.ARROW for message dialog button,
+ *                                       don't hardcode its size, add getFont()
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class StatBar extends ContributionItem implements IStatusListener {
-    private StatusStore statusStore;
 
-    private Composite comp;
+    private StatusStore statusStore;
 
     private Device device;
 
     private NewMessageIndicator indicator;
-
-    private Label statusLabel;
-
-    private Button pastButton;
 
     private Label msgText;
 
@@ -104,7 +100,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
         // create controls
         device = parent.getDisplay();
 
-        comp = new Composite(parent, SWT.NONE);
+        Composite comp = new Composite(parent, SWT.NONE);
         EdgeLayoutData layoutData = new EdgeLayoutData();
         layoutData.edgeAffinity = EdgeAffinity.LEFT;
         layoutData.grabExcessHorizontalSpace = true;
@@ -114,23 +110,20 @@ public class StatBar extends ContributionItem implements IStatusListener {
 
         // Default
         setGray(RGBColors.getRGBColor("Gray80"));
-        font = new Font(comp.getDisplay(), "Monospace", 8, SWT.NORMAL);
+        font = new Font(device, "Monospace", 8, SWT.NORMAL);
 
         // Add the new message indicator
         this.indicator = new NewMessageIndicator(comp);
         this.indicator.setLayoutData(new GridData(20, 12));
 
         // Add the "Status" label
-        this.statusLabel = new Label(comp, SWT.NONE);
-        this.statusLabel.setFont(font);
-        this.statusLabel.setText(this.getId() + ":");
+        Label statusLabel = new Label(comp, SWT.NONE);
+        statusLabel.setFont(font);
+        statusLabel.setText(this.getId() + ":");
 
         // Add the button to display past messages
-        this.pastButton = new Button(comp, SWT.PUSH);
-        this.pastButton.setLayoutData(new GridData(20, 20));
-        this.pastButton.setFont(font);
-        this.pastButton.setText("^");
-        this.pastButton.addSelectionListener(new SelectionAdapter() {
+        Button pastButton = new Button(comp, SWT.ARROW);
+        pastButton.addSelectionListener(new SelectionAdapter() {
 
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -142,7 +135,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
         // Now the message text
         this.msgText = new Label(comp, SWT.BORDER);
         this.msgText.setFont(font);
-        GridData gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        GridData gridData = new GridData(SWT.FILL, SWT.CENTER, true, false);
         gridData.minimumWidth = 0;
         this.msgText.setLayoutData(gridData);
         this.msgText.addMouseListener(new MouseAdapter() {
@@ -155,7 +148,7 @@ public class StatBar extends ContributionItem implements IStatusListener {
             }
         });
 
-        if (statusStore.getMessageBuffer().size() > 0) {
+        if (!statusStore.getMessageBuffer().isEmpty()) {
             update(statusStore.getMessageBuffer().getFirst());
         }
 
@@ -278,5 +271,15 @@ public class StatBar extends ContributionItem implements IStatusListener {
 
     private void viewMessages() {
         statusStore.openViewMessagesDialog();
+    }
+
+    /**
+     * Get the font used by this status bar. Note that the font will be null
+     * until { @link #fill(Composite) } is called.
+     *
+     * @return this status bar's font
+     */
+    public Font getFont() {
+        return font;
     }
 }

@@ -22,8 +22,8 @@ package com.raytheon.viz.ui.widgets.duallist;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 
 import org.eclipse.swt.SWT;
@@ -31,6 +31,8 @@ import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
@@ -42,11 +44,11 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
 
 /**
  * SWT Dual List Widget.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Feb 13, 2012           mpduff    Initial creation
@@ -63,11 +65,12 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  *                                  clear and add to the include list.
  * May 04, 2015  4419     rferrel   Handle sorting of lists
  * May 05, 2016  5487     tjensen   Added additional sorting options
- * 
+ * Feb 28, 2017  6121     randerso  Change DualListConfig to specify list height
+ *                                  in items and width in characters
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class DualList extends Composite {
@@ -133,16 +136,6 @@ public class DualList extends Composite {
     private ButtonImages btnImg;
 
     /**
-     * Button Height.
-     */
-    private int buttonHeight = SWT.DEFAULT;
-
-    /**
-     * Button Width.
-     */
-    private final int buttonWidth = 45;
-
-    /**
      * Move left flag.
      */
     boolean moveLeft = false;
@@ -154,7 +147,7 @@ public class DualList extends Composite {
 
     /**
      * Constructor
-     * 
+     *
      * @param parent
      *            Parent container
      * @param style
@@ -168,7 +161,7 @@ public class DualList extends Composite {
 
     /**
      * Constructor
-     * 
+     *
      * @param parent
      *            Parent container
      * @param style
@@ -177,7 +170,7 @@ public class DualList extends Composite {
      *            Data/Configuration object
      * @param cb
      *            Update Callback
-     * 
+     *
      */
     public DualList(Composite parent, int style, DualListConfig config,
             IUpdate cb) {
@@ -193,10 +186,6 @@ public class DualList extends Composite {
     private void init() {
         // Create the button image class
         btnImg = new ButtonImages(this);
-
-        if (config.getListHeight() <= 90) {
-            buttonHeight = 20;
-        }
 
         // Determine how many columns need to be on the layout.
         // The default is three.
@@ -255,13 +244,39 @@ public class DualList extends Composite {
      * Create the available list control.
      */
     private void createAvailableListControl() {
+        availableList = new List(this,
+                SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
 
+        int listWidth = config.getListWidthInChars();
+        GC gc = new GC(availableList);
+        if (listWidth != SWT.DEFAULT) {
+            listWidth = gc.getFontMetrics().getAverageCharWidth() * listWidth;
+        } else if (config.getListWidth() != SWT.DEFAULT) {
+            listWidth = config.getListWidth();
+        } else {
+            for (String item : config.getFullList()) {
+                listWidth = Math.max(listWidth, gc.textExtent(item).x);
+            }
+        }
+        gc.dispose();
+
+        int visibleItems = config.getVisibleItems();
+        int listSize = config.getFullList().size();
+        int listHeight = config.getListHeight();
+        if (visibleItems != SWT.DEFAULT) {
+            visibleItems = Math.min(visibleItems, listSize);
+            listHeight = availableList.getItemHeight() * visibleItems;
+        } else if (listHeight == SWT.DEFAULT) {
+            visibleItems = listSize;
+            listHeight = availableList.getItemHeight() * visibleItems;
+        }
+
+        Rectangle trim = availableList.computeTrim(0, 0, listWidth, listHeight);
         GridData listData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        listData.widthHint = config.getListWidth();
-        listData.heightHint = config.getListHeight();
-        availableList = new List(this, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL
-                | SWT.H_SCROLL);
+        listData.widthHint = trim.width;
+        listData.heightHint = trim.height;
         availableList.setLayoutData(listData);
+
         availableList.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -289,7 +304,8 @@ public class DualList extends Composite {
         /*
          * Add and Remove Buttons
          */
-        GridData selectData = new GridData(SWT.DEFAULT, SWT.CENTER, false, true);
+        GridData selectData = new GridData(SWT.DEFAULT, SWT.CENTER, false,
+                true);
         GridLayout selectLayout = new GridLayout(1, false);
         selectLayout.verticalSpacing = 2;
 
@@ -298,11 +314,8 @@ public class DualList extends Composite {
         selectComp.setLayoutData(selectData);
 
         // Left/Right buttons
-        GridData btnData = new GridData(buttonWidth, buttonHeight);
-
         moveAllRightBtn = new Button(selectComp, SWT.PUSH);
         moveAllRightBtn.setImage(btnImg.getImage(ButtonImage.AddAll));
-        moveAllRightBtn.setLayoutData(btnData);
         moveAllRightBtn.setEnabled(false);
         moveAllRightBtn.setToolTipText("Move all items right");
         moveAllRightBtn.addSelectionListener(new SelectionAdapter() {
@@ -315,10 +328,8 @@ public class DualList extends Composite {
             }
         });
 
-        btnData = new GridData(buttonWidth, buttonHeight);
         moveRightBtn = new Button(selectComp, SWT.PUSH);
         moveRightBtn.setImage(btnImg.getImage(ButtonImage.Add));
-        moveRightBtn.setLayoutData(btnData);
         moveRightBtn.setEnabled(false);
         moveRightBtn.setToolTipText("Move selected item(s) right");
         moveRightBtn.addSelectionListener(new SelectionAdapter() {
@@ -331,10 +342,8 @@ public class DualList extends Composite {
             }
         });
 
-        btnData = new GridData(buttonWidth, buttonHeight);
         moveLeftBtn = new Button(selectComp, SWT.PUSH);
         moveLeftBtn.setImage(btnImg.getImage(ButtonImage.Remove));
-        moveLeftBtn.setLayoutData(btnData);
         moveLeftBtn.setEnabled(false);
         moveLeftBtn.setToolTipText("Move selected item(s) left");
         moveLeftBtn.addSelectionListener(new SelectionAdapter() {
@@ -347,10 +356,8 @@ public class DualList extends Composite {
             }
         });
 
-        btnData = new GridData(buttonWidth, buttonHeight);
         moveAllLeftBtn = new Button(selectComp, SWT.PUSH);
         moveAllLeftBtn.setImage(btnImg.getImage(ButtonImage.RemoveAll));
-        moveAllLeftBtn.setLayoutData(btnData);
         moveAllLeftBtn.setEnabled(false);
         moveAllLeftBtn.setToolTipText("Move all items left");
         moveAllLeftBtn.addSelectionListener(new SelectionAdapter() {
@@ -368,13 +375,28 @@ public class DualList extends Composite {
      * Create the selected list control.
      */
     private void createSelectedListControl() {
-        GridData listData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        listData.widthHint = config.getListWidth();
-        listData.heightHint = config.getListHeight();
+        selectedList = new List(this,
+                SWT.BORDER | SWT.MULTI | SWT.V_SCROLL | SWT.H_SCROLL);
 
-        selectedList = new List(this, SWT.BORDER | SWT.MULTI | SWT.V_SCROLL
-                | SWT.H_SCROLL);
+        int listWidth = config.getListWidthInChars();
+        GC gc = new GC(availableList);
+        if (listWidth != SWT.DEFAULT) {
+            listWidth = gc.getFontMetrics().getAverageCharWidth() * listWidth;
+        } else if (config.getListWidth() != SWT.DEFAULT) {
+            listWidth = config.getListWidth();
+        } else {
+            for (String item : config.getFullList()) {
+                listWidth = Math.max(listWidth, gc.textExtent(item).x);
+            }
+        }
+        gc.dispose();
+
+        Rectangle trim = selectedList.computeTrim(0, 0, listWidth, 0);
+        GridData listData = new GridData(SWT.FILL, SWT.FILL, true, true);
+        listData.heightHint = 0; // will fill to height of available list
+        listData.widthHint = trim.width;
         selectedList.setLayoutData(listData);
+
         selectedList.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -402,17 +424,15 @@ public class DualList extends Composite {
      */
     private void createMoveUpDownControls() {
 
-        GridData actionData = new GridData(SWT.DEFAULT, SWT.CENTER, false, true);
+        GridData actionData = new GridData(SWT.DEFAULT, SWT.CENTER, false,
+                true);
         GridLayout actionLayout = new GridLayout(1, false);
         Composite actionComp = new Composite(this, SWT.NONE);
         actionComp.setLayout(actionLayout);
         actionComp.setLayoutData(actionData);
 
-        GridData btnData = new GridData(buttonWidth, buttonHeight);
-
         moveUpBtn = new Button(actionComp, SWT.PUSH);
         moveUpBtn.setImage(btnImg.getImage(ButtonImage.Up));
-        moveUpBtn.setLayoutData(btnData);
         moveUpBtn.setEnabled(false);
         moveUpBtn.setToolTipText("Move item up in the list");
         moveUpBtn.addSelectionListener(new SelectionAdapter() {
@@ -422,10 +442,8 @@ public class DualList extends Composite {
             }
         });
 
-        btnData = new GridData(buttonWidth, buttonHeight);
         moveDownBtn = new Button(actionComp, SWT.PUSH);
         moveDownBtn.setImage(btnImg.getImage(ButtonImage.Down));
-        moveDownBtn.setLayoutData(btnData);
         moveDownBtn.setEnabled(false);
         moveDownBtn.setToolTipText("Move item down in the list");
         moveDownBtn.addSelectionListener(new SelectionAdapter() {
@@ -438,7 +456,7 @@ public class DualList extends Composite {
 
     /**
      * Set SelectedList.
-     * 
+     *
      * @param selectedList
      *            all users listed in notification table
      */
@@ -449,7 +467,7 @@ public class DualList extends Composite {
 
     /**
      * Set FullList.
-     * 
+     *
      * @param fullList
      *            all users listed in notification table
      */
@@ -540,7 +558,7 @@ public class DualList extends Composite {
 
         int firstIndex = selectionIndices[0];
 
-        HashSet<String> list = config.getIncludeList();
+        Set<String> list = config.getIncludeList();
 
         if (list.contains(selectedList.getItem(firstIndex))) {
 
@@ -569,7 +587,7 @@ public class DualList extends Composite {
      */
     private void handleMoveAllLeft(boolean callEntriesUpdated) {
 
-        HashSet<String> list = config.getIncludeList();
+        Set<String> list = config.getIncludeList();
         moveAllLeft = true;
 
         for (String sl : selectedList.getItems()) {
@@ -653,7 +671,7 @@ public class DualList extends Composite {
 
     /**
      * Place desired items to the right if needed sort and keep selected items.
-     * 
+     *
      * @param items
      */
     private void moveRight(String[] items) {
@@ -663,7 +681,8 @@ public class DualList extends Composite {
         }
 
         if (config.isSortList()) {
-            java.util.List<String> newSelectedList = sortAvailable(selectedList);
+            java.util.List<String> newSelectedList = sortAvailable(
+                    selectedList);
             if (selectedList.getSelectionCount() == 0) {
                 selectedList.removeAll();
                 for (String s : newSelectedList) {
@@ -710,8 +729,8 @@ public class DualList extends Composite {
                 moveUpBtn.setEnabled(true);
             }
 
-            if (selectedList.getSelectionIndex() == selectedList.getItemCount() - 1
-                    || selectedList.getItemCount() == 0) {
+            if (selectedList.getSelectionIndex() == selectedList.getItemCount()
+                    - 1 || selectedList.getItemCount() == 0) {
                 moveDownBtn.setEnabled(false);
             } else {
                 moveDownBtn.setEnabled(true);
@@ -767,12 +786,11 @@ public class DualList extends Composite {
             if (moveAllLeft) {
                 availableList.removeAll();
 
-                String[] fullList = config.getFullList().toArray(
-                        new String[config.getFullList().size()]);
+                String[] fullList = config.getFullList()
+                        .toArray(new String[config.getFullList().size()]);
                 java.util.List<String> filteredList = SearchUtils.search(
-                        config.getSearchField(), fullList,
-                        config.getMatchAny(), config.isCaseFlag(),
-                        config.isExcludeFlag());
+                        config.getSearchField(), fullList, config.getMatchAny(),
+                        config.isCaseFlag(), config.isExcludeFlag());
 
                 for (String s : filteredList) {
                     availableList.add(s);
@@ -805,8 +823,8 @@ public class DualList extends Composite {
         IMenuData menuData = config.getMenuData();
         if (menuData.isShowMenu() && availableList.getSelectionCount() > 0) {
             menuData.setListSelection(availableList.getSelection()[0]);
-            menuData.showListMenu(getShell(), config.getMenuData()
-                    .getMenuText());
+            menuData.showListMenu(getShell(),
+                    config.getMenuData().getMenuText());
         }
     }
 
@@ -814,8 +832,8 @@ public class DualList extends Composite {
         IMenuData menuData = config.getMenuData();
         if (menuData.isShowMenu() && selectedList.getSelectionCount() > 0) {
             menuData.setListSelection(selectedList.getSelection()[0]);
-            menuData.showListMenu(getShell(), config.getMenuData()
-                    .getMenuText());
+            menuData.showListMenu(getShell(),
+                    config.getMenuData().getMenuText());
         }
     }
 
@@ -882,7 +900,7 @@ public class DualList extends Composite {
 
     /**
      * Clear Available Users list.
-     * 
+     *
      * @param clearSelectionList
      */
     public void clearAvailableList(boolean clearSelectionList) {
@@ -895,7 +913,7 @@ public class DualList extends Composite {
 
     /**
      * Set the Available List items.
-     * 
+     *
      * @param items
      *            the list items.
      */
@@ -905,7 +923,7 @@ public class DualList extends Composite {
 
     /**
      * Get the number of items in the list.
-     * 
+     *
      * @return the number of items.
      */
     public int getItemCount() {
@@ -914,7 +932,7 @@ public class DualList extends Composite {
 
     /**
      * Get the Selected List items.
-     * 
+     *
      * @return the items in the selected list.
      */
     public String[] getSelectedListItems() {
@@ -923,7 +941,7 @@ public class DualList extends Composite {
 
     /**
      * Get the selection.
-     * 
+     *
      * @return the selections.
      */
     public String[] getSelectedSelection() {
@@ -932,7 +950,7 @@ public class DualList extends Composite {
 
     /**
      * Get the configuration.
-     * 
+     *
      * @return items in available list.
      */
     public String[] getAvailableListItems() {
@@ -941,7 +959,7 @@ public class DualList extends Composite {
 
     /**
      * Set the Selected List items.
-     * 
+     *
      * @param items
      *            the list items.
      */
@@ -952,7 +970,7 @@ public class DualList extends Composite {
 
     /**
      * Selected User items.
-     * 
+     *
      * @param selection
      *            selected user items
      */
@@ -977,7 +995,7 @@ public class DualList extends Composite {
 
     /**
      * Add an item to the include list.
-     * 
+     *
      * @param item
      *            Item to add to the include list.
      */

@@ -62,6 +62,7 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Jul 26, 2006             chammack    Initial Creation.
  * Aug 08, 2008      #703   randerso    fixed bug, changed to scale to fit 
  *                                      paper and rotate if necessary
+ * Mar 23, 2017 6117        bsteffen    Workaround crash when printing images.
  * 
  * </pre>
  * 
@@ -177,8 +178,8 @@ public class PrintScreenReverseAction extends AbstractHandler {
             }
         }
 
-        image.dispose();
         printer.dispose();
+        image.dispose();
 
         return null;
 
