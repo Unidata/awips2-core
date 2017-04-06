@@ -111,6 +111,7 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  * Oct 25, 2016  5929     bsteffen  Ensure compatibility layer listeners fire
  *                                  when editors swap
  * Nov 23, 2016  6004     bsteffen  Move handling of nonrestorable views out of this class.
+ * Mar 02, 2017 6162        bsteffen    activate/deactivate tools when changing perspectives.
  * 
  * </pre>
  * 
@@ -400,6 +401,9 @@ public abstract class AbstractVizPerspectiveManager
             activateInternal();
         }
         activateContexts();
+        for (AbstractModalTool tool : toolManager.getSelectedModalTools()) {
+            tool.activate();
+        }
         contributeToStatusLine();
 
         perspectiveWindow.getShell().setText(getTitle(title));
@@ -589,6 +593,9 @@ public abstract class AbstractVizPerspectiveManager
         }
 
         deactivateDialogs();
+        for (AbstractModalTool tool : toolManager.getSelectedModalTools()) {
+            tool.deactivate();
+        }
         deactivateContexts();
         removeFromStatusLine();
     }

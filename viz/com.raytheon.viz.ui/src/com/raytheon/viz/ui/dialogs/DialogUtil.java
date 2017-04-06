@@ -33,13 +33,14 @@ import org.eclipse.swt.widgets.Shell;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- --------------------------------------------
  * Sep 21, 2016  5901     randerso  Initial creation
+ * Feb 14, 2017  6037     randerso  Added centerOnMonitor() and
+ *                                  getCursorMonitor()
  *
  * </pre>
  *
  * @author randerso
- * @version 1.0
  */
 
 public class DialogUtil {
@@ -59,6 +60,36 @@ public class DialogUtil {
     }
 
     /**
+     * Center the shell on the specified monitor
+     *
+     * @param shell
+     *            the shell to be centered
+     * @param monitor
+     *            the monitor to be centered upon
+     */
+    public static void centerOnMonitor(Shell shell, Monitor monitor) {
+        centerInBounds(shell, monitor.getClientArea());
+    }
+
+    /**
+     * Get the monitor that contains the cursor
+     *
+     * @param display
+     * @return monitor containing the cursor
+     */
+    public static Monitor getCursorMonitor(Display display) {
+        Point cursor = display.getCursorLocation();
+        for (Monitor monitor : display.getMonitors()) {
+            if (monitor.getBounds().contains(cursor)) {
+                return monitor;
+            }
+        }
+
+        // should never get here, hopefully
+        return display.getPrimaryMonitor();
+    }
+
+    /**
      * Center a shell on the monitor containing the cursor
      *
      * @param shell
@@ -67,18 +98,8 @@ public class DialogUtil {
     public static void centerOnCurrentMonitor(Shell shell) {
         // center shell on monitor containing cursor
         Display display = shell.getDisplay();
-        Monitor[] monitors = display.getMonitors();
-        int monitor = 0;
-
-        Point cursor = display.getCursorLocation();
-        for (int i = 0; i < monitors.length; i++) {
-            if (monitors[i].getBounds().contains(cursor)) {
-                monitor = i;
-                break;
-            }
-        }
-
-        centerInBounds(shell, monitors[monitor].getBounds());
+        Monitor monitor = getCursorMonitor(display);
+        centerOnMonitor(shell, monitor);
     }
 
     /**
@@ -94,4 +115,5 @@ public class DialogUtil {
     public static void centerOnParentShell(Shell parent, Shell shell) {
         centerInBounds(shell, parent.getBounds());
     }
+
 }

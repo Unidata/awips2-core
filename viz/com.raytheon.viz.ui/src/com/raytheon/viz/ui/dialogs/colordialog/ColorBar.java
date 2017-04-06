@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -46,8 +46,6 @@ import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
-import org.eclipse.swt.layout.RowData;
-import org.eclipse.swt.layout.RowLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Canvas;
 import org.eclipse.swt.widgets.Composite;
@@ -59,11 +57,11 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 /**
  * A Composite that renders a colorbar and also arrows and buttons to
  * manipulate/edit it.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 08, 2014 2950       bsteffen    Support dynamic color counts and resizing.
@@ -71,16 +69,13 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Apr 11, 2014 DR 15811   Qinglu Lin  Added decimalPlaceMap and logic to have 4 decimal places
  * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
  * Feb 04, 2016 5301       tgurney     Fix undoColorBar and redoColorBar return values
- * 
+ * Feb 27, 2017 6116       mapeters    Don't hardcode size of nav buttons
+ *
  * </pre>
- * 
- * @version 1.0
+ *
  */
-public class ColorBar extends Composite implements MouseListener,
-        MouseMoveListener {
-
-    /** Size of the navigation navButtons. */
-    protected final Point NAV_BTN_SIZE = new Point(33, 25);
+public class ColorBar extends Composite
+        implements MouseListener, MouseMoveListener {
 
     /** Size of the slider arrows. */
     protected final Point ARROW_SIZE = new Point(10, 28);
@@ -88,7 +83,7 @@ public class ColorBar extends Composite implements MouseListener,
     /** Size of the margin. */
     protected final Point MARGIN_SIZE = new Point(6, 6);
 
-    /** Size of the margin. */
+    /** Size of the bar. */
     protected final Point BAR_SIZE = new Point(343, 50);
 
     /** Callback used to update the color wheel. */
@@ -101,7 +96,7 @@ public class ColorBar extends Composite implements MouseListener,
     protected Font font;
 
     /** Navigation Buttons */
-    protected List<Button> navButtons = new ArrayList<Button>();
+    protected List<Button> navButtons = new ArrayList<>();
 
     /** Set on mouse down to move top slider when mouse is moved. */
     protected boolean moveTopSlider = false;
@@ -157,6 +152,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     private final Map<String, String> decimalPlaceMap = new HashMap<String, String>() {
         private static final long serialVersionUID = 1L;
+
         {
             /*
              * keys are the last portion of the title in the color table editor
@@ -171,7 +167,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
      * @param callback
@@ -186,7 +182,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
      * @param callback
@@ -204,13 +200,13 @@ public class ColorBar extends Composite implements MouseListener,
 
         for (String s : decimalPlaceMap.keySet()) {
             if (parent.getShell().getText().toLowerCase().contains(s)) {
-                numberFormat = new DecimalFormat("###,###,##0."
-                        + decimalPlaceMap.get(s));
+                numberFormat = new DecimalFormat(
+                        "###,###,##0." + decimalPlaceMap.get(s));
                 break;
             }
         }
 
-        colorHistory = new ArrayList<List<ColorData>>();
+        colorHistory = new ArrayList<>();
         colorHistory.add(ColorUtil.buildColorData(cmapParams.getColorMap()));
 
         topSliderIndex = 0;
@@ -228,44 +224,38 @@ public class ColorBar extends Composite implements MouseListener,
 
     /** Initialize the components for the color bar. */
     private void initComponents() {
-        createLeftButtons();
+        // Create left buttons
+        createNavButtons(true);
+
         createColorBarArea();
-        createRightButtons();
+
+        // Create right buttons
+        createNavButtons(false);
 
         initalizeColorbarImages();
     }
 
-    /** Create the slider navigation buttons on the left side of the color bar. */
-    private void createLeftButtons() {
-        // Create a composite to hold the navButtons.
-        Composite leftButtonsComp = new Composite(this, SWT.NONE);
-        RowLayout rowLayout = new RowLayout(SWT.VERTICAL);
-        rowLayout.spacing = 5;
-        leftButtonsComp.setLayout(rowLayout);
+    /**
+     * Create the slider navigation buttons on the given side of the color bar.
+     *
+     * @param left
+     *            whether the buttons are on the left or right side
+     */
+    private void createNavButtons(boolean left) {
+        // Create a composite to hold the navButtons
+        Composite buttonsComp = new Composite(this, SWT.NONE);
+        GridLayout gl = new GridLayout(1, true);
+        buttonsComp.setLayout(gl);
 
-        createNavButton(leftButtonsComp, true, true, false);
-        createNavButton(leftButtonsComp, true, true, true);
-        createNavButton(leftButtonsComp, false, true, true);
-        createNavButton(leftButtonsComp, false, true, false);
-    }
-
-    /** Create the slider navigation buttons on the right side of the color bar. */
-    private void createRightButtons() {
-        // Create a composite that will hold the navButtons.
-        Composite rightButtonsComp = new Composite(this, SWT.NONE);
-        RowLayout rowLayout = new RowLayout(SWT.VERTICAL);
-        rowLayout.spacing = 5;
-        rightButtonsComp.setLayout(rowLayout);
-
-        createNavButton(rightButtonsComp, true, false, false);
-        createNavButton(rightButtonsComp, true, false, true);
-        createNavButton(rightButtonsComp, false, false, true);
-        createNavButton(rightButtonsComp, false, false, false);
+        createNavButton(buttonsComp, true, left, false);
+        createNavButton(buttonsComp, true, left, true);
+        createNavButton(buttonsComp, false, left, true);
+        createNavButton(buttonsComp, false, left, false);
     }
 
     /**
      * Create a single navigation button
-     * 
+     *
      * @param parent
      *            Button parent
      * @param top
@@ -284,13 +274,14 @@ public class ColorBar extends Composite implements MouseListener,
         } else {
             label = ">";
         }
-        ;
+
         if (skip) {
             label = label + label;
         }
+
         Button button = new Button(parent, SWT.PUSH);
         button.setText(label);
-        button.setLayoutData(new RowData(NAV_BTN_SIZE));
+        button.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, false, false));
         button.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -302,7 +293,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Shift one of the sliders to a new index.
-     * 
+     *
      * @param top
      *            true for top slider, false for bottom slider
      * @param left
@@ -337,8 +328,8 @@ public class ColorBar extends Composite implements MouseListener,
                             bottomSliderIndex);
                 } else {
                     bottomSliderIndex = i;
-                    topSliderIndex = Math
-                            .min(topSliderIndex, bottomSliderIndex);
+                    topSliderIndex = Math.min(topSliderIndex,
+                            bottomSliderIndex);
                 }
                 repaint();
                 break;
@@ -356,8 +347,8 @@ public class ColorBar extends Composite implements MouseListener,
 
         /* Create the composite that will hold the color bar canvas. */
         Composite colorBarComp = new Composite(this, SWT.NONE);
-        colorBarComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-                false));
+        colorBarComp
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, true));
         colorBarComp.setLayout(new GridLayout(1, false));
 
         /*
@@ -394,13 +385,14 @@ public class ColorBar extends Composite implements MouseListener,
         int totalMarginX = MARGIN_SIZE.x + ARROW_SIZE.x;
         int totalMarginY = MARGIN_SIZE.y + ARROW_SIZE.y;
         Point canvasSize = colorBarCanvas.getSize();
-        return new Rectangle(totalMarginX, totalMarginY, canvasSize.x - 2
-                * totalMarginX, canvasSize.y - 2 * totalMarginY);
+        return new Rectangle(totalMarginX, totalMarginY,
+                canvasSize.x - 2 * totalMarginX,
+                canvasSize.y - 2 * totalMarginY);
     }
 
     /**
      * Paint the colorbar, arrows, and decorations on the colorbar canvas.
-     * 
+     *
      * @param gc
      */
     public void paintCanvas(GC gc) {
@@ -444,7 +436,8 @@ public class ColorBar extends Composite implements MouseListener,
             Color currentColor = new Color(getDisplay(), colorData.rgbColor);
             gc.setBackground(currentColor);
             gc.setAlpha(colorData.alphaValue);
-            int topSliderX = reIndex(getColorCount(), bar.width, topSliderIndex);
+            int topSliderX = reIndex(getColorCount(), bar.width,
+                    topSliderIndex);
             int[] topArrowPolygon = calcTopArrow(topSliderX);
             gc.fillPolygon(topArrowPolygon);
             gc.setAlpha(255);
@@ -496,7 +489,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Calculate the points of the top slider arrow.
-     * 
+     *
      * @param xCoord
      *            X coordinate to draw the top slider arrow.
      * @return Array of points outlining the top slider arrow.
@@ -510,13 +503,13 @@ public class ColorBar extends Composite implements MouseListener,
         int midY = top + ARROW_SIZE.y / 2;
         int bottom = top + ARROW_SIZE.y;
 
-        return new int[] { right, bottom - 2, right, top, midX, top, midX,
-                midY, left, midY };
+        return new int[] { right, bottom - 2, right, top, midX, top, midX, midY,
+                left, midY };
     }
 
     /**
      * Calculate the points of the bottom slider arrow.
-     * 
+     *
      * @param xCoord
      *            X coordinate to draw the bottom slider arrow.
      * @return Array of points outlining the bottom slider arrow.
@@ -547,12 +540,12 @@ public class ColorBar extends Composite implements MouseListener,
      *         modification).
      */
     protected List<ColorData> getCurrentColorsCopy() {
-        return new ArrayList<ColorData>(getCurrentColors());
+        return new ArrayList<>(getCurrentColors());
     }
 
     /**
      * Set the current colors as the last item on the color history.
-     * 
+     *
      * @param colors
      */
     protected void setCurrentColors(List<ColorData> colors) {
@@ -599,7 +592,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Method called when the mouse is moved.
-     * 
+     *
      * @param e
      *            Mouse event.
      */
@@ -668,7 +661,7 @@ public class ColorBar extends Composite implements MouseListener,
     /**
      * Set the current cell (top or bottom depending on the flag passed in) to
      * the specified color in the color data object.
-     * 
+     *
      * @param colorData
      *            Color data object containing the RGB and alpha values.
      * @param upperFlag
@@ -690,7 +683,7 @@ public class ColorBar extends Composite implements MouseListener,
      * Fill the area of the color bar with a solid color from the color wheel.
      * The area between the top and bottom sliders will be fill with the
      * specified color.
-     * 
+     *
      * @param colorData
      *            The color to fill the color bar area with.
      */
@@ -710,7 +703,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Undo the last change to the color bar.
-     * 
+     *
      * @return True if there are more "undos" that can take place, otherwise
      *         return false.
      */
@@ -730,7 +723,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Redo the last change to the color bar.
-     * 
+     *
      * @return True if there are more "redos" that can take place, otherwise
      *         return false.
      */
@@ -767,13 +760,13 @@ public class ColorBar extends Composite implements MouseListener,
      * Fills the specified range with an interpolation or blending of the lower
      * color with the upper color. This interpolation along the hue, saturation,
      * brightness color model is linear.
-     * 
+     *
      * If the colors are RGB: --- Fills the specified range with an
      * interpolation or blending of the lower color with the upper color. This
      * interpolation along the red, green, blue color model is linear.
-     * 
+     *
      * The alpha value is also interpolated.
-     * 
+     *
      * @param startColorData
      *            Starting color.
      * @param endColorData
@@ -799,8 +792,8 @@ public class ColorBar extends Composite implements MouseListener,
             float deltaRed = (endRGB.red - startRGB.red) / numOfCells;
             float deltaGreen = (endRGB.green - startRGB.green) / numOfCells;
             float deltaBlue = (endRGB.blue - startRGB.blue) / numOfCells;
-            float deltaAlpha = (endColorData.alphaValue - startColorData.alphaValue)
-                    / numOfCells;
+            float deltaAlpha = (endColorData.alphaValue
+                    - startColorData.alphaValue) / numOfCells;
 
             /*
              * Loop through all of the cells and fill them with the interpolated
@@ -832,8 +825,8 @@ public class ColorBar extends Composite implements MouseListener,
             float deltaSaturation = (endHSB[1] - startHSB[1]) / numOfCells;
             float deltaBrightness = (endHSB[2] - startHSB[2]) / numOfCells;
 
-            float deltaAlpha = (endColorData.alphaValue - startColorData.alphaValue)
-                    / numOfCells;
+            float deltaAlpha = (endColorData.alphaValue
+                    - startColorData.alphaValue) / numOfCells;
             /*
              * Loop through all of the cells and fill them with the interpolated
              * colors.
@@ -842,8 +835,8 @@ public class ColorBar extends Composite implements MouseListener,
                 float newHue = (deltaHue * i) + startHSB[0];
                 float newSaturation = (deltaSaturation * i) + startHSB[1];
                 float newBrightness = (deltaBrightness * i) + startHSB[2];
-                int newAlpha = Math.round((deltaAlpha * i)
-                        + startColorData.alphaValue);
+                int newAlpha = Math
+                        .round((deltaAlpha * i) + startColorData.alphaValue);
 
                 RGB tmpRGB = new RGB(checkHue(newHue), newSaturation,
                         newBrightness);
@@ -859,7 +852,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Interpolate between the start and end alpha values only.
-     * 
+     *
      * @param startColorData
      *            Starting color.
      * @param endColorData
@@ -873,8 +866,8 @@ public class ColorBar extends Composite implements MouseListener,
         if (topSliderIndex == bottomSliderIndex) {
             newColors.set(topSliderIndex, startColorData);
         } else {
-            float deltaAlpha = (endColorData.alphaValue - startColorData.alphaValue)
-                    / numOfCells;
+            float deltaAlpha = (endColorData.alphaValue
+                    - startColorData.alphaValue) / numOfCells;
 
             /*
              * Loop through all of the cells and fill them with the interpolated
@@ -903,7 +896,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Get the text to display for a slider arrow at the specified index.
-     * 
+     *
      * @param index
      * @return
      */
@@ -943,10 +936,11 @@ public class ColorBar extends Composite implements MouseListener,
                 if (Double.isNaN(lastVal)) {
                     return "NO DATA";
                 } else if (((Double) value).isNaN()) {
-                    if (numberFormat != null)
+                    if (numberFormat != null) {
                         return "> " + numberFormat.format(lastVal);
-                    else
+                    } else {
                         return "> " + lastVal;
+                    }
                 }
             }
 
@@ -1078,7 +1072,7 @@ public class ColorBar extends Composite implements MouseListener,
     /**
      * Adjust the number of colors in the current color list. If more colors
      * than the current list then interpolated colors will be added.
-     * 
+     *
      * @param count
      */
     public void setColorCount(int count) {
@@ -1087,7 +1081,7 @@ public class ColorBar extends Composite implements MouseListener,
         if (count == oldCount) {
             return;
         }
-        List<ColorData> newColors = new ArrayList<ColorData>(count);
+        List<ColorData> newColors = new ArrayList<>(count);
         for (int i = 0; i < count; i += 1) {
             double percentage = i / (double) (count - 1);
             double index = (oldCount - 1) * percentage;
@@ -1100,14 +1094,14 @@ public class ColorBar extends Composite implements MouseListener,
                 double nextWeight = index - prev;
                 ColorData prevData = currentColors.get(prev);
                 ColorData nextData = currentColors.get(next);
-                int r = (int) (prevData.rgbColor.red * prevWeight + nextData.rgbColor.red
-                        * nextWeight);
-                int g = (int) (prevData.rgbColor.green * prevWeight + nextData.rgbColor.green
-                        * nextWeight);
-                int b = (int) (prevData.rgbColor.blue * prevWeight + nextData.rgbColor.blue
-                        * nextWeight);
-                int a = (int) (prevData.alphaValue * prevWeight + nextData.alphaValue
-                        * nextWeight);
+                int r = (int) (prevData.rgbColor.red * prevWeight
+                        + nextData.rgbColor.red * nextWeight);
+                int g = (int) (prevData.rgbColor.green * prevWeight
+                        + nextData.rgbColor.green * nextWeight);
+                int b = (int) (prevData.rgbColor.blue * prevWeight
+                        + nextData.rgbColor.blue * nextWeight);
+                int a = (int) (prevData.alphaValue * prevWeight
+                        + nextData.alphaValue * nextWeight);
                 RGB rgb = new RGB(r, g, b);
                 newColors.add(new ColorData(rgb, a));
             }
@@ -1130,12 +1124,12 @@ public class ColorBar extends Composite implements MouseListener,
      * Get the minimum difference between hue values. The hue values range from
      * 0 to 359.99 so we need to figure out the shortest "distance" between the
      * two colors.
-     * 
+     *
      * Example: If the first color is 0 and the second is 170, the colors will
      * go "clockwise" from 0 to 170. If the second color is 190 the the colors
      * will go from 0 to 190 "counterclockwise" (0, 359, 358, ..., 191, 190)
-     * 
-     * 
+     *
+     *
      * @param startHue
      *            Starting hue value.
      * @param endHue
@@ -1154,7 +1148,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Valid that the hue value is within the 0 to 359.99 range.
-     * 
+     *
      * @param hue
      *            Hue value.
      * @return Either the original hue value or the corrected hue value.
@@ -1171,7 +1165,7 @@ public class ColorBar extends Composite implements MouseListener,
 
     /**
      * Validate that the R/G/B color is within the 0 to 255 range.
-     * 
+     *
      * @param color
      *            R/G/B color to validate.
      * @return Existing R/G/B color value or the adjusted color value.
@@ -1187,7 +1181,8 @@ public class ColorBar extends Composite implements MouseListener,
         return icolol;
     }
 
-    private static int reIndex(int currentWidth, int newWidth, int currentIndex) {
+    private static int reIndex(int currentWidth, int newWidth,
+            int currentIndex) {
         if (newWidth == currentWidth) {
             return currentIndex;
         }
