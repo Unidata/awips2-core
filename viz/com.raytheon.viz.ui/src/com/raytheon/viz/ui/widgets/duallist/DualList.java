@@ -22,8 +22,8 @@ package com.raytheon.viz.ui.widgets.duallist;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.Map;
 import java.util.Set;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.eclipse.swt.SWT;
@@ -67,6 +67,8 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  * May 05, 2016  5487     tjensen   Added additional sorting options
  * Feb 28, 2017  6121     randerso  Change DualListConfig to specify list height
  *                                  in items and width in characters
+ * May 01, 2017  6217     randerso  Added getters for available and selected
+ *                                  lists
  *
  * </pre>
  *
@@ -138,12 +140,12 @@ public class DualList extends Composite {
     /**
      * Move left flag.
      */
-    boolean moveLeft = false;
+    private boolean moveLeft = false;
 
     /**
      * Move All flag.
      */
-    boolean moveAllLeft = false;
+    private boolean moveAllLeft = false;
 
     /**
      * Constructor
@@ -280,6 +282,7 @@ public class DualList extends Composite {
         availableList.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
+                selectedList.deselectAll();
                 enableDisableLeftRightButtons();
             }
         });
@@ -393,13 +396,15 @@ public class DualList extends Composite {
 
         Rectangle trim = selectedList.computeTrim(0, 0, listWidth, 0);
         GridData listData = new GridData(SWT.FILL, SWT.FILL, true, true);
-        listData.heightHint = 0; // will fill to height of available list
+        // will fill to height of available list
+        listData.heightHint = 0;
         listData.widthHint = trim.width;
         selectedList.setLayoutData(listData);
 
         selectedList.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
+                availableList.deselectAll();
                 enableDisableLeftRightButtons();
                 enableDisableUpDownButtons();
             }
@@ -492,7 +497,7 @@ public class DualList extends Composite {
                 if (s == null) {
                     continue;
                 }
-                if (config.getSelectedList().contains(s) == false) {
+                if (!config.getSelectedList().contains(s)) {
                     availableList.add(s);
                 }
             }
@@ -598,7 +603,7 @@ public class DualList extends Composite {
 
         reloadAvailableList();
 
-        if (callEntriesUpdated == true) {
+        if (callEntriesUpdated) {
             entriesUpdated();
         }
 
@@ -696,7 +701,8 @@ public class DualList extends Composite {
                 int index = 0;
                 for (String s : newSelectedList) {
                     if (selectedArray.contains(s)) {
-                        selIndices[index++] = selectedList.getItemCount();
+                        selIndices[index] = selectedList.getItemCount();
+                        index++;
                     }
                     selectedList.add(s);
                 }
@@ -713,7 +719,7 @@ public class DualList extends Composite {
      */
     private void enableDisableUpDownButtons() {
         // Return if the buttons are now even visible.
-        if (config.isShowUpDownBtns() == false) {
+        if (!config.isShowUpDownBtns()) {
             return;
         }
 
@@ -846,14 +852,13 @@ public class DualList extends Composite {
         if (config.isNumericData()) {
             // If data are numeric then must sort on the numeric value
             try {
-                Map<Double, String> map = new TreeMap<>();
+                // Using TreeMap to sort by double values of strings
+                SortedMap<Double, String> map = new TreeMap<>();
                 for (String a : arr) {
                     map.put(Double.parseDouble(a), a);
                 }
+                availableListsorted.addAll(map.values());
 
-                for (Double i : map.keySet()) {
-                    availableListsorted.add(map.get(i));
-                }
             } catch (NumberFormatException e) {
                 // numeric data not all numeric, string sorting
                 availableListsorted = (ArrayList<String>) Arrays.asList(arr);
@@ -906,7 +911,7 @@ public class DualList extends Composite {
     public void clearAvailableList(boolean clearSelectionList) {
         this.availableList.removeAll();
 
-        if (clearSelectionList == true) {
+        if (clearSelectionList) {
             clearSelection();
         }
     }
@@ -1011,5 +1016,19 @@ public class DualList extends Composite {
         moveAllLeftBtn.setEnabled(selectedList.getItemCount() > 0);
         moveRightBtn.setEnabled(availableList.getSelectionCount() > 0);
         moveLeftBtn.setEnabled(selectedList.getSelectionCount() > 0);
+    }
+
+    /**
+     * @return the availableList
+     */
+    public List getAvailableList() {
+        return availableList;
+    }
+
+    /**
+     * @return the selectedList
+     */
+    public List getSelectedList() {
+        return selectedList;
     }
 }

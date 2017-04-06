@@ -19,25 +19,21 @@
  **/
 package com.raytheon.uf.common.auth.req;
 
+import com.raytheon.uf.common.auth.RolesAndPermissions;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
 
 /**
- * Request to determine if a user has a permission.
- *
- * Can be used in client code to determine if a user has a permission.
- * Recommended for allowing access to certain GUI elements etc. Server side
- * actions should have their own permission checks.
+ * Save user roles and permissions
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------
- * Feb 24, 2015  4300     randerso  Initial creation
- * Apr 18, 2017  6217     randerso  Updated for new roles/permissions
+ * ------------- -------- --------- -----------------
+ * Apr 24, 2017  6217     randerso  Initial creation
  *
  * </pre>
  *
@@ -45,40 +41,42 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
  */
 
 @DynamicSerialize
-public class CheckAuthorizationRequest implements IServerRequest {
+public class SaveRolesAndPermissionsRequest implements IServerRequest {
 
     @DynamicSerializeElement
-    private String permission;
+    private RolesAndPermissions rolesAndPermissions;
 
     /**
-     * Default constructor for serialization only
+     * Default constructor for serialization
      */
-    public CheckAuthorizationRequest() {
+    public SaveRolesAndPermissionsRequest() {
 
     }
 
     /**
      * Constructor
      *
-     * @param permission
+     * @param rolesAndPermissions
+     *            to be saved
      */
-    public CheckAuthorizationRequest(String permission) {
-        this.permission = permission;
+    public SaveRolesAndPermissionsRequest(
+            RolesAndPermissions rolesAndPermissions) {
+        this.rolesAndPermissions = rolesAndPermissions;
     }
 
     /**
-     * @return the permission
+     * @return the rolesAndPermissions
      */
-    public String getPermission() {
-        return permission;
+    public RolesAndPermissions getRolesAndPermissions() {
+        return rolesAndPermissions;
     }
 
     /**
-     * @param permission
-     *            the permission to set
+     * @param rolesAndPermissions
+     *            the rolesAndPermissions to set
      */
-    public void setPermission(String permission) {
-        this.permission = permission;
+    public void setRolesAndPermissions(
+            RolesAndPermissions rolesAndPermissions) {
+        this.rolesAndPermissions = rolesAndPermissions;
     }
-
 }

@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Util
+Bundle-SymbolicName: com.raytheon.uf.common.auth.util
+Bundle-Version: 1.17.0.qualifier
+Bundle-Vendor: RAYTHEON
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Export-Package: com.raytheon.uf.common.auth.util
+Require-Bundle: com.raytheon.uf.common.localization

@@ -3,6 +3,35 @@
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd">
 
+    <!-- Uncomment this bean and adjust configuration as required for LDAP authentication
+    
+         TODO: consider moving the LDAP configuration information out of Spring XML into 
+               a simpler configuration file since it may need to be edited at installation time.
+    <bean id="ldapRealm" class="org.apache.shiro.realm.ldap.DefaultLdapRealm">
+        <property name="userDnTemplate" value="uid={0},ou=users,dc=mycompany,dc=com"/>
+        <property name="contextFactory.url" value="ldap://ldapHost:389"/>
+    </bean>
+     -->
+
+    <bean id="iniRealm" class="com.raytheon.uf.edex.auth.realm.IniRealm">
+        <property name="name" value="awipsRealm"/>
+        <property name="defaultRole" value="awipsUser"/>
+        <property name="adminRole" value="awipsAdmin"/>
+    </bean>
+
+    <bean id="permissionsManager" class="com.raytheon.uf.edex.auth.ShiroPermissionsManager">
+        <!-- Uncomment this arg to use LDAP authentication 
+        <constructor-arg ref="ldapRealm"/>
+         -->
+        <constructor-arg ref="iniRealm"/>
+    </bean>
+
+    <bean class="com.raytheon.uf.edex.auth.AuthManagerFactory" factory-method="getInstance">
+        <property name="permissionsManager" ref="permissionsManager"/>
+    </bean>
+
     <bean id="checkAuthorizationHandler" class="com.raytheon.uf.edex.auth.req.CheckAuthorizationHandler"/>
+    <bean id="getRolesAndPermissionsHandler" class="com.raytheon.uf.edex.auth.req.GetRolesAndPermissionsHandler"/>
+    <bean id="saveRolesAndPermissionsHandler" class="com.raytheon.uf.edex.auth.req.SaveRolesAndPermissionsHandler"/>
 
 </beans>

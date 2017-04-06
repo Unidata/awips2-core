@@ -19,37 +19,41 @@
  **/
 package com.raytheon.uf.edex.auth.req;
 
-import com.raytheon.uf.common.auth.req.CheckAuthorizationRequest;
+import com.raytheon.uf.common.auth.RolesAndPermissions;
+import com.raytheon.uf.common.auth.exception.AuthorizationException;
+import com.raytheon.uf.common.auth.req.SaveRolesAndPermissionsRequest;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.edex.auth.AuthManagerFactory;
 import com.raytheon.uf.edex.auth.IPermissionsManager;
 
 /**
- * Handler for CheckAuthorizationRequest
+ * Handler for GetRolesAndPermissionsRequest
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------
- * Feb 24, 2015  4300     randerso  Initial creation
- * Apr 18, 2017  6217     randerso  Updated for new roles/permissions
+ * ------------- -------- --------- -----------------
+ * Apr 24, 2017  6217     randerso  Initial creation
  *
  * </pre>
  *
  * @author randerso
  */
 
-public class CheckAuthorizationHandler
-        implements IRequestHandler<CheckAuthorizationRequest> {
+public class SaveRolesAndPermissionsHandler
+        implements IRequestHandler<SaveRolesAndPermissionsRequest> {
 
     @Override
-    public Boolean handleRequest(CheckAuthorizationRequest request)
-            throws Exception {
-        IPermissionsManager manager = AuthManagerFactory.getInstance()
-                .getPermissionsManager();
+    public RolesAndPermissions handleRequest(
+            SaveRolesAndPermissionsRequest request)
+            throws AuthorizationException {
 
-        return manager.isPermitted(request.getPermission());
+        IPermissionsManager permissionsManager = AuthManagerFactory
+                .getInstance().getPermissionsManager();
+
+        return permissionsManager
+                .saveRolesAndPermissions(request.getRolesAndPermissions());
     }
 }

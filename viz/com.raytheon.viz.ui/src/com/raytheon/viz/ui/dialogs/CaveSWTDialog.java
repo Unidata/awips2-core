@@ -72,6 +72,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                  switching.
  * Sep 21, 2016  5901     randerso  Fix dialog centering issue introduced in
  *                                  Eclipse 4
+ * Apr 25, 2017  6217     randerso  Added shouldClose method
  *
  * </pre>
  *
@@ -86,20 +87,20 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
         /**
          * No CAVE style.
          */
-        public static int NONE = 0;
+        public static final int NONE = 0;
 
         /**
          * Does not block when open() is called. Normally the open() will wait
          * until the shell is disposed before leaving the open() method. This
          * style will skip the waiting part and will leave the open method.
          */
-        public static int DO_NOT_BLOCK = 1 << 1;
+        public static final int DO_NOT_BLOCK = 1 << 1;
 
         /**
          * The dialog will always be displayed even when the perspectives are
          * changed (switching between GFE & D2D for example).
          */
-        public static int PERSPECTIVE_INDEPENDENT = 1 << 2;
+        public static final int PERSPECTIVE_INDEPENDENT = 1 << 2;
 
         /**
          * This style will skip all of the default control painting for
@@ -107,7 +108,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
          * control colors and the ModeListener will override the changes. This
          * style prevents the ModeListener from being called.
          */
-        public static int MODE_INDEPENDENT = 1 << 3;
+        public static final int MODE_INDEPENDENT = 1 << 3;
 
         /**
          * This style will create the dialog off of the display and not parent
@@ -115,14 +116,14 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
          * buttons in the title bar. The dialog will also be displayed in the
          * task bar separately from CAVE.
          */
-        public static int INDEPENDENT_SHELL = 1 << 4;
+        public static final int INDEPENDENT_SHELL = 1 << 4;
 
         /**
          * Dialog should not pack the shell and the controls before opening.
          * Normally this should not be called. If a dialog needs to be a certain
          * size the controls should be sized properly and the shell packed.
          */
-        public static int NO_PACK = 1 << 5;
+        public static final int NO_PACK = 1 << 5;
     }
 
     private static class ListenerPair {
@@ -210,7 +211,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
         this.style = style;
         this.caveStyle = caveStyle;
         this.title = "";
-        listenersToAdd = new ArrayList<ListenerPair>();
+        listenersToAdd = new ArrayList<>();
 
         if (!hasAttribute(CAVE.PERSPECTIVE_INDEPENDENT)) {
             perspectiveManager = VizPerspectiveListener
@@ -252,7 +253,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
         this.style = style;
         this.caveStyle = caveStyle | CAVE.INDEPENDENT_SHELL;
         this.title = "";
-        listenersToAdd = new ArrayList<ListenerPair>();
+        listenersToAdd = new ArrayList<>();
 
         if (!hasAttribute(CAVE.PERSPECTIVE_INDEPENDENT)) {
             perspectiveManager = VizPerspectiveListener
@@ -455,9 +456,21 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      */
     @Override
     public final boolean close() {
-        if ((shell != null) && (!shell.isDisposed())) {
-            shell.dispose();
+        if (shell != null && !shell.isDisposed()) {
+            if (shouldClose()) {
+                shell.dispose();
+                return true;
+            }
         }
+        return false;
+    }
+
+    /**
+     * Allow subclasses to implement close checking behavior
+     *
+     * @return true if dialog should close
+     */
+    public boolean shouldClose() {
         return true;
     }
 
@@ -489,8 +502,8 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     /**
      * Returns the shell's style information.
      * <p>
-     * Note that, the value which is returned by this method <em>may
-     * not match</em> the value which was provided to the constructor when the
+     * Note that, the value which is returned by this method <em>may not
+     * match</em> the value which was provided to the constructor when the
      * receiver was created.
      * </p>
      *
