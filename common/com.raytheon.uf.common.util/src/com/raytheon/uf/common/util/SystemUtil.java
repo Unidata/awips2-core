@@ -42,7 +42,7 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  * Sep 26, 2011            rjpeter     Initial creation
  * Apr 10, 2014 2726       rjpeter     Moved hostName caching logic from WsId to here.
  * Feb 06, 2017 6113       njensen     Updated getLocalAddress() to loop over NetworkInterfaces
- * 
+ * Apr 11, 2017 6113       rjpeter     Updated getLocalAddress() to break after first address found.
  * </pre>
  * 
  * @author rjpeter
@@ -92,16 +92,15 @@ public class SystemUtil {
             try {
                 Enumeration<NetworkInterface> nis = NetworkInterface
                         .getNetworkInterfaces();
-                while (nis.hasMoreElements()) {
+                while (addrToUse == null && nis.hasMoreElements()) {
                     NetworkInterface ni = nis.nextElement();
                     Enumeration<InetAddress> addrs = ni.getInetAddresses();
-                    while (addrs.hasMoreElements()) {
+                    while (addrToUse == null && addrs.hasMoreElements()) {
                         InetAddress addr = addrs.nextElement();
                         if (!addr.isLinkLocalAddress()
                                 && !addr.isSiteLocalAddress()
                                 && !addr.isLoopbackAddress()) {
                             addrToUse = addr;
-                            break;
                         }
                     }
                 }
