@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.4"?>
+<plugin>
+  <extension point="org.eclipse.search.searchPages">
+    <page
+      class="com.raytheon.uf.viz.localization.perspective.search.ui.LocalizationSearchPage"
+      id="com.raytheon.uf.viz.localization.perspective.search.LocalizationSearchPage"
+      label="Localization">
+    </page>
+  </extension>
+  <extension point="org.eclipse.search.searchResultViewPages">
+    <viewPage
+      class="com.raytheon.uf.viz.localization.perspective.search.ui.result.LocalizationSearchResultPage"
+      id="com.raytheon.uf.viz.localization.perspective.search.LocalizationSearchResultPage"
+      searchResultClass="com.raytheon.uf.viz.localization.perspective.search.LocalizationSearchResult">
+    </viewPage>
+  </extension>
+
+  <extension point="org.eclipse.ui.menus">
+    <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=edit">
+      <!-- File menu -->
+      <menu id="search" label="Search" mnemonic="S">
+        <visibleWhen>
+          <reference
+            definitionId="com.raytheon.uf.viz.localization.inLocalizationActionSet">
+          </reference>
+        </visibleWhen>
+
+        <command
+              commandId="org.eclipse.search.ui.openSearchDialog"
+              label="Search"
+              mnemonic="S"
+              style="push">
+        </command>
+      </menu>
+    </menuContribution>
+  </extension>
+  <extension
+        point="org.eclipse.ui.handlers">
+     <handler
+           class="com.raytheon.uf.viz.localization.perspective.search.handler.OpenSearchDialogHandler"
+           commandId="org.eclipse.search.ui.openSearchDialog">
+        <activeWhen>
+          <reference
+            definitionId="com.raytheon.uf.viz.localization.inLocalizationActionSet">
+          </reference>
+        </activeWhen>
+     </handler>
+  </extension>
+  <extension
+        point="org.eclipse.ui.activities">
+      <activityPatternBinding activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide" pattern=".*/org.eclipse.search.internal.ui.text.TextSearchPage*"/>
+      <activityPatternBinding activityId="com.raytheon.uf.viz.personalities.cave.eclipse.hide" pattern=".*/com.python.pydev.analysis.search_index.PySearchIndexPage"/>
+  </extension>
+</plugin>
