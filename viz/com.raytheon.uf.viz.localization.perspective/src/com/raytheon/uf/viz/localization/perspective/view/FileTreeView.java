@@ -177,15 +177,17 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Aug 11, 2016  5816     randerso  Changed find to search for deepest match of
  *                                  nearest parent instead of first partial
  *                                  match
+ * Apr 12, 2017  6188     bsteffen  Ensure that is possible to find and open
+ *                                  files that have a PathData containing only
+ *                                  '/', such as cave_config files.
  * 
  * </pre>
  * 
  * @author mnash
  */
-
-public class FileTreeView extends ViewPart implements IPartListener2,
-        IWindowListener, ILocalizationService, IResourceChangeListener,
-        ILocalizationPathObserver {
+public class FileTreeView extends ViewPart
+        implements IPartListener2, IWindowListener, ILocalizationService,
+        IResourceChangeListener, ILocalizationPathObserver {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(FileTreeView.class);
 
@@ -195,7 +197,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
         private final FileChangeType type;
 
-        public FileUpdateRefresher(ILocalizationFile file, FileChangeType type) {
+        public FileUpdateRefresher(ILocalizationFile file,
+                FileChangeType type) {
             this.file = file;
             this.type = type;
         }
@@ -216,21 +219,22 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                              * discrepancies
                              */
                             if (type == FileChangeType.UPDATED) {
-                                if (found.getData() instanceof LocalizationFileGroupData) {
+                                if (found
+                                        .getData() instanceof LocalizationFileGroupData) {
                                     for (LocalizationFileEntryData data : ((LocalizationFileGroupData) found
                                             .getData()).getChildrenData()) {
                                         if (data.getFile().equals(file)) {
                                             try {
                                                 data.getResource()
-                                                        .setLocalTimeStamp(
-                                                                file.getTimeStamp()
-                                                                        .getTime());
+                                                        .setLocalTimeStamp(file
+                                                                .getTimeStamp()
+                                                                .getTime());
                                             } catch (CoreException e) {
-                                                statusHandler
-                                                        .handle(Priority.INFO,
-                                                                "Could not update workspace file timestamp: "
-                                                                        + e.getLocalizedMessage(),
-                                                                e);
+                                                statusHandler.handle(
+                                                        Priority.INFO,
+                                                        "Could not update workspace file timestamp: "
+                                                                + e.getLocalizedMessage(),
+                                                        e);
                                             }
                                         }
                                     }
@@ -305,8 +309,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
         site.getWorkbenchWindow().getWorkbench().addWindowListener(this);
 
-        PathManagerFactory.getPathManager().addLocalizationPathObserver(
-                IPathManager.SEPARATOR, this);
+        PathManagerFactory.getPathManager()
+                .addLocalizationPathObserver(IPathManager.SEPARATOR, this);
 
         ResourcesPlugin.getWorkspace().addResourceChangeListener(this,
                 IResourceChangeEvent.POST_CHANGE);
@@ -318,17 +322,17 @@ public class FileTreeView extends ViewPart implements IPartListener2,
     @Override
     public void dispose() {
         super.dispose();
-        if (directoryImage.isDisposed() == false) {
+        if (!directoryImage.isDisposed()) {
             directoryImage.dispose();
         }
 
         for (Image img : imageMap.values()) {
-            if (img.isDisposed() == false) {
+            if (!img.isDisposed()) {
                 img.dispose();
             }
         }
 
-        if (getTree().isDisposed() == false) {
+        if (!getTree().isDisposed()) {
             getTree().dispose();
         }
 
@@ -370,7 +374,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     if (item.getData() instanceof LocalizationFileEntryData) {
                         protectedLevel = ((LocalizationFileEntryData) item
                                 .getData()).getFile().getProtectedLevel();
-                    } else if (item.getData() instanceof LocalizationFileGroupData) {
+                    } else if (item
+                            .getData() instanceof LocalizationFileGroupData) {
                         for (LocalizationFileEntryData entry : ((LocalizationFileGroupData) item
                                 .getData()).getChildrenData()) {
                             protectedLevel = entry.getFile()
@@ -420,7 +425,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                         IFile file = ((LocalizationFileEntryData) data)
                                 .getResource();
                         IWorkbenchPage page = getSite().getPage();
-                        for (IEditorReference ref : page.getEditorReferences()) {
+                        for (IEditorReference ref : page
+                                .getEditorReferences()) {
                             IEditorInput input = null;
                             try {
                                 input = ref.getEditorInput();
@@ -429,8 +435,9 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                         pie.getLocalizedMessage(), pie);
                             }
                             if (input instanceof LocalizationEditorInput) {
-                                if (file.equals(((LocalizationEditorInput) input)
-                                        .getFile())) {
+                                if (file.equals(
+                                        ((LocalizationEditorInput) input)
+                                                .getFile())) {
                                     /*
                                      * Can only safely pass true to getEditor()
                                      * once above conditions are met.
@@ -464,7 +471,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                 new LocalizationFileEntryData[] { data }).run();
                     } else {
                         populateNode(ti);
-                        if (ti.getExpanded() == false) {
+                        if (!ti.getExpanded()) {
                             ti.setExpanded(true);
                         } else {
                             ti.setExpanded(false);
@@ -488,7 +495,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         tree.setMenu(menu);
 
         IToolBarManager mgr = getViewSite().getActionBars().getToolBarManager();
-        Action linkAction = new Action("Link with Editor", IAction.AS_CHECK_BOX) {
+        Action linkAction = new Action("Link with Editor",
+                IAction.AS_CHECK_BOX) {
             @Override
             public void run() {
                 linkWithEditor = !linkWithEditor;
@@ -572,7 +580,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         buildSelectionSet(tree.getSelection(), selectionSet, item);
         // Recursively repopulate
         repopulateTreeItemRecursive(item);
-        if (item.isDisposed() == false) {
+        if (!item.isDisposed()) {
             // If item wasn't removed, reselect items
             List<TreeItem> selected = new ArrayList<>();
             select(selected, selectionSet, item);
@@ -585,7 +593,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         if (item.getData() instanceof FileTreeEntryData) {
             // These are directory nodes
             FileTreeEntryData data = (FileTreeEntryData) item.getData();
-            if (((data instanceof LocalizationFileEntryData) == false)
+            if (!((data instanceof LocalizationFileEntryData))
                     && data.hasRequestedChildren()) {
                 // Item has been populated, refresh
                 Map<FileTreeEntryData, Boolean> expandMap = new HashMap<>();
@@ -678,20 +686,16 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         String name = pd.getName();
         if (application.contains(File.separator)
                 || application.contains(IPathManager.SEPARATOR)) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Problem adding "
-                                    + pd.getApplication()
-                                    + " folder: Path names cannot contain path separator string");
+            statusHandler.handle(Priority.PROBLEM, "Problem adding "
+                    + pd.getApplication()
+                    + " folder: Path names cannot contain path separator string");
             return;
         }
         if (name.contains(File.separator)
                 || name.contains(IPathManager.SEPARATOR)) {
-            statusHandler
-                    .handle(Priority.PROBLEM,
-                            "Problem adding "
-                                    + pd.getName()
-                                    + " folder: Path names cannot contain path separator string");
+            statusHandler.handle(Priority.PROBLEM, "Problem adding "
+                    + pd.getName()
+                    + " folder: Path names cannot contain path separator string");
             return;
         }
 
@@ -705,14 +709,14 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
         if (applicationItem == null) {
             // Create tree item for application
-            applicationItem = new TreeItem(tree, SWT.NONE, getInsertionIndex(
-                    tree.getItems(), application));
+            applicationItem = new TreeItem(tree, SWT.NONE,
+                    getInsertionIndex(tree.getItems(), application));
             applicationItem.setText(application);
             applicationItem.setImage(directoryImage);
 
             // Create folder in project for application
             IFolder folder = localizationProject.getFolder(application);
-            if (folder.exists() == false) {
+            if (!folder.exists()) {
                 try {
                     folder.create(true, true, null);
                 } catch (CoreException e) {
@@ -741,7 +745,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
     private IFolder createFolder(IFolder parent, String name) {
         IFolder folder = parent.getFolder(name);
-        if (folder.exists() == false) {
+        if (!folder.exists()) {
             try {
                 folder.create(true, true, null);
             } catch (CoreException e) {
@@ -761,7 +765,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
      * @return
      */
     private int getInsertionIndex(TreeItem[] curItems, String name) {
-        int idx = curItems.length; // add to end
+        /* add to end */
+        int idx = curItems.length;
         for (int i = 0; i < curItems.length; ++i) {
             String text = curItems[i].getText();
             int comp = text.compareToIgnoreCase(name);
@@ -800,7 +805,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 }
             }
 
-            if (dataList.size() > 0) {
+            if (!dataList.isEmpty()) {
                 // Verify the PathData objects are the same
                 PathData prev = dataList.get(0).getPathData();
                 for (FileTreeEntryData data : dataList) {
@@ -812,12 +817,10 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     }
                 }
 
-                if (dataList.size() > 0) {
+                if (!dataList.isEmpty()) {
                     // All the same... add adapter items
-                    if (prev.getAdapter().addContextMenuItems(
-                            mgr,
-                            dataList.toArray(new FileTreeEntryData[dataList
-                                    .size()]))) {
+                    if (prev.getAdapter().addContextMenuItems(mgr, dataList
+                            .toArray(new FileTreeEntryData[dataList.size()]))) {
                         mgr.add(new Separator());
                     }
                 }
@@ -847,9 +850,9 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 // add open with...
                 LocalizationFileEntryData data = (LocalizationFileEntryData) selected[0]
                         .getData();
-                mgr.add(new OpenWithAction(getSite().getPage(), fileDataList
-                        .get(0), data.getResource(), data.getPathData()
-                        .getAdapter()));
+                mgr.add(new OpenWithAction(getSite().getPage(),
+                        fileDataList.get(0), data.getResource(),
+                        data.getPathData().getAdapter()));
             }
             mgr.add(new Separator());
         }
@@ -864,8 +867,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             });
 
             mgr.add(new CopyToAction(fileDataList.get(0), this));
-            mgr.add(new DeleteAction(getSite().getPage(), fileList
-                    .toArray(new LocalizationFile[0])));
+            mgr.add(new DeleteAction(getSite().getPage(),
+                    fileList.toArray(new LocalizationFile[0])));
 
             mgr.add(new Separator());
         } else if ((selected.length == 1)
@@ -875,8 +878,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     (LocalizationFileGroupData) selected[0].getData()));
             mgr.add(new Separator());
         } else if (fileList.size() == selected.length) {
-            mgr.add(new DeleteAction(getSite().getPage(), fileList
-                    .toArray(new LocalizationFile[fileList.size()])));
+            mgr.add(new DeleteAction(getSite().getPage(),
+                    fileList.toArray(new LocalizationFile[fileList.size()])));
             mgr.add(new Separator());
         } else {
             LocalizationFile[] toDelete = buildDeleteFileList(selected);
@@ -889,8 +892,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
 
         // Add the move to item
         if ((selected.length == 1) && (fileDataList.size() == 1)) {
-            mgr.add(new MoveFileAction(getSite().getPage(),
-                    fileDataList.get(0), this));
+            mgr.add(new MoveFileAction(getSite().getPage(), fileDataList.get(0),
+                    this));
             mgr.add(new Separator());
         }
 
@@ -905,10 +908,10 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     LocalizationFileEntryData right = (LocalizationFileEntryData) selected[1]
                             .getData();
                     LocalizationCompareEditorInput editorInput = new LocalizationCompareEditorInput(
-                            new LocalizationEditorInput(left.getFile(), left
-                                    .getResource()),
-                            new LocalizationEditorInput(right.getFile(), right
-                                    .getResource()));
+                            new LocalizationEditorInput(left.getFile(),
+                                    left.getResource()),
+                            new LocalizationEditorInput(right.getFile(),
+                                    right.getResource()));
                     CompareUI.openCompareEditor(editorInput);
                 }
 
@@ -935,9 +938,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 if (fdata.isDirectory()) {
                     // We can import into true directories, not group datas
                     mgr.add(new Separator());
-                    mgr.add(new ImportFileAction(
-                            fdata.getPathData().getTypes(), fdata.getPath(),
-                            fdata.getPathData().getFilter()));
+                    mgr.add(new ImportFileAction(fdata.getPathData().getTypes(),
+                            fdata.getPath(), fdata.getPathData().getFilter()));
                 }
             }
         }
@@ -1044,10 +1046,10 @@ public class FileTreeView extends ViewPart implements IPartListener2,
      */
     private void refresh(TreeItem... items) {
         for (TreeItem item : items) {
-            if (item.isDisposed() == false) {
+            if (!item.isDisposed()) {
                 // If item is disposed, it was a child of a previous item and
                 // already refreshed
-                if ((item.getData() instanceof FileTreeEntryData) == false) {
+                if (!(item.getData() instanceof FileTreeEntryData)) {
                     // Application level node, refresh children
                     refresh(item.getItems());
                 } else {
@@ -1064,8 +1066,9 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                         // rsc is folder (either directory or group of files)
                         IPathManager pm = PathManagerFactory.getPathManager();
                         ILocalizationFile file = pm.getStaticLocalizationFile(
-                                getTreeSearchContexts(data.getPathData()
-                                        .getTypes()), data.getPath());
+                                getTreeSearchContexts(
+                                        data.getPathData().getTypes()),
+                                data.getPath());
                         if (file == null || !file.exists()) {
                             item.dispose();
                         } else {
@@ -1090,7 +1093,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         }
 
         // Top (Application) level has no data to request
-        if ((parentItem.getData() instanceof FileTreeEntryData) == false) {
+        if (!(parentItem.getData() instanceof FileTreeEntryData)) {
             return false;
         }
 
@@ -1123,9 +1126,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             parentItem.removeAll();
 
             for (LocalizationFile file : files) {
-                if (checkName
-                        && (file.getPath().isEmpty() || data.getPath().equals(
-                                file.getPath()))) {
+                if (checkName && (file.getPath().isEmpty()
+                        || data.getPath().equals(file.getPath()))) {
                     continue;
                 }
                 if (file.exists()) {
@@ -1168,8 +1170,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             if (showAllSet.contains(level) && showSet.contains(level)) {
                 Set<String> contexts = contextMap.get(level);
                 if (contexts == null) {
-                    contexts = new HashSet<>(Arrays.asList(pathManager
-                            .getContextList(level)));
+                    contexts = new HashSet<>(
+                            Arrays.asList(pathManager.getContextList(level)));
                     contextMap.put(level, contexts);
                 }
                 String myContext = LocalizationManager.getContextName(level);
@@ -1188,8 +1190,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 }
             }
         }
-        return searchContexts.toArray(new LocalizationContext[searchContexts
-                .size()]);
+        return searchContexts
+                .toArray(new LocalizationContext[searchContexts.size()]);
     }
 
     private void populateDirectoryDataNode(TreeItem parentItem,
@@ -1202,7 +1204,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         // we are expanding a folder
         for (LocalizationFile file : files) {
             String name = file.getPath();
-            if (processedPaths.contains(name) == false) {
+            if (!processedPaths.contains(name)) {
                 FileTreeEntryData treeData = null;
                 if (file.isDirectory()) {
                     treeData = new FileTreeEntryData(pd, name);
@@ -1213,7 +1215,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 addTreeItem(parentItem, treeData);
                 processedPaths.add(name);
             }
-            if (file.isDirectory() == false) {
+            if (!file.isDirectory()) {
                 List<LocalizationFile> entryFiles = processedFiles.get(name);
                 if (entryFiles == null) {
                     entryFiles = new ArrayList<>();
@@ -1288,10 +1290,10 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     try {
                         rsc.delete(true, null);
                     } catch (CoreException e) {
-                        statusHandler.handle(
-                                Priority.PROBLEM,
+                        statusHandler.handle(Priority.PROBLEM,
                                 "Error deleting resource: "
-                                        + e.getLocalizedMessage(), e);
+                                        + e.getLocalizedMessage(),
+                                e);
                     }
                 }
             }
@@ -1305,7 +1307,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
      * @param treeData
      * @return new TreeItem
      */
-    private TreeItem addTreeItem(TreeItem parentItem, FileTreeEntryData treeData) {
+    private TreeItem addTreeItem(TreeItem parentItem,
+            FileTreeEntryData treeData) {
         String name = treeData.getName();
         ILocalizationFile file = null;
         int idx = parentItem.getItemCount();
@@ -1315,7 +1318,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             LocalizationContext ctx = file.getContext();
             LocalizationLevel level = ctx.getLocalizationLevel();
             StringBuilder nameBuilder = new StringBuilder(level.toString());
-            if (entryData.isMultipleTypes() || level != LocalizationLevel.BASE) {
+            if (entryData.isMultipleTypes()
+                    || level != LocalizationLevel.BASE) {
                 nameBuilder.append(" (");
                 if (level != LocalizationLevel.BASE) {
                     nameBuilder.append(ctx.getContextName());
@@ -1324,8 +1328,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     if (level != LocalizationLevel.BASE) {
                         nameBuilder.append(" - ");
                     }
-                    nameBuilder.append(ctx.getLocalizationType().name()
-                            .toLowerCase());
+                    nameBuilder.append(
+                            ctx.getLocalizationType().name().toLowerCase());
                 }
                 nameBuilder.append(")");
             }
@@ -1535,12 +1539,12 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         FileTreeEntryData data = (FileTreeEntryData) item.getData();
         if (data.getPathData().getTypes().contains(ctx.getLocalizationType())) {
             java.nio.file.Path itemPath = Paths.get(data.getPath());
-            if (path.startsWith(itemPath)) {
+            if (path.startsWith(itemPath) || itemPath.getNameCount() == 0) {
                 if (path.equals(itemPath)
-                        || ((data.hasRequestedChildren() == false) && !populateToFind)) {
+                        || (!data.hasRequestedChildren() && !populateToFind)) {
                     return item;
                 } else {
-                    if (data.hasRequestedChildren() == false) {
+                    if (!data.hasRequestedChildren()) {
                         populateNode(item);
                     }
                     for (TreeItem child : item.getItems()) {
@@ -1567,8 +1571,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
         try {
             input = partRef.getEditorInput();
         } catch (PartInitException e) {
-            statusHandler.handle(Priority.PROBLEM, "Error activating editor: "
-                    + e.getLocalizedMessage(), e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error activating editor: " + e.getLocalizedMessage(), e);
         }
         if ((input instanceof LocalizationEditorInput) && linkWithEditor) {
             selectFile(((LocalizationEditorInput) input).getLocalizationFile());
@@ -1599,11 +1603,12 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                     LocalizationEditorInput input = (LocalizationEditorInput) editorInput;
                     IFile inputFile = input.getFile();
                     IResourceDelta rootDelta = event.getDelta();
-                    IResourceDelta docDelta = rootDelta.findMember(inputFile
-                            .getFullPath());
+                    IResourceDelta docDelta = rootDelta
+                            .findMember(inputFile.getFullPath());
                     if ((docDelta != null)
                             && (docDelta.getKind() == IResourceDelta.CHANGED)
-                            && ((docDelta.getFlags() & IResourceDelta.CONTENT) == IResourceDelta.CONTENT)) {
+                            && ((docDelta.getFlags()
+                                    & IResourceDelta.CONTENT) == IResourceDelta.CONTENT)) {
                         LocalizationFile file = input.getLocalizationFile();
                         if (!file.getContext().getLocalizationLevel()
                                 .isSystemLevel()) {
@@ -1612,7 +1617,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                 try {
                                     // Check if local changes differ from server
                                     String localChecksum = Checksum
-                                            .getMD5Checksum(file.getFile(false));
+                                            .getMD5Checksum(
+                                                    file.getFile(false));
                                     IPathManager pm = PathManagerFactory
                                             .getPathManager();
                                     String remoteChecksum = pm
@@ -1643,10 +1649,11 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                                     input.refreshLocalizationFile();
                                 }
                             } catch (LocalizationException e) {
-                                statusHandler.handle(
-                                        Priority.ERROR,
-                                        "Error saving file: "
-                                                + e.getLocalizedMessage(), e);
+                                statusHandler
+                                        .handle(Priority.ERROR,
+                                                "Error saving file: "
+                                                        + e.getLocalizedMessage(),
+                                                e);
                             }
                         }
                     }
@@ -1677,9 +1684,10 @@ public class FileTreeView extends ViewPart implements IPartListener2,
                 filePath);
 
         if (file != null) {
-            if (((file.exists() == false) && ((type == FileChangeType.ADDED) || (type == FileChangeType.UPDATED)))
+            if ((!file.exists() && ((type == FileChangeType.ADDED)
+                    || (type == FileChangeType.UPDATED)))
                     || (file.exists() && (type == FileChangeType.DELETED))) {
-                System.err.println("Got weird state in update for " + file
+                statusHandler.debug("Got weird state in update for " + file
                         + ": exists=" + file.exists() + ", changeType="
                         + message.getChangeType());
             }
@@ -1792,7 +1800,7 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             // An item was found, if it is not an entry for this file, refresh
             // the item and search again
             FileTreeEntryData data = (FileTreeEntryData) item.getData();
-            if ((data instanceof LocalizationFileEntryData) == false) {
+            if (!(data instanceof LocalizationFileEntryData)) {
                 refresh(item);
                 item = find(file, true, true);
             }
@@ -1800,27 +1808,28 @@ public class FileTreeView extends ViewPart implements IPartListener2,
             if (item.getData() instanceof LocalizationFileEntryData) {
                 LocalizationFileEntryData fileData = (LocalizationFileEntryData) item
                         .getData();
-                LocalizationEditorUtils.openInEditor(
-                        page,
-                        new LocalizationEditorInput(file, fileData
-                                .getResource()));
+                LocalizationEditorUtils.openInEditor(page,
+                        new LocalizationEditorInput(file,
+                                fileData.getResource()));
                 fileOpened = true;
             }
         }
         if (!fileOpened) {
             // File was not opened, send status
-            VizException e = new VizException("Unable to find " + file
-                    + " in view to open");
+            VizException e = new VizException(
+                    "Unable to find " + file + " in view to open");
             statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(), e);
         }
     }
 
     @Override
     public void activateEditor(IEditorPart editor) {
-        selectItem((IEditorReference) (getSite().getPage().getReference(editor)));
+        selectItem(
+                (IEditorReference) (getSite().getPage().getReference(editor)));
     }
 
-    private void toggleSet(Set<LocalizationLevel> set, LocalizationLevel level) {
+    private void toggleSet(Set<LocalizationLevel> set,
+            LocalizationLevel level) {
         if (set.contains(level)) {
             set.remove(level);
         } else {
@@ -1876,7 +1885,8 @@ public class FileTreeView extends ViewPart implements IPartListener2,
          * refresh/update nodes as necessary
          */
         FileChangeType t = null;
-        if (ILocalizationFile.NON_EXISTENT_CHECKSUM.equals(file.getCheckSum())) {
+        if (ILocalizationFile.NON_EXISTENT_CHECKSUM
+                .equals(file.getCheckSum())) {
             t = FileChangeType.DELETED;
         } else {
             /*
