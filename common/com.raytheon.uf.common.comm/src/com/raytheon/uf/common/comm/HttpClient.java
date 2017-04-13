@@ -489,6 +489,7 @@ public class HttpClient {
                          * to the EDEX that is shutting down.  Otherwise, the retry
                          * may just go to the same server again.
                          */
+                        put.abort();
                         wantRetryDelay = true;
                         errorMsg = "Service unavailable";
                         exc = new CommunicationException(errorMsg);
