@@ -156,7 +156,7 @@
          id="org.apache.camel"
          download-size="0"
          install-size="0"
-         version="2.18.2"/>
+         version="2.18.3"/>
 
    <plugin
          id="org.apache.commons.management"
