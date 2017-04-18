@@ -74,14 +74,13 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  *                                    when recycle fails.
  * Jul 30, 2015  17761    D. Friemdan Support time matching based on descriptor
  *                                    frame times.
- * 
+ * Apr 18, 2017  6047     bsteffen    synchronize access to dataTimes to prevent
+ *                                    unexpected exceptions.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
-
 @SuppressWarnings("unchecked")
 public abstract class AbstractVizResource<T extends AbstractResourceData, D extends IDescriptor> {
 
@@ -100,7 +99,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * Should be returned if a resource does not pertain to time (e.g. static
      * map backgrounds)
      */
-    public static final List<DataTime> TIME_AGNOSTIC = Collections.EMPTY_LIST;
+    public static final List<DataTime> TIME_AGNOSTIC = Collections.emptyList();
 
     /**
      * The descriptor that this resource is contained in. This is frequently
@@ -177,14 +176,15 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @param capabilities
      *            the capabilities
      */
-    protected AbstractVizResource(T resourceData, LoadProperties loadProperties) {
+    protected AbstractVizResource(T resourceData,
+            LoadProperties loadProperties) {
         this.resourceData = resourceData;
         this.loadProperties = loadProperties;
-        refreshListeners = new CopyOnWriteArraySet<IRefreshListener>();
-        initListeners = new CopyOnWriteArraySet<IInitListener>();
-        paintListeners = new CopyOnWriteArraySet<IPaintListener>();
-        paintStatusListeners = new CopyOnWriteArraySet<IPaintStatusChangedListener>();
-        disposeListeners = new CopyOnWriteArraySet<IDisposeListener>();
+        refreshListeners = new CopyOnWriteArraySet<>();
+        initListeners = new CopyOnWriteArraySet<>();
+        paintListeners = new CopyOnWriteArraySet<>();
+        paintStatusListeners = new CopyOnWriteArraySet<>();
+        disposeListeners = new CopyOnWriteArraySet<>();
 
         if (resourceData != null) {
             resourceData.addChangeListener(changeListener);
@@ -235,7 +235,8 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @param capability
      * @return true if resource has the capability; false otherwise
      */
-    public boolean hasCapability(Class<? extends AbstractCapability> capability) {
+    public boolean hasCapability(
+            Class<? extends AbstractCapability> capability) {
         return getLoadProperties().getCapabilities().hasCapability(capability);
     }
 
@@ -245,14 +246,17 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @return the currently loaded set of datatimes
      */
     public DataTime[] getDataTimes() {
-        return this.dataTimes.toArray(new DataTime[this.dataTimes.size()]);
+        synchronized (dataTimes) {
+            return this.dataTimes.toArray(new DataTime[this.dataTimes.size()]);
+        }
     }
 
     /**
      * Get a list of displayable times given the set of frame times as a hint.
      *
-     * @param timeSteps Base frame time steps or null if not specified (the
-     * resource should return times as if it were the time match basis.)
+     * @param timeSteps
+     *            Base frame time steps or null if not specified (the resource
+     *            should return times as if it were the time match basis.)
      * @return the currently loaded set of datatimes
      */
     public DataTime[] getMatchedDataTimes(DataTime[] timeSteps) {
@@ -269,7 +273,9 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      *            the data time to remove
      */
     public void remove(DataTime dataTime) {
-        this.dataTimes.remove(dataTime);
+        synchronized (dataTimes) {
+            this.dataTimes.remove(dataTime);
+        }
     }
 
     /**
@@ -340,7 +346,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @throws VizException
      */
     public void project(CoordinateReferenceSystem crs) throws VizException {
-        return; // NO OP
+        return;
     }
 
     /**
@@ -353,7 +359,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @param updateObject
      */
     protected void resourceDataChanged(ChangeType type, Object updateObject) {
-        return; // No OP
+        return;
     }
 
     /**
@@ -777,7 +783,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
         }
         status = ResourceStatus.NEW;
         initJob = null;
-        if (dataTimes.isEmpty() == false) {
+        if (!dataTimes.isEmpty()) {
             dataTimes.clear();
         }
     }
