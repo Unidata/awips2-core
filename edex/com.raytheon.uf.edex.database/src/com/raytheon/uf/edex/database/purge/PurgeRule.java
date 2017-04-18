@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,15 +38,16 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * This class contains a rule used for purging data from the data store. This
  * class was derived from the AWIPS I purgeInfo.txt file.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * 2/15/11      #2469       bphillip    Initial creation
@@ -54,9 +55,10 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      to be {@link PurgeKeyValue}.
  * 01/28/2016   #5262       bkowal      Handle empty key/value pairs in rules non-default
  *                                      rules.
- * 
+ * Apr 14, 2017 6003        tgurney     Add modTimeToWaitApplied flag
+ *
  * </pre>
- * 
+ *
  * @author bphillip
  * @version 1
  */
@@ -159,6 +161,8 @@ public class PurgeRule {
     @DynamicSerializeElement
     private String ruleDescription;
 
+    private boolean modTimeToWaitApplied = false;
+
     /**
      * Creates a new empty purge rule
      */
@@ -183,7 +187,7 @@ public class PurgeRule {
 
     /**
      * Gets the key values associated with the PurgeRuleSet keys.
-     * 
+     *
      * @return
      */
     public List<PurgeKeyValue> getKeyValues() {
@@ -192,7 +196,7 @@ public class PurgeRule {
 
     /**
      * Sets the key values associated with the PurgeRuleSet keys.
-     * 
+     *
      * @param keyValues
      */
     public void setKeyValues(List<PurgeKeyValue> keyValues) {
@@ -201,7 +205,7 @@ public class PurgeRule {
 
     /**
      * Gets the time period in milliseconds
-     * 
+     *
      * @return The time period in milliseconds
      */
     public long getPeriodInMillis() {
@@ -210,7 +214,7 @@ public class PurgeRule {
 
     /**
      * Gets the round time in milliseconds
-     * 
+     *
      * @return The round time in milliseconds
      */
     public long getRoundInMillis() {
@@ -219,7 +223,7 @@ public class PurgeRule {
 
     /**
      * Gets the last modification time in milliseconds
-     * 
+     *
      * @return The last modification time in milliseconds
      */
     public long getModTimeToWaitInMillis() {
@@ -228,7 +232,7 @@ public class PurgeRule {
 
     /**
      * Gets the delta time in milliseconds
-     * 
+     *
      * @return The delta time in milliseconds
      */
     public long getDeltaTimeInMillis() {
@@ -237,7 +241,7 @@ public class PurgeRule {
 
     /**
      * Checks if this rule specifies versions to keep
-     * 
+     *
      * @return True if versions to keep are specified
      */
     public boolean isVersionsToKeepSpecified() {
@@ -246,43 +250,43 @@ public class PurgeRule {
 
     /**
      * Checks if this rule specifies a delta time
-     * 
+     *
      * @return True if a delta time is specified
      */
     public boolean isDeltaSpecified() {
-        return !this.delta.equals("0");
+        return !"0".equals(this.delta);
     }
 
     /**
      * Checks if this rule specifies a last modification time to wait period
-     * 
+     *
      * @return True if one is specified
      */
     public boolean isModTimeToWaitSpecified() {
-        return !modTimeToWait.equals("0");
+        return !"0".equals(modTimeToWait);
     }
 
     /**
      * Checks if this rule specifies a rounding time
-     * 
+     *
      * @return True if a rounding time is specified
      */
     public boolean isRoundSpecified() {
-        return !round.equals("0");
+        return !"0".equals(round);
     }
 
     /**
      * Checks if this rule specifies a period
-     * 
+     *
      * @return True if a period is specified
      */
     public boolean isPeriodSpecified() {
-        return !period.equals("0");
+        return !"0".equals(period);
     }
 
     /**
      * Checks if the round value should be added
-     * 
+     *
      * @return True if the round value should be added
      */
     public boolean isRoundAdditive() {
@@ -291,7 +295,7 @@ public class PurgeRule {
 
     /**
      * Checks if the delta time specifies an exact multiple
-     * 
+     *
      * @return True if the deta time is to be used as an exact multiple
      */
     public boolean isDeltaTimeMultiple() {
@@ -300,7 +304,7 @@ public class PurgeRule {
 
     /**
      * Checks if the delta time is to be an estimate
-     * 
+     *
      * @return True if the delta time is to be used as an estimate
      */
     public boolean isDeltaTimeClosest() {
@@ -310,7 +314,7 @@ public class PurgeRule {
     /**
      * Checks if the period specified is to use the latest data time instead of
      * the current time
-     * 
+     *
      * @return True if the period is to use the latest data time instead of the
      *         current time
      */
@@ -320,7 +324,7 @@ public class PurgeRule {
 
     /**
      * Gets the human readable description of the modification time to wait
-     * 
+     *
      * @return The human readable description of the modification time to way
      */
     public String getModTimeToWaitDescription() {
@@ -330,7 +334,7 @@ public class PurgeRule {
     /**
      * Gets the rounded time for the given date based on the delta time
      * specified
-     * 
+     *
      * @param refTime
      *            The time to round
      * @return The rounded time for the given date based on the delta time
@@ -340,8 +344,8 @@ public class PurgeRule {
         Date timeToCompare = new Date(refTime.getTime());
         if (this.isRoundSpecified()) {
             if (this.isRoundAdditive()) {
-                timeToCompare.setTime(refTime.getTime()
-                        + this.getRoundInMillis());
+                timeToCompare
+                        .setTime(refTime.getTime() + this.getRoundInMillis());
             } else {
                 /*
                  * Determine the upper and lower bounds based on the delta time
@@ -354,8 +358,8 @@ public class PurgeRule {
                 long quotient = timeInMillis / roundInMillis;
                 lowerLimit = new Date(quotient * roundInMillis);
                 upperLimit = new Date((quotient + 1) * roundInMillis);
-                if ((timeInMillis - lowerLimit.getTime()) < (upperLimit
-                        .getTime() - timeInMillis)) {
+                if (timeInMillis - lowerLimit.getTime() < upperLimit.getTime()
+                        - timeInMillis) {
                     timeToCompare = lowerLimit;
                 } else {
                     timeToCompare = upperLimit;
@@ -369,7 +373,7 @@ public class PurgeRule {
      * Determines if there is regex that needs to be compiled for this rule.
      * This method returns true if the regex attribute is set on the word,
      * itself, or on a key value within the rule.
-     * 
+     *
      * @return true, if the rule should be evaluated as a regex rule; false,
      *         otherwise.
      */
@@ -429,7 +433,7 @@ public class PurgeRule {
 
     /**
      * Gets the human readable description of this rule
-     * 
+     *
      * @return The human readable description of this rule
      */
     public String getRuleDescription(List<String> keys) {
@@ -438,7 +442,7 @@ public class PurgeRule {
 
             StringBuilder builder = new StringBuilder();
 
-            if ((keys == null) || keys.isEmpty() || (keyValues == null)
+            if (keys == null || keys.isEmpty() || keyValues == null
                     || keyValues.isEmpty()) {
                 builder.append("Default rule, ");
             } else {
@@ -489,18 +493,18 @@ public class PurgeRule {
 
     /**
      * Gets the human readable version of the round time
-     * 
+     *
      * @param builder
      *            The string builder to append to
      */
     private void getRoundClause(StringBuilder builder) {
         if (isRoundSpecified()) {
             if (isRoundAdditive()) {
-                builder.append("plus ").append(
-                        this.getTimeDescription(this.round));
+                builder.append("plus ")
+                        .append(this.getTimeDescription(this.round));
             } else {
-                builder.append("rounding to ").append(
-                        this.getTimeDescription(this.round));
+                builder.append("rounding to ")
+                        .append(this.getTimeDescription(this.round));
             }
         } else {
             builder.append("with no rounding applied ");
@@ -509,7 +513,7 @@ public class PurgeRule {
 
     /**
      * Gets the human readable version of the versions to keep
-     * 
+     *
      * @param builder
      *            The string builder to append to
      */
@@ -524,14 +528,14 @@ public class PurgeRule {
 
     /**
      * Gets the human readable version of the period
-     * 
+     *
      * @param builder
      *            The string builder to append to
      */
     private void getPeriodClause(StringBuilder builder) {
         if (isPeriodSpecified()) {
-            builder.append("newer than ").append(
-                    getTimeDescription(this.period));
+            builder.append("newer than ")
+                    .append(getTimeDescription(this.period));
             if (isPeriodBasedOnLatestTime()) {
                 builder.append("based on the most recent reference time.");
             } else {
@@ -542,7 +546,7 @@ public class PurgeRule {
 
     /**
      * Parses a given formatted time into milliseconds
-     * 
+     *
      * @param time
      *            The time to parse
      * @return The milliseconds represented by the given formatted time
@@ -563,14 +567,16 @@ public class PurgeRule {
         long seconds = 0;
 
         // Default to 12 hours
-        long milliseconds = 43200000;
+        long milliseconds = 12 * TimeUtil.MILLIS_PER_HOUR;
         if (timeMatcher.find()) {
             days = Long.parseLong(timeMatcher.group(1));
             hours = Long.parseLong(timeMatcher.group(2));
             minutes = Long.parseLong(timeMatcher.group(3));
             seconds = Long.parseLong(timeMatcher.group(4));
-            milliseconds = seconds * 1000 + minutes * 60000 + hours * 3600000
-                    + days * 86400000;
+            milliseconds = seconds * TimeUtil.MILLIS_PER_SECOND
+                    + minutes * TimeUtil.MILLIS_PER_MINUTE
+                    + hours * TimeUtil.MILLIS_PER_HOUR
+                    + days * TimeUtil.MILLIS_PER_DAY;
         } else {
             statusHandler.handle(Priority.ERROR,
                     "Encountered incorrectly formatted time period: "
@@ -582,7 +588,7 @@ public class PurgeRule {
 
     /**
      * Gets the human readable form of the given formatted time
-     * 
+     *
      * @param time
      *            The time to translate
      * @return The human readable form of the given formatted time
@@ -651,6 +657,9 @@ public class PurgeRule {
      * @return the versionsToKeep
      */
     public int getVersionsToKeep() {
+        if (modTimeToWaitApplied) {
+            return versionsToKeep + 1;
+        }
         return versionsToKeep;
     }
 
@@ -735,5 +744,13 @@ public class PurgeRule {
      */
     public void setLogOnly(boolean logOnly) {
         this.logOnly = logOnly;
+    }
+
+    public boolean isModTimeToWaitApplied() {
+        return modTimeToWaitApplied;
+    }
+
+    public void setModTimeToWaitApplied(boolean modTimeToWaitApplied) {
+        this.modTimeToWaitApplied = modTimeToWaitApplied;
     }
 }
