@@ -69,24 +69,24 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
  * Jun 24, 2013  2140     randerso    Added paintResource method
  * Oct 22, 2013  2491     bsteffen    Switch clone to ProcedureXmlManager
  * Dec 09, 2016  6027     bsteffen    Copy bounds in clone
+ * Apr 18, 2017  6049     bsteffen    Fix race condition causing NPE
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractRenderableDisplay.class);
 
-    private static RGB BACKGROUND_COLOR = null;
+    private static volatile RGB BACKGROUND_COLOR = null;
 
     protected static RGB getStartingBackgroundColor() {
         if (BACKGROUND_COLOR == null) {
             if (PlatformUI.isWorkbenchRunning()) {
-                BACKGROUND_COLOR = ColorFactory.getInstance().getColor(
-                        "com.raytheon.uf.viz.core.backgroundColor");
+                BACKGROUND_COLOR = ColorFactory.getInstance()
+                        .getColor("com.raytheon.uf.viz.core.backgroundColor");
             } else {
                 return new RGB(0, 0, 0);
             }
@@ -94,7 +94,8 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         return BACKGROUND_COLOR;
     }
 
-    public static final int CURSOR_HEIGHT = 18; // guesstimate of cursor
+    /* guesstimate of cursor */
+    public static final int CURSOR_HEIGHT = 18;
 
     protected RGB backgroundColor;
 
@@ -110,18 +111,18 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     protected IDisplayPaneContainer container;
 
     /** The blink interval in milliseconds. */
-    long blinkInterval = 500;
+    protected long blinkInterval = 500;
 
     /** The last blink time in computer epoch milliseconds */
-    long timeLastBlink;
+    protected long timeLastBlink;
 
-    boolean currentBlinkState;
+    protected boolean currentBlinkState;
 
     protected RenderableDisplayListener listener;
 
     private boolean swapping = false;
 
-    private Map<String, Object> globals = new HashMap<String, Object>();
+    private Map<String, Object> globals = new HashMap<>();
 
     private AbstractGraphicsFactoryAdapter graphicsAdapter;
 
@@ -142,10 +143,10 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     public void dispose() {
         if (this.descriptor != null) {
             descriptor.getResourceList().clear();
-            this.descriptor.getResourceList().removePostAddListener(
-                    this.listener);
-            this.descriptor.getResourceList().removePostRemoveListener(
-                    this.listener);
+            this.descriptor.getResourceList()
+                    .removePostAddListener(this.listener);
+            this.descriptor.getResourceList()
+                    .removePostRemoveListener(this.listener);
         }
         this.initializedTarget = null;
     }
@@ -191,11 +192,6 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         view.scaleToClientArea(clientArea, getDimensions());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IRenderableDisplay#isBlinking()
-     */
     @Override
     public boolean isBlinking() {
         if (blinkInterval == 0.0) {
@@ -218,7 +214,8 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
 
     @Override
     public boolean isBlinkStateChanged() {
-        return (System.currentTimeMillis() - this.timeLastBlink) > blinkInterval;
+        return (System.currentTimeMillis()
+                - this.timeLastBlink) > blinkInterval;
     }
 
     @Override
@@ -243,10 +240,10 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     @Override
     public void setDescriptor(IDescriptor desc) {
         if (this.descriptor != null) {
-            this.descriptor.getResourceList().removePostAddListener(
-                    this.listener);
-            this.descriptor.getResourceList().removePostRemoveListener(
-                    this.listener);
+            this.descriptor.getResourceList()
+                    .removePostAddListener(this.listener);
+            this.descriptor.getResourceList()
+                    .removePostRemoveListener(this.listener);
         }
 
         this.descriptor = (AbstractDescriptor) desc;
@@ -276,84 +273,38 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         return new int[] { getWorldWidth(), getWorldHeight(), 0 };
     }
 
-    /**
-     * @return the view
-     */
     @Override
     public IView getView() {
         return view;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#gridToScreen(double
-     * [], com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public double[] gridToScreen(double[] grid, IGraphicsTarget target) {
         return this.view.gridToScreen(grid, target);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#recalcZoomLevel
-     * (int[])
-     */
     @Override
     public double recalcZoomLevel(int[] dimensions) {
         return this.view.recalcZoomLevel(dimensions);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#scaleAndBias(double
-     * , double, double, com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public void scaleAndBias(double factor, double screenX, double screenY,
             IGraphicsTarget target) {
         this.view.scaleAndBias(factor, screenX, screenY, target);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#scaleToClientArea
-     * (org.eclipse.swt.graphics.Rectangle,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay)
-     */
     @Override
     public void scaleToClientArea(Rectangle clientArea) {
         this.view.scaleToClientArea(clientArea, getDimensions());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#screenToGrid(double
-     * , double, double, com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public double[] screenToGrid(double x, double y, double depth,
             IGraphicsTarget target) {
         return this.view.screenToGrid(x, y, depth, target);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#setBounds(org.eclipse
-     * .swt.graphics.Rectangle)
-     */
     @Override
     public void setBounds(Rectangle bounds) {
         this.canvasBounds = bounds;
@@ -364,59 +315,27 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         return canvasBounds;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#setExtent(com.raytheon
-     * .uf.viz.core.IExtent)
-     */
     @Override
     public void setExtent(IExtent pe) {
         this.view.setExtent(pe);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#shiftExtent(double
-     * [], double[], com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public void shiftExtent(double[] startScreen, double[] endScreen,
             IGraphicsTarget target) {
         this.view.shiftExtent(startScreen, endScreen, target);
     }
 
-    /**
-     * Get Zoom
-     * 
-     * @return zoom
-     */
     @Override
     public double getZoom() {
         return this.view.getZoom();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.IRenderableDisplay#zoom(double)
-     */
     @Override
     public void zoom(double zoomLevel) {
         this.view.zoom(zoomLevel);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderable#paint(com.raytheon.uf.
-     * viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     public void paint(IGraphicsTarget target, PaintProperties paintProps)
             throws VizException {
@@ -435,16 +354,13 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         return paintProps;
     }
 
-    protected class RenderableDisplayListener implements AddListener,
-            RemoveListener, IRefreshListener {
+    protected class RenderableDisplayListener
+            implements AddListener, RemoveListener, IRefreshListener {
 
         @Override
         public void notifyAdd(ResourcePair rp) throws VizException {
             rp.getResource().registerListener(this);
-            if (AbstractRenderableDisplay.this.initializedTarget != null) {
-                AbstractRenderableDisplay.this.initializedTarget
-                        .setNeedsRefresh(true);
-            }
+            refreshTarget();
         }
 
         @Override
@@ -454,17 +370,18 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
                 rp.getResource().unregisterListener(this);
             }
 
-            if (AbstractRenderableDisplay.this.initializedTarget != null) {
-                AbstractRenderableDisplay.this.initializedTarget
-                        .setNeedsRefresh(true);
-            }
+            refreshTarget();
         }
 
         @Override
         public void refresh() {
-            if (AbstractRenderableDisplay.this.initializedTarget != null) {
-                AbstractRenderableDisplay.this.initializedTarget
-                        .setNeedsRefresh(true);
+            refreshTarget();
+        }
+
+        private void refreshTarget() {
+            IGraphicsTarget target = AbstractRenderableDisplay.this.initializedTarget;
+            if (target != null) {
+                target.setNeedsRefresh(true);
             }
         }
 
@@ -507,12 +424,12 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
             ProcedureXmlManager jaxb = ProcedureXmlManager.getInstance();
             AbstractRenderableDisplay clonedDisplay = jaxb.unmarshal(
                     AbstractRenderableDisplay.class, jaxb.marshal(this));
-            List<ResourcePair> rscsToRemove = new ArrayList<ResourcePair>();
+            List<ResourcePair> rscsToRemove = new ArrayList<>();
             for (ResourcePair rp : clonedDisplay.getDescriptor()
                     .getResourceList()) {
                 // Remove any non system resources or map resources
-                if (!(rp.getProperties().isMapLayer() || rp.getProperties()
-                        .isSystemResource())) {
+                if (!(rp.getProperties().isMapLayer()
+                        || rp.getProperties().isSystemResource())) {
                     rscsToRemove.add(rp);
                 }
             }
@@ -559,8 +476,8 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
 
     @Override
     public Map<String, Object> getGlobalsMap() {
-        globals.put(VizConstants.FRAME_COUNT_ID, getDescriptor()
-                .getFramesInfo().getFrameCount());
+        globals.put(VizConstants.FRAME_COUNT_ID,
+                getDescriptor().getFramesInfo().getFrameCount());
         return globals;
     }
 
@@ -587,25 +504,11 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         listener.refresh();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#getGraphicsAdapter
-     * ()
-     */
     @Override
     public AbstractGraphicsFactoryAdapter getGraphicsAdapter() {
         return graphicsAdapter;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay#setGraphicsAdapter
-     * (com.raytheon.uf.viz.core.AbstractGraphicsFactoryAdapter)
-     */
     @Override
     public void setGraphicsAdapter(AbstractGraphicsFactoryAdapter adapter) {
         if (this.graphicsAdapter != adapter) {
@@ -615,12 +518,9 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     }
 
     /**
-     * Standardized method to handle Paint Errors
-     * 
-     * @param pair
-     * @param target
-     * @param paintProps
-     * @throws VizException
+     * Standardized method to handle paint a resource and handle errors. This is
+     * usually called from the {@link #paint(IGraphicsTarget, PaintProperties)}
+     * method of subclasses.
      */
     protected void paintResource(ResourcePair pair, IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
