@@ -57,10 +57,11 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
  * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
  * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
  * Apr 25, 2016 5604        rjpeter     Updated checkPersistenceTimes to utilize same object for each call.
+ * Apr 19, 2017 6187        njensen     Improved logging
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class EDEXUtil implements ApplicationContextAware {
 
@@ -147,7 +148,7 @@ public class EDEXUtil implements ApplicationContextAware {
      * Retrieve an object from the ESB context This object could be a Spring
      * Bean, a context or a property container
      * 
-     * @param The
+     * @param name
      *            name of the object
      * @return The instance
      */
@@ -158,7 +159,7 @@ public class EDEXUtil implements ApplicationContextAware {
             result = CONTEXT.getBean(name);
         } catch (Exception e) {
             logger.error("Unable to retrieve component: " + name
-                    + " from ESB. " + e);
+                    + " from ESB.", e);
         }
 
         return result;
@@ -291,7 +292,7 @@ public class EDEXUtil implements ApplicationContextAware {
         try {
             getMessageProducer().sendAsync(alertEndpoint, sm);
         } catch (Exception e) {
-            logger.error("Could not send message to AlertViz");
+            logger.error("Could not send message to AlertViz", e);
         }
     }
 
