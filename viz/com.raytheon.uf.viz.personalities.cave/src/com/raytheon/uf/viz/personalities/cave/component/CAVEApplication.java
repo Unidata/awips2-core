@@ -90,6 +90,7 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
  * Jan 11, 2016 5232       njensen     Apply css style at startup
+ * May 31, 2016            mjames@ucar Mute CAVEMode.performStartupDuties()
  * 
  * </pre>
  * 
@@ -126,7 +127,7 @@ public class CAVEApplication implements IStandaloneComponent {
                 .addLogListener(getEclipseLogListener());
 
         UnitRegistrar.registerUnits();
-        CAVEMode.performStartupDuties();
+        //CAVEMode.performStartupDuties();
 
         ITimer timer = TimeUtil.getTimer();
         timer.start();
@@ -392,20 +393,8 @@ public class CAVEApplication implements IStandaloneComponent {
     
     @SuppressWarnings("restriction")
     protected void applyCssStyle(Display display) throws IOException {
-        CAVEMode mode = CAVEMode.getMode();
         CSSEngine cssEngine = new CSSSWTEngineImpl(this.applicationDisplay);
-        String cssFile = "css" + File.separator;
-        switch (mode) {
-        case PRACTICE:
-            cssFile += "practicemode.css";
-            break;
-        case TEST:
-            cssFile += "testmode.css";
-            break;
-        default:
-            cssFile += "viz.css";
-            break;
-        }
+        String cssFile = "css" + File.separator + "viz.css";
         Bundle b = FrameworkUtil.getBundle(CAVEApplication.class);
         IPath path = new Path(cssFile);
         try (InputStream is = FileLocator.openStream(b, path, false)) {

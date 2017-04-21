@@ -35,7 +35,7 @@
     <Method name="Alias">
         <Field abbreviation="PAcc"/>
     </Method>
-    <Method name="Alias" models="RUC130 HRRR">
+    <Method name="Alias" models="RAP13 HRRR">
         <Field abbreviation="TP1hr"/>
     </Method>
     <Method name="Add">
@@ -45,7 +45,7 @@
     <Method name="Alias">
         <Field abbreviation="PC"/>
     </Method>
-    <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
+    <Method name="Or" models="GFS20 AK-GFS22 GFS-EPAC20 PR-GFS20">
         <Field abbreviation="TP3hr"/>
         <Field abbreviation="TP6hr"/>
     </Method>
@@ -55,7 +55,7 @@
     <Method name="Alias">
         <Field abbreviation="TP2hr"/>
     </Method>
-    <Method name="Supplement" models="mesoEta212 mesoEta215">
+    <Method name="Supplement" models="NAM40 NAM20">
         <Field abbreviation="TP3hr"/>
     </Method>
     <Method name="Supplement" models="HiResW-ARW-East HiResW-ARW-West HiResW-ARW-AK HiResW-ARW-SJU HiResW-ARW-HI HiResW-ARW-GU">

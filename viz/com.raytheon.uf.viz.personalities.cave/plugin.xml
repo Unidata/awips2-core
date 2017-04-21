@@ -28,22 +28,16 @@
                id="CAVE"
                label="CAVE">
             <menu
-                  id="file.new"
-                  label="New">
-               <command commandId="org.eclipse.ui.window.newEditor"
-               			label="Editor"
-               			style="push">
-               </command>
+                  id="perspectives"
+                  label="Perspective">
+               <dynamic
+                     class="com.raytheon.uf.viz.personalities.cave.menu.OpenPerspectiveMenu"
+                     id="com.raytheon.uf.viz.personalities.cave.openPerspective">
+               </dynamic>
             </menu>
-            <menu id="perspectives" label="Perspective">
-            	<dynamic
-                   class="com.raytheon.uf.viz.personalities.cave.menu.OpenPerspectiveMenu"
-                   id="com.raytheon.uf.viz.personalities.cave.openPerspective">
-            	</dynamic>
-            </menu>
-            <menu id="browsers"
-            	label="Data Browsers">
-            	<!-- Place holder for data browsers -->
+            <menu
+                  id="browsers"
+                  label="Data Browsers">
             </menu>
             <separator
                   name="afterNewGroup"
@@ -70,73 +64,30 @@
                   visible="true">
             </separator>
             <separator
-                  name="importExportSeparator"
-                  visible="true">
-            </separator>
-            <menu
-                  id="import"
-                  label="Import">
-            </menu>
-            <menu
-                  id="export"
-                  label="Export">
-            </menu>
-            <menu id="displaysState"
-                  label="Load/Save Displays">
-               <command
-                     commandId="com.raytheon.viz.ui.saveBundle"
-                     label="Save Editor Display..."
-                     style="push">
-               </command>
-               <command
-                     commandId="com.raytheon.viz.ui.saveProcedure"
-                     label="Save Perspective Displays..."
-                     style="push">
-               </command>
-               <command
-                     commandId="com.raytheon.viz.ui.loadSerialized"
-                     label="Load Displays..."
-                     style="push">
-               </command>
-            </menu>
-            <separator
                   name="preferenceGroup"
                   visible="true">
             </separator>
             <command
                   commandId="org.eclipse.ui.window.preferences"
-                  label="Preferences..."
+                  label="Preferences"
                   style="push">
             </command>
-             <separator
-                   name="beforeExitGroup"
-                   visible="true">
-             </separator>
-             <command
-                   commandId="com.raytheon.viz.ui.file.exit"
-                   label="Exit..."
-                   style="push">
-             </command>
-         </menu>         
-          <menu
-                id="help"
-                label="Help"
-                mnemonic="H">
-             <command
-                   commandId="org.eclipse.ui.help.aboutAction"
-                   label="About CAVE"
-                   mnemonic="A"
-                   style="push">
-             </command>
-             <separator
-                   name="aboutAdditions"
-                   visible="false">
-             </separator>
-             <dynamic
-                   class="com.raytheon.uf.viz.personalities.cave.menu.SystemIdItem"
-                   id="systemIdMenuItem">
-             </dynamic>
-          </menu>          
+            <command
+                  commandId="org.eclipse.ui.help.aboutAction"
+                  label="About CAVE"
+                  mnemonic="A"
+                  style="push">
+            </command>
+            <separator
+                  name="beforeExitGroup"
+                  visible="true">
+            </separator>
+            <command
+                  commandId="com.raytheon.viz.ui.file.exit"
+                  label="Exit"
+                  style="push">
+            </command>
+         </menu>
       </menuContribution>
    </extension>
 
@@ -463,6 +414,12 @@
                   id="index"
                   value="19">
             </parameter>
+      </key>
+      <key
+            commandId="com.raytheon.viz.ui.file.exit"
+            contextId="org.eclipse.ui.contexts.window"
+            schemeId="com.raytheon.viz.ui.cave.scheme"
+            sequence="M1+Q">
       </key>
    </extension>
    <extension

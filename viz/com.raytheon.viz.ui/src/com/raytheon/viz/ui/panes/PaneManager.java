@@ -67,15 +67,14 @@ import com.vividsolutions.jts.geom.Coordinate;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Jul 07, 2009  830      bgonzale  Initial Creation.
- * Jan 09, 2014  2647     bsteffen  Do not change active editor on focus because
- *                                  that causes problems when switching windows.
- * Feb 11, 2016  5351     bsteffen  Use only visible panes as active panes when
- *                                  possible
- * 
+ *      
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- -----------------------------------------
+ * Jul 07, 2009            bgonzale    Initial Creation.
+ * Jan 09, 2014  2647      bsteffen    Do not change active editor on focus
+ *                                     because that causes problems when
+ *                                     switching windows.
+ * Apr 20, 2016            mjames@ucar Add two-column configuration.
  * </pre>
  * 
  * @author bgonzale
@@ -196,9 +195,6 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                 setSelectedPane(IMultiPaneEditor.IMAGE_ACTION, null);
             }
             adjustPaneLayout(displayedPaneCount);
-            if (pane == activatedPane) {
-                activatedPane = null;
-            }
         }
         refresh();
     }
@@ -219,8 +215,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         if (composite == null || composite.isDisposed()) {
             return;
         }
-        int numColums = (int) Math.sqrt(paneCount);
-        int numRows = (int) Math.ceil(paneCount / (double) numColums);
+        int numRows = (int) Math.sqrt(paneCount);
+        int numColums = (int) Math.ceil(paneCount / (double) numRows);
         GridLayout gl = new GridLayout(numColums, true);
         int width = composite.getBounds().width;
         int height = composite.getBounds().height;
@@ -354,8 +350,15 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         if (composite == null || composite.isDisposed()) {
             return null;
         }
+       
+        
         int numColums = (int) Math.sqrt(displayedPaneCount);
         int numRows = (int) Math.ceil(displayedPaneCount / (double) numColums);
+        if (displayedPaneCount == 2){
+        	numColums = displayedPaneCount;
+            numRows = 1;
+        }
+        
 
         BufferedImage[] screens = screenshots();
         BufferedImage retval = new BufferedImage(screens[0].getWidth()
@@ -406,15 +409,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     @Override
     public IDisplayPane getActiveDisplayPane() {
         if (activatedPane == null) {
-            for (VizDisplayPane pane : displayPanes) {
-                if (pane.isVisible()) {
-                    activatedPane = pane;
-                    break;
-                }
-            }
-            if (activatedPane == null && !displayPanes.isEmpty()) {
-                activatedPane = displayPanes.get(0);
-            }
+            activatedPane = displayPanes.size() > 0 ? displayPanes.get(0)
+                    : null;
         }
         return activatedPane;
     }
