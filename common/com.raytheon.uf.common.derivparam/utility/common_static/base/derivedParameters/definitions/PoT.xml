@@ -25,7 +25,7 @@
         <Field abbreviation="TEMP"/>
         <ConstantField value="-1"/>
     </Method>
-    <Method models="SREF212" name="Theta">
+    <Method models="SREF40" name="Theta">
         <Field abbreviation="P"/>
         <Field abbreviation="Tmean"/>
     </Method>

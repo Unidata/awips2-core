@@ -448,8 +448,7 @@ public class HttpClient {
         try {
             String host = put.getURI().getHost();
             if (host == null) {
-                throw new InvalidURIException("Invalid URI: "
-                        + put.getURI().toString());
+                throw new InvalidURIException("Not Connected");
             }
             ongoing = currentRequestsCount.get(host);
             if (ongoing == null) {

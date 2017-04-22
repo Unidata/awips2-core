@@ -49,8 +49,8 @@ public class DensityCapability extends AbstractCapability {
 
     public static final Double MAX_THRESHOLD = 4.0;
 
-    private static final double[] DEFAULT_DENSITY_VALUES = { 0.0, 0.33, 0.5,
-            0.67, 1.0, 1.25, 1.5, 2.0, 99999.0 };
+    private static final double[] DEFAULT_DENSITY_VALUES = { 0.0, 0.1, 0.25, 0.33, 0.5,
+            0.67, 0.75, 1.0, 1.25, 1.5, 2.0, 99999.0 };
 
     @XmlAttribute
     private Double density;

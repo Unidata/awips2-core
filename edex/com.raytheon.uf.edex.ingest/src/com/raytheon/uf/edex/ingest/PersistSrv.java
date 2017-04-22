@@ -35,8 +35,6 @@ import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
-import com.raytheon.uf.common.status.IPerformanceStatusHandler;
-import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
@@ -71,9 +69,6 @@ public class PersistSrv {
         return instance;
     }
 
-    private final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("HDF5:");
-
     private PersistSrv() {
     }
 
@@ -95,8 +90,6 @@ public class PersistSrv {
             timer.start();
             StorageStatus ss = dao.persistToHDF5(pdos);
             timer.stop();
-            perfLog.logDuration(pluginName + ": Persisted " + pdos.length
-                    + " record(s): Time to Persist", timer.getElapsedTime());
             StorageException[] se = ss.getExceptions();
             pdoSet.addAll(Arrays.asList(pdos));
             if (se != null) {

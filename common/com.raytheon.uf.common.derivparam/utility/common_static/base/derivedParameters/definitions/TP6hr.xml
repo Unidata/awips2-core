@@ -19,7 +19,7 @@
         further_licensing_information.
     -->
 <DerivedParameter unit="mm" name="6 Hr Accum Precip" abbreviation="TP6hr" xmlns:ns2="group">
-    <Method models="SREF212" name="Alias">
+    <Method models="SREF40" name="Alias">
         <Field abbreviation="TP6mean"/>
     </Method>
     <Method name="Alias" models="RFCqpf HPCqpf">
@@ -31,7 +31,7 @@
     <Method name="Alias">
         <Field abbreviation="QPE06"/>
     </Method>
-    <Method models="ETA GFS212" name="Supplement">
+    <Method models="ETA GFS40" name="Supplement">
         <Field abbreviation="TPx12x6"/>
     </Method>
     <Method name="Add">

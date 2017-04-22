@@ -212,7 +212,7 @@ public class GLWireframeShape2D implements IWireframeShape {
         if (labels != null) {
             DrawableString string = new DrawableString(label, DEFAULT_COLOR);
             string.horizontalAlignment = HorizontalAlignment.CENTER;
-            string.verticallAlignment = VerticalAlignment.MIDDLE;
+            string.verticalAlignment = VerticalAlignment.MIDDLE;
             string.setCoordinates(screenCoordinate[0], screenCoordinate[1]);
             labels.add(string);
         }

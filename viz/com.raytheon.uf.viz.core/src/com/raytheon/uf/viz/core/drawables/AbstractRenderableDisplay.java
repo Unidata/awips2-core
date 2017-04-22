@@ -97,7 +97,7 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     public static final int CURSOR_HEIGHT = 18; // guesstimate of cursor
 
     protected RGB backgroundColor;
-
+    
     /** The view area */
     private IView view;
 
@@ -519,6 +519,7 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
             for (ResourcePair rp : rscsToRemove) {
                 clonedDisplay.getDescriptor().getResourceList().remove(rp);
             }
+           
             clonedDisplay.setExtent(this.getExtent().clone());
             return clonedDisplay;
         } catch (SerializationException e) {

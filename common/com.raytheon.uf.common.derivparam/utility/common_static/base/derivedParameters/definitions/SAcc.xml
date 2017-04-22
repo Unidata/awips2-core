@@ -3,7 +3,7 @@
     <Method name="Alias" levels="Surface" models="modelsounding">
         <Field abbreviation="snowFall" level="Station"/>
     </Method>
-    <Method name="Or" models="GFS215 GFS217 GFS20-PAC GFS20-PRICO">
+    <Method name="Or" models="GFS20 AK-GFS22 GFS-EPAC20 PR-GFS20">
         <Field abbreviation="SA3hr"/>
         <Field abbreviation="SA6hr"/>
     </Method>
