@@ -33,14 +33,14 @@ import javax.xml.bind.annotation.XmlElement;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 4, 2011            bsteffen     Initial creation
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Jan 04, 2011           bsteffen  Initial creation
+ * Apr 27, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class SamplePreferences {
@@ -51,38 +51,34 @@ public class SamplePreferences {
     @XmlElement
     private double maxValue;
 
-    @XmlElement
     /**
-     * number of decimal places to format the string to
+     * May contain the number of decimal places to format the string to
      */
+    @XmlElement
     private String formatString;
 
-    /**
-     * @return the minValue
-     */
+    public SamplePreferences() {
+
+    }
+
+    public SamplePreferences(SamplePreferences prefs) {
+        this.minValue = prefs.getMinValue();
+        this.maxValue = prefs.getMaxValue();
+        this.formatString = prefs.getFormatString();
+    }
+
     public double getMinValue() {
         return minValue;
     }
 
-    /**
-     * @param minValue
-     *            the minValue to set
-     */
     public void setMinValue(double minValue) {
         this.minValue = minValue;
     }
 
-    /**
-     * @return the maxValue
-     */
     public double getMaxValue() {
         return maxValue;
     }
 
-    /**
-     * @param maxValue
-     *            the maxValue to set
-     */
     public void setMaxValue(double maxValue) {
         this.maxValue = maxValue;
     }
@@ -93,6 +89,11 @@ public class SamplePreferences {
 
     public void setFormatString(String formatString) {
         this.formatString = formatString;
+    }
+
+    @Override
+    public SamplePreferences clone() {
+        return new SamplePreferences(this);
     }
 
 }

@@ -42,16 +42,16 @@ import com.raytheon.uf.common.style.StyleException;
  * <pre>
  * 
  *    SOFTWARE HISTORY
- *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Jul 27, 2007             chammack    Initial Creation.
- *  Nov 25, 2013  2492      bsteffen    Add colorMapUnits
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------
+ * Jul 27, 2007           chammack  Initial Creation.
+ * Nov 25, 2013  2492     bsteffen  Add colorMapUnits
+ * Apr 26, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "imageStyle")
@@ -81,6 +81,22 @@ public class ImagePreferences extends AbstractStylePreferences {
     @XmlElement
     private String colorMapUnits;
 
+    public ImagePreferences() {
+
+    }
+
+    public ImagePreferences(ImagePreferences prefs) {
+        super(prefs);
+        this.defaultColormap = prefs.getDefaultColormap();
+        this.dataScale = prefs.getDataScale();
+        this.legend = prefs.getLegend();
+        this.samplePrefs = prefs.getSamplePrefs().clone();
+        this.dataMapping = prefs.getDataMapping().clone();
+        this.colorbarLabeling = prefs.getColorbarLabeling().clone();
+        this.interpolate = prefs.isInterpolate();
+        this.colorMapUnits = prefs.getColorMapUnits();
+    }
+
     public boolean isInterpolate() {
         return interpolate;
     }
@@ -89,62 +105,34 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.interpolate = interpolate;
     }
 
-    /**
-     * @return the defaultColormap
-     */
     public String getDefaultColormap() {
         return defaultColormap;
     }
 
-    /**
-     * @param defaultColormap
-     *            the defaultColormap to set
-     */
     public void setDefaultColormap(String defaultColormap) {
         this.defaultColormap = defaultColormap;
     }
 
-    /**
-     * @return the dataScale
-     */
     public DataScale getDataScale() {
         return dataScale;
     }
 
-    /**
-     * @param dataScale
-     *            the dataScale to set
-     */
     public void setDataScale(DataScale dataScale) {
         this.dataScale = dataScale;
     }
 
-    /**
-     * @return the colorbarLabeling
-     */
     public LabelingPreferences getColorbarLabeling() {
         return colorbarLabeling;
     }
 
-    /**
-     * @param colorbarLabeling
-     *            the colorbarLabeling to set
-     */
     public void setColorbarLabeling(LabelingPreferences colorbarLabeling) {
         this.colorbarLabeling = colorbarLabeling;
     }
 
-    /**
-     * @return the dataMapping
-     */
     public DataMappingPreferences getDataMapping() {
         return dataMapping;
     }
 
-    /**
-     * @param dataMapping
-     *            the dataMapping to set
-     */
     public void setDataMapping(DataMappingPreferences dataMapping) {
         this.dataMapping = dataMapping;
     }
@@ -157,9 +145,6 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.samplePrefs = samplePrefs;
     }
 
-    /**
-     * @return the legend
-     */
     public String getLegend() {
         return legend;
     }
@@ -189,12 +174,17 @@ public class ImagePreferences extends AbstractStylePreferences {
     public Unit<?> getColorMapUnitsObject() throws StyleException {
         if (colorMapUnits != null && !colorMapUnits.isEmpty()) {
             try {
-                return UnitFormat.getUCUMInstance().parseProductUnit(
-                        colorMapUnits, new ParsePosition(0));
+                return UnitFormat.getUCUMInstance()
+                        .parseProductUnit(colorMapUnits, new ParsePosition(0));
             } catch (ParseException e) {
                 throw new StyleException("Unable to parse colorMap Units.");
             }
         }
         return null;
+    }
+
+    @Override
+    public ImagePreferences clone() {
+        return new ImagePreferences(this);
     }
 }
