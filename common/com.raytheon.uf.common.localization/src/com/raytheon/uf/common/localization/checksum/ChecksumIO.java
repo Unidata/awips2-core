@@ -24,11 +24,15 @@ import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.IOException;
+import java.nio.file.Files;
 
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Utilities to support checkums
@@ -43,11 +47,11 @@ import com.raytheon.uf.common.status.UFStatus;
  *                                      Extracted from UtilityManager
  *                                      Refactored getFileChecksum(File)
  * Feb 03, 2016  4754      bsteffen    Fix concurrency issue
+ * May 03, 2017  6258      tgurney     Set permissions on checksum file
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class ChecksumIO {
@@ -136,6 +140,15 @@ public class ChecksumIO {
         try (BufferedWriter bw = new BufferedWriter(
                 new FileWriter(checksumFile))) {
             bw.write(chksum);
+        }
+        try {
+            Files.setPosixFilePermissions(checksumFile.toPath(),
+                    LocalizationFile.FILE_PERMISSIONS);
+        } catch (IOException e) {
+            logger.handle(Priority.PROBLEM,
+                    "Failed to set permissions on file: "
+                            + checksumFile.getAbsolutePath(),
+                    e);
         }
         return chksum;
     }

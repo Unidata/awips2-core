@@ -19,10 +19,12 @@
  **/
 package com.raytheon.uf.common.util.file;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.file.FileAlreadyExistsException;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.util.EnumSet;
@@ -34,8 +36,9 @@ import java.util.Set;
 /**
  * Provides custom implementations of
  * {@link java.nio.file.Files#createFile(Path, FileAttribute...)},
- * {@link java.nio.file.Files#createDirectory(Path, FileAttribute...)}, and
- * {@link java.nio.file.Files#createDirectories(Path, FileAttribute...)}.
+ * {@link java.nio.file.Files#createDirectory(Path, FileAttribute...)},
+ * {@link java.nio.file.Files#createDirectories(Path, FileAttribute...)}, and
+ * {@link java.nio.file.Files#createTempFile(Path, String, String, FileAttribute...)}.
  * 
  * The custom implementations were created due to bugs related to how
  * {@link PosixFilePermission} are either not recognized or incorrectly handled
@@ -56,6 +59,7 @@ import java.util.Set;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 5, 2017  6255       bkowal      Initial creation
+ * May 9, 2017y 6223       tgurney     Add createTempFile()
  *
  * </pre>
  *
@@ -287,5 +291,92 @@ public final class Files {
                     permissions);
         }
         return dir;
+    }
+
+    /**
+     * Creates a new empty file in the specified directory, using the given
+     * prefix and suffix strings to generate its name. The resulting
+     * {@code Path} is associated with the same {@code FileSystem} as the given
+     * directory.
+     *
+     * <p>
+     * The details as to how the name of the file is constructed is
+     * implementation dependent and therefore not specified. Where possible the
+     * {@code prefix} and {@code suffix} are used to construct candidate names
+     * in the same manner as the
+     * {@link java.io.File#createTempFile(String,String,File)} method.
+     *
+     * <p>
+     * As with the {@code File.createTempFile} methods, this method is only part
+     * of a temporary-file facility. Where used as a <em>work files</em>, the
+     * resulting file may be opened using the
+     * {@link StandardOpenOption#DELETE_ON_CLOSE DELETE_ON_CLOSE} option so that
+     * the file is deleted when the appropriate {@code close} method is invoked.
+     * Alternatively, a {@link Runtime#addShutdownHook shutdown-hook}, or the
+     * {@link java.io.File#deleteOnExit} mechanism may be used to delete the
+     * file automatically.
+     *
+     * <p>
+     * The {@code attrs} parameter is optional {@link FileAttribute
+     * file-attributes} to set atomically when creating the file. Each attribute
+     * is identified by its {@link FileAttribute#name name}. If more than one
+     * attribute of the same name is included in the array then all but the last
+     * occurrence is ignored. When no file attributes are specified, then the
+     * resulting file may have more restrictive access permissions to files
+     * created by the {@link java.io.File#createTempFile(String,String,File)}
+     * method.
+     *
+     * @param dir
+     *            the path to directory in which to create the file
+     * @param prefix
+     *            the prefix string to be used in generating the file's name;
+     *            may be {@code null}
+     * @param suffix
+     *            the suffix string to be used in generating the file's name;
+     *            may be {@code null}, in which case "{@code .tmp}" is used
+     * @param attrs
+     *            an optional list of file attributes to set atomically when
+     *            creating the file
+     *
+     * @return the path to the newly created file that did not exist before this
+     *         method was invoked
+     *
+     * @throws IllegalArgumentException
+     *             if the prefix or suffix parameters cannot be used to generate
+     *             a candidate file name
+     * @throws UnsupportedOperationException
+     *             if the array contains an attribute that cannot be set
+     *             atomically when creating the directory
+     * @throws IOException
+     *             if an I/O error occurs or {@code dir} does not exist
+     * @throws SecurityException
+     *             In the case of the default provider, and a security manager
+     *             is installed, the {@link SecurityManager#checkWrite(String)
+     *             checkWrite} method is invoked to check write access to the
+     *             file.
+     * 
+     *             <pre>
+     * (https://docs.oracle.com/javase/7/docs/api/java/nio/file/Files.html#createTempFile%28java.nio.file.Path,%20java.lang.String,%20java.lang.String,%20java.nio.file.attribute.FileAttribute...%29)
+     *             </pre>
+     */
+    public static Path createTempFile(Path dir, String prefix, String suffix,
+            FileAttribute<?>... attrs) throws IOException {
+        final Set<PosixFilePermission> permissions = EnumSet
+                .noneOf(PosixFilePermission.class);
+        /*
+         * Using a Linked List because order is important per the JavaDoc for
+         * attributes: "If more than one attribute of the same name is included
+         * in the array then all but the last occurrence is ignored."
+         */
+        final List<FileAttribute<?>> revisedAttributes = new LinkedList<>();
+        IOPermissionsHelper.separatePosixFilePermissions(permissions,
+                revisedAttributes, attrs);
+        Path path = java.nio.file.Files.createTempFile(dir, prefix, suffix,
+                revisedAttributes.toArray(new FileAttribute<?>[0]));
+        if (IOPermissionsHelper.isPosixSupported(path)
+                && !permissions.isEmpty()) {
+            IOPermissionsHelper.applyFilePermissions(path, permissions);
+        }
+        return path;
     }
 }
