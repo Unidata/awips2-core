@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -35,6 +36,7 @@ import java.util.Map;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.util.file.Files;
 
 /**
  * Class to be used to lock a File for reading or writing. The class works so
@@ -42,20 +44,20 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * sure that when locking files, the locker does not execute operations that
  * would lock the same file in a different thread after locking the file or
  * deadlock could occur
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 23, 2011            mschenke    Initial creation
  * Apr 12, 2013 1903       rjpeter     Fix allocateLock freezing out other lock requests.
  * May 30, 2013 2056       rjpeter     Allow ACQUIRING state to be released.
+ * Apr 26, 2017 6258       tgurney     Make dirs with restricted permissions
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class FileLocker {
@@ -72,7 +74,7 @@ public class FileLocker {
 
         final Thread lockingThread;
 
-        final List<Object> lockers = new ArrayList<Object>();
+        final List<Object> lockers = new ArrayList<>();
 
         long lockTime = System.currentTimeMillis();
 
@@ -94,10 +96,10 @@ public class FileLocker {
     private static final int MAX_WAIT = 30 * 1000;
 
     /** Map of waiters on threads */
-    private final Map<File, Deque<LockWaiter>> waiters = new HashMap<File, Deque<LockWaiter>>();
+    private final Map<File, Deque<LockWaiter>> waiters = new HashMap<>();
 
     /** Map of locks we have on files */
-    private final Map<File, LockedFile> locks = new HashMap<File, LockedFile>();
+    private final Map<File, LockedFile> locks = new HashMap<>();
 
     /** Singleton instance of FileLocker class */
     private static FileLocker instance = new FileLocker();
@@ -108,7 +110,7 @@ public class FileLocker {
 
     /**
      * Attempt to lock the LocalizationFile for reading or writing.
-     * 
+     *
      * @param locker
      *            Object acquiring the lock
      * @param file
@@ -117,14 +119,15 @@ public class FileLocker {
      *            The lock type READ or WRITE
      * @return true if locked file, false otherwise
      */
-    public static boolean lock(Object locker, LocalizationFile file, Type type) {
+    public static boolean lock(Object locker, LocalizationFile file,
+            Type type) {
         if (file != null) {
             try {
                 return instance.lockInternal(locker,
                         file.getFile(type == Type.READ), type, true);
             } catch (LocalizationException e) {
                 UFStatus.getHandler().handle(Priority.PROBLEM,
-                        "Error locking LocaliationFile: " + file, e);
+                        "Error locking LocalizationFile: " + file, e);
             }
         }
         return false;
@@ -132,7 +135,7 @@ public class FileLocker {
 
     /**
      * Unlock the LocalizationFiles locked by the object
-     * 
+     *
      * @param locker
      *            The object that was used to lock the file
      * @param files
@@ -145,7 +148,7 @@ public class FileLocker {
                     instance.unlockInternal(locker, file.getFile(false));
                 } catch (Throwable t) {
                     UFStatus.getHandler().handle(Priority.PROBLEM,
-                            "Error unlocking LocaliationFile: " + file, t);
+                            "Error unlocking LocalizationFile: " + file, t);
                 }
             }
         }
@@ -153,7 +156,7 @@ public class FileLocker {
 
     /**
      * Attempt to lock the File for reading or writing.
-     * 
+     *
      * @param locker
      *            Object acquiring the lock
      * @param file
@@ -168,7 +171,7 @@ public class FileLocker {
 
     /**
      * Unlock the Files locked by the object
-     * 
+     *
      * @param locker
      *            The object that was used to lock the file
      * @param files
@@ -208,8 +211,9 @@ public class FileLocker {
                 // if the lock file has been obtained and either the thread is
                 // the same as the one that obtained the lock or the original
                 // lock and this request are both read locks
-                if ((lock.lockState == LockState.IN_USE)
-                        && ((lock.lockingThread == myThread) || ((type == Type.READ) && (type == lock.lockType)))) {
+                if (lock.lockState == LockState.IN_USE
+                        && (lock.lockingThread == myThread || type == Type.READ
+                                && type == lock.lockType)) {
                     // TODO: This is not safe as another thread could have a
                     // read lock and we may clobber the read
                     lock.lockers.add(locker);
@@ -229,7 +233,7 @@ public class FileLocker {
             synchronized (waiters) {
                 lws = waiters.get(file);
                 if (lws == null) {
-                    lws = new ArrayDeque<LockWaiter>();
+                    lws = new ArrayDeque<>();
                     waiters.put(file, lws);
                 }
                 lws.add(waiter);
@@ -269,8 +273,9 @@ public class FileLocker {
                         return allocateLock(file, lock);
                     } else if (lock != null) {
                         synchronized (lock) {
-                            if ((type == Type.READ) && (type == lock.lockType)
-                                    && LockState.IN_USE.equals(lock.lockState)) {
+                            if (type == Type.READ && type == lock.lockType
+                                    && LockState.IN_USE
+                                            .equals(lock.lockState)) {
                                 // A different waiter grabbed it for
                                 // reading, we can read it also
                                 lock.lockers.add(locker);
@@ -278,13 +283,11 @@ public class FileLocker {
                                 return true;
                             } else {
                                 long curTime = System.currentTimeMillis();
-                                if ((curTime - lock.lockTime) > MAX_WAIT) {
-                                    System.err
-                                            .println("Releasing lock: "
-                                                    + "Lock has been allocated for  "
-                                                    + ((curTime - lock.lockTime) / 1000)
-                                                    + "s on file "
-                                                    + file.getPath());
+                                if (curTime - lock.lockTime > MAX_WAIT) {
+                                    System.err.println("Releasing lock: "
+                                            + "Lock has been allocated for  "
+                                            + (curTime - lock.lockTime) / 1000
+                                            + "s on file " + file.getPath());
                                     locks.remove(file);
                                 }
                             }
@@ -312,13 +315,13 @@ public class FileLocker {
             synchronized (locks) {
                 lock = locks.get(file);
                 // Return early if we have never locked
-                if ((lock == null) || (locker == null)) {
+                if (lock == null || locker == null) {
                     return;
                 }
             }
 
             synchronized (lock) {
-                if ((lock.lockState == LockState.IN_USE)
+                if (lock.lockState == LockState.IN_USE
                         || lock.lockingThread.equals(Thread.currentThread())) {
                     lock.lockers.remove(locker);
 
@@ -359,7 +362,7 @@ public class FileLocker {
     /**
      * Function to actually allocate the lock, this needs to be cross process
      * aware and wait until other processes are finished with the file
-     * 
+     *
      * @param file
      * @param lock
      * @return
@@ -371,16 +374,22 @@ public class FileLocker {
         File parentDir = file.getParentFile();
 
         if (!parentDir.exists()) {
-            parentDir.mkdirs();
+            try {
+                Files.createDirectories(parentDir.toPath(), PosixFilePermissions
+                        .asFileAttribute(LocalizationFile.DIR_PERMISSIONS));
+            } catch (IOException e) {
+                UFStatus.getHandler().handle(Priority.PROBLEM,
+                        "Failed to create directory: "
+                                + parentDir.getAbsolutePath(),
+                        e);
+            }
         }
-
         // If we can't write to the parent directory of the file we are
         // locking, can't do any locking
         if (parentDir.canWrite() == false) {
-            UFStatus.getHandler()
-                    .handle(Priority.DEBUG,
-                            "Cannot write to directory: "
-                                    + parentDir.getAbsolutePath());
+            UFStatus.getHandler().handle(Priority.DEBUG,
+                    "Cannot write to directory: "
+                            + parentDir.getAbsolutePath());
             return false;
         }
 
@@ -395,7 +404,8 @@ public class FileLocker {
             long fileTime;
             while ((curTime = System.currentTimeMillis()) < maxWaitTime) {
                 gotLock = lockFile.createNewFile()
-                        || (((fileTime = lockFile.lastModified()) > 0) && ((curTime - fileTime) > MAX_WAIT));
+                        || (fileTime = lockFile.lastModified()) > 0
+                                && curTime - fileTime > MAX_WAIT;
 
                 if (gotLock) {
                     break;
@@ -444,19 +454,19 @@ public class FileLocker {
 
     /**
      * Test program for file locking
-     * 
+     *
      * @param args
      */
     public static void main(String[] args) {
         long t0 = System.currentTimeMillis();
         // Parse the command line args
-        Map<String, String> argumentMap = new HashMap<String, String>();
+        Map<String, String> argumentMap = new HashMap<>();
         for (int i = 0; i < args.length; ++i) {
             String arg = args[i];
             if (arg.startsWith("-")) {
                 // we have a key
-                if ((args.length > (i + 1))
-                        && (args[i + 1].startsWith("-") == false)) {
+                if (args.length > i + 1
+                        && args[i + 1].startsWith("-") == false) {
                     argumentMap.put(arg.substring(1), args[i + 1]);
                     ++i;
                 } else {
@@ -472,13 +482,12 @@ public class FileLocker {
         String fileToLock = argumentMap.get("f");
         String threads = argumentMap.get("tc");
         final boolean verbose = argumentMap.get("v") != null;
-        final boolean verboseCount = (argumentMap.get("vc") != null) || verbose;
-        final boolean verboseErrors = (argumentMap.get("ve") != null)
-                || verbose;
+        final boolean verboseCount = argumentMap.get("vc") != null || verbose;
+        final boolean verboseErrors = argumentMap.get("ve") != null || verbose;
         String outputAtCount = argumentMap.get("c");
         String iterVal = argumentMap.get("i");
 
-        if ((fileToLock == null) || (argumentMap.get("help") != null)) {
+        if (fileToLock == null || argumentMap.get("help") != null) {
             System.out.println("Required argument -f <pathToFile>"
                     + " specifies the file to use in the program");
             System.out.println("-help prints out this help message");
@@ -532,7 +541,7 @@ public class FileLocker {
 
         final int[] errors = new int[1];
         final File toLock = new File(fileToLock);
-        List<Runnable> runnables = new ArrayList<Runnable>(threadCount);
+        List<Runnable> runnables = new ArrayList<>(threadCount);
         final Object lockObj = new Object();
 
         final int[] i = { 0 };
@@ -543,15 +552,13 @@ public class FileLocker {
                 if (verbose) {
                     System.out
                             .println("No thread arguments specified for thread "
-                                    + j
-                                    + ", defaulting to '-"
-                                    + j
+                                    + j + ", defaulting to '-" + j
                                     + " rw' (read/write)");
                     System.out.flush();
                 }
                 threadArgs = "rw";
-            } else if ((threadArgs.contains("r") == false)
-                    && (threadArgs.contains("w") == false)) {
+            } else if (threadArgs.contains("r") == false
+                    && threadArgs.contains("w") == false) {
                 System.err.println("Error parsing thread " + j + " arguments ("
                         + threadArgs + "), defaulting to rw");
                 System.err.flush();
@@ -563,8 +570,8 @@ public class FileLocker {
             final boolean write = threadArgs.contains("w");
 
             if (verbose) {
-                System.out.println("Thread " + j + " read=" + read + " write="
-                        + write);
+                System.out.println(
+                        "Thread " + j + " read=" + read + " write=" + write);
                 System.out.flush();
             }
 
@@ -572,8 +579,8 @@ public class FileLocker {
                 @Override
                 public void run() {
                     try {
-                        if (FileLocker.lock(lockObj, toLock, write ? Type.WRITE
-                                : Type.READ)) {
+                        if (FileLocker.lock(lockObj, toLock,
+                                write ? Type.WRITE : Type.READ)) {
                             boolean canRead = true;
                             if (toLock.exists() == false) {
                                 if (verbose) {
@@ -584,9 +591,8 @@ public class FileLocker {
                                 canRead = false;
                             } else if (toLock.length() == 0) {
                                 if (verboseErrors) {
-                                    System.err
-                                            .println(i[0]
-                                                    + " Error: Lock file has incorrect file length");
+                                    System.err.println(i[0]
+                                            + " Error: Lock file has incorrect file length");
                                     System.err.flush();
                                 }
                                 errors[0] += 1;
@@ -599,9 +605,9 @@ public class FileLocker {
                                     fin = new FileInputStream(toLock);
                                     fin.read(bytes);
                                     if (verbose) {
-                                        System.out.println(threadId
-                                                + " read from lock file: "
-                                                + new String(bytes));
+                                        System.out.println(
+                                                threadId + " read from lock file: "
+                                                        + new String(bytes));
                                         System.out.flush();
                                     }
                                 } catch (Throwable t) {
@@ -624,9 +630,9 @@ public class FileLocker {
                                     fou = new FileOutputStream(toLock);
                                     fou.write(bytes);
                                     if (verbose) {
-                                        System.out.println(threadId
-                                                + " wrote to lock file: "
-                                                + new String(bytes));
+                                        System.out.println(
+                                                threadId + " wrote to lock file: "
+                                                        + new String(bytes));
                                         System.out.flush();
                                     }
                                 } catch (Throwable t) {
@@ -642,9 +648,8 @@ public class FileLocker {
                             }
                         } else {
                             if (verboseErrors) {
-                                System.err
-                                        .println(threadId
-                                                + ": Did not accquire lock as expected!");
+                                System.err.println(threadId
+                                        + ": Did not accquire lock as expected!");
                                 System.err.flush();
                             }
                         }
@@ -662,8 +667,8 @@ public class FileLocker {
 
         int totalErrors = 0;
         int count = 0;
-        while ((iterations == null) || (i[0] < iterations)) {
-            List<Thread> threadList = new ArrayList<Thread>(threadCount);
+        while (iterations == null || i[0] < iterations) {
+            List<Thread> threadList = new ArrayList<>(threadCount);
             for (Runnable r : runnables) {
                 threadList.add(new Thread(r));
             }
@@ -686,8 +691,8 @@ public class FileLocker {
             ++count;
 
             // Output at -c val if we are verbose or indefinitely looping
-            if ((count == outputCountAt)
-                    && (verboseCount || (iterations == null))) {
+            if (count == outputCountAt
+                    && (verboseCount || iterations == null)) {
                 PrintStream out = errors[0] > 0 ? System.err : System.out;
                 out.println("Completed " + count + " iterations with "
                         + errors[0] + " errors");
@@ -698,7 +703,7 @@ public class FileLocker {
             }
         }
 
-        if ((i[0] % outputCountAt != 0) || !verboseCount) {
+        if (i[0] % outputCountAt != 0 || !verboseCount) {
             totalErrors += errors[0];
             PrintStream out = totalErrors > 0 ? System.err : System.out;
             out.println("Completed " + i[0] + " iterations with " + totalErrors

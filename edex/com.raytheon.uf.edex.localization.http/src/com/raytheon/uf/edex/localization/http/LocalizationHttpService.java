@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,10 +23,10 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
+import java.nio.file.attribute.PosixFilePermissions;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -60,6 +60,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.file.Files;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
 import com.raytheon.uf.edex.localization.http.writer.HtmlDirectoryListingWriter;
@@ -68,21 +69,21 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
 
 /**
  * REST service for handling localization file requests over HTTP.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 12, 2015 3978       bclement    Initial creation
  * Dec 02, 2015 4834       njensen     Added support for PUT requests
  * Jul 01, 2016 5729       bsteffen    Fix restricted permissions on files after PUT.
- * 
+ * Apr 26, 2017 6258       tgurney     Set permissions on file after PUT
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public class LocalizationHttpService {
 
@@ -145,7 +146,7 @@ public class LocalizationHttpService {
 
     /**
      * Handle HTTP GET requests for localization files and directories
-     * 
+     *
      * @param request
      * @param response
      * @throws IOException
@@ -178,10 +179,11 @@ public class LocalizationHttpService {
                 if (rawPath.endsWith(DIRECTORY_SUFFIX)) {
                     LocalizationContext context = LocalizationResolver
                             .getContext(relative);
-                    Path afterContext = LocalizationResolver.relativize(
-                            context, relative);
+                    Path afterContext = LocalizationResolver.relativize(context,
+                            relative);
                     if (afterContext.toString().isEmpty()) {
-                        ResponsePair<ILocalizationResponseWriter> writerPair = findWriter(responseTypes);
+                        ResponsePair<ILocalizationResponseWriter> writerPair = findWriter(
+                                responseTypes);
                         handleDirectory(context, "", writerPair, out);
                     } else {
                         handleFile(rawPath, relative, responseTypes, out);
@@ -195,10 +197,9 @@ public class LocalizationHttpService {
         } catch (Throwable t) {
             log.error("Problem handling localization get request: " + fullPath,
                     t);
-            sendError(
-                    new LocalizationHttpException(
-                            HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            SERVER_ERROR), out);
+            sendError(new LocalizationHttpException(
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR, SERVER_ERROR),
+                    out);
         } finally {
             out.flush();
             out.setAllowClose(true);
@@ -208,7 +209,7 @@ public class LocalizationHttpService {
 
     /**
      * Handle HTTP PUT requests for localization files
-     * 
+     *
      * @param request
      * @param response
      * @throws IOException
@@ -260,12 +261,15 @@ public class LocalizationHttpService {
                         newContentMd5 = "**No Content-MD5 Header Supplied**";
                     }
                     sb.append(newContentMd5);
-                    sb.append(" has not been saved because it has been changed by another process. ");
+                    sb.append(
+                            " has not been saved because it has been changed by another process. ");
                     sb.append("The client modified the file based on version ");
                     sb.append(preModChecksum);
-                    sb.append(" but the localization service's latest version is ");
+                    sb.append(
+                            " but the localization service's latest version is ");
                     sb.append(currentChecksum);
-                    sb.append(". Please consider updating to the latest version of the ");
+                    sb.append(
+                            ". Please consider updating to the latest version of the ");
                     sb.append("file and merging the changes.");
                     throw new LocalizationHttpException(
                             HttpServletResponse.SC_CONFLICT, sb.toString());
@@ -283,12 +287,9 @@ public class LocalizationHttpService {
                 Path parentPath = file.toPath().getParent();
                 Path tmpFile = null;
                 try {
-                    /*
-                     * Files.createTempFile is not used because we want to
-                     * create files with the default umask.
-                     */
-                    tmpFile = File.createTempFile(file.getName(), ".tmp",
-                            parentPath.toFile()).toPath();
+                    tmpFile = Files.createTempFile(parentPath, file.getName(),
+                            ".tmp", PosixFilePermissions.asFileAttribute(
+                                    LocalizationFile.FILE_PERMISSIONS));
                     try (FileOutputStream fos = new FileOutputStream(
                             tmpFile.toFile())) {
                         try (InputStream is = request.getInputStream()) {
@@ -301,12 +302,12 @@ public class LocalizationHttpService {
                     }
                 } catch (Throwable t) {
                     if (tmpFile != null) {
-                        Files.deleteIfExists(tmpFile);
+                        java.nio.file.Files.deleteIfExists(tmpFile);
                     }
                     throw t;
                 }
 
-                Files.move(tmpFile, file.toPath(),
+                java.nio.file.Files.move(tmpFile, file.toPath(),
                         StandardCopyOption.REPLACE_EXISTING);
 
                 // generate the new checksum after the change
@@ -314,10 +315,10 @@ public class LocalizationHttpService {
                 long timeStamp = file.lastModified();
 
                 // notify topic the file has changed
-                EDEXUtil.getMessageProducer().sendAsync(
-                        "utilityNotify",
-                        new FileUpdatedMessage(lfile.getContext(), lfile
-                                .getPath(), changeType, timeStamp, checksum));
+                EDEXUtil.getMessageProducer().sendAsync("utilityNotify",
+                        new FileUpdatedMessage(lfile.getContext(),
+                                lfile.getPath(), changeType, timeStamp,
+                                checksum));
 
                 response.setStatus(HttpServletResponse.SC_OK);
                 SimpleDateFormat format = TIME_HEADER_FORMAT.get();
@@ -332,10 +333,9 @@ public class LocalizationHttpService {
         } catch (Throwable t) {
             log.error("Problem handling localization put request: " + fullPath,
                     t);
-            sendError(
-                    new LocalizationHttpException(
-                            HttpServletResponse.SC_INTERNAL_SERVER_ERROR,
-                            SERVER_ERROR), out);
+            sendError(new LocalizationHttpException(
+                    HttpServletResponse.SC_INTERNAL_SERVER_ERROR, SERVER_ERROR),
+                    out);
         } finally {
             out.flush();
             out.setAllowClose(true);
@@ -346,7 +346,7 @@ public class LocalizationHttpService {
     /**
      * Validates a put request. Will throw an exception if something is not
      * valid such as not authorized.
-     * 
+     *
      * @param request
      * @param relative
      * @return the localization file to be saved (presuming no exceptions were
@@ -410,7 +410,7 @@ public class LocalizationHttpService {
 
     /**
      * Redirect client to URL
-     * 
+     *
      * @param out
      * @param url
      * @throws IOException
@@ -431,7 +431,7 @@ public class LocalizationHttpService {
 
     /**
      * Send error message to client
-     * 
+     *
      * @param e
      * @param out
      * @throws IOException
@@ -500,7 +500,7 @@ public class LocalizationHttpService {
 
     /**
      * Generate directory listing for context parts (localization type or level)
-     * 
+     *
      * @param resourcePath
      * @param responseTypes
      * @param out
@@ -540,14 +540,15 @@ public class LocalizationHttpService {
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_INTERNAL_SERVER_ERROR, SERVER_ERROR);
         }
-        ResponsePair<IDirectoryListingWriter> responsePair = findListingWriter(responseTypes);
+        ResponsePair<IDirectoryListingWriter> responsePair = findListingWriter(
+                responseTypes);
         IDirectoryListingWriter writer = responsePair.getWriter();
         writer.write(responsePair.getResponseType(), results, out);
     }
 
     /**
      * Handle generating a response for a localization directory
-     * 
+     *
      * @param context
      * @param path
      * @param writerPair
@@ -568,7 +569,7 @@ public class LocalizationHttpService {
 
     /**
      * Handle GET request for generic file
-     * 
+     *
      * @param rawPath
      *            full URL path
      * @param relative
@@ -592,8 +593,8 @@ public class LocalizationHttpService {
         File file = lfile.getFile(false);
         if (!file.exists()) {
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_NOT_FOUND, "Resource not found: "
-                            + rawPath);
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Resource not found: " + rawPath);
         }
         if (!file.canRead()) {
             throw new LocalizationHttpException(
@@ -604,7 +605,8 @@ public class LocalizationHttpService {
             if (!rawPath.endsWith(DIRECTORY_SUFFIX)) {
                 sendRedirect(out, rawPath + DIRECTORY_SUFFIX);
             } else {
-                ResponsePair<ILocalizationResponseWriter> writerPair = findWriter(responseTypes);
+                ResponsePair<ILocalizationResponseWriter> writerPair = findWriter(
+                        responseTypes);
                 LocalizationContext context = lfile.getContext();
                 handleDirectory(context, lfile.getName(), writerPair, out);
             }
@@ -615,16 +617,17 @@ public class LocalizationHttpService {
 
     /**
      * Handle GET requests for regular (non-directory) files
-     * 
+     *
      * @param lfile
      * @param out
      * @throws IOException
      * @throws LocalizationException
      */
     private void handleRegularFile(LocalizationFile lfile,
-            ProtectiveHttpOutputStream out) throws IOException,
-            LocalizationException {
-        String typeString = Files.probeContentType(lfile.getFile().toPath());
+            ProtectiveHttpOutputStream out)
+            throws IOException, LocalizationException {
+        String typeString = java.nio.file.Files
+                .probeContentType(lfile.getFile().toPath());
         String responseType = DEFAULT_RESPONSE_TYPE;
         if (typeString != null) {
             responseType = typeString;
@@ -648,33 +651,33 @@ public class LocalizationHttpService {
 
     /**
      * @see #findWriter(List, List, ResponsePair)
-     * 
+     *
      * @param responseTypes
      * @return
      */
     private ResponsePair<IDirectoryListingWriter> findListingWriter(
             List<MimeType> responseTypes) {
-        ResponsePair<IDirectoryListingWriter> defaultResult = new ResponsePair<IDirectoryListingWriter>(
+        ResponsePair<IDirectoryListingWriter> defaultResult = new ResponsePair<>(
                 HtmlDirectoryListingWriter.CONTENT_TYPE, defaultListingWriter);
         return findWriter(responseTypes, listingWriters, defaultResult);
     }
 
     /**
      * @see #findWriter(List, List, ResponsePair)
-     * 
+     *
      * @param responseTypes
      * @return
      */
     private ResponsePair<ILocalizationResponseWriter> findWriter(
             List<MimeType> responseTypes) {
-        ResponsePair<ILocalizationResponseWriter> defaultResult = new ResponsePair<ILocalizationResponseWriter>(
+        ResponsePair<ILocalizationResponseWriter> defaultResult = new ResponsePair<>(
                 HtmlDirectoryListingWriter.CONTENT_TYPE, defaultListingWriter);
         return findWriter(responseTypes, writers, defaultResult);
     }
 
     /**
      * Find the best match for a preferred response type
-     * 
+     *
      * @param responseTypes
      * @param writers
      * @param defaultResult
@@ -693,7 +696,7 @@ public class LocalizationHttpService {
                 synchronized (writers) {
                     for (T writer : writers) {
                         if (writer.generates(responseType)) {
-                            rval = new ResponsePair<T>(responseType, writer);
+                            rval = new ResponsePair<>(responseType, writer);
                             break;
                         }
                     }
@@ -705,7 +708,7 @@ public class LocalizationHttpService {
 
     /**
      * Register response writers with service
-     * 
+     *
      * @param writers
      * @return self for spring compatibility
      */
