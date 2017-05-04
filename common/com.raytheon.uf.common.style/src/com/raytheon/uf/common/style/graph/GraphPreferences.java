@@ -29,13 +29,15 @@ import com.raytheon.uf.common.style.AbstractStylePreferences;
 import com.raytheon.uf.common.style.LabelingPreferences;
 
 /**
- * TODO class description
+ * Preferences describing how data should be displayed on an x/y graph.
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 3, 2007             njensen     Initial creation
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Oct 03, 2007           njensen   Initial creation
+ * Apr 26, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
@@ -55,34 +57,35 @@ public class GraphPreferences extends AbstractStylePreferences {
     @XmlElement
     private LabelingPreferences dottedLines;
 
-    /**
-     * @return the axisScale
-     */
+    public GraphPreferences() {
+
+    }
+
+    public GraphPreferences(GraphPreferences prefs) {
+        super(prefs);
+        this.axisScale = prefs.getAxisScale();
+        this.dottedLines = prefs.getDottedLines().clone();
+    }
+
     public AxisScale getAxisScale() {
         return axisScale;
     }
 
-    /**
-     * @param axisScale
-     *            the axisScale to set
-     */
     public void setAxisScale(AxisScale axisScale) {
         this.axisScale = axisScale;
     }
 
-    /**
-     * @return the dottedLines
-     */
     public LabelingPreferences getDottedLines() {
         return dottedLines;
     }
 
-    /**
-     * @param dottedLines
-     *            the dottedLines to set
-     */
     public void setDottedLines(LabelingPreferences dottedLines) {
         this.dottedLines = dottedLines;
+    }
+
+    @Override
+    public GraphPreferences clone() {
+        return new GraphPreferences(this);
     }
 
 }

@@ -9,6 +9,12 @@
   <!-- Dual purpose bean, provides the thrift handler for getServers requests and contains the registry of servers -->
   <bean id="serverLocationRegistry" class="com.raytheon.edex.services.GetServersHandler"/>
   <bean id="getServerTime" class="com.raytheon.edex.services.GetServerTimeHandler"/>
+
+  <!-- Register manually due to custom GetBmhServersRequest in bmh-utility-request registered to same handler -->
+  <bean factory-bean="handlerRegistry" factory-method="register">
+       <constructor-arg value="com.raytheon.uf.common.localization.msgs.GetServersRequest"/>
+       <constructor-arg ref="serverLocationRegistry"/>
+  </bean>
   
   <!-- deprecated -->
   <bean class="com.raytheon.edex.services.LocalizationStreamGetHandler" />

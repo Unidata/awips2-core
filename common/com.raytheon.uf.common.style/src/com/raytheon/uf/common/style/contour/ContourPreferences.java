@@ -35,20 +35,19 @@ import com.raytheon.uf.common.style.LabelingPreferences;
  * <pre>
  * 
  *    SOFTWARE HISTORY
- *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Oct 18, 2007             chammack    Initial Creation.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------
+ * Oct 18, 2007           chammack  Initial Creation.
+ * Apr 26, 2017  6247     bsteffen  Improve clone
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "contourStyle")
-public class ContourPreferences extends AbstractStylePreferences implements
-        Cloneable {
+public class ContourPreferences extends AbstractStylePreferences {
 
     @XmlElement
     private LabelingPreferences contourLabeling;
@@ -71,59 +70,34 @@ public class ContourPreferences extends AbstractStylePreferences implements
         this.contourLabeling = prefs.contourLabeling.clone();
         this.positiveLinePattern = prefs.positiveLinePattern;
         this.negativeLinePattern = prefs.negativeLinePattern;
+        this.smoothingDistance = prefs.smoothingDistance;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#clone()
-     */
     @Override
     public ContourPreferences clone() {
         return new ContourPreferences(this);
     }
 
-    /**
-     * @return the contourLabeling
-     */
     public LabelingPreferences getContourLabeling() {
         return contourLabeling;
     }
 
-    /**
-     * @param contourLabeling
-     *            the contourLabeling to set
-     */
     public void setContourLabeling(LabelingPreferences contourLabeling) {
         this.contourLabeling = contourLabeling;
     }
 
-    /**
-     * @return the positiveLinePattern
-     */
     public String getPositiveLinePattern() {
         return positiveLinePattern;
     }
 
-    /**
-     * @param positiveLinePattern
-     *            the positiveLinePattern to set
-     */
     public void setPositiveLinePattern(String positiveLinePattern) {
         this.positiveLinePattern = positiveLinePattern;
     }
 
-    /**
-     * @return the negativeLinePattern
-     */
     public String getNegativeLinePattern() {
         return negativeLinePattern;
     }
 
-    /**
-     * @param negativeLinePattern
-     *            the negativeLinePattern to set
-     */
     public void setNegativeLinePattern(String negativeLinePattern) {
         this.negativeLinePattern = negativeLinePattern;
     }
@@ -143,66 +117,61 @@ public class ContourPreferences extends AbstractStylePreferences implements
         this.smoothingDistance = smoothingDistance;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = super.hashCode();
         result = prime * result
                 + ((contourLabeling == null) ? 0 : contourLabeling.hashCode());
-        result = prime
-                * result
-                + ((negativeLinePattern == null) ? 0 : negativeLinePattern
-                        .hashCode());
-        result = prime
-                * result
-                + ((positiveLinePattern == null) ? 0 : positiveLinePattern
-                        .hashCode());
-        result = prime
-                * result
-                + ((smoothingDistance == null) ? 0 : smoothingDistance
-                        .hashCode());
+        result = prime * result + ((negativeLinePattern == null) ? 0
+                : negativeLinePattern.hashCode());
+        result = prime * result + ((positiveLinePattern == null) ? 0
+                : positiveLinePattern.hashCode());
+        result = prime * result + ((smoothingDistance == null) ? 0
+                : smoothingDistance.hashCode());
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         ContourPreferences other = (ContourPreferences) obj;
         if (contourLabeling == null) {
-            if (other.contourLabeling != null)
+            if (other.contourLabeling != null) {
                 return false;
-        } else if (!contourLabeling.equals(other.contourLabeling))
+            }
+        } else if (!contourLabeling.equals(other.contourLabeling)) {
             return false;
+        }
         if (negativeLinePattern == null) {
-            if (other.negativeLinePattern != null)
+            if (other.negativeLinePattern != null) {
                 return false;
-        } else if (!negativeLinePattern.equals(other.negativeLinePattern))
+            }
+        } else if (!negativeLinePattern.equals(other.negativeLinePattern)) {
             return false;
+        }
         if (positiveLinePattern == null) {
-            if (other.positiveLinePattern != null)
+            if (other.positiveLinePattern != null) {
                 return false;
-        } else if (!positiveLinePattern.equals(other.positiveLinePattern))
+            }
+        } else if (!positiveLinePattern.equals(other.positiveLinePattern)) {
             return false;
+        }
         if (smoothingDistance == null) {
-            if (other.smoothingDistance != null)
+            if (other.smoothingDistance != null) {
                 return false;
-        } else if (!smoothingDistance.equals(other.smoothingDistance))
+            }
+        } else if (!smoothingDistance.equals(other.smoothingDistance)) {
             return false;
+        }
         return true;
     }
 

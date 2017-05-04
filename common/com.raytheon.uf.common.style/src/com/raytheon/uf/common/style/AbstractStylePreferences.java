@@ -41,10 +41,12 @@ import javax.xml.bind.annotation.XmlValue;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 21, 2007            njensen     Initial creation
- * Nov 14, 2013 2361       njensen     Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------------
+ * Sep 21, 2007           njensen   Initial creation
+ * Nov 14, 2013  2361     njensen   Remove ISerializableObject
+ * Apr 26, 2017  6247     bsteffen  Improve clone
  * 
  * </pre>
  * 
@@ -77,8 +79,8 @@ public abstract class AbstractStylePreferences {
             Unit<?> unit = null;
             if (unitString != null && unitString.length() > 0) {
                 try {
-                    unit = UnitFormat.getUCUMInstance().parseProductUnit(
-                            unitString, new ParsePosition(0));
+                    unit = UnitFormat.getUCUMInstance()
+                            .parseProductUnit(unitString, new ParsePosition(0));
                 } catch (ParseException e) {
                     throw new RuntimeException(e);
                 }
@@ -123,14 +125,11 @@ public abstract class AbstractStylePreferences {
     }
 
     @XmlElementRef
-    private final DisplayUnit displayUnits;
+    private DisplayUnit displayUnits;
 
     @XmlElement(required = false)
-    private final DisplayFlags displayFlags;
+    private DisplayFlags displayFlags;
 
-    /**
-     * Default Constructor
-     */
     public AbstractStylePreferences() {
         this.displayUnits = new DisplayUnit();
         this.displayFlags = new DisplayFlags();
@@ -141,9 +140,6 @@ public abstract class AbstractStylePreferences {
         this.displayFlags = prefs.displayFlags;
     }
 
-    /**
-     * @return the displayUnits
-     */
     public Unit<?> getDisplayUnits() {
         return this.displayUnits.getUnit();
     }
@@ -152,27 +148,15 @@ public abstract class AbstractStylePreferences {
         return this.displayUnits.getLabel();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime
-                * result
-                + ((displayUnits.getUnit() == null) ? 0 : displayUnits
-                        .getUnit().hashCode());
+        result = prime * result + ((displayUnits.getUnit() == null) ? 0
+                : displayUnits.getUnit().hashCode());
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -189,17 +173,29 @@ public abstract class AbstractStylePreferences {
             if (other.displayUnits.getUnit() != null) {
                 return false;
             }
-        } else if (!displayUnits.getUnit().equals(other.displayUnits.getUnit())) {
+        } else if (!displayUnits.getUnit()
+                .equals(other.displayUnits.getUnit())) {
             return false;
         }
         return true;
     }
 
-    /**
-     * @return the displayFlags
-     */
     public DisplayFlags getDisplayFlags() {
         return displayFlags;
     }
+
+    public void setDisplayUnits(DisplayUnit displayUnits) {
+        this.displayUnits = displayUnits;
+    }
+
+    public void setDisplayFlags(DisplayFlags displayFlags) {
+        this.displayFlags = displayFlags;
+    }
+
+    /**
+     * Sub classes should implement this method by calling a copy constructor to
+     * correctly clone the state in this class.
+     */
+    public abstract AbstractStylePreferences clone();
 
 }

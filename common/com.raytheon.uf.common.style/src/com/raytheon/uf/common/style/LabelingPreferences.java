@@ -33,17 +33,18 @@ import javax.xml.bind.annotation.XmlList;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jul 12, 2007            chammack    Initial Creation.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------
+ * Jul 12, 2007           chammack  Initial Creation.
+ * Apr 26, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public class LabelingPreferences implements Cloneable {
+public class LabelingPreferences {
 
     private static final String SEPARATOR = " ";
 
@@ -85,11 +86,6 @@ public class LabelingPreferences implements Cloneable {
 
     }
 
-    /**
-     * Copy constructor
-     * 
-     * @param prefs
-     */
     public LabelingPreferences(LabelingPreferences prefs) {
         if (prefs.values != null) {
             this.values = new float[prefs.values.length];
@@ -97,50 +93,40 @@ public class LabelingPreferences implements Cloneable {
                     this.values.length);
         }
         this.increment = prefs.increment;
+        this.createNegativeValues = prefs.createNegativeValues;
+        this.labelFormat = prefs.labelFormat;
+        this.labelSpacing = prefs.labelSpacing;
+        this.labelTrimLeft = prefs.labelTrimLeft;
+        this.maxLabel = prefs.maxLabel;
+        this.maxMinTrimLeft = prefs.maxMinTrimLeft;
+        this.minLabel = prefs.minLabel;
+        this.minMaxLabelFormat = prefs.minMaxLabelFormat;
+        this.numberOfContours = prefs.numberOfContours;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#clone()
-     */
     @Override
     public LabelingPreferences clone() {
         return new LabelingPreferences(this);
     }
 
-    /**
-     * @return the values
-     */
     public float[] getValues() {
         return values;
     }
 
-    /**
-     * @param values
-     *            the values to set
-     */
     public void setValues(float[] values) {
         this.values = values;
     }
 
-    /**
-     * @return the increment
-     */
     public float getIncrement() {
         return increment;
     }
 
-    /**
-     * @param increment
-     *            the increment to set
-     */
     public void setIncrement(float increment) {
         this.increment = increment;
     }
 
     /**
-     * Gets the values interpreted as a String (used by JiBX)
+     * Gets the values interpreted as a String
      * 
      * @return a space separated list of values
      */
@@ -159,7 +145,7 @@ public class LabelingPreferences implements Cloneable {
     }
 
     /**
-     * Sets the values from an interpretation of a String (used by JiBX)
+     * Sets the values from an interpretation of a String
      * 
      * @param aValues
      *            a space separated list of values
@@ -246,11 +232,6 @@ public class LabelingPreferences implements Cloneable {
         this.maxMinTrimLeft = maxMinTrimLeft;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -260,11 +241,6 @@ public class LabelingPreferences implements Cloneable {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

@@ -33,14 +33,13 @@ import com.raytheon.uf.common.style.AbstractStylePreferences;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 11, 2015  #4384     dgilling     Add minimum magnitude field.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------
+ * May 11, 2015  4384     dgilling  Add minimum magnitude field.
+ * Apr 26, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
- * @author xxxxxxxx
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "arrowStyle")
@@ -51,6 +50,16 @@ public class ArrowPreferences extends AbstractStylePreferences {
 
     @XmlElement
     private double minimumMagnitude = Double.NaN;
+
+    public ArrowPreferences() {
+
+    }
+
+    public ArrowPreferences(ArrowPreferences prefs) {
+        super(prefs);
+        this.scale = prefs.getScale();
+        this.minimumMagnitude = prefs.getMinimumMagnitude();
+    }
 
     public void setScale(double scale) {
         this.scale = scale;
@@ -66,6 +75,11 @@ public class ArrowPreferences extends AbstractStylePreferences {
 
     public void setMinimumMagnitude(double minimumMagnitude) {
         this.minimumMagnitude = minimumMagnitude;
+    }
+
+    @Override
+    public ArrowPreferences clone() {
+        return new ArrowPreferences(this);
     }
 
     // TODO this should contain some other preferences

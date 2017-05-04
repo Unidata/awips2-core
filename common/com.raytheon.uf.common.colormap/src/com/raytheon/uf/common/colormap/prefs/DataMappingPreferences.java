@@ -35,23 +35,24 @@ import com.raytheon.uf.common.units.PiecewisePixel;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- *  6/2013      DR 16070   jgerth      Interpolation capability
- * Aug 2, 2013  2211       mschenke    Backed out 16070 changes
- * Aug 21, 2014 DR 17313   jgerth      New methods
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * 6/2013        16070    jgerth    Interpolation capability
+ * Aug 02, 2013  2211     mschenke  Backed out 16070 changes
+ * Aug 21, 2014  17313    jgerth    New methods
+ * Apr 27, 2017  6247     bsteffen  Implement clone
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class DataMappingPreferences {
 
     @XmlAccessorType(XmlAccessType.NONE)
-    public static class DataMappingEntry implements
-            Comparable<DataMappingEntry> {
+    public static class DataMappingEntry
+            implements Comparable<DataMappingEntry> {
         @XmlAttribute
         private Double displayValue;
 
@@ -67,86 +68,63 @@ public class DataMappingPreferences {
         @XmlAttribute
         private String operator;
 
-        /**
-         * @return the displayValue
-         */
+        public DataMappingEntry() {
+
+        }
+
+        public DataMappingEntry(DataMappingEntry entry) {
+            this.displayValue = entry.getDisplayValue();
+            this.pixelValue = entry.getPixelValue();
+            this.label = entry.getLabel();
+            this.sample = entry.getSample();
+            this.operator = entry.getOperator();
+        }
+
         public Double getDisplayValue() {
             return displayValue;
         }
 
-        /**
-         * @param displayValue
-         *            the displayValue to set
-         */
         public void setDisplayValue(Double displayValue) {
             this.displayValue = displayValue;
         }
 
-        /**
-         * @return the pixelValue
-         */
         public Double getPixelValue() {
             return pixelValue;
         }
 
-        /**
-         * @param pixelValue
-         *            the pixelValue to set
-         */
         public void setPixelValue(Double pixelValue) {
             this.pixelValue = pixelValue;
         }
 
-        /**
-         * @return the label
-         */
         public String getLabel() {
             return label;
         }
 
-        /**
-         * @param label
-         *            the label to set
-         */
         public void setLabel(String label) {
             this.label = label;
         }
 
-        /**
-         * @return the sample
-         */
         public String getSample() {
             return sample;
         }
 
-        /**
-         * @param sample
-         *            the sample to set
-         */
         public void setSample(String sample) {
             this.sample = sample;
         }
 
-        /**
-         * @param operator
-         *            the operator to set
-         */
         public void setOperator(String operator) {
             this.operator = operator;
         }
 
-        /**
-         * @return the operator
-         */
         public String getOperator() {
             return operator;
         }
 
-        /*
-         * Compares pixelValue
-         * 
-         * @see java.lang.Comparable#compareTo(java.lang.Object)
-         */
+        @Override
+        public DataMappingEntry clone() {
+            return new DataMappingEntry(this);
+        }
+
         @Override
         public int compareTo(DataMappingEntry o2) {
             if (o2 == null) {
@@ -185,6 +163,17 @@ public class DataMappingPreferences {
 
     private Unit<?> imageUnit;
 
+    public DataMappingPreferences() {
+    }
+
+    public DataMappingPreferences(DataMappingPreferences prefs) {
+        for (DataMappingEntry entry : prefs.entries) {
+            addEntry(entry.clone());
+        }
+        this.imageUnit = prefs.imageUnit;
+
+    }
+
     @SuppressWarnings({ "unchecked", "rawtypes" })
     public Unit<?> getImageUnit(Unit<?> displayUnit) {
         if (imageUnit == null) {
@@ -214,9 +203,6 @@ public class DataMappingPreferences {
         return imageUnit;
     }
 
-    /**
-     * @return the entries
-     */
     @XmlElement(name = "entry")
     public DataMappingEntry[] getSerializableEntries() {
         return entries.toArray(new DataMappingEntry[entries.size()]);
@@ -249,8 +235,8 @@ public class DataMappingPreferences {
                 equalsEntries.add(entry);
             } else if (">".equals(operator)) {
                 greaterThanEntries.add(entry);
-                Collections
-                .sort(greaterThanEntries, Collections.reverseOrder());
+                Collections.sort(greaterThanEntries,
+                        Collections.reverseOrder());
             } else if ("<".equals(operator)) {
                 lessThanEntries.add(entry);
                 Collections.sort(lessThanEntries);
@@ -365,5 +351,9 @@ public class DataMappingPreferences {
             }
         }
         return null;
+    }
+
+    public DataMappingPreferences clone() {
+        return new DataMappingPreferences(this);
     }
 }

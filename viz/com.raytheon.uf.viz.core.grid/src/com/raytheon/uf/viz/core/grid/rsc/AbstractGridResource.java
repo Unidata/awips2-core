@@ -148,6 +148,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  magnitude.
  * May 14, 2015  4079     bsteffen  Move to core.grid, add getDisplayUnit
  * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
+ * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
  * 
  * </pre>
  * 
@@ -1104,7 +1105,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     protected Collection<IRenderable> getOrCreateRenderables(
             IGraphicsTarget target, PaintProperties paintProps)
-                    throws VizException {
+            throws VizException {
         DataTime time = paintProps.getDataTime();
         if (time == null) {
             time = getTimeForResource();
@@ -1154,4 +1155,21 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             return null;
         }
     }
+
+    public AbstractStylePreferences getStylePreferences() {
+        return stylePreferences.clone();
+    }
+
+    public void setStylePreferences(AbstractStylePreferences stylePreferences) {
+        this.stylePreferences = stylePreferences.clone();
+        synchronized (renderableMap) {
+            for (List<IRenderable> renderableList : renderableMap.values()) {
+                for (IRenderable renderable : renderableList) {
+                    disposeRenderable(renderable);
+                }
+            }
+            renderableMap.clear();
+        }
+    }
+
 }
