@@ -450,11 +450,11 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
             }
         }
 
-        try {
-            fireRemoveListeners(rp, postRemoveListeners);
-        } catch (VizException e1) {
-            // eat exception
-        }
+//        try {
+//            fireRemoveListeners(rp, postRemoveListeners);
+//        } catch (VizException e1) {
+//            // eat exception
+//        }
 
         return rp;
     }

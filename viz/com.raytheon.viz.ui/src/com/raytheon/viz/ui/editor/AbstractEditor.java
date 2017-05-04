@@ -653,7 +653,7 @@ public abstract class AbstractEditor extends EditorPart implements
 
         @Override
         public void notifyAdd(ResourcePair rp) throws VizException {
-            firePropertyChange(ISaveablePart2.PROP_DIRTY);
+            //firePropertyChange(ISaveablePart2.PROP_DIRTY);
         }
 
         @Override
