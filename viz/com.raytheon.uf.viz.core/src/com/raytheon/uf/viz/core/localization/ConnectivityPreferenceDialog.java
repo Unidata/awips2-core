@@ -76,12 +76,12 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
  * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
+ * Dec 14, 2015  5195     njensen     Don't extend org.eclipse.swt.widgets.Dialog
  * Feb 08, 2016  5281     tjensen     Added method getServerOptions. Don't extend 
  *                                    org.eclipse.swt.widgets.Dialog
  * Feb 17, 2016  5281     tjensen     Fix Dialog centering
  * Apr 07, 2016  5281     tjensen     Clear details if status is good.
  * Sep 12, 2016           mjames@ucar Clean formatted server name.
- * 
  * </pre>
  * 
  * @author mschenke

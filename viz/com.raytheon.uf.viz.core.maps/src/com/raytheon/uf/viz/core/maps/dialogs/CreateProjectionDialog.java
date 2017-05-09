@@ -87,13 +87,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 16, 2008 783        randerso    Initial Creation
- * Jan 29, 2013 15567      snaples     Remove Orthographic projection from list temporarily
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 16, 2008  783      randerso  Initial Creation
+ * Jan 29, 2013  15567    snaples   Remove Orthographic projection from list
+ *                                  temporarily
+ * Aug 30, 2016 ----       mjames@ucar Generate WFO site envelopes + design updates.
  * Apr 21, 2016  5579     bsteffen  Default to match current display. Add Import
  *                                  Extent From Display. Add tooltips.
- * Aug 30, 2016 ----       mjames@ucar Generate WFO site envelopes + design updates.
  * 
  * </pre>
  * 
@@ -522,7 +524,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
         setEnabledGroup(cornersGroup, true);
         setEnabledGroup(centerGroup, true);
-        
+
         validateExtent();
         if (newMapGeom == null) {
             return;
@@ -633,7 +635,7 @@ private void generateRadarExtents() {
         }
 
         CoordinateSystem cs = crs.getCoordinateSystem();
-        
+
         Coordinate ll = null;
         Coordinate ur = null;
         Coordinate center = null;

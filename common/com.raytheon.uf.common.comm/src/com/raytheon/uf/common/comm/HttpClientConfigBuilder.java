@@ -35,6 +35,7 @@ package com.raytheon.uf.common.comm;
  * Jun 30, 2015            mjames@ucar  maxConnections increased from 10 to 1000
  * Jul 06, 2015  4614      njensen      Add gzipEnabled
  * Dec 07, 2015  4834      njensen      Changed for rename of IHttpsHandler to HttpAuthHandler
+ * Mar 24, 2017  DR 19830  D. Friedman  Add retryDelay
  * 
  * </pre>
  * 
@@ -57,6 +58,8 @@ public class HttpClientConfigBuilder {
 
     private boolean gzipEnabled = false;
 
+    private int retryDelay = 6000;
+
     /**
      * 
      */
@@ -75,6 +78,7 @@ public class HttpClientConfigBuilder {
         this.setSocketTimeout(config.getSocketTimeout());
         this.setTcpNoDelay(config.isTcpNoDelay());
         this.setExpectContinueEnabled(config.isExpectContinueEnabled());
+        this.setRetryDelay(config.getRetryDelay());
     }
 
     public static HttpClientConfig defaultConfig() {
@@ -87,7 +91,7 @@ public class HttpClientConfigBuilder {
     public HttpClientConfig build() {
         return new HttpClientConfig(socketTimeout, connectionTimeout,
                 maxConnections, httpAuthHandler, tcpNoDelay,
-                expectContinueEnabled, gzipEnabled);
+                expectContinueEnabled, gzipEnabled, retryDelay);
     }
 
     /**
@@ -241,6 +245,14 @@ public class HttpClientConfigBuilder {
 
     public void setGzipEnabled(boolean gzipEnabled) {
         this.gzipEnabled = gzipEnabled;
+    }
+
+    public int getRetryDelay() {
+        return retryDelay;
+    }
+
+    public void setRetryDelay(int retryDelay) {
+        this.retryDelay = retryDelay;
     }
 
 }
