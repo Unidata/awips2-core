@@ -34,11 +34,11 @@
 	<mapScale displayName="World - Mercator" fileName="WorldMercator.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
 	</mapScale>
-	<mapScale displayName="World - Full Disk" fileName="Geostationary.xml" areaScale="false">
-	</mapScale>
 	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="World - Mollweide" fileName="WorldMollweide.xml" areaScale="true">
+	</mapScale>
+	<mapScale displayName="GOES East Full Disk" fileName="Geostationary.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="Regional - Africa" fileName="Africa.xml" areaScale="false">
 	</mapScale>
