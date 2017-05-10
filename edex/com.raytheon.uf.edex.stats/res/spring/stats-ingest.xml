@@ -1,9 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd
-  http://camel.apache.org/schema/spring
-  http://camel.apache.org/schema/spring/camel-spring.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="aggregateDao" class="com.raytheon.uf.edex.stats.dao.AggregateRecordDao">
         <property name="sessionFactory" ref="metadataSessionFactory" />
@@ -17,7 +17,7 @@
         depends-on="statsRegister"/>
 
     <bean id="aggregateManager" class="com.raytheon.uf.edex.stats.AggregateManager">
-        <!-- Not directly exposing at this time, due to performance concerns from 
+        <!-- Not directly exposing at this time, due to performance concerns from
             improper values -->
         <!-- Bucket interval in minutes for aggregation -->
         <constructor-arg value="5"/>

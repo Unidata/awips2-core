@@ -1,41 +1,41 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean class="com.raytheon.uf.common.convert.ConvertUtil" factory-method="registerConverter">
-  		<constructor-arg><bean class="com.raytheon.uf.common.geospatial.util.JtsGeometryConverter"/></constructor-arg>
-  		<constructor-arg><value>com.vividsolutions.jts.geom.Geometry</value></constructor-arg>
-	</bean>
-    
+    <bean class="com.raytheon.uf.common.convert.ConvertUtil" factory-method="registerConverter">
+          <constructor-arg><bean class="com.raytheon.uf.common.geospatial.util.JtsGeometryConverter"/></constructor-arg>
+          <constructor-arg><value>com.vividsolutions.jts.geom.Geometry</value></constructor-arg>
+    </bean>
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>com.vividsolutions.jts.geom.Coordinate</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.CoordAdapter"/></constructor-arg>
     </bean>
-    
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>com.vividsolutions.jts.geom.Geometry</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.GeometryTypeAdapter"/></constructor-arg>
     </bean>
-    
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>org.geotools.coverage.grid.GridGeometry2D</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.GridGeometry2DAdapter"/></constructor-arg>
     </bean>
-    
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>org.geotools.coverage.grid.GeneralGridGeometry</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.GridGeometryAdapter"/></constructor-arg>
     </bean>
-    
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>com.vividsolutions.jts.geom.Envelope</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.JTSEnvelopeAdapter"/></constructor-arg>
     </bean>
-    
+
     <bean class="com.raytheon.uf.common.serialization.DynamicSerializationManager" factory-method="registerAdapter">
         <constructor-arg><value>org.geotools.geometry.jts.ReferencedEnvelope</value></constructor-arg>
         <constructor-arg><bean class="com.raytheon.uf.common.geospatial.adapter.ReferencedEnvelopeAdapter"/></constructor-arg>
     </bean>
-	
+
 </beans>

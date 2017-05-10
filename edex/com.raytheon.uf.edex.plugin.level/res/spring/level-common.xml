@@ -1,24 +1,24 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="levelProperties" class="com.raytheon.uf.common.dataplugin.PluginProperties">
-		<property name="pluginName" value="level" />
-		<property name="pluginFQN" value="com.raytheon.uf.common.dataplugin.level" />
-		<property name="dao" value="com.raytheon.uf.edex.plugin.level.dao.LevelDao"/>
-	    <property name="record" value="com.raytheon.uf.common.dataplugin.level.Level" />
-		<property name="database" value="metadata" />
-	</bean>
-	
-	<bean id="levelRegistered" factory-bean="pluginRegistry" factory-method="register">
-		<constructor-arg value="level"/>
-		<constructor-arg ref="levelProperties"/>
-	</bean>
- 
+    <bean id="levelProperties" class="com.raytheon.uf.common.dataplugin.PluginProperties">
+        <property name="pluginName" value="level" />
+        <property name="pluginFQN" value="com.raytheon.uf.common.dataplugin.level" />
+        <property name="dao" value="com.raytheon.uf.edex.plugin.level.dao.LevelDao"/>
+        <property name="record" value="com.raytheon.uf.common.dataplugin.level.Level" />
+        <property name="database" value="metadata" />
+    </bean>
+
+    <bean id="levelRegistered" factory-bean="pluginRegistry" factory-method="register">
+        <constructor-arg value="level"/>
+        <constructor-arg ref="levelProperties"/>
+    </bean>
+
     <bean id="levelFactoryInitialized"
         class="com.raytheon.uf.common.dataplugin.level.LevelFactory"
         factory-method="getInstance"
         depends-on="levelRegistered, registerRequestServiceRouter, queryDataRegistered, masterLevelHandlerRegistered" />
-	
+
 </beans>

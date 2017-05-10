@@ -1,30 +1,30 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-	<bean id="getMasterLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetMasterLevelHandler" />
-	<bean id="masterLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register" depends-on="getLevelHandlerRegistered, getLevelByIdHandlerRegistered, getAllLevelsForMasterLevelHandlerRegistered">
-  		<constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetMasterLevelRequest"/>
-  		<constructor-arg ref="getMasterLevelHandler"/>
-  	</bean>
+    <bean id="getMasterLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetMasterLevelHandler" />
+    <bean id="masterLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register" depends-on="getLevelHandlerRegistered, getLevelByIdHandlerRegistered, getAllLevelsForMasterLevelHandlerRegistered">
+          <constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetMasterLevelRequest"/>
+          <constructor-arg ref="getMasterLevelHandler"/>
+      </bean>
 
-	<bean id="getLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetLevelHandler" />
-	<bean id="getLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
-  		<constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetLevelRequest"/>
-  		<constructor-arg ref="getLevelHandler"/>
-  	</bean>
+    <bean id="getLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetLevelHandler" />
+    <bean id="getLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
+          <constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetLevelRequest"/>
+          <constructor-arg ref="getLevelHandler"/>
+      </bean>
 
-	<bean id="getLevelByIdHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetLevelByIdHandler" />
-	<bean id="getLevelByIdHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
-  		<constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetLevelByIdRequest"/>
-  		<constructor-arg ref="getLevelByIdHandler"/>
-  	</bean>
+    <bean id="getLevelByIdHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetLevelByIdHandler" />
+    <bean id="getLevelByIdHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
+          <constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetLevelByIdRequest"/>
+          <constructor-arg ref="getLevelByIdHandler"/>
+      </bean>
 
-	<bean id="getAllLevelsForMasterLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetAllLevelsForMasterLevelHandler" />
-	<bean id="getAllLevelsForMasterLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
-  		<constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetAllLevelsForMasterLevelRequest"/>
-  		<constructor-arg ref="getAllLevelsForMasterLevelHandler"/>
-  	</bean>
-  
+    <bean id="getAllLevelsForMasterLevelHandler" class="com.raytheon.uf.edex.plugin.level.handler.GetAllLevelsForMasterLevelHandler" />
+    <bean id="getAllLevelsForMasterLevelHandlerRegistered" factory-bean="handlerRegistry" factory-method="register">
+          <constructor-arg value="com.raytheon.uf.common.dataplugin.level.request.GetAllLevelsForMasterLevelRequest"/>
+          <constructor-arg ref="getAllLevelsForMasterLevelHandler"/>
+      </bean>
+
 </beans>

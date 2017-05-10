@@ -1,26 +1,25 @@
-<beans
-  xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xmlns:util="http://www.springframework.org/schema/util"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd
-  http://www.springframework.org/schema/util
-  http://www.springframework.org/schema/util/spring-util.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:util="http://www.springframework.org/schema/util"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://www.springframework.org/schema/util
+    http://www.springframework.org/schema/util/spring-util.xsd">
 
     <bean id="product" class="org.eclipse.core.runtime.Platform" factory-method="getProduct"/>
-  
+
     <bean id="productName" factory-bean="product" factory-method="getName"/>
-    
+
     <bean id="version" factory-bean="product" factory-method="getProperty">
        <constructor-arg value="version"/>
     </bean>
-    
+
     <bean id="args" class="com.raytheon.uf.viz.core.ProgramArguments" factory-method="getInstance"/>
-    
+
     <bean id="component" factory-bean="args" factory-method="getString">
        <constructor-arg value="-component"/>
     </bean>
-    
+
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
         <constructor-arg ref="productName"/>
         <!--
@@ -39,18 +38,18 @@
        <property name="maxConnections" value="10"/>
        <property name="httpAuthHandler" ref="caveCredentialHandler" />
     </bean>
-    
-    <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder" factory-method="build"/>
-    
-	<bean id="httpClient" class="com.raytheon.uf.common.comm.HttpClient" factory-method="configureGlobalInstance" depends-on="appInfo">
-	   <constructor-arg ref="httpClientConfig"/>
-	</bean>	
 
-	<bean id="baosPool" class="com.raytheon.uf.common.util.ByteArrayOutputStreamPool" factory-method="getInstance">
-	   <property name="maxPoolSize" value="8"/>
-	   <property name="initStreamSize" value="1"/>
-	   <property name="maxStreamSize" value="5.5"/>
-	</bean>
+    <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder" factory-method="build"/>
+
+    <bean id="httpClient" class="com.raytheon.uf.common.comm.HttpClient" factory-method="configureGlobalInstance" depends-on="appInfo">
+       <constructor-arg ref="httpClientConfig"/>
+    </bean>
+
+    <bean id="baosPool" class="com.raytheon.uf.common.util.ByteArrayOutputStreamPool" factory-method="getInstance">
+       <property name="maxPoolSize" value="8"/>
+       <property name="initStreamSize" value="1"/>
+       <property name="maxStreamSize" value="5.5"/>
+    </bean>
 
    <bean id="vizMonitorHandler" class="com.raytheon.uf.viz.core.status.VizMonitorHandler">
       <property name="monitorEndpoint" value="edex.alerts.msg"/>
@@ -59,18 +58,18 @@
    <bean class="com.raytheon.uf.common.geospatial.LogRedirector" factory-method="setGeotoolsLogFactory">
         <constructor-arg value="org.geotools.util.logging.Log4JLoggerFactory"/>
    </bean>
-   
+
    <bean class="com.raytheon.uf.common.geospatial.SpatialQueryFactory"
         factory-method="setImplementation">
-        <constructor-arg value="com.raytheon.uf.viz.core.spatial.SpatialDbQuery"/>    
+        <constructor-arg value="com.raytheon.uf.viz.core.spatial.SpatialDbQuery"/>
    </bean>
-   
+
    <!-- These util:constant beans should not be required, they overwrite the ones in *-common.xml files for CAVE since
-        CAVE just gets a ClassNotFoundException on boot... 
+        CAVE just gets a ClassNotFoundException on boot...
         someday the reason should be figured out and these beans removed -->
    <util:constant id="requestServerKey"
         static-field="com.raytheon.uf.common.auth.RequestConstants.REQUEST_SERVER" />
-   
+
    <!-- Register routers -->
    <bean id="requestRouterRegistry"
         class="com.raytheon.uf.common.serialization.comm.RequestRouter"
@@ -85,20 +84,20 @@
         <constructor-arg ref="requestServerKey" />
         <constructor-arg ref="requestServiceRouter" />
     </bean>
-    
+
     <bean id="recordFactory" class="com.raytheon.uf.viz.core.RecordFactory" factory-method="getInstance"/>
-    
+
     <bean id="recordFactoryRegisteredToDataURIUtil"
-		class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-		<property name="targetClass">
-			<value>com.raytheon.uf.common.dataplugin.annotations.DataURIUtil</value>
-		</property>
-		<property name="targetMethod">
-			<value>setClassMapper</value>
-		</property>
-		<property name="arguments" ref="recordFactory" />
-	</bean>
-	    
+        class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass">
+            <value>com.raytheon.uf.common.dataplugin.annotations.DataURIUtil</value>
+        </property>
+        <property name="targetMethod">
+            <value>setClassMapper</value>
+        </property>
+        <property name="arguments" ref="recordFactory" />
+    </bean>
+
     <bean id="vizSubClassLocator" class="com.raytheon.uf.viz.core.reflect.SubClassLocator"/>
     <bean class="com.raytheon.uf.common.style.StyleManager" factory-method="getInstance">
         <property name="subClassLocator" ref="vizSubClassLocator" />

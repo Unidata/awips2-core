@@ -1,12 +1,12 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
-   
-   <bean id="adaptivePlotHandler" class="com.raytheon.uf.edex.pointdata.NewAdaptivePlotHandler"/>
-   <bean id="pointDataQueryHandler" class="com.raytheon.uf.edex.pointdata.PointDataHandler" />
-   <bean id="accumDataQueryHandler" class="com.raytheon.uf.edex.pointdata.accumulate.AccumDataHandler" />
-   <bean id="pointDataServerRequestHandler" class="com.raytheon.uf.edex.pointdata.PointDataServerRequestHandler" />
-   <bean id="getPointDataTreeHandler" class="com.raytheon.uf.edex.pointdata.GetPointDataTreeHandler" depends-on="levelRegistered"/>
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
+
+    <bean id="adaptivePlotHandler" class="com.raytheon.uf.edex.pointdata.NewAdaptivePlotHandler"/>
+    <bean id="pointDataQueryHandler" class="com.raytheon.uf.edex.pointdata.PointDataHandler" />
+    <bean id="accumDataQueryHandler" class="com.raytheon.uf.edex.pointdata.accumulate.AccumDataHandler" />
+    <bean id="pointDataServerRequestHandler" class="com.raytheon.uf.edex.pointdata.PointDataServerRequestHandler" />
+    <bean id="getPointDataTreeHandler" class="com.raytheon.uf.edex.pointdata.GetPointDataTreeHandler" depends-on="levelRegistered"/>
 
 </beans>

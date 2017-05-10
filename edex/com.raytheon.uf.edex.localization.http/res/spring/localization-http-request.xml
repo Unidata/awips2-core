@@ -1,9 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd
-  http://camel.apache.org/schema/spring
-  http://camel.apache.org/schema/spring/camel-spring.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="localizationHttpSrv" class="com.raytheon.uf.edex.localization.http.LocalizationHttpService">
         <constructor-arg value="${edex.localization.http.path}" />
@@ -20,7 +20,7 @@
 
         <!-- We define this REST service without using the camel REST tags
              because that schema requires a set number of parameters in the
-             URI. The localization REST service must support a variable 
+             URI. The localization REST service must support a variable
              number of parameters in the URI to support multiple levels of
              sub-directories. -->
 

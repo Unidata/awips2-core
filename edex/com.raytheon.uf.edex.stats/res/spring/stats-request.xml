@@ -1,12 +1,12 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
     <bean id="graphDataHandlerAggregateRecordDao" class="com.raytheon.uf.edex.stats.dao.AggregateRecordDao">
         <property name="sessionFactory" ref="metadataSessionFactory" />
     </bean>
-    
+
     <bean id="aggregatedStatsHandler" class="com.raytheon.uf.edex.stats.handler.AggregatedStatsHandler"/>
     <bean id="statsGraphDataHandler" class="com.raytheon.uf.edex.stats.handler.GraphDataHandler" >
         <property name="aggregateRecordDao" ref="graphDataHandlerAggregateRecordDao" />

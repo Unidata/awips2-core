@@ -1,38 +1,37 @@
-<beans
-  xmlns="http://www.springframework.org/schema/beans"
-  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.springframework.org/schema/beans
-  http://www.springframework.org/schema/beans/spring-beans.xsd">
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="http://www.springframework.org/schema/beans
+    http://www.springframework.org/schema/beans/spring-beans.xsd">
 
-  <bean id="queryData" class="com.raytheon.uf.edex.database.handlers.DbQueryHandler"/>
-  <bean id="querySpatialData" class="com.raytheon.uf.edex.database.handlers.SpatialDbQueryHandler"/>
-  <bean id="queryDataSet" class="com.raytheon.uf.edex.database.handlers.DbQueryHandlerSet"/>
+    <bean id="queryData" class="com.raytheon.uf.edex.database.handlers.DbQueryHandler"/>
+    <bean id="querySpatialData" class="com.raytheon.uf.edex.database.handlers.SpatialDbQueryHandler"/>
+    <bean id="queryDataSet" class="com.raytheon.uf.edex.database.handlers.DbQueryHandlerSet"/>
 
-  <bean id="queryDataRegistered" factory-bean="handlerRegistry" factory-method="register">
-     <constructor-arg value="com.raytheon.uf.common.dataquery.requests.DbQueryRequest"/>
-     <constructor-arg ref="queryData"/>
-  </bean>
+    <bean id="queryDataRegistered" factory-bean="handlerRegistry" factory-method="register">
+        <constructor-arg value="com.raytheon.uf.common.dataquery.requests.DbQueryRequest"/>
+        <constructor-arg ref="queryData"/>
+    </bean>
 
-  <bean id="qlServerRequestHandler" class="com.raytheon.uf.edex.database.QlServerRequestHandler" />
-  <bean id="dataRecordRequestHandler" class="com.raytheon.uf.edex.database.handlers.DataRecordRequestHandler" />
-  <bean id="timeQueryHandler" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandler" />
-  <bean id="timeQueryHandlerSet" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandlerSet" />  
-  <bean id="saveOrUpdateHandler" class="com.raytheon.uf.edex.database.handlers.SaveOrUpdateHandler" />
+    <bean id="qlServerRequestHandler" class="com.raytheon.uf.edex.database.QlServerRequestHandler" />
+    <bean id="dataRecordRequestHandler" class="com.raytheon.uf.edex.database.handlers.DataRecordRequestHandler" />
+    <bean id="timeQueryHandler" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandler" />
+    <bean id="timeQueryHandlerSet" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandlerSet" />
+    <bean id="saveOrUpdateHandler" class="com.raytheon.uf.edex.database.handlers.SaveOrUpdateHandler" />
 
 
-  <bean id="pluginFactory" class="com.raytheon.uf.edex.database.plugin.PluginFactory" factory-method="getInstance">
-    <property name="defaultPathProvider" ref="defaultPathProvider"/>
-  </bean>
+    <bean id="pluginFactory" class="com.raytheon.uf.edex.database.plugin.PluginFactory" factory-method="getInstance">
+        <property name="defaultPathProvider" ref="defaultPathProvider"/>
+    </bean>
 
-  <bean id="pluginFactoryRegisteredToDataURIUtil"
-    class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
-    <property name="targetClass">
-      <value>com.raytheon.uf.common.dataplugin.annotations.DataURIUtil</value>
-    </property>
-    <property name="targetMethod">
-      <value>setClassMapper</value>
-    </property>
-    <property name="arguments" ref="pluginFactory" />
-  </bean>
+    <bean id="pluginFactoryRegisteredToDataURIUtil"
+        class="org.springframework.beans.factory.config.MethodInvokingFactoryBean">
+        <property name="targetClass">
+            <value>com.raytheon.uf.common.dataplugin.annotations.DataURIUtil</value>
+        </property>
+        <property name="targetMethod">
+            <value>setClassMapper</value>
+        </property>
+        <property name="arguments" ref="pluginFactory" />
+    </bean>
 
 </beans>
