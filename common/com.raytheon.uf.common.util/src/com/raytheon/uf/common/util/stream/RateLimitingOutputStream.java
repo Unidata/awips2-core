@@ -35,6 +35,7 @@ import com.raytheon.uf.common.util.rate.TokenBucket;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 17, 2016 5937       tgurney     Initial creation
+ * May 15, 2017 5937       tgurney     Add support for weighting
  *
  * </pre>
  *
@@ -48,9 +49,11 @@ public class RateLimitingOutputStream extends OutputStream {
     /** Stream to write data to. */
     private final OutputStream wrappedStream;
 
-    private TokenBucket bucket;
+    private final TokenBucket bucket;
 
-    private int chunkSize;
+    private final double weight;
+
+    private int minWriteSize;
 
     /**
      * Wraps the provided {@code OutputStream} limiting the number of bytes
@@ -61,14 +64,23 @@ public class RateLimitingOutputStream extends OutputStream {
      */
     public RateLimitingOutputStream(OutputStream outputStream,
             int bytesPerSecond) {
-        if (bytesPerSecond < 1) {
-            throw new IllegalArgumentException(
-                    "bytes per second must be at least 1 (given: "
-                            + bytesPerSecond + ")");
-        }
-        this.wrappedStream = outputStream;
-        this.bucket = new TokenBucket(bytesPerSecond, DEFAULT_INTERVAL_MS);
-        this.chunkSize = Math.max(bucket.getCapacity() / 16, 1);
+        this(outputStream,
+                new TokenBucket(bytesPerSecond, DEFAULT_INTERVAL_MS));
+    }
+
+    /**
+     * Wraps the provided {@code OutputStream} and uses the provided
+     * {@code TokenBucket} to limit the number of bytes written over the
+     * specified interval. (one token = one byte). As a consumer from the token
+     * bucket, this stream will have a relative weight of 1.0. (see class
+     * Javadoc for {@code TokenBucket})
+     *
+     * @param outputStream
+     * @param tokenBucket
+     */
+    public RateLimitingOutputStream(OutputStream outputStream,
+            TokenBucket bucket) {
+        this(outputStream, bucket, 1.0);
     }
 
     /**
@@ -78,12 +90,23 @@ public class RateLimitingOutputStream extends OutputStream {
      *
      * @param outputStream
      * @param tokenBucket
+     * @param weight
+     *            A positive value specifying the weight of this stream relative
+     *            to other consumers taking from the same token bucket. The
+     *            relative weights of all concurrent consumers are compared to
+     *            determine how much throughput each consumer is allowed. Higher
+     *            number = greater proportion of the maximum throughput.
      */
     public RateLimitingOutputStream(OutputStream outputStream,
-            TokenBucket bucket) {
+            TokenBucket bucket, double weight) {
+        if (weight <= 0) {
+            throw new IllegalArgumentException(
+                    "weight must be greater than 0 (given: " + weight + ")");
+        }
         this.wrappedStream = outputStream;
         this.bucket = bucket;
-        this.chunkSize = Math.max(bucket.getCapacity() / 16, 1);
+        this.weight = weight;
+        this.minWriteSize = Math.max(bucket.getCapacity() / 16, 1);
     }
 
     @Override
@@ -99,7 +122,7 @@ public class RateLimitingOutputStream extends OutputStream {
             int writeSize;
             try {
                 writeSize = bucket.consumeBetween(
-                        Math.min(bytesLeft, chunkSize), bytesLeft);
+                        Math.min(bytesLeft, minWriteSize), bytesLeft, weight);
             } catch (InterruptedException e) {
                 throw new IOException(e);
             }
@@ -126,23 +149,29 @@ public class RateLimitingOutputStream extends OutputStream {
     @Override
     public void write(int b) throws IOException {
         try {
-            bucket.consume(1);
+            bucket.consume(1, weight);
         } catch (InterruptedException e) {
             throw new IOException(e);
         }
         wrappedStream.write(b);
     }
 
-    public int getChunkSize() {
-        return chunkSize;
+    /**
+     * @return Minimum size of each write to the wrapped stream, in bytes. A
+     *         single call to write() will result in multiple writes to the
+     *         wrapped stream that are each no smaller than this, except for the
+     *         last write, which may be as small as 1 byte.
+     */
+    public int getMinWriteSize() {
+        return minWriteSize;
     }
 
-    public void setChunkSize(int chunkSize) {
-        if (chunkSize < 1) {
+    public void setMinWriteSize(int minWriteSize) {
+        if (minWriteSize < 1) {
             throw new IllegalArgumentException(
-                    "chunkSize must be at least 1 (given: " + chunkSize + ")");
+                    "minWriteSize must be at least 1 (given: " + minWriteSize
+                            + ")");
         }
-        this.chunkSize = chunkSize;
+        this.minWriteSize = minWriteSize;
     }
-
 }

@@ -35,6 +35,7 @@ import com.raytheon.uf.common.util.rate.TokenBucket;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 22, 2016 5937       tgurney     Initial creation
+ * May 15, 2017 5937       tgurney     Add support for weighting
  *
  * </pre>
  *
@@ -48,9 +49,9 @@ public class RateLimitingInputStream extends InputStream {
     /** Stream to get data from. */
     private final InputStream wrappedStream;
 
-    private TokenBucket bucket;
+    private final TokenBucket bucket;
 
-    private int chunkSize;
+    private final double weight;
 
     private boolean eof = false;
 
@@ -63,14 +64,22 @@ public class RateLimitingInputStream extends InputStream {
      */
     public RateLimitingInputStream(InputStream inputStream,
             int bytesPerSecond) {
-        if (bytesPerSecond < 1) {
-            throw new IllegalArgumentException(
-                    "bytes per interval must be at least 1 (given: "
-                            + bytesPerSecond + ")");
-        }
-        this.wrappedStream = inputStream;
-        this.bucket = new TokenBucket(bytesPerSecond, DEFAULT_INTERVAL_MS);
-        this.chunkSize = Math.max(bucket.getCapacity() / 16, 1);
+        this(inputStream, new TokenBucket(bytesPerSecond, DEFAULT_INTERVAL_MS));
+    }
+
+    /**
+     * Wraps the provided {@code InputStream} and uses the provided
+     * {@code TokenBucket} to limit the number of bytes read over the specified
+     * interval. (one token = one byte). As a consumer from the token bucket,
+     * this stream will have a relative weight of 1.0. (see class Javadoc for
+     * {@code TokenBucket})
+     *
+     * @param inputStream
+     * @param tokenBucket
+     */
+    public RateLimitingInputStream(InputStream inputStream,
+            TokenBucket bucket) {
+        this(inputStream, bucket, 1.0);
     }
 
     /**
@@ -80,12 +89,22 @@ public class RateLimitingInputStream extends InputStream {
      *
      * @param inputStream
      * @param tokenBucket
+     * @param weight
+     *            A positive value specifying the weight of this stream relative
+     *            to other consumers taking from the same token bucket. The
+     *            relative weights of all concurrent consumers are compared to
+     *            determine how much throughput each consumer is allowed. Higher
+     *            number = greater proportion of the maximum throughput.
      */
-    public RateLimitingInputStream(InputStream inputStream,
-            TokenBucket bucket) {
+    public RateLimitingInputStream(InputStream inputStream, TokenBucket bucket,
+            double weight) {
+        if (weight <= 0) {
+            throw new IllegalArgumentException(
+                    "weight must be greater than 0 (given: " + weight + ")");
+        }
         this.wrappedStream = inputStream;
         this.bucket = bucket;
-        this.chunkSize = Math.max(bucket.getCapacity() / 16, 1);
+        this.weight = weight;
     }
 
     @Override
@@ -98,25 +117,22 @@ public class RateLimitingInputStream extends InputStream {
         if (eof) {
             return -1;
         }
-        int readSize;
-        try {
-            readSize = bucket.consumeBetween(Math.min(len, chunkSize), len);
-        } catch (InterruptedException e) {
-            throw new IOException(e);
+        if (len == 0) {
+            return 0;
         }
-        int actualReadSize = wrappedStream.read(b, off, readSize);
+        int actualReadSize = wrappedStream.read(b, off, len);
         if (actualReadSize == -1) {
             eof = true;
+        } else {
+            try {
+                bucket.consume(actualReadSize, weight);
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
         return actualReadSize;
     }
 
-    /**
-     * NOTE: Skipping is rate limited in the same way as reading--you need to
-     * perform it in a loop to account for partial skips.
-     *
-     * {@inheritDoc}
-     */
     @Override
     public long skip(long n) throws IOException {
         if (eof) {
@@ -125,27 +141,31 @@ public class RateLimitingInputStream extends InputStream {
         if (n <= 0) {
             return 0;
         }
-        int skipSize;
-        try {
-            skipSize = bucket.consumeBetween(Math.min((int) n, chunkSize),
-                    (int) n);
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
-        int actualSkipSize = (int) wrappedStream.skip(skipSize);
+        int actualSkipSize = (int) wrappedStream.skip(n);
         if (actualSkipSize == -1) {
             eof = true;
+        } else {
+            try {
+                bucket.consume(actualSkipSize, weight);
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
         return actualSkipSize;
     }
 
+    /**
+     * NOTE: read() may still block regardless of the return value of this
+     * method, due to throughput limitation.
+     *
+     * <br>
+     * <br>
+     *
+     * {@inheritDoc}
+     */
     @Override
     public int available() throws IOException {
-        /*
-         * read() will block if there are not enough tokens in the bucket, and
-         * we have no way of knowing this without actually trying to read.
-         */
-        return 0;
+        return wrappedStream.available();
     }
 
     @Override
@@ -170,28 +190,16 @@ public class RateLimitingInputStream extends InputStream {
 
     @Override
     public int read() throws IOException {
-        try {
-            bucket.consume(1);
-        } catch (InterruptedException e) {
-            throw new IOException(e);
-        }
         int rval = wrappedStream.read();
         if (rval == -1) {
             eof = true;
+        } else {
+            try {
+                bucket.consume(1, weight);
+            } catch (InterruptedException e) {
+                // ignore
+            }
         }
         return rval;
     }
-
-    public int getChunkSize() {
-        return chunkSize;
-    }
-
-    public void setChunkSize(int chunkSize) {
-        if (chunkSize < 1) {
-            throw new IllegalArgumentException(
-                    "chunkSize must be at least 1 (given: " + chunkSize + ")");
-        }
-        this.chunkSize = chunkSize;
-    }
-
 }

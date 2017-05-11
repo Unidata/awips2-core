@@ -52,7 +52,7 @@ public class TestTokenBucket {
 
     @Test
     public void testGetCapacity() {
-        TokenBucket bucket = new TokenBucket(20, 10000);
+        TokenBucket bucket = new TokenBucket(20, 1000);
         assertEquals(bucket.getCapacity(), 20);
     }
 
@@ -149,21 +149,26 @@ public class TestTokenBucket {
     }
 
     @Test
-    public void testConsumeTooManyThrowsException() {
+    public void testConsumeOverCapacity() {
         int count = 10;
-        TokenBucket bucket = new TokenBucket(count, 1000);
+        int intervalMs = 20;
+        TokenBucket bucket = new TokenBucket(count, intervalMs);
+        long t0 = System.currentTimeMillis();
+        int consumed = 0;
         try {
-            bucket.consume(count + 1);
-            fail("did not throw IllegalArgumentException");
-        } catch (IllegalArgumentException | InterruptedException e) {
-            // pass
+            consumed = bucket.consume(count * 2);
+        } catch (InterruptedException e) {
+            // ignore
         }
+        long diff = System.currentTimeMillis() - t0;
+        assertTrue("Blocked for at least one interval", diff > intervalMs);
+        assertTrue("Consumed " + count * 2 + " tokens", consumed == count * 2);
     }
 
     @Test
     public void testConsumeNegativeThrowsException() {
         int count = 10;
-        TokenBucket bucket = new TokenBucket(count, 1000);
+        TokenBucket bucket = new TokenBucket(count, 100);
         try {
             bucket.consume(-count);
             fail("did not throw IllegalArgumentException");
@@ -175,7 +180,7 @@ public class TestTokenBucket {
     @Test
     public void testTryConsumeTooManyThrowsException() {
         int count = 10;
-        TokenBucket bucket = new TokenBucket(count, 1000);
+        TokenBucket bucket = new TokenBucket(count, 100);
         try {
             bucket.tryConsume(count + 1);
             fail("did not throw IllegalArgumentException");
@@ -187,7 +192,7 @@ public class TestTokenBucket {
     @Test
     public void testTryConsumeNegativeThrowsException() {
         int count = 10;
-        TokenBucket bucket = new TokenBucket(count, 1000);
+        TokenBucket bucket = new TokenBucket(count, 100);
         try {
             bucket.tryConsume(-count);
             fail("did not throw IllegalArgumentException");
@@ -198,7 +203,7 @@ public class TestTokenBucket {
 
     @Test
     public void testTryConsumeImmediatelyDoesNotBlock() {
-        double intervalMs = 10000;
+        double intervalMs = 1000;
         int result = 0;
         int count = 10;
         TokenBucket bucket = new TokenBucket(count, (long) intervalMs);
