@@ -109,6 +109,7 @@ import com.raytheon.uf.common.util.rate.TokenBucket;
  * Jan 27, 2016  5070        tjensen     Added comment noting stats stored here but logged elsewhere
  * Feb 22, 2016  5306        njensen     Get new HttpClientContext if host or port change
  * Nov 29, 2016  5937        tgurney     Add optional rate limiting to postDynamicSerialize
+ * Mar 24, 2017  DR 19830    D. Friedman Retry with delay on connection or 503 errors.
  *
  * </pre>
  *
@@ -467,6 +468,7 @@ public class HttpClient {
                 }
             }
             while (retry) {
+                boolean wantRetryDelay = false;
                 retry = false;
                 tries++;
 
@@ -474,6 +476,24 @@ public class HttpClient {
                 Exception exc = null;
                 try {
                     resp = postRequest(put);
+                    if (resp.getStatusLine().getStatusCode() == 503) {
+                        /* If EDEX starts a shutdown with in-flight requests, the
+                         * port will not be closed immediately.  Instead, it
+                         * responds to new requests with a 503.  If the specific
+                         * type of service had no in-flight requests, but some other
+                         * service type did,  EDEX may return 404 instead.
+                         * However, testing for just 503 should cover the most common
+                         * case for thrift requests.
+                         *
+                         * Need to wait a bit to ensure LVS has deactivated the route
+                         * to the EDEX that is shutting down.  Otherwise, the retry
+                         * may just go to the same server again.
+                         */
+                        put.abort();
+                        wantRetryDelay = true;
+                        errorMsg = "Service unavailable";
+                        exc = new CommunicationException(errorMsg);
+                    }
                 } catch (ConnectionPoolTimeoutException e) {
                     errorMsg = "Timed out waiting for http connection from pool: "
                             + e.getMessage();
@@ -487,6 +507,7 @@ public class HttpClient {
                     errorMsg = "Error occurred communicating with server: "
                             + e.getMessage();
                     exc = e;
+                    wantRetryDelay = true;
                 }
 
                 if (errorMsg != null && exc != null) {
@@ -501,6 +522,13 @@ public class HttpClient {
                     } else {
                         errorMsg += ".  Retrying...";
                         statusHandler.handle(Priority.INFO, errorMsg);
+                        if (wantRetryDelay) {
+                            try {
+                                Thread.sleep(config.getRetryDelay());
+                            } catch (InterruptedException e) {
+                                throw new CommunicationException("Interrupted while waiting to retry");
+                            }
+                        }
                         retry = true;
                     }
                 }
