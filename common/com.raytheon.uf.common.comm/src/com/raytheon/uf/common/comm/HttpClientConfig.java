@@ -34,6 +34,7 @@ package com.raytheon.uf.common.comm;
  * Jan 26, 2015 3952       njensen      gzip handled by default
  * Jul 06, 2015 4614       njensen      Add gzipEnabled
  * Dec 07, 2015 4834       njensen      Changes for rename of IHttpsHandler to HttpAuthHandler
+ * Mar 24, 2017  DR 19830  D. Friedman  Add retryDelay
  * 
  * </pre>
  * 
@@ -56,6 +57,8 @@ public class HttpClientConfig {
 
     private final boolean gzipEnabled;
 
+    private int retryDelay;
+
     /**
      * Protected constructor used by builder.
      * 
@@ -70,7 +73,8 @@ public class HttpClientConfig {
      */
     protected HttpClientConfig(int socketTimeout, int connectionTimeout,
             int maxConnections, HttpAuthHandler handler, boolean tcpNoDelay,
-            boolean expectContinueEnabled, boolean gzipEnabled) {
+            boolean expectContinueEnabled, boolean gzipEnabled,
+            int retryDelay) {
         /*
          * This is protected to limit required changes if the arguments change
          * in the future. Callers should use the builder to construct configs.
@@ -82,6 +86,7 @@ public class HttpClientConfig {
         this.tcpNoDelay = tcpNoDelay;
         this.expectContinueEnabled = expectContinueEnabled;
         this.gzipEnabled = gzipEnabled;
+        this.retryDelay = retryDelay;
     }
 
     /**
@@ -128,6 +133,10 @@ public class HttpClientConfig {
 
     public boolean isGzipEnabled() {
         return gzipEnabled;
+    }
+
+    public int getRetryDelay() {
+        return retryDelay;
     }
 
 }
