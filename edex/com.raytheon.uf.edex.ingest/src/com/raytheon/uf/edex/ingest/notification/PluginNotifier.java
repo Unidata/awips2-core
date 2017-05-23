@@ -66,11 +66,11 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * to reduce dependencies as we no longer need to call a route directly. All
  * registration must occur before messages are being picked up. Otherwise
  * concurrency problems may occur.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jun 13, 2013           mnash     Initial creation.
@@ -80,9 +80,10 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * Jul 21, 2014  3373     bclement  JAXB manager API changes
  * May 22, 2015  4008     nabowle   Add periodic check for updates and reload.
  * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
- * 
+ * May 22, 2017  6130     tjensen   Update notify to return list of PDOs
+ *
  * </pre>
- * 
+ *
  * @author mnash
  */
 
@@ -95,21 +96,21 @@ public class PluginNotifier implements IContextStateProcessor {
     private final IPerformanceStatusHandler perfLog = PerformanceStatus
             .getHandler("Notification:");
 
-    private static final int DEFAULT_TIME_TO_LIVE = 300000;
+    private static final int DEFAULT_TIME_TO_LIVE = 300_000;
 
     /**
      * Decision tree for plugin notification.
      */
-    private DecisionTree<INotificationRouter> tree = new DecisionTree<INotificationRouter>();
+    private DecisionTree<INotificationRouter> tree = new DecisionTree<>();
 
-    private List<INotificationRouter> receiveAllRoutes = new LinkedList<INotificationRouter>();
+    private List<INotificationRouter> receiveAllRoutes = new LinkedList<>();
 
-    private List<INotificationRouter> filteredRoutes = new LinkedList<INotificationRouter>();
+    private List<INotificationRouter> filteredRoutes = new LinkedList<>();
 
     /**
      * Set of loaded names. Used for duplicate detection.
      */
-    private Set<String> loadedNames = new HashSet<String>();
+    private Set<String> loadedNames = new HashSet<>();
 
     /**
      * ReadWriteLock to allow concurrent 'reads' in notify() and
@@ -118,7 +119,7 @@ public class PluginNotifier implements IContextStateProcessor {
      */
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private Map<String, Long> modifiedTimes = new HashMap<String, Long>();
+    private Map<String, Long> modifiedTimes = new HashMap<>();
 
     public PluginNotifier() throws JAXBException {
         loadConfigurations();
@@ -142,10 +143,8 @@ public class PluginNotifier implements IContextStateProcessor {
                          * empty files may be used to override base files to
                          * remove functionality
                          */
-                        InputStream is = null;
 
-                        try {
-                            is = lf.openInputStream();
+                        try (InputStream is = lf.openInputStream()) {
 
                             PluginNotifierConfigList confList = (PluginNotifierConfigList) mgr
                                     .unmarshalFromInputStream(is);
@@ -160,18 +159,15 @@ public class PluginNotifier implements IContextStateProcessor {
                             theHandler.handle(Priority.PROBLEM,
                                     "Unable to deserialize " + f.getPath(), e);
                         } catch (InvalidNotificationConfigException e) {
-                            theHandler.handle(
-                                    Priority.PROBLEM,
+                            theHandler.handle(Priority.PROBLEM,
                                     "Unable to load plugin configuration "
-                                            + f.getPath(), e);
-                        } finally {
-                            if (is != null) {
-                                try {
-                                    is.close();
-                                } catch (IOException e) {
-                                    // ignore
-                                }
-                            }
+                                            + f.getPath(),
+                                    e);
+                        } catch (IOException e) {
+                            theHandler.handle(Priority.PROBLEM,
+                                    "Unable to open input stream to file "
+                                            + f.getPath(),
+                                    e);
                         }
                     }
                 } catch (LocalizationException e) {
@@ -192,18 +188,18 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /*
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
-     * 
+     *
      * @return
-     * 
+     *
      * public void register(PluginNotifierConfig config) throws
      * InvalidNotificationConfigException { register(config, true); }
      */
 
     /**
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
      * @param rebuildTree
      *            Whether or not to rebuild the internal tree. If many things
@@ -218,14 +214,14 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /*
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
-     * 
+     *
      * @param router The INotificationRouter to use for this config. If null,
      * will use the default based on the config format.
-     * 
+     *
      * @return
-     * 
+     *
      * public synchronized void register(PluginNotifierConfig config,
      * INotificationRouter router) throws InvalidNotificationConfigException {
      * register(config, router, true); }
@@ -233,7 +229,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Register the given PluginNotifierConfig.
-     * 
+     *
      * @param config
      * @param router
      *            The INotificationRouter to use for this config. If null, will
@@ -270,8 +266,8 @@ public class PluginNotifier implements IContextStateProcessor {
                     .getMetadataMap();
             boolean receiveAll = (metadataMaps == null)
                     || (metadataMaps.length == 0)
-                    || ((metadataMaps.length == 1) && ((metadataMaps[0] == null) || metadataMaps[0]
-                            .isEmpty()));
+                    || ((metadataMaps.length == 1) && ((metadataMaps[0] == null)
+                            || metadataMaps[0].isEmpty()));
 
             if (receiveAll) {
                 // null or empty constraint map implies receive all data
@@ -295,7 +291,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Validate the passed config
-     * 
+     *
      * @param config
      * @return
      */
@@ -315,8 +311,7 @@ public class PluginNotifier implements IContextStateProcessor {
         EndpointType type = config.getEndpointType();
         if (type == null) {
             StringBuilder msg = new StringBuilder(180);
-            msg.append("PluginConfiguration ")
-                    .append(endpoint)
+            msg.append("PluginConfiguration ").append(endpoint)
                     .append(": missing required field endpointType.  Valid values for ")
                     .append(NotifyFormat.PDO).append(" format are ")
                     .append(EndpointType.DIRECTVM).append(" and ")
@@ -330,9 +325,8 @@ public class PluginNotifier implements IContextStateProcessor {
         }
 
         NotifyFormat format = config.getFormat();
-        if (NotifyFormat.PDO.equals(format)
-                && (EndpointType.QUEUE.equals(type) || EndpointType.TOPIC
-                        .equals(type))) {
+        if (NotifyFormat.PDO.equals(format) && (EndpointType.QUEUE.equals(type)
+                || EndpointType.TOPIC.equals(type))) {
             StringBuilder msg = new StringBuilder(120);
             msg.append("PluginConfiguration ").append(endpoint)
                     .append(": endpointType ").append(type)
@@ -350,11 +344,9 @@ public class PluginNotifier implements IContextStateProcessor {
 
         if ((EndpointType.QUEUE.equals(type) || EndpointType.TOPIC.equals(type))
                 && (config.getTimeToLive() < 0)) {
-            theHandler
-                    .warn("PluginConfiguration: "
-                            + endpoint
-                            + " has invalid time to live.  Time to live for JMS endpoints must be 0 or greater.  Setting to default of: "
-                            + DEFAULT_TIME_TO_LIVE + " ms");
+            theHandler.warn("PluginConfiguration: " + endpoint
+                    + " has invalid time to live.  Time to live for JMS endpoints must be 0 or greater.  Setting to default of: "
+                    + DEFAULT_TIME_TO_LIVE + " ms");
             config.setTimeToLive(DEFAULT_TIME_TO_LIVE);
         }
     }
@@ -374,11 +366,11 @@ public class PluginNotifier implements IContextStateProcessor {
     /**
      * Checks the pdo's against the registered routes. Data will then be
      * transformed and queued or sent immediately depending on configuration.
-     * 
+     *
      * @param pdos
      * @return
      */
-    public void notify(PluginDataObject... pdos) {
+    public PluginDataObject[] notify(PluginDataObject... pdos) {
         lock.readLock().lock();
         try {
             if ((pdos != null) && (pdos.length > 0)) {
@@ -397,18 +389,18 @@ public class PluginNotifier implements IContextStateProcessor {
                         } catch (EdexException e) {
                             theHandler.handle(Priority.PROBLEM,
                                     "Unable to send notification data to "
-                                            + router.getRoute(), e);
+                                            + router.getRoute(),
+                                    e);
                         }
                     }
                 }
 
                 if (!filteredRoutes.isEmpty()) {
-                    Set<INotificationRouter> routesWithData = new HashSet<INotificationRouter>();
+                    Set<INotificationRouter> routesWithData = new HashSet<>();
                     for (PluginDataObject pdo : pdos) {
                         try {
-                            List<INotificationRouter> routers = tree
-                                    .searchTree(DataURIUtil
-                                            .createDataURIMap(pdo));
+                            List<INotificationRouter> routers = tree.searchTree(
+                                    DataURIUtil.createDataURIMap(pdo));
                             for (INotificationRouter router : routers) {
                                 router.process(pdo);
                                 routesWithData.add(router);
@@ -425,7 +417,8 @@ public class PluginNotifier implements IContextStateProcessor {
                         } catch (EdexException e) {
                             theHandler.handle(Priority.PROBLEM,
                                     "Unable to send notification data to "
-                                            + router.getRoute(), e);
+                                            + router.getRoute(),
+                                    e);
                         }
                     }
                 }
@@ -436,11 +429,13 @@ public class PluginNotifier implements IContextStateProcessor {
         } finally {
             lock.readLock().unlock();
         }
+
+        return pdos;
     }
 
     /**
      * Send the queued notifications.
-     * 
+     *
      * @return
      */
     public void sendQueuedNotifications() {
@@ -450,10 +445,10 @@ public class PluginNotifier implements IContextStateProcessor {
                 try {
                     router.sendQueuedData();
                 } catch (EdexException e) {
-                    theHandler.handle(
-                            Priority.PROBLEM,
+                    theHandler.handle(Priority.PROBLEM,
                             "Unable to send notification data to "
-                                    + router.getRoute(), e);
+                                    + router.getRoute(),
+                            e);
                 }
             }
 
@@ -461,10 +456,10 @@ public class PluginNotifier implements IContextStateProcessor {
                 try {
                     router.sendQueuedData();
                 } catch (EdexException e) {
-                    theHandler.handle(
-                            Priority.PROBLEM,
+                    theHandler.handle(Priority.PROBLEM,
                             "Unable to send notification data to "
-                                    + router.getRoute(), e);
+                                    + router.getRoute(),
+                            e);
                 }
             }
         } finally {
@@ -479,12 +474,12 @@ public class PluginNotifier implements IContextStateProcessor {
 
     @Override
     public void postStart() {
-
+        // Not implemented
     }
 
     @Override
     public void preStop() {
-
+        // Not implemented
     }
 
     @Override
@@ -509,10 +504,10 @@ public class PluginNotifier implements IContextStateProcessor {
         Set<String> loadedNamesBak = loadedNames;
         Map<String, Long> modifiedTimesBak = modifiedTimes;
         try {
-            tree = new DecisionTree<INotificationRouter>();
-            receiveAllRoutes = new LinkedList<INotificationRouter>();
-            filteredRoutes = new LinkedList<INotificationRouter>();
-            loadedNames = new HashSet<String>();
+            tree = new DecisionTree<>();
+            receiveAllRoutes = new LinkedList<>();
+            filteredRoutes = new LinkedList<>();
+            loadedNames = new HashSet<>();
             modifiedTimes = new HashMap<>();
 
             loadConfigurations();
@@ -521,10 +516,9 @@ public class PluginNotifier implements IContextStateProcessor {
 
             theHandler.handle(Priority.INFO, "Configurations were reloaded.");
         } catch (Exception e) {
-            theHandler
-                    .handle(Priority.PROBLEM,
-                            "Could not reload the localizations files due to an error. Using previously loaded configurations.",
-                            e);
+            theHandler.handle(Priority.PROBLEM,
+                    "Could not reload the localizations files due to an error. Using previously loaded configurations.",
+                    e);
             // fall back to previous configuration
             tree = treeBak;
             receiveAllRoutes = receiveAllRoutesBak;
@@ -538,7 +532,7 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Determines if files have changed since the last check.
-     * 
+     *
      * @return True if a file change is detected. False otherwise.
      */
     private boolean filesChanged() {
@@ -560,10 +554,10 @@ public class PluginNotifier implements IContextStateProcessor {
 
     /**
      * Lists the files in the notification directory
-     * 
+     *
      * @return An array of the files in the notification directory
      */
-    private List<File> getNotificationFiles() {
+    private static List<File> getNotificationFiles() {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         LocalizationFile[] locfiles = pathMgr.listStaticFiles(CONFIG_DIR,
                 new String[] { ".xml" }, false, true);
