@@ -41,17 +41,20 @@ import com.raytheon.uf.common.auth.user.IUser;
 public interface IPermissionsManager extends IRolesAndPermissionsStore {
 
     /**
-     * Sets the subject on the current thread
+     * Sets the subject on the current thread.
+     *
+     * {@link #removeThreadSubject()} should be called on the same thread when
+     * the protected operation is complete.
      *
      * @param user
      *            user object
      */
-    public void setSubject(IUser user);
+    public void setThreadSubject(IUser user);
 
     /**
      * Remove the subject from the current thread
      */
-    public void removeSubject();
+    public void removeThreadSubject();
 
     /**
      * Query whether the current subject has permission

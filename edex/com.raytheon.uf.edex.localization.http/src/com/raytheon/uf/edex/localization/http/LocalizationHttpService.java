@@ -74,12 +74,15 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 12, 2015 3978       bclement    Initial creation
- * Dec 02, 2015 4834       njensen     Added support for PUT requests
- * Jul 01, 2016 5729       bsteffen    Fix restricted permissions on files after PUT.
- * Apr 26, 2017 6258       tgurney     Set permissions on file after PUT
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jan 12, 2015  3978     bclement  Initial creation
+ * Dec 02, 2015  4834     njensen   Added support for PUT requests
+ * Jul 01, 2016  5729     bsteffen  Fix restricted permissions on files after
+ *                                  PUT.
+ * Apr 26, 2017  6258     tgurney   Set permissions on file after PUT
+ * May 18, 2017  6242     randerso  Changed to use new roles and permissions
+ *                                  framework
  *
  * </pre>
  *
@@ -392,8 +395,8 @@ public class LocalizationHttpService {
          * Got the username, validate that they have permissions to put against
          * this localization context and path.
          */
-        if (!LocalizationAuthorization.isPutAuthorized(cred.getUserid(),
-                lfile.getContext(), lfile.getPath())) {
+        if (!LocalizationAuthorization.isPutAuthorized(cred, lfile.getContext(),
+                lfile.getPath())) {
             throw new LocalizationHttpException(
                     HttpServletResponse.SC_FORBIDDEN,
                     "Insufficient permissions to modify " + lfile);

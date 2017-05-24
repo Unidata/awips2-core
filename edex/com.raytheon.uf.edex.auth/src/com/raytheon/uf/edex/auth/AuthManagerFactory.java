@@ -142,7 +142,7 @@ public class AuthManagerFactory {
              *            user object
              */
             @Override
-            public void setSubject(IUser user) {
+            public void setThreadSubject(IUser user) {
                 // do nothing
             }
 
@@ -150,7 +150,7 @@ public class AuthManagerFactory {
              * Remove the subject from the current thread
              */
             @Override
-            public void removeSubject() {
+            public void removeThreadSubject() {
                 // do nothing
             }
 

@@ -100,7 +100,7 @@ public class ShiroPermissionsManager
     }
 
     @Override
-    public void setSubject(IUser user) {
+    public void setThreadSubject(IUser user) {
         Subject subject = SecurityUtils.getSubject();
 
         if (!subject.isAuthenticated()) {
@@ -128,7 +128,7 @@ public class ShiroPermissionsManager
     }
 
     @Override
-    public void removeSubject() {
+    public void removeThreadSubject() {
         ThreadContext.remove(ThreadContext.SUBJECT_KEY);
     }
 

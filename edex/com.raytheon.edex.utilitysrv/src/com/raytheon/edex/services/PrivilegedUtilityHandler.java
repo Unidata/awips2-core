@@ -17,22 +17,24 @@ import com.raytheon.uf.edex.core.EdexException;
 
 /**
  * Handle privileged requests.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 03, 2010            rgeorge     Initial creation
- * Jul 10, 2014 2914       garmendariz Remove EnvProperties
- * Feb 14, 2017 6111       njensen     Overrode getRequestType()
- * 
+ *
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Jun 03, 2010           rgeorge      Initial creation
+ * Jul 10, 2014  2914     garmendariz  Remove EnvProperties
+ * Feb 14, 2017  6111     njensen      Overrode getRequestType()
+ * May 18, 2017  6242     randerso     Changed to use new roles and permissions
+ *                                     framework
+ *
  * </pre>
- * 
+ *
  * @author rgeorge
  */
-public class PrivilegedUtilityHandler
-        extends
+public class PrivilegedUtilityHandler extends
         AbstractPrivilegedLocalizationRequestHandler<PrivilegedUtilityRequestMessage> {
 
     private static String UTILITY_DIR = EDEXUtil.getEdexUtility();
@@ -46,7 +48,7 @@ public class PrivilegedUtilityHandler
         for (AbstractPrivilegedUtilityCommand cmd : cmds) {
             LocalizationContext context = cmd.getContext();
             if (cmd instanceof DeleteUtilityCommand) {
-                DeleteUtilityCommand castCmd = ((DeleteUtilityCommand) cmd);
+                DeleteUtilityCommand castCmd = (DeleteUtilityCommand) cmd;
                 String fileName = castCmd.getFilename();
                 responses.add(UtilityManager.deleteFile(UTILITY_DIR, context,
                         fileName));
@@ -69,12 +71,19 @@ public class PrivilegedUtilityHandler
             throws AuthorizationException {
 
         AbstractPrivilegedUtilityCommand[] commands = request.getCommands();
-        for (AbstractPrivilegedUtilityCommand abstractUtilityCommand : commands) {
-            LocalizationContext context = abstractUtilityCommand.getContext();
-            String filename = abstractUtilityCommand.getFilename();
+        for (AbstractPrivilegedUtilityCommand command : commands) {
+            LocalizationContext context = command.getContext();
+            String filename = command.getFilename();
+            String operation;
+            if (command instanceof DeleteUtilityCommand) {
+                operation = "delete";
+            } else {
+                throw new IllegalArgumentException("Unrecognized command: "
+                        + command.getClass().getName());
+            }
+
             AuthorizationResponse resp = getAuthorizationResponse(user,
-                    context, filename,
-                    abstractUtilityCommand.getMyContextName());
+                    operation, context, filename, command.getMyContextName());
             if (!resp.isAuthorized()) {
                 // If we are not authorized for any of the commands, break early
                 return resp;

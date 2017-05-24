@@ -91,92 +91,99 @@ public class RequestServiceExecutor {
      */
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object execute(IServerRequest request) throws Exception {
-        if (request instanceof RequestWrapper) {
+        boolean subjectSet = false;
+        try {
+            if (request instanceof RequestWrapper) {
 
-            // Check for wrapped request and get actual request to execute
-            RequestWrapper wrapper = (RequestWrapper) request;
-            request = wrapper.getRequest();
+                // Check for wrapped request and get actual request to execute
+                RequestWrapper wrapper = (RequestWrapper) request;
+                request = wrapper.getRequest();
 
-            IUser user = new User(wrapper.getWsId().getUserName());
+                IUser user = new User(wrapper.getWsId().getUserName());
 
-            AuthManagerFactory.getInstance().getPermissionsManager()
-                    .setSubject(user);
-        }
+                AuthManagerFactory.getInstance().getPermissionsManager()
+                        .setThreadSubject(user);
+                subjectSet = true;
+            }
 
-        String id = request.getClass().getCanonicalName();
-        IRequestHandler handler = registry.getRequestHandler(id);
+            String id = request.getClass().getCanonicalName();
+            IRequestHandler handler = registry.getRequestHandler(id);
 
-        if (request instanceof AbstractPrivilegedRequest) {
-            AuthManager manager = AuthManagerFactory.getInstance().getManager();
-            // Not the default role, attempt to cast handler and request
-            try {
-                AbstractPrivilegedRequest privReq = (AbstractPrivilegedRequest) request;
-                AbstractPrivilegedRequestHandler privHandler = (AbstractPrivilegedRequestHandler) handler;
+            if (request instanceof AbstractPrivilegedRequest) {
+                AuthManager manager = AuthManagerFactory.getInstance()
+                        .getManager();
+                // Not the default role, attempt to cast handler and request
+                try {
+                    AbstractPrivilegedRequest privReq = (AbstractPrivilegedRequest) request;
+                    AbstractPrivilegedRequestHandler privHandler = (AbstractPrivilegedRequestHandler) handler;
 
-                IUser user = privReq.getUser();
+                    IUser user = privReq.getUser();
 
-                // Do not process request if user passed in is null
-                if (user == null || user.uniqueId() == null) {
-                    return ResponseFactory.constructNotAuthorized(privReq,
-                            "Unable to process privileged request " + request
-                                    + " for null user");
-                }
+                    // Do not process request if user passed in is null
+                    if (user == null || user.uniqueId() == null) {
+                        return ResponseFactory.constructNotAuthorized(privReq,
+                                "Unable to process privileged request "
+                                        + request + " for null user");
+                    }
 
-                // check that user is who they claim to be (authentication)
-                AuthenticationResponse resp = manager.getAuthenticator()
-                        .authenticate(user);
-                if (!resp.isAuthenticated()) {
+                    // check that user is who they claim to be (authentication)
+                    AuthenticationResponse resp = manager.getAuthenticator()
+                            .authenticate(user);
+                    if (!resp.isAuthenticated()) {
+                        /*
+                         * TODO someday pass in updated IAuthenticationData if
+                         * we have an actual implementation that uses it for
+                         * security
+                         */
+                        return ResponseFactory
+                                .constructNotAuthenticated(privReq, null);
+                    }
+
+                    /*
+                     * check handler that user is allowed to execute this
+                     * request (authorization)
+                     */
+                    AuthorizationResponse authResp = privHandler
+                            .authorized(user, privReq);
+                    if (authResp != null && !authResp.isAuthorized()
+                            && authResp.getResponseMessage() != null) {
+                        return ResponseFactory.constructNotAuthorized(privReq,
+                                authResp.getResponseMessage());
+                    }
+
+                    /*
+                     * they've passed authentication and authorization, let the
+                     * handler execute the request
+                     */
                     /*
                      * TODO someday pass in updated IAuthenticationData if we
                      * have an actual implementation that uses it for security
                      */
-                    return ResponseFactory.constructNotAuthenticated(privReq,
-                            null);
+                    return ResponseFactory.constructSuccessfulExecution(
+                            privHandler.handleRequest(privReq), null);
+                } catch (ClassCastException e) {
+                    throw new AuthException(
+                            "Roles can only be defined for requests/handlers of AbstractPrivilegedRequest/Handler, request was "
+                                    + request.getClass().getName(),
+                            e);
+
+                } catch (Throwable t) {
+                    statusHandler.handle(Priority.PROBLEM,
+                            "Error occured while performing privileged request "
+                                    + request,
+                            t);
+                    throw t;
                 }
+            }
 
-                /*
-                 * check handler that user is allowed to execute this request
-                 * (authorization)
-                 */
-                AuthorizationResponse authResp = privHandler.authorized(user,
-                        privReq);
-                if (authResp != null && !authResp.isAuthorized()
-                        && authResp.getResponseMessage() != null) {
-                    return ResponseFactory.constructNotAuthorized(privReq,
-                            authResp.getResponseMessage());
-                }
+            return handler.handleRequest(request);
 
-                /*
-                 * they've passed authentication and authorization, let the
-                 * handler execute the request
-                 */
-                /*
-                 * TODO someday pass in updated IAuthenticationData if we have
-                 * an actual implementation that uses it for security
-                 */
-                return ResponseFactory.constructSuccessfulExecution(
-                        privHandler.handleRequest(privReq), null);
-            } catch (ClassCastException e) {
-                throw new AuthException(
-                        "Roles can only be defined for requests/handlers of AbstractPrivilegedRequest/Handler, request was "
-                                + request.getClass().getName(),
-                        e);
-
-            } catch (Throwable t) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Error occured while performing privileged request "
-                                + request,
-                        t);
-                throw t;
+        } finally {
+            if (subjectSet) {
+                AuthManagerFactory.getInstance().getPermissionsManager()
+                        .removeThreadSubject();
             }
         }
-
-        Object response = handler.handleRequest(request);
-
-        AuthManagerFactory.getInstance().getPermissionsManager()
-                .removeSubject();
-
-        return response;
     }
 
 }
