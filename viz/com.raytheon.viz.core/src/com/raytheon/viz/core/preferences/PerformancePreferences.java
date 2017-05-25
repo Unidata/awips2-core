@@ -45,6 +45,7 @@ import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
  * Jul 01, 2006           chammack  Initial Creation.
  * Mar 29, 2016  5523     bsteffen  Add Larger texture cache sizes.
  * Mar 29, 2017  6202     bsteffen  Add pixel density preference.
+ * May 25, 2017  6202     bsteffen  Remove text limit on pixel density.
  * 
  * </pre>
  * 
@@ -115,7 +116,6 @@ public class PerformancePreferences extends FieldEditorPreferencePage
         pixelDensity.setMaximum(800);
         pixelDensity.setIncrement(5);
         pixelDensity.setPageIncrement(25);
-        pixelDensity.setTextLimit(4);
         pixelDensity.setToolTipText(
                 "Smaller numbers improve image quality.\nLarger numbers improve performance.");
 
