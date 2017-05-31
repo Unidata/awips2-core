@@ -89,6 +89,11 @@ public class ShiroPermissionsManager
         securityManager = new DefaultSecurityManager(authenticator);
         CacheManager cacheManager = new MemoryConstrainedCacheManager();
         securityManager.setCacheManager(cacheManager);
+
+        if (authenticator instanceof CacheManagerAware) {
+            authenticator.setCacheManager(cacheManager);
+        }
+
         if (authorizer != null) {
             securityManager.setAuthorizer(authorizer);
             if (authorizer instanceof CacheManagerAware) {
@@ -185,6 +190,10 @@ public class ShiroPermissionsManager
         checkPermission("auth:administration",
                 "retrieve roles and permissions data");
 
+        /* Log roles and permissions retrieval */
+        Subject subject = SecurityUtils.getSubject();
+        log.info("Roles/permissions retrieved by " + getUserName(subject));
+
         return getRolesAndPermissionsStore().getRolesAndPermissions();
     }
 
@@ -192,9 +201,15 @@ public class ShiroPermissionsManager
     public RolesAndPermissions saveRolesAndPermissions(
             RolesAndPermissions rolesAndPermissions)
             throws AuthorizationException {
+
         /* Ensure subject has required permission */
         checkPermission("auth:administration",
                 "retrieve roles and permissions data");
+
+        /* Log roles and permissions update */
+        Subject subject = SecurityUtils.getSubject();
+        log.info("Roles/permissions updated by " + getUserName(subject));
+
         return getRolesAndPermissionsStore()
                 .saveRolesAndPermissions(rolesAndPermissions);
     }

@@ -36,8 +36,11 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
+import org.eclipse.swt.widgets.List;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.uf.common.auth.RolesAndPermissions;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -74,6 +77,8 @@ public class AssignUserRolesDialog extends CaveSWTDialog {
     private DualList rolesDL;
 
     private Label errorLabel;
+
+    private Text roleDescriptionText;
 
     private Button saveButton;
 
@@ -158,14 +163,15 @@ public class AssignUserRolesDialog extends CaveSWTDialog {
         config.setSortList(true);
 
         config.setFullList(
-                new ArrayList<String>(rolesAndPermissions.getRoles().keySet()));
-        config.setSelectedList(new ArrayList<String>(
-                rolesAndPermissions.getUsers().get(user)));
+                new ArrayList<>(rolesAndPermissions.getRoles().keySet()));
+        config.setSelectedList(
+                new ArrayList<>(rolesAndPermissions.getUsers().get(user)));
 
         rolesDL = new DualList(shell, SWT.NONE, config, new IUpdate() {
             @Override
             public void selectionChanged() {
                 setDirty(true);
+                updateRoleDescription(rolesDL);
             }
 
             @Override
@@ -175,12 +181,34 @@ public class AssignUserRolesDialog extends CaveSWTDialog {
         });
         gridData = new GridData(SWT.FILL, SWT.FILL, true, true);
         rolesDL.setLayoutData(gridData);
+        SelectionAdapter adapter = new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                updateRoleDescription(rolesDL);
+            }
+        };
+        rolesDL.getAvailableList().addSelectionListener(adapter);
+        rolesDL.getSelectedList().addSelectionListener(adapter);
 
         errorLabel = new Label(shell, SWT.LEFT);
         gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         errorLabel.setLayoutData(gridData);
         errorLabel.setForeground(getDisplay().getSystemColor(SWT.COLOR_RED));
 
+        Group group = new Group(shell, SWT.BORDER);
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.horizontalSpan = 2;
+        group.setLayoutData(gridData);
+        layout = new GridLayout(1, false);
+        group.setLayout(layout);
+        group.setText("Role Description:");
+
+        roleDescriptionText = new Text(group,
+                SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.heightHint = roleDescriptionText.getLineHeight() * 2;
+        roleDescriptionText.setLayoutData(gridData);
+        roleDescriptionText.setBackground(group.getBackground());
         Composite buttonComp = new Composite(shell, SWT.NONE);
         gridData = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         buttonComp.setLayoutData(gridData);
@@ -209,6 +237,24 @@ public class AssignUserRolesDialog extends CaveSWTDialog {
         });
 
         setDirty(false);
+    }
+
+    private void updateRoleDescription(DualList dl) {
+
+        List list = dl.getAvailableList();
+        if (list.getSelectionIndex() == -1) {
+            list = dl.getSelectedList();
+        }
+
+        roleDescriptionText.setText("");
+        int index = list.getSelectionIndex();
+        if (index > -1) {
+            String rolename = list.getItem(index);
+            String description = rolesAndPermissions.getRoles().get(rolename)
+                    .getDescription();
+
+            roleDescriptionText.setText(description);
+        }
     }
 
     @Override

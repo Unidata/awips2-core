@@ -28,8 +28,6 @@ import org.eclipse.swt.events.ModifyEvent;
 import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.events.VerifyEvent;
-import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
@@ -82,13 +80,14 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
      * includes *, /, backspace, and del
      */
     private static final Pattern VALID_PATH_CHAR_PATTERN = Pattern
-            .compile("[" + PATH_CHARS + "\\*" + IPathManager.SEPARATOR + SWT.BS
-                    + SWT.DEL + "]+");
+            .compile("[" + PATH_CHARS + "\\*" + IPathManager.SEPARATOR + "]*");
 
     /* regex for valid path string */
     private static final Pattern VALID_PATH_REGEX = Pattern.compile(
             "(\\*|[" + PATH_CHARS + "]+)(" + IPathManager.SEPARATOR + "(\\*|["
                     + PATH_CHARS + "]+))*" + IPathManager.SEPARATOR + "{0,1}");
+
+    private String initialValue;
 
     private IPathManager pathMgr;
 
@@ -116,15 +115,42 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
 
     /**
      * @param parent
+     * @param initialValue
+     *            value used to initialize GUI elements
      */
-    public DefineLocalizationPermissionDlg(Shell parent) {
+    public DefineLocalizationPermissionDlg(Shell parent, String initialValue) {
         super(parent, SWT.TITLE | SWT.BORDER | SWT.RESIZE | SWT.PRIMARY_MODAL,
                 CAVE.PERSPECTIVE_INDEPENDENT | CAVE.MODE_INDEPENDENT);
+        this.initialValue = initialValue;
         setText("Define Localization Permission");
 
         setReturnValue(false);
         pathMgr = PathManagerFactory.getPathManager();
         setReturnValue(null);
+    }
+
+    private boolean isValid() {
+        boolean valid = true;
+        errorLabel.setText("");
+
+        Matcher matcher = VALID_PATH_CHAR_PATTERN.matcher(pathText.getText());
+        valid = matcher.matches();
+        if (!valid) {
+            errorLabel.setText("Path may only contain "
+                    + PATH_CHARS.replace("\\", "") + "*/");
+            getDisplay().beep();
+
+        } else {
+            matcher = VALID_PATH_REGEX.matcher(pathText.getText());
+            valid = matcher.matches();
+            if (!valid) {
+                errorLabel.setText(
+                        "Path may not be empty or contain repeated *s or /s");
+                getDisplay().beep();
+            }
+        }
+
+        return valid;
     }
 
     /**
@@ -140,7 +166,7 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
      */
     public void setDirty(boolean dirty) {
         this.dirty = dirty;
-        saveButton.setEnabled(dirty);
+        saveButton.setEnabled(dirty && isValid());
     }
 
     @Override
@@ -156,7 +182,6 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
         gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         operationCombo.setLayoutData(gridData);
         operationCombo.setItems(LOCALIZATION_OPERATIONS);
-        operationCombo.setText(DEFAULT_LOCALIZATION_OPERATION);
         operationCombo.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -197,7 +222,6 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
                 typeCombo.setData(typeName, type);
             }
         }
-        typeCombo.setText(LocalizationType.COMMON_STATIC.toString());
 
         label = new Label(shell, SWT.RIGHT);
         label.setText("Level:");
@@ -229,8 +253,6 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
         }
         gc.dispose();
 
-        levelCombo.setText(LocalizationLevel.SITE.toString());
-
         contextLabel = new Label(shell, SWT.RIGHT);
         gridData = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gridData.widthHint = contextLabelWidth;
@@ -260,45 +282,10 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
         pathText = new Text(shell, SWT.BORDER | SWT.SINGLE);
         gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         pathText.setLayoutData(gridData);
-        pathText.setText("*");
-        pathText.addVerifyListener(new VerifyListener() {
-
-            @Override
-            public void verifyText(VerifyEvent e) {
-                errorLabel.setText("");
-
-                String newText = e.text;
-                if (e.text.isEmpty()) {
-                    newText = Character.toString(e.character);
-                }
-
-                /* disallow invalid characters */
-                Matcher matcher = VALID_PATH_CHAR_PATTERN.matcher(newText);
-                if (!matcher.matches()) {
-                    e.doit = false;
-                    errorLabel.setText("Path may only contain "
-                            + PATH_CHARS.replace("\\", "") + "*/");
-                    getDisplay().beep();
-                    return;
-                }
-
-                String path = pathText.getText();
-
-                path = path.substring(0, e.start) + e.text
-                        + path.substring(e.end);
-
-                matcher = VALID_PATH_REGEX.matcher(path);
-                if (!matcher.matches()) {
-                    e.doit = false;
-                    errorLabel.setText(
-                            "Path may not be empty or contain repeated *s or /s");
-                    getDisplay().beep();
-                }
-            }
-        });
         pathText.addModifyListener(new ModifyListener() {
             @Override
             public void modifyText(ModifyEvent e) {
+                isValid();
                 updatePermission();
             }
         });
@@ -373,9 +360,53 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
             }
         });
 
-        updateLevel();
+        initDialog();
         updatePermission();
         setDirty(false);
+    }
+
+    private void initDialog() {
+        operationCombo.setText(DEFAULT_LOCALIZATION_OPERATION);
+        typeCombo.setText(LocalizationType.COMMON_STATIC.toString());
+        levelCombo.setText(LocalizationLevel.SITE.toString());
+        pathText.setText("*");
+        updateLevel();
+
+        if (initialValue != null) {
+            String[] parts = initialValue.split(":");
+
+            for (int i = 1; i < parts.length; i++) {
+                switch (i) {
+                case 1:
+                    // read/write/delete
+                    operationCombo.setText(parts[i]);
+                    break;
+                case 2:
+                    // localization type
+                    typeCombo.setText(parts[i].toUpperCase());
+                    break;
+
+                case 3:
+                    // localization level
+                    levelCombo.setText(parts[i].toUpperCase());
+                    break;
+
+                case 4:
+                    // context name
+                    contextNameCombo.setText(parts[i]);
+                    break;
+
+                case 5:
+                    pathText.setText(parts[i]);
+                    break;
+
+                default:
+                    pathText.setText(pathText.getText() + IPathManager.SEPARATOR
+                            + parts[i]);
+                    break;
+                }
+            }
+        }
     }
 
     private void updateLevel() {

@@ -1,7 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-    http://www.springframework.org/schema/beans/spring-beans.xsd">
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <!-- Uncomment this bean and adjust configuration as required for LDAP authentication
     
@@ -34,4 +36,17 @@
     <bean id="getRolesAndPermissionsHandler" class="com.raytheon.uf.edex.auth.req.GetRolesAndPermissionsHandler"/>
     <bean id="saveRolesAndPermissionsHandler" class="com.raytheon.uf.edex.auth.req.SaveRolesAndPermissionsHandler"/>
 
+    <camelContext id="auth-request-camel" xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
+        <route id="rolesUpdated">
+            <from uri="jms-generic:topic:edex.alerts.auth?threadName=rolesUpdated-edex.alerts.auth" />
+            <doTry>
+                <bean ref="serializationUtil" method="transformFromThrift"/>
+                <bean ref="iniRealm" method="reinitialize"/>
+                <doCatch>
+                    <exception>java.lang.Throwable</exception>
+                    <to uri="log:auth?level=ERROR"/>
+                </doCatch>
+            </doTry>
+        </route>
+    </camelContext>
 </beans>

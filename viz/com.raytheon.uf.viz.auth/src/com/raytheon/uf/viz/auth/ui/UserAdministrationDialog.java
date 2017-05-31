@@ -21,7 +21,6 @@ package com.raytheon.uf.viz.auth.ui;
 
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -47,6 +46,7 @@ import org.eclipse.swt.widgets.TabItem;
 import org.eclipse.swt.widgets.Text;
 
 import com.raytheon.uf.common.auth.RolesAndPermissions;
+import com.raytheon.uf.common.auth.RolesAndPermissions.Role;
 import com.raytheon.uf.common.auth.req.GetRolesAndPermissionsRequest;
 import com.raytheon.uf.common.auth.req.SaveRolesAndPermissionsRequest;
 import com.raytheon.uf.common.auth.util.PermissionDescriptionBuilder;
@@ -93,6 +93,8 @@ public class UserAdministrationDialog extends CaveSWTDialog {
 
     private List rolesList;
 
+    private Text userRoleDescriptionText;
+
     private List rolePermissionsList;
 
     private Button editRoleButton;
@@ -100,6 +102,10 @@ public class UserAdministrationDialog extends CaveSWTDialog {
     private Button copyRoleButton;
 
     private Button deleteRoleButton;
+
+    private Group roleDescGroup;
+
+    private Text roleDescriptionText;
 
     private Text permissionDescriptionText;
 
@@ -266,6 +272,25 @@ public class UserAdministrationDialog extends CaveSWTDialog {
         gridData.widthHint = avgCharWidth * 32;
         gridData.heightHint = userRolesList.getItemHeight() * 12;
         userRolesList.setLayoutData(gridData);
+        userRolesList.addSelectionListener(new SelectionAdapter() {
+            @Override
+            public void widgetSelected(SelectionEvent e) {
+                updateUserRoleDescription();
+            }
+        });
+
+        Group group = new Group(userTabComp, SWT.BORDER);
+        group.setText("Role Description:");
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.horizontalSpan = 2;
+        group.setLayoutData(gridData);
+        group.setLayout(new GridLayout(1, false));
+
+        userRoleDescriptionText = new Text(group, SWT.MULTI | SWT.WRAP);
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.heightHint = userRoleDescriptionText.getLineHeight() * 2;
+        userRoleDescriptionText.setLayoutData(gridData);
+        userRoleDescriptionText.setBackground(group.getBackground());
     }
 
     void createRolesTab(TabFolder tabFolder) {
@@ -377,20 +402,35 @@ public class UserAdministrationDialog extends CaveSWTDialog {
         gridData.heightHint = rolePermissionsList.getItemHeight() * 12;
         rolePermissionsList.setLayoutData(gridData);
 
-        Group descGroup = new Group(rolesTabComp, SWT.BORDER);
+        roleDescGroup = new Group(rolesTabComp, SWT.BORDER);
         gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gridData.horizontalSpan = 2;
-        descGroup.setLayoutData(gridData);
+        roleDescGroup.setLayoutData(gridData);
         layout = new GridLayout(1, false);
-        descGroup.setLayout(layout);
-        descGroup.setText("Permission Description:");
+        roleDescGroup.setLayout(layout);
+        roleDescGroup.setText("Role Description:");
 
-        permissionDescriptionText = new Text(descGroup,
+        roleDescriptionText = new Text(roleDescGroup,
+                SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.heightHint = roleDescriptionText.getLineHeight() * 2;
+        roleDescriptionText.setLayoutData(gridData);
+        roleDescriptionText.setBackground(roleDescGroup.getBackground());
+
+        Group permDescGroup = new Group(rolesTabComp, SWT.BORDER);
+        gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        gridData.horizontalSpan = 2;
+        permDescGroup.setLayoutData(gridData);
+        layout = new GridLayout(1, false);
+        permDescGroup.setLayout(layout);
+        permDescGroup.setText("Permission Description:");
+
+        permissionDescriptionText = new Text(permDescGroup,
                 SWT.READ_ONLY | SWT.MULTI | SWT.WRAP);
         gridData = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
         gridData.heightHint = permissionDescriptionText.getLineHeight() * 2;
         permissionDescriptionText.setLayoutData(gridData);
-        permissionDescriptionText.setBackground(descGroup.getBackground());
+        permissionDescriptionText.setBackground(permDescGroup.getBackground());
 
         rolePermissionsList.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -409,7 +449,7 @@ public class UserAdministrationDialog extends CaveSWTDialog {
         filteredUsers.removeAll(rolesAndPermissions.getProtectedUsers());
         String[] users = filteredUsers
                 .toArray(new String[filteredUsers.size()]);
-        Arrays.sort(users);
+        Arrays.sort(users, String.CASE_INSENSITIVE_ORDER);
         userList.setItems(users);
         if (userList.getItemCount() > 0) {
             userList.setSelection(0);
@@ -418,7 +458,7 @@ public class UserAdministrationDialog extends CaveSWTDialog {
 
         keyset = rolesAndPermissions.getRoles().keySet();
         String[] roles = keyset.toArray(new String[keyset.size()]);
-        Arrays.sort(roles);
+        Arrays.sort(roles, String.CASE_INSENSITIVE_ORDER);
         rolesList.setItems(roles);
         if (rolesList.getItemCount() > 0) {
             rolesList.setSelection(0);
@@ -483,8 +523,9 @@ public class UserAdministrationDialog extends CaveSWTDialog {
 
             Set<String> roles = rolesAndPermissions.getUsers().get(user);
             String[] rolesArray = roles.toArray(new String[roles.size()]);
-            Arrays.sort(rolesArray);
+            Arrays.sort(rolesArray, String.CASE_INSENSITIVE_ORDER);
             userRolesList.setItems(rolesArray);
+            userRoleDescriptionText.setText("");
         }
     }
 
@@ -522,27 +563,46 @@ public class UserAdministrationDialog extends CaveSWTDialog {
         }
     }
 
+    private void updateUserRoleDescription() {
+        userRoleDescriptionText.setText("");
+        int index = userRolesList.getSelectionIndex();
+        if (index > -1) {
+            String rolename = userRolesList.getItem(index);
+
+            Role role = rolesAndPermissions.getRoles().get(rolename);
+            userRoleDescriptionText.setText(role.getDescription());
+        }
+    }
+
     private void updateSelectedRole() {
+        String roleType = "";
+        roleDescriptionText.setText("");
         rolePermissionsList.removeAll();
         int index = rolesList.getSelectionIndex();
         if (index > -1) {
-            String role = rolesList.getItem(index);
+            String rolename = rolesList.getItem(index);
 
-            Set<String> permissions = rolesAndPermissions.getRoles().get(role);
+            Role role = rolesAndPermissions.getRoles().get(rolename);
+            roleDescriptionText.setText(role.getDescription());
+
+            Set<String> permissions = role.getPermissions();
             String[] permissionsArray = permissions
                     .toArray(new String[permissions.size()]);
-            Arrays.sort(permissionsArray);
+            Arrays.sort(permissionsArray, String.CASE_INSENSITIVE_ORDER);
             rolePermissionsList.setItems(permissionsArray);
             permissionDescriptionText.setText("");
 
             boolean isProtected = rolesAndPermissions.getProtectedRoles()
-                    .contains(role);
+                    .contains(rolename);
+            roleType = isProtected ? "predefined" : "custom";
             editRoleButton.setEnabled(!isProtected);
             deleteRoleButton.setEnabled(!isProtected);
             copyRoleButton.setEnabled(true);
         } else {
             copyRoleButton.setEnabled(false);
         }
+
+        roleDescGroup.setText("Role Description: (" + roleType + ")");
     }
 
     private void updatePermissionDescription() {
@@ -603,7 +663,7 @@ public class UserAdministrationDialog extends CaveSWTDialog {
         String[] items = Arrays.copyOfRange(rolesList.getItems(), 0,
                 rolesList.getItemCount() + 1);
         items[items.length - 1] = roleName;
-        Arrays.sort(items);
+        Arrays.sort(items, String.CASE_INSENSITIVE_ORDER);
         rolesList.setItems(items);
         rolesList.setSelection(rolesList.indexOf(roleName));
     }
@@ -620,11 +680,13 @@ public class UserAdministrationDialog extends CaveSWTDialog {
     private void copyRole() {
         int index = rolesList.getSelectionIndex();
         if (index > -1) {
+            String existingRoleName = rolesList.getItem(index);
             String roleName = getNewRoleName();
             if (roleName != null) {
-                String[] permissions = rolePermissionsList.getItems();
+                Role existingRole = rolesAndPermissions.getRoles()
+                        .get(existingRoleName);
                 rolesAndPermissions.updateRole(roleName,
-                        new HashSet<>(Arrays.asList(permissions)));
+                        new Role(existingRole));
                 addRole(roleName);
                 updateSelectedRole();
             }

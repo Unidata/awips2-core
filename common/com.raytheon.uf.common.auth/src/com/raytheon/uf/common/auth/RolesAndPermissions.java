@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.auth;
 
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -43,6 +44,76 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  */
 @DynamicSerialize
 public class RolesAndPermissions {
+
+    /**
+     * Container for role description and associated permissions
+     */
+    @DynamicSerialize
+    public static class Role {
+        @DynamicSerializeElement
+        private String description;
+
+        @DynamicSerializeElement
+        private Set<String> permissions;
+
+        /**
+         * Default constructor for dynamic serialization
+         */
+        public Role() {
+        }
+
+        /**
+         * Constructor
+         *
+         * @param description
+         * @param permissions
+         */
+        public Role(String description, Set<String> permissions) {
+            this.description = description;
+            this.permissions = permissions;
+        }
+
+        /**
+         * Copy constructor
+         *
+         * @param role
+         */
+        public Role(Role role) {
+            this(role.description, new HashSet<>(role.permissions));
+        }
+
+        /**
+         * @return the description
+         */
+        public String getDescription() {
+            return description;
+        }
+
+        /**
+         *
+         * @param description
+         *            the description to set
+         */
+        public void setDescription(String description) {
+            this.description = description;
+        }
+
+        /**
+         * @return the permissions
+         */
+        public Set<String> getPermissions() {
+            return permissions;
+        }
+
+        /**
+         * @param permissions
+         *            the permissions to set
+         */
+        public void setPermissions(Set<String> permissions) {
+            this.permissions = permissions;
+        }
+    }
+
     @DynamicSerializeElement
     private String defaultRole = "defaultUser";
 
@@ -59,7 +130,7 @@ public class RolesAndPermissions {
     private Map<String, String> permissions = Collections.emptyMap();
 
     @DynamicSerializeElement
-    private Map<String, Set<String>> roles = Collections.emptyMap();
+    private Map<String, Role> roles = Collections.emptyMap();
 
     @DynamicSerializeElement
     private Map<String, Set<String>> users = Collections.emptyMap();
@@ -68,7 +139,7 @@ public class RolesAndPermissions {
     private Map<String, Set<String>> userChanges = Collections.emptyMap();
 
     @DynamicSerializeElement
-    private Map<String, Set<String>> roleChanges = Collections.emptyMap();
+    private Map<String, Role> roleChanges = Collections.emptyMap();
 
     /**
      * @return the defaultRole
@@ -152,23 +223,23 @@ public class RolesAndPermissions {
     }
 
     /**
-     * Returns a map where the keys are all defined roles and the values contain
-     * a list of all permissions assigned to the role.
+     * Returns a map where the keys are the names of the defined roles and the
+     * values are the roles.
      *
      * @return the roles
      */
-    public Map<String, Set<String>> getRoles() {
+    public Map<String, Role> getRoles() {
         return roles;
     }
 
     /**
      * Sets the roles. The map should contain keys for all defined roles with
-     * values containing a list of all permissions assigned to the role.
+     * values containing the role.
      *
      * @param roles
      *            the roles to set
      */
-    public void setRoles(Map<String, Set<String>> roles) {
+    public void setRoles(Map<String, Role> roles) {
         this.roles = roles;
     }
 
@@ -211,7 +282,7 @@ public class RolesAndPermissions {
     /**
      * @return the roleChanges
      */
-    public Map<String, Set<String>> getRoleChanges() {
+    public Map<String, Role> getRoleChanges() {
         return roleChanges;
     }
 
@@ -219,7 +290,7 @@ public class RolesAndPermissions {
      * @param roleChanges
      *            the roleChanges to set
      */
-    public void setRoleChanges(Map<String, Set<String>> roleChanges) {
+    public void setRoleChanges(Map<String, Role> roleChanges) {
         this.roleChanges = roleChanges;
     }
 
@@ -242,16 +313,16 @@ public class RolesAndPermissions {
     /**
      * Update a role's assigned permissions
      *
+     * @param name
      * @param role
-     * @param permissions
      *            if null role will be deleted
      */
-    public void updateRole(String role, Set<String> permissions) {
-        if (permissions == null || permissions.isEmpty()) {
-            getRoles().remove(role);
+    public void updateRole(String name, Role role) {
+        if (role == null) {
+            getRoles().remove(name);
         } else {
-            getRoles().put(role, permissions);
+            getRoles().put(name, role);
         }
-        roleChanges.put(role, permissions);
+        roleChanges.put(name, role);
     }
 }

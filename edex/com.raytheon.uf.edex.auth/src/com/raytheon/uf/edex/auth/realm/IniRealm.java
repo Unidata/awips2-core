@@ -23,12 +23,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.io.StringWriter;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
@@ -48,11 +46,11 @@ import org.apache.shiro.authz.permission.WildcardPermission;
 import org.apache.shiro.config.ConfigurationException;
 import org.apache.shiro.config.Ini;
 import org.apache.shiro.config.Ini.Section;
-import org.apache.shiro.util.PermissionUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.auth.RolesAndPermissions;
+import com.raytheon.uf.common.auth.RolesAndPermissions.Role;
 import com.raytheon.uf.common.auth.util.PermissionDescriptionBuilder;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -63,10 +61,12 @@ import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.auth.IRolesAndPermissionsStore;
 import com.raytheon.uf.edex.auth.ShiroPermissionsManager;
 import com.raytheon.uf.edex.core.EDEXUtil;
+import com.raytheon.uf.edex.core.EdexException;
 
 /**
  * IniRealm which initializes from multiple ini files from localization tree
@@ -88,13 +88,15 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         implements IRolesAndPermissionsStore {
     private static final String PERMISSIONS_SECTION_NAME = "permissions";
 
+    private static final String ROLE_DESCRIPTIONS_SECTION_NAME = "roleDescriptions";
+
     private static final String USERS_INI_HEADER = ""
             + "# -----------------------------------------------------------------------------\n"
             + "# This file should not be manually edited.\n"
             + "# Please use the user administration GUI to modify user roles/permissions.\n"
             + "# -----------------------------------------------------------------------------\n"
-            + "# Users and their (optional) assigned roles\n"
-            + "# Users may only have roles, they may not have permissions.\n#\n"
+            + "# [users] section defines users and their (optional) assigned roles\n"
+            + "# Users may only be assigned roles, they may not be assigned permissions.\n#\n"
             + "# username = password, role1, role2, ..., roleN\n"
             + "# -----------------------------------------------------------------------------";
 
@@ -103,7 +105,10 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             + "# This file should not be manually edited.\n"
             + "# Please use the user administration GUI to modify user roles/permissions.\n"
             + "# -----------------------------------------------------------------------------\n"
-            + "# Roles with assigned permissions\n"
+            + "# [roleDescriptions] section defines the description for each role\n"
+            + "# roleName = description\n"
+            + "# -----------------------------------------------------------------------------\n"
+            + "# [roles] section defines the permissions assigned to each role\n"
             + "# roleName = perm1, perm2, ..., permN\n"
             + "# -----------------------------------------------------------------------------";
 
@@ -120,8 +125,25 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
     /** permission-to-description */
     protected final Map<String, String> permissions;
 
+    // NOTE: When locking multiple locks, these locks and the USERS_LOCK and
+    // ROLES_LOCK inherited from the super class must be locked in the following
+    // order (and unlocked in the reverse order) to prevent deadlock:
+    //
+    // USERS_LOCK
+    // ROLES_LOCK
+    // ROLE_DESCRIPTIONS_LOCK
+    // PERMISSIONS_LOCK
+
     /** permissions lock */
     protected final ReadWriteLock PERMISSIONS_LOCK;
+
+    /** roles-to-description */
+    protected final Map<String, String> roleDescriptions;
+
+    /** role descriptions lock */
+    protected final ReadWriteLock ROLE_DESCRIPTIONS_LOCK;
+
+    private volatile boolean reinitializing = false;
 
     /**
      * Constructor
@@ -140,10 +162,13 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         this.permissions = new LinkedHashMap<>();
         PERMISSIONS_LOCK = new ReentrantReadWriteLock();
 
+        this.roleDescriptions = new LinkedHashMap<>();
+        ROLE_DESCRIPTIONS_LOCK = new ReentrantReadWriteLock();
+
         setIni(getMergedIni());
         init();
-        setCachingEnabled(true);
         setAuthenticationCachingEnabled(true);
+        setAuthorizationCachingEnabled(true);
     }
 
     /**
@@ -188,7 +213,6 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             }
             out.close();
             stream.save();
-
         } catch (LocalizationException | IOException e) {
             log.error("Error writing ini file: " + lf, e);
         }
@@ -264,6 +288,45 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         Ini.Section permissionsSection = ini
                 .getSection(PERMISSIONS_SECTION_NAME);
         processPermissionDefinitions(permissionsSection);
+
+        Ini.Section roleDescriptions = ini
+                .getSection(ROLE_DESCRIPTIONS_SECTION_NAME);
+        processRoleDescriptions(roleDescriptions);
+
+        log.info("Roles/permissions initialization complete.");
+    }
+
+    /**
+     * Called when site ini files have been updated
+     *
+     * @param msg
+     *            content unused
+     */
+    public void reinitialize(Object msg) {
+        log.info("Reinitializing roles/permissions due to site ini change.");
+
+        USERS_LOCK.writeLock().lock();
+        ROLES_LOCK.writeLock().lock();
+        ROLE_DESCRIPTIONS_LOCK.writeLock().lock();
+        PERMISSIONS_LOCK.writeLock().lock();
+        try {
+            this.permissions.clear();
+            this.users.clear();
+            this.roles.clear();
+            this.roleDescriptions.clear();
+
+            setIni(getMergedIni());
+            init();
+
+            getAuthenticationCache().clear();
+            getAuthorizationCache().clear();
+        } finally {
+            PERMISSIONS_LOCK.writeLock().unlock();
+            ROLE_DESCRIPTIONS_LOCK.writeLock().unlock();
+            ROLES_LOCK.writeLock().unlock();
+            USERS_LOCK.writeLock().unlock();
+        }
+        reinitializing = false;
     }
 
     private void processPermissionDefinitions(
@@ -273,25 +336,22 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                 addPermission(entry.getKey(), entry.getValue());
             }
 
+            ROLES_LOCK.readLock().lock();
+            PERMISSIONS_LOCK.writeLock().lock();
             try {
-                ROLES_LOCK.readLock().lock();
-                try {
-                    PERMISSIONS_LOCK.writeLock().lock();
-                    for (SimpleRole role : roles.values()) {
-                        for (Permission permission : role.getPermissions()) {
-                            String permString = permission.toString();
-                            if (permString.startsWith("localization")
-                                    && !permissions.containsKey(permString)) {
-                                permissions.put(permString,
-                                        PermissionDescriptionBuilder
-                                                .buildDescription(permString));
-                            }
+                for (SimpleRole role : roles.values()) {
+                    for (Permission permission : role.getPermissions()) {
+                        String permString = permission.toString();
+                        if (permString.startsWith("localization")
+                                && !permissions.containsKey(permString)) {
+                            permissions.put(permString,
+                                    PermissionDescriptionBuilder
+                                            .buildDescription(permString));
                         }
                     }
-                } finally {
-                    PERMISSIONS_LOCK.writeLock().unlock();
                 }
             } finally {
+                PERMISSIONS_LOCK.writeLock().unlock();
                 ROLES_LOCK.readLock().unlock();
             }
         }
@@ -313,14 +373,22 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         }
     }
 
-    @Override
-    public void addAccount(String username, String password, String... roles) {
-        Map<String, Set<String>> userChanges = new HashMap<>(1, 1.0f);
-        userChanges.put(username, new HashSet<>(Arrays.asList(roles)));
-        updateAccounts(password, userChanges);
+    private void processRoleDescriptions(Map<String, String> roleDescs) {
+        for (Entry<String, String> entry : roleDescs.entrySet()) {
+            addRoleDescription(entry.getKey(), entry.getValue());
+        }
     }
 
-    private void updateAccounts(String password,
+    private void addRoleDescription(String role, String description) {
+        ROLE_DESCRIPTIONS_LOCK.writeLock().lock();
+        try {
+            roleDescriptions.put(role, description);
+        } finally {
+            ROLE_DESCRIPTIONS_LOCK.writeLock().unlock();
+        }
+    }
+
+    private void updateSiteUsers(String password,
             Map<String, Set<String>> userChanges) {
         if (userChanges.isEmpty()) {
             return;
@@ -367,20 +435,14 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             String username = entry.getKey();
             Set<String> roles = entry.getValue();
 
-            if (roles == null || roles.isEmpty()) {
-                /* remove account */
-                this.users.remove(username);
-
+            if (roles == null) {
+                /* remove user */
                 Section usersSection = siteUsers.getSection(USERS_SECTION_NAME);
                 if (usersSection != null) {
                     usersSection.remove(username);
                 }
 
             } else {
-                /* add/update account */
-                super.addAccount(username, password,
-                        roles.toArray(new String[roles.size()]));
-
                 // add the new user with specified password and roles
                 siteUsers.setSectionProperty(USERS_SECTION_NAME, username,
                         String.join(", ", password, String.join(", ", roles)));
@@ -404,7 +466,10 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         String username = up.getUsername();
         String password = new String(up.getPassword());
         if (!accountExists(username)) {
-            addAccount(username, password, defaultRole);
+            Map<String, Set<String>> userChanges = new HashMap<>(1, 1.0f);
+            userChanges.put(username,
+                    new HashSet<>(Arrays.asList(defaultRole)));
+            updateSiteUsers(password, userChanges);
         }
         return super.doGetAuthenticationInfo(token);
     }
@@ -418,34 +483,44 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         retVal.setProtectedRoles(protectedRoles);
         retVal.setProtectedUsers(protectedUsers);
 
+        Map<String, String> permDefs;
         PERMISSIONS_LOCK.readLock().lock();
         try {
-            Map<String, String> permDefs = new HashMap<>(permissions.size(),
-                    1.0f);
+            permDefs = new HashMap<>(permissions.size(), 1.0f);
             for (Entry<String, String> entry : permissions.entrySet()) {
                 permDefs.put(entry.getKey().replace('.', ':'),
                         entry.getValue());
             }
-            retVal.setPermissions(permDefs);
         } finally {
             PERMISSIONS_LOCK.readLock().unlock();
         }
 
         ROLES_LOCK.readLock().lock();
+        ROLE_DESCRIPTIONS_LOCK.readLock().lock();
         try {
-            Map<String, Set<String>> roleDefs = new HashMap<>(roles.size(),
-                    1.0f);
+            Map<String, Role> roleDefs = new HashMap<>(roles.size(), 1.0f);
             for (Entry<String, SimpleRole> entry : roles.entrySet()) {
                 Set<String> permissionStrings = new HashSet<>(
                         entry.getValue().getPermissions().size(), 1.0f);
                 for (Permission permission : entry.getValue()
                         .getPermissions()) {
-                    permissionStrings.add(permission.toString());
+                    String permString = permission.toString();
+                    permissionStrings.add(permString);
+
+                    if (!permDefs.containsKey(permString)) {
+                        permDefs.put(permString, PermissionDescriptionBuilder
+                                .buildDescription(permString));
+                    }
                 }
-                roleDefs.put(entry.getKey(), permissionStrings);
+
+                roleDefs.put(entry.getKey(),
+                        new Role(roleDescriptions.get(entry.getKey()),
+                                permissionStrings));
             }
             retVal.setRoles(roleDefs);
+            retVal.setPermissions(permDefs);
         } finally {
+            ROLE_DESCRIPTIONS_LOCK.readLock().unlock();
             ROLES_LOCK.readLock().unlock();
         }
 
@@ -465,7 +540,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
         return retVal;
     }
 
-    private void updateRoles(Map<String, Set<String>> roleChanges) {
+    private void updateSiteRoles(Map<String, Role> roleChanges) {
         if (roleChanges.isEmpty()) {
             return;
         }
@@ -498,14 +573,12 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             siteRoles.addSection(ROLES_SECTION_NAME);
         }
 
-        for (Entry<String, Set<String>> entry : roleChanges.entrySet()) {
+        for (Entry<String, Role> entry : roleChanges.entrySet()) {
             String rolename = entry.getKey();
-            Set<String> values = entry.getValue();
+            Role role = entry.getValue();
 
-            if (values == null || values.isEmpty()) {
+            if (role == null || role.getPermissions().isEmpty()) {
                 /* remove role */
-                this.roles.remove(rolename);
-
                 Section rolesSection = siteRoles.getSection(ROLES_SECTION_NAME);
                 if (rolesSection != null) {
                     rolesSection.remove(rolename);
@@ -513,37 +586,10 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
 
             } else {
                 /* add/update role */
-                List<String> permissions = new ArrayList<>(values.size());
-                for (String permission : entry.getValue()) {
-                    permissions.add(permission);
-
-                    /* add new permissions as required */
-                    PERMISSIONS_LOCK.writeLock().lock();
-                    try {
-                        if (!this.permissions.containsKey(permission)) {
-                            this.permissions.put(permission,
-                                    PermissionDescriptionBuilder
-                                            .buildDescription(permission));
-                        }
-                    } finally {
-                        PERMISSIONS_LOCK.writeLock().unlock();
-                    }
-                }
-
-                /* Create role if it doesn't already exist */
-                SimpleRole role = getRole(rolename);
-                if (role == null) {
-                    role = new SimpleRole(rolename);
-                    add(role);
-                }
-
-                /* Set the role's permissions */
-                role.setPermissions(PermissionUtils.resolvePermissions(
-                        permissions, getPermissionResolver()));
-
-                /* add the new role with specified permissions */
+                siteRoles.setSectionProperty(ROLE_DESCRIPTIONS_SECTION_NAME,
+                        rolename, role.getDescription());
                 siteRoles.setSectionProperty(ROLES_SECTION_NAME, rolename,
-                        String.join(", ", permissions));
+                        String.join(", ", role.getPermissions()));
             }
         }
 
@@ -554,11 +600,38 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
     @Override
     public RolesAndPermissions saveRolesAndPermissions(
             RolesAndPermissions rolesAndPermissions) {
-        updateAccounts(ShiroPermissionsManager.DEFAULT_PASSWORD,
+
+        updateSiteUsers(ShiroPermissionsManager.DEFAULT_PASSWORD,
                 rolesAndPermissions.getUserChanges());
 
-        updateRoles(rolesAndPermissions.getRoleChanges());
+        updateSiteRoles(rolesAndPermissions.getRoleChanges());
 
+        reinitializing = true;
+        try {
+            EDEXUtil.getMessageProducer().sendAsyncThriftUri(
+                    "jms-generic:topic:edex.alerts.auth?timeToLive=60000",
+                    "roles and permissions updated");
+        } catch (EdexException | SerializationException e) {
+            log.error("Error sending roles and permissions update notification",
+                    e);
+        }
+
+        long timeout = System.currentTimeMillis() + 10_000;
+        while (reinitializing) {
+            try {
+                Thread.sleep(10);
+            } catch (InterruptedException e) {
+                log.warn(
+                        "Thread interrupted while awaiting roles/permissions reinitialization",
+                        e);
+            }
+
+            if (System.currentTimeMillis() > timeout) {
+                log.error(
+                        "Timeout awaiting roles/permissions reinitialization");
+                break;
+            }
+        }
         return getRolesAndPermissions();
     }
 
