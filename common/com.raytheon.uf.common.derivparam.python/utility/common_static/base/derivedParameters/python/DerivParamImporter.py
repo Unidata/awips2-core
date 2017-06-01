@@ -20,10 +20,19 @@
 
 #
 # Python import hook (PEP 302) for providing inheritance to derived parameters.
-# This enables an individual to override one of the methods of a derived
-# parameter function while still retaining the base versions of the other
-# methods.
-#   
+ #
+# The primary purpose of this hook is to allow files at multiple localization
+# levels to be combined into a single module. This allows a file override to
+# override a single method while inheriting other methods from higher level
+# files.
+#
+# Another function of this hook is to allow sub-directories to be treated as
+# packages automatically, without the need for an __init__.py file.
+#
+# The final thing this hook does is allow the localization files to be imported
+# without relying on the file existing on the local filesystem. The content of
+# of the file are streamed directly to a string which is executed to create the
+# modules.   
 #    
 #     SOFTWARE HISTORY
 #    
@@ -32,6 +41,7 @@
 #    12/20/10                      njensen        Initial creation
 #    06/20/16        5439          bsteffen       import directly from localization files.
 #    10/05/16        5891          bsteffen       Treat all directories as modules, even without __init___.py.
+#    06/01/17        5891          bsteffen       Separate files into their own modules to support source code lookup. 
 #    
 # 
 #
@@ -85,6 +95,7 @@ class DerivParamImporter(object):
         if sys.modules.has_key(fullname):
             return sys.modules[fullname]
         combined = imp.new_module(fullname)
+        combined.__loader__ = self
         fullpath = fullname.replace('.', sep)
         files = self.__getRegularFiles(fullpath)
         if files.isEmpty():
@@ -92,7 +103,35 @@ class DerivParamImporter(object):
             combined.__path__ = ['DerivParamImporter']
         files = TreeMap(files)
         for file in files.values():
-            source = MasterDerivScriptFactory.readLocalizationFile(file)
-            exec source in combined.__dict__
+            loader = LocalizedModuleLoader(file)
+            localname = str(file.getContext().getLocalizationLevel()) + '-' + fullname
+            localmod = loader.load_module(localname)
+            combined.__dict__.update(localmod.__dict__)
         sys.modules[fullname] = combined
         return combined
+
+# This  loader is used internally by the DerivParamImporter to load a single
+# localization file into a module. The reason for a separate loader is to support
+# source code lookup for traceback and conversion to java stack traces. Although
+# these modules end up in sys.modules, they are not intended to be used outside of
+# the DerivParamImporter
+class LocalizedModuleLoader(object):
+    
+    def __init__(self, file):
+        self.file = file
+
+    def load_module(self, fullname):
+        module = imp.new_module(fullname)
+        exec self.get_code(fullname) in module.__dict__
+        module.__loader__ = self
+        # Must put the module in sys.module or source lookup doesn't work.
+        sys.modules[fullname] = module
+        return module
+        
+    def get_code(self, fullname):
+        fullfile = str(self.file.getContext()) + sep + self.file.getPath()
+        return compile(self.get_source(fullname), fullfile, 'exec')
+
+    def get_source(self, fullname):
+        return MasterDerivScriptFactory.readLocalizationFile(self.file)
+        
