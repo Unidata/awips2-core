@@ -413,18 +413,15 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                  * We won't overwrite the file so the site admin can attempt to
                  * repair it.
                  */
-                log.error(
-                        "Error reading: " + lf
-                                + ". Unable to create new user roles and permissions account",
-                        e);
+                String msg = "Error reading: " + lf
+                        + ". Unable to update user roles.";
+
+                log.error(msg, e);
 
                 StringWriter stackTrace = new StringWriter();
                 e.printStackTrace(new PrintWriter(stackTrace));
                 EDEXUtil.sendMessageAlertViz(Priority.ERROR, "AUTH", "EDEX",
-                        "MISC",
-                        "Error reading: " + lf
-                                + ". Unable to create new user roles and permissions account",
-                        stackTrace.toString(), null);
+                        "MISC", msg, stackTrace.toString(), null);
                 return;
             }
         } else {
@@ -559,13 +556,19 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                 siteRoles = readIni(lf);
             } catch (Throwable e) {
                 /*
-                 * Most likely a corrupted users.ini file, this is bad!!!
+                 * Most likely a corrupted roles.ini file, this is bad!!!
                  *
                  * We won't overwrite the file so the site admin can attempt to
                  * repair it.
                  */
-                log.error("Error reading: " + lf + ". Unable to update users",
-                        e);
+                String msg = "Error reading: " + lf
+                        + ". Unable to update site roles definitions.";
+                log.error(msg, e);
+
+                StringWriter stackTrace = new StringWriter();
+                e.printStackTrace(new PrintWriter(stackTrace));
+                EDEXUtil.sendMessageAlertViz(Priority.ERROR, "AUTH", "EDEX",
+                        "MISC", msg, stackTrace.toString(), null);
                 return;
             }
         } else {

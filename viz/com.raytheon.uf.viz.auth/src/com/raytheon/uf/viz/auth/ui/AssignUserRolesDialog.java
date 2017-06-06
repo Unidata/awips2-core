@@ -113,13 +113,17 @@ public class AssignUserRolesDialog extends CaveSWTDialog {
     }
 
     private boolean isValid() {
-        boolean valid = rolesDL.getSelectedListItems().length > 0;
+        boolean valid = true;
+        errorLabel.setText("");
 
-        if (valid) {
-            errorLabel.setText("");
-        } else {
-            errorLabel.setText("At least one role must be assigned!");
-        }
+        // At least for now it is OK for a user to have no roles
+        // This allows only unprivileged access.
+        // This method was left in place for future validation needs.
+
+        // if (rolesDL.getSelectedListItems().length == 0){
+        // errorLabel.setText("At least one role must be assigned!");
+        // valid = false;
+        // }
 
         return valid;
     }

@@ -302,7 +302,7 @@ public class RolesAndPermissions {
      *            if null user will be deleted
      */
     public void updateUser(String username, Set<String> roles) {
-        if (roles == null || roles.isEmpty()) {
+        if (roles == null) {
             getUsers().remove(username);
         } else {
             getUsers().put(username, roles);
