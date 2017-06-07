@@ -55,6 +55,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * ------------ ---------- ----------- --------------------------
  * Nov 22, 2016 5937       tgurney     Initial creation
  * May 11, 2017 6223       tgurney     Add fairness and prioritization
+ * Jun 07, 2017 6222       tgurney     Add DEFAULT_WEIGHT
  *
  * </pre>
  *
@@ -62,6 +63,8 @@ import java.util.concurrent.locks.ReentrantLock;
  */
 
 public class TokenBucket {
+
+    public static final double DEFAULT_WEIGHT = 1.0;
 
     private final int tokensPerInterval;
 
@@ -128,7 +131,7 @@ public class TokenBucket {
     /**
      * Consume n tokens. Will block for as long as necessary to consume the
      * whole n. This may be a long time if n is much larger than the bucket
-     * capacity. The calling thread will have a weight of 1.0.
+     * capacity. The calling thread will have a weight of DEFAULT_WEIGHT.
      *
      * @return the number of tokens actually consumed (n)
      * @throws IllegalArgumentException
@@ -136,7 +139,7 @@ public class TokenBucket {
      * @throws InterruptedException
      */
     public int consume(int n) throws InterruptedException {
-        return consume(n, 1.0);
+        return consume(n, DEFAULT_WEIGHT);
     }
 
     /**
@@ -164,7 +167,7 @@ public class TokenBucket {
      * Consume at least {@code min} tokens, but no more than {@code max} tokens.
      * Either number may be larger than the bucket capacity. Note that a
      * {@code min} larger than the bucket capacity guarantees that this method
-     * will block. The calling thread will have a weight of 1.0.
+     * will block. The calling thread will have a weight of DEFAULT_WEIGHT.
      *
      * @param min
      * @param max
@@ -175,7 +178,7 @@ public class TokenBucket {
      * @throws InterruptedException
      */
     public int consumeBetween(int min, int max) throws InterruptedException {
-        return consumeBetween(min, max, 1.0);
+        return consumeBetween(min, max, DEFAULT_WEIGHT);
     }
 
     /**
