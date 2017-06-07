@@ -808,7 +808,7 @@ public class DualList extends Composite {
         String[] selectedItems = listBox.getSelection();
 
         String[] items = listBox.getItems();
-        java.util.List<String> availableListsorted = Arrays.asList(items);
+        java.util.List<String> availableListsorted;
 
         // Put available list in order
         if (config.isNumericData()) {
@@ -816,17 +816,18 @@ public class DualList extends Composite {
             try {
                 // Using TreeMap to sort by double values of strings
                 SortedMap<Double, String> map = new TreeMap<>();
-                for (String a : availableListsorted) {
+                for (String a : items) {
                     map.put(Double.parseDouble(a), a);
                 }
-                availableListsorted.clear();
-                availableListsorted.addAll(map.values());
+                availableListsorted = new ArrayList<>(map.values());
 
             } catch (NumberFormatException e) {
                 // numeric data not all numeric, string sorting
+                availableListsorted = Arrays.asList(items);
                 Collections.sort(availableListsorted);
             }
         } else {
+            availableListsorted = Arrays.asList(items);
             if (config.isCaseFlag()) {
                 Collections.sort(availableListsorted);
             } else {
