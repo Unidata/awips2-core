@@ -56,6 +56,7 @@ import java.util.concurrent.locks.ReentrantLock;
  * Nov 22, 2016 5937       tgurney     Initial creation
  * May 11, 2017 6223       tgurney     Add fairness and prioritization
  * Jun 07, 2017 6222       tgurney     Add DEFAULT_WEIGHT
+ * Jun 08, 2017 6222       tgurney     Add setCapacity, setInterval
  *
  * </pre>
  *
@@ -66,9 +67,9 @@ public class TokenBucket {
 
     public static final double DEFAULT_WEIGHT = 1.0;
 
-    private final int tokensPerInterval;
+    private volatile int tokensPerInterval;
 
-    private final long intervalMs;
+    private volatile long intervalMs;
 
     /*
      * volatile not necessary on this field since it is only accessed by the
@@ -253,8 +254,8 @@ public class TokenBucket {
      */
     private int consumeBetweenInternal(Thread thread, int min, int max)
             throws InterruptedException {
+        tokensAvailableLock.lock();
         try {
-            tokensAvailableLock.lock();
             int allowedConsumption = getAllowedConsumption(thread);
             waitUntilAvailable(Math.min(min, allowedConsumption));
             /*
@@ -319,11 +320,60 @@ public class TokenBucket {
     }
 
     /**
-     * Return the capacity of this bucket, i.e., the maximum number of tokens it
-     * can hold.
+     * @return the capacity of this bucket, i.e., the maximum number of tokens
+     *         it can hold.
      */
     public int getCapacity() {
         return tokensPerInterval;
+    }
+
+    /**
+     * Set the capacity of this bucket, i.e., the maximum number of tokens it
+     * can hold. This method must acquire a lock on the available tokens. If the
+     * number of currently available tokens is larger than the new capacity, the
+     * excess tokens will be lost.
+     * 
+     * @param capacity
+     */
+    public void setCapacity(int capacity) {
+        if (capacity < 1) {
+            throw new IllegalArgumentException(
+                    "capacity must be at least 1 (given: " + capacity + ")");
+        }
+        tokensAvailableLock.lock();
+        try {
+            if (capacity < tokensAvailable) {
+                tokensAvailable = capacity;
+            }
+            tokensPerInterval = capacity;
+        } finally {
+            tokensAvailableLock.unlock();
+        }
+    }
+
+    /** @return the refill interval in milliseconds. */
+    public long getIntervalMs() {
+        return intervalMs;
+    }
+
+    /**
+     * Set the refill interval. This method must acquire a lock on the available
+     * tokens.
+     * 
+     * @param intervalMs
+     */
+    public void setIntervalMs(long intervalMs) {
+        if (intervalMs < 1) {
+            throw new IllegalArgumentException(
+                    "interval must be at least 1 millisecond (given: "
+                            + intervalMs + ")");
+        }
+        tokensAvailableLock.lock();
+        try {
+            this.intervalMs = intervalMs;
+        } finally {
+            tokensAvailableLock.unlock();
+        }
     }
 
     /**
