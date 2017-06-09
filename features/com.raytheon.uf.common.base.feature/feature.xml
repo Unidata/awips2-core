@@ -263,7 +263,7 @@
          download-size="0"
          install-size="0"
          version="2.6.0"/>
-         
+
    <plugin
          id="org.apache.commons.lang3"
          download-size="0"
@@ -310,7 +310,7 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="3.5.3"/>
+         version="3.7.0"/>
 
    <plugin
          id="org.slf4j"
