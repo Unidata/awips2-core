@@ -93,7 +93,7 @@ public class VizApplication implements IApplication {
         }
 
         addShutdownHook();
-
+        System.out.println("Starting component: " + appToRun + ".");
         return component.startComponent(appToRun);
     }
 
