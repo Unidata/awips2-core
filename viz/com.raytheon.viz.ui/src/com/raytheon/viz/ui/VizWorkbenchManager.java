@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IEditorReference;
@@ -55,25 +56,24 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
  * Jan 13, 2016  5231      njensen      Don't mess with contexts on window activated/deactivated
  * Jun 09, 2016  5256      njensen      Don't mess with contexts on part opened
  * Jun 28, 2016  5717      bsteffen     Ensure ui is updated when an editor is activated
+ * Jun 12, 2017  6297      bsteffen     Make listeners thread safe.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class VizWorkbenchManager implements IPartListener, IPartListener2,
         IWindowListener, IPageListener {
 
     private IWorkbenchWindow currentWindow = null;
 
-    private Map<IWorkbenchWindow, IEditorPart> activeEditorMap = new HashMap<IWorkbenchWindow, IEditorPart>();
+    private final Map<IWorkbenchWindow, IEditorPart> activeEditorMap = new HashMap<>();
 
-    private Map<IWorkbenchWindow, Set<IEditorPart>> visibleParts = new HashMap<IWorkbenchWindow, Set<IEditorPart>>();
+    private final Map<IWorkbenchWindow, Set<IEditorPart>> visibleParts = new HashMap<>();
 
-    private Set<IVizEditorChangedListener> changeListeners = new HashSet<IVizEditorChangedListener>();
+    private final Set<IVizEditorChangedListener> changeListeners = new CopyOnWriteArraySet<>();
 
-    private static VizWorkbenchManager instance = new VizWorkbenchManager();
+    private static final VizWorkbenchManager instance = new VizWorkbenchManager();
 
     public static VizWorkbenchManager getInstance() {
         return instance;
@@ -279,24 +279,22 @@ public class VizWorkbenchManager implements IPartListener, IPartListener2,
 
     private void updateUI(IWorkbenchWindow window) {
         IEditorPart currentEditor = activeEditorMap.get(window);
-        VizGlobalsManager
-                .getInstance(window)
-                .updateUI(
-                        currentEditor instanceof IDisplayPaneContainer ? (IDisplayPaneContainer) currentEditor
-                                : null);
+        VizGlobalsManager.getInstance(window)
+                .updateUI(currentEditor instanceof IDisplayPaneContainer
+                        ? (IDisplayPaneContainer) currentEditor : null);
     }
 
     @Override
     public void partHidden(IWorkbenchPartReference partRef) {
         IWorkbenchPart part = partRef.getPart(false);
         if (part instanceof IEditorPart) {
-            Set<IEditorPart> parts = visibleParts.get(part.getSite()
-                    .getWorkbenchWindow());
+            Set<IEditorPart> parts = visibleParts
+                    .get(part.getSite().getWorkbenchWindow());
             if (parts != null) {
                 parts.remove(part);
             }
-            IEditorPart active = activeEditorMap.get(part.getSite()
-                    .getWorkbenchWindow());
+            IEditorPart active = activeEditorMap
+                    .get(part.getSite().getWorkbenchWindow());
             if (active == part) {
                 activeEditorMap.put(part.getSite().getWorkbenchWindow(), null);
             }

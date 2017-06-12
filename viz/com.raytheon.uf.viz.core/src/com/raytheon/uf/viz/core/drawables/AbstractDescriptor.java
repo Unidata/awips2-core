@@ -22,11 +22,11 @@ package com.raytheon.uf.viz.core.drawables;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -79,23 +79,24 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  *                                    otherwise ignored exception
  * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
  * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
+ * Jun 12, 2017  6297     bsteffen    Make listeners thread safe.
  * 
  * </pre>
  * 
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public abstract class AbstractDescriptor extends ResourceGroup implements
-        IDescriptor {
+public abstract class AbstractDescriptor extends ResourceGroup
+        implements IDescriptor {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractDescriptor.class);
 
     private static class TimeManager {
-        DataTime[] frames;
+        protected DataTime[] frames;
 
-        AbstractTimeMatcher timeMatcher;
+        protected AbstractTimeMatcher timeMatcher;
 
-        int numberOfFrames = 12;
+        protected int numberOfFrames = 12;
 
         public TimeManager() {
             Integer frames = ((Integer) VizGlobalsManager.getCurrentInstance()
@@ -106,7 +107,7 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         }
     }
 
-    protected Set<IFrameChangedListener> listeners = new HashSet<>();
+    protected final Set<IFrameChangedListener> listeners = new CopyOnWriteArraySet<>();
 
     protected TimeManager timeManager = new TimeManager();
 
@@ -189,8 +190,8 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
                             .getContainer();
                     for (IDisplayPane pane : container.getDisplayPanes()) {
                         if (pane.getDescriptor() != AbstractDescriptor.this) {
-                            TimeMatchingJob.scheduleTimeMatch(pane
-                                    .getDescriptor());
+                            TimeMatchingJob
+                                    .scheduleTimeMatch(pane.getDescriptor());
                         }
                     }
                 }
@@ -548,15 +549,14 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
                 setFrameInternal(info.frameIndex);
             }
             if (info.setMap) {
-                timeMatchingMap = new ConcurrentHashMap<>(
-                        info.timeMap);
+                timeMatchingMap = new ConcurrentHashMap<>(info.timeMap);
             }
             FramesInfo currInfo = getFramesInfo();
             FramesInfo oldInfo = new FramesInfo(oldTimes, oldIdx);
             oldTime = oldInfo.getCurrentFrame();
             currTime = currInfo.getCurrentFrame();
-            if (((oldTime != null) && (oldTime.equals(currTime) == false))
-                    || ((currTime != null) && (currTime.equals(oldTime) == false))) {
+            if (((oldTime != null) && (!oldTime.equals(currTime)))
+                    || ((currTime != null) && (!currTime.equals(oldTime)))) {
                 frameChanged = true;
             }
         }
@@ -628,7 +628,6 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         this.frameCoordinator = frameCoordinator;
     }
 
-
     private void init() {
         try {
             setupTransforms();
@@ -651,9 +650,11 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
             }
             this.resourceList.removeAll(unProjectable);
         } catch (Exception e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error setting up Math Transforms,"
-                            + " this descriptor may not work properly", e);
+            statusHandler
+                    .handle(Priority.PROBLEM,
+                            "Error setting up Math Transforms,"
+                                    + " this descriptor may not work properly",
+                            e);
         }
     }
 
@@ -733,7 +734,8 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
 
     @Override
     @Deprecated
-    public void changeFrame(FrameChangeOperation operation, FrameChangeMode mode) {
+    public void changeFrame(FrameChangeOperation operation,
+            FrameChangeMode mode) {
         IFrameCoordinator.FrameChangeOperation fop = IFrameCoordinator.FrameChangeOperation
                 .valueOf(operation.name());
         IFrameCoordinator.FrameChangeMode fmode = IFrameCoordinator.FrameChangeMode
@@ -747,10 +749,9 @@ public abstract class AbstractDescriptor extends ResourceGroup implements
         envelope.setRange(0, extent.getMinX(), extent.getMaxX());
         envelope.setRange(1, extent.getMinY(), extent.getMaxY());
         envelope.setCoordinateReferenceSystem(crs);
-        return new GridGeometry2D(
-                new GeneralGridEnvelope(new int[] { 0, 0 }, new int[] {
-                        (int) extent.getWidth(), (int) extent.getHeight() },
-                        false), envelope);
+        return new GridGeometry2D(new GeneralGridEnvelope(new int[] { 0, 0 },
+                new int[] { (int) extent.getWidth(), (int) extent.getHeight() },
+                false), envelope);
     }
 
 }

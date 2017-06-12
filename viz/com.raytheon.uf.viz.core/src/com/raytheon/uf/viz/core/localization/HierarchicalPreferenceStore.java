@@ -31,6 +31,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArraySet;
 
 import javax.measure.converter.ConversionException;
 
@@ -77,11 +78,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                     all LocalizationLevels
  * Aug 18, 2015 3806       njensen     Use SaveableOutputStream to save
  * Dec 09, 2015 4834       njensen     Get latest ILocalizationFile on reload()
+ * Jun 12, 2017 6297       bsteffen    Make listeners thread safe.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
@@ -108,7 +109,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         }
 
         public synchronized XMLConfiguration accessConfiguration() {
-            if (loaded == false) {
+            if (!loaded) {
                 // Loaded flag is used for first access
                 loaded = true;
                 try {
@@ -133,16 +134,12 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             ILocalizationFile file = getILocalizationFile(level);
             if (isDirty()) {
                 try (SaveableOutputStream sos = file.openOutputStream()) {
-                    try {
-                        config.save(sos);
-                        sos.save();
-                        dirty = false;
-                    } catch (ConfigurationException | IOException e) {
-                        throw new LocalizationException(
-                                "Error saving config.xml into localization", e);
-                    }
-                } catch (IOException e) {
-                    // Ignore close exception
+                    config.save(sos);
+                    sos.save();
+                    dirty = false;
+                } catch (ConfigurationException | IOException e) {
+                    throw new LocalizationException(
+                            "Error saving config.xml into localization", e);
                 }
             }
         }
@@ -150,20 +147,13 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         public void reload() throws LocalizationException {
             ILocalizationFile file = getILocalizationFile(level);
             if (file.exists()) {
-                InputStream in = file.openInputStream();
-                try {
+                try (InputStream in = file.openInputStream()) {
                     XMLConfiguration newConfig = new XMLConfiguration();
                     newConfig.load(in);
                     this.config = newConfig;
-                } catch (ConfigurationException e) {
+                } catch (IOException | ConfigurationException e) {
                     throw new LocalizationException(
                             "Error loading localization file into config", e);
-                } finally {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        // Ignore close exception
-                    }
                 }
             }
         }
@@ -175,7 +165,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
          * @param level
          * @return
          */
-        private ILocalizationFile getILocalizationFile(LocalizationLevel level) {
+        private ILocalizationFile getILocalizationFile(
+                LocalizationLevel level) {
             IPathManager mgr = PathManagerFactory.getPathManager();
             LocalizationFile configFile = mgr.getLocalizationFile(
                     mgr.getContext(LocalizationType.CAVE_CONFIG, level),
@@ -190,11 +181,11 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
     private final LocalizationLevel defaultPersistLevel;
 
-    private final Map<LocalizationLevel, LocalizationConfiguration> configMap = new HashMap<LocalizationLevel, LocalizationConfiguration>();
+    private final Map<LocalizationLevel, LocalizationConfiguration> configMap = new HashMap<>();
 
     private MapConfiguration defaults;
 
-    private final Set<IPropertyChangeListener> propertyChangeListeners = new LinkedHashSet<IPropertyChangeListener>();
+    private final Set<IPropertyChangeListener> propertyChangeListeners = new CopyOnWriteArraySet<>();
 
     /**
      * We can't register the listener in the constructor since the IPathManager
@@ -203,7 +194,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      */
     private volatile boolean listenerRegistered = false;
 
-    public static String EMPTY_CONFIGURATION = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"no\"?>\n"
+    public static final String EMPTY_CONFIGURATION = "<?xml version=\"1.0\" encoding=\"ISO-8859-1\" standalone=\"no\"?>\n"
             + "<configuration>\n" + "</configuration>\n";
 
     /**
@@ -246,7 +237,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
     private synchronized MapConfiguration getDefaultConfig() {
         if (defaults == null) {
-            defaults = new MapConfiguration(new HashMap<String, Object>());
+            defaults = new MapConfiguration(new HashMap<>());
             // Populate defaults with base first, setDefault* method will
             // override what was in BASE
             LocalizationConfiguration baseConfig = new LocalizationConfiguration(
@@ -280,7 +271,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         LocalizationLevel[] levels = PathManagerFactory.getPathManager()
                 .getAvailableLevels();
-        List<LocalizationConfiguration> configs = new ArrayList<LocalizationConfiguration>(
+        List<LocalizationConfiguration> configs = new ArrayList<>(
                 levels.length);
         for (int i = levels.length - 1; i >= 0; i--) {
             LocalizationLevel level = levels[i];
@@ -337,7 +328,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         }
         if (config != null && config.loaded) {
             // Capture old properties
-            Map<String, Object> oldPropertyMapping = new HashMap<String, Object>();
+            Map<String, Object> oldPropertyMapping = new HashMap<>();
             for (String key : getKeys()) {
                 oldPropertyMapping.put(key, getProperty(key));
             }
@@ -355,8 +346,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
                 Object oldProperty = oldPropertyMapping.get(key);
                 if ((oldProperty != null && newProperty == null)
                         || (oldProperty == null && newProperty != null)
-                        || (oldProperty != null && oldProperty
-                                .equals(newProperty) == false)) {
+                        || (oldProperty != null
+                                && !oldProperty.equals(newProperty))) {
                     firePropertyChangeEvent(key, oldProperty, newProperty);
                 }
             }
@@ -394,13 +385,13 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         final PropertyChangeEvent pe = new PropertyChangeEvent(this, name,
                 oldValue, newValue);
         for (final IPropertyChangeListener listener : this.propertyChangeListeners) {
-            SafeRunnable.run(new SafeRunnable(JFaceResources
-                    .getString("PreferenceStore.changeError")) { //$NON-NLS-1$
-                        @Override
-                        public void run() {
-                            listener.propertyChange(pe);
-                        }
-                    });
+            SafeRunnable.run(new SafeRunnable(
+                    JFaceResources.getString("PreferenceStore.changeError")) {
+                @Override
+                public void run() {
+                    listener.propertyChange(pe);
+                }
+            });
 
         }
     }
@@ -677,7 +668,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return
      */
     public Object getProperty(LocalizationLevel level, String name) {
-        LocalizationConfiguration config = getConfigurationForLevel(level, name);
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
         if (config != null) {
             XMLConfiguration xmlConfig = config.accessConfiguration();
             if (xmlConfig.containsKey(name)) {
@@ -706,13 +698,13 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return
      */
     public boolean isDefault(LocalizationLevel level, String name) {
-        LocalizationConfiguration config = getConfigurationForLevel(level, name);
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
         if (config != null) {
             Object object = config.accessConfiguration().getProperty(name);
             Object defaultObject = getDefaultConfig().getProperty(name);
-            return (object == defaultObject)
-                    || (object != null && defaultObject != null && object
-                            .equals(defaultObject));
+            return (object == defaultObject) || (object != null
+                    && defaultObject != null && object.equals(defaultObject));
         }
         return true;
     }
@@ -734,7 +726,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
     @Override
     public void putValue(String name, String value) {
-        LocalizationConfiguration config = getConfigurationForLevel(defaultPersistLevel);
+        LocalizationConfiguration config = getConfigurationForLevel(
+                defaultPersistLevel);
         XMLConfiguration xmlConfig = config.accessConfiguration();
         xmlConfig.setProperty(name, value);
         config.markDirty();
@@ -792,8 +785,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             config.markDirty();
         }
         if (oldValue != value) {
-            firePropertyChangeEvent(name, new Boolean(oldValue), new Boolean(
-                    value));
+            firePropertyChangeEvent(name, new Boolean(oldValue),
+                    new Boolean(value));
         }
     }
 
@@ -819,8 +812,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             config.markDirty();
         }
         if (oldValue != value) {
-            firePropertyChangeEvent(name, new Double(oldValue), new Double(
-                    value));
+            firePropertyChangeEvent(name, new Double(oldValue),
+                    new Double(value));
         }
     }
 
@@ -846,7 +839,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             config.markDirty();
         }
         if (oldValue != value) {
-            firePropertyChangeEvent(name, new Float(oldValue), new Float(value));
+            firePropertyChangeEvent(name, new Float(oldValue),
+                    new Float(value));
         }
     }
 
@@ -872,8 +866,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
             config.markDirty();
         }
         if (oldValue != value) {
-            firePropertyChangeEvent(name, new Integer(oldValue), new Integer(
-                    value));
+            firePropertyChangeEvent(name, new Integer(oldValue),
+                    new Integer(value));
         }
     }
 
@@ -928,7 +922,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         if ((oldValue == null && value != null)
                 || (oldValue != null && value == null)
-                || (oldValue != null && oldValue.equals(value) == false)) {
+                || (oldValue != null && !oldValue.equals(value))) {
             firePropertyChangeEvent(name, oldValue, value);
         }
     }
@@ -952,13 +946,13 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
         if ((oldValue == null && value != null)
                 || (oldValue != null && value == null)
-                || Arrays.equals(oldValue, value) == false) {
+                || !Arrays.equals(oldValue, value)) {
             firePropertyChangeEvent(name, oldValue, value);
         }
     }
 
     public String[] getKeys() {
-        Set<String> keys = new LinkedHashSet<String>();
+        Set<String> keys = new LinkedHashSet<>();
         for (LocalizationConfiguration config : getSearchHierarchy()) {
             XMLConfiguration xmlConfig = config.accessConfiguration();
             Iterator<?> configKeys = xmlConfig.getKeys();
@@ -971,7 +965,7 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
     }
 
     public String[] getKeys(String prefix) {
-        Set<String> keys = new LinkedHashSet<String>();
+        Set<String> keys = new LinkedHashSet<>();
         for (LocalizationConfiguration config : getSearchHierarchy()) {
             XMLConfiguration xmlConfig = config.accessConfiguration();
             Iterator<?> configKeys = xmlConfig.getKeys(prefix);
@@ -1042,7 +1036,8 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      *            the key to clear overrides
      */
     public void clearUserOverrides(String key) {
-        LocalizationConfiguration config = getConfigurationForLevel(LocalizationLevel.USER);
+        LocalizationConfiguration config = getConfigurationForLevel(
+                LocalizationLevel.USER);
         XMLConfiguration xmlConfig = config.accessConfiguration();
         Iterator<?> keys = xmlConfig.getKeys(key);
         if (keys.hasNext()) {
