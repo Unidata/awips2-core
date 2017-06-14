@@ -127,7 +127,7 @@ public class CAVEApplication implements IStandaloneComponent {
                 .addLogListener(getEclipseLogListener());
 
         UnitRegistrar.registerUnits();
-        CAVEMode.performStartupDuties();
+        //CAVEMode.performStartupDuties();
 
         ITimer timer = TimeUtil.getTimer();
         timer.start();
