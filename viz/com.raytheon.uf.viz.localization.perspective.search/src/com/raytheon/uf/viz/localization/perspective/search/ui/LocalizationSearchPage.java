@@ -90,6 +90,8 @@ public class LocalizationSearchPage extends DialogPage implements ISearchPage {
         searchText = new Text(composite, SWT.BORDER);
         searchText.setLayoutData(
                 new GridData(GridData.FILL, GridData.BEGINNING, true, false));
+        searchText.setToolTipText(
+                "Only files containing the text you enter will be displayed in the results.");
         searchText.addModifyListener(e -> validate());
         caseSensitive = new Button(composite, SWT.CHECK);
         caseSensitive.setText("Case Sensitive");
