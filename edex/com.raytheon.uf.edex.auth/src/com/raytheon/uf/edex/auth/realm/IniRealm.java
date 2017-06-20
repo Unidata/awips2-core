@@ -467,6 +467,7 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             userChanges.put(username,
                     new HashSet<>(Arrays.asList(defaultRole)));
             updateSiteUsers(password, userChanges);
+            startReinitialization();
         }
         return super.doGetAuthenticationInfo(token);
     }
@@ -609,6 +610,11 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
 
         updateSiteRoles(rolesAndPermissions.getRoleChanges());
 
+        startReinitialization();
+        return getRolesAndPermissions();
+    }
+
+    private void startReinitialization() {
         reinitializing = true;
         try {
             EDEXUtil.getMessageProducer().sendAsyncThriftUri(
@@ -635,7 +641,6 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
                 break;
             }
         }
-        return getRolesAndPermissions();
     }
 
 }
