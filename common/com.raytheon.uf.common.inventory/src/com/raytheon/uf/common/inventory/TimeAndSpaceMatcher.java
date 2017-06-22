@@ -59,6 +59,7 @@ import com.raytheon.uf.common.time.DataTime;
  * May 08, 2012           bsteffen    Initial creation
  * Apr 11, 2014  2947     bsteffen    Switch spatial matching to use
  *                                    IGridGeometryProvider
+ * May 30, 2017  DR 18358 D. Friedman Use valid period in match results
  * 
  * </pre>
  * 
@@ -108,7 +109,7 @@ public class TimeAndSpaceMatcher {
      */
     public Map<TimeAndSpace, MatchResult> match(
             Collection<TimeAndSpace> times1, Collection<TimeAndSpace> times2) {
-        Map<TimeAndSpace, MatchResult> result = new HashMap<TimeAndSpace, MatchResult>();
+        Map<TimeAndSpace, MatchResult> result = new HashMap<>();
         for (TimeAndSpace t1 : times1) {
             for (TimeAndSpace t2 : times2) {
                 MatchResult res = createMatchResult(t1, t2);
@@ -156,8 +157,7 @@ public class TimeAndSpaceMatcher {
              * If the ignoreRanfe flag is set then it is still considered a
              * match even if the ranges are different.
              */
-            time = new DataTime(t1.getTime().getRefTime(), t1.getTime()
-                    .getFcstTime());
+            time = createMergedTime(t1.getTime(), t2.getTime());
             timeMatchType = TimeMatchType.IGNORE_RANGE;
         } else if (matchValid
                 && t1.getTime().getMatchValid() == t2.getTime().getMatchValid()) {
@@ -166,11 +166,9 @@ public class TimeAndSpaceMatcher {
              * refTime/forecastTimes as long as valid matches.
              */
             if (t1.getTime().getMatchRef() > t2.getTime().getMatchRef()) {
-                time = new DataTime(t1.getTime().getRefTime(), t1.getTime()
-                        .getFcstTime());
+                time = createMergedTime(t1.getTime(), t2.getTime());
             } else {
-                time = new DataTime(t2.getTime().getRefTime(), t2.getTime()
-                        .getFcstTime());
+                time = createMergedTime(t2.getTime(), t1.getTime());
             }
             timeMatchType = TimeMatchType.VALID_TIME;
         } else {
@@ -349,6 +347,27 @@ public class TimeAndSpaceMatcher {
                 matchResults.size());
         for (MatchResult mr : matchResults.values()) {
             result.add(mr.get1());
+        }
+        return result;
+    }
+
+    /**
+     * Create a new DataTime using the valid time from validTime. If validTime
+     * has a valid period, apply that to the result. Otherwise, if other has a
+     * valid period, apply that to the result.
+     *
+     * @param validTime
+     * @param other
+     * @return
+     */
+    private DataTime createMergedTime(DataTime validTime, DataTime other) {
+        DataTime result = new DataTime(validTime.getRefTime(), validTime.getFcstTime());
+        if (validTime.getUtilityFlags().contains(DataTime.FLAG.PERIOD_USED)) {
+            result.setValidPeriod(validTime.getValidPeriod());
+            result.getUtilityFlags().add(DataTime.FLAG.PERIOD_USED);
+        } else if (other.getUtilityFlags().contains(DataTime.FLAG.PERIOD_USED)) {
+            result.setValidPeriod(other.getValidPeriod());
+            result.getUtilityFlags().add(DataTime.FLAG.PERIOD_USED);
         }
         return result;
     }

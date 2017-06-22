@@ -66,7 +66,8 @@ import com.raytheon.uf.common.time.DataTime;
  *                                    simultaneously in the function adapter.
  * Nov 01, 2015  DR14947  porricel    Modified getDataInternal to
  *                                    use 0-30MB for *derived* boundary layer
- *                                    
+ * May 30, 2017  DR 18358 D. Friedman Handle mismatch when there are valid periods.
+ *
  * </pre>
  * 
  * @author rjpeter
@@ -352,8 +353,12 @@ public class DerivedLevelNode extends AbstractDerivedDataNode {
                 while (it.hasNext()) {
                     Entry<TimeAndSpace, DerivedParameterRequest> entry = it
                             .next();
-                    TimeAndSpace requestTime = matchTimes.get(entry.getKey())
-                            .get2();
+                    MatchResult matchResult = matchTimes.get(entry.getKey());
+                    if (matchResult == null) {
+                        it.remove();
+                        continue;
+                    }
+                    TimeAndSpace requestTime = matchResult.get2();
                     if (shiftMap != null) {
                         requestTime = shiftMap.get(requestTime);
                     }
