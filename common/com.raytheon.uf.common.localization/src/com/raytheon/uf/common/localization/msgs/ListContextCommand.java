@@ -33,13 +33,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Nov 2, 2010             mpduff     Initial creation
- * Oct 1, 2013  2361       njensen     Removed XML annotations
+ * Nov 02, 2010            mpduff      Initial creation
+ * Oct 01, 2013  2361      njensen     Removed XML annotations
+ * Jun 22, 2017  6339      njensen     Overrode toString()
  * 
  * </pre>
  * 
  * @author mpduff
- * @version 1.0
  */
 
 @DynamicSerialize
@@ -60,6 +60,12 @@ public class ListContextCommand extends AbstractUtilityCommand {
 
     public void setRequestLevel(LocalizationLevel requestLevel) {
         this.requestLevel = requestLevel;
+    }
+
+    @Override
+    public String toString() {
+        return "ListContextCommand [requestLevel=" + requestLevel + ", context="
+                + context + "]";
     }
 
 }

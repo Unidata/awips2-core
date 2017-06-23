@@ -65,6 +65,8 @@ import com.raytheon.uf.edex.core.EdexException;
  * Feb 05, 2016  4754     bsteffen  Use PathManager for checksums
  * Aug 15, 2016  5834     njensen   Always return entry in addEntry, even if
  *                                   file is protected
+ * June 22, 2017 6339     njensen   Refactored validation of files to reduce
+ *                                   calls to underlying filesystem
  * 
  * </pre>
  * 
@@ -92,6 +94,8 @@ public class UtilityManager {
      *            the utility context
      * @param subPath
      *            file or directory path below context
+     * @param fileExtension
+     *            the file extension to filter on, or null if no filter
      * @param recursive
      *            true if recursive file listing is desired
      * @param filesOnly
@@ -101,7 +105,7 @@ public class UtilityManager {
      */
     public static ListUtilityResponse listFiles(String localizedSite,
             String baseDir, LocalizationContext context, String subPath,
-            boolean recursive, boolean filesOnly) {
+            String fileExtension, boolean recursive, boolean filesOnly) {
         List<ListResponseEntry> entries = new ArrayList<>();
         String msg = null;
         try {
@@ -110,7 +114,7 @@ public class UtilityManager {
             File file = new File(path);
 
             recursiveFileBuild(localizedSite, context, file, subPath,
-                    recursive, filesOnly, entries, 0);
+                    fileExtension, recursive, filesOnly, entries, 0);
         } catch (EdexException e) {
             msg = e.getMessage();
         }
@@ -154,10 +158,10 @@ public class UtilityManager {
                     msg = "File could not be deleted: ";
                     if (delFile.isDirectory() && delFile.list().length > 0) {
                         msg += "Non-empty directory";
-                    } else if (delFile.canWrite() == false) {
+                    } else if (!delFile.canWrite()) {
                         msg += "Do not have write permission to file";
                     } else if (delFile.getParentFile() != null
-                            && delFile.getParentFile().canWrite() == false) {
+                            && !delFile.getParentFile().canWrite()) {
                         msg += "Do not have write permission to file's parent directory";
                     } else {
                         msg += "Reason unknown";
@@ -266,7 +270,7 @@ public class UtilityManager {
 
     private static void recursiveFileBuild(String localizedSite,
             LocalizationContext context, File dir, String subPath,
-            boolean recursive, boolean filesOnly,
+            String fileExtension, boolean recursive, boolean filesOnly,
             List<ListResponseEntry> entries, int depth) throws EdexException {
 
         String path = dir.getPath();
@@ -278,17 +282,19 @@ public class UtilityManager {
         String prependToPath = subPath + "/";
 
         File file = new File(path);
-        if (depth == 0 && file.exists() == false) {
-            // File doesn't exist, make sure we flush any NFS caches by listing
-            // the parent files and recreating the file. We only need to perform
-            // this hack if depth is 0 since otherwise we were called based on
-            // results of a listFiles() call
+        if (depth == 0 && !file.exists()) {
+            /*
+             * File doesn't exist, make sure we flush any NFS caches by listing
+             * the parent files and recreating the file. We only need to perform
+             * this hack if depth is 0 since otherwise we were called based on
+             * results of a listFiles() call
+             */
             File parent = file.getParentFile();
             parent.listFiles();
             file = new File(path);
         }
 
-        if (file.exists() && (!file.canRead() || file.isHidden())) {
+        if (!isValidEntry(file, fileExtension)) {
             return;
         }
 
@@ -298,7 +304,7 @@ public class UtilityManager {
 
         if (file.isDirectory()) {
             for (File f : file.listFiles()) {
-                if (!f.canRead() || f.isHidden()) {
+                if (!isValidEntry(f, fileExtension)) {
                     continue;
                 }
                 if (f.isFile()) {
@@ -307,8 +313,8 @@ public class UtilityManager {
                 } else if (f.isDirectory()) {
                     if (recursive) {
                         recursiveFileBuild(localizedSite, context, dir,
-                                prependToPath + f.getName(), recursive,
-                                filesOnly, entries, depth + 1);
+                                prependToPath + f.getName(), fileExtension,
+                                recursive, filesOnly, entries, depth + 1);
                     } else if (!filesOnly) {
                         addEntry(localizedSite, context,
                                 prependToPath + f.getName(), f, entries);
@@ -318,12 +324,53 @@ public class UtilityManager {
         }
     }
 
+    /**
+     * Verifies a File is potentially a valid entry, i.e. if the filename
+     * matches the fileExtension (if provided), and if the file exists then is
+     * it readable and not hidden. Note a non-existent file may be considered a
+     * valid entry if the filename matches the fileExtension (if provided). This
+     * method is optimized to do the least number of operations against the
+     * underlying filesystem as possible.
+     * 
+     * @param file
+     *            the file to verify
+     * @param fileExtension
+     *            a fileExtension to filter on, or null
+     * @return
+     */
+    private static boolean isValidEntry(File file, String fileExtension) {
+        /*
+         * file.getName() does not go to the underlying filesystem, so check
+         * filenames first
+         */
+        String filename = file.getName();
+        if (filename.endsWith(Checksum.CHECKSUM_FILE_EXTENSION)) {
+            return false;
+        }
+
+        if (fileExtension != null && !filename.endsWith(fileExtension)
+                && !file.isDirectory()) {
+            return false;
+        }
+
+        /*
+         * According to File.canRead() javadoc, canRead() should return false if
+         * the file doesn't exist. However, that is not guaranteed and does not
+         * seem to work right so we will check existence.
+         */
+        if (file.exists() && (!file.canRead() || file.isHidden())) {
+            return false;
+        }
+
+        return true;
+    }
+
     public static ListUtilityResponse listContexts(String path,
             LocalizationLevel level) {
         List<ListResponseEntry> entries = new ArrayList<>();
         for (LocalizationType type : LocalizationType.values()) {
-            if (type.name().equals("UNKNOWN")
-                    || type.name().equals("EDEX_STATIC")) {
+            if ("UNKNOWN".equals(type.name())
+                    || "EDEX_STATIC".equals(type.name())) {
                 continue;
             }
             String fullPath = path + File.separator + type.name().toLowerCase()

@@ -33,6 +33,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
  * Jul 30, 2007            njensen     Initial creation
  * Aug 22, 2008  #1502     bclement    Added JAXB/Serializable annotations
  * Oct 01, 2013   2361     njensen     Removed XML annotations
+ * Jun 22, 2017   6339     njensen     Overrode toString()
  * 
  * </pre>
  * 
@@ -49,6 +50,12 @@ public class DeleteUtilityCommand extends AbstractPrivilegedUtilityCommand {
     public DeleteUtilityCommand(LocalizationContext context, String filename) {
         super(context);
         this.filename = filename;
+    }
+
+    @Override
+    public String toString() {
+        return "DeleteUtilityCommand [filename=" + filename + ", myContextName="
+                + myContextName + ", context=" + context + "]";
     }
 
 }

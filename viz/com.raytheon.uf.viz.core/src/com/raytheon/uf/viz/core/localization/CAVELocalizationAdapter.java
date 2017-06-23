@@ -20,9 +20,7 @@
 package com.raytheon.uf.viz.core.localization;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -44,10 +42,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.LocalizationInternalFile;
-import com.raytheon.uf.common.localization.LockingFileInputStream;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.NoSuchLocalizationFileException;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
@@ -79,6 +75,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Dec 02, 2015 4834        njensen     Updated to use new LocalizationManager.upload()
  * Jan 11, 2016 5242        kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 15, 2016 5695        njensen     delete() deletes local file first
+ * Jun 22, 2017 6339        njensen     Cleanup, updated for new method signatures with fileExtension
  * 
  * </pre>
  * 
@@ -89,9 +86,9 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     protected static final String BUNDLE_LOCALIZATION_DIR = "localization";
 
-    private static final Map<LocalizationType, LocalizationContext[]> contexts = new HashMap<LocalizationType, LocalizationContext[]>();
+    private static final Map<LocalizationType, LocalizationContext[]> contexts = new HashMap<>();
 
-    private static final Map<String, File> caveStaticBaseFiles = new HashMap<String, File>();
+    private static final Map<String, File> caveStaticBaseFiles = new HashMap<>();
 
     protected static final LocalizationContext CAVE_STATIC_BASE = new LocalizationContext(
             LocalizationType.CAVE_STATIC, LocalizationLevel.BASE);
@@ -145,37 +142,38 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             if (context.getContextName() != null) {
                 return BundleScanner.searchInBundle(context.getContextName(),
                         BUNDLE_LOCALIZATION_DIR, fileName);
-            } else {
-                File file = new File(FileUtil.join(
-                        LocalizationManager.getBaseDir(), typeDir, fileName));
-                if (file.exists()) {
-                    return file;
-                } else {
-                    File bundleFile = file; // Default to base location
-                    boolean containsKey = false;
-                    synchronized (caveStaticBaseFiles) {
-                        containsKey = caveStaticBaseFiles.containsKey(fileName);
-                        if (containsKey) {
-                            bundleFile = caveStaticBaseFiles.get(fileName);
-                        }
-                    }
-                    if (!containsKey) {
-                        for (String bundle : BundleScanner
-                                .getListOfBundles(BUNDLE_LOCALIZATION_DIR)) {
-                            file = BundleScanner.searchInBundle(bundle,
-                                    BUNDLE_LOCALIZATION_DIR, fileName);
-                            if (file != null && file.exists()) {
-                                bundleFile = file;
-                                break;
-                            }
-                        }
-                        synchronized (caveStaticBaseFiles) {
-                            caveStaticBaseFiles.put(fileName, bundleFile);
-                        }
-                    }
-                    return bundleFile;
+            }
+            File file = new File(FileUtil.join(LocalizationManager.getBaseDir(),
+                    typeDir, fileName));
+            if (file.exists()) {
+                return file;
+            }
+
+            // Default to base location
+            File bundleFile = file;
+            boolean containsKey = false;
+            synchronized (caveStaticBaseFiles) {
+                containsKey = caveStaticBaseFiles.containsKey(fileName);
+                if (containsKey) {
+                    bundleFile = caveStaticBaseFiles.get(fileName);
                 }
             }
+            if (!containsKey) {
+                for (String bundle : BundleScanner
+                        .getListOfBundles(BUNDLE_LOCALIZATION_DIR)) {
+                    file = BundleScanner.searchInBundle(bundle,
+                            BUNDLE_LOCALIZATION_DIR, fileName);
+                    if (file != null && file.exists()) {
+                        bundleFile = file;
+                        break;
+                    }
+                }
+                synchronized (caveStaticBaseFiles) {
+                    caveStaticBaseFiles.put(fileName, bundleFile);
+                }
+            }
+            return bundleFile;
+
         } else if (level != LocalizationLevel.UNKNOWN) {
             String baseDir = FileUtil.join(LocalizationManager.getUserDir(),
                     typeDir, levelDir);
@@ -195,9 +193,9 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
     public ListResponse[] getLocalizationMetadata(
             LocalizationContext[] context, String fileName)
             throws LocalizationException {
-        List<LocalizationContext> serverContexts = new ArrayList<LocalizationContext>(
+        List<LocalizationContext> serverContexts = new ArrayList<>(
                 context.length);
-        List<LocalizationContext> localContexts = new ArrayList<LocalizationContext>(
+        List<LocalizationContext> localContexts = new ArrayList<>(
                 context.length);
         for (LocalizationContext ctx : context) {
             if (isCaveConfigBase(ctx)) {
@@ -209,12 +207,11 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             }
         }
 
-        List<ListResponse> responses = new ArrayList<ListResponse>(
-                context.length);
+        List<ListResponse> responses = new ArrayList<>(context.length);
 
-        if (serverContexts.isEmpty() == false) {
+        if (!serverContexts.isEmpty()) {
             List<ListResponseEntry[]> entriesList = LocalizationManager
-                    .getInstance().getListResponseEntry(context, fileName,
+                    .getInstance().getListResponseEntry(context, fileName, null,
                             false, false);
 
             for (int i = 0; i < context.length; i++) {
@@ -263,25 +260,13 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean save(LocalizationFile file) throws LocalizationException {
         File localFile = file.getFile(false);
-        if (localFile.isDirectory() == false && localFile.exists()) {
-            InputStream in = null;
-            try {
-                in = new LockingFileInputStream(localFile);
-                LocalizationManager.getInstance().upload(file, localFile);
-                return true;
-            } catch (FileNotFoundException e) {
-                throw new NoSuchLocalizationFileException(
-                        "Error saving, file does not exist: " + file);
-            } finally {
-                // Make sure to close input stream
-                if (in != null) {
-                    try {
-                        in.close();
-                    } catch (IOException e) {
-                        // Ignore close exception
-                    }
-                }
-            }
+        if (!localFile.isDirectory() && localFile.exists()) {
+            /*
+             * we don't need a lock here, it's already been locked by
+             * LocalizationFile.save()
+             */
+            LocalizationManager.getInstance().upload(file, localFile);
+            return true;
         }
         return false;
     }
@@ -294,10 +279,10 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
             if (ctx != null) {
                 // Check for new available levels
-                Set<LocalizationLevel> levelSet = new HashSet<LocalizationLevel>(
+                Set<LocalizationLevel> levelSet = new HashSet<>(
                         Arrays.asList(levels));
                 for (LocalizationContext context : ctx) {
-                    if (levelSet.contains(context.getLocalizationLevel()) == false) {
+                    if (!levelSet.contains(context.getLocalizationLevel())) {
                         // New level detected, regenerate search hierarchy
                         ctx = null;
                         break;
@@ -334,12 +319,13 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public ListResponse[] listDirectory(LocalizationContext[] contexts,
-            String path, boolean recursive, boolean filesOnly)
+            String path, String fileExtension, boolean recursive,
+            boolean filesOnly)
             throws LocalizationException {
-        Set<String> addedFiles = new HashSet<String>();
-        Set<LocalizationContext> serverContexts = new LinkedHashSet<LocalizationContext>(
+        Set<String> addedFiles = new HashSet<>();
+        Set<LocalizationContext> serverContexts = new LinkedHashSet<>(
                 contexts.length);
-        Set<LocalizationContext> localContexts = new LinkedHashSet<LocalizationContext>(
+        Set<LocalizationContext> localContexts = new LinkedHashSet<>(
                 contexts.length);
         for (LocalizationContext context : contexts) {
             if (isCaveStaticBase(context)) {
@@ -360,15 +346,15 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             }
         }
 
-        List<ListResponse> responses = new ArrayList<ListResponse>(
-                contexts.length);
+        List<ListResponse> responses = new ArrayList<>(contexts.length);
 
         LocalizationManager manager = LocalizationManager.getInstance();
-        if (serverContexts.isEmpty() == false) {
+        if (!serverContexts.isEmpty()) {
             List<ListResponseEntry[]> entryList = manager.getListResponseEntry(
                     serverContexts
                             .toArray(new LocalizationContext[serverContexts
-                                    .size()]), path, recursive, filesOnly);
+                                    .size()]),
+                    path, fileExtension, recursive, filesOnly);
             for (ListResponseEntry[] lre : entryList) {
                 for (ListResponseEntry entry : lre) {
                     String id = entry.getContext().toString() + ":"
@@ -380,21 +366,22 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
 
         String currentSite = manager.getCurrentSite();
-        Map<LocalizationContext, File> map = new HashMap<LocalizationContext, File>();
+        Map<LocalizationContext, File> map = new HashMap<>();
         // Union results from server with local filesystem
-        List<ProtectedFileCommand> commands = new ArrayList<ProtectedFileCommand>();
+        List<ProtectedFileCommand> commands = new ArrayList<>();
         for (LocalizationContext context : localContexts) {
             // No need to check CAVE_CONFIG - BASE as they are not "protectable"
             File file = getPath(context, "");
-            if (file == null || file.exists() == false) {
+            if (file == null || !file.exists()) {
                 continue;
             }
             map.put(context, file);
-            List<String> paths = buildPaths(path, file, recursive, filesOnly);
+            List<String> paths = buildPaths(path, file, fileExtension,
+                    recursive, filesOnly);
             for (String p : paths) {
                 if (context.getLocalizationType() == LocalizationType.CAVE_STATIC) {
                     String id = context.toString() + ":" + p;
-                    if (addedFiles.contains(id) == false) {
+                    if (!addedFiles.contains(id)) {
                         ProtectedFileCommand cmd = new ProtectedFileCommand();
                         cmd.setContext(context);
                         cmd.setSubPath(p);
@@ -418,7 +405,7 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             }
         }
 
-        if (commands.isEmpty() == false) {
+        if (!commands.isEmpty()) {
             UtilityRequestMessage msg = new UtilityRequestMessage(
                     commands.toArray(new AbstractUtilityCommand[commands.size()]));
 
@@ -517,8 +504,8 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
      * @return
      */
     protected List<String> buildPaths(String prefix, File startingFile,
-            boolean recursive, boolean filesOnly) {
-        List<String> results = new ArrayList<String>();
+            String fileExtension, boolean recursive, boolean filesOnly) {
+        List<String> results = new ArrayList<>();
 
         String path = startingFile.getPath();
         if ((prefix == null) || prefix.isEmpty()) {
@@ -529,6 +516,12 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         String prependToPath = prefix + "/";
 
         File file = new File(path);
+
+        String filename = file.getName();
+        if (fileExtension != null && !filename.endsWith(fileExtension)
+                && !file.isDirectory()) {
+            return results;
+        }
 
         if (!file.exists()) {
             return results;
@@ -543,8 +536,11 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
         }
 
         if (file.isDirectory()) {
-            try { // Win32: listFiles may return null for an empty directory,
-                  // Win32: Make all paths use '/'
+            try {
+                /*
+                 * Win32: listFiles may return null for an empty directory, Make
+                 * all paths use '/'
+                 */
                 for (File f : file.listFiles()) {
                     if (!f.canRead() || f.isHidden()) {
                         continue;
@@ -557,7 +553,8 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
                             results.addAll(buildPaths(
                                     prependToPath
                                             + FileUtil.edexPath(f.getName()),
-                                    startingFile, recursive, filesOnly));
+                                    startingFile, fileExtension, recursive,
+                                    filesOnly));
                         } else if (!filesOnly) {
                             results.add(prependToPath
                                     + FileUtil.edexPath(f.getName()));
@@ -565,7 +562,8 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
                     }
                 }
             } catch (Exception e) {
-                System.err.println(e.toString() + " listing " + file.getPath());
+                logger.error("Error building path, prefix=" + prefix + ", file="
+                        + file.getPath(), e);
             }
         }
 
@@ -577,7 +575,7 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
             throws LocalizationException {
         List<ListResponseEntry[]> entriesList = LocalizationManager
                 .getInstance().getContextList(level);
-        Set<String> fileList = new HashSet<String>();
+        Set<String> fileList = new HashSet<>();
         for (ListResponseEntry[] entryArr : entriesList) {
             for (ListResponseEntry entry : entryArr) {
                 fileList.add(entry.getContext().getContextName());
@@ -590,8 +588,7 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         LocalizationLevel[] levels = LocalizationLevel.values();
-        List<LocalizationLevel> available = new ArrayList<LocalizationLevel>(
-                levels.length);
+        List<LocalizationLevel> available = new ArrayList<>(levels.length);
         for (LocalizationLevel level : levels) {
             String contextName = LocalizationManager.getContextName(level);
             if (contextName != null || level == LocalizationLevel.BASE) {
@@ -625,6 +622,6 @@ public class CAVELocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public Map<LocalizationFileKey, LocalizationFile> createCache() {
-        return new ConcurrentHashMap<LocalizationFileKey, LocalizationFile>();
+        return new ConcurrentHashMap<>();
     }
 }

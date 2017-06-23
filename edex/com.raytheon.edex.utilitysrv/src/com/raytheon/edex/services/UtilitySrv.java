@@ -48,11 +48,12 @@ import com.raytheon.uf.edex.core.EdexException;
  * Jul 30, 2007            njensen     Added delete case
  * Aug 22, 2008 1422       chammack    Pulled out serialization
  * Nov 14, 2008            njensen     Camel Refactor
- * Jul 10, 2014   2914     garmendariz Remove EnvProperties
+ * Jul 10, 2014 2914       garmendariz Remove EnvProperties
+ * Jun 22, 2017 6339       njensen     UtilityManager.listFiles() now takes a fileExtension
+ * 
  * </pre>
  * 
- * @author njensen
- * @version 1.0
+ * @author chammack
  */
 
 public class UtilitySrv implements IRequestHandler<UtilityRequestMessage> {
@@ -63,7 +64,7 @@ public class UtilitySrv implements IRequestHandler<UtilityRequestMessage> {
     public UtilityResponseMessage handleRequest(UtilityRequestMessage msg)
             throws Exception {
         // Service each command
-        List<AbstractUtilityResponse> responses = new ArrayList<AbstractUtilityResponse>();
+        List<AbstractUtilityResponse> responses = new ArrayList<>();
         AbstractUtilityCommand[] cmds = msg.getCommands();
         for (AbstractUtilityCommand cmd : cmds) {
             LocalizationContext context = cmd.getContext();
@@ -71,15 +72,15 @@ public class UtilitySrv implements IRequestHandler<UtilityRequestMessage> {
                 ListUtilityCommand castCmd = ((ListUtilityCommand) cmd);
                 responses.add(UtilityManager.listFiles(
                         castCmd.getLocalizedSite(), UTILITY_DIR, context,
-                        castCmd.getSubDirectory(), castCmd.isRecursive(),
-                        castCmd.isFilesOnly()));
+                        castCmd.getSubDirectory(), castCmd.getFileExtension(),
+                        castCmd.isRecursive(), castCmd.isFilesOnly()));
             } else if (cmd instanceof ProtectedFileCommand) {
                 ProtectedFileCommand castCmd = (ProtectedFileCommand) cmd;
                 ProtectedFileResponse response = new ProtectedFileResponse();
                 LocalizationLevel protectedLevel = ProtectedFiles
-                        .getProtectedLevel(castCmd.getLocalizedSite(), castCmd
-                                .getContext().getLocalizationType(), castCmd
-                                .getSubPath());
+                        .getProtectedLevel(castCmd.getLocalizedSite(),
+                                castCmd.getContext().getLocalizationType(),
+                                castCmd.getSubPath());
                 response.setProtectedLevel(protectedLevel);
                 response.setPathName(castCmd.getSubPath());
                 response.setContext(castCmd.getContext());

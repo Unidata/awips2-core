@@ -39,13 +39,14 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
  * May 15, 2008 #878        chammack    Initial creation
  * Jul 24, 2014 3378        bclement    removed unneeded abstract modifiers
  *                                      added createCache()
- * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile                                     
+ * Nov 12, 2015 4834        njensen     Removed references to ModifiableLocalizationFile
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
+ * Jun 22, 2017 6339        njensen     Updated listDirectory() to take a fileExtension
+ *                                      Overrode ListResponse.toString()
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public interface ILocalizationAdapter {
 
@@ -105,6 +106,8 @@ public interface ILocalizationAdapter {
      *            a set of contexts to search
      * @param path
      *            a path
+     * @param fileExtension
+     *            the extension to filter files on, or null if no filter
      * @param recursive
      *            whether the search should be recursive
      * @param filesOnly
@@ -113,8 +116,8 @@ public interface ILocalizationAdapter {
      * @throws LocalizationException
      */
     public ListResponse[] listDirectory(LocalizationContext[] context,
-            String path, boolean recursive, boolean filesOnly)
-            throws LocalizationException;
+            String path, String fileExtension, boolean recursive,
+            boolean filesOnly) throws LocalizationException;
 
     /**
      * Return the localization contexts that should be searched given a
@@ -208,5 +211,15 @@ public interface ILocalizationAdapter {
 
         /** defines if the file exists on the server */
         public boolean existsOnServer;
+
+        @Override
+        public String toString() {
+            return "ListResponse [context=" + context + ", fileName=" + fileName
+                    + ", checkSum=" + checkSum + ", date=" + date
+                    + ", isDirectory=" + isDirectory + ", protectedLevel="
+                    + protectedLevel + ", existsOnServer=" + existsOnServer
+                    + "]";
+        }
+
     }
 }

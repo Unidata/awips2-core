@@ -20,6 +20,7 @@
 package com.raytheon.edex.utility;
 
 import java.io.File;
+import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -90,6 +91,8 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * Jan 21, 2016 4834        njensen     Fixed checksum and timestamp notification on save()
  * Apr 26, 2017 6258        tgurney     Set file/dir permissions on save
+ * Jun 22, 2017 6339        njensen     Updated listDirectory() method signature
+ *                                      Use FilenameFilter since we now have an extension
  *
  * </pre>
  *
@@ -277,17 +280,28 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public ListResponse[] listDirectory(LocalizationContext[] context,
-            String path, boolean recursive, boolean filesOnly)
-            throws LocalizationException {
+            String path, String fileExtension, boolean recursive,
+            boolean filesOnly) throws LocalizationException {
 
         // use the Set datatype to ensure no duplicate entries, use linked to
         // ensure order is deterministic when scanning multiple contexts
         Set<ListResponse> contents = new LinkedHashSet<>();
 
-        for (LocalizationContext ctx : context) {
+        FilenameFilter filter = null;
+        if (fileExtension != null) {
+            filter = new FilenameFilter() {
 
+                @Override
+                public boolean accept(File dir, String name) {
+                    return name.endsWith(fileExtension);
+                }
+
+            };
+        }
+
+        for (LocalizationContext ctx : context) {
             List<File> fileList = com.raytheon.uf.common.util.FileUtil
-                    .listFiles(getPath(ctx, path), null, recursive);
+                    .listFiles(getPath(ctx, path), filter, recursive);
 
             for (File file : fileList) {
 

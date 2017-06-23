@@ -74,6 +74,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jan 28, 2016 4834       njensen     Pass along FileChangeType to old style observers
  * Jun 21, 2016 5695       njensen     Clear parent directories from cache on file add
  * Aug 15, 2016 5834       njensen     Reuse protected file level in fireListeners()
+ * Jun 22, 2017 6339       njensen     listFiles() now has an eager filter
  * 
  * </pre>
  * 
@@ -97,9 +98,9 @@ public class PathManager implements IPathManager {
      * Cache of LocalizationFile instances that hold metadata (checksum,
      * timestamp, etc) about the files.
      */
-    final Map<LocalizationFileKey, LocalizationFile> fileCache;
+    protected final Map<LocalizationFileKey, LocalizationFile> fileCache;
 
-    final ILocalizationAdapter adapter;
+    protected final ILocalizationAdapter adapter;
 
     protected final ConcurrentMap<String, Collection<ILocalizationPathObserver>> listenerMap;
 
@@ -266,7 +267,7 @@ public class PathManager implements IPathManager {
             LocalizationFile cached = fileCache.get(new LocalizationFileKey(
                     name, ctx));
             if (cached != null) {
-                if (cached.isNull() == false) {
+                if (!cached.isNull()) {
                     availableFiles.put(ctx, cached);
                 }
             } else {
@@ -274,7 +275,7 @@ public class PathManager implements IPathManager {
             }
         }
 
-        if (ctxToCheck.size() > 0) {
+        if (!ctxToCheck.isEmpty()) {
             ListResponse[] entry = null;
             try {
                 entry = this.adapter.getLocalizationMetadata(ctxToCheck
@@ -282,14 +283,16 @@ public class PathManager implements IPathManager {
                         name);
             } catch (LocalizationException e) {
                 // Error on server, no files will be returned
-                e.printStackTrace();
+                statusHandler
+                        .error("Error retrieving localization file metadata for "
+                                + name, e);
             }
 
             if (entry != null) {
                 synchronized (fileCache) {
                     for (ListResponse lr : entry) {
                         LocalizationFile file = createFromResponse(lr);
-                        if (file.isNull() == false) {
+                        if (!file.isNull()) {
                             availableFiles.put(file.getContext(), file);
                         }
                     }
@@ -357,8 +360,12 @@ public class PathManager implements IPathManager {
             String name, String[] filter, boolean recursive, boolean filesOnly) {
         try {
             List<LocalizationFile> files = new ArrayList<>();
+            String eagerFilter = null;
+            if (filter != null && filter.length == 1) {
+                eagerFilter = filter[0];
+            }
             ListResponse[] entries = this.adapter.listDirectory(contexts, name,
-                    recursive, filesOnly);
+                    eagerFilter, recursive, filesOnly);
 
             synchronized (fileCache) {
                 for (ListResponse entry : entries) {
@@ -469,7 +476,7 @@ public class PathManager implements IPathManager {
         for (LocalizationFile file : files) {
             String id = file.getPath();
             id = id.replace("\\", "/"); // Win32
-            if (filterMap.containsKey(id) == false) {
+            if (!filterMap.containsKey(id)) {
                 filterFiles.add(file);
                 filterMap.put(id, file);
             }

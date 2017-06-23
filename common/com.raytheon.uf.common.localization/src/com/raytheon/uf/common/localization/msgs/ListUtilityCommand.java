@@ -35,24 +35,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 19, 2007            chammack     Initial Creation.
+ * Apr 19, 2007            chammack    Initial Creation.
  * Aug 22, 2008  #1502     bclement    Added JAXB/Serializable annotations
  * Oct 01, 2013   2361     njensen     Removed XML annotations
+ * Jun 22, 2017   6339     njensen     Added fileExtension, overrode toString()
+ * 
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 @DynamicSerialize
 public class ListUtilityCommand extends AbstractUtilityCommand {
 
     @DynamicSerializeElement
-    String subDirectory;
+    private String subDirectory;
 
     @DynamicSerializeElement
-    boolean recursive;
+    private boolean recursive;
 
     @DynamicSerializeElement
     private boolean filesOnly;
@@ -60,13 +61,17 @@ public class ListUtilityCommand extends AbstractUtilityCommand {
     @DynamicSerializeElement
     private String localizedSite;
 
+    @DynamicSerializeElement
+    private String fileExtension;
+
     /**
      * Constructor
      * 
      * @param context
      */
     public ListUtilityCommand(LocalizationContext context, String subDirectory,
-            boolean recursive, boolean filesOnly, String localizedSite) {
+            String fileExtension, boolean recursive, boolean filesOnly,
+            String localizedSite) {
         super(context);
 
         // Win32
@@ -75,6 +80,7 @@ public class ListUtilityCommand extends AbstractUtilityCommand {
         this.recursive = recursive;
         this.filesOnly = filesOnly;
         this.localizedSite = localizedSite;
+        this.fileExtension = fileExtension;
     }
 
     /**
@@ -122,6 +128,22 @@ public class ListUtilityCommand extends AbstractUtilityCommand {
      */
     public void setFilesOnly(boolean filesOnly) {
         this.filesOnly = filesOnly;
+    }
+
+    public String getFileExtension() {
+        return fileExtension;
+    }
+
+    public void setFileExtension(String fileExtension) {
+        this.fileExtension = fileExtension;
+    }
+
+    @Override
+    public String toString() {
+        return "ListUtilityCommand [subDirectory=" + subDirectory
+                + ", recursive=" + recursive + ", filesOnly=" + filesOnly
+                + ", localizedSite=" + localizedSite + ", fileExtension="
+                + fileExtension + "]";
     }
 
 }

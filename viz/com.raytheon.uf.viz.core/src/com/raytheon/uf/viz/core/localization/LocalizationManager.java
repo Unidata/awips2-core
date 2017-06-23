@@ -108,6 +108,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
+ * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
  *
  * </pre>
  *
@@ -536,11 +537,13 @@ public class LocalizationManager implements IPropertyChangeListener {
     }
 
     protected List<ListResponseEntry[]> getListResponseEntry(
-            LocalizationContext[] contexts, String fileName, boolean recursive,
+            LocalizationContext[] contexts, String fileName,
+            String fileExtension, boolean recursive,
             boolean filesOnly) throws LocalizationException {
         ListUtilityCommand[] cmds = new ListUtilityCommand[contexts.length];
         for (int i = 0; i < contexts.length; i++) {
-            cmds[i] = new ListUtilityCommand(contexts[i], fileName, recursive,
+            cmds[i] = new ListUtilityCommand(contexts[i], fileName,
+                    fileExtension, recursive,
                     filesOnly, getCurrentSite());
         }
 
@@ -641,7 +644,8 @@ public class LocalizationManager implements IPropertyChangeListener {
     private void retrieveDir(LocalizationContext context, String fileName)
             throws LocalizationException {
         List<ListResponseEntry[]> entriesList = getListResponseEntry(
-                new LocalizationContext[] { context }, fileName, true, false);
+                new LocalizationContext[] { context }, fileName, null, true,
+                false);
 
         List<File> toCheck = new ArrayList<>();
         Set<File> available = new TreeSet<>();
@@ -815,19 +819,20 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         if (!file.exists()) {
             return true;
-        } else {
-            try {
-                // Check the checksum (integrity check)
-                String localChecksum = Checksum.getMD5Checksum(file);
-                return !localChecksum.equals(remoteChecksum);
-            } catch (Throwable t) {
-                statusHandler.handle(Priority.DEBUG,
-                        "Exception computing MD5 checksum", t);
-
-                // something went wrong, just re-download the file
-                return true;
-            }
         }
+
+        try {
+            // Check the checksum (integrity check)
+            String localChecksum = Checksum.getMD5Checksum(file);
+            return !localChecksum.equals(remoteChecksum);
+        } catch (Throwable t) {
+            statusHandler.handle(Priority.DEBUG,
+                    "Exception computing MD5 checksum", t);
+
+            // something went wrong, just re-download the file
+            return true;
+        }
+
     }
 
     /**
@@ -908,12 +913,12 @@ public class LocalizationManager implements IPropertyChangeListener {
                 }
                 // Yay, successful execution!
                 return dur.getTimeStamp();
-            } else {
-                throw new LocalizationException(
-                        "Unexpected return type from delete: Expected "
-                                + DeleteUtilityResponse.class + " received "
-                                + (rsp != null ? rsp.getClass() : null));
             }
+
+            throw new LocalizationException(
+                    "Unexpected return type from delete: Expected "
+                            + DeleteUtilityResponse.class + " received "
+                            + (rsp != null ? rsp.getClass() : null));
         } catch (VizException e) {
             throw new LocalizationException("Error processing delete command: "
                     + e.getLocalizedMessage(), e);

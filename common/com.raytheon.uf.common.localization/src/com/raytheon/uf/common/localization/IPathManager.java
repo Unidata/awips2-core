@@ -55,11 +55,11 @@ import com.raytheon.uf.common.serialization.SerializationException;
  *                                     LocalizationContexts.
  * Aug 24, 2015 4393       njensen     Added getObserver()
  * Nov 16, 2015 4834       njensen     Removed getObserver(), added add/removeFileChangeObserver()
+ * Jun 23, 2017 6339       njensen     Added TODOs to listFiles(), listStaticFiles()
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 public interface IPathManager {
 
@@ -197,6 +197,11 @@ public interface IPathManager {
      * Note: If the same file exists in multiple localization levels, all
      * versions of the file will be returned in the array.
      * 
+     * TODO: We should only take a single extension filter instead of an array
+     * of extension filters. Almost all the code uses 0 or 1 filters, and the
+     * code that does not should perhaps use no filters or re-layout its
+     * directory structure.
+     * 
      * @param context
      *            the localization context to use
      * @param name
@@ -219,6 +224,11 @@ public interface IPathManager {
      * Lists all files in the localization hierarchy for the specified directory
      * Note: If the same file exists in multiple localization levels, all
      * versions of the file will be returned in the array.
+     * 
+     * TODO: We should only take a single extension filter instead of an array
+     * of extension filters. Almost all the code uses 0 or 1 filters, and the
+     * code that does not should perhaps use no filters or re-layout its
+     * directory structure.
      * 
      * @param contexts
      *            the localization contexts to search
@@ -244,6 +254,11 @@ public interface IPathManager {
      * Note: If the same file exists in multiple localization levels, only the
      * lowest level version of the file will be returned in the array.
      * 
+     * TODO: We should only take a single extension filter instead of an array
+     * of extension filters. Almost all the code uses 0 or 1 filters, and the
+     * code that does not should perhaps use no filters or re-layout its
+     * directory structure.
+     * 
      * @param name
      *            the directory to look in
      * @param extensions
@@ -263,6 +278,11 @@ public interface IPathManager {
      * Lists all files in the specified LocalizationType in a particular
      * directory. Note: If the same file exists in multiple localization levels,
      * only the lowest level version of the file will be returned in the array.
+     * 
+     * TODO: We should only take a single extension filter instead of an array
+     * of extension filters. Almost all the code uses 0 or 1 filters, and the
+     * code that does not should perhaps use no filters or re-layout its
+     * directory structure.
      * 
      * @param type
      *            the localization type to use
@@ -288,9 +308,14 @@ public interface IPathManager {
      * particular directory. Note: If the same file exists in multiple
      * localization levels, only the lowest level version of the file will be
      * returned in the array.
-     * <p>
+     *
      * Do not pass in a mix LocalizationContexts with different
      * LocalizationTypes to this method, the results will be unreliable.
+     * 
+     * TODO: We should only take a single extension filter instead of an array
+     * of extension filters. Almost all the code uses 0 or 1 filters, and the
+     * code that does not should perhaps use no filters or re-layout its
+     * directory structure.
      * 
      * @param contexts
      *            the {@code LocalizationContext}s to search

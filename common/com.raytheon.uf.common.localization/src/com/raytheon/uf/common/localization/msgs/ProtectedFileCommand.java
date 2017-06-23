@@ -31,13 +31,13 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 26, 2010            mschenke     Initial creation
- * Oct 01, 2013  2361       njensen     Removed XML annotations
+ * Aug 26, 2010            mschenke    Initial creation
+ * Oct 01, 2013  2361      njensen     Removed XML annotations
+ * Jun 22, 2017  6339      njensen     Overrode toString()
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 @DynamicSerialize
@@ -64,6 +64,12 @@ public class ProtectedFileCommand extends AbstractUtilityCommand {
     public void setSubPath(String subPath) {
         // Win32
         this.subPath = subPath.replace("\\", IPathManager.SEPARATOR);
+    }
+
+    @Override
+    public String toString() {
+        return "ProtectedFileCommand [subPath=" + subPath + ", localizedSite="
+                + localizedSite + ", context=" + context + "]";
     }
 
 }
