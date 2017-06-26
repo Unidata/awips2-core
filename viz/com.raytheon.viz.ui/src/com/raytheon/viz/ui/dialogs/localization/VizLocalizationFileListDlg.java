@@ -292,7 +292,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             showComp.setLayoutData(gd);
 
             showMineRdo = new Button(showComp, SWT.RADIO);
-            showMineRdo.setText("Show Mine");
+            showMineRdo.setText("Show Me");
             showMineRdo.setSelection(true);
             enableBtnArray.add(showMineRdo);
             showMineRdo.addSelectionListener(new SelectionAdapter() {
@@ -304,7 +304,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                     }
                 }
             });
-
+            /*
+             * Show All User-level Files
+             */
             gd = new GridData();
             gd.horizontalIndent = 10;
             showAllUsersRdo = new Button(showComp, SWT.RADIO);
@@ -320,7 +322,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                     }
                 }
             });
-
+            /*
+             * Show Files at all Localization Levels
+             */
             gd = new GridData();
             gd.horizontalIndent = 10;
             showAllLocalizationRdo = new Button(showComp, SWT.RADIO);

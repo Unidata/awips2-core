@@ -66,6 +66,7 @@ import org.eclipse.ui.plugin.AbstractUIPlugin;
  * Aug 26, 2015 4800       bkowal      Prevent NPE if all required properties are
  *                                     not set in time before the first filter.
  * Dec 18, 2015 5216       dgilling    Use ModifyListener instead of KeyListener.
+ * Jul 11, 2017 ----       mjames@ucar Don't both creating images for filetree.
  * 
  * </pre>
  * 
@@ -84,12 +85,6 @@ public class FilterDelegate {
 
     private Text text;
 
-    private Image inactiveImage = null;
-
-    private Image activeImage = null;
-
-    private Image pressedImage = null;
-
     public FilterDelegate(Composite parent, AbstractVizTreeFilter filter) {
         this(parent, null, filter, null);
     }
@@ -99,7 +94,6 @@ public class FilterDelegate {
         this.treeViewer = treeViewer;
         this.filter = filter;
         this.filterInput = filterInput;
-        this.createImages();
 
         Composite comp = new Composite(parent, SWT.BORDER);
         comp.setBackground(Display.getCurrent().getSystemColor(
@@ -113,24 +107,6 @@ public class FilterDelegate {
 
         this.createFilterText(comp);
         this.createClearControl(parent, comp);
-        parent.addDisposeListener(new DisposeListener() {
-
-            @Override
-            public void widgetDisposed(DisposeEvent e) {
-                dispose();
-            }
-        });
-    }
-
-    private void createImages() {
-        inactiveImage = AbstractUIPlugin.imageDescriptorFromPlugin(
-                PlatformUI.PLUGIN_ID, "$nl$/icons/full/dtool16/clear_co.gif")
-                .createImage();
-        activeImage = AbstractUIPlugin.imageDescriptorFromPlugin(
-                PlatformUI.PLUGIN_ID, "$nl$/icons/full/etool16/clear_co.gif")
-                .createImage();
-        pressedImage = new Image(Display.getCurrent(), activeImage,
-                SWT.IMAGE_GRAY);
     }
 
     private void createFilterText(Composite comp) {
@@ -154,7 +130,6 @@ public class FilterDelegate {
         final Label clearControl = new Label(comp, SWT.NONE);
         clearControl.setLayoutData(new GridData(SWT.BEGINNING, SWT.CENTER,
                 false, false));
-        clearControl.setImage(inactiveImage);
         clearControl.setBackground(parent.getDisplay().getSystemColor(
                 SWT.COLOR_LIST_BACKGROUND));
         clearControl
@@ -164,7 +139,6 @@ public class FilterDelegate {
 
             @Override
             public void mouseDown(MouseEvent e) {
-                clearControl.setImage(pressedImage);
                 fMoveListener = new MouseMoveListener() {
                     private boolean fMouseInButton = true;
 
@@ -173,8 +147,6 @@ public class FilterDelegate {
                         boolean mouseInButton = isMouseInButton(e);
                         if (mouseInButton != fMouseInButton) {
                             fMouseInButton = mouseInButton;
-                            clearControl.setImage(mouseInButton ? pressedImage
-                                    : inactiveImage);
                         }
                     }
                 };
@@ -187,8 +159,6 @@ public class FilterDelegate {
                     clearControl.removeMouseMoveListener(fMoveListener);
                     fMoveListener = null;
                     boolean mouseInButton = isMouseInButton(e);
-                    clearControl.setImage(mouseInButton ? activeImage
-                            : inactiveImage);
                     if (mouseInButton) {
                         text.setText("");
                         filter();
@@ -201,25 +171,6 @@ public class FilterDelegate {
                 Point buttonSize = clearControl.getSize();
                 return 0 <= e.x && e.x < buttonSize.x && 0 <= e.y
                         && e.y < buttonSize.y;
-            }
-        });
-        clearControl.addMouseTrackListener(new MouseTrackAdapter() {
-            @Override
-            public void mouseEnter(MouseEvent e) {
-                clearControl.setImage(activeImage);
-            }
-
-            @Override
-            public void mouseExit(MouseEvent e) {
-                clearControl.setImage(inactiveImage);
-            }
-        });
-        clearControl.addDisposeListener(new DisposeListener() {
-            @Override
-            public void widgetDisposed(DisposeEvent e) {
-                inactiveImage.dispose();
-                activeImage.dispose();
-                pressedImage.dispose();
             }
         });
         clearControl.getAccessible().addAccessibleListener(
@@ -236,12 +187,6 @@ public class FilterDelegate {
                         e.detail = ACC.ROLE_PUSHBUTTON;
                     }
                 });
-    }
-
-    private void dispose() {
-        inactiveImage.dispose();
-        activeImage.dispose();
-        pressedImage.dispose();
     }
 
     private void filter() {
