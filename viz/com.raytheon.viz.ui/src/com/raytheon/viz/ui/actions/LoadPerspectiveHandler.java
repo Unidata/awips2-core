@@ -90,6 +90,7 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  *                                    to localization when loading it.
  * Dec 21, 2015  5191     bsteffen    Updated layout handling for Eclipse 4.
  * Feb 11, 2016  5242     dgilling    Remove calls to deprecated Localization APIs.
+ * Jul 11, 2017  ----     mjames@ucar Load procedures as individual bundles. 
  * 
  * </pre>
  * 
@@ -103,6 +104,8 @@ public class LoadPerspectiveHandler
             .getHandler(LoadPerspectiveHandler.class);
 
     private OpenPerspectiveFileListDlg dialog;
+    
+    private static String DEFAULT_BUNDLE_NAME = "Map";
 
     @Override
     public Object execute(final ExecutionEvent event) throws ExecutionException {
@@ -206,7 +209,7 @@ public class LoadPerspectiveHandler
 
         try {
             if (obj instanceof Procedure) {
-                loadProcedureToScreen((Procedure) obj, false);
+                loadProcedureAsBundles((Procedure) obj, false, source);
             } else if (obj instanceof Bundle) {
                 loadBundle((Bundle) obj);
             }
@@ -233,12 +236,12 @@ public class LoadPerspectiveHandler
         return obj;
     }
 
-    private void loadBundle(Bundle bundle) throws VizException {
+    private static void loadBundle(Bundle bundle) throws VizException {
         IRenderableDisplay renderableDisplay = bundle.getDisplays()[0];
         IDescriptor bundleDescriptor = renderableDisplay.getDescriptor();
         String bundleEditorId = DescriptorMap.getEditorId(bundleDescriptor
                 .getClass().getName());
-        AbstractEditor editor = UiUtil.createOrOpenEditor(bundleEditorId,
+        AbstractEditor editor = UiUtil.createEditor(bundleEditorId,
                 bundle.getDisplays());
 
         BundleLoader.loadTo(editor, bundle);
@@ -310,7 +313,29 @@ public class LoadPerspectiveHandler
 
         }
     }
+    
+    public static void loadProcedureAsBundles(Procedure procedure,
+            boolean ignorePerspective, String source) throws VizException {
+        IWorkbenchWindow windowToLoadTo = VizWorkbenchManager.getInstance()
+                .getCurrentWindow();
+        IWorkbenchPage page = windowToLoadTo.getActivePage();
+        loadProcedureAsBundles(procedure, page.getWorkbenchWindow(), source);
+    }
 
+    public static void loadProcedureAsBundles(Procedure procedure,
+            IWorkbenchWindow window, String source) throws VizException {
+    	if (!source.isEmpty()) {
+    		source = source.substring(source.indexOf("/") + 1, source.indexOf(".xml"));
+    	} else {
+    		source = "Map";
+    	}
+        Bundle[] bundles = procedure.getBundles();
+        for (Bundle b : bundles) {
+        	b.setName(source);
+        	loadBundle((Bundle) b);
+        }
+    }
+    
     @SuppressWarnings("restriction")
     private static void loadLayout(IServiceLocator services,
             IMemento layoutMemento) {
