@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -50,10 +50,10 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
 /**
- * 
+ *
  * Uses common environmental variables to find the ssl certificates for a jms
  * connection.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -61,6 +61,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Feb 02, 2017  6085     bsteffen    Initial creation
+ * Jun 26, 2017  6340     rjpeter     Check file times and recreate stores if necessary.
  *
  * </pre>
  *
@@ -176,7 +177,23 @@ public class JmsSslConfiguration {
 
     public Path getJavaTrustStoreFile() {
         Path path = clientKey.resolveSibling(clientName + ".jks");
-        if (!Files.exists(path)) {
+        boolean createStore = !Files.exists(path);
+
+        if (!createStore) {
+            // double check file times
+            try {
+                long storeTime = Files.getLastModifiedTime(path).toMillis();
+                long certTime = Files.getLastModifiedTime(getRootCert())
+                        .toMillis();
+                createStore = certTime >= storeTime;
+            } catch (IOException e) {
+                statusHandler.error(
+                        "Failed to check modified times for trust store.", e);
+            }
+
+        }
+
+        if (createStore) {
             try {
                 KeyStore trustStore = loadTrustStore();
                 try (OutputStream out = Files.newOutputStream(path)) {
@@ -192,7 +209,25 @@ public class JmsSslConfiguration {
 
     public Path getJavaKeyStoreFile() {
         Path path = rootCert.resolveSibling("root.jks");
-        if (!Files.exists(path)) {
+        boolean createStore = !Files.exists(path);
+
+        if (!createStore) {
+            // double check file times
+            try {
+                long storeTime = Files.getLastModifiedTime(path).toMillis();
+                long certTime = Files.getLastModifiedTime(getClientCert())
+                        .toMillis();
+                long keyTime = Files.getLastModifiedTime(getClientKey())
+                        .toMillis();
+                createStore = certTime >= storeTime || keyTime >= storeTime;
+            } catch (IOException e) {
+                statusHandler.error(
+                        "Failed to check modified times for trust store.", e);
+            }
+
+        }
+
+        if (createStore) {
             try {
                 KeyStore keyStore = loadKeyStore();
                 try (OutputStream out = Files.newOutputStream(path)) {
@@ -219,7 +254,7 @@ public class JmsSslConfiguration {
      * add the corresponding options to the URL. If there is no ssl option on
      * the provided url, or if it is not set to true, then no changes are made
      * to the URL.
-     * 
+     *
      * @param url
      *            The url, which may need to be modified to add ssl
      *            certificates.
