@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.SWT;
@@ -52,11 +53,11 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 
 /**
  * Deletes the selected localization file
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 3, 2010            mschenke     Initial creation
@@ -70,14 +71,15 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Apr 12, 2016 4946      mapeters     Fixed issue where action did nothing if prompt == false
  * Jun 02, 2016 4907      mapeters     Close merge/compare editors of deleted files
  * Aug 15, 2016 5834      njensen      Enable delete regardless of protection level
- * 
+ * Jun 22, 2017 4818      mapeters     Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
 public class DeleteAction extends Action {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DeleteAction.class);
 
     private LocalizationFile[] toDelete;
@@ -120,10 +122,10 @@ public class DeleteAction extends Action {
 
             Shell shell = page.getWorkbenchWindow().getShell();
             SWTMessageBox messageDialog = new SWTMessageBox(shell,
-                    "Delete Confirmation", msg.toString(), SWT.OK | SWT.CANCEL
-                            | SWT.ICON_QUESTION);
+                    "Delete Confirmation", msg.toString(),
+                    SWT.OK | SWT.CANCEL | SWT.ICON_QUESTION);
 
-            messageDialog.setCloseCallback(new ICloseCallback() {
+            messageDialog.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {
@@ -146,7 +148,7 @@ public class DeleteAction extends Action {
      * deleted. Note that for entire directories being deleted, only the parent
      * directory is listed (note that this requires the parent directory being
      * listed before any of its contents in toDelete).
-     * 
+     *
      * @return the list of files as a StringBuilder
      */
     private StringBuilder buildFileListString() {
@@ -188,9 +190,11 @@ public class DeleteAction extends Action {
             try {
                 input = ref.getEditorInput();
             } catch (PartInitException e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Failed to check if an editor for the deleted "
-                                + "file was open (in order to close it)", e);
+                statusHandler
+                        .handle(Priority.PROBLEM,
+                                "Failed to check if an editor for the deleted "
+                                        + "file was open (in order to close it)",
+                                e);
             }
 
             LocalizationEditorInput[] editorInputs = new LocalizationEditorInput[0];
@@ -201,8 +205,8 @@ public class DeleteAction extends Action {
 
             } else if (input instanceof LocalizationMergeEditorInput) {
                 LocalizationMergeEditorInput mergeInput = (LocalizationMergeEditorInput) input;
-                editorInputs = new LocalizationEditorInput[] { mergeInput
-                        .getLocalizationEditorInput() };
+                editorInputs = new LocalizationEditorInput[] {
+                        mergeInput.getLocalizationEditorInput() };
 
             } else if (input instanceof LocalizationCompareEditorInput) {
                 LocalizationCompareEditorInput compareInput = (LocalizationCompareEditorInput) input;
@@ -217,7 +221,7 @@ public class DeleteAction extends Action {
             }
         }
 
-        if (toClose.size() > 0) {
+        if (!toClose.isEmpty()) {
             page.closeEditors(
                     toClose.toArray(new IEditorReference[toClose.size()]),
                     false);
@@ -233,21 +237,21 @@ public class DeleteAction extends Action {
             try {
                 deleteFile(file);
             } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM, "Error deleting file: "
-                        + file.toString(), e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error deleting file: " + file.toString(), e);
             }
         }
     }
 
     /**
      * Delete the file and all associated file extension variations.
-     * 
+     *
      * @param file
      *            The file to delete
      * @throws Exception
      */
     private void deleteFile(ILocalizationFile file) throws Exception {
-        if (file.isDirectory() == false) {
+        if (!file.isDirectory()) {
             // Check for file extension
             String name = LocalizationUtil.extractName(file.getPath());
             String[] parts = name.split("[.]");
@@ -262,12 +266,9 @@ public class DeleteAction extends Action {
                     String path = file.getPath().substring(0,
                             file.getPath().lastIndexOf(name));
 
-                    String prefix = "";
+                    StringJoiner prefix = new StringJoiner(".");
                     for (int i = 0; i < (parts.length - 1); ++i) {
-                        if (i > 0) {
-                            prefix += ".";
-                        }
-                        prefix += parts[i];
+                        prefix.add(parts[i]);
                     }
 
                     path += prefix;

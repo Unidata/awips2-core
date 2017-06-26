@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -42,10 +42,10 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
  * CaveJFACEDialog.
- * 
+ *
  * Extends the org.eclipse.jface.dialogs.Dialog to be able to change the
  * background color when CAVE is in training or practice mode.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#     Engineer    Description
@@ -60,14 +60,14 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *                                        to CaveSWTDialogBase's open.
  * Aug 31, 2015 4749        njensen     closeCallback now a List
  * Apr 20, 2016 5541        dgilling    Fix issues with hide/restore and perspective switching.
- * 
+ * Jun 22, 2017 4818        mapeters    Implement ICloseCallbackDialog
+ *
  * </pre>
- * 
+ *
  * @author Dan Fitch
- * @version 1
  */
-public class CaveJFACEDialog extends Dialog implements
-        IPerspectiveSpecificDialog {
+public class CaveJFACEDialog extends Dialog
+        implements IPerspectiveSpecificDialog, ICloseCallbackDialog {
 
     /** Dialog last location on the screen. */
     protected Point lastLocation;
@@ -82,7 +82,7 @@ public class CaveJFACEDialog extends Dialog implements
     private boolean blockedOnOpen = false;
 
     /**
-     * 
+     *
      * @param parentShell
      */
     protected CaveJFACEDialog(Shell parentShell) {
@@ -90,7 +90,7 @@ public class CaveJFACEDialog extends Dialog implements
     }
 
     /**
-     * 
+     *
      * @param parentShell
      */
     protected CaveJFACEDialog(Shell parentShell, boolean perspectiveSpecific) {
@@ -189,7 +189,7 @@ public class CaveJFACEDialog extends Dialog implements
      */
     public final void bringToTop() {
         Shell shell = getShell();
-        if (shell != null && shell.isDisposed() == false) {
+        if (shell != null && !shell.isDisposed()) {
             shell.setVisible(true);
             shell.forceFocus();
             shell.forceActive();
@@ -212,7 +212,7 @@ public class CaveJFACEDialog extends Dialog implements
 
     /**
      * Returns whether the dialog has been opened yet or not
-     * 
+     *
      * @return True if the dialog was opened, false otherwise.
      */
     public final boolean isOpen() {
@@ -222,7 +222,7 @@ public class CaveJFACEDialog extends Dialog implements
     /**
      * Returns if the dialog is disposed, a null dialog will not mean it is
      * disposed as it may not have been opened yet.
-     * 
+     *
      * @return
      */
     public final boolean isDisposed() {
@@ -230,13 +230,7 @@ public class CaveJFACEDialog extends Dialog implements
         return (shell != null && shell.isDisposed());
     }
 
-    /**
-     * Add a callback to the dialog. The callback will be called when the dialog
-     * is disposed.
-     * 
-     * @param callback
-     *            Callback to be called when the dialog is disposed.
-     */
+    @Override
     public void addCloseCallback(ICloseCallback callback) {
 
         /*
@@ -248,8 +242,10 @@ public class CaveJFACEDialog extends Dialog implements
          */
         if (blockedOnOpen && isOpen()) {
             StringBuilder sb = new StringBuilder();
-            sb.append("The method setBlockOnOpen() was called and set to true.  The callback method ");
-            sb.append("will not run correctly as the dialog has been opened and blocked before this ");
+            sb.append(
+                    "The method setBlockOnOpen() was called and set to true.  The callback method ");
+            sb.append(
+                    "will not run correctly as the dialog has been opened and blocked before this ");
             sb.append("method was called.");
             throw new RejectedExecutionException(sb.toString());
         }
@@ -261,7 +257,7 @@ public class CaveJFACEDialog extends Dialog implements
      * This method overrides the existing setBlockOnOpen() method. This will
      * eventually be a catch method that will prevent blocking the dialog on
      * open. At this time it serves as a placeholder for upcoming work.
-     * 
+     *
      * @param blockOnOpen
      *            Flag indicating if the dialog should block when opened.
      */

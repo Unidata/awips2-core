@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -68,26 +68,27 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 /**
  * Editor input for merging the remote version of a localization file into a
  * user's local version when a file version conflict occurs.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ------------
  * May 23, 2016  4907     mapeters  Initial creation.
  * Jun 13, 2016  4907     mapeters  Update remote tmp file from server without
  *                                  overwriting local file.
- * 
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mapeters
  */
 
-public class LocalizationMergeEditorInput extends CompareEditorInput implements
-        ISaveablesSource {
+public class LocalizationMergeEditorInput extends CompareEditorInput
+        implements ISaveablesSource {
 
-    protected static final transient IUFStatusHandler statusHandler = UFStatus
+    protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationMergeEditorInput.class);
 
     private LocalizationEditorInput input;
@@ -157,7 +158,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
      * Refresh the Local editor's contents with the given doc's contents, and
      * refresh the Remote editor's contents with the latest file from the
      * localization server.
-     * 
+     *
      * @param doc
      *            the document containing the contents to put in the Local
      *            editor
@@ -180,7 +181,8 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             } catch (IOException | CommunicationException e) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Failed to update the remote file to the latest version: "
-                                + e.getLocalizedMessage(), e);
+                                + e.getLocalizedMessage(),
+                        e);
             }
 
             // Refresh the editor with the files' new contents
@@ -193,7 +195,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
      * files for the Local and Remote editors. Note that it is the caller's
      * responsibility to call {@link ResourceNode#discardBuffer()} on the
      * left/right node if it alters its actual file and not just its buffer.
-     * 
+     *
      * @param isRefreshingToSavedState
      *            true if the updated contents have been saved, false otherwise
      *            (i.e. whether or not the editor should be dirty after
@@ -248,7 +250,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         SWTMessageBox messageDialog = new SWTMessageBox(shell, "File Changed",
                 msg, SWT.YES | SWT.NO | SWT.ICON_QUESTION);
 
-        messageDialog.setCloseCallback(new ICloseCallback() {
+        messageDialog.addCloseCallback(new ICloseCallback() {
 
             @Override
             public void dialogClosed(Object returnValue) {
@@ -265,7 +267,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
     /**
      * Determine if the local file is out of sync with the local file system and
      * if it should be synced.
-     * 
+     *
      * @return true if the file should be synced, otherwise false
      */
     private boolean shouldSync() {
@@ -301,7 +303,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
 
     /**
      * Get the current timestamp of the localization file on the file system.
-     * 
+     *
      * @return the local file's timestamp
      */
     private long getTimestamp() {
@@ -332,10 +334,10 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
                         updateTimestamp();
                     } catch (IOException | LocalizationException
                             | CoreException e) {
-                        statusHandler.handle(
-                                Priority.PROBLEM,
+                        statusHandler.handle(Priority.PROBLEM,
                                 "Failed to refresh merge editor: "
-                                        + e.getLocalizedMessage(), e);
+                                        + e.getLocalizedMessage(),
+                                e);
                     }
                 }
             }
@@ -394,8 +396,8 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         }
     }
 
-    private static class LocalizationMergeSaveable extends
-            AbstractLocalizationSaveable {
+    private static class LocalizationMergeSaveable
+            extends AbstractLocalizationSaveable {
 
         private LocalizationMergeEditorInput parent;
 
@@ -441,8 +443,9 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         protected boolean validateSave(IProgressMonitor monitor) {
             IPathManager pm = PathManagerFactory.getPathManager();
             LocalizationFile inputLocFile = input.getLocalizationFile();
-            String latestServerFileChecksum = pm.getLocalizationFile(
-                    inputLocFile.getContext(), inputLocFile.getPath())
+            String latestServerFileChecksum = pm
+                    .getLocalizationFile(inputLocFile.getContext(),
+                            inputLocFile.getPath())
                     .getCheckSum();
             if (!latestServerFileChecksum.equals(parent.serverFileChecksum)) {
                 // New merge conflict
@@ -461,17 +464,17 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
             return true;
         }
 
-        private void handleAnotherMergeConflict(final IProgressMonitor monitor) {
+        private void handleAnotherMergeConflict(
+                final IProgressMonitor monitor) {
             Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                     .getShell();
-            String msg = "The file '"
-                    + input.getName()
+            String msg = "The file '" + input.getName()
                     + "' has been modified by another user again. The remote "
                     + "file will be updated to the latest version from the server.";
             SWTMessageBox messageDialog = new SWTMessageBox(shell,
                     "File Version Conflict", msg, SWT.OK | SWT.ICON_WARNING);
 
-            messageDialog.setCloseCallback(new ICloseCallback() {
+            messageDialog.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {
@@ -486,7 +489,7 @@ public class LocalizationMergeEditorInput extends CompareEditorInput implements
         /**
          * Get the checksum value of the changes made by the user (the current
          * contents of the Local editor).
-         * 
+         *
          * @return the checksum
          */
         private String getChangesChecksum() {

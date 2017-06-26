@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -63,14 +63,14 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
 
 /**
  * SavePerspectiveHandler
- * 
+ *
  * Save a procedure that currently maps the current state of the screen
  * including the editor and any side views.
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
+ *
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
  *    Sep 11, 2007             chammack    Initial Creation.
@@ -79,11 +79,11 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  *                                         localization. Renamed class; originally SaveProcedure.
  *    Jun 10, 2015  4401       bkowal      Extend {@link AbstractVizPerspectiveLocalizationHandler}.
  *    Dec 21, 2015  5191       bsteffen    Updated layout handling for Eclipse 4.
- * 
+ *    Jun 22, 2017  4818       mapeters    Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 public class SavePerspectiveHandler
         extends AbstractVizPerspectiveLocalizationHandler {
@@ -93,12 +93,6 @@ public class SavePerspectiveHandler
 
     private PerspectiveFileListDlg saveAsDlg;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.core.commands.AbstractHandler#execute(org.eclipse.core.
-     * commands.ExecutionEvent)
-     */
     @Override
     public Object execute(final ExecutionEvent event)
             throws ExecutionException {
@@ -109,7 +103,7 @@ public class SavePerspectiveHandler
             saveAsDlg = new PerspectiveFileListDlg(
                     "Save Perspective Display As...", shell,
                     VizLocalizationFileListDlg.Mode.SAVE, PERSPECTIVES_DIR);
-            saveAsDlg.setCloseCallback(new ICloseCallback() {
+            saveAsDlg.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {
@@ -192,7 +186,7 @@ public class SavePerspectiveHandler
         }
         procedure.setLayout(layout);
 
-        List<Bundle> bundleList = new ArrayList<Bundle>();
+        List<Bundle> bundleList = new ArrayList<>();
 
         List<ContainerPart> panes = UiUtil.getActiveDisplayMap();
         for (ContainerPart part : panes) {
@@ -220,14 +214,14 @@ public class SavePerspectiveHandler
                     b.setView(key);
                 }
 
-                List<AbstractRenderableDisplay> displays = new ArrayList<AbstractRenderableDisplay>();
+                List<AbstractRenderableDisplay> displays = new ArrayList<>();
                 for (IRenderableDisplay disp : displayArr) {
                     if (disp instanceof AbstractRenderableDisplay) {
                         displays.add((AbstractRenderableDisplay) disp);
                     }
                 }
 
-                if (displays.size() > 0) {
+                if (!displays.isEmpty()) {
                     b.setDisplays(displays.toArray(
                             new AbstractRenderableDisplay[displays.size()]));
                     bundleList.add(b);
@@ -235,7 +229,7 @@ public class SavePerspectiveHandler
             }
         }
 
-        if (bundleList.isEmpty() == false) {
+        if (!bundleList.isEmpty()) {
             procedure.setBundles(
                     bundleList.toArray(new Bundle[bundleList.size()]));
         }
@@ -248,7 +242,7 @@ public class SavePerspectiveHandler
      * designed to be compatible with Eclipse 3.8 layout mementos. If the
      * container contains elements that are not representable using this format
      * than an {@link IllegalStateException} will be thrown.
-     * 
+     *
      * @param root
      *            The root memento that contains a single "info" memento for
      *            each PartStack in the container hierarchy.

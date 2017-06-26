@@ -57,25 +57,26 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Action for resolving a file version conflict when a user tries to save a
  * localization file that has been modified on the server. It prompts the user
  * regarding the conflict and allows them to open a merge editor to resolve it.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * May 23, 2016  4907     mapeters  Initial creation.
  * Jun 13, 2016  4907     mapeters  Copy file from server without overwriting
  *                                  local file.
- * 
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mapeters
  */
 
 public class ResolveFileVersionConflictAction extends Action {
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ResolveFileVersionConflictAction.class);
 
     private final LocalizationEditorInput input;
@@ -86,7 +87,7 @@ public class ResolveFileVersionConflictAction extends Action {
 
     /**
      * Constructor for an action to resolve a file version conflict.
-     * 
+     *
      * @param input
      *            the editor input whose save operation caused the conflict
      * @param doc
@@ -102,8 +103,9 @@ public class ResolveFileVersionConflictAction extends Action {
         if (serverFileChecksum == null) {
             ILocalizationFile file = input.getLocalizationFile();
             IPathManager pm = PathManagerFactory.getPathManager();
-            serverFileChecksum = pm.getLocalizationFile(file.getContext(),
-                    file.getPath()).getCheckSum();
+            serverFileChecksum = pm
+                    .getLocalizationFile(file.getContext(), file.getPath())
+                    .getCheckSum();
         }
         this.serverFileChecksum = serverFileChecksum;
     }
@@ -117,10 +119,10 @@ public class ResolveFileVersionConflictAction extends Action {
                 + "to save your changes, you must merge them with the latest "
                 + "version of the file.\n\nSelect OK to merge.";
         SWTMessageBox messageDialog = new SWTMessageBox(shell,
-                "File Version Conflict", msg, SWT.OK | SWT.CANCEL
-                        | SWT.ICON_WARNING);
+                "File Version Conflict", msg,
+                SWT.OK | SWT.CANCEL | SWT.ICON_WARNING);
 
-        messageDialog.setCloseCallback(new ICloseCallback() {
+        messageDialog.addCloseCallback(new ICloseCallback() {
 
             @Override
             public void dialogClosed(Object returnValue) {
@@ -174,12 +176,12 @@ public class ResolveFileVersionConflictAction extends Action {
         return getTmpFile(tmpPath);
     }
 
-    private IFile copyLatestVersionToTmpFile() throws IOException,
-            CoreException, CommunicationException {
+    private IFile copyLatestVersionToTmpFile()
+            throws IOException, CoreException, CommunicationException {
         java.nio.file.Path tmpPath = createTmpFilePath();
 
-        LocalizationManager.getInstance().retrieveToFile(
-                input.getLocalizationFile(), tmpPath.toFile());
+        LocalizationManager.getInstance()
+                .retrieveToFile(input.getLocalizationFile(), tmpPath.toFile());
 
         return getTmpFile(tmpPath);
     }

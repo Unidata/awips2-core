@@ -21,6 +21,7 @@ package com.raytheon.viz.ui.dialogs;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.swt.SWT;
@@ -73,13 +74,15 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Sep 21, 2016  5901     randerso  Fix dialog centering issue introduced in
  *                                  Eclipse 4
  * Apr 25, 2017  6217     randerso  Added shouldClose method
+ * Jun 22, 2017  4818     mapeters  Changed closeCallback to a list,
+ *                                  implemented ICloseCallbackDialog
  *
  * </pre>
  *
  * @author mschenke
- * @version 1.0
  */
-public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
+public abstract class CaveSWTDialog
+        implements IPerspectiveSpecificDialog, ICloseCallbackDialog {
 
     /** Cave dialog attributes */
     public static class CAVE {
@@ -160,8 +163,8 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
 
     private List<ListenerPair> listenersToAdd;
 
-    /** Callback called when the dialog is disposed. */
-    private ICloseCallback closeCallback = null;
+    /** Callbacks called when the dialog is disposed. */
+    private List<ICloseCallback> closeCallbacks = new ArrayList<>();
 
     /** Dialog last offset from parent window. */
     private Point lastOffset;
@@ -328,7 +331,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
             @Override
             public void widgetDisposed(DisposeEvent e) {
                 disposed();
-                callCloseCallback();
+                callCloseCallbacks();
             }
         });
 
@@ -351,7 +354,7 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
                 public void widgetDisposed(DisposeEvent e) {
                     if (perspectiveManager != null) {
                         perspectiveManager
-                        .removePespectiveDialog(CaveSWTDialog.this);
+                                .removePespectiveDialog(CaveSWTDialog.this);
                     }
                 }
             });
@@ -412,12 +415,17 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     }
 
     /**
-     * Call the callback method as this dialog has been disposed. This action is
-     * in a separate method since the disposed method can be overridden.
+     * Call the callback methods as this dialog has been disposed. This action
+     * is in a separate method since the disposed method can be overridden.
      */
-    private void callCloseCallback() {
-        if (closeCallback != null) {
-            closeCallback.dialogClosed(returnValue);
+    private void callCloseCallbacks() {
+        if (!closeCallbacks.isEmpty()) {
+            ListIterator<ICloseCallback> itr = closeCallbacks
+                    .listIterator(closeCallbacks.size());
+            while (itr.hasPrevious()) {
+                ICloseCallback cb = itr.previous();
+                cb.dialogClosed(returnValue);
+            }
         }
     }
 
@@ -650,9 +658,8 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
     }
 
     /**
-     * Add a callback to the dialog. This callback will be called when the
-     * dialog is disposed. Also, the caveStyle is updated to include
-     * DO_NOT_BLOCK.
+     * Add a callback to the dialog. The callback will be called when the dialog
+     * is disposed. Also, the caveStyle is updated to include DO_NOT_BLOCK.
      *
      * @param callback
      *            Callback to be called when the dialog is disposed.
@@ -660,21 +667,31 @@ public abstract class CaveSWTDialog implements IPerspectiveSpecificDialog {
      *             with a message indicating that this method needs to be called
      *             before the open method.
      */
-    public void setCloseCallback(ICloseCallback callback)
+    @Override
+    public void addCloseCallback(ICloseCallback callback)
             throws RejectedExecutionException {
 
         if (isOpen()) {
             StringBuilder sb = new StringBuilder();
             sb.append(
-                    "The method setCloseCallback() needs to be called before the open().  ");
+                    "The method addCloseCallback() needs to be called before the open().  ");
             sb.append(
-                    "This is due to setCloseCallback setting the caveStyle to DO_NOT_BLOCK");
+                    "This is due to addCloseCallback setting the caveStyle to DO_NOT_BLOCK");
             throw new RejectedExecutionException(sb.toString());
         }
 
         // Set the DO_NOT_BLOCK on the cave style
-        this.caveStyle = caveStyle | CAVE.DO_NOT_BLOCK;
-        this.closeCallback = callback;
+        this.caveStyle |= CAVE.DO_NOT_BLOCK;
+        this.closeCallbacks.add(callback);
+    }
+
+    /**
+     * @deprecated use {@link #addCloseCallback(ICloseCallback) }
+     */
+    @Deprecated
+    public void setCloseCallback(ICloseCallback callback) {
+        closeCallbacks.clear();
+        addCloseCallback(callback);
     }
 
     /**

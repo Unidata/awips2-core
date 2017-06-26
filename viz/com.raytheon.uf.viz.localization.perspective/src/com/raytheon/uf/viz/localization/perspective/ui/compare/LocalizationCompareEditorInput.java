@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -55,11 +55,11 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 
 /**
  * Comparing editor input for localization files
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 24, 2011           mschenke  Initial creation
@@ -68,16 +68,17 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * May 23, 2016  4907     mapeters  Added save validation and sync handling,
  *                                  fix saving with read-only files, abstracted
  *                                  out most of saveable class
- * 
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
 public class LocalizationCompareEditorInput extends CompareEditorInput
         implements ISaveablesSource {
 
-    protected static final transient IUFStatusHandler statusHandler = UFStatus
+    protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationCompareEditorInput.class);
 
     private LocalizationEditorInput leftInput;
@@ -156,7 +157,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
     /**
      * Sync the editor on the given side with the contents of its corresponding
      * local file.
-     * 
+     *
      * @param left
      *            the side to sync
      */
@@ -233,7 +234,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
     /**
      * Determine if the given node's resource is out of sync with the local file
      * system and if it should be synced.
-     * 
+     *
      * @param node
      *            the node to check the sync state of
      * @param timestamp
@@ -276,7 +277,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
     /**
      * Prompt the user to sync the file on the given side with the local file
      * system.
-     * 
+     *
      * @param left
      *            the side to prompt for sync
      */
@@ -301,7 +302,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
         SWTMessageBox messageDialog = new SWTMessageBox(shell, "File Changed",
                 msg, SWT.YES | SWT.NO | SWT.ICON_QUESTION);
 
-        messageDialog.setCloseCallback(new ICloseCallback() {
+        messageDialog.addCloseCallback(new ICloseCallback() {
 
             @Override
             public void dialogClosed(Object returnValue) {
@@ -318,7 +319,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
     /**
      * Update the stored timestamp of the file on the given side to the current
      * timestamp of the local file
-     * 
+     *
      * @param left
      *            the side to update
      */
@@ -332,7 +333,7 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
 
     /**
      * Get the current timestamp of the given node's file on the file system.
-     * 
+     *
      * @param node
      * @return the local file's timestamp
      */
@@ -353,15 +354,15 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
 
     /**
      * Get the inputs for the left and right editors in this compare editor.
-     * 
+     *
      * @return the editor inputs
      */
     public LocalizationEditorInput[] getEditorInputs() {
         return new LocalizationEditorInput[] { leftInput, rightInput };
     }
 
-    private static class LocalizationCompareSaveable extends
-            AbstractLocalizationSaveable {
+    private static class LocalizationCompareSaveable
+            extends AbstractLocalizationSaveable {
 
         private LocalizationCompareEditorInput parent;
 
@@ -408,8 +409,8 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
 
         @Override
         public boolean isDirty() {
-            return (left ? parent.isLeftSaveNeeded() : parent
-                    .isRightSaveNeeded());
+            return (left ? parent.isLeftSaveNeeded()
+                    : parent.isRightSaveNeeded());
         }
     }
 }

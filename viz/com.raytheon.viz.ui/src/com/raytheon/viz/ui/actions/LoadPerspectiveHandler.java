@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -73,9 +73,9 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
 
 /**
  * Handles loading of bundles or procedures
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
@@ -90,11 +90,11 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  *                                    to localization when loading it.
  * Dec 21, 2015  5191     bsteffen    Updated layout handling for Eclipse 4.
  * Feb 11, 2016  5242     dgilling    Remove calls to deprecated Localization APIs.
- * 
+ * Jun 22, 2017  4818     mapeters    Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 public class LoadPerspectiveHandler
         extends AbstractVizPerspectiveLocalizationHandler {
@@ -105,14 +105,16 @@ public class LoadPerspectiveHandler
     private OpenPerspectiveFileListDlg dialog;
 
     @Override
-    public Object execute(final ExecutionEvent event) throws ExecutionException {
+    public Object execute(final ExecutionEvent event)
+            throws ExecutionException {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
 
-        if (dialog == null || dialog.getShell() == null || dialog.isDisposed()) {
+        if (dialog == null || dialog.getShell() == null
+                || dialog.isDisposed()) {
             dialog = new OpenPerspectiveFileListDlg(shell,
                     SavePerspectiveHandler.PERSPECTIVES_DIR);
-            dialog.setCloseCallback(new ICloseCallback() {
+            dialog.addCloseCallback(new ICloseCallback() {
                 @Override
                 public void dialogClosed(Object returnValue) {
                     if (returnValue instanceof LocalizationFile) {
@@ -135,8 +137,8 @@ public class LoadPerspectiveHandler
     }
 
     private void loadFromLocalization(LocalizationFile localizationFile) {
-        statusHandler.info("Loading perspective file: "
-                + localizationFile.getPath());
+        statusHandler.info(
+                "Loading perspective file: " + localizationFile.getPath());
 
         Object obj = null;
         try (InputStream is = localizationFile.openInputStream()) {
@@ -144,7 +146,8 @@ public class LoadPerspectiveHandler
         } catch (Exception e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to deserialize perspective localization file: "
-                            + localizationFile.getPath() + ".", e);
+                            + localizationFile.getPath() + ".",
+                    e);
             return;
         }
         this.load(obj, localizationFile.getPath());
@@ -161,7 +164,8 @@ public class LoadPerspectiveHandler
         } catch (IOException e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to read localization file: " + filePath.toString()
-                            + " for upload.", e);
+                            + " for upload.",
+                    e);
             return;
         }
 
@@ -182,7 +186,8 @@ public class LoadPerspectiveHandler
         } catch (Exception e) {
             statusHandler.handle(Priority.CRITICAL,
                     "Failed to deserialize perspective file system file: "
-                            + filePath.toString() + ".", e);
+                            + filePath.toString() + ".",
+                    e);
             return;
         }
         this.load(obj, filePath.toString());
@@ -191,7 +196,7 @@ public class LoadPerspectiveHandler
     /**
      * Attempts to load the specified {@link Bundle} or {@link Procedure} for
      * display.
-     * 
+     *
      * @param obj
      *            the specified {@link Bundle} or {@link Procedure}
      * @param source
@@ -236,8 +241,8 @@ public class LoadPerspectiveHandler
     private void loadBundle(Bundle bundle) throws VizException {
         IRenderableDisplay renderableDisplay = bundle.getDisplays()[0];
         IDescriptor bundleDescriptor = renderableDisplay.getDescriptor();
-        String bundleEditorId = DescriptorMap.getEditorId(bundleDescriptor
-                .getClass().getName());
+        String bundleEditorId = DescriptorMap
+                .getEditorId(bundleDescriptor.getClass().getName());
         AbstractEditor editor = UiUtil.createOrOpenEditor(bundleEditorId,
                 bundle.getDisplays());
 
@@ -248,12 +253,8 @@ public class LoadPerspectiveHandler
             boolean ignorePerspective) throws VizException {
         IWorkbenchWindow windowToLoadTo = VizWorkbenchManager.getInstance()
                 .getCurrentWindow();
-        String perspective = null;
-        try {
-            perspective = procedure.getPerspective();
-        } catch (Throwable e) {
-            e.printStackTrace();
-        }
+        String perspective = procedure.getPerspective();
+
         IWorkbenchPage page = null;
         if (perspective != null && !ignorePerspective) {
             try {
@@ -416,7 +417,7 @@ public class LoadPerspectiveHandler
 
     /**
      * @deprecated Use {@link BundleLoader} instead
-     * 
+     *
      * @param editor
      *            the container to load to
      * @param b

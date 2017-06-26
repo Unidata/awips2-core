@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -56,26 +56,27 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Class used to verify we can modify localization files. Used so user is not
  * prompted to make file writable when set to read only, and to handle merge
  * conflicts when users try to save a file that has been changed on the server.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Mar 03, 2011           mschenke  Initial creation
  * May 23, 2016  4907     mapeters  Added save validation
  * Jun 08, 2016  4907     mapeters  Handle editors that aren't ITextEditors
- * 
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
-public class LocalizationFileModificationValidator extends
-        FileModificationValidator {
+public class LocalizationFileModificationValidator
+        extends FileModificationValidator {
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationFileModificationValidator.class);
 
     @Override
@@ -110,11 +111,11 @@ public class LocalizationFileModificationValidator extends
                     if (part instanceof ITextEditor) {
                         // Most editors (e.g. python, .txt, images/sounds)
                         ITextEditor editor = (ITextEditor) part;
-                        doc = editor.getDocumentProvider().getDocument(
-                                editorInput);
+                        doc = editor.getDocumentProvider()
+                                .getDocument(editorInput);
                     } else {
                         // Multi-page editors (e.g. color map and XML)
-                        doc = (IDocument) part.getAdapter(IDocument.class);
+                        doc = part.getAdapter(IDocument.class);
                     }
 
                     if (doc != null) {
@@ -138,7 +139,7 @@ public class LocalizationFileModificationValidator extends
      * that the local changes match the latest version of the file. If not, an
      * {@link ResolveFileVersionConflictAction} is started and the save
      * operation is canceled.
-     * 
+     *
      * @param input
      *            the editor input
      * @param doc
@@ -159,8 +160,9 @@ public class LocalizationFileModificationValidator extends
         // OK if saving on top of the latest version of the file
         LocalizationFile inputLocFile = input.getLocalizationFile();
         IPathManager pm = PathManagerFactory.getPathManager();
-        String serverChecksum = pm.getLocalizationFile(
-                inputLocFile.getContext(), inputLocFile.getPath())
+        String serverChecksum = pm
+                .getLocalizationFile(inputLocFile.getContext(),
+                        inputLocFile.getPath())
                 .getCheckSum();
         String localChecksum = inputLocFile.getCheckSum();
 
@@ -180,9 +182,9 @@ public class LocalizationFileModificationValidator extends
                 return Status.OK_STATUS;
             }
         } catch (IOException e) {
-            statusHandler
-                    .handle(Priority.PROBLEM, "Error calculating checksum: "
-                            + e.getLocalizedMessage(), e);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error calculating checksum: " + e.getLocalizedMessage(),
+                    e);
         }
 
         // Handle file version conflict
@@ -195,15 +197,14 @@ public class LocalizationFileModificationValidator extends
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
                 .getShell();
         String msg = "A file version conflict occurred when previously "
-                + "attempting to save the file '"
-                + fileName
+                + "attempting to save the file '" + fileName
                 + "'. The conflict must be resolved before it can be saved.\n\n"
                 + "Select OK to go to the open merge editor.";
         SWTMessageBox messageDialog = new SWTMessageBox(shell,
-                "Unresolved File Version Conflict", msg, SWT.OK | SWT.CANCEL
-                        | SWT.ICON_WARNING);
+                "Unresolved File Version Conflict", msg,
+                SWT.OK | SWT.CANCEL | SWT.ICON_WARNING);
 
-        messageDialog.setCloseCallback(new ICloseCallback() {
+        messageDialog.addCloseCallback(new ICloseCallback() {
 
             @Override
             public void dialogClosed(Object returnValue) {

@@ -69,7 +69,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
 
 /**
  * This is the main dialog for the Color Edit Dialog.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
@@ -89,21 +89,21 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Feb 04, 2016  5301     tgurney     Fix undo, redo and revert behavior, plus general cleanup
  * Feb 17, 2016  5331     tgurney     Make undo() restore original colormap name when appropriate
  * Mar 02, 2016  4834     bsteffen    Save sets the current name correctly.
- * 
+ * Jun 22, 2017  4818     mapeters    Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
- * 
+ *
  * @author lvenable
- * @version 1.0
  */
-public class ColorEditDialog extends CaveSWTDialog implements
-        IVizEditorChangedListener, IRenderableDisplayChangedListener,
+public class ColorEditDialog extends CaveSWTDialog
+        implements IVizEditorChangedListener, IRenderableDisplayChangedListener,
         RemoveListener, AddListener, IResourceDataChanged,
         ISelectedPanesChangedListener, IColorEditCompCallback {
 
-    private final transient IUFStatusHandler statusHandler = UFStatus
+    private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ColorEditDialog.class);
 
-    private final String NO_COLOR_TABLE = "No color table is being edited";
+    private static final String NO_COLOR_TABLE = "No color table is being edited";
 
     private String currentColormapName;
 
@@ -165,7 +165,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     private SaveColorMapDialog saveAsDialog;
 
-    public static void openDialog(Shell parent,
+    public static synchronized void openDialog(Shell parent,
             IDisplayPaneContainer container,
             AbstractVizResource<?, ?> singleRscToEdit, boolean rightImages,
             boolean block) {
@@ -176,7 +176,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         } else {
             instance.update(container, singleRscToEdit, rightImages);
             if (block) {
-                while (instance.getShell().isDisposed() == false) {
+                while (!instance.getShell().isDisposed()) {
                     if (!instance.getDisplay().readAndDispatch()) {
                         instance.getDisplay().sleep();
                     }
@@ -187,7 +187,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
     /**
      * Constructor.
-     * 
+     *
      * @param parent
      *            Parent shell.
      */
@@ -244,8 +244,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     private ColorMapCapability getCapabilityToEdit() {
-        if (singleResourceToEdit != null
-                && singleResourceToEdit.hasCapability(ColorMapCapability.class)) {
+        if (singleResourceToEdit != null && singleResourceToEdit
+                .hasCapability(ColorMapCapability.class)) {
             return singleResourceToEdit.getCapability(ColorMapCapability.class);
         } else {
             IDisplayPane imagePane = null;
@@ -273,9 +273,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                 if (pane.isVisible()) {
                     for (ResourcePair rp : pane.getDescriptor()
                             .getResourceList()) {
-                        if (rp.getResource() != null
-                                && rp.getResource().hasCapability(
-                                        BlendableCapability.class)) {
+                        if (rp.getResource() != null && rp.getResource()
+                                .hasCapability(BlendableCapability.class)) {
                             hasBlended = true;
                             break;
                         }
@@ -290,22 +289,22 @@ public class ColorEditDialog extends CaveSWTDialog implements
                             .getResourceList()) {
                         if (rp.getResource() != null) {
                             AbstractVizResource<?, ?> rsc = rp.getResource();
-                            if (!hasBlended
-                                    && rsc.hasCapability(ColorMapCapability.class)) {
-                                cap = rsc
-                                        .getCapability(ColorMapCapability.class);
+                            if (!hasBlended && rsc
+                                    .hasCapability(ColorMapCapability.class)) {
+                                cap = rsc.getCapability(
+                                        ColorMapCapability.class);
                                 break;
                             } else if (rsc
                                     .hasCapability(BlendableCapability.class)) {
-                                ResourceList blendedList = rsc.getCapability(
-                                        BlendableCapability.class)
+                                ResourceList blendedList = rsc
+                                        .getCapability(
+                                                BlendableCapability.class)
                                         .getResourceList();
                                 if (!rightImages && blendedList.size() > 0) {
                                     ResourcePair pair = blendedList.get(0);
                                     if (pair.getResource() != null
-                                            && pair.getResource()
-                                                    .hasCapability(
-                                                            ColorMapCapability.class)) {
+                                            && pair.getResource().hasCapability(
+                                                    ColorMapCapability.class)) {
                                         cap = pair.getResource().getCapability(
                                                 ColorMapCapability.class);
                                         break;
@@ -314,9 +313,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                                         && blendedList.size() > 1) {
                                     ResourcePair pair = blendedList.get(1);
                                     if (pair.getResource() != null
-                                            && pair.getResource()
-                                                    .hasCapability(
-                                                            ColorMapCapability.class)) {
+                                            && pair.getResource().hasCapability(
+                                                    ColorMapCapability.class)) {
                                         cap = pair.getResource().getCapability(
                                                 ColorMapCapability.class);
                                         break;
@@ -334,9 +332,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                     if (pane.isVisible()) {
                         for (ResourcePair rp : pane.getDescriptor()
                                 .getResourceList()) {
-                            if (rp.getResource() != null
-                                    && rp.getResource().hasCapability(
-                                            ColorMapCapability.class)) {
+                            if (rp.getResource() != null && rp.getResource()
+                                    .hasCapability(ColorMapCapability.class)) {
                                 cap = rp.getResource().getCapability(
                                         ColorMapCapability.class);
                                 break;
@@ -375,8 +372,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
 
             if (cap.getColorMapParameters() != null
                     && cap.getColorMapParameters().getColorMap() != null) {
-                colorEditComp.getColorBar().updateColorMap(
-                        cap.getColorMapParameters());
+                colorEditComp.getColorBar()
+                        .updateColorMap(cap.getColorMapParameters());
                 colorEditComp.updateColorCount();
             }
         } else {
@@ -587,10 +584,12 @@ public class ColorEditDialog extends CaveSWTDialog implements
             IDisplayPane[] panes = container.getDisplayPanes();
             if (container instanceof IMultiPaneEditor) {
                 IMultiPaneEditor mpe = (IMultiPaneEditor) container;
-                if (mpe.getSelectedPane(IMultiPaneEditor.VISIBLE_PANE) != null) {
+                if (mpe.getSelectedPane(
+                        IMultiPaneEditor.VISIBLE_PANE) != null) {
                     panes = new IDisplayPane[] { mpe
                             .getSelectedPane(IMultiPaneEditor.VISIBLE_PANE) };
-                } else if (mpe.getSelectedPane(IMultiPaneEditor.IMAGE_ACTION) != null) {
+                } else if (mpe.getSelectedPane(
+                        IMultiPaneEditor.IMAGE_ACTION) != null) {
                     panes = new IDisplayPane[] { mpe
                             .getSelectedPane(IMultiPaneEditor.IMAGE_ACTION) };
                 }
@@ -601,15 +600,14 @@ public class ColorEditDialog extends CaveSWTDialog implements
                     if (rp.getResource() != null) {
                         AbstractVizResource<?, ?> rsc = rp.getResource();
                         if (rsc.hasCapability(BlendableCapability.class)) {
-                            ResourceList blendedList = rsc.getCapability(
-                                    BlendableCapability.class)
+                            ResourceList blendedList = rsc
+                                    .getCapability(BlendableCapability.class)
                                     .getResourceList();
                             if (rightImages && blendedList.size() > 1) {
                                 AbstractVizResource<?, ?> rightRsc = blendedList
                                         .get(1).getResource();
-                                if (rightRsc != null
-                                        && rightRsc
-                                                .hasCapability(ColorMapCapability.class)) {
+                                if (rightRsc != null && rightRsc.hasCapability(
+                                        ColorMapCapability.class)) {
                                     applyToCapability(
                                             rightRsc.getCapability(
                                                     ColorMapCapability.class)
@@ -619,9 +617,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                             } else if (!rightImages && blendedList.size() > 0) {
                                 AbstractVizResource<?, ?> leftRsc = blendedList
                                         .get(0).getResource();
-                                if (leftRsc != null
-                                        && leftRsc
-                                                .hasCapability(ColorMapCapability.class)) {
+                                if (leftRsc != null && leftRsc.hasCapability(
+                                        ColorMapCapability.class)) {
                                     applyToCapability(
                                             leftRsc.getCapability(
                                                     ColorMapCapability.class)
@@ -629,8 +626,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
                                             applyFrom.getColorMapParameters());
                                 }
                             }
-                        } else if (!rightImages
-                                && rsc.hasCapability(ColorMapCapability.class)) {
+                        } else if (!rightImages && rsc
+                                .hasCapability(ColorMapCapability.class)) {
                             applyToCapability(
                                     rsc.getCapability(ColorMapCapability.class)
                                             .getColorMapParameters(),
@@ -741,7 +738,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     * 
+     *
      * @param display
      */
     private void removeListeners(IRenderableDisplay display) {
@@ -751,7 +748,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     * 
+     *
      * @param rl
      */
     private void removeListeners(ResourceList rl) {
@@ -787,7 +784,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     * 
+     *
      * @param display
      */
     private void addListeners(IRenderableDisplay display) {
@@ -797,7 +794,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     /**
-     * 
+     *
      * @param rl
      */
     private void addListeners(ResourceList rl) {
@@ -836,8 +833,8 @@ public class ColorEditDialog extends CaveSWTDialog implements
             cap.getColorMapParameters().setColorMapName(currentColormapName);
         } else {
             IPathManager pathManager = PathManagerFactory.getPathManager();
-            LocalizationContext context = pathManager.getContext(
-                    LocalizationType.COMMON_STATIC, level);
+            LocalizationContext context = pathManager
+                    .getContext(LocalizationType.COMMON_STATIC, level);
             String fullName = level.toString() + IPathManager.SEPARATOR
                     + context.getContextName() + IPathManager.SEPARATOR
                     + currentColormapName;
@@ -883,7 +880,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         if (mustCreate(officeSaveAsDialog)) {
             officeSaveAsDialog = new SaveColorMapDialog(shell, getColorMap(),
                     LocalizationLevel.SITE, currentColormapName);
-            officeSaveAsDialog.setCloseCallback(new ICloseCallback() {
+            officeSaveAsDialog.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {
@@ -905,7 +902,7 @@ public class ColorEditDialog extends CaveSWTDialog implements
         if (mustCreate(saveAsDialog)) {
             saveAsDialog = new SaveColorMapDialog(shell, getColorMap(),
                     LocalizationLevel.USER, currentColormapName);
-            saveAsDialog.setCloseCallback(new ICloseCallback() {
+            saveAsDialog.addCloseCallback(new ICloseCallback() {
 
                 @Override
                 public void dialogClosed(Object returnValue) {
@@ -964,9 +961,9 @@ public class ColorEditDialog extends CaveSWTDialog implements
          * This is only called when the color map is edited -- add asterisk to
          * current color map name (in the dialog, not in the object itself), to
          * indicate that it wasn't saved.
-         * 
+         *
          * -------------------------
-         * 
+         *
          * This can break caching of colormaps in GlTarget to check load visible
          * satellite, edit colormap, close dialog without saving if edited
          * colormap is still used ( it is at the time of writing ) save the
@@ -975,11 +972,11 @@ public class ColorEditDialog extends CaveSWTDialog implements
          * it, notice edited colormap is used, clear and reload vis sat from
          * menu, edited colormap is used because the name matches the default
          * and it is cached in GLTarget
-         * 
+         *
          * -------------------------
-         * 
-         * newColorMap.setName(cap.getColorMapParameters().getColorMap().getName(
-         * ));
+         *
+         * newColorMap.setName(cap.getColorMapParameters().getColorMap().
+         * getName( ));
          */
 
         // set colormap to new colormap passed in
@@ -996,12 +993,12 @@ public class ColorEditDialog extends CaveSWTDialog implements
     }
 
     private void updateTitleText() {
-        String newColormapName = currentColormapName != null ? currentColormapName
-                : "Untitled Colormap";
+        String newColormapName = currentColormapName != null
+                ? currentColormapName : "Untitled Colormap";
         if (cap != null && cap.getColorMapParameters() != null) {
             if (cap.getColorMapParameters().getColorMapName() == null
                     || colorEditComp != null
-                    && colorEditComp.getColorBar().canUndo()) {
+                            && colorEditComp.getColorBar().canUndo()) {
                 newColormapName = "*".concat(newColormapName);
             }
         }
