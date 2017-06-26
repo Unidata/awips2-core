@@ -23,22 +23,28 @@ import java.io.IOException;
 import java.io.OutputStream;
 
 /**
- * Stream that counts the number of bytes that have been written.
- * 
+ * Stream that counts the number of bytes that have been written, and tracks the
+ * time of the first and last write()
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 15, 2014 2928       rjpeter     Initial creation
- * 
+ * Jun 22, 2017 6222       tgurney     Track first and last write time
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class CountingOutputStream extends OutputStream {
+
+    private Long firstWriteTimeMillis = null;
+
+    private Long lastWriteTimeMillis = null;
+
     /**
      * Stream to write data to.
      */
@@ -52,39 +58,31 @@ public class CountingOutputStream extends OutputStream {
     /**
      * Wraps the passed {@code OutputStream} counting the bytes that are written
      * to it.
-     * 
+     *
      * @param outputStream
      */
     public CountingOutputStream(OutputStream outputStream) {
         this.wrappedStream = outputStream;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.OutputStream#write(byte[])
-     */
     @Override
     public void write(byte[] b) throws IOException {
         this.write(b, 0, b.length);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.OutputStream#write(byte[], int, int)
-     */
     @Override
     public void write(byte[] b, int off, int len) throws IOException {
-        wrappedStream.write(b, off, len);
-        increaseBytesWritten(len);
+        try {
+            if (firstWriteTimeMillis == null) {
+                firstWriteTimeMillis = System.currentTimeMillis();
+            }
+            wrappedStream.write(b, off, len);
+            increaseBytesWritten(len);
+        } finally {
+            lastWriteTimeMillis = System.currentTimeMillis();
+        }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.OutputStream#flush()
-     */
     @Override
     public void flush() throws IOException {
         wrappedStream.flush();
@@ -99,22 +97,24 @@ public class CountingOutputStream extends OutputStream {
         wrappedStream.close();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.OutputStream#write(int)
-     */
     @Override
     public void write(int b) throws IOException {
-        wrappedStream.write(b);
-        increaseBytesWritten(1);
+        try {
+            if (firstWriteTimeMillis == null) {
+                firstWriteTimeMillis = System.currentTimeMillis();
+            }
+            wrappedStream.write(b);
+            increaseBytesWritten(1);
+        } finally {
+            lastWriteTimeMillis = System.currentTimeMillis();
+        }
     }
 
     /**
      * Method that updates the internal count of the number of bytes written.
      * Also useful extension point for special handling based on amount of bytes
      * written.
-     * 
+     *
      * @param bytesRead
      * @throws IOException
      */
@@ -124,10 +124,26 @@ public class CountingOutputStream extends OutputStream {
 
     /**
      * Returns the bytes written so far.
-     * 
+     *
      * @return
      */
     public long getBytesWritten() {
         return bytesWritten;
+    }
+
+    /**
+     * @return The time at which the first write to this stream began. null if
+     *         this stream has never been read from
+     */
+    public Long getFirstWriteTimeMillis() {
+        return firstWriteTimeMillis;
+    }
+
+    /**
+     * @return The time at which the most recent write to this stream ended.
+     *         null if this stream has never been written to
+     */
+    public Long getLastWriteTimeMillis() {
+        return lastWriteTimeMillis;
     }
 }

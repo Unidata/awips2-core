@@ -23,22 +23,27 @@ import java.io.IOException;
 import java.io.InputStream;
 
 /**
- * Stream that counts the number of bytes that have been read.
- * 
+ * Stream that counts the number of bytes that have been read, and tracks the
+ * time of the first and last read()
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 15, 2014 2928       rjpeter     Initial creation
- * 
+ * Jun 22, 2017 6222       tgurney     Track first and last read time
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class CountingInputStream extends InputStream {
+    private Long firstReadTimeMillis = null;
+
+    private Long lastReadTimeMillis = null;
+
     /**
      * Stream to get data from.
      */
@@ -52,50 +57,37 @@ public class CountingInputStream extends InputStream {
     /**
      * Wraps the passed {@code InputStream} counting the bytes that are read
      * from it.
-     * 
+     *
      * @param inputStream
      */
     public CountingInputStream(InputStream inputStream) {
         this.wrappedStream = inputStream;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#read(byte[])
-     */
     @Override
     public int read(byte[] b) throws IOException {
         return read(b, 0, b.length);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#read(byte[], int, int)
-     */
     @Override
     public int read(byte[] b, int off, int len) throws IOException {
-        int rval = wrappedStream.read(b, off, len);
-        increaseBytesRead(rval);
-        return rval;
+        try {
+            if (firstReadTimeMillis == null) {
+                firstReadTimeMillis = System.currentTimeMillis();
+            }
+            int rval = wrappedStream.read(b, off, len);
+            increaseBytesRead(rval);
+            return rval;
+        } finally {
+            lastReadTimeMillis = System.currentTimeMillis();
+        }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#skip(long)
-     */
     @Override
     public long skip(long n) throws IOException {
         return wrappedStream.skip(n);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#available()
-     */
     @Override
     public int available() throws IOException {
         return wrappedStream.available();
@@ -110,53 +102,40 @@ public class CountingInputStream extends InputStream {
         wrappedStream.close();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#mark(int)
-     */
     @Override
     public synchronized void mark(int readlimit) {
         wrappedStream.mark(readlimit);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#reset()
-     */
     @Override
     public synchronized void reset() throws IOException {
         wrappedStream.reset();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#markSupported()
-     */
     @Override
     public boolean markSupported() {
         return wrappedStream.markSupported();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.io.InputStream#read()
-     */
     @Override
     public int read() throws IOException {
-        int rval = wrappedStream.read();
-        increaseBytesRead(1);
-        return rval;
+        try {
+            if (firstReadTimeMillis == null) {
+                firstReadTimeMillis = System.currentTimeMillis();
+            }
+            int rval = wrappedStream.read();
+            increaseBytesRead(1);
+            return rval;
+        } finally {
+            lastReadTimeMillis = System.currentTimeMillis();
+        }
     }
 
     /**
      * Method that updates the internal count of the number of bytes read. Also
      * useful extension point for special handling based on amount of bytes
      * read.
-     * 
+     *
      * @param bytesRead
      * @throws IOException
      */
@@ -166,10 +145,26 @@ public class CountingInputStream extends InputStream {
 
     /**
      * Returns the bytes read so far.
-     * 
+     *
      * @return
      */
     public long getBytesRead() {
         return bytesRead;
+    }
+
+    /**
+     * @return The time at which the first read from this stream began. null if
+     *         this stream has never been read from
+     */
+    public Long getFirstReadTimeMillis() {
+        return firstReadTimeMillis;
+    }
+
+    /**
+     * @return The time at which the most recent read from this stream ended.
+     *         null if this stream has never been read from
+     */
+    public Long getLastReadTimeMillis() {
+        return lastReadTimeMillis;
     }
 }
