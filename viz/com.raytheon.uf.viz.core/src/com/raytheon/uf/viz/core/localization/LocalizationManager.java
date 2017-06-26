@@ -110,6 +110,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Dec 03, 2015 4834       njensen     Use REST service for efficient PUT of files
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
+ * Jun 25, 2017            mjames@ucar Always run alertviz.
  * 
  * </pre>
  * 
@@ -160,8 +161,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     private final LocalizationRestConnector restConnect;
 
     /** Was the alert server launched within cave? */
-    public static boolean internalAlertServer = ProgramArguments.getInstance()
-            .getBoolean("-alertviz");
+    public static boolean internalAlertServer = true;
 
     private static Map<LocalizationLevel, String> contextMap = new HashMap<>();
 
