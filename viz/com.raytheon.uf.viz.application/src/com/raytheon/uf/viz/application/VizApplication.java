@@ -45,6 +45,7 @@ import com.raytheon.uf.viz.application.component.IStandaloneComponent;
  * Oct 07, 2008 1433       chammack    Added alertviz startup
  * Nov 27, 2013            mschenke    Removed ProgramArguments to make dependencies cleaner
  * Jan 23, 2014            njensen     Added shutdown hook and printout
+ * Jun 25, 2017            mjames@ucar Default to thinclient component
  * 
  * </pre>
  * 
@@ -76,8 +77,8 @@ public class VizApplication implements IApplication {
         IStandaloneComponent component = null;
 
         if (appToRun == null) {
-            System.out.println("No component specified, defaulting to 'viz'");
-            appToRun = "viz";
+            System.out.println("No component specified, defaulting to 'thinclient'");
+            appToRun = "thinclient";
         }
 
         try {
