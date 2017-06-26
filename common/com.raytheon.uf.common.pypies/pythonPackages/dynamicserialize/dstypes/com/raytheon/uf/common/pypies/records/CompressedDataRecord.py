@@ -17,11 +17,23 @@
 # further licensing information.
 
 # File auto-generated against equivalent DynamicSerialize Java class
-# and then modified by bsteffen
+# and then modified by bsteffen and rjpeter
+#
+
+#
+# Compressed version of a DataRecord.
+#
+#
+#     SOFTWARE HISTORY
+#
+#    Date            Ticket#       Engineer       Description
+#    ------------    ----------    -----------    --------------------------
+#    12/02/16        5992          bsteffen       Initial Creation.
+#    06/26/17        6341          rjpeter        Optimize decompress
+#
 
 import numpy
-import StringIO
-import gzip
+import zlib
 
 class CompressedDataRecord(object):
 
@@ -128,13 +140,22 @@ class CompressedDataRecord(object):
         else:
             raise TypeError("Unexpected compressed type " + str(self.type))
     
+    # utilize zlib directly to take advantage of passing in initial size of the
+    # decompress buffer, which prevents repeated allocation of a growing buffer
+    # for each chunk
     def decompress(self):
         datatype = numpy.dtype(self.determineStorageType()).newbyteorder('>')
-        compressedFile = StringIO.StringIO(numpy.getbuffer(self.compressedData))
+        compressedBuffer = numpy.getbuffer(self.compressedData)
         self.compressedData = None
-        decompressedFile = gzip.GzipFile(fileobj=compressedFile)
-        self.uncompressedData = numpy.frombuffer(decompressedFile.read(), datatype)
-    
+        uncompressedSize = datatype.itemsize
+        for s in self.sizes:
+            uncompressedSize *= s
+
+        # zlib.MAX_WBITS | 16, add 16 to window bits to support gzip header/trailer
+        # http://www.zlib.net/manual.html#Advanced
+        decompressedBuffer = zlib.decompress(compressedBuffer, zlib.MAX_WBITS | 16, uncompressedSize)
+        self.uncompressedData = numpy.frombuffer(decompressedBuffer, datatype)
+
     def retrieveDataObject(self):
         if self.uncompressedData is None:
             self.decompress()
