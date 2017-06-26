@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -33,7 +33,7 @@ public interface IGLTarget extends IGraphicsTarget {
 
     public abstract GL2 getGl();
 
-    public abstract GLU getGlu();
+    public abstract GLUgl2 getGlu();
 
     public abstract void pushGLState();
 

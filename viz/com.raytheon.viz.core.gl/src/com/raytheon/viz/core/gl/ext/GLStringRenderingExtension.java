@@ -26,7 +26,6 @@ import java.util.List;
 import java.util.Map;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.GL2GL3;
 
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
@@ -410,7 +409,7 @@ public class GLStringRenderingExtension extends GraphicsExtension<GLTarget>
         float[] rotatedPoint = rotate(string);
         GL2 gl = target.getGl().getGL2();
         Map<TextStyle, RGB> textStyles = string.getTextStyleColorMap();
-        ((GL2GL3) gl).glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
+        gl.glPolygonMode(GL2.GL_BACK, GL2.GL_LINE);
         gl.glLineWidth(1);
         for (int c = 0; c < string.getText().length; c++) {
             String str = string.getText()[c];

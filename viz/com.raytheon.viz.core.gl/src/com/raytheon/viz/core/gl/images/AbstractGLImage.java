@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl.images;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.drawables.IImage;
@@ -122,7 +122,7 @@ public abstract class AbstractGLImage implements IImage {
     public void target(IGraphicsTarget target) throws VizException {
         // TextureLoaderJob.getInstance().requestLoadIntoTexture(this, ctx);
         GLContextBridge.makeMasterContextCurrent();
-        this.loadTexture(GLU.getCurrentGL().getGL2());
+        this.loadTexture(GLUgl2.getCurrentGL().getGL2());
         GLContextBridge.releaseMasterContext();
     }
 
@@ -179,7 +179,7 @@ public abstract class AbstractGLImage implements IImage {
     }
 
     public void usaAsFrameBuffer() throws VizException {
-        GL2 gl = GLU.getCurrentGL().getGL2();
+        GL2 gl = GLUgl2.getCurrentGL().getGL2();
         if (fbo == null || fbo.isValid() == false) {
             gl.glBindTexture(getTextureStorageType(), 0);
 

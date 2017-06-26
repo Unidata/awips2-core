@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl.internal;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -100,7 +100,7 @@ public class GLView2D extends AbstractView {
     public void setupView(IGraphicsTarget target) {
         IGLTarget glTarget = asIGLTarget(target);
         GL2 gl = glTarget.getGl().getGL2();
-        GLU glu = glTarget.getGlu();
+        GLUgl2 glu = glTarget.getGlu();
 
         boolean release = glTarget.makeContextCurrent();
         gl.glMatrixMode(GL2.GL_PROJECTION);

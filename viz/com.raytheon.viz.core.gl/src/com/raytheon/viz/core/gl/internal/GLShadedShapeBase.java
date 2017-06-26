@@ -27,7 +27,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 import com.jogamp.opengl.glu.GLUtessellator;
 import com.jogamp.opengl.glu.GLUtessellatorCallback;
 
@@ -159,21 +159,21 @@ public class GLShadedShapeBase implements IShape {
         allocateBuffers();
         if (tessellate) {
 
-            GLU glu = new GLU();
+            GLUgl2 glu = new GLUgl2();
             Tessellator callback = new Tessellator();
             GLUtessellator tessellator = glu.gluNewTess();
 
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_VERTEX, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_BEGIN, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_END, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_ERROR, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_COMBINE, callback);
-            glu.gluTessCallback(tessellator, GLU.GLU_TESS_EDGE_FLAG, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_VERTEX, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_BEGIN, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_END, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_ERROR, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_COMBINE, callback);
+            glu.gluTessCallback(tessellator, GLUgl2.GLU_TESS_EDGE_FLAG, callback);
             glu.gluTessNormal(tessellator, 0.0, 0.0, -1.0);
 
             for (FloatBuffer[] contours : polygons) {
-                glu.gluTessProperty(tessellator, GLU.GLU_TESS_WINDING_RULE,
-                        GLU.GLU_TESS_WINDING_ODD);
+                glu.gluTessProperty(tessellator, GLUgl2.GLU_TESS_WINDING_RULE,
+                		GLUgl2.GLU_TESS_WINDING_ODD);
                 glu.gluTessBeginPolygon(tessellator, (double[]) null);
                 int polygonStart = vertexBuffer.position() / 2;
                 for (FloatBuffer contour : contours) {

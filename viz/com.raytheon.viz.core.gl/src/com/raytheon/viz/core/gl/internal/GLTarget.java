@@ -37,7 +37,7 @@ import java.util.Map.Entry;
 
 import com.jogamp.opengl.GL2;
 import com.jogamp.opengl.GLAutoDrawable;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 import com.jogamp.opengl.glu.GLUquadric;
 
 import org.eclipse.swt.SWT;
@@ -230,7 +230,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     protected double theCurrentZoom;
 
     /** The GLU object */
-    protected final GLU glu = new GLU();
+    protected final GLUgl2 glu = new GLUgl2();
 
     protected static final Map<String, GLTextureObject> loadedColorMaps = new LinkedHashMap<String, GLTextureObject>() {
 
@@ -320,7 +320,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theContext.makeContextCurrent();
 
-        gl = GLU.getCurrentGL().getGL2();
+        gl = GLUgl2.getCurrentGL().getGL2();
 
         theWidth = width;
         theHeight = height;
@@ -372,7 +372,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
 
         theContext.makeContextCurrent();
 
-        gl = GLU.getCurrentGL().getGL2();
+        gl = GLUgl2.getCurrentGL().getGL2();
         theWidth = width;
         theHeight = height;
 
@@ -403,7 +403,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      * @see com.raytheon.viz.core.gl.IGLTarget#getGlu()
      */
     @Override
-    public GLU getGlu() {
+    public GLUgl2 getGlu() {
         return this.glu;
     }
 
@@ -957,7 +957,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         }
         GLContextBridge.makeMasterContextCurrent();
 
-        GLDisposalManager.performDispose(GLU.getCurrentGL().getGL2());
+        GLDisposalManager.performDispose(GLUgl2.getCurrentGL().getGL2());
 
         if (theCanvas != null && theCanvas.isDisposed() == false) {
             GLStats.printStats(gl, theCanvas.getShell());
@@ -1037,7 +1037,7 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     @Override
     public void init() {
         makeContextCurrent();
-        GLU glu = new GLU();
+        GLUgl2 glu = new GLUgl2();
         String exts = glu.gluGetString(GL2.GL_EXTENSIONS);
         String openGlRenderer = gl.glGetString(GL2.GL_RENDERER);
         String openGlVersion = gl.glGetString(GL2.GL_VERSION);
@@ -1545,15 +1545,19 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
      */
     @Override
     public Rectangle2D getStringsBounds(DrawableString parameters, String string) {
-        IFont font = parameters.font;
-        if (font == null) {
-            font = getDefaultFont();
-        }
+    	//makeContextCurrent();
+    	//getGlu();
+    	//makeContextCurrent();
+    	//gLContext = gLCanvas.getContext();
+    	//gLContext.makeCurrent();
+    	theContext.makeContextCurrent();
+    	IGLFont font = (IGLFont) parameters.font;
+
 
         double fontPercentage = this.calculateFontResizePercentage(font)
                 * parameters.magnification;
 
-        TextRenderer textRenderer = ((IGLFont) font).getTextRenderer();
+        TextRenderer textRenderer = font.getTextRenderer();
 
         // use apostrophe and y to get full ascender and descender in height
         Rectangle2D b1 = textRenderer.getBounds("'y");
@@ -1561,6 +1565,11 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         // add character to start and end of string to so leading and
         // trailing spaces will be included
         Rectangle2D b2 = textRenderer.getBounds("'" + string + "y");
+        
+//        Rectangle2D b1 = new Rectangle2D();
+//        b1.setRect(1, -10, 14, 14);
+//        Rectangle2D b2 = new Rectangle2D();
+//        b2.setRect(1, -11, 15, 196);
 
         // Make Necessary Adjustments To The Calculated Bounds Based On The
         // Pane Size And The Scale Associated With The Pane Size.

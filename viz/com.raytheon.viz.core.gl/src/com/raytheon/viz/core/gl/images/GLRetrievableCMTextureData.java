@@ -23,9 +23,8 @@ import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.measure.unit.Unit;
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback;
@@ -226,7 +225,7 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         double value = Double.NaN;
         if (!isStaged() && isLoaded()) {
             GLContextBridge.makeMasterContextCurrent();
-            GL2 gl = GLU.getCurrentGL().getGL2();
+            GL2 gl = GLUgl2.getCurrentGL().getGL2();
             int textureStorageType = getTextureStorageType();
             int copybackTextureType = data.getCopyBackTextureType();
             Buffer copybackBuffer = data.getCopybackBuffer();

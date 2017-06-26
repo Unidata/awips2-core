@@ -20,7 +20,7 @@
 package com.raytheon.viz.core.gl.objects;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.glu.GLU;
+import com.jogamp.opengl.glu.gl2.GLUgl2;
 
 import com.raytheon.viz.core.gl.GLDisposalManager;
 import com.raytheon.viz.core.gl.GLDisposalManager.GLDisposer;
@@ -55,7 +55,7 @@ public abstract class GLIdWrapper extends GLDisposer {
 
     public GLIdWrapper() {
         int[] arr = new int[1];
-        genId(GLU.getCurrentGL().getGL2(), arr);
+        genId(GLUgl2.getCurrentGL().getGL2(), arr);
         this.id = arr[0];
     }
 
