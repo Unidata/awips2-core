@@ -40,7 +40,9 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
@@ -71,17 +73,20 @@ import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
  * Feb 24, 2015  3978     njensen     Use openInputStream() to read bundleXml
  * Jun 05, 2015 4401      bkowal      Renamed LoadSerializedXml to
  *                                    LoadPerspectiveHandler.
+ * Jun 23, 2017 6316      njensen     Improved logging
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class MapScalesManager {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MapScalesManager.class);
+
+    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler("MapScalesManager:");
 
     private static final String DEFAULT_SCALES_DIR = "bundles"
             + IPathManager.SEPARATOR + "scales";
@@ -144,7 +149,14 @@ public class MapScalesManager {
              */
 
             // validate the XML is good
-            getScaleBundle();
+            long t0 = System.currentTimeMillis();
+            try {
+                getScaleBundle();
+            } finally {
+                perfLog.logDuration(
+                        "Loading scale " + this.displayName,
+                        (System.currentTimeMillis() - t0));
+            }
         }
 
         private ManagedMapScale(String displayName, Bundle scaleBundle)
@@ -177,25 +189,21 @@ public class MapScalesManager {
         }
 
         /**
-         * Gets the
+         * Unmarshals the scale bundle
          * 
          * @return
          * @throws SerializationException
          */
         public Bundle getScaleBundle() throws SerializationException {
             if (bundleXml != null) {
-                long t0 = System.currentTimeMillis();
-                try {
-                    return ProcedureXmlManager.getInstance().unmarshal(
-                            Bundle.class, bundleXml);
-                } finally {
-                    System.out.println("Time to create Bundle: "
-                            + (System.currentTimeMillis() - t0) + "ms");
-                }
-            } else {
-                throw new SerializationException(
-                        "Scale Bundle XML could not be read");
+                return ProcedureXmlManager.getInstance().unmarshal(Bundle.class,
+                        bundleXml);
             }
+
+            throw new SerializationException(
+                    "Scale Bundle XML could not be read from file "
+                            + scaleFile.getFilePath());
+
         }
 
         public String getDisplayName() {
@@ -230,7 +238,8 @@ public class MapScalesManager {
                         MapScales.class);
                 loadMapScales(scales);
             } catch (SerializationException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error updating changed scale " + file.getFilePath(),
                         e);
             }
         }
@@ -241,11 +250,11 @@ public class MapScalesManager {
     private final String scaleBundleDir;
 
     // TODO: Possibly have a Map<String,ManagedMapScale> to handle duplicates
-    private Collection<ManagedMapScale> storedScales = new ArrayList<ManagedMapScale>();
+    private Collection<ManagedMapScale> storedScales = new ArrayList<>();
 
     // TODO: Need to figure out best way to create custom scales (depends on
     // maps loaded so it can't be at the projection dialog level)
-    private final Collection<ManagedMapScale> customScales = new ArrayList<ManagedMapScale>();
+    private final Collection<ManagedMapScale> customScales = new ArrayList<>();
 
     /**
      * Construct a MapScalesManager for the given scales file. File must be
@@ -295,8 +304,8 @@ public class MapScalesManager {
     }
 
     private synchronized void loadMapScales(MapScales scales) {
-        List<ManagedMapScale> storedScales = new ArrayList<ManagedMapScale>();
-        List<PartId> failedParts = new ArrayList<PartId>();
+        List<ManagedMapScale> storedScales = new ArrayList<>();
+        List<PartId> failedParts = new ArrayList<>();
         for (MapScale scale : scales.getScales()) {
             try {
                 storedScales.add(new ManagedMapScale(scaleBundleDir, scale));
@@ -352,7 +361,7 @@ public class MapScalesManager {
         /*
          * Set all the missing parts to the scale in the main pane
          */
-        List<PartId> combinedParts = new ArrayList<PartId>(
+        List<PartId> combinedParts = new ArrayList<>(
                 mainPane.partIds.length + missingParts.size());
         for (PartId p : mainPane.getPartIds()) {
             combinedParts.add(p);
@@ -377,11 +386,11 @@ public class MapScalesManager {
             scales = getScales();
         }
         Procedure procedure = new Procedure();
-        List<Bundle> bundles = new ArrayList<Bundle>();
+        List<Bundle> bundles = new ArrayList<>();
         for (ManagedMapScale scale : scales) {
             String editorId = null;
             for (PartId partId : scale.getPartIds()) {
-                if (partId.isView() == false) {
+                if (!partId.isView()) {
                     editorId = partId.getId();
                     break;
                 }
@@ -413,10 +422,12 @@ public class MapScalesManager {
                 + custom.size()];
         int i = 0;
         for (ManagedMapScale scale : stored) {
-            scales[i++] = scale;
+            scales[i] = scale;
+            i++;
         }
         for (ManagedMapScale scale : custom) {
-            scales[i++] = scale;
+            scales[i] = scale;
+            i++;
         }
         return scales;
     }
@@ -450,7 +461,7 @@ public class MapScalesManager {
      * @return
      */
     public Bundle getScaleBundleForPart(String partId) {
-        List<ManagedMapScale> scalesForPart = new ArrayList<ManagedMapScale>();
+        List<ManagedMapScale> scalesForPart = new ArrayList<>();
         for (ManagedMapScale scale : storedScales) {
             for (PartId part : scale.getPartIds()) {
                 if (partId.equals(part.getId())) {
@@ -516,7 +527,8 @@ public class MapScalesManager {
             } catch (SerializationException e) {
                 throw new IllegalStateException(
                         "Unable to construct the MapScalesManager using the default file: "
-                                + DEFAULT_SCALES_FILE);
+                                + DEFAULT_SCALES_FILE,
+                        e);
             }
         }
         return DEFAULT_MANAGER;
@@ -526,7 +538,7 @@ public class MapScalesManager {
             throws SerializationException {
         if (jaxbManager == null) {
             try {
-                jaxbManager = new SingleTypeJAXBManager<MapScales>(
+                jaxbManager = new SingleTypeJAXBManager<>(
                         MapScales.class);
             } catch (JAXBException e) {
                 throw new SerializationException(

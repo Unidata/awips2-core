@@ -4,17 +4,18 @@ Bundle-Name: Derived Parameter Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.datacube;singleton:=true
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.common.derivparam,
- com.raytheon.uf.common.serialization.comm;bundle-version="1.12.1174",
+ com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.inventory;bundle-version="1.14.0",
- com.raytheon.uf.common.time;bundle-version="1.12.1174",
- com.raytheon.uf.common.dataplugin;bundle-version="1.12.1174",
- com.raytheon.uf.common.dataquery;bundle-version="1.0.0",
- com.raytheon.uf.common.datastorage;bundle-version="1.12.1174",
+ com.raytheon.uf.common.time,
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.dataquery,
+ com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.pointdata;bundle-version="1.13.0",
  com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
- com.raytheon.uf.common.status;bundle-version="1.12.1174"
+ com.raytheon.uf.common.status,
+ org.slf4j;bundle-version="1.7.21"
 Export-Package: com.raytheon.uf.viz.datacube
 Bundle-ClassPath: com.raytheon.uf.viz.datacube.jar

@@ -7,17 +7,17 @@
 
    <!-- Only define when not wanting to use the UF Standard.
    <property scope="context" name="log.message.pattern" value="%-5p %d [%t] %c{0}: %m%n"/>
-   -->      
-   
+   -->
+
    <!-- TODO this is just a copy of logback-viz-core.xml but with
          sending to alertview instead of alertviz. Ideally we ought
          to be able to reuse the commonality or conditionally
          select which appender to use. -->
          
    <property scope="system" name="alertview.enabled" value="true" />
-   
+
    <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />            
-   
+
    <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
       <directory>${user.home}/${LOGDIR}</directory>
       <name>cave_${startTime}_pid_%PID%_logs.log</name>
@@ -47,7 +47,7 @@
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
       <file>${caveLogFile}</file>
    </appender>
-   
+
    <!-- this appender will log any System.out and System.err printouts to a
          file while also allowing them through to System.out and System.err -->
    <appender name="consoleLog" class="com.raytheon.uf.common.logback.appender.ConsoleFileAppender">
@@ -58,24 +58,24 @@
    <appender name="PerformanceLogAppender" class="ch.qos.logback.core.FileAppender">
       <file>${performanceLogFile}</file>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>    
-   
+   </appender>
+
    <!-- TODO should somehow be contributed from viz.gfe plugin -->
    <appender name="ProductEditorLogAppender" class="ch.qos.logback.core.FileAppender">
       <file>${producteditorLogFile}</file>
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>    
-   
+   </appender>
+
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>
       <appender-ref ref="CaveLogAppender"/>      
    </appender>
-   
+
    <appender name="AsyncAlertViewAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>      
       <appender-ref ref="AlertViewAppender"/>
    </appender> 
-   
+
    <appender name="AsyncPerfLogAppender" class="ch.qos.logback.classic.AsyncAppender">
       <queueSize>500</queueSize>
       <appender-ref ref="PerformanceLogAppender"/>
@@ -86,49 +86,33 @@
       <appender-ref ref="ProductEditorLogAppender"/>
    </appender> 
 
-   <logger name="CaveLogger" additivity="false">
-      <level value="ALL"/>
+   <logger name="CaveLogger" level="all" additivity="false">
       <appender-ref ref="AsyncCaveLogAppender"/>
       <appender-ref ref="AsyncAlertViewAppender"/>
    </logger>
 
-   <logger name="PerformanceLogger" additivity="false">
-      <level value="ALL"/>
+   <logger name="PerformanceLogger" level="all" additivity="false">
       <appender-ref ref="AsyncPerfLogAppender"/>
    </logger>
 
-   <logger name="ProductEditorLogger" additivity="false">
-      <level value="ALL"/>
+   <logger name="ProductEditorLogger" level="all" additivity="false">
       <appender-ref ref="AsyncProductEditorLogAppender"/>
    </logger>
 
-   <logger name="com.raytheon">
-      <level value="INFO"/>
-   </logger>
+   <logger name="com.raytheon" level="info" />
 
-   <logger name="mx4j">
-      <level value="ERROR"/>
-   </logger>
-   <logger name="org.apache">
-      <level value="INFO"/>
-   </logger>
-   <logger name="org.apache.commons.beanutils">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.apache.qpid">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.geotools">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.apache.xbean.spring">
-      <level value="WARN"/>
-   </logger>
-   <logger name="org.springframework">
-      <level value="ERROR"/>
-   </logger>
-   <root> 
-      <level value="INFO"/> 
+   <logger name="mx4j" level="error" />
+   <logger name="org.apache" level="info" />
+   <logger name="org.apache.commons.beanutils" level="warn" />
+   <logger name="org.apache.qpid" level="warn" />
+   <logger name="org.apache.xbean.spring" level="warn" />
+   <logger name="org.geotools" level="warn" />
+
+   <!-- Silence viz spring startup info messages -->
+   <logger name="org.springframework" level="error" />
+   <logger name="com.raytheon.uf.viz.spring" level="warn" />
+
+   <root level="info">
       <appender-ref ref="consoleLog"/>
-    </root> 
+   </root> 
 </configuration> 

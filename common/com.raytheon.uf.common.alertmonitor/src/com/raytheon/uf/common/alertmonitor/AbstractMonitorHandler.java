@@ -28,10 +28,21 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * UFStatus abstract base class for for monitor event handlers.
+ * 
+ * <pre>
+ * 
+ * SOFTWARE HISTORY
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * ???          ???        ???         Initial creation
+ * Jun 14, 2017 6316       njensen     Removed inherited interface default methods
+ * 
+ * </pre>
+ * 
  */
 public abstract class AbstractMonitorHandler implements IUFStatusHandler {
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractMonitorHandler.class, "GDN_ADMIN", "GDN_ADMIN");
 
     public static final String MONITOR = "MONITOR";
@@ -57,35 +68,21 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandler#handle(com.raytheon.uf
-     * .common.status.UFStatus)
-     */
     @Override
     public void handle(UFStatus status) {
         this.handle(status.getPriority(), status.getMessage(),
                 status.getException());
     }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.common.status.IUFStatusHandler#handle(com.raytheon.uf
-	 * .common.status.UFStatus, java.lang.String)
-	 */
-	@Override
-	public void handle(UFStatus status, String category) {
-		this.handle(status.getPriority(), category, status.getMessage(),
-				status.getException());
-	}
+    @Override
+    public void handle(UFStatus status, String category) {
+        this.handle(status.getPriority(), category, status.getMessage(),
+                status.getException());
+    }
 
     @Override
     public void handle(Priority p, String msg) {
-		this.handle(p, msg, (Throwable) null);
+        this.handle(p, msg, (Throwable) null);
     }
 
     @Override
@@ -104,63 +101,56 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
         sendMonitorMessage(p, msg, null, null);
     }
 
-	/*
-	 * (non-Javadoc)
-	 * 
-	 * @see
-	 * com.raytheon.uf.common.status.IUFStatusHandler#handle(com.raytheon.uf
-	 * .common.status.UFStatus.Priority, java.lang.String, java.lang.String)
-	 */
-	@Override
-	public void handle(Priority priority, String category, String message) {
-		handle(priority, category, message, (Throwable) null);
-	}
+    @Override
+    public void handle(Priority priority, String category, String message) {
+        handle(priority, category, message, (Throwable) null);
+    }
 
-	@Override
-	public void handle(Priority p, String category, String msg, Throwable t) {
-		StringBuilder sb = new StringBuilder(msg.length() + 64);
-		sb.append(MONITOR);
+    @Override
+    public void handle(Priority p, String category, String msg, Throwable t) {
+        StringBuilder sb = new StringBuilder(msg.length() + 64);
+        sb.append(MONITOR);
 
-		if (source != null) {
-			sb.append(": ");
-			sb.append(source);
-		}
+        if (source != null) {
+            sb.append(": ");
+            sb.append(source);
+        }
 
-		sb.append(" - ");
-		sb.append(msg);
-		msg = sb.toString();
-		sendMonitorMessage(p, category, msg, null, null);
-	}
+        sb.append(" - ");
+        sb.append(msg);
+        msg = sb.toString();
+        sendMonitorMessage(p, category, msg, null, null);
+    }
 
-	/**
-	 * Send a message to alertViz
-	 * 
-	 * @param priority
-	 * @param message
-	 * @param details
-	 * @param audioFile
-	 */
+    /**
+     * Send a message to alertViz
+     * 
+     * @param priority
+     * @param message
+     * @param details
+     * @param audioFile
+     */
     private void sendMonitorMessage(Priority priority, String message,
             String details, String audioFile) {
-		sendMonitorMessage(priority, MONITOR, message, details, audioFile);
-	}
+        sendMonitorMessage(priority, MONITOR, message, details, audioFile);
+    }
 
-	/**
-	 * Send a message to alertViz
-	 * 
-	 * @param priority
-	 * @param category
-	 * @param message
-	 * @param details
-	 * @param audioFile
-	 */
-	private void sendMonitorMessage(Priority priority, String category,
-			String message, String details, String audioFile) {
+    /**
+     * Send a message to alertViz
+     * 
+     * @param priority
+     * @param category
+     * @param message
+     * @param details
+     * @param audioFile
+     */
+    private void sendMonitorMessage(Priority priority, String category,
+            String message, String details, String audioFile) {
 
         StatusMessage sm = new StatusMessage();
         sm.setPriority(priority);
         sm.setPlugin(pluginId);
-		sm.setCategory(category);
+        sm.setCategory(category);
         sm.setMessage(message);
         sm.setSourceKey(source);
         sm.setDetails(details);
@@ -180,7 +170,7 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
      * @param sm
      * @throws Exception
      */
-    abstract protected void sendMonitorMessage(StatusMessage sm)
+    protected abstract void sendMonitorMessage(StatusMessage sm)
             throws Exception;
 
     /**
@@ -198,62 +188,4 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
         AbstractMonitorHandler.monitorEndpoint = monitorEndpoint;
     }
 
-    @Override
-    public void debug(String message) {
-        handle(Priority.DEBUG, message);
-    }
-
-    @Override
-	public void debug(String category, String message) {
-		handle(Priority.DEBUG, category, message);
-	}
-
-	@Override
-    public void info(String message) {
-        handle(Priority.INFO, message);
-    }
-
-    @Override
-	public void info(String category, String message) {
-		handle(Priority.INFO, category, message);
-	}
-
-	@Override
-    public void warn(String message) {
-        handle(Priority.WARN, message);
-    }
-
-	public void warn(String category, String message) {
-		handle(Priority.WARN, category, message);
-	}
-
-    @Override
-    public void error(String message) {
-        handle(Priority.ERROR, message);
-    }
-
-    @Override
-	public void error(String category, String message) {
-		handle(Priority.ERROR, category, message);
-	}
-
-	@Override
-    public void error(String message, Throwable throwable) {
-        handle(Priority.ERROR, message, throwable);
-    }
-
-    @Override
-	public void error(String category, String message, Throwable throwable) {
-		handle(Priority.ERROR, category, message, throwable);
-	}
-
-	@Override
-    public void fatal(String message, Throwable throwable) {
-        handle(Priority.FATAL, message, throwable);
-    }
-
-	@Override
-	public void fatal(String category, String message, Throwable throwable) {
-		handle(Priority.FATAL, category, message, throwable);
-	}
 }

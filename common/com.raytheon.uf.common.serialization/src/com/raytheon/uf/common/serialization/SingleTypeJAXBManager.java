@@ -21,10 +21,11 @@ package com.raytheon.uf.common.serialization;
 
 import java.io.File;
 import java.io.InputStream;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * A JAXBManager that only supports a single class (including any classes that
@@ -44,15 +45,18 @@ import javax.xml.bind.JAXBException;
  * Aug 08, 2014  3503      bclement    removed ufstatus
  * Feb 18, 2015  4125      rjpeter     Added unmarshalFromXml
  * Dec 10, 2015  4834      njensen     Added unmarshalFromInputStream
+ * Jun 19, 2017  6316      njensen     Fixed logging
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  * @param <T>
  */
 
 public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
+
+    private static final Logger logger = LoggerFactory
+            .getLogger(SingleTypeJAXBManager.class);
 
     protected final Class<T> type;
 
@@ -163,15 +167,10 @@ public class SingleTypeJAXBManager<T extends Object> extends JAXBManager {
             boolean pooling, Class<A> clazz) {
         SingleTypeJAXBManager<A> retVal = null;
         try {
-            retVal = new SingleTypeJAXBManager<A>(clazz);
+            retVal = new SingleTypeJAXBManager<>(pooling, clazz);
         } catch (JAXBException e) {
-            // technically this should only ever happen if a developer messes
-            // up, so we're going to print the stacktrace too as extra warning
-            e.printStackTrace();
-            Logger.getGlobal().log(
-                    Level.SEVERE,
-                    "Unable to initialize single type JAXB manager: "
-                            + e.getLocalizedMessage());
+            logger.error("Unable to initialize single type JAXB manager: "
+                    + e.getLocalizedMessage(), e);
         }
 
         return retVal;

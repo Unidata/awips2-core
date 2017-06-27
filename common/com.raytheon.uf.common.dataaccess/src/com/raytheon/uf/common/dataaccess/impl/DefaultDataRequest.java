@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess.impl;
 
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -49,11 +50,11 @@ import com.vividsolutions.jts.geom.Envelope;
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
  * May 28, 2013 2023       dgilling    Add support for DynamicSerialize.
+ * Jun 14, 2017 6316       njensen     Overrode toString()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 @XmlAccessorType(XmlAccessType.NONE)
@@ -92,7 +93,7 @@ public class DefaultDataRequest implements IDataRequest {
     @Override
     public void addIdentifier(String key, Object value) {
         if (identifiers == null) {
-            identifiers = new HashMap<String, Object>();
+            identifiers = new HashMap<>();
         }
         identifiers.put(key, value);
     }
@@ -157,4 +158,14 @@ public class DefaultDataRequest implements IDataRequest {
     public Envelope getEnvelope() {
         return envelope;
     }
+
+    @Override
+    public String toString() {
+        return "DefaultDataRequest [datatype=" + datatype + ", identifiers="
+                + identifiers + ", parameters=" + Arrays.toString(parameters)
+                + ", levels=" + Arrays.toString(levels) + ", locationNames="
+                + Arrays.toString(locationNames) + ", envelope=" + envelope
+                + "]";
+    }
+
 }

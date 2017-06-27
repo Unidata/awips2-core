@@ -142,7 +142,7 @@ public class JAXBManager {
                     if (clazz.length == 1) {
                         System.out.println("JAXB context for "
                                 + clazz[0].getSimpleName() + " inited in: "
-                                + (System.currentTimeMillis() - t0) + "ms");
+                                + (System.currentTimeMillis() - t0) + " ms");
                     }
                     clazz = null;
                 }

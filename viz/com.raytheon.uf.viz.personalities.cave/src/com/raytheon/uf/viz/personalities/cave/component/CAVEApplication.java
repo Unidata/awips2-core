@@ -56,8 +56,6 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.SimulatedTime;
-import com.raytheon.uf.common.time.util.ITimer;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.viz.application.component.IStandaloneComponent;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.RecordFactory;
@@ -90,11 +88,11 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Jan 15, 2015 3947       mapeters    Don't save simulated time
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
  * Jan 11, 2016 5232       njensen     Apply css style at startup
+ * Jun 27, 2017 6316       njensen     Pass along start time
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class CAVEApplication implements IStandaloneComponent {
@@ -107,19 +105,11 @@ public class CAVEApplication implements IStandaloneComponent {
 
     private Display applicationDisplay;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.application.component.IStandaloneComponent#startComponent
-     * (java.lang.String)
-     */
     @Override
     @SuppressWarnings("restriction")
     public Object startComponent(String componentName) throws Exception {
+        long workbenchStartTime = System.currentTimeMillis();
         this.componentName = componentName;
-        ITimer startupTimer = TimeUtil.getTimer();
-        startupTimer.start();
 
         // Workaround for when PlatformUI has not been started
         Platform.getLog(WorkbenchPlugin.getDefault().getBundle())
@@ -127,9 +117,6 @@ public class CAVEApplication implements IStandaloneComponent {
 
         UnitRegistrar.registerUnits();
         CAVEMode.performStartupDuties();
-
-        ITimer timer = TimeUtil.getTimer();
-        timer.start();
 
         // Get the display
         this.applicationDisplay = createDisplay();
@@ -169,14 +156,14 @@ public class CAVEApplication implements IStandaloneComponent {
             // open JMS connection to allow alerts to be received
             NotificationManagerJob.connect();
 
-            timer.stop();
-            System.out.println("Internal initialization time: "
-                    + timer.getElapsedTime() + " ms");
-
             workbenchAdvisor = getWorkbenchAdvisor();
             if (workbenchAdvisor instanceof VizWorkbenchAdvisor) {
                 ((VizWorkbenchAdvisor) workbenchAdvisor)
-                        .setStartupTimer(startupTimer);
+                        .setWorkbenchStartTime(workbenchStartTime);
+                ((VizWorkbenchAdvisor) workbenchAdvisor)
+                        .setAppStartTime(
+                        com.raytheon.uf.viz.spring.dm.Activator.getDefault()
+                                .getApplicationStartTime());
                 // Only initialize the procedure XML if the workbench advisor is
                 // a VizWorkbenchAdvisor meaning the CAVE display will be up
                 ProcedureXmlManager.inititializeAsync();
@@ -220,7 +207,7 @@ public class CAVEApplication implements IStandaloneComponent {
     }
 
     /**
-     * @return the {@link #componentName}
+     * @return the componentName
      */
     public String getComponentName() {
         return componentName;
@@ -285,7 +272,7 @@ public class CAVEApplication implements IStandaloneComponent {
     protected int handleSpringFailure() {
         String msg = "CAVE's Spring container did not initialize correctly and CAVE must shut down.";
         boolean restart = false;
-        if (isNonUIComponent() == false) {
+        if (!isNonUIComponent()) {
             msg += " Attempt to restart CAVE?";
             restart = MessageDialog.openQuestion(
                     new Shell(Display.getDefault()), "Startup Error", msg);

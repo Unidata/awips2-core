@@ -37,8 +37,9 @@ import org.eclipse.ui.application.WorkbenchAdvisor;
 import org.eclipse.ui.application.WorkbenchWindowAdvisor;
 import org.eclipse.ui.commands.ICommandService;
 import org.eclipse.ui.contexts.IContextService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import com.raytheon.uf.common.time.util.ITimer;
 import com.raytheon.uf.viz.core.ProgramArguments;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 import com.raytheon.uf.viz.ui.menus.DiscoverMenuContributions;
@@ -65,29 +66,27 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Jan 05, 2016 5193        bsteffen    Activate viz perspective after startup.
  * Jan 14, 2016 5192        njensen     Remove jdt, debug, and team commands
  * Mar 04, 2016 5267        bsteffen    Let eclipse close nonrestorable views.
+ * Jun 27, 2017 6316        njensen     Log perspective argument, perspective activate time,
+ *                                       total startup time
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
 
     private boolean createdMenus = false;
 
-    protected ITimer startupTimer;
+    protected final Logger logger = LoggerFactory.getLogger(this.getClass());
+
+    protected long appStartTime = -1L;
+
+    protected long workbenchStartTime = -1L;
 
     public VizWorkbenchAdvisor() {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.application.WorkbenchAdvisor#initialize(org.eclipse.ui
-     * .application.IWorkbenchConfigurer)
-     */
     @Override
     public void initialize(IWorkbenchConfigurer configurer) {
         super.initialize(configurer);
@@ -168,7 +167,7 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         IPreferenceNode[] topNodes = preferenceManager.getRootSubNodes();
         for (IPreferenceNode root : topNodes) {
             String rootId = root.getId();
-            if (rootId.equals("org.eclipse.ui.preferencePages.Workbench")) {
+            if ("org.eclipse.ui.preferencePages.Workbench".equals(rootId)) {
                 IPreferenceNode node = root
                         .findSubNode("org.eclipse.ui.preferencePages.Workspace");
                 if (node != null) {
@@ -184,19 +183,13 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.application.WorkbenchAdvisor#getInitialWindowPerspectiveId
-     * ()
-     */
     @Override
     public String getInitialWindowPerspectiveId() {
         String perspective = ProgramArguments.getInstance().getString(
                 "-perspective");
         IPerspectiveDescriptor desc = getSpecifiedPerspective(perspective);
         if (desc != null) {
+            logger.info("Viz started with -perspective " + perspective);
             return desc.getId();
         }
         IPerspectiveRegistry registry = PlatformUI.getWorkbench()
@@ -237,17 +230,10 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.application.WorkbenchAdvisor#createWorkbenchWindowAdvisor
-     * (org.eclipse.ui.application.IWorkbenchWindowConfigurer)
-     */
     @Override
     public final WorkbenchWindowAdvisor createWorkbenchWindowAdvisor(
             IWorkbenchWindowConfigurer configurer) {
-        if (createdMenus == false) {
+        if (!createdMenus) {
             createdMenus = true;
             createDynamicMenus();
         }
@@ -265,11 +251,6 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         return new VizWorkbenchWindowAdvisor(configurer);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.application.WorkbenchAdvisor#preShutdown()
-     */
     @Override
     public boolean preShutdown() {
         boolean bResult = super.preShutdown();
@@ -280,8 +261,7 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         }
 
         if (bResult) {
-            System.out
-                    .println("VizWorkbenchAdvisor: User exiting CAVE, shutdown initiated");
+            logger.info("User exiting CAVE, shutdown initiated");
         }
 
         return bResult;
@@ -295,23 +275,36 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         IContextService service = workbench.getService(IContextService.class);
         service.activateContext("com.raytheon.uf.viz.application.cave");
 
-        if (startupTimer != null) {
-            startupTimer.stop();
-            System.out.println("Workbench startup time: "
-                    + startupTimer.getElapsedTime() + " ms");
+        if (workbenchStartTime > -1) {
+            logger.info("Workbench startup time: "
+                    + (System.currentTimeMillis() - workbenchStartTime)
+                    + " ms");
         }
+
         IWorkbenchWindow window = workbench.getActiveWorkbenchWindow();
         IWorkbenchPage page = window.getActivePage();
         IPerspectiveDescriptor perspective = page.getPerspective();
         if (perspective != null) {
+            long t0 = System.currentTimeMillis();
             VizPerspectiveListener.getInstance(window)
                     .perspectiveActivated(page, perspective);
+            logger.info(perspective.getLabel() + " perspective started in "
+                            + (System.currentTimeMillis() - t0) + " ms");
+        } else {
+            logger.info("No perspective activated at startup");
         }
         
         /*
          * remove after starting up, as some commands may not have initialized yet
          */
         removeExtraCommands();
+
+        // print out total startup time
+        if (appStartTime > -1) {
+            long endTime = System.currentTimeMillis();
+            logger.info("*** Total CAVE startup: " + (endTime - appStartTime)
+                    + " ms ***");
+        }
     }
 
     /**
@@ -322,10 +315,14 @@ public class VizWorkbenchAdvisor extends WorkbenchAdvisor {
         DiscoverMenuContributions.discoverContributions();
     }
 
-    public void setStartupTimer(ITimer startupTimer) {
-        this.startupTimer = startupTimer;
+    public void setWorkbenchStartTime(long timeInMillis) {
+        this.workbenchStartTime = timeInMillis;
     }
     
+    public void setAppStartTime(long timeInMillis) {
+        this.appStartTime = timeInMillis;
+    }
+
     /**
      * Undefines specific commands so that they aren't available in the system. This
      * has the benefit of removing them from the ctrl-shift-L key binding

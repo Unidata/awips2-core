@@ -42,11 +42,11 @@ import com.raytheon.uf.common.status.slf4j.UFMarkers;
  * Oct 28, 2009            njensen     Initial creation
  * Jun 27, 2013 2142       njensen     Use SLF4J instead of log4j
  * May 27, 2015 4473       njensen     Refactored
+ * Jun 14, 2017 6316       njensen     Removed inherited interface default methods
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class EdexLogHandler implements IUFStatusHandler {
@@ -176,53 +176,17 @@ public class EdexLogHandler implements IUFStatusHandler {
     }
 
     @Override
-    public void info(String message) {
-        handle(Priority.INFO, message);
+    public void debug(String message, Throwable throwable) {
+        if (this.clazzLogger.isDebugEnabled()) {
+            handle(Priority.DEBUG, message, throwable);
+        }
     }
 
     @Override
-    public void info(String category, String message) {
-        handle(Priority.INFO, category, message);
-    }
-
-    @Override
-    public void warn(String message) {
-        handle(Priority.WARN, message);
-    }
-
-    @Override
-    public void warn(String category, String message) {
-        handle(Priority.WARN, category, message);
-    }
-
-    @Override
-    public void error(String message) {
-        handle(Priority.ERROR, message);
-    }
-
-    @Override
-    public void error(String category, String message) {
-        handle(Priority.ERROR, category, message);
-    }
-
-    @Override
-    public void error(String message, Throwable throwable) {
-        handle(Priority.ERROR, message, throwable);
-    }
-
-    @Override
-    public void error(String category, String message, Throwable throwable) {
-        handle(Priority.ERROR, category, message, throwable);
-    }
-
-    @Override
-    public void fatal(String message, Throwable throwable) {
-        handle(Priority.FATAL, message, throwable);
-    }
-
-    @Override
-    public void fatal(String category, String message, Throwable throwable) {
-        handle(Priority.FATAL, category, message, throwable);
+    public void debug(String category, String message, Throwable throwable) {
+        if (this.clazzLogger.isDebugEnabled()) {
+            handle(Priority.DEBUG, category, message, throwable);
+        }
     }
 
 }

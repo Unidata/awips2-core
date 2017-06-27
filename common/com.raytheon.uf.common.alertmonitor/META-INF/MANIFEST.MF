@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: AlertMonitor Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.alertmonitor
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.17.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: com.raytheon.uf.common.message,
  com.raytheon.uf.common.status,
  javax.jms

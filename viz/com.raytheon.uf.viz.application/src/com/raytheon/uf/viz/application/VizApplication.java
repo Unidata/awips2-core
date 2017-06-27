@@ -45,21 +45,22 @@ import com.raytheon.uf.viz.application.component.IStandaloneComponent;
  * Oct 07, 2008 1433       chammack    Added alertviz startup
  * Nov 27, 2013            mschenke    Removed ProgramArguments to make dependencies cleaner
  * Jan 23, 2014            njensen     Added shutdown hook and printout
+ * Jun 26, 2017 3613       njensen     Log component specified
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 public class VizApplication implements IApplication {
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seeorg.eclipse.equinox.app.IApplication#start(org.eclipse.equinox.app.
-     * IApplicationContext)
-     */
+    private SimpleDateFormat sdf;
+
+    public VizApplication() {
+        sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+    }
+
     @Override
     public Object start(IApplicationContext context) throws Exception {
         String appToRun = null;
@@ -74,10 +75,14 @@ public class VizApplication implements IApplication {
         }
 
         IStandaloneComponent component = null;
-
+        String dateString = sdf.format(new Date());
         if (appToRun == null) {
-            System.out.println("No component specified, defaulting to 'viz'");
+            System.out.println(dateString
+                    + " No component specified, defaulting to 'viz'");
             appToRun = "viz";
+        } else {
+            System.out.println(
+                    dateString + " Component " + appToRun + " specified");
         }
 
         try {
@@ -87,7 +92,7 @@ public class VizApplication implements IApplication {
         }
 
         if (component == null) {
-            System.err.println("No component by name: " + appToRun
+            System.err.println(dateString + " No component by name: " + appToRun
                     + ", exiting...");
             return IApplication.EXIT_OK;
         }
@@ -97,11 +102,6 @@ public class VizApplication implements IApplication {
         return component.startComponent(appToRun);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.equinox.app.IApplication#stop()
-     */
     @Override
     public void stop() {
 
@@ -154,9 +154,7 @@ public class VizApplication implements IApplication {
                  * spontaneous death of the process or force kill will not have
                  * this printout.
                  */
-                SimpleDateFormat sdf = new SimpleDateFormat(
-                        "yyyy-MM-dd HH:mm:ss");
-                sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
+
                 System.out.println(sdf.format(new Date())
                         + " VizApplication's runtime shutdown hook triggered");
             }

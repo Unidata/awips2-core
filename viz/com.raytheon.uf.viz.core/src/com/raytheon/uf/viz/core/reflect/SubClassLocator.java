@@ -59,11 +59,11 @@ import com.raytheon.uf.viz.core.Activator;
  * Apr 17, 2014  3018     njensen     Synchronize against BundleRepository
  * Aug 13, 2014  3500     bclement    uses BundleSynchronizer
  * Aug 22, 2014  3500     bclement    removed sync on OSGi internals
+ * Jun 23, 2017  6316     njensen     Exclude javax
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class SubClassLocator implements ISubClassLocator {
     private static final transient IUFStatusHandler statusHandler = UFStatus
@@ -71,11 +71,11 @@ public class SubClassLocator implements ISubClassLocator {
 
     private static final String CACHE_FILENAME = "subclassCache.txt";
 
-    private final Map<String, BundleReflections> reflectionLookup = new HashMap<String, BundleReflections>();
+    private final Map<String, BundleReflections> reflectionLookup = new HashMap<>();
 
-    private final Map<String, Bundle> bundleLookup = new HashMap<String, Bundle>();
+    private final Map<String, Bundle> bundleLookup = new HashMap<>();
 
-    private final Map<String, Collection<Bundle>> requiredBundles = new HashMap<String, Collection<Bundle>>();
+    private final Map<String, Collection<Bundle>> requiredBundles = new HashMap<>();
 
     private final BundleClassCache cache;
 
@@ -100,9 +100,9 @@ public class SubClassLocator implements ISubClassLocator {
      */
     @Override
     public Collection<Class<?>> locateSubClasses(Class<?> base) {
-        Map<String, Set<Class<?>>> recursiveClasses = new HashMap<String, Set<Class<?>>>(
+        Map<String, Set<Class<?>>> recursiveClasses = new HashMap<>(
                 bundleLookup.size(), 1.0f);
-        Set<Class<?>> result = new HashSet<Class<?>>(512);
+        Set<Class<?>> result = new HashSet<>(512);
         for (Bundle bundle : bundleLookup.values()) {
             result.addAll(lookupRecursiveSubClasses(base, bundle, true,
                     recursiveClasses));
@@ -139,7 +139,8 @@ public class SubClassLocator implements ISubClassLocator {
             Bundle bundle, boolean includeRequiredSubclasses,
             Map<String, Set<Class<?>>> recursiveClasses) {
         String bundleName = bundle.getSymbolicName();
-        if (bundleName.startsWith("org.eclipse")) {
+        if (bundleName.startsWith("org.eclipse")
+                || bundleName.startsWith("javax")) {
             /*
              * org.eclipse.osgi has no class loader and must be skipped,
              * skipping the rest of org.eclipse just saves time.
@@ -174,31 +175,30 @@ public class SubClassLocator implements ISubClassLocator {
             ownedNames = new String[owned.size()];
             int index = 0;
             for (Class<?> clazz : owned) {
-                ownedNames[index++] = clazz.getName();
+                ownedNames[index] = clazz.getName();
+                index++;
             }
             cache.putTypes(bundle, base.getName(), ownedNames);
-            Set<Class<?>> all = new HashSet<Class<?>>(dependencies);
+            Set<Class<?>> all = new HashSet<>(dependencies);
             all.addAll(owned);
             recursiveClasses.put(bundleName, all);
             if (includeRequiredSubclasses) {
                 return all;
-            } else {
-                return owned;
             }
-        } else {
-            Set<Class<?>> owned = loadClassesFromCache(bundle,
-                    Arrays.asList(ownedNames));
-            if (includeRequiredSubclasses) {
-                Set<Class<?>> dependencies = getRequiredSubclasses(base,
-                        bundle, recursiveClasses);
-                Set<Class<?>> all = new HashSet<Class<?>>(dependencies);
-                all.addAll(owned);
-                recursiveClasses.put(bundleName, all);
-                return all;
-            } else {
-                return owned;
-            }
+            return owned;
         }
+
+        Set<Class<?>> owned = loadClassesFromCache(bundle,
+                Arrays.asList(ownedNames));
+        if (includeRequiredSubclasses) {
+            Set<Class<?>> dependencies = getRequiredSubclasses(base, bundle,
+                    recursiveClasses);
+            Set<Class<?>> all = new HashSet<>(dependencies);
+            all.addAll(owned);
+            recursiveClasses.put(bundleName, all);
+            return all;
+        }
+        return owned;
     }
 
     /**
@@ -216,7 +216,7 @@ public class SubClassLocator implements ISubClassLocator {
      */
     private Set<Class<?>> getRequiredSubclasses(Class<?> base, Bundle bundle,
             Map<String, Set<Class<?>>> recursiveClasses) {
-        Set<Class<?>> dependencies = new HashSet<Class<?>>();
+        Set<Class<?>> dependencies = new HashSet<>();
         dependencies.add(base);
         for (Bundle reqBundle : getRequiredBundles(bundle)) {
             dependencies.addAll(lookupRecursiveSubClasses(base, reqBundle,
@@ -276,7 +276,7 @@ public class SubClassLocator implements ISubClassLocator {
             return Collections.emptySet();
         }
 
-        HashSet<Class<?>> result = new HashSet<Class<?>>(classNames.size(),
+        HashSet<Class<?>> result = new HashSet<>(classNames.size(),
                 1.0f);
         for (String className : classNames) {
             try {
@@ -300,7 +300,7 @@ public class SubClassLocator implements ISubClassLocator {
         String bundleName = bundle.getSymbolicName();
         Collection<Bundle> required = requiredBundles.get(bundleName);
         if (required == null) {
-            required = new HashSet<Bundle>();
+            required = new HashSet<>();
             BundleWiring bundleWiring = bundle.adapt(BundleWiring.class);
             if (bundleWiring != null) {
                 /* Get Required bundles */

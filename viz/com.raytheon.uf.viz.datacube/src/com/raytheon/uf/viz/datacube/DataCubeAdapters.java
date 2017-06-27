@@ -22,9 +22,8 @@ package com.raytheon.uf.viz.datacube;
 import java.util.HashMap;
 import java.util.Map;
 
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * Contains a registry of IDataCubeAdapter instances and provides the interface
@@ -36,22 +35,22 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 1, 2014            ekladstrup     Initial creation
+ * Apr 01, 2014            ekladstrup  Initial creation
+ * Jun 27, 2017  6316      njensen     Switched from ufstatus to slf4j for logging
  * 
  * </pre>
  * 
  * @author ekladstrup
- * @version 1.0
  */
 
 public class DataCubeAdapters {
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(DataCubeAdapters.class);
+    private final Logger logger = LoggerFactory
+            .getLogger(DataCubeAdapters.class);
 
-    protected Map<String, IDataCubeAdapter> adapters = new HashMap<String, IDataCubeAdapter>();
+    protected Map<String, IDataCubeAdapter> adapters = new HashMap<>();
 
-    protected Map<IDataCubeAdapter, Boolean> initializedMap = new HashMap<IDataCubeAdapter, Boolean>();
+    protected Map<IDataCubeAdapter, Boolean> initializedMap = new HashMap<>();
 
     protected static DataCubeAdapters instance = new DataCubeAdapters();
 
@@ -83,20 +82,17 @@ public class DataCubeAdapters {
             for (String plugin : supportedPlugins) {
                 IDataCubeAdapter registeredAdapter = adapters.get(plugin);
                 if (registeredAdapter != null) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Already registered "
-                                    + registeredAdapter.getClass()
-                                            .getCanonicalName()
-                                    + " IDataCubeAdapter for plugin \""
-                                    + plugin + "\" ignoring "
-                                    + adapter.getClass().getCanonicalName());
+                    logger.warn("Already registered "
+                            + registeredAdapter.getClass().getCanonicalName()
+                            + " IDataCubeAdapter for plugin \"" + plugin
+                            + "\" ignoring "
+                            + adapter.getClass().getCanonicalName());
                 } else {
                     adapters.put(plugin, adapter);
-                    statusHandler
-                            .handle(Priority.VERBOSE, "Registered "
-                                    + adapter.getClass().getCanonicalName()
-                                    + " IDataCubeAdapter for plugin \""
-                                    + plugin + "\"");
+                    logger.debug("Registered "
+                            + adapter.getClass().getCanonicalName()
+                            + " IDataCubeAdapter for plugin \"" + plugin
+                            + "\"");
                 }
             }
         }

@@ -21,7 +21,7 @@ import org.osgi.framework.BundleContext;
 
 /**
  * 
- * Custom version of spring osgi ContextLoaderListener to turn off xml
+ * Custom version of Spring OSGi ContextLoaderListener to turn off xml
  * validation
  * 
  * 
@@ -37,11 +37,12 @@ import org.osgi.framework.BundleContext;
  * Mar 05, 2013 1754       djohnson     Catch exceptions and allow as much of the Spring container to boot as possible.
  * May 23, 2013 2005       njensen      Added springSuccess flag
  * Nov 12, 2013 2361       njensen      Print out time spent on each spring context
+ * Jun 27, 2017 6316       njensen      Track bundle start time
+ * 
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 public class Activator implements BundleActivator {
 
@@ -63,37 +64,38 @@ public class Activator implements BundleActivator {
     private boolean springSuccess = true;
 
     /**
+     * Start time of this plugin. Since this plugin is usually the first plugin
+     * started outside of Eclipse's plugins, this works as a good measure for
+     * total startup time.
+     */
+    private long startTime;
+
+    /**
      * The constructor
      */
     public Activator() {
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.core.runtime.Plugins#start(org.osgi.framework.BundleContext)
-     */
     @Override
     public void start(BundleContext context) throws Exception {
-        long t0 = System.currentTimeMillis();
+        startTime = System.currentTimeMillis();
         if (this.isInstallOperation()) {
             return;
         }
         plugin = this;
 
-        Map<String, OSGIXmlApplicationContext> contextMap = new HashMap<String, OSGIXmlApplicationContext>();
-        Set<String> processing = new HashSet<String>();
+        Map<String, OSGIXmlApplicationContext> contextMap = new HashMap<>();
+        Set<String> processing = new HashSet<>();
         Bundle[] bundles = context.getBundles();
-        Map<String, Bundle> bundleMap = new HashMap<String, Bundle>();
+        Map<String, Bundle> bundleMap = new HashMap<>();
         for (Bundle b : bundles) {
             bundleMap.put(b.getSymbolicName(), b);
         }
         for (Bundle b : bundles) {
             createContext(bundleMap, contextMap, b, processing);
         }
-        System.out.println("Spring initialization: "
-                + (System.currentTimeMillis() - t0) + " ms");
+        System.out.println("Spring initialization took: "
+                + (System.currentTimeMillis() - startTime) + " ms");
     }
 
     private OSGIXmlApplicationContext createContext(
@@ -103,8 +105,8 @@ public class Activator implements BundleActivator {
         BundleResolver bundleResolver = new BundleResolver();
         String bundleName = bundle.getSymbolicName();
         OSGIXmlApplicationContext appCtx = contextMap.get(bundleName);
-        if (contextMap.containsKey(bundleName) == false
-                && bundleName.contains(".edex.") == false) {
+        if (!contextMap.containsKey(bundleName)
+                && !bundleName.contains(".edex.")) {
             if (processing.contains(bundleName)) {
                 springSuccess = false;
                 throw new RuntimeException(
@@ -117,7 +119,7 @@ public class Activator implements BundleActivator {
             Enumeration<?> entries = bundle.findEntries(SPRING_PATH,
                     SPRING_FILE_EXT, true);
             if (entries != null) {
-                List<String> files = new ArrayList<String>();
+                List<String> files = new ArrayList<>();
                 while (entries.hasMoreElements()) {
                     URL url = (URL) entries.nextElement();
                     try {
@@ -128,11 +130,11 @@ public class Activator implements BundleActivator {
                                 "Error resolving spring file: " + url, e);
                     }
                 }
-                if (files.size() > 0) {
+                if (!files.isEmpty()) {
                     // Files found, check for dependencies
                     Collection<Bundle> requiredBundles = bundleResolver
                             .getRequiredBundles(bundle);
-                    List<OSGIXmlApplicationContext> parentContexts = new ArrayList<OSGIXmlApplicationContext>();
+                    List<OSGIXmlApplicationContext> parentContexts = new ArrayList<>();
                     for (Bundle requiredBundle : requiredBundles) {
                         // Found bundle, process context for bundle
                         OSGIXmlApplicationContext parent = createContext(
@@ -145,7 +147,7 @@ public class Activator implements BundleActivator {
 
                     try {
                         long t0 = System.currentTimeMillis();
-                        if (parentContexts.size() > 0) {
+                        if (!parentContexts.isEmpty()) {
                             // Context with parent context
                             appCtx = new OSGIXmlApplicationContext(
                                     new OSGIGroupApplicationContext(bundle,
@@ -156,9 +158,9 @@ public class Activator implements BundleActivator {
                             appCtx = new OSGIXmlApplicationContext(
                                     files.toArray(new String[0]), bundle);
                         }
-                        System.out.println("Bundle " + bundle.getSymbolicName()
-                                + " spring init took: "
-                                + (System.currentTimeMillis() - t0));
+                        System.out.println("Spring init of plugin "
+                                + bundle.getSymbolicName() + " took: "
+                                + (System.currentTimeMillis() - t0) + " ms");
                     } catch (Throwable t) {
                         // No access to the statusHandler yet, so print the
                         // stack trace to the console. By catching this, we also
@@ -177,12 +179,6 @@ public class Activator implements BundleActivator {
         return appCtx;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.core.runtime.Plugin#stop(org.osgi.framework.BundleContext)
-     */
     @Override
     public void stop(BundleContext context) throws Exception {
         plugin = null;
@@ -225,5 +221,9 @@ public class Activator implements BundleActivator {
 
     public boolean isSpringInitSuccessful() {
         return springSuccess;
+    }
+
+    public long getApplicationStartTime() {
+        return startTime;
     }
 }
