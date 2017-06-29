@@ -72,6 +72,9 @@ import com.raytheon.viz.ui.colormap.IRefreshColorMapTreeListener;
  * Dec 01, 2016  5990     bsteffen  Ensure menu population does not pause UI
  * Apr 19, 2017  5852     tgurney   Label button "Untitled Colormap" if the
  *                                  selected colormap has no name
+ * May 10, 2017  6276     bsteffen  Force the popup menu to load synchronously
+ *                                  when the menu is accessed directly and ignore
+ *                                  other menu items that may be added.
  *
  * </pre>
  *
@@ -206,6 +209,21 @@ public class ColormapComp {
     }
 
     public Menu getMenu() {
+        return this.getMenu(true);
+    }
+
+    /**
+     * @param prepare
+     *            false allows the menu to be returned immediately and it may
+     *            display a temporary loading item when it is shown. True will
+     *            force the loading to complete before the menu is returned.
+     * @return the Menu for this control.
+     */
+    public Menu getMenu(boolean prepare) {
+        if (prepare) {
+            ColorMapTreeFactory.getInstance().getBaseTree().getSubTrees()
+                    .forEach(ColorMapTree::prepare);
+        }
         return cmapPopupMenu;
     }
 
@@ -245,6 +263,16 @@ public class ColormapComp {
 
         private ColorMapTree tree;
 
+        /**
+         * This field is used to track the lifecycle of population. The field
+         * will be null until the first time the menu is shown. When the menu
+         * has been shown but the tree is being prepared in the background it
+         * will be a placeholder menu item that says "Loading...". It will be
+         * a disposed menu item once the preparation is complete and the menu
+         * is populated.
+         */
+        private MenuItem loadingItem;
+
         public MenuPopulator(Menu menu, ColorMapTree tree) {
             this.menu = menu;
             this.tree = tree;
@@ -269,14 +297,15 @@ public class ColormapComp {
 
         @Override
         public void menuShown(MenuEvent e) {
-            if (menu.getItemCount() == 0) {
+            if (loadingItem == null) {
                 /*
                  * Display a Loading menu item until the tree is ready, then
                  * fill in the menu. Hopeful the async prepare from the
                  * constructor is done by now and the user never sees the
                  * loading item.
                  */
-                new MenuItem(menu, SWT.PUSH).setText("Loading...");
+                loadingItem = new MenuItem(menu, SWT.PUSH, 0);
+                loadingItem.setText("Loading...");
                 tree.prepareAsync(Optional.of(this::populateMenu));
             } else {
                 /*
@@ -289,11 +318,16 @@ public class ColormapComp {
         }
 
         private void populateMenu() {
-            for (MenuItem item : menu.getItems()) {
-                item.dispose();
+            int index = menu.getItemCount() - 1;
+            for (int i = 0; i < menu.getItemCount(); i += 1) {
+                if (menu.getItem(i) == loadingItem) {
+                    loadingItem.dispose();
+                    index = i;
+                    break;
+                }
             }
 
-            if (tree.isEmpty()) {
+            if (tree.isEmpty() && menu.getItemCount() == 0) {
                 /*
                  * Do not remove empty menus since it can cause the menu to
                  * shift while the user is still over an item.
@@ -307,14 +341,22 @@ public class ColormapComp {
             List<ColorMapTree> subTrees = tree.getSubTrees();
             subTrees.sort((tree1, tree2) -> tree1.getName()
                     .compareToIgnoreCase(tree2.getName()));
-            subTrees.forEach(this::addSubTree);
+            for (ColorMapTree subTree : subTrees) {
+                if (addSubTree(subTree, index)) {
+                    index += 1;
+                }
+            }
             List<ILocalizationFile> files = tree.getColorMapFiles();
             files.sort((file1, file2) -> file1.getPath()
                     .compareToIgnoreCase(file2.getPath()));
-            files.forEach(this::addFile);
+            for (ILocalizationFile file : files) {
+                addFile(file, index);
+                index += 1;
+            }
 
             if (menu == cmapPopupMenu) {
-                new MenuItem(menu, SWT.SEPARATOR);
+                new MenuItem(menu, SWT.SEPARATOR, index);
+                index += 1;
 
                 ColorMapTreeFactory cmtf = ColorMapTreeFactory.getInstance();
                 LocalizationLevel[] levels = PathManagerFactory.getPathManager()
@@ -323,30 +365,42 @@ public class ColormapComp {
                 for (int i = 1; i < levels.length; i += 1) {
                     LocalizationLevel level = levels[i];
                     ColorMapTree tree = cmtf.getTreeForLevel(level);
-                    addSubTree(tree);
+                    addSubTree(tree, index);
+                    index += 1;
                 }
             }
         }
 
-        private void addSubTree(ColorMapTree tree) {
+        /**
+         * 
+         * @param tree
+         *            the tree to add to the menu
+         * @param index
+         *            the index where the new item should be placed.
+         * @return true if a new menu item is added or false if the tree is
+         *         empty and no item is needed.
+         */
+        private boolean addSubTree(ColorMapTree tree, int index) {
             if (tree.isReady() && tree.isEmpty()) {
                 if (tree.isLevel()) {
-                    new MenuItem(menu, SWT.PUSH)
+                    new MenuItem(menu, SWT.PUSH, index)
                             .setText(tree.getName() + " ---");
+                    return true;
                 }
-                return;
+                return false;
             }
-            MenuItem item = new MenuItem(menu, SWT.CASCADE);
+            MenuItem item = new MenuItem(menu, SWT.CASCADE, index);
             item.setData(tree);
             item.setText(tree.getName());
             Menu subMenu = new Menu(shell, SWT.DROP_DOWN);
             subMenu.setData(tree.getName());
             item.setMenu(subMenu);
             subMenu.addMenuListener(new MenuPopulator(subMenu, tree));
+            return true;
         }
 
-        private void addFile(ILocalizationFile file) {
-            MenuItem item = new MenuItem(menu, SWT.None);
+        private void addFile(ILocalizationFile file, int index) {
+            MenuItem item = new MenuItem(menu, SWT.None, index);
             final String name = ColorMapLoader.shortenName(file);
             int start = name.lastIndexOf(IPathManager.SEPARATOR);
             if (start >= 0) {
@@ -370,8 +424,9 @@ public class ColormapComp {
             }
             boolean allReady = true;
             for (MenuItem item : menu.getItems()) {
-                if (item.getData() != null) {
-                    ColorMapTree tree = (ColorMapTree) item.getData();
+                Object data = item.getData();
+                if (data instanceof ColorMapTree) {
+                    ColorMapTree tree = (ColorMapTree) data;
                     if (!tree.isReady()) {
                         allReady = false;
                     } else if (tree.isEmpty()) {
