@@ -16,6 +16,8 @@
         <constructor-arg ref="persist-camel"/>
         <constructor-arg ref="pluginNotifier"/>
     </bean>
+    
+    <bean id="notificationCountStrategy" class="com.raytheon.uf.edex.esb.camel.CountAggregator"/>
 
     <camelContext id="persist-camel" xmlns="http://camel.apache.org/schema/spring" errorHandlerRef="errorHandler">
         <!-- Generic persist and indexing

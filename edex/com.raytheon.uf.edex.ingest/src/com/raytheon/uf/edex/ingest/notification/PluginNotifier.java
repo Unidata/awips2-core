@@ -80,7 +80,8 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * Jul 21, 2014  3373     bclement  JAXB manager API changes
  * May 22, 2015  4008     nabowle   Add periodic check for updates and reload.
  * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
- * May 22, 2017  6130     tjensen   Update notify to return list of PDOs
+ * May 22, 2017  6130     tjensen   Update notify to return the number of PDOs
+ *                                  processed
  *
  * </pre>
  *
@@ -370,7 +371,7 @@ public class PluginNotifier implements IContextStateProcessor {
      * @param pdos
      * @return
      */
-    public PluginDataObject[] notify(PluginDataObject... pdos) {
+    public int notify(PluginDataObject... pdos) {
         lock.readLock().lock();
         try {
             if ((pdos != null) && (pdos.length > 0)) {
@@ -430,7 +431,7 @@ public class PluginNotifier implements IContextStateProcessor {
             lock.readLock().unlock();
         }
 
-        return pdos;
+        return pdos.length;
     }
 
     /**
