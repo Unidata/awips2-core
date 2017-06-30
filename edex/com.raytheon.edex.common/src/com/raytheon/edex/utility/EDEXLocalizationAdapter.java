@@ -93,6 +93,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Apr 26, 2017 6258        tgurney     Set file/dir permissions on save
  * Jun 22, 2017 6339        njensen     Updated listDirectory() method signature
  *                                      Use FilenameFilter since we now have an extension
+ * Jun 30, 2017 6316        njensen     Improved regions.xml debug message
  *
  * </pre>
  *
@@ -432,8 +433,8 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         } else if (level == LocalizationLevel.REGION) {
             contextName = RegionLookup.getWfoRegion(getSiteName());
             if (contextName == null) {
-                handler.info("Unable to find " + getSiteName()
-                        + " in regions.xml file");
+                handler.debug("Site " + getSiteName()
+                        + " is not in regions.xml file, region will default to none");
                 contextName = "none";
             }
         } else {

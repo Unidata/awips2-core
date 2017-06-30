@@ -109,6 +109,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
  * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
+ * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  *
  * </pre>
  *
@@ -204,8 +205,8 @@ public class LocalizationManager implements IPropertyChangeListener {
             if (region != null) {
                 registerContextName(LocalizationLevel.REGION, region);
             } else {
-                statusHandler.warn("Unable to find " + getCurrentSite()
-                        + " in regions.xml file.");
+                statusHandler.debug("Site " + getCurrentSite()
+                        + " is not in regions.xml file, region localization level will be ignored");
             }
         }
 
