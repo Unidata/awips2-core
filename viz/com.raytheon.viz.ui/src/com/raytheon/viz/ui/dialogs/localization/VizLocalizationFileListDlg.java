@@ -90,6 +90,8 @@ import com.raytheon.viz.ui.widgets.FilterDelegate;
  * 02 Nov 2015  5025       bkowal      Check for files at the specified localization location
  *                                     instead of defaulting to cave_static.
  * 13 Jan 2016  5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * 12 Jul 2017  ----       mjames@ucar Remove widgetDefaultSelected from treeViewer.getTree().addSelectionListener
+ * 									  to allow for new DeleteAWIPSBundle dialog.
  * 
  * </pre>
  * 
@@ -356,11 +358,6 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             public void widgetSelected(SelectionEvent arg0) {
                 handleLocalizationSelection();
             }
-
-            @Override
-            public void widgetDefaultSelected(SelectionEvent e) {
-                selectAction();
-            }
         });
 
         treeViewer.getTree().addMouseListener(new MouseAdapter() {
@@ -565,6 +562,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             }
         });
     }
+    
+
 
     /**
      * @return the fileName
@@ -698,9 +697,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                 boolean result = MessageDialog.openQuestion(
                         shell,
                         "Confirm Deletion",
-                        "Are you sure you want to delete the "
-                                + this.fileTypeDesc + " \""
-                                + selection[0].getText() + "\"");
+                        "Are you sure you want to delete the file "
+                                + selection[0].getText() + "?");
                 if (result == true) {
                     fileName = selection[0].getText();
                     VizLocalizationFileTree tmp = getSelectedTreeItem();
