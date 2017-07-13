@@ -17,6 +17,10 @@ BASE:cave_static/derivedParameters/DerivedParameterInterface.py
 # GFE protected files
 BASE:cave_static/gfe/userPython/textProducts/HLSTCV_Common.py
 BASE:cave_static/gfe/userPython/textProducts/MultipleElementTable.py
+BASE:cave_static/gfe/userPython/textUtilities/regular/DefaultCallToActions.py
+
+CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultAreaDictionary.py
+CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultCityLocation.py
 
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py
