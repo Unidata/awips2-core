@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.localization.http.writer;
+package com.raytheon.uf.edex.localization.http.writer.zip;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -26,6 +26,8 @@ import java.nio.file.Paths;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
@@ -33,6 +35,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.edex.localization.http.LocalizationHttpDataTransfer;
+import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter;
 
 /**
  * Localization response writer that recursively writes a localization directory
@@ -61,11 +64,13 @@ public class ZipArchiveResponseWriter implements ILocalizationResponseWriter {
     }
 
     @Override
-    public void write(MimeType contentType, LocalizationContext context,
-            String path, OutputStream out) throws IOException {
+    public void write(HttpServletRequest request, MimeType contentType,
+            LocalizationContext context, String path, OutputStream out)
+            throws IOException {
         if (!generates(contentType)) {
             throw new IllegalArgumentException(
-                    "Unable to generate requested content type: " + contentType);
+                    "Unable to generate requested content type: "
+                            + contentType);
         }
         IPathManager pathManager = PathManagerFactory.getPathManager();
         LocalizationFile[] files = pathManager.listFiles(context, path, null,
@@ -84,8 +89,9 @@ public class ZipArchiveResponseWriter implements ILocalizationResponseWriter {
                 try {
                     LocalizationHttpDataTransfer.copy(entryFile, zout);
                 } catch (LocalizationException e) {
-                    throw new IOException("Unable to read localization file: "
-                            + entryFile, e);
+                    throw new IOException(
+                            "Unable to read localization file: " + entryFile,
+                            e);
                 } finally {
                     zout.closeEntry();
                 }

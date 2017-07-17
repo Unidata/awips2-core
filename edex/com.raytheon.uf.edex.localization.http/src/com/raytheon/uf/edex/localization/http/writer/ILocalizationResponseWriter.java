@@ -22,6 +22,8 @@ package com.raytheon.uf.edex.localization.http.writer;
 import java.io.IOException;
 import java.io.OutputStream;
 
+import javax.servlet.http.HttpServletRequest;
+
 import com.raytheon.uf.common.http.MimeType;
 import com.raytheon.uf.common.localization.LocalizationContext;
 
@@ -35,11 +37,11 @@ import com.raytheon.uf.common.localization.LocalizationContext;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 15, 2015 3978       bclement     Initial creation
+ * Aug 07, 2017 5731       bsteffen     Include the original request in write method.
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public interface ILocalizationResponseWriter {
 
@@ -52,12 +54,9 @@ public interface ILocalizationResponseWriter {
     /**
      * Write the file to the output stream in the specified content type
      * 
-     * @param contentType
-     * @param context
-     * @param path
-     * @param out
      */
-    public void write(MimeType contentType, LocalizationContext context,
-            String path, OutputStream out) throws IOException;
+    public void write(HttpServletRequest request, MimeType contentType,
+            LocalizationContext context, String path, OutputStream out)
+            throws IOException;
 
 }

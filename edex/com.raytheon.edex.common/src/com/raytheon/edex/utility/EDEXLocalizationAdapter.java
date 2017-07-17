@@ -30,6 +30,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.apache.commons.lang3.ArrayUtils;
@@ -95,6 +96,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  *                                      Use FilenameFilter since we now have an extension
  * Jun 30, 2017 6316        njensen     Improved regions.xml debug message
  * Aug 04, 2017 6379        njensen     Removed protected-ness from responses
+ * Aug 07, 2017 5731        bsteffen    Implement getContextList
  *
  * </pre>
  *
@@ -190,8 +192,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     public ListResponse[] getLocalizationMetadata(LocalizationContext[] context,
             String fileName) throws LocalizationException {
 
-        List<ListResponse> contents = new ArrayList<>(
-                context.length);
+        List<ListResponse> contents = new ArrayList<>(context.length);
 
         for (LocalizationContext ctx : context) {
             ListResponse entry = createListResponse(ctx, fileName,
@@ -267,9 +268,21 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         String fullPath = file.getAbsolutePath();
         String path = getUtilityDir() + File.separator + ctx.toPath()
                 + File.separator;
-        entry.fileName = fullPath.replaceFirst(path, "");
-        if (entry.fileName.startsWith(File.separator)) {
-            entry.fileName = entry.fileName.substring(1);
+        if (fullPath.length() > path.length()) {
+            entry.fileName = fullPath.replaceFirst(path, "");
+            if (entry.fileName.startsWith(File.separator)) {
+                entry.fileName = entry.fileName.substring(1);
+            }
+        } else {
+            /*-
+             * This case hits for the root where
+             * fullPath = /a2/edex/data/utility/common_static/base
+             * path = /a2/edex/data/utility/common_static/base/
+             */
+            entry.fileName = path.replaceFirst(fullPath, "");
+            if (entry.fileName.startsWith(File.separator)) {
+                entry.fileName = entry.fileName.substring(1);
+            }
         }
         entry.date = new Date(file.lastModified());
         entry.existsOnServer = file.exists();
@@ -448,7 +461,27 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
 
     @Override
     public String[] getContextList(LocalizationLevel level) {
-        return new String[0];
+        /* Sorting is not required but alphabetical just looks nicer. */
+        Set<String> results = new TreeSet<>();
+        File utilityDir = getUtilityDir();
+
+        for (LocalizationType type : getStaticContexts()) {
+            File typeDir = new File(utilityDir, type.name().toLowerCase());
+            File levelDir = new File(typeDir, level.name().toLowerCase());
+
+            File[] files = levelDir.listFiles();
+            if (files != null) {
+                for (File file : files) {
+                    if (file.isDirectory()) {
+                        results.add(file.getName());
+                    }
+                }
+
+            }
+        }
+
+        return results.toArray(new String[0]);
+
     }
 
     @Override

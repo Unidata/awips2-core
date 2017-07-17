@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.localization.http.scheme;
 
-import javax.servlet.http.HttpServletResponse;
+import java.nio.file.Path;
 
 import com.raytheon.uf.common.auth.user.User;
 import com.raytheon.uf.common.http.auth.BasicCredential;
@@ -72,36 +72,59 @@ public class LocalizationAuthorization {
     private static final String PERMISSION_PREFIX = "localization";
 
     /**
-     * Checks if the user is authorized to modify or create a file at the
+     * Checks if the user is authorized to modify or delete a file at the
      * specified context and path.
      *
      * @param user
+     * @param operation
+     *            write or delete
      * @param context
      * @param fileName
      * @return if the user is authorized or not
      * @throws LocalizationHttpException
      */
-    public static boolean isPutAuthorized(BasicCredential cred,
+    public static boolean isAuthorized(BasicCredential cred, String operation,
             LocalizationContext context, String fileName)
             throws LocalizationHttpException {
+        if ("read".equals(operation)) {
+            /*
+             * Allow everyone to read for now
+             *
+             * If/when we decide to implement read permissions remove this if
+             * statement
+             */
+            return true;
+        } else if (cred == null) {
+            /*
+             * TODO consider mapping requests without credentials to a default
+             * user for simple anonymous access.
+             */
+            return false;
+        }
+
         String contextName = context.getContextName();
         LocalizationLevel level = context.getLocalizationLevel();
         LocalizationType type = context.getLocalizationType();
-        if (level.isSystemLevel()) {
-            throw new LocalizationHttpException(
-                    HttpServletResponse.SC_FORBIDDEN,
-                    "Cannot use REST service to put localization files at system levels");
-        } else if (level == LocalizationLevel.USER
+
+        if (level == LocalizationLevel.USER
                 && cred.getUserid().equals(contextName)) {
             // Don't prevent users from modifying own files
             return true;
         }
 
-        String permission = buildPermissionString("write", level, type,
+        String permission = buildPermissionString(operation, level, type,
                 contextName, fileName);
 
         IPermissionsManager manager = AuthManagerFactory.getInstance()
                 .getPermissionsManager();
+
+        /*
+         * TODO The password has not been checked at this point and is not being
+         * passed along to the permissions manager. The User object supports a
+         * concept of IAuthenticationData which could be used to pass the
+         * password along but there is no standard way for the manager to get
+         * the password out.
+         */
 
         manager.setThreadSubject(new User(cred.getUserid()));
         try {
@@ -121,6 +144,15 @@ public class LocalizationAuthorization {
                 type.toString().toLowerCase(), level.toString().toLowerCase(),
                 contextName == null ? "" : contextName, namePart);
         return permission;
+    }
+
+    public static boolean isContextAuthorized(BasicCredential cred,
+            String operation, Path relative) {
+        /*
+         * If reads are ever limited then this should be converted into a
+         * specific permission.
+         */
+        return "read".equals(operation);
     }
 
 }

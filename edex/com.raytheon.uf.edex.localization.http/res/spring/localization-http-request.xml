@@ -11,7 +11,19 @@
 
     <bean factory-bean="localizationHttpSrv" factory-method="register">
         <constructor-arg>
-            <bean class="com.raytheon.uf.edex.localization.http.writer.ZipArchiveResponseWriter" />
+            <bean class="com.raytheon.uf.edex.localization.http.writer.zip.ZipArchiveResponseWriter" />
+        </constructor-arg>
+    </bean>
+
+    <bean factory-bean="localizationHttpSrv" factory-method="register">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.localization.http.writer.json.JsonDirectoryListingWriter" />
+        </constructor-arg>
+    </bean>
+
+    <bean factory-bean="localizationHttpSrv" factory-method="register">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.edex.localization.http.writer.xml.XmlDirectoryListingWriter" />
         </constructor-arg>
     </bean>
 
@@ -25,18 +37,11 @@
              sub-directories. -->
 
         <endpoint id="localizationHttpEndpoint"
-            uri="jetty:http://0.0.0.0:${HTTP_PORT}${edex.localization.http.path}?${edex.localization.http.properties}&amp;httpMethodRestrict=GET,PUT" />
+            uri="jetty:http://0.0.0.0:${HTTP_PORT}${edex.localization.http.path}?${edex.localization.http.properties}&amp;httpMethodRestrict=HEAD,GET,PUT,DELETE" />
 
         <route id="localizationHttpRoute" streamCache="false">
             <from uri="localizationHttpEndpoint" />
-            <choice>
-              <when><simple>${in.header.CamelHttpMethod} == &#39;GET&#39;</simple>
-                <bean ref="localizationHttpSrv" method="handleGet(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})" />
-              </when>
-              <when><simple>${in.header.CamelHttpMethod} == &#39;PUT&#39;</simple>
-                <bean ref="localizationHttpSrv" method="handlePut(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})" />
-              </when>
-            </choice>
+            <bean ref="localizationHttpSrv" method="handle(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})" />
         </route>
 
     </camelContext>

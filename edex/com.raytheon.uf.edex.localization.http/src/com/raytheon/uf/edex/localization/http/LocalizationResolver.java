@@ -40,11 +40,11 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 16, 2015 3978       bclement     Initial creation
+ * Aug 07, 2017 5731       bsteffen     Handle context queries better.
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public class LocalizationResolver {
 
@@ -74,7 +74,13 @@ public class LocalizationResolver {
          * if we don't have at least the localization type and level on the url,
          * then it is a query for one of them
          */
-        return resourcePath.getNameCount() < CONTEXT_PATH_BASE_COUNT;
+        if (resourcePath.getNameCount() == CONTEXT_PATH_BASE_COUNT
+                && "base".equals(resourcePath.getFileName().toString())) {
+            return false;
+        } else if (resourcePath.getNameCount() <= CONTEXT_PATH_BASE_COUNT) {
+            return true;
+        }
+        return false;
     }
 
     /**
@@ -92,23 +98,14 @@ public class LocalizationResolver {
         LocalizationContext context = getContext(resourcePath);
         if (context != null) {
             Path filePath = relativize(context, resourcePath);
-            if (filePath.toString().isEmpty()) {
-                /*
-                 * FIXME the path manager does not currently support getting a
-                 * file for the root of the localization context
-                 */
-                throw new LocalizationHttpException(
-                        HttpServletResponse.SC_FORBIDDEN,
-                        "Unable to view contents of path: " + resourcePath);
-            } else {
-                rval = PathManagerFactory.getPathManager().getLocalizationFile(
-                        context, filePath.toString());
-            }
+
+            rval = PathManagerFactory.getPathManager()
+                    .getLocalizationFile(context, filePath.toString());
         }
         if (rval == null) {
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_NOT_FOUND, "Resource not found: "
-                            + resourcePath);
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Resource not found: " + resourcePath);
         }
         return rval;
     }
@@ -122,7 +119,8 @@ public class LocalizationResolver {
      * @param resourcePath
      * @return
      */
-    public static Path relativize(LocalizationContext context, Path resourcePath) {
+    public static Path relativize(LocalizationContext context,
+            Path resourcePath) {
         Path contextPath = Paths.get(context.toPath());
         return contextPath.relativize(resourcePath);
     }
@@ -168,16 +166,16 @@ public class LocalizationResolver {
                             LocalizationLevel.UNKNOWN);
                     rval.setLocalizationLevel(level);
                 } else {
-                    String identifier = resourcePath.getName(
-                            CONTEXT_PATH_ID_INDEX).toString();
+                    String identifier = resourcePath
+                            .getName(CONTEXT_PATH_ID_INDEX).toString();
                     rval = new LocalizationContext(type, level, identifier);
                 }
             }
         }
         if (rval == null) {
             throw new LocalizationHttpException(
-                    HttpServletResponse.SC_NOT_FOUND, "Resource not found: "
-                            + resourcePath);
+                    HttpServletResponse.SC_NOT_FOUND,
+                    "Resource not found: " + resourcePath);
         }
         return rval;
     }

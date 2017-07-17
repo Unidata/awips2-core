@@ -24,6 +24,8 @@ import java.io.OutputStream;
 import java.util.List;
 
 import com.raytheon.uf.common.http.MimeType;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.IPathManager;
 
 /**
  * Interface for localization response writers that generate directory listings
@@ -35,11 +37,11 @@ import com.raytheon.uf.common.http.MimeType;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 15, 2015 3978       bclement     Initial creation
+ * Aug 07, 2017 5731       bsteffen     Add getRelativeName
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public interface IDirectoryListingWriter extends ILocalizationResponseWriter {
 
@@ -56,5 +58,21 @@ public interface IDirectoryListingWriter extends ILocalizationResponseWriter {
      */
     public void write(MimeType contentType, List<String> entries,
             OutputStream out) throws IOException;
+
+    /**
+     * Return the name of the file with any leading directory components
+     * removed.
+     */
+    public static String getBaseName(ILocalizationFile file) {
+        String name = file.getPath();
+        int index = name.lastIndexOf(IPathManager.SEPARATOR);
+        if (index >= 0) {
+            name = name.substring(index + 1);
+        }
+        if (file.isDirectory()) {
+            name = name + IPathManager.SEPARATOR;
+        }
+        return name;
+    }
 
 }
