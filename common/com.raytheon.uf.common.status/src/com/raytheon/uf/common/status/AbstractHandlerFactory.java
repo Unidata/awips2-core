@@ -20,10 +20,12 @@
 package com.raytheon.uf.common.status;
 
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Observable;
 import java.util.Observer;
+import java.util.TimeZone;
 
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
@@ -36,13 +38,13 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * May 10, 2011            bgonzale     Initial creation
- * Sep 09, 2014 3549       njensen      log() uses Priority to pick PrintStream
+ * May 10, 2011            bgonzale    Initial creation
+ * Sep 09, 2014 3549       njensen     log() uses Priority to pick PrintStream
+ * Jul 18, 2017 6316       njensen     Include timestamp on PrintStream log()
  * 
  * </pre>
  * 
  * @author bgonzale
- * @version 1.0
  */
 
 public abstract class AbstractHandlerFactory implements
@@ -50,9 +52,18 @@ public abstract class AbstractHandlerFactory implements
 
     private final String defaultCategory;
 
-    private final Map<String, IUFStatusHandler> namedHandlers = new HashMap<String, IUFStatusHandler>();
+    private final Map<String, IUFStatusHandler> namedHandlers = new HashMap<>();
 
     private FilterPatternContainer sourceFilters;
+
+    private ThreadLocal<SimpleDateFormat> sdf = new ThreadLocal<SimpleDateFormat>() {
+        @Override
+        protected SimpleDateFormat initialValue() {
+            SimpleDateFormat df = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            df.setTimeZone(TimeZone.getTimeZone("GMT"));
+            return df;
+        }
+    };
 
     /**
      * 
@@ -61,25 +72,11 @@ public abstract class AbstractHandlerFactory implements
         this.defaultCategory = category;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#hasHandler(java
-     * .lang.String)
-     */
     @Override
     public IUFStatusHandler hasHandler(String name) {
         return namedHandlers.get(name);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.String)
-     */
     @Override
     public IUFStatusHandler getInstance(String name) {
         IUFStatusHandler handler = namedHandlers.get(name);
@@ -91,37 +88,16 @@ public abstract class AbstractHandlerFactory implements
         return handler;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.Class)
-     */
     @Override
     public IUFStatusHandler getInstance(Class<?> cls) {
         return getInstance(cls, null, null);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.Class, java.lang.String)
-     */
     @Override
     public IUFStatusHandler getInstance(Class<?> cls, String source) {
         return getInstance(cls, null, source);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.Class, java.lang.String, java.lang.String)
-     */
     @Override
     public IUFStatusHandler getInstance(Class<?> cls, String category,
             String source) {
@@ -129,25 +105,11 @@ public abstract class AbstractHandlerFactory implements
         return getInstance(pluginId, category, source);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.String, java.lang.String)
-     */
     @Override
     public IUFStatusHandler getInstance(String pluginId, String source) {
         return getInstance(pluginId, null, source);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getInstance(java
-     * .lang.String, java.lang.String, java.lang.String)
-     */
     @Override
     public IUFStatusHandler getInstance(String pluginId, String category,
             String source) {
@@ -169,25 +131,11 @@ public abstract class AbstractHandlerFactory implements
         return category == null ? defaultCategory : category;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getMonitorInstance
-     * (java.lang.Class)
-     */
     @Override
     public IUFStatusHandler getMonitorInstance(Class<?> cls) {
         return getMonitorInstance(cls, null);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.status.IUFStatusHandlerFactory#getMonitorInstance
-     * (java.lang.Class, java.lang.String)
-     */
     @Override
     public IUFStatusHandler getMonitorInstance(Class<?> cls,
             String monitorSource) {
@@ -236,6 +184,8 @@ public abstract class AbstractHandlerFactory implements
             String source, String message, Throwable throwable) {
         StringBuilder sb = new StringBuilder();
         sb.append(priority).append(' ');
+        sb.append(sdf.get().format(System.currentTimeMillis())).append(" ");
+        // sb.append("[").append(Thread.currentThread().getName()).append("] ");
         sb.append(pluginId).append(": ");
         if (category != null) {
             sb.append(category);

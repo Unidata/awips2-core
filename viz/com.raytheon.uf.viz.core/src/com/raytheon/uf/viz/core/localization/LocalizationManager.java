@@ -110,6 +110,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
  * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
+ * Jul 18, 2017 6316       njensen     Log setting site localization
  *
  * </pre>
  *
@@ -117,7 +118,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  */
 public class LocalizationManager implements IPropertyChangeListener {
 
-    private static transient IUFStatusHandler statusHandler = UFStatus
+    private static IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationManager.class, "CAVE");
 
     /**
@@ -282,6 +283,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                 applyChanges();
             }
         }
+        statusHandler.info("Localizing as site " + this.currentSite);
     }
 
     /**
