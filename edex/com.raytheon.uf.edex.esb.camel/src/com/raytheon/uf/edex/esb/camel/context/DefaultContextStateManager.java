@@ -30,6 +30,9 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
 import org.apache.camel.ServiceStatus;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
 
 /**
@@ -48,12 +51,17 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Mar 21, 2016 3290       tgurney     Enforce startup order on manual route
  *                                     startup
  * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
+ * Jul 17, 2017 5570       tgurney     Always stop external routes first
  *
  * </pre>
  *
  * @author rjpeter
  */
 public class DefaultContextStateManager implements IContextStateManager {
+
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(DefaultContextStateManager.class);
+
     private static final Set<ServiceStatus> STARTABLE_STATES = EnumSet.of(
             ServiceStatus.Stopped, ServiceStatus.Suspended,
             ServiceStatus.Suspending);
@@ -69,7 +77,7 @@ public class DefaultContextStateManager implements IContextStateManager {
     public boolean isContextStartable(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
         return STARTABLE_STATES.contains(status)
-                || (status.isStarted() && !context.isAutoStartup());
+                || status.isStarted() && !context.isAutoStartup();
     }
 
     @Override
@@ -158,13 +166,14 @@ public class DefaultContextStateManager implements IContextStateManager {
     public boolean isContextStoppable(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
         boolean shuttingDown = ContextManager.getInstance().isShuttingDown();
-        return (shuttingDown && STOPPABLE_STATES.contains(status))
-                || (!shuttingDown && SUSPENDABLE_STATES.contains(status));
+        return shuttingDown && STOPPABLE_STATES.contains(status)
+                || !shuttingDown && SUSPENDABLE_STATES.contains(status);
     }
 
     @Override
     public boolean stopContext(CamelContext context) throws Exception {
         ServiceStatus status = context.getStatus();
+        boolean rval = true;
         if (isContextStoppable(context)) {
             List<IContextStateProcessor> processorList = ContextManager
                     .getInstance().getStateProcessor(context);
@@ -175,8 +184,27 @@ public class DefaultContextStateManager implements IContextStateManager {
                 }
             }
 
-            // a context will automatically stop all its routes
             if (ContextManager.getInstance().isShuttingDown()) {
+                // begin shutting down external routes
+                List<Route> routes = context.getRoutes();
+                for (Route route : routes) {
+                    String uri = route.getEndpoint().getEndpointUri();
+                    Pair<String, String> typeAndName = ContextData
+                            .getEndpointTypeAndName(uri);
+                    String type = typeAndName.getFirst();
+                    if (!ContextManager.INTERNAL_ENDPOINT_TYPES
+                            .contains(type)) {
+                        try {
+                            statusHandler.info(
+                                    "Stopping route [" + route.getId() + "]");
+                            rval &= stopRoute(route);
+                        } catch (Exception e) {
+                            statusHandler
+                                    .error("Error occurred Stopping route: "
+                                            + route.getId(), e);
+                        }
+                    }
+                }
                 context.stop();
             } else {
                 context.suspend();
@@ -191,7 +219,8 @@ public class DefaultContextStateManager implements IContextStateManager {
             status = context.getStatus();
         }
 
-        return status.isStopped();
+        rval &= status.isStopped();
+        return rval;
     }
 
     @Override

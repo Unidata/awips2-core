@@ -70,6 +70,8 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Mar 11, 2014 2726       rjpeter     Implemented graceful shutdown.
  * Oct 27, 2016 5860       njensen     Contexts setAllowOriginalMessage to false
  * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
+ * Jul 17, 2017 5570       tgurney     Move external route stopping to
+ *                                     DefaultContextStateManager
  *
  * </pre>
  *
@@ -86,7 +88,7 @@ public class ContextManager
      * Endpoint types that are internal only. Mainly used at shutdown time to
      * designate routes that shouldn't be shutdown immediately.
      */
-    private static final Set<String> INTERNAL_ENDPOINT_TYPES;
+    public static final Set<String> INTERNAL_ENDPOINT_TYPES;
 
     static {
         HashSet<String> set = new HashSet<>(
@@ -246,8 +248,8 @@ public class ContextManager
          */
         synchronized (this) {
             long millis = System.currentTimeMillis();
-            if ((dependencyMapping == null) || (millis > (lastDependencyTime
-                    + (3 * TimeUtil.MILLIS_PER_MINUTE)))) {
+            if (dependencyMapping == null || millis > lastDependencyTime
+                    + 3 * TimeUtil.MILLIS_PER_MINUTE) {
                 lastDependencyTime = millis;
                 dependencyMapping = new ContextDependencyMapping(
                         getContextData(), suppressExceptions);
@@ -434,8 +436,7 @@ public class ContextManager
     }
 
     /**
-     * Private Callable for stopping a context. If context not immediately
-     * stoppable will instead shutdown external routes first.
+     * Private Callable for stopping a context.
      */
     private class StopContext implements Callable<Pair<CamelContext, Boolean>> {
         private final CamelContext context;
@@ -462,31 +463,6 @@ public class ContextManager
                 } catch (Throwable e) {
                     statusHandler.fatal("Error occurred stopping context: "
                             + context.getName(), e);
-                }
-            } else {
-                /*
-                 * context not immediately stoppable, begin shutting down
-                 * external routes instead
-                 */
-                List<Route> routes = context.getRoutes();
-                rval = true;
-
-                for (Route route : routes) {
-                    String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = ContextData
-                            .getEndpointTypeAndName(uri);
-                    String type = typeAndName.getFirst();
-                    if (!INTERNAL_ENDPOINT_TYPES.contains(type)) {
-                        try {
-                            statusHandler.info(
-                                    "Stopping route [" + route.getId() + "]");
-                            rval &= stateManager.stopRoute(route);
-                        } catch (Exception e) {
-                            statusHandler
-                                    .error("Error occurred Stopping route: "
-                                            + route.getId(), e);
-                        }
-                    }
                 }
             }
 
