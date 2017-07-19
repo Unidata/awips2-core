@@ -131,7 +131,7 @@
         <include>.*\.management\..*</include>
     </filterPattern>
     <filterPattern name="Storage">
-        <include>.*\.nwsauth\..*</include>
+        <include>.*\.auth\..*</include>
         <include>.*\.persist\..*</include>
     </filterPattern>
     <filterPattern name="TOPO">

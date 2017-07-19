@@ -20,26 +20,19 @@
 
 # File auto-generated against equivalent DynamicSerialize Java class
 
-import os
-from dynamicserialize.dstypes.com.raytheon.uf.common.localization.stream import AbstractLocalizationStreamRequest
-from dynamicserialize.dstypes.com.raytheon.uf.common.auth.user import User
+import os, pwd
 
-class LocalizationStreamGetRequest(AbstractLocalizationStreamRequest):
+class UserId(object):
 
-    def __init__(self):
-        super(LocalizationStreamGetRequest, self).__init__()
-        self.offset = None
-        self.numBytes = None
+    def __init__(self, id = None):
+        if id is None:
+           self.id = pwd.getpwuid(os.getuid()).pw_name
+        else:
+           self.id = id
 
-    def getOffset(self):
-        return self.offset
+    def getId(self):
+        return self.id
 
-    def setOffset(self, offset):
-        self.offset = offset
-
-    def getNumBytes(self):
-        return self.numBytes
-
-    def setNumBytes(self, numBytes):
-        self.numBytes = numBytes
+    def setId(self, id):
+        self.id = id
 

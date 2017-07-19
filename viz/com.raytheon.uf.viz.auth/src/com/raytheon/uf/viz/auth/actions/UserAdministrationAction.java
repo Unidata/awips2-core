@@ -26,6 +26,7 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.handlers.HandlerUtil;
 
 import com.raytheon.uf.common.auth.req.CheckAuthorizationRequest;
+import com.raytheon.uf.common.auth.util.PermissionUtils;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.auth.ui.UserAdministrationDialog;
@@ -78,7 +79,8 @@ public class UserAdministrationAction extends AbstractHandler {
     private boolean isAuthorized() {
         boolean authorized = false;
         CheckAuthorizationRequest request = new CheckAuthorizationRequest(
-                "auth:administration");
+                PermissionUtils.buildPermissionString("auth",
+                        "administration"));
 
         try {
             authorized = (Boolean) ThriftClient.sendRequest(request);

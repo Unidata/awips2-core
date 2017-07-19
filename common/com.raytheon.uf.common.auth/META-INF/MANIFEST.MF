@@ -12,4 +12,5 @@ Export-Package: com.raytheon.uf.common.auth,
  com.raytheon.uf.common.auth.exception,
  com.raytheon.uf.common.auth.req,
  com.raytheon.uf.common.auth.resp,
- com.raytheon.uf.common.auth.user
+ com.raytheon.uf.common.auth.user,
+ com.raytheon.uf.common.auth.util

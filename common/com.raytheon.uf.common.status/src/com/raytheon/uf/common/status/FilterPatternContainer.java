@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
@@ -35,17 +36,18 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * Container for FilterPattern objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 22, 2010            njensen     Initial creation
  * Apr 12, 2011            bgonzale    Refactored from EdexModeContainer
- * 
+ * Jul 18, 2017 6217       randerso    Replace nwsauth reference with auth
+ *
  * </pre>
- * 
+ *
  * @author njensen
  * @version 1.0
  */
@@ -55,7 +57,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class FilterPatternContainer {
 
     @XmlElements({ @XmlElement(name = "filterPattern") })
-    private ArrayList<FilterPattern> filterPatterns;
+    private List<FilterPattern> filterPatterns;
 
     /**
      * A default FilterPatternContainer.
@@ -67,22 +69,15 @@ public class FilterPatternContainer {
      * Initialize a FilterPatternContainer from a file.
      */
     public FilterPatternContainer(File file) throws JAXBException, IOException {
-        FileReader reader = null;
-
-        try {
+        try (FileReader reader = new FileReader(file)) {
             JAXBContext context = JAXBContext.newInstance(
                     FilterPatternContainer.class, FilterPattern.class);
             Unmarshaller unmarshaller = context.createUnmarshaller();
-            reader = new FileReader(file);
             FilterPatternContainer container = (FilterPatternContainer) unmarshaller
                     .unmarshal(reader);
 
             container.compile();
             this.filterPatterns = container.getFilterPatterns();
-        } finally {
-            if (reader != null) {
-                reader.close();
-            }
         }
     }
 
@@ -92,11 +87,11 @@ public class FilterPatternContainer {
         }
     }
 
-    public ArrayList<FilterPattern> getFilterPatterns() {
+    public List<FilterPattern> getFilterPatterns() {
         return filterPatterns;
     }
 
-    public void setModes(ArrayList<FilterPattern> filterPatterns) {
+    public void setModes(List<FilterPattern> filterPatterns) {
         this.filterPatterns = filterPatterns;
     }
 
@@ -122,7 +117,7 @@ public class FilterPatternContainer {
 
     public static FilterPatternContainer createDefault() {
         FilterPatternContainer obj = new FilterPatternContainer();
-        obj.filterPatterns = new ArrayList<FilterPattern>();
+        obj.filterPatterns = new ArrayList<>();
         FilterPattern fp = new FilterPattern("RADAR");
         fp.addInclude(".*\\.radar.*");
         obj.filterPatterns.add(fp);
@@ -211,7 +206,7 @@ public class FilterPatternContainer {
         fp.addInclude(".*\\.management\\..*");
         obj.filterPatterns.add(fp);
         fp = new FilterPattern("Storage");
-        fp.addInclude(".*\\.nwsauth\\..*");
+        fp.addInclude(".*\\.auth\\..*");
         fp.addInclude(".*\\.persist\\..*");
         obj.filterPatterns.add(fp);
         fp = new FilterPattern("TOPO");
