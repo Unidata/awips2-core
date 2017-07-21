@@ -4,7 +4,6 @@ import java.util.ArrayList;
 import java.util.List;
 
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.msgs.AbstractPrivilegedUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
@@ -29,6 +28,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * Feb 14, 2017  6111     njensen      Overrode getRequestType()
  * May 18, 2017  6242     randerso     Changed to use new roles and permissions
  *                                     framework
+ * Jul 18, 2017  6217     randerso     Removed user argument from authorized method
  *
  * </pre>
  *
@@ -66,7 +66,7 @@ public class PrivilegedUtilityHandler extends
     }
 
     @Override
-    public AuthorizationResponse authorized(IUser user,
+    public AuthorizationResponse authorized(
             PrivilegedUtilityRequestMessage request)
             throws AuthorizationException {
 
@@ -82,8 +82,9 @@ public class PrivilegedUtilityHandler extends
                         + command.getClass().getName());
             }
 
-            AuthorizationResponse resp = getAuthorizationResponse(user,
-                    operation, context, filename, command.getMyContextName());
+            AuthorizationResponse resp = getAuthorizationResponse(
+                    request.getUser(), operation, context, filename,
+                    command.getMyContextName());
             if (!resp.isAuthorized()) {
                 // If we are not authorized for any of the commands, break early
                 return resp;

@@ -62,6 +62,11 @@ public class AuthPropertyTester extends PropertyTester {
             Object expectedValue) {
         boolean authorized = false;
 
+        /*
+         * TODO: try to make this not error of when running against a 17.3.1
+         * server
+         */
+
         CheckAuthorizationRequest request = new CheckAuthorizationRequest(
                 expectedValue.toString());
 

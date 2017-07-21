@@ -29,10 +29,8 @@ import com.raytheon.uf.common.serialization.comm.RequestWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.auth.AuthManager;
 import com.raytheon.uf.edex.auth.AuthManagerFactory;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
-import com.raytheon.uf.edex.auth.resp.AuthenticationResponse;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.auth.resp.ResponseFactory;
 
@@ -53,6 +51,8 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  * Dec 02, 2015  4834     njensen   Stop triple-wrapping AuthExceptions
  * May 17, 2017  6217     randerso  Add support for new roles and permissions
  *                                  framework
+ * Jul 18, 2017  6217     randerso  Removed support for old roles and
+ *                                  permissions framework
  *
  * </pre>
  *
@@ -110,41 +110,17 @@ public class RequestServiceExecutor {
             IRequestHandler handler = registry.getRequestHandler(id);
 
             if (request instanceof AbstractPrivilegedRequest) {
-                AuthManager manager = AuthManagerFactory.getInstance()
-                        .getManager();
                 // Not the default role, attempt to cast handler and request
                 try {
                     AbstractPrivilegedRequest privReq = (AbstractPrivilegedRequest) request;
                     AbstractPrivilegedRequestHandler privHandler = (AbstractPrivilegedRequestHandler) handler;
-
-                    IUser user = privReq.getUser();
-
-                    // Do not process request if user passed in is null
-                    if (user == null || user.uniqueId() == null) {
-                        return ResponseFactory.constructNotAuthorized(privReq,
-                                "Unable to process privileged request "
-                                        + request + " for null user");
-                    }
-
-                    // check that user is who they claim to be (authentication)
-                    AuthenticationResponse resp = manager.getAuthenticator()
-                            .authenticate(user);
-                    if (!resp.isAuthenticated()) {
-                        /*
-                         * TODO someday pass in updated IAuthenticationData if
-                         * we have an actual implementation that uses it for
-                         * security
-                         */
-                        return ResponseFactory
-                                .constructNotAuthenticated(privReq, null);
-                    }
 
                     /*
                      * check handler that user is allowed to execute this
                      * request (authorization)
                      */
                     AuthorizationResponse authResp = privHandler
-                            .authorized(user, privReq);
+                            .authorized(privReq);
                     if (authResp != null && !authResp.isAuthorized()
                             && authResp.getResponseMessage() != null) {
                         return ResponseFactory.constructNotAuthorized(privReq,
@@ -152,8 +128,8 @@ public class RequestServiceExecutor {
                     }
 
                     /*
-                     * they've passed authentication and authorization, let the
-                     * handler execute the request
+                     * they've passed authorization, let the handler execute the
+                     * request
                      */
                     /*
                      * TODO someday pass in updated IAuthenticationData if we

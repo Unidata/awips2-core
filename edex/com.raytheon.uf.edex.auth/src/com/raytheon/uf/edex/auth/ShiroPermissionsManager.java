@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import com.raytheon.uf.common.auth.RolesAndPermissions;
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
 import com.raytheon.uf.common.auth.user.IUser;
+import com.raytheon.uf.common.auth.util.PermissionUtils;
 
 /**
  * Authentication/Authorization manager
@@ -187,7 +188,8 @@ public class ShiroPermissionsManager
     public RolesAndPermissions getRolesAndPermissions()
             throws AuthorizationException {
         /* Ensure subject has required permission */
-        checkPermission("auth:administration",
+        checkPermission(
+                PermissionUtils.buildPermissionString("auth", "administration"),
                 "retrieve roles and permissions data");
 
         /* Log roles and permissions retrieval */
@@ -203,7 +205,8 @@ public class ShiroPermissionsManager
             throws AuthorizationException {
 
         /* Ensure subject has required permission */
-        checkPermission("auth:administration",
+        checkPermission(
+                PermissionUtils.buildPermissionString("auth", "administration"),
                 "retrieve roles and permissions data");
 
         /* Log roles and permissions update */

@@ -25,9 +25,6 @@ import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.edex.auth.authentication.EmptyAuthenticationStorage;
-import com.raytheon.uf.edex.auth.authentication.HonorSystemAuthenticator;
-import com.raytheon.uf.edex.auth.authorization.AllowAllAuthorizer;
 
 /**
  * Singleton class which plugins should register their authentication
@@ -56,34 +53,24 @@ public class AuthManagerFactory {
     /** The instance for the factory */
     private static AuthManagerFactory instance = new AuthManagerFactory();
 
-    /** The implementing auth manager */
-    private volatile AuthManager manager;
-
     private volatile IPermissionsManager permissionsManager;
 
     private AuthManagerFactory() {
 
     }
 
+    /**
+     * @return the singleton instance
+     */
     public static AuthManagerFactory getInstance() {
         return instance;
     }
 
-    public void setManager(AuthManager manager) {
-        this.manager = manager;
-    }
-
-    public AuthManager getManager() {
-        if (manager == null) {
-            synchronized (this) {
-                if (manager == null) {
-                    manager = allowEverything();
-                }
-            }
-        }
-        return manager;
-    }
-
+    /**
+     * Set the permissionsManager
+     *
+     * @param permissionsManager
+     */
     public void setPermissionsManager(IPermissionsManager permissionsManager) {
         this.permissionsManager = permissionsManager;
     }
@@ -102,26 +89,6 @@ public class AuthManagerFactory {
             }
         }
         return permissionsManager;
-    }
-
-    /**
-     * Initializes an AuthManager which has members that allow everything
-     * through. Also logs an error since this should not be encountered outside
-     * of a development environment unless something is misconfigured.
-     *
-     * @return an auth manager that allows everything
-     */
-    private AuthManager allowEverything() {
-        IllegalStateException throwable = new IllegalStateException(
-                "Unable to perform priviledged request validation, AuthManager not set. ALL REQUESTS WILL BE EXECUTED!");
-        statusHandler.handle(Priority.PROBLEM, throwable.getLocalizedMessage(),
-                throwable);
-
-        AuthManager manager = new AuthManager();
-        manager.setAuthenticationStorage(new EmptyAuthenticationStorage());
-        manager.setAuthenticator(new HonorSystemAuthenticator());
-        manager.setAuthorizer(new AllowAllAuthorizer());
-        return manager;
     }
 
     /*

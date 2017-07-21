@@ -22,7 +22,6 @@ package com.raytheon.edex.services;
 import java.io.File;
 
 import com.raytheon.uf.common.auth.exception.AuthorizationException;
-import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
@@ -56,6 +55,7 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
  *                                  subclasses
  * May 18, 2017  6242     randerso  Changed to use new roles and permissions
  *                                  framework
+ * Jul 18, 2017  6217     randerso  Removed user argument from authorized method
  *
  *             </pre>
  *
@@ -79,7 +79,7 @@ public abstract class LocalizationStreamHandler<T extends AbstractLocalizationSt
     }
 
     @Override
-    public AuthorizationResponse authorized(IUser user,
+    public AuthorizationResponse authorized(
             AbstractLocalizationStreamRequest request)
             throws AuthorizationException {
         String operation;
@@ -93,8 +93,8 @@ public abstract class LocalizationStreamHandler<T extends AbstractLocalizationSt
         }
         LocalizationContext context = request.getContext();
         String fileName = request.getFileName();
-        return getAuthorizationResponse(user, operation, context, fileName,
-                request.getMyContextName());
+        return getAuthorizationResponse(request.getUser(), operation, context,
+                fileName, request.getMyContextName());
     }
 
 }
