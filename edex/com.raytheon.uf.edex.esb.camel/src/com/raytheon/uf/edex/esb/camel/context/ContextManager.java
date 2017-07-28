@@ -48,7 +48,6 @@ import org.springframework.context.ApplicationContextAware;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.Pair;
 import com.raytheon.uf.edex.core.EdexAsyncStartupBean;
 import com.raytheon.uf.edex.core.IContextStateProcessor;
@@ -63,15 +62,17 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * <pre>
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 10, 2010 5050       rjpeter     Initial creation.
- * May 13, 2013 1989       njensen     Camel 2.11 compatibility.
- * Mar 11, 2014 2726       rjpeter     Implemented graceful shutdown.
- * Oct 27, 2016 5860       njensen     Contexts setAllowOriginalMessage to false
- * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
- * Jul 17, 2017 5570       tgurney     Move external route stopping to
- *                                     DefaultContextStateManager
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 10, 2010  5050     rjpeter   Initial creation.
+ * May 13, 2013  1989     njensen   Camel 2.11 compatibility.
+ * Mar 11, 2014  2726     rjpeter   Implemented graceful shutdown.
+ * Oct 27, 2016  5860     njensen   Contexts setAllowOriginalMessage to false
+ * Jan 26, 2017  6092     randerso  Allow multiple context state processors per
+ *                                  context
+ * Jul 17, 2017  5570     tgurney   Move external route stopping to
+ *                                  DefaultContextStateManager
+ * Jul 28, 2017  5570     rjpeter   Fix dependency generation on shutdown
  *
  * </pre>
  *
@@ -150,12 +151,6 @@ public class ContextManager
      * should only be changed in a sync block. Otherwise mark as volatile.
      */
     private ContextDependencyMapping dependencyMapping = null;
-
-    /**
-     * Last time dependency mapping was generated. Used to periodically
-     * regenerate the dependency mappings.
-     */
-    private long lastDependencyTime = 0;
 
     /**
      * Collection of beans required for startup that can be initialized off the
@@ -242,22 +237,29 @@ public class ContextManager
      */
     public ContextDependencyMapping getDependencyMapping(
             boolean suppressExceptions) throws ConfigurationException {
-        /*
-         * This is not permanently cashed and regenerated periodically since
-         * routing via code can change at runtime.
-         */
         synchronized (this) {
-            long millis = System.currentTimeMillis();
-            if (dependencyMapping == null || millis > lastDependencyTime
-                    + 3 * TimeUtil.MILLIS_PER_MINUTE) {
-                lastDependencyTime = millis;
+            if (dependencyMapping == null) {
+                long t0 = System.currentTimeMillis();
                 dependencyMapping = new ContextDependencyMapping(
                         getContextData(), suppressExceptions);
+                long t1 = System.currentTimeMillis();
+                statusHandler.info("Took " + (t1 - t0)
+                        + "ms to generate depedency mapping.");
             }
         }
 
         return dependencyMapping;
 
+    }
+
+    /**
+     * Force clear the generated dependency mapping. Should be called when new
+     * routes are dynamically added to the system.
+     */
+    public void clearDependencyMapping() {
+        synchronized (this) {
+            dependencyMapping = null;
+        }
     }
 
     /**
@@ -406,6 +408,12 @@ public class ContextManager
          * initiated
          */
         if (shuttingDown.compareAndSet(false, true)) {
+            /*
+             * clear the dependency mapping to force a fresh mapping of any
+             * runtime dependencies.
+             */
+            clearDependencyMapping();
+
             if (springCtx == null) {
                 statusHandler.info(
                         "Spring Context not set.  Start up never completed, cannot orderly shutdown");
@@ -464,6 +472,12 @@ public class ContextManager
                     statusHandler.fatal("Error occurred stopping context: "
                             + context.getName(), e);
                 }
+            } else {
+                /*
+                 * dependency context that will be called by a future shutdown
+                 * after its dependencies have shut down
+                 */
+                rval = true;
             }
 
             return new Pair<>(context, rval);

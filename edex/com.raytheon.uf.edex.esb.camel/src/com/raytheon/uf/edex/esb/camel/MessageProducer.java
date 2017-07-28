@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -57,40 +57,47 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Sends message to endpoints programmatically. Implements the camel
  * {@link InterceptStrategy} to allow for tracking of camel dependencies where
  * possible so that the ProducerTemplate is created from the correct context.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 14, 2008            njensen     Initial creation.
- * Mar 27, 2014 2726       rjpeter     Modified for graceful shutdown changes,
- *                                     added tracking of endpoints by context.
- * Oct 08, 2014     #3684  randerso    Added sendAsyncThriftUri
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 14, 2008           njensen   Initial creation.
+ * Mar 27, 2014  2726     rjpeter   Modified for graceful shutdown changes,
+ *                                  added tracking of endpoints by context.
+ * Oct 08, 2014  3684     randerso  Added sendAsyncThriftUri
+ * Jul 28, 2017  5570     rjpeter   Fix dependency generation on shutdown
+ *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
  */
 
 public class MessageProducer implements IMessageProducer, InterceptStrategy {
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MessageProducer.class);
 
+    private static final String URI_CACHE_SIZE_PROPERTY = "MessageProducer.uriCacheSize";
+
+    private static final int URI_CACHE_SIZE = Integer
+            .getInteger(URI_CACHE_SIZE_PROPERTY, 256);
+
     /*
      * setup via an interceptor used for tracking what context the current
      * thread is participating in for dependency management of runtime
      * IMessageProducer message sends.
      */
-    private final ThreadLocal<CamelContext> currentThreadContext = new ThreadLocal<CamelContext>();
+    private final ThreadLocal<CamelContext> currentThreadContext = new ThreadLocal<>();
 
-    private final ConcurrentMap<CamelContext, ProducerTemplate> contextProducerMap = new ConcurrentHashMap<CamelContext, ProducerTemplate>();
+    private final ConcurrentMap<CamelContext, ProducerTemplate> contextProducerMap = new ConcurrentHashMap<>();
 
-    private final ConcurrentMap<CamelContext, Map<String, Endpoint>> contextUriEndpointMap = new ConcurrentHashMap<CamelContext, Map<String, Endpoint>>();
+    private final ConcurrentMap<CamelContext, Map<String, Endpoint>> contextUriEndpointMap = new ConcurrentHashMap<>();
 
     /**
      * List of messages waiting to be sent.
      */
-    private final List<WaitingMessage> waitingMessages = new LinkedList<WaitingMessage>();
+    private final List<WaitingMessage> waitingMessages = new LinkedList<>();
 
     /**
      * Internal variable for tracking if messages should be queued or not.
@@ -116,7 +123,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
 
     /**
      * Returns the ContextData
-     * 
+     *
      * @return
      * @throws EdexException
      */
@@ -128,16 +135,11 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.IMessageProducer#sendAsync(java.lang.String
-     * , java.lang.Object)
-     */
     @Override
-    public void sendAsync(String endpoint, Object message) throws EdexException {
-        if (!started && queueWaitingMessage(WaitingType.ID, endpoint, message)) {
+    public void sendAsync(String endpoint, Object message)
+            throws EdexException {
+        if (!started
+                && queueWaitingMessage(WaitingType.ID, endpoint, message)) {
             return;
         }
 
@@ -145,13 +147,6 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         sendAsyncUri(uri, message);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.core.IMessageProducer#sendAsyncUri(java.lang.String,
-     * java.lang.Object)
-     */
     @Override
     public void sendAsyncUri(String uri, Object message) throws EdexException {
         if (!started && queueWaitingMessage(WaitingType.URI, uri, message)) {
@@ -159,14 +154,15 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         }
 
         try {
-            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(uri);
+            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(
+                    uri);
             Map<String, Object> headers = getHeaders(message);
             ProducerTemplate template = ctxAndTemplate.getFirst();
             Endpoint ep = ctxAndTemplate.getSecond();
 
             if (headers != null) {
-                template.sendBodyAndHeaders(ep, ExchangePattern.InOnly,
-                        message, headers);
+                template.sendBodyAndHeaders(ep, ExchangePattern.InOnly, message,
+                        headers);
             } else {
                 template.sendBody(ep, ExchangePattern.InOnly, message);
             }
@@ -185,7 +181,8 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         }
 
         try {
-            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(uri);
+            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(
+                    uri);
             Map<String, Object> headers = getHeaders(message);
             ProducerTemplate template = ctxAndTemplate.getFirst();
             Endpoint ep = ctxAndTemplate.getSecond();
@@ -203,13 +200,6 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.IMessageProducer#sendSync(java.lang.String
-     * , java.lang.Object)
-     */
     @Override
     public Object sendSync(String endpoint, Object message)
             throws EdexException {
@@ -221,7 +211,8 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         String uri = getContextData().getEndpointUriForRouteId(endpoint);
 
         try {
-            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(uri);
+            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(
+                    uri);
             Map<String, Object> headers = getHeaders(message);
             ProducerTemplate template = ctxAndTemplate.getFirst();
             Endpoint ep = ctxAndTemplate.getSecond();
@@ -240,7 +231,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
 
     /**
      * Queues up an async message for sending to an endpoint.
-     * 
+     *
      * @param type
      * @param endpoint
      * @param message
@@ -268,7 +259,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
      * currently a part of and the endpoint for the URI. If thread is not part
      * of a context, will use context of the uri. If the uri is not registered
      * in this jvm, will use the first context available.
-     * 
+     *
      * @return
      */
     protected Pair<ProducerTemplate, Endpoint> getProducerTemplateAndEndpointForUri(
@@ -280,8 +271,8 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             Pair<String, String> typeAndName = ContextData
                     .getEndpointTypeAndName(uri);
             if (typeAndName != null) {
-                Route route = contextData.getRouteForEndpointName(typeAndName
-                        .getSecond());
+                Route route = contextData
+                        .getRouteForEndpointName(typeAndName.getSecond());
                 if (route != null) {
                     ctx = route.getRouteContext().getCamelContext();
                 }
@@ -290,7 +281,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             if (ctx == null) {
                 // this jvm does not consume from this route, use first context
                 List<CamelContext> contexts = contextData.getContexts();
-                if (contexts.size() > 0) {
+                if (!contexts.isEmpty()) {
                     // should always be a context defined
                     ctx = contexts.iterator().next();
                 }
@@ -301,13 +292,15 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             ProducerTemplate tmp = contextProducerMap.get(ctx);
             if (tmp == null) {
                 tmp = ctx.createProducerTemplate();
-                ProducerTemplate prev = contextProducerMap
-                        .putIfAbsent(ctx, tmp);
+                ProducerTemplate prev = contextProducerMap.putIfAbsent(ctx,
+                        tmp);
                 if ((prev != null) && (prev != tmp)) {
                     try {
                         tmp.stop();
                     } catch (Exception e) {
-
+                        statusHandler.error(
+                                "Error occurred stopping temporary ProducerTemplate. Consider synchronizing producer creation.",
+                                e);
                     }
                     tmp = prev;
                 }
@@ -316,7 +309,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             /*
              * Caching endpoint for the uri ourselves. Camel considers various
              * endpoints non singleton. So for things like jms-topic, a new
-             * endpoint is created everytime a message is sent to the URI
+             * endpoint is created every time a message is sent to the URI
              * instead of reusing one that was already created. This is in part
              * due to the lack of tracking per route. We are ok with caching per
              * context as we don't operate on routes individually only contexts
@@ -324,9 +317,14 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
              */
             Map<String, Endpoint> endpointMap = contextUriEndpointMap.get(ctx);
             if (endpointMap == null) {
-                endpointMap = new BoundedMap<String, Endpoint>(100);
-                Map<String, Endpoint> prev = contextUriEndpointMap.putIfAbsent(
-                        ctx, endpointMap);
+                /*
+                 * Use bounded map to prevent leaking cached endpoints. If
+                 * mapping size is an issue, we may need to consider using just
+                 * the base part of the URI as the key
+                 */
+                endpointMap = new BoundedMap<>(URI_CACHE_SIZE);
+                Map<String, Endpoint> prev = contextUriEndpointMap
+                        .putIfAbsent(ctx, endpointMap);
                 if (prev != null) {
                     endpointMap = prev;
                 }
@@ -336,12 +334,21 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             synchronized (endpointMap) {
                 ep = endpointMap.get(uri);
                 if (ep == null) {
+                    if (endpointMap.size() == URI_CACHE_SIZE) {
+                        statusHandler
+                                .error("Context URI mapping has exceeded number of URIs limit ["
+                                        + URI_CACHE_SIZE
+                                        + "]. Possible Endpoint leak in Camel Context. Consider increasing System property ["
+                                        + URI_CACHE_SIZE_PROPERTY + "]");
+                    }
+
+                    ContextManager.getInstance().clearDependencyMapping();
                     ep = ctx.getEndpoint(uri);
                     endpointMap.put(uri, ep);
                 }
             }
 
-            return new Pair<ProducerTemplate, Endpoint>(tmp, ep);
+            return new Pair<>(tmp, ep);
         }
 
         throw new ConfigurationException(
@@ -352,12 +359,12 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
     private Map<String, Object> getHeaders(Object message) {
         Map<String, Object> headers = null;
         if (message instanceof IMessage) {
-            headers = new HashMap<String, Object>();
+            headers = new HashMap<>();
             headers.put("JMSType", message.getClass().getName());
             headers.putAll(((IMessage) message).getHeaders());
         } else if (message instanceof List) {
             List<?> list = ((List<?>) message);
-            if (list.size() > 0) {
+            if (!list.isEmpty()) {
                 if (list.get(0) instanceof IMessage) {
                     headers = ((IMessage) list.get(0)).getHeaders();
                 }
@@ -385,9 +392,9 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                         break;
                     }
                 } catch (Exception e) {
-                    statusHandler
-                            .error("Error occurred sending startup delayed async message",
-                                    e);
+                    statusHandler.error(
+                            "Error occurred sending startup delayed async message",
+                            e);
                 }
             }
         }
