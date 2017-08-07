@@ -26,6 +26,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 /**
  * A request for protected files.
  * 
+ * @deprecated Use ProtectedFileLookup instead.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
@@ -34,12 +36,14 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Aug 26, 2010            mschenke    Initial creation
  * Oct 01, 2013  2361      njensen     Removed XML annotations
  * Jun 22, 2017  6339      njensen     Overrode toString()
+ * Aug 04, 2017  6379      njensen     Deprecated
  * 
  * </pre>
  * 
  * @author mschenke
  */
 
+@Deprecated
 @DynamicSerialize
 public class ProtectedFileCommand extends AbstractUtilityCommand {
 

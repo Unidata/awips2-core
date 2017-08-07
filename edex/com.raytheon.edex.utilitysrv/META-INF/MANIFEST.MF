@@ -10,7 +10,8 @@ Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.edex.auth,
  com.raytheon.uf.common.status;bundle-version="1.12.1130",
  com.raytheon.uf.common.auth;bundle-version="1.12.1174",
- org.slf4j;bundle-version="1.7.5"
+ org.slf4j;bundle-version="1.7.21",
+ com.raytheon.uf.common.protectedfiles
 Export-Package: com.raytheon.edex.services
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.auth.req,

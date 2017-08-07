@@ -94,6 +94,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jun 22, 2017 6339        njensen     Updated listDirectory() method signature
  *                                      Use FilenameFilter since we now have an extension
  * Jun 30, 2017 6316        njensen     Improved regions.xml debug message
+ * Aug 04, 2017 6379        njensen     Removed protected-ness from responses
  *
  * </pre>
  *
@@ -273,8 +274,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         entry.date = new Date(file.lastModified());
         entry.existsOnServer = file.exists();
         entry.checkSum = ChecksumIO.getFileChecksum(file);
-        entry.protectedLevel = ProtectedFiles.getProtectedLevel(null,
-                ctx.getLocalizationType(), entry.fileName);
 
         return entry;
     }

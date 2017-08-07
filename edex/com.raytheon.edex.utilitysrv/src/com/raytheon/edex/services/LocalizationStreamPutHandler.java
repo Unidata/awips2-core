@@ -24,7 +24,6 @@ import java.io.FileOutputStream;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
 
-import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
@@ -33,6 +32,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.localization.stream.LocalizationStreamPutRequest;
+import com.raytheon.uf.common.protectedfiles.ProtectedFiles;
 import com.raytheon.uf.edex.core.EDEXUtil;
 
 /**
@@ -42,15 +42,16 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * @deprecated Continues to exist to support older clients. Newer clients should
  *             use the Localization REST service.
  * 
- * <pre>
+ *             <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 14, 2017 6111       njensen     Extracted from LocalizationStreamHandler
+ * Aug 08, 2017 6379       njensen     Updated import of ProtectedFiles
  *
- * </pre>
+ *             </pre>
  *
  * @author njensen
  */

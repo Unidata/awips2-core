@@ -51,6 +51,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -74,6 +75,7 @@ import com.raytheon.viz.ui.EditorUtil;
  * Aug 29, 2014 #3527      mapeters    Check for active editor to not 
  *                                     be null before calling isDirty().
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Aug 04, 2017 6379       njensen     Use ProtectedFileLookup
  * 
  * </pre>
  * 
@@ -93,8 +95,9 @@ public class LocalizationSaveAsPopulator extends CompoundContributionItem {
         if (active != null
                 && active.getEditorInput() instanceof LocalizationEditorInput) {
             enabled = active.isDirty();
-            protectedLevel = ((LocalizationEditorInput) active.getEditorInput())
-                    .getLocalizationFile().getProtectedLevel();
+            protectedLevel = ProtectedFileLookup.getProtectedLevel(
+                    ((LocalizationEditorInput) active.getEditorInput())
+                            .getLocalizationFile());
         } else {
             enabled = false;
             protectedLevel = null;
@@ -103,12 +106,15 @@ public class LocalizationSaveAsPopulator extends CompoundContributionItem {
         LocalizationLevel[] levels = PathManagerFactory.getPathManager()
                 .getAvailableLevels();
         for (final LocalizationLevel level : levels) {
-            if (level.isSystemLevel() == false) {
+            if (!level.isSystemLevel()) {
                 String displayName = LocalizationUtil.getProperName(level);
                 final String contextName = LocalizationManager
                         .getContextName(level);
                 if (contextName != null) {
-                    displayName += " (" + contextName + ")";
+                    StringBuilder sb = new StringBuilder();
+                    sb.append(displayName).append(" (").append(contextName)
+                            .append(")");
+                    displayName = sb.toString();
                 }
 
                 menuMgr.add(new Action(displayName) {

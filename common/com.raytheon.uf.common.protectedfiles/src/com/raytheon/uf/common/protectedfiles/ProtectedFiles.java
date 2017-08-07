@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.edex.utility;
+package com.raytheon.uf.common.protectedfiles;
 
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
@@ -32,15 +32,15 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Class for managing the protected file list. <br/>
@@ -57,9 +57,10 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Aug 25, 2010            mschenke     Initial creation
- * Apr 08, 2015 4346       rferrel      Load plugin entries into the BASE entry.
- * Jul 11, 2016 5750       tgurney      Move protectedFiles.txt to common_static
+ * Aug 25, 2010            mschenke    Initial creation
+ * Apr 08, 2015 4346       rferrel     Load plugin entries into the BASE entry.
+ * Jul 11, 2016 5750       tgurney     Move protectedFiles.txt to common_static
+ * Aug 04, 2017 6379       njensen     Moved to new plugin, cleanup
  * 
  * </pre>
  * 
@@ -68,8 +69,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 public class ProtectedFiles {
 
-    private static transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(ProtectedFiles.class);
+    private static Logger logger = LoggerFactory
+            .getLogger(ProtectedFiles.class);
 
     private static final String COMMENT = "#";
 
@@ -171,22 +172,23 @@ public class ProtectedFiles {
      * Write the protectedFiles.txt file.
      */
     private synchronized void writeProtectedFile() {
+
         try {
             file.createNewFile();
 
-            BufferedWriter out = new BufferedWriter(new FileWriter(file));
-            out.write(level == LocalizationLevel.BASE ? BASE_HEADER : String
-                    .format(LEVEL_HEADER, level));
-            Iterator<String> iter = protectedFiles.iterator();
-            while (iter.hasNext()) {
-                out.write(iter.next() + "\n");
-            }
+            try (BufferedWriter out = new BufferedWriter(
+                    new FileWriter(file))) {
+                out.write(level == LocalizationLevel.BASE ? BASE_HEADER
+                        : String.format(LEVEL_HEADER, level));
+                Iterator<String> iter = protectedFiles.iterator();
+                while (iter.hasNext()) {
+                    out.write(iter.next() + "\n");
+                }
 
-            out.flush();
-            out.close();
+                out.flush();
+            }
         } catch (IOException e) {
-            statusHandler.handle(Priority.PROBLEM,
-                    "Error writing protected file list", e);
+            logger.error("Error writing protected file list", e);
         }
     }
 
@@ -195,7 +197,7 @@ public class ProtectedFiles {
      */
     private void reloadFile() {
         if (file.lastModified() > lastModifiedTime) {
-            if (file.exists() == false) {
+            if (!file.exists()) {
                 writeProtectedFile();
             }
             protectedFiles.clear();
@@ -217,7 +219,7 @@ public class ProtectedFiles {
                     }
                 }
             } catch (IOException e) {
-                statusHandler.handle(Priority.PROBLEM,
+                logger.error(
                         "Error reading protected file list", e);
             }
         }
@@ -230,15 +232,14 @@ public class ProtectedFiles {
      * @throws IOException
      */
     private void parseFile(File file) throws IOException {
-        BufferedReader br = new BufferedReader(new FileReader(file));
-        String line = null;
-        while ((line = br.readLine()) != null) {
-            if (!line.startsWith(COMMENT) && !line.trim().isEmpty()) {
-                line.replace("//", "/");
-                protectedFiles.add(line);
+        try (BufferedReader br = new BufferedReader(new FileReader(file))) {
+            String line = null;
+            while ((line = br.readLine()) != null) {
+                if (!line.startsWith(COMMENT) && !line.trim().isEmpty()) {
+                    protectedFiles.add(line);
+                }
             }
         }
-        br.close();
     }
 
     /**
@@ -256,9 +257,6 @@ public class ProtectedFiles {
         reloadFile();
 
         String path = type.toString().toLowerCase() + File.separator + subPath;
-        if (path.contains("//")) {
-            path.replace("//", "/");
-        }
 
         LocalizationLevel[] levels = PathManagerFactory.getPathManager()
                 .getAvailableLevels();

@@ -28,6 +28,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.viz.localization.perspective.service.ILocalizationService;
 import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryData;
 import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileGroupData;
@@ -46,6 +47,7 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileGroupDa
  *                                     files for multiple Localization Types.
  * Jan 15, 2016 5242       kbisanz     Replaced LocalizationFile with
  *                                     ILocalizationFile where possible
+ * Aug 04, 2017 6379       njensen     Use ProtectedFileLookup
  * 
  * 
  * </pre>
@@ -66,7 +68,8 @@ public class PasteFileAction extends CopyToAction {
         this.dataToCopyTo = data;
         // Grab the level this file is protected at (if any)
         for (LocalizationFileEntryData entry : dataToCopyTo.getChildrenData()) {
-            pasteToProtectedLevel = entry.getFile().getProtectedLevel();
+            pasteToProtectedLevel = ProtectedFileLookup
+                    .getProtectedLevel(entry.getFile());
             break;
         }
     }

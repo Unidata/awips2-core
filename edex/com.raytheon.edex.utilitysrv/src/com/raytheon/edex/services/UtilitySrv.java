@@ -22,9 +22,7 @@ package com.raytheon.edex.services;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityCommand;
 import com.raytheon.uf.common.localization.msgs.AbstractUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListContextCommand;
@@ -50,6 +48,7 @@ import com.raytheon.uf.edex.core.EdexException;
  * Nov 14, 2008            njensen     Camel Refactor
  * Jul 10, 2014 2914       garmendariz Remove EnvProperties
  * Jun 22, 2017 6339       njensen     UtilityManager.listFiles() now takes a fileExtension
+ * Aug 04, 2017 6379       njensen     Removed protected-ness from responses
  * 
  * </pre>
  * 
@@ -75,13 +74,13 @@ public class UtilitySrv implements IRequestHandler<UtilityRequestMessage> {
                         castCmd.getSubDirectory(), castCmd.getFileExtension(),
                         castCmd.isRecursive(), castCmd.isFilesOnly()));
             } else if (cmd instanceof ProtectedFileCommand) {
+                /*
+                 * TODO: Remove support for ProtectedFileCommand. It's only here
+                 * for backwards compatibility. At present it will always return
+                 * null, implying the file is not protected.
+                 */
                 ProtectedFileCommand castCmd = (ProtectedFileCommand) cmd;
                 ProtectedFileResponse response = new ProtectedFileResponse();
-                LocalizationLevel protectedLevel = ProtectedFiles
-                        .getProtectedLevel(castCmd.getLocalizedSite(),
-                                castCmd.getContext().getLocalizationType(),
-                                castCmd.getSubPath());
-                response.setProtectedLevel(protectedLevel);
                 response.setPathName(castCmd.getSubPath());
                 response.setContext(castCmd.getContext());
                 responses.add(response);

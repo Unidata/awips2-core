@@ -35,6 +35,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -58,6 +59,7 @@ import com.raytheon.uf.viz.localization.perspective.view.PathData;
  *                                     files for multiple Localization Types.
  * Nov 12, 2015 4834       njensen     Changed LocalizationOpFailedException to LocalizationException
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Aug 04, 2017 6379       njensen     Use ProtectedFileLookup
  * 
  * </pre>
  * 
@@ -87,9 +89,10 @@ public class CopyToAction extends AbstractToAction {
     @Override
     protected boolean isLevelEnabled(LocalizationLevel level) {
         boolean enabled = super.isLevelEnabled(level);
-        if (enabled && file.isProtected()) {
+        if (enabled && ProtectedFileLookup.isProtected(file)) {
             // Ensure protected level is greater than copy to level
-            enabled = file.getProtectedLevel().compareTo(level) >= 0;
+            enabled = ProtectedFileLookup.getProtectedLevel(file)
+                    .compareTo(level) >= 0;
         }
         return enabled;
     }

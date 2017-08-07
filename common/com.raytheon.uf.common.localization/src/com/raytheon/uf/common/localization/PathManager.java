@@ -75,6 +75,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jun 21, 2016 5695       njensen     Clear parent directories from cache on file add
  * Aug 15, 2016 5834       njensen     Reuse protected file level in fireListeners()
  * Jun 22, 2017 6339       njensen     listFiles() now has an eager filter
+ * Aug 04, 2017 6379       njensen     Updated LocalizationFile constructor signature
  * 
  * </pre>
  * 
@@ -329,16 +330,14 @@ public class PathManager implements IPathManager {
                     response.fileName);
             if (file != null) {
                 // No cache file available but path is resolved, create
-                lf = new LocalizationFile(this, this.adapter, response.context,
+                lf = new LocalizationFile(this.adapter, response.context,
                         file, response.date, response.fileName,
-                        response.checkSum, response.isDirectory,
-                        response.protectedLevel);
+                        response.checkSum, response.isDirectory);
             } else {
                 // file does not exist
-                lf = new LocalizationFile(this, this.adapter, response.context,
+                lf = new LocalizationFile(this.adapter, response.context,
                         null, null, response.fileName,
-                        ILocalizationFile.NON_EXISTENT_CHECKSUM, false,
-                        response.protectedLevel);
+                        ILocalizationFile.NON_EXISTENT_CHECKSUM, false);
             }
             fileCache.put(key, lf);
         }
@@ -536,7 +535,6 @@ public class PathManager implements IPathManager {
             lre.setDirectory(file.isDirectory());
             lre.setExistsOnServer(file.isAvailableOnServer());
             lre.setFileName(file.getPath());
-            lre.setProtectedLevel(file.getProtectedLevel());
             cacheObject.put(new SerializableKey(entry.getKey()), lre);
         }
 
@@ -568,11 +566,11 @@ public class PathManager implements IPathManager {
             ListResponseEntry lre = entry.getValue();
             SerializableKey key = entry.getKey();
             if (lre.getContext() != null && lre.getFileName() != null) {
-                LocalizationFile file = new LocalizationFile(pm, pm.adapter,
+                LocalizationFile file = new LocalizationFile(pm.adapter,
                         lre.getContext(), pm.adapter.getPath(lre.getContext(),
                                 lre.getFileName()), lre.getDate(),
                         lre.getFileName(), lre.getChecksum(),
-                        lre.isDirectory(), lre.getProtectedLevel());
+                        lre.isDirectory());
                 fileCache.put(
                         new LocalizationFileKey(key.getFileName(), key
                                 .getContext()), file);
@@ -714,15 +712,10 @@ public class PathManager implements IPathManager {
             // ideally we should never get a null checksum but just in case...
             newInstance = getLocalizationFile(fum.getContext(), name);
         } else {
-            LocalizationLevel protectedLevel = null;
-            if (fileInCache != null) {
-                // protected level won't change
-                protectedLevel = fileInCache.getProtectedLevel();
-            }
             File localFile = adapter.getPath(fum.getContext(), name);
-            newInstance = new LocalizationFile(this, adapter, fum.getContext(),
+            newInstance = new LocalizationFile(adapter, fum.getContext(),
                     localFile, new Date(fum.getTimeStamp()), name,
-                    fum.getCheckSum(), false, protectedLevel);
+                    fum.getCheckSum(), false);
         }
         fileCache.put(key, newInstance);
 

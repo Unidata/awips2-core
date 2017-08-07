@@ -23,7 +23,6 @@ package com.raytheon.uf.common.localization.msgs;
 import java.util.Date;
 
 import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
@@ -38,11 +37,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Apr 19, 2007            chammack    Initial Creation.
  * Aug 22, 2008  #1502     bclement    Added JAXB/Serializable annotations
  * Oct 01, 2013   2361     njensen     Removed XML annotations
+ * Aug 04, 2017   6379     njensen     Removed protected level concept
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 @DynamicSerialize
@@ -64,9 +63,6 @@ public class ListResponseEntry {
     protected boolean directory;
 
     @DynamicSerializeElement
-    protected LocalizationLevel protectedLevel;
-
-    @DynamicSerializeElement
     protected boolean existsOnServer;
 
     public boolean isExistsOnServer() {
@@ -75,21 +71,6 @@ public class ListResponseEntry {
 
     public void setExistsOnServer(boolean existsOnServer) {
         this.existsOnServer = existsOnServer;
-    }
-
-    /**
-     * @return the protectedLevel
-     */
-    public LocalizationLevel getProtectedLevel() {
-        return protectedLevel;
-    }
-
-    /**
-     * @param protectedLevel
-     *            the protectedLevel to set
-     */
-    public void setProtectedLevel(LocalizationLevel protectedLevel) {
-        this.protectedLevel = protectedLevel;
     }
 
     /**

@@ -37,7 +37,6 @@ import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.exception.LocalizationProtectedFileException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.util.file.Files;
 
@@ -103,6 +102,7 @@ import com.raytheon.uf.common.util.file.Files;
  * Jun 15, 2016 5695        njensen     Rewrote delete() to delegate to adapter
  * Aug 15, 2016 5834        njensen     Check protection level in openOutputStream()
  * Apr 26, 2017 6258        tgurney     Add default file and dir permissions
+ * Aug 04, 2017 6379        njensen     Remove protected level concept
  *
  * </pre>
  *
@@ -133,7 +133,7 @@ public final class LocalizationFile
     private static final int EAGER_READ_MAXSIZE = 100 * 1024;
 
     /** Local file pointer to localization file, will never be null */
-    protected final File file;
+    private final File file;
 
     /**
      * The file timestamp on the server, may be null if file doesn't exist yet
@@ -150,21 +150,13 @@ public final class LocalizationFile
     private final boolean isDirectory;
 
     /** The localization adapter for the file */
-    protected final ILocalizationAdapter adapter;
+    private final ILocalizationAdapter adapter;
 
     /** The localization path of the file */
     private final String path;
 
-    /**
-     * Protection flag of file, if file cannot be overridden, it is protected
-     */
-    private LocalizationLevel protectedLevel;
-
     /** File changed observers */
     private final Map<ILocalizationFileObserver, ILocalizationPathObserver> observers = new HashMap<>();
-
-    /** Flag to set if file has been requested */
-    protected boolean fileRequested = false;
 
     /**
      * Check if a file is null type
@@ -176,10 +168,9 @@ public final class LocalizationFile
                 && file == null;
     }
 
-    LocalizationFile(IPathManager pathMgr, ILocalizationAdapter adapter,
+    LocalizationFile(ILocalizationAdapter adapter,
             LocalizationContext context, File file, Date date, String path,
-            String checkSum, boolean isDirectory,
-            LocalizationLevel protectedLevel) {
+            String checkSum, boolean isDirectory) {
         this.adapter = adapter;
         this.context = context;
         this.file = file;
@@ -187,7 +178,6 @@ public final class LocalizationFile
         this.fileTimestamp = date;
         this.isDirectory = isDirectory;
         this.path = LocalizationUtil.getSplitUnique(path);
-        this.protectedLevel = protectedLevel;
     }
 
     /**
@@ -241,7 +231,6 @@ public final class LocalizationFile
     @Deprecated
     public File getFile(boolean retrieveFile) throws LocalizationException {
         if (retrieveFile) {
-            fileRequested = true;
             /*
              * Attempt to eagerly create parent directories. It's okay if this
              * fails since they are not needed yet. save() will create them as
@@ -407,13 +396,6 @@ public final class LocalizationFile
     @Deprecated
     public SaveableOutputStream openOutputStream(boolean isAppending)
             throws LocalizationException {
-        if (this.isProtected()) {
-            if (context.getLocalizationLevel().compareTo(protectedLevel) > 0) {
-                throw new LocalizationProtectedFileException("File " + path
-                        + " is protected at level " + protectedLevel,
-                        protectedLevel);
-            }
-        }
         try {
             return new LocalizationSaveableFileOutputStream(
                     new LocalizationFileOutputStream(this, isAppending));
@@ -486,24 +468,6 @@ public final class LocalizationFile
     }
 
     /**
-     * Check if file is protected
-     *
-     * @return true if file is protected and cannot be overridden
-     */
-    public boolean isProtected() {
-        return protectedLevel != null;
-    }
-
-    /**
-     * Gets the level the file is protected at, null otherwise
-     *
-     * @return the level the file is protected at, or null
-     */
-    public LocalizationLevel getProtectedLevel() {
-        return protectedLevel;
-    }
-
-    /**
      * Save the file back to the localization store
      *
      * @deprecated Please use openOutputStream() to get a SaveableOutputStream
@@ -570,7 +534,7 @@ public final class LocalizationFile
      */
     @Override
     public boolean exists() {
-        return isNull() == false && adapter.exists(this);
+        return !isNull() && adapter.exists(this);
     }
 
     /**

@@ -29,7 +29,6 @@ import java.util.List;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.raytheon.edex.utility.ProtectedFiles;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
@@ -67,6 +66,7 @@ import com.raytheon.uf.edex.core.EdexException;
  *                                   file is protected
  * June 22, 2017 6339     njensen   Refactored validation of files to reduce
  *                                   calls to underlying filesystem
+ * Aug 04, 2017  6379     njensen   Removed protected-ness from responses
  * 
  * </pre>
  * 
@@ -260,10 +260,6 @@ public class UtilityManager {
                 entry.setChecksum(ILocalizationFile.NON_EXISTENT_CHECKSUM);
             }
 
-            LocalizationLevel protectedLevel = ProtectedFiles
-                    .getProtectedLevel(localizedSite,
-                            context.getLocalizationType(), path);
-            entry.setProtectedLevel(protectedLevel);
             entries.add(entry);
         }
     }

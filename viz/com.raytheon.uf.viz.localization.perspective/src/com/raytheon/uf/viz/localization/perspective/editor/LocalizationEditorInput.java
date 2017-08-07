@@ -36,6 +36,7 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 
@@ -54,6 +55,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 11, 2015 4108       randerso    Implmented hashCode() and equals()
  * Jan 06, 2016 4834       nabowle     add refreshLocalizationFile().
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Aug 04, 2017 6379       njensen     Use ProtectedFileLookup
  * 
  * </pre>
  * 
@@ -134,8 +136,9 @@ public class LocalizationEditorInput implements IFileEditorInput,
     @Override
     public String getToolTipText() {
         String tip = localizationFile.getPath();
-        if (localizationFile.isProtected()) {
-            tip += " (Protected @ " + localizationFile.getProtectedLevel()
+        if (ProtectedFileLookup.isProtected(localizationFile)) {
+            tip += " (Protected @ "
+                    + ProtectedFileLookup.getProtectedLevel(localizationFile)
                     + ")";
         }
         return tip;
@@ -154,7 +157,7 @@ public class LocalizationEditorInput implements IFileEditorInput,
 
     @Override
     public IFile getFile() {
-        if (file.exists() == false) {
+        if (!file.exists()) {
             try {
                 file.createLink(localizationFile.getFile().toURI(),
                         IResource.NONE, null);

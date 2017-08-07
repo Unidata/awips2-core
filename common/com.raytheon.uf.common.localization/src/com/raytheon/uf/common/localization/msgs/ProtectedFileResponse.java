@@ -26,6 +26,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 /**
  * A response for protected files.
  * 
+ * @deprecated Use ProtectedFileLookup instead.
+ * 
  * <pre>
  * 
  * SOFTWARE HISTORY
@@ -33,13 +35,14 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Aug 26, 2010            mschenke    Initial creation
  * Oct 01, 2013  2361      njensen     Removed XML annotations
+ * Aug 04, 2017  6379      njensen     Deprecated
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
+@Deprecated
 @DynamicSerialize
 public class ProtectedFileResponse extends AbstractUtilityResponse {
 

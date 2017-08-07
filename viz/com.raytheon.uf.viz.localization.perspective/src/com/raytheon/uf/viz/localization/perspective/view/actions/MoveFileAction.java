@@ -31,8 +31,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.status.IUFStatusHandler;
-import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.localization.perspective.service.ILocalizationService;
 import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryData;
@@ -51,6 +50,7 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryDa
  * Oct 13, 2015 4410       bsteffen    Allow localization perspective to mix
  *                                     files for multiple Localization Types.
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Aug 04, 2017 6379       njensen     Use ProtectedFileLookup
  * 
  * 
  * </pre>
@@ -59,8 +59,6 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryDa
  */
 
 public class MoveFileAction extends CopyToAction {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(MoveFileAction.class);
 
     private final DeleteAction delete;
 
@@ -79,9 +77,10 @@ public class MoveFileAction extends CopyToAction {
     @Override
     protected boolean isLevelEnabled(LocalizationLevel level) {
         boolean enabled = super.isLevelEnabled(level);
-        if (enabled && file.isProtected()) {
+        if (enabled && ProtectedFileLookup.isProtected(file)) {
             // Ensure protected level is greater than copy to level
-            enabled = file.getProtectedLevel().compareTo(level) >= 0;
+            enabled = ProtectedFileLookup.getProtectedLevel(file)
+                    .compareTo(level) >= 0;
         }
         return enabled;
     }

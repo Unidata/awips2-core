@@ -102,6 +102,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.protectedfiles.ProtectedFileLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -180,6 +181,7 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Apr 12, 2017  6188     bsteffen  Ensure that is possible to find and open
  *                                  files that have a PathData containing only
  *                                  '/', such as cave_config files.
+ * Aug 04, 2017  6379     njensen   Use ProtectedFileLookup
  * 
  * </pre>
  * 
@@ -372,14 +374,15 @@ public class FileTreeView extends ViewPart
                 if (item != null) {
                     LocalizationLevel protectedLevel = null;
                     if (item.getData() instanceof LocalizationFileEntryData) {
-                        protectedLevel = ((LocalizationFileEntryData) item
-                                .getData()).getFile().getProtectedLevel();
+                        protectedLevel = ProtectedFileLookup.getProtectedLevel(
+                                ((LocalizationFileEntryData) item.getData())
+                                        .getFile());
                     } else if (item
                             .getData() instanceof LocalizationFileGroupData) {
                         for (LocalizationFileEntryData entry : ((LocalizationFileGroupData) item
                                 .getData()).getChildrenData()) {
-                            protectedLevel = entry.getFile()
-                                    .getProtectedLevel();
+                            protectedLevel = ProtectedFileLookup
+                                    .getProtectedLevel(entry.getFile());
                             break;
                         }
                     }
