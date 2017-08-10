@@ -59,7 +59,7 @@ import com.raytheon.uf.common.auth.util.PermissionUtils;
  */
 
 public class ShiroPermissionsManager
-        implements IPermissionsManager, IRolesAndPermissionsStore {
+implements IPermissionsManager, IRolesAndPermissionsStore {
     private static final Logger log = LoggerFactory
             .getLogger(ShiroPermissionsManager.class);
 
@@ -111,20 +111,16 @@ public class ShiroPermissionsManager
 
         if (!subject.isAuthenticated()) {
             String userName = user.uniqueId().toString();
-            String password = DEFAULT_PASSWORD;
-            if (user.authenticationData() != null) {
-                /*
-                 * TODO: this probably changes if we ever implement
-                 * authentication.
-                 *
-                 * We will probably need to re-visit the whole IUser concept at
-                 * that time
-                 */
-                password = user.authenticationData().toString();
-            }
+            /*
+             * TODO: If we ever implement authentication we will need to do
+             * something with User.authenticationData.
+             *
+             * For now we ignore it and everyone uses the same DEFAULT_PASSWORD
+             * which effectively bypasses authentication.
+             */
 
             UsernamePasswordToken token = new UsernamePasswordToken(userName,
-                    password);
+                    DEFAULT_PASSWORD);
             try {
                 subject.login(token);
             } catch (AuthenticationException e) {
@@ -202,7 +198,7 @@ public class ShiroPermissionsManager
     @Override
     public RolesAndPermissions saveRolesAndPermissions(
             RolesAndPermissions rolesAndPermissions)
-            throws AuthorizationException {
+                    throws AuthorizationException {
 
         /* Ensure subject has required permission */
         checkPermission(
