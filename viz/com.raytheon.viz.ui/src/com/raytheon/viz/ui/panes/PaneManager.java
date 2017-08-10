@@ -79,6 +79,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  possible
  * Mar 02, 2017  6153     bsteffen  Reset descriptor on shared maps when
  *                                  removing a pane.
+ * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
  * 
  * </pre>
  * 
@@ -195,7 +196,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
             VizDisplayPane glPane = (VizDisplayPane) pane;
             --displayedPaneCount;
             pane.setVisible(false);
-            ((GridData) glPane.getCanvas().getParent().getLayoutData()).exclude = true;
+            ((GridData) glPane.getCanvas().getParent()
+                    .getLayoutData()).exclude = true;
             if (pane == getSelectedPane(IMultiPaneEditor.IMAGE_ACTION)) {
                 setSelectedPane(IMultiPaneEditor.IMAGE_ACTION, null);
             }
@@ -212,7 +214,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
             VizDisplayPane glPane = (VizDisplayPane) pane;
             ++displayedPaneCount;
             pane.setVisible(true);
-            ((GridData) glPane.getCanvas().getParent().getLayoutData()).exclude = false;
+            ((GridData) glPane.getCanvas().getParent()
+                    .getLayoutData()).exclude = false;
             setSelectedPane(IMultiPaneEditor.IMAGE_ACTION, null);
             adjustPaneLayout(displayedPaneCount);
         }
@@ -307,8 +310,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
             return null;
         }
         IDisplayPane pane = getActiveDisplayPane();
-        double[] grid = pane.getDescriptor().worldToPixel(
-                new double[] { c.x, c.y, c.z });
+        double[] grid = pane.getDescriptor()
+                .worldToPixel(new double[] { c.x, c.y, c.z });
         if (grid == null) {
             return null;
         }
@@ -362,9 +365,9 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         int numRows = (int) Math.ceil(displayedPaneCount / (double) numColums);
 
         BufferedImage[] screens = screenshots();
-        BufferedImage retval = new BufferedImage(screens[0].getWidth()
-                * numColums, screens[0].getHeight() * numRows,
-                screens[0].getType());
+        BufferedImage retval = new BufferedImage(
+                screens[0].getWidth() * numColums,
+                screens[0].getHeight() * numRows, screens[0].getType());
 
         int column = 0;
         int row = 0;
@@ -520,7 +523,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
         VizDisplayPane pane = null;
         try {
-            pane = (VizDisplayPane) createNewPane(renderableDisplay, canvasComp);
+            pane = (VizDisplayPane) createNewPane(renderableDisplay,
+                    canvasComp);
             registerHandlers(pane);
         } catch (VizException e) {
             statusHandler.handle(Priority.PROBLEM, "Error adding pane", e);
@@ -538,8 +542,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                                     .getBackgroundColor());
                 } else if (paneContainer instanceof AbstractEditor) {
                     ((AbstractEditor) paneContainer).getBackgroundColor()
-                            .setColor(
-                                    BGColorMode.EDITOR,
+                            .setColor(BGColorMode.EDITOR,
                                     pane.getRenderableDisplay()
                                             .getBackgroundColor());
                 }
@@ -603,12 +606,14 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
         // Undo map sharing that was done in addPane
         IDescriptor descriptor = pane.getDescriptor();
-        for (ResourcePair rp : descriptor.getResourceList()) {
-            if (rp.getProperties().isMapLayer()) {
-                AbstractVizResource<?, ?> resource = rp.getResource();
-                if (resource != null
-                        && resource.getDescriptor() == descriptor) {
-                    resetDescriptor(rp);
+        if (descriptor != null) {
+            for (ResourcePair rp : descriptor.getResourceList()) {
+                if (rp.getProperties().isMapLayer()) {
+                    AbstractVizResource<?, ?> resource = rp.getResource();
+                    if (resource != null
+                            && resource.getDescriptor() == descriptor) {
+                        resetDescriptor(rp);
+                    }
                 }
             }
         }
@@ -729,8 +734,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#addSelectedPaneChangedListener
+     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#
+     * addSelectedPaneChangedListener
      * (com.raytheon.viz.ui.editor.ISelectedPaneChangedListener)
      */
     @Override
@@ -742,8 +747,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     /*
      * (non-Javadoc)
      * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#removeSelectedPaneChangedListener
+     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#
+     * removeSelectedPaneChangedListener
      * (com.raytheon.viz.ui.editor.ISelectedPaneChangedListener)
      */
     @Override
