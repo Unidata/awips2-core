@@ -36,6 +36,7 @@ import org.apache.http.util.CharArrayBuffer;
  * Oct 29, 2012            bclement     Initial creation
  * Feb 14, 2014 2756       bclement     moved to common http from ogc common
  * Jan 08, 2015 3789       bclement     refactored to use HeaderValueParser
+ * Aug 14, 2017 5731       bsteffen     Add accept() method.
  * 
  * </pre>
  * 
@@ -45,6 +46,8 @@ import org.apache.http.util.CharArrayBuffer;
 
 public class MimeType {
 
+    private static final String WILDCARD = "*";
+
     private static final String SUBTYPE_SEPARATOR = "/";
 
     protected final String type;
@@ -53,10 +56,6 @@ public class MimeType {
 
     protected final Map<String, String> parameters;
 
-
-    /**
-     * @param mime
-     */
     public MimeType(String mime) {
         CharArrayBuffer buffer = new CharArrayBuffer(mime.length());
         buffer.append(mime);
@@ -64,8 +63,8 @@ public class MimeType {
         HeaderElement[] elements = parser.parseElements(buffer,
                 new ParserCursor(0, buffer.length()));
         if (elements == null || elements.length < 1) {
-            throw new IllegalArgumentException("Invalid mime type string: "
-                    + mime);
+            throw new IllegalArgumentException(
+                    "Invalid mime type string: " + mime);
         }
         HeaderElement mimeElement = elements[0];
         String mimeType = mimeElement.getName();
@@ -89,11 +88,6 @@ public class MimeType {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -105,23 +99,22 @@ public class MimeType {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         MimeType other = (MimeType) obj;
         if (parameters == null) {
-            if (other.parameters != null)
+            if (other.parameters != null) {
                 return false;
+            }
         } else {
             if (other.parameters == null) {
                 return false;
@@ -129,23 +122,28 @@ public class MimeType {
             if (parameters.size() != other.parameters.size()) {
                 return false;
             }
-            for (String s : parameters.keySet()) {
-                String val = parameters.get(s);
+            for (Entry<String, String> e : parameters.entrySet()) {
+                String s = e.getKey();
+                String val = e.getValue();
                 if (!val.equalsIgnoreCase(other.parameters.get(s))) {
                     return false;
                 }
             }
         }
         if (subtype == null) {
-            if (other.subtype != null)
+            if (other.subtype != null) {
                 return false;
-        } else if (!subtype.equalsIgnoreCase(other.subtype))
+            }
+        } else if (!subtype.equalsIgnoreCase(other.subtype)) {
             return false;
+        }
         if (type == null) {
-            if (other.type != null)
+            if (other.type != null) {
                 return false;
-        } else if (!type.equalsIgnoreCase(other.type))
+            }
+        } else if (!type.equalsIgnoreCase(other.type)) {
             return false;
+        }
         return true;
     }
 
@@ -158,16 +156,51 @@ public class MimeType {
             return false;
         }
         if (subtype == null) {
-            if (other.subtype != null)
+            if (other.subtype != null) {
                 return false;
-        } else if (!subtype.equalsIgnoreCase(other.subtype))
+            }
+        } else if (!subtype.equalsIgnoreCase(other.subtype)) {
             return false;
+        }
         if (type == null) {
-            if (other.type != null)
+            if (other.type != null) {
                 return false;
-        } else if (!type.equalsIgnoreCase(other.type))
+            }
+        } else if (!type.equalsIgnoreCase(other.type)) {
             return false;
+        }
         return true;
+    }
+
+    /**
+     * Determine of another mimetype is an acceptable match for this mimetype.
+     * This is similar to {@link #equalsIgnoreParams(MimeType)}, except this
+     * also handles the case where this mimetype contains a type and/or subtype
+     * of '*'. For example if this mimetype represents 'text/*' then all
+     * mimetypes with a type of text will be acceptable, ignoring subtype.
+     */
+    public boolean accept(MimeType other) {
+        if (other == null) {
+            return false;
+        }
+        if (subtype == null) {
+            if (other.subtype != null) {
+                return false;
+            }
+        } else if (!subtype.equalsIgnoreCase(other.subtype)
+                && !WILDCARD.equals(subtype)) {
+            return false;
+        }
+        if (type == null) {
+            if (other.type != null) {
+                return false;
+            }
+        } else if (!type.equalsIgnoreCase(other.type)
+                && !WILDCARD.equals(type)) {
+            return false;
+        }
+        return true;
+
     }
 
     /**
@@ -185,15 +218,10 @@ public class MimeType {
         return parameters.size();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
         String rval = toStringWithoutParams();
-        if ( !parameters.isEmpty()){
+        if (!parameters.isEmpty()) {
             BasicHeaderElement mimeElement = new BasicHeaderElement(rval, null);
             CharArrayBuffer buffer = new CharArrayBuffer(32);
             BasicHeaderValueFormatter formatter = new BasicHeaderValueFormatter();
@@ -227,16 +255,10 @@ public class MimeType {
         return sb.toString();
     }
 
-    /**
-     * @return the type
-     */
     public String getType() {
         return type;
     }
 
-    /**
-     * @return the subtype
-     */
     public String getSubtype() {
         return subtype;
     }

@@ -57,7 +57,7 @@ public class HtmlDirectoryListingWriter implements IDirectoryListingWriter {
 
     @Override
     public boolean generates(MimeType contentType) {
-        return CONTENT_TYPE.equalsIgnoreParams(contentType);
+        return contentType.accept(CONTENT_TYPE);
     }
 
     @Override
@@ -86,7 +86,8 @@ public class HtmlDirectoryListingWriter implements IDirectoryListingWriter {
         IPathManager pathManager = PathManagerFactory.getPathManager();
         ILocalizationFile[] files = pathManager.listFiles(context, path, null,
                 false, false);
-        Arrays.sort(files, Comparator.comparing(ILocalizationFile::getPath));
+        Arrays.sort(files,
+                Comparator.comparing(IDirectoryListingWriter::getBaseName));
 
         pw.write("<ul>");
         for (ILocalizationFile file : files) {

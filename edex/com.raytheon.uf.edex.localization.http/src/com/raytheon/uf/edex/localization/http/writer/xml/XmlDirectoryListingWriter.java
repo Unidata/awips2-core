@@ -60,8 +60,8 @@ public class XmlDirectoryListingWriter implements IDirectoryListingWriter {
 
     @Override
     public boolean generates(MimeType contentType) {
-        return CONTENT_TYPE.equalsIgnoreParams(contentType)
-                || ALT_CONTENT_TYPE.equalsIgnoreParams(contentType);
+        return contentType.accept(CONTENT_TYPE)
+                || contentType.accept(ALT_CONTENT_TYPE);
     }
 
     private final JAXBManager jaxbManager;
@@ -109,7 +109,8 @@ public class XmlDirectoryListingWriter implements IDirectoryListingWriter {
         IPathManager pathManager = PathManagerFactory.getPathManager();
         ILocalizationFile[] files = pathManager.listFiles(context, path, null,
                 false, false);
-        Arrays.sort(files, Comparator.comparing(ILocalizationFile::getPath));
+        Arrays.sort(files,
+                Comparator.comparing(IDirectoryListingWriter::getBaseName));
         LocalizationFilesXml result = new LocalizationFilesXml();
         for (ILocalizationFile file : files) {
             if (depth > 1 && file.isDirectory()) {

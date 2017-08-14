@@ -48,11 +48,11 @@ import com.raytheon.uf.edex.localization.http.writer.ILocalizationResponseWriter
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 16, 2015 3978       bclement     Initial creation
+ * Aug 14, 2017 5731       bsteffen     Handle wildcards in mimetype
  * 
  * </pre>
  * 
  * @author bclement
- * @version 1.0
  */
 public class ZipArchiveResponseWriter implements ILocalizationResponseWriter {
 
@@ -60,7 +60,7 @@ public class ZipArchiveResponseWriter implements ILocalizationResponseWriter {
 
     @Override
     public boolean generates(MimeType contentType) {
-        return CONTENT_TYPE.equalsIgnoreParams(contentType);
+        return contentType.accept(CONTENT_TYPE);
     }
 
     @Override

@@ -76,8 +76,8 @@ public class JsonDirectoryListingWriter implements IDirectoryListingWriter {
 
     @Override
     public boolean generates(MimeType contentType) {
-        return CONTENT_TYPE.equalsIgnoreParams(contentType)
-                || ALT_CONTENT_TYPE.equalsIgnoreParams(contentType);
+        return contentType.accept(CONTENT_TYPE)
+                || contentType.accept(ALT_CONTENT_TYPE);
     }
 
     @Override
@@ -117,7 +117,8 @@ public class JsonDirectoryListingWriter implements IDirectoryListingWriter {
         IPathManager pathManager = PathManagerFactory.getPathManager();
         ILocalizationFile[] files = pathManager.listFiles(context, path, null,
                 false, false);
-        Arrays.sort(files, Comparator.comparing(ILocalizationFile::getPath));
+        Arrays.sort(files,
+                Comparator.comparing(IDirectoryListingWriter::getBaseName));
         Map<String, LocalizationFileJson> result = new HashMap<>();
         for (ILocalizationFile file : files) {
             LocalizationFileJson json = new LocalizationFileJson(file);
