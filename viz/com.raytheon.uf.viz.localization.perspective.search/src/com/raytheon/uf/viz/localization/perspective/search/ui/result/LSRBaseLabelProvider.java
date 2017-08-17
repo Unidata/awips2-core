@@ -58,8 +58,9 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileGroupDa
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- --------------------------
  * Apr 06, 2017  6188     bsteffen  Initial creation
+ * Aug 17, 2017  6359     bsteffen  Remove unused page field.
  * 
  * </pre>
  *
@@ -77,12 +78,10 @@ public abstract class LSRBaseLabelProvider extends LabelProvider
     protected static final Styler HIGHLIGHT_STYLE = StyledString
             .createColorRegistryStyler(null, HIGHLIGHT_BG_COLOR_NAME);
 
-    protected final LocalizationSearchResultPage page;
-
     protected final Map<ImageDescriptor, Image> imageMap = new HashMap<>();
 
-    public LSRBaseLabelProvider(LocalizationSearchResultPage page) {
-        this.page = page;
+    public LSRBaseLabelProvider() {
+
     }
 
     /**
