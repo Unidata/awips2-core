@@ -37,8 +37,9 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryDa
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- ---------------------------------
  * Apr 06, 2017  6188     bsteffen  Initial creation
+ * Aug 17, 2017  6359     bsteffen  Move page field from base class.
  * 
  * </pre>
  *
@@ -51,8 +52,10 @@ public class LSRTreeLabelProvider extends LSRBaseLabelProvider {
 
     private static final String LINE_CUT_INDICATOR = " ... ";
 
+    protected final LocalizationSearchResultPage page;
+
     public LSRTreeLabelProvider(LocalizationSearchResultPage page) {
-        super(page);
+        this.page = page;
     }
 
     @Override

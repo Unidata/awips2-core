@@ -16,6 +16,14 @@
     </viewPage>
   </extension>
 
+   <extension
+         point="org.eclipse.ui.commands">
+      <command
+            id="com.raytheon.uf.viz.localization.perspective.search.searchByName"
+            name="Search By Name">
+      </command>
+   </extension>
+
   <extension point="org.eclipse.ui.menus">
     <menuContribution locationURI="menu:org.eclipse.ui.main.menu?after=edit">
       <!-- File menu -->
@@ -28,8 +36,14 @@
 
         <command
               commandId="org.eclipse.search.ui.openSearchDialog"
-              label="Search"
+              label="Search By Content"
               mnemonic="S"
+              style="push">
+        </command>
+        <command
+              commandId="com.raytheon.uf.viz.localization.perspective.search.searchByName"
+              label="Search By Name"
+              mnemonic="N"
               style="push">
         </command>
       </menu>
@@ -40,6 +54,15 @@
      <handler
            class="com.raytheon.uf.viz.localization.perspective.search.handler.OpenSearchDialogHandler"
            commandId="org.eclipse.search.ui.openSearchDialog">
+        <activeWhen>
+          <reference
+            definitionId="com.raytheon.uf.viz.localization.inLocalizationActionSet">
+          </reference>
+        </activeWhen>
+     </handler>
+     <handler
+           class="com.raytheon.uf.viz.localization.perspective.search.handler.OpenSearchByNameDialogHandler"
+           commandId="com.raytheon.uf.viz.localization.perspective.search.searchByName">
         <activeWhen>
           <reference
             definitionId="com.raytheon.uf.viz.localization.inLocalizationActionSet">

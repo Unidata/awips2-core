@@ -21,77 +21,48 @@ package com.raytheon.uf.viz.localization.perspective.search.ui.result;
 
 import org.eclipse.core.runtime.IPath;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.jface.viewers.DelegatingStyledCellLabelProvider.IStyledLabelProvider;
 import org.eclipse.jface.viewers.StyledCellLabelProvider;
 import org.eclipse.jface.viewers.StyledString;
 
 import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.viz.localization.perspective.search.ui.LocalizationResourceSelectionDialog;
 import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryData;
-import com.raytheon.uf.viz.localization.perspective.view.PathData;
 
 /**
- * {@link IStyledLabelProvider} used in the {@link LocalizationSearchResultPage}
- * when the results are displayed as a list.
+ * Provide labels for {@link LocalizationFileEntryData} objects in the main list
+ * of the {@link LocalizationResourceSelectionDialog}
  * 
  * <pre>
  *
  * SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ---------------------------------
- * Apr 06, 2017  6188     bsteffen  Initial creation
- * Aug 17, 2017  6359     bsteffen  Move page field from base class.
- * 
+ * ------------- -------- --------- -----------------
+ * Aug 17, 2017  6359     bsteffen  Initial creation
  * 
  * </pre>
  *
  * @author bsteffen
  */
-public class LSRListLabelProvider extends LSRBaseLabelProvider {
-
-    protected final LocalizationSearchResultPage page;
-
-    public LSRListLabelProvider(LocalizationSearchResultPage page) {
-        this.page = page;
-    }
+public class ResourceSelectionListLabelProvider extends LSRBaseLabelProvider {
 
     @Override
     public StyledString getStyledText(Object element) {
         if (element instanceof LocalizationFileEntryData) {
             LocalizationFileEntryData data = (LocalizationFileEntryData) element;
             ILocalizationFile file = data.getFile();
-            PathData pathData = data.getPathData();
             IPath filePath = Path.forPosix(file.getPath());
-            IPath dataPath = Path.forPosix(pathData.getPath());
-            if (dataPath.isAbsolute() && dataPath.segmentCount() != 0) {
-                dataPath = dataPath.makeRelative();
-            }
 
-            String name = filePath.lastSegment() + " - "
-                    + getContextLabel(data);
+            String name = filePath.lastSegment();
             StyledString styledName = new StyledString(name);
 
-            IPath path = Path.forPosix(pathData.getApplication());
-            path = path.append(pathData.getName());
-            if (dataPath.segmentCount() == 0) {
-                path = path.append(filePath);
-            } else {
-                path = path.append(filePath.makeRelativeTo(dataPath));
-            }
-            path = path.removeLastSegments(0);
-
-            String decorated = name + " " + path.toString();
+            String decorated = name + " " + getContextLabel(data);
 
             StyledCellLabelProvider.styleDecoratedString(decorated,
                     StyledString.QUALIFIER_STYLER, styledName);
-
-            int count = page.getInput().getMatchCount(file);
-            if (count > 1) {
-                String countInfo = "(" + count + " matches)";
-                styledName.append(' ').append(countInfo,
-                        StyledString.COUNTER_STYLER);
-            }
             return styledName;
+        } else if (element == null) {
+            return new StyledString();
         }
         return new StyledString(element.toString());
     }
