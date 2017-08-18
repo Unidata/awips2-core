@@ -29,7 +29,6 @@ package com.raytheon.uf.viz.core.localization;
  * Sep 24, 2008           chammack    Initial creation
  * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
  * Jun 24, 2014  3236     njensen     Add http server address options
- * Jun 25, 2015           mjames@ucar Added BOU as default site.
  * </pre>
  * 
  * @author chammack
@@ -58,6 +57,6 @@ public class LocalizationConstants {
 
     public static final String P_LOCALIZATION_HTTP_SERVER_OPTIONS = "httpServerAddressOptions";
     
-    public static final String DEFAULT_LOCALIZATION_SITE = "BOU";
+    public static final String DEFAULT_LOCALIZATION_SITE = "OAX";
 
 }
