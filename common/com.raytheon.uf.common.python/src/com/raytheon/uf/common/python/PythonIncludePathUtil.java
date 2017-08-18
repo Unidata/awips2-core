@@ -41,6 +41,7 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * Feb 27, 2013            dgilling     Initial creation
  * May 20, 2015  4509      njensen      Added getCommonPythonIncludePath(String...)
  * Oct 22, 2015  5003      dgilling     Added getEdexPythonIncludePath.
+ * Aug 18, 2017            mjames@ucar  Force include of site-packages/gfe for macOS.
  * 
  * </pre>
  * 
@@ -85,8 +86,9 @@ public class PythonIncludePathUtil {
      * @return the path to that python directory
      */
     public static String getCommonPythonIncludePath() {
-        return getPath(COMMON_STATIC_BASE, PYTHON);
+        return getPath(COMMON_STATIC_BASE, PYTHON) + ":/Library/Python/2.7/site-packages/gfe/";
     }
+   
 
     /**
      * Gets the path for the common_static/base/python directory
