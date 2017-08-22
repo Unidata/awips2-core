@@ -364,6 +364,9 @@ public class LocalizationHttpGetDelegate extends LocalizationHttpDelegate {
                 handleDirectory(request, context, lfile.getName(), writerPair,
                         out);
             }
+        } else if (rawPath.endsWith(DIRECTORY_SUFFIX)) {
+            sendRedirect(out, rawPath.substring(0, rawPath.length() - 1),
+                    request.getQueryString());
         } else {
             handleRegularFile(lfile, out);
         }
