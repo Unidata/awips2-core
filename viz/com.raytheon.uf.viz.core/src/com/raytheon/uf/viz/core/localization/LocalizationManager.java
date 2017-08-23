@@ -472,6 +472,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                     .toUpperCase();
             this.overrideSite = true;
         }
+        statusHandler.info("Localizing as site " + this.currentSite);
     }
 
     private void checkForServerOverride() {
