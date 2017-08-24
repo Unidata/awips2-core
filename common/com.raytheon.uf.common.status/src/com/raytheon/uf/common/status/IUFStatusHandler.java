@@ -47,7 +47,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * to AlertViz. Therefore, by using IUFStatusHandler the behavior of sending all
  * messages to AlertViz is retained.
  * 
- * In constrast, using an instance of {@link org.slf4j.Logger} in viz (or common
+ * In contrast, using an instance of {@link org.slf4j.Logger} in viz (or common
  * code running in viz) skips Slf4JBridge and will use the logback configuration
  * for that particular logger, which is most likely set at a higher level than
  * DEBUG or TRACE, i.e. most loggers are typically set to INFO, WARN, or ERROR
