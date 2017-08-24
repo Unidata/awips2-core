@@ -24,6 +24,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.StringJoiner;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
@@ -59,6 +60,8 @@ import jep.NDArray;
  * Oct 05, 2016  5891     bsteffen  Allow functions in subdirectories
  * Nov 02, 2016  5979     njensen   Cast to Number where applicable
  * Jan 04, 2017  5959     njensen   Use JepConfig in constructor
+ * Aug 28, 2017  6391     bsteffen  Handle cubes at a single point.
+ * 
  * 
  * </pre>
  * 
@@ -130,13 +133,14 @@ public class MasterDerivScript extends PythonInterpreter {
             String path = name.substring(0, lastIdx);
             /* Translate directory into a python submodule */
             path = path.replace(IPathManager.SEPARATOR, ".");
-            jep.eval("from " + path + " import " + functionName + " as execute");
+            jep.eval(
+                    "from " + path + " import " + functionName + " as execute");
         } else {
             /* Translate directory into a python submodule */
             name = name.replace(IPathManager.SEPARATOR, ".");
             jep.eval("from " + name + " import execute");
         }
-        jep.eval(functionCall.toString());
+            jep.eval(functionCall.toString());
     }
 
     @Override
@@ -149,70 +153,9 @@ public class MasterDerivScript extends PythonInterpreter {
             List valList = (List) argValue;
             Object val = valList.get(0);
             if (val instanceof CubeLevel) {
-                // process as cube
-                jep.eval("import numpy");
-                jep.eval(argName + " = []");
-                boolean cubeCreated = false;
                 @SuppressWarnings("unchecked")
                 List<CubeLevel<Object, Object>> levelList = valList;
-                StringBuilder temp = new StringBuilder();
-                for (int i = 0; i < levelList.size(); i++) {
-                    CubeLevel<Object, Object> cubeLevel = levelList.get(i);
-                    Object press = cubeLevel.getPressure();
-                    String pressKey = argName + "_tmpPress";
-                    if (press != null) {
-                        pressKey += Integer.toHexString((press.hashCode()));
-                    }
-                    evaluateArgument(pressKey, press);
-
-                    Object param = cubeLevel.getParam();
-                    String paramKey = argName + "_tmpParam";
-                    if (param != null) {
-                        paramKey += Integer.toHexString((param.hashCode()));
-                    }
-                    evaluateArgument(paramKey, param);
-
-                    if (!cubeCreated) {
-                        jep.eval("import numpy");
-                        jep.eval("paramShape = " + paramKey + ".shape");
-                        jep.eval(argName
-                                + ".append(numpy.ndarray(["
-                                + valList.size()
-                                + ", paramShape[0], paramShape[1]], 'float32'))");
-                        // handle pressure shaping
-                        temp.setLength(0);
-                        temp.append("if type(");
-                        temp.append(pressKey);
-                        temp.append(") == float:\n\t");
-                        temp.append(argName);
-                        temp.append(".append(numpy.ndarray([1,");
-                        temp.append(valList.size());
-                        temp.append("], 'float32'))\nelse:\n\t");
-                        temp.append(argName);
-                        temp.append(".append(numpy.ndarray([");
-                        temp.append(valList.size());
-                        temp.append(", paramShape[0], paramShape[1]], 'float32'))");
-                        jep.eval(temp.toString());
-                        cubeCreated = true;
-                    }
-                    jep.eval(argName + "[0][" + i + "] = " + paramKey);
-                    temp.setLength(0);
-                    temp.append("if type(");
-                    temp.append(pressKey);
-                    temp.append(") == float:\n\t");
-                    temp.append(argName);
-                    temp.append("[1][0][");
-                    temp.append(i);
-                    temp.append("] = ");
-                    temp.append(pressKey);
-                    temp.append("\nelse:\n\t");
-                    temp.append(argName);
-                    temp.append("[1][");
-                    temp.append(i);
-                    temp.append("] = ");
-                    temp.append(pressKey);
-                    jep.eval(temp.toString());
-                }
+                processCube(argName, levelList);
             } else {
                 // process as list
                 if (valList.size() == 1) {
@@ -279,14 +222,70 @@ public class MasterDerivScript extends PythonInterpreter {
         pArgs.add(argName);
     }
 
+    private void processCube(String argName,
+            List<CubeLevel<Object, Object>> levelList) throws JepException {
+        // process as cube
+        jep.eval(argName + " = []");
+        for (int i = 0; i < levelList.size(); i++) {
+            CubeLevel<Object, Object> cubeLevel = levelList.get(i);
+            Object press = cubeLevel.getPressure();
+            String pressKey = argName + "_tmpPress";
+            if (press != null) {
+                pressKey += Integer.toHexString((press.hashCode()));
+            }
+            evaluateArgument(pressKey, press);
+
+            Object param = cubeLevel.getParam();
+            String paramKey = argName + "_tmpParam";
+            if (param != null) {
+                paramKey += Integer.toHexString((param.hashCode()));
+            }
+            evaluateArgument(paramKey, param);
+
+            /*
+             * evaluateArgument() can recursively enter this method, so it is
+             * important to reset all local variables after each call to
+             * evaluateArguments.
+             */
+            jep.eval("cube = " + argName);
+            jep.eval("numLevels = " + levelList.size());
+            jep.eval("index = " + i);
+            jep.eval("press = " + pressKey);
+            jep.eval("param = " + paramKey);
+            if (i == 0) {
+                jep.eval("import numpy");
+                jep.eval("paramShape = param.shape");
+                /*
+                 * Cubes are expected to be 3D, so each level must be 2D, if the
+                 * parameter is only 1D then add a second dimension.
+                 */
+                jep.eval(new StringJoiner("\n").add("if len(paramShape) == 1:")
+                        .add("    paramShape += (1,)").toString());
+                ;
+                jep.eval(
+                        "cube.append(numpy.ndarray((numLevels,) + paramShape, 'float32'))");
+                jep.eval(new StringJoiner("\n").add("if type(press) == float:")
+                        .add("    cube.append(numpy.ndarray([1,numLevels], 'float32'))")
+                        .add("else:")
+                        .add("    cube.append(numpy.ndarray((numLevels,) + paramShape, 'float32'))")
+                        .toString());
+            }
+
+            jep.eval("cube[0][index] = param");
+            jep.eval(new StringJoiner("\n").add("if type(press) == float:")
+                    .add("    cube[1][0][index] = press").add("else:")
+                    .add("    cube[1][index] = press").toString());
+        }
+    }
+
     /**
      * Retrieves the result of the method execution
      */
     protected List<?> getExecutionResult() throws JepException {
         // Retrieve the results and return them
         List<IDataRecord> result = null;
-        Boolean isTuple = (Boolean) jep.getValue("isinstance(" + RESULT
-                + ",tuple)");
+        Boolean isTuple = (Boolean) jep
+                .getValue("isinstance(" + RESULT + ",tuple)");
         if (isTuple) {
             // figure out how long the tuple is
             int lenTuple = ((Number) jep.getValue("len(" + RESULT + ")"))
