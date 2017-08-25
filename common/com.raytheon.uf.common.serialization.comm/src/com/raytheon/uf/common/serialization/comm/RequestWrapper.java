@@ -37,11 +37,11 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Jul 24, 2012            njensen     Initial creation
  * Aug 15, 2014 3541       mschenke    Made implement IServerRequest since sent
  *                                     as one 
+ * Aug 25, 2017 6316       njensen     Improved toString()
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 @DynamicSerialize
@@ -94,8 +94,13 @@ public class RequestWrapper implements IServerRequest {
     @Override
     public String toString() {
         StringBuilder sb = new StringBuilder(125);
-        sb.append("Request[").append(wsId.toPrettyString()).append("][")
-                .append(uniqueId).append("] ")
+        sb.append("Request[");
+        if (wsId != null) {
+            sb.append(wsId.toPrettyString());
+        } else {
+            sb.append("null wsId");
+        }
+        sb.append("][").append(uniqueId).append("] ")
                 .append(request.getClass().getSimpleName());
         return sb.toString();
     }
