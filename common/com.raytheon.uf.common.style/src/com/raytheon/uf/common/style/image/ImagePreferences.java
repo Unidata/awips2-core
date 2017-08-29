@@ -29,6 +29,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
+import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.style.AbstractStylePreferences;
@@ -44,10 +46,11 @@ import com.raytheon.uf.common.style.StyleException;
  *    SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------
+ * ------------- -------- --------- ---------------------------
  * Jul 27, 2007           chammack  Initial Creation.
  * Nov 25, 2013  2492     bsteffen  Add colorMapUnits
  * Apr 26, 2017  6247     bsteffen  Implement clone
+ * Aug 25, 2017  6403     bsteffen  Use CollapsedStringAdapter
  * 
  * </pre>
  * 
@@ -58,12 +61,14 @@ import com.raytheon.uf.common.style.StyleException;
 public class ImagePreferences extends AbstractStylePreferences {
 
     @XmlElement
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     private String defaultColormap;
 
     @XmlElement(name = "range")
     private DataScale dataScale;
 
     @XmlElement(name = "displayLegend")
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     private String legend;
 
     @XmlElement
@@ -79,6 +84,7 @@ public class ImagePreferences extends AbstractStylePreferences {
     private boolean interpolate = true;
 
     @XmlElement
+    @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     private String colorMapUnits;
 
     public ImagePreferences() {
