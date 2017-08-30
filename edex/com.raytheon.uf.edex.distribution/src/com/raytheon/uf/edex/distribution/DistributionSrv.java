@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,27 +36,32 @@ import org.slf4j.LoggerFactory;
  * for each plugin registering itself with this bean and route messages based on
  * those XML files. The route method will provide a list of destinations based
  * on a header (or filename) and the associated plugin specified regex patterns.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 16, 2009            brockwoo    Initial creation
- * 6/8/2010     4647       bphillip    Added automatic pattern refreshing
- * 09/01/2010   4293       cjeanbap    Logging of unknown Weather Products.
- * Feb 27, 2013 1638       mschenke    Cleaned up localization code to fix null pointer
- *                                     when no distribution files present
- * Mar 19, 2013 1794       djohnson    PatternWrapper is immutable, add toString() to it for debugging.
- * Aug 19, 2013 2257       bkowal      edexBridge to qpid 0.18 upgrade
- * Aug 30, 2013 2163       bkowal      edexBridge to qpid 0.18 RHEL6 upgrade
- * Sep 06, 2013 2327       rjpeter     Updated to use DistributionPatterns.
- * May 09, 2014 3151       bclement    changed registration so only required plugins throw exception on error
- * Dec 11, 2015 5166       kbisanz     Update logging to use SLF4J
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 16, 2009           brockwoo  Initial creation
+ * Jun 08, 2010  4647     bphillip  Added automatic pattern refreshing
+ * Sep 01, 2010  4293     cjeanbap  Logging of unknown Weather Products.
+ * Feb 27, 2013  1638     mschenke  Cleaned up localization code to fix null
+ *                                  pointer when no distribution files present
+ * Mar 19, 2013  1794     djohnson  PatternWrapper is immutable, add toString()
+ *                                  to it for debugging.
+ * Aug 19, 2013  2257     bkowal    edexBridge to qpid 0.18 upgrade
+ * Aug 30, 2013  2163     bkowal    edexBridge to qpid 0.18 RHEL6 upgrade
+ * Sep 06, 2013  2327     rjpeter   Updated to use DistributionPatterns.
+ * May 09, 2014  3151     bclement  changed registration so only required
+ *                                  plugins throw exception on error
+ * Dec 11, 2015  5166     kbisanz   Update logging to use SLF4J
+ * Aug 30, 2017  6381     randerso  Fix ClassCastException when no header is
+ *                                  present
+ *
  * </pre>
- * 
+ *
  * @author brockwoo
- * @version 1.0
  */
 public class DistributionSrv {
     private static final String HEADER_QPID_SUBJECT = "qpid.subject";
@@ -68,11 +73,11 @@ public class DistributionSrv {
     protected Logger routeFailedLogger = LoggerFactory
             .getLogger("RouteFailedLog");
 
-    private final ConcurrentMap<String, String> pluginRoutes = new ConcurrentHashMap<String, String>();
+    private final ConcurrentMap<String, String> pluginRoutes = new ConcurrentHashMap<>();
 
     /**
      * Allows a plugin to register itself with this bean.
-     * 
+     *
      * @param pluginName
      *            the plugin name
      * @param destination
@@ -99,8 +104,7 @@ public class DistributionSrv {
             boolean required) throws DistributionException {
         if (!DistributionPatterns.getInstance()
                 .hasPatternsForPlugin(pluginName)) {
-            String msg = "Plugin "
-                    + pluginName
+            String msg = "Plugin " + pluginName
                     + " does not have a valid distribution patterns file in localization.";
             if (required) {
                 throw new DistributionException(msg);
@@ -115,7 +119,7 @@ public class DistributionSrv {
     /**
      * Generates a list of destinations for this message based on the header (or
      * filename if the header is not available).
-     * 
+     *
      * @param exchange
      *            The exchange object
      * @return a list of destinations
@@ -149,12 +153,12 @@ public class DistributionSrv {
         boolean unroutedFlag = true;
         if (header == null) {
             // No header entry so will try and use the filename instead
-            header = (String) exchange.getIn().getBody();
+            header = bodyString;
         }
 
         List<String> plugins = DistributionPatterns.getInstance()
                 .getMatchingPlugins(header, pluginRoutes.keySet());
-        List<String> routes = new ArrayList<String>(plugins.size());
+        List<String> routes = new ArrayList<>(plugins.size());
         StringBuilder pluginNames = new StringBuilder(plugins.size() * 8);
         for (String plugin : plugins) {
             String route = pluginRoutes.get(plugin);
