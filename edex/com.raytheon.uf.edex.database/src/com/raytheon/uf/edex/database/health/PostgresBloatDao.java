@@ -28,7 +28,10 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.hibernate.SQLQuery;
+import org.hibernate.ScrollableResults;
 import org.hibernate.Session;
+import org.hibernate.type.IntegerType;
+import org.hibernate.type.StringType;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 
@@ -46,6 +49,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * ------------ ---------- ----------- --------------------------
  * Feb 10, 2016 4630       rjpeter     Initial creation
  * Jun 20, 2016 5679       rjpeter     Add admin database account
+ * Sep 08, 2017 DR 20135   D. Friedman Rebuild constraint-backing indexes concurrently
  * 
  * </pre>
  * 
@@ -253,16 +257,30 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
             + "am.amname = 'btree') AS sub WHERE NOT is_na  ORDER BY 1, 2, 3;";
 
     /**
-     * For a given name (table/constraint/index) in a schema, grab the oid.
+     * For a given name (table/constraint/index) in a schema, grab the oid and index definition.
      */
-    private final String SELECT_OID = "select tbl.oid from pg_class tbl join pg_namespace ns "
+    private static final String SELECT_INDEX_INFO = "select tbl.oid, pg_get_indexdef(tbl.oid) as indexdef "
+            + "from pg_class tbl join pg_namespace ns "
             + "on ns.oid = tbl.relnamespace where tbl.relname = :name and ns.nspname = :schema";
 
     /**
-     * For a given name check if its a constraint.
+     * For a given name, check if it is a constraint.
      */
-    private final String SELECT_CONSTRAINT_OID = "select con.oid from pg_constraint con join pg_namespace ns "
+    private static final String SELECT_CONSTRAINT_INFO = "select con.oid, con.contype "
+            + "from pg_constraint con join pg_namespace ns "
             + "on ns.oid = con.connamespace where con.conname = :name and ns.nspname = :schema";
+
+    /**
+     * Fetch foreign constraints that use the same index as the given constraint.
+     */
+    private static final String SELECT_INDEX_FCONS = "select "
+            + "fcon.conname as fconname, fconrel.relname as fconrelname, fconns.nspname as fconns, "
+            + "fcon.contype as fcontype, pg_get_constraintdef(fcon.oid) as fcondef "
+            + "from pg_constraint fcon join pg_class fconrel on fcon.conrelid = fconrel.oid "
+            + "join pg_namespace fconns on fcon.connamespace = fconns.oid "
+            + "where fcon.conindid = :conindid";
+
+    private static final String SELECT_INDEX_FCONS_EXCLUSION = " and fcon.oid <> :conid";
 
     protected final Pattern INDEX_REGEX = Pattern
             .compile("(.+?) INDEX \"?.+?\"? (ON .+)");
@@ -347,41 +365,23 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                 paramMap.put("schema", schema);
                 Session sess = getCurrentSession();
 
-                /*
-                 * indexes may be backing a constraint, reindex in place if
-                 * that's the case
-                 */
-                SQLQuery query = sess.createSQLQuery(SELECT_CONSTRAINT_OID);
+                SQLQuery query = sess.createSQLQuery(SELECT_INDEX_INFO)
+                        .addScalar("oid", IntegerType.INSTANCE)
+                        .addScalar("indexdef", StringType.INSTANCE);
                 addParamsToQuery(query, paramMap);
-                List<?> rows = query.list();
+                ScrollableResults queryResult = query.scroll();
 
-                if ((rows != null) && (rows.size() > 0)) {
-                    String cmd = "REINDEX INDEX " + fqnIndexName;
-                    logger.info("INDEX supports a constraint, REINDEX in place. Running cmd: "
-                            + cmd);
-                    return executeSQLUpdate(cmd);
+                Integer indexId = null;
+                String indexDef = null;
+                if (queryResult.next()) {
+                    indexId = queryResult.getInteger(0);
+                    indexDef = queryResult.getString(1);
                 }
-
-                // normal index, build concurrently
-                query = sess.createSQLQuery(SELECT_OID);
-                addParamsToQuery(query, paramMap);
-                rows = query.list();
-                if ((rows == null) || (rows.isEmpty()) || (rows.get(0) == null)) {
-                    logger.warn("Could not look up OID for index: " + indexName);
+                if (indexId == null || indexDef == null) {
+                    logger.warn("Could not look up OID and definition for index: " + fqnIndexName);
                     return 0;
                 }
 
-                String oid = rows.get(0).toString();
-                query = sess.createSQLQuery("select pg_get_indexdef(" + oid
-                        + ")");
-                rows = query.list();
-                if ((rows == null) || rows.isEmpty() || (rows.get(0) == null)) {
-                    logger.warn("Could not look up definition for index: "
-                            + fqnIndexName);
-                    return 0;
-                }
-
-                String indexDef = rows.get(0).toString();
                 logger.info("Index definition: " + indexDef);
 
                 /* update index name to a tmp name */
@@ -407,6 +407,70 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                 }
 
                 /*
+                 * The index may be backing a primary key or unique constraint.
+                 * Recreate the constraint if that's the case.
+                 */
+                query = sess.createSQLQuery(SELECT_CONSTRAINT_INFO)
+                        .addScalar("oid", IntegerType.INSTANCE)
+                        .addScalar("contype", StringType.INSTANCE);
+                addParamsToQuery(query, paramMap);
+                queryResult = query.scroll();
+
+                boolean isConstraint = queryResult.next();
+                String indexTypeForConstraint = null;
+                if (isConstraint) {
+                    String constraintType = queryResult.getString(1);
+                    if ("p".equals(constraintType)) {
+                        indexTypeForConstraint = "PRIMARY KEY";
+                    } else if ("u".equals(constraintType)) {
+                        indexTypeForConstraint = "UNIQUE";
+                    } else {
+                        logger.warn(String.format("Can not recreate index %s for constraint type '%s'",
+                                indexName, constraintType));
+                        return 0;
+                    }
+                }
+
+                /*
+                 * Recreate foreign constraints that depend on this index.
+                 */
+                query = sess.createSQLQuery(SELECT_INDEX_FCONS
+                        + (isConstraint ? SELECT_INDEX_FCONS_EXCLUSION : ""))
+                        .addScalar("fconname", StringType.INSTANCE)
+                        .addScalar("fconrelname", StringType.INSTANCE)
+                        .addScalar("fconns", StringType.INSTANCE)
+                        .addScalar("fcontype", StringType.INSTANCE)
+                        .addScalar("fcondef", StringType.INSTANCE);
+                paramMap.clear();
+                paramMap.put("conindid", indexId);
+                if (isConstraint) {
+                    Integer conId = queryResult.getInteger(0);
+                    paramMap.put("conid", conId);
+                }
+                addParamsToQuery(query, paramMap);
+                queryResult = query.scroll();
+
+                StringBuilder fkconDrops = new StringBuilder();
+                StringBuilder fkconAdds = new StringBuilder();
+                StringBuilder fkconValidates = new StringBuilder();
+                while (queryResult.next()) {
+                    String fconType = queryResult.getString(3);
+                    String fkConName = queryResult.getString(0);
+                    if ("f".equals(fconType)) {
+                        String fqnFkTable = String.format("\"%s\".\"%s\"", queryResult.getString(2), queryResult.getString(1));
+                        fkconDrops.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s;\n", fqnFkTable, fkConName));
+                        fkconAdds.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s %s NOT VALID;\n", fqnFkTable, fkConName, queryResult.getString(4)));
+                        fkconValidates.append(String.format("ALTER TABLE %s VALIDATE CONSTRAINT %s;\n", fqnFkTable, fkConName));
+                    } else {
+                        logger.warn(String.format(
+                                "Constraint %s appears to depend on %s, but do not know how to handle it. "
+                                        + "Manually rebuilding the index is recommended",
+                                fkConName, indexName));
+                        return 0;
+                    }
+                }
+
+                /*
                  * Create temp index concurrently, cannot happen in a
                  * transaction block
                  */
@@ -417,15 +481,29 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                         + cmd);
                 sess.createSQLQuery(cmd).executeUpdate();
 
-                cmd = "DROP INDEX IF EXISTS " + fqnIndexName;
-                logger.info("Dropping old index: " + cmd);
-                /* delete old index */
-                sess.createSQLQuery(cmd).executeUpdate();
-
-                /* rename tmp index */
-                cmd = "ALTER INDEX " + fqnTmpName + " RENAME TO " + "\""
-                        + indexName + "\"";
-                logger.info("Renaming tmp index: " + cmd);
+                /*
+                 * Recreate the index either by recreating the constraint(s) or
+                 * by renaming the temporary index.
+                 */
+                StringBuilder recreateCmd = new StringBuilder();
+                recreateCmd.append("BEGIN;\n")
+                    .append(fkconDrops);
+                if (isConstraint) {
+                    recreateCmd.append("ALTER TABLE \"" + schema + "\".\"" + info.getTableName() + "\" "
+                            + "DROP CONSTRAINT " + "\"" + indexName + "\", "
+                            + "ADD CONSTRAINT \"" + indexName + "\" " + indexTypeForConstraint
+                            + " USING INDEX \"" + tmpName + "\"");
+                } else {
+                    recreateCmd.append("DROP INDEX IF EXISTS " + fqnIndexName
+                            + ";\nALTER INDEX " + fqnTmpName + " RENAME TO \"" + indexName + "\"");
+                }
+                recreateCmd.append(";\n")
+                    .append(fkconAdds)
+                    .append("COMMIT;\nBEGIN;\n")
+                    .append(fkconValidates)
+                    .append("COMMIT;\n");
+                cmd = recreateCmd.toString();
+                logger.info("Recreate/rename index: " + cmd);
                 return sess.createSQLQuery(cmd).executeUpdate();
             }
         });
