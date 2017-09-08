@@ -22,6 +22,7 @@ package com.raytheon.edex.utility;
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -90,6 +91,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Nov 30, 2015 4834        njensen     Removed references to LocalizationOpFailedException
  * Jan 21, 2016 4834        njensen     Fixed checksum and timestamp notification on save()
  * Apr 26, 2017 6258        tgurney     Set file/dir permissions on save
+ * Sep  8, 2017 6255        tgurney     Check ownership before setting permissions
  *
  * </pre>
  *
@@ -185,8 +187,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     public ListResponse[] getLocalizationMetadata(LocalizationContext[] context,
             String fileName) throws LocalizationException {
 
-        List<ListResponse> contents = new ArrayList<>(
-                context.length);
+        List<ListResponse> contents = new ArrayList<>(context.length);
 
         for (LocalizationContext ctx : context) {
             ListResponse entry = createListResponse(ctx, fileName,
@@ -339,12 +340,18 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         try {
             File theFile = getPath(file.getContext(), file.getPath());
             Path p = theFile.toPath();
+            Set<PosixFilePermission> permsToSet;
             if (theFile.isDirectory()) {
-                Files.setPosixFilePermissions(p,
-                        LocalizationFile.DIR_PERMISSIONS);
+                permsToSet = LocalizationFile.DIR_PERMISSIONS;
             } else {
-                Files.setPosixFilePermissions(p,
-                        LocalizationFile.FILE_PERMISSIONS);
+                permsToSet = LocalizationFile.FILE_PERMISSIONS;
+            }
+            String owner = Files.getOwner(p).getName();
+            if (owner.equals(System.getProperty("user.name"))) {
+                Files.setPosixFilePermissions(p, permsToSet);
+            } else {
+                handler.info("Not changing permissions for " + p
+                        + " because it is owned by user " + owner);
             }
         } catch (Exception e) {
             handler.error("Error setting permissions on " + file, e);

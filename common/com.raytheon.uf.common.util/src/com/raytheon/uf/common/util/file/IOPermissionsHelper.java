@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,9 +21,9 @@ package com.raytheon.uf.common.util.file;
 
 import java.io.IOException;
 import java.io.OutputStream;
-import java.nio.file.attribute.FileAttribute;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileAttribute;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
 import java.util.Collection;
@@ -36,7 +36,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Implementation of a common capability that can be used to apply specified
  * permissions to individual files and/or directory hierarchies. This class is
  * only usable on Operating Systems that implement POSIX.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -44,6 +44,7 @@ import com.raytheon.uf.common.util.CollectionUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * May 4, 2017  6255       bkowal      Initial creation
+ * Sep 8, 2017  6255       tgurney     Check ownership before setting permissions
  *
  * </pre>
  *
@@ -62,8 +63,9 @@ public final class IOPermissionsHelper {
 
     /**
      * Attempts to apply the specified {@link PosixFilePermission}s to the
-     * specified file {@link Path}.
-     * 
+     * specified file {@link Path}. Fails silently if the file is not owned by
+     * the current user.
+     *
      * @param filePath
      *            the specified file {@link Path}.
      * @param permissions
@@ -83,7 +85,10 @@ public final class IOPermissionsHelper {
         verifyPosixSupport(filePath);
 
         try {
-            Files.setPosixFilePermissions(filePath, permissions);
+            if (Files.getOwner(filePath).getName()
+                    .equals(System.getProperty("user.name"))) {
+                Files.setPosixFilePermissions(filePath, permissions);
+            }
         } catch (IOException e) {
             throw new IOException(
                     "Failed to update the permissions for file: "
@@ -95,8 +100,9 @@ public final class IOPermissionsHelper {
 
     /**
      * Attempts to apply the specified {@link PosixFilePermission}s to the
-     * specified directory {@link Path}.
-     * 
+     * specified directory {@link Path}. Fails silently if the directory is not
+     * owned by the current user.
+     *
      * @param directoryPath
      *            the specified directory {@link Path}.
      * @param permissions
@@ -116,7 +122,10 @@ public final class IOPermissionsHelper {
         verifyPosixSupport(directoryPath);
 
         try {
-            Files.setPosixFilePermissions(directoryPath, permissions);
+            if (Files.getOwner(directoryPath).getName()
+                    .equals(System.getProperty("user.name"))) {
+                Files.setPosixFilePermissions(directoryPath, permissions);
+            }
         } catch (IOException e) {
             throw new IOException(
                     "Failed to update the permissions for directory: "
@@ -128,8 +137,9 @@ public final class IOPermissionsHelper {
 
     /**
      * Attempts to apply the specified {@link PosixFilePermission}s to the
-     * specified directory {@link Path}s.
-     * 
+     * specified directory {@link Path}s. Directories not owned by the current
+     * user are ignored.
+     *
      * @param directoryPaths
      *            the specified directory {@link Path}s.
      * @param permissions
@@ -163,7 +173,7 @@ public final class IOPermissionsHelper {
      * Returns an {@link OutputStream} for the specified file {@link Path} with
      * the specified {@link PosixFilePermission}s applied. Ideally, this method
      * would be invoked within a try-with-resources block.
-     * 
+     *
      * @param filePath
      *            the specified file {@link Path}.
      * @param permissions
@@ -201,7 +211,7 @@ public final class IOPermissionsHelper {
     /**
      * Converts the specified array of {@link PosixFilePermission}s to an
      * {@link EnumSet} of {@link PosixFilePermission}s.
-     * 
+     *
      * @param permissionsToConvert
      *            the specified array of {@link PosixFilePermission}s
      * @return the {@link EnumSet} of {@link PosixFilePermission}s.
@@ -224,7 +234,7 @@ public final class IOPermissionsHelper {
     /**
      * Converts the specified array of {@link PosixFilePermission}s to
      * {@link FileAttribute}s.
-     * 
+     *
      * @param permissionsToConvert
      *            the specified array of {@link PosixFilePermission}s
      * @return {@link FileAttribute}s
@@ -239,7 +249,7 @@ public final class IOPermissionsHelper {
      * Given a sequence of {@link FileAttribute}s, will separate the
      * {@link PosixFilePermission} attributes and other {@link FileAttribute}s
      * into a separate {@link Set} and {@link Collection} respectively.
-     * 
+     *
      * @param permissions
      *            a {@link Set} containing the extracted
      *            {@link PosixFilePermission}s
@@ -319,7 +329,7 @@ public final class IOPermissionsHelper {
     /**
      * Determines if the Operating System implements the Portable Operating
      * System Interface (POSIX).
-     * 
+     *
      * @return {@code true} if the OS does implement POSIX; {@code false},
      *         otherwise.
      */
