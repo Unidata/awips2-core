@@ -69,6 +69,7 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  *                                  in items and width in characters
  * May 01, 2017  6217     randerso  Added getters for available and selected
  *                                  lists. Additional code cleanup.
+ * Sep 26, 2017  6413     tjensen   Add pre-sorted options for lists
  *
  * </pre>
  *
@@ -811,7 +812,15 @@ public class DualList extends Composite {
         java.util.List<String> availableListsorted;
 
         // Put available list in order
-        if (config.isNumericData()) {
+        if (config.isPreSorted()) {
+            availableListsorted = new ArrayList<>(1);
+            java.util.List<String> itemsList = Arrays.asList(items);
+            for (String item : config.getFullList()) {
+                if (itemsList.contains(item)) {
+                    availableListsorted.add(item);
+                }
+            }
+        } else if (config.isNumericData()) {
             // If data are numeric then must sort on the numeric value
             try {
                 // Using TreeMap to sort by double values of strings
@@ -839,7 +848,7 @@ public class DualList extends Composite {
             Collections.reverse(availableListsorted);
         }
 
-        listBox.setItems(items);
+        listBox.setItems(availableListsorted.toArray(items));
         listBox.setSelection(selectedItems);
     }
 

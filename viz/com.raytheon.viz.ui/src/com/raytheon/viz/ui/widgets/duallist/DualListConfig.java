@@ -44,6 +44,7 @@ import org.eclipse.swt.SWT;
  * May 05, 2016  5487     tjensen   Added option for reverse sorting.
  * Feb 28, 2017  6121     randerso  Change DualListConfig to specify list height
  *                                  in items and width in characters
+ * Sep 26, 2017  6413     tjensen   Add pre-sorted options for lists
  *
  * </pre>
  *
@@ -128,6 +129,12 @@ public class DualListConfig {
 
     /** Flag for numeric data */
     private boolean numericData = false;
+
+    /**
+     * Flag for if the list is preSorted. Used for complex objects that have
+     * unique sorting methods.
+     */
+    private boolean preSorted = false;
 
     /**
      * Match any/all flag. True is match any, false is match all. Only used when
@@ -461,5 +468,13 @@ public class DualListConfig {
 
     public void setReverseSort(boolean reverseSort) {
         this.reverseSort = reverseSort;
+    }
+
+    public boolean isPreSorted() {
+        return preSorted;
+    }
+
+    public void setPreSorted(boolean preSorted) {
+        this.preSorted = preSorted;
     }
 }
