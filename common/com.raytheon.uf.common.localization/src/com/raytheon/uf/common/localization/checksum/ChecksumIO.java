@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,11 +36,11 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Utilities to support checkums
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 17, 2015  4834      njensen     Initial creation
@@ -48,9 +48,10 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      Refactored getFileChecksum(File)
  * Feb 03, 2016  4754      bsteffen    Fix concurrency issue
  * May 03, 2017  6258      tgurney     Set permissions on checksum file
- * 
+ * Sep  8, 2017  6255      tgurney     Check ownership before setting permissions
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 
@@ -66,7 +67,7 @@ public class ChecksumIO {
     /**
      * Gets the checksum for a particular file. If one does not exist, creates a
      * checksum file alongside the file.
-     * 
+     *
      * @param file
      * @return
      */
@@ -77,7 +78,7 @@ public class ChecksumIO {
     /**
      * Gets the checksum for a particular file. If one does not exist and write
      * is true, creates a checksum file alongside the file.
-     * 
+     *
      * @param file
      * @parm write
      * @return
@@ -122,14 +123,14 @@ public class ChecksumIO {
     }
 
     private static File getChecksumFile(File utilityFile) {
-        return new File(utilityFile.getParentFile(), utilityFile.getName()
-                + Checksum.CHECKSUM_FILE_EXTENSION);
+        return new File(utilityFile.getParentFile(),
+                utilityFile.getName() + Checksum.CHECKSUM_FILE_EXTENSION);
     }
 
     /**
      * Writes out a checksum file alongside the file. Returns the checksum
      * generated for that file.
-     * 
+     *
      * @param file
      * @return
      * @throws Exception
@@ -141,9 +142,15 @@ public class ChecksumIO {
                 new FileWriter(checksumFile))) {
             bw.write(chksum);
         }
+        String owner = Files.getOwner(checksumFile.toPath()).getName();
         try {
-            Files.setPosixFilePermissions(checksumFile.toPath(),
-                    LocalizationFile.FILE_PERMISSIONS);
+            if (owner.equals(System.getProperty("user.name"))) {
+                Files.setPosixFilePermissions(checksumFile.toPath(),
+                        LocalizationFile.FILE_PERMISSIONS);
+            } else {
+                logger.info("Not changing permissions for " + checksumFile
+                        + " because it is owned by user " + owner);
+            }
         } catch (IOException e) {
             logger.handle(Priority.PROBLEM,
                     "Failed to set permissions on file: "

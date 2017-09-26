@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FilenameFilter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashMap;
@@ -97,6 +98,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Jun 30, 2017 6316        njensen     Improved regions.xml debug message
  * Aug 04, 2017 6379        njensen     Removed protected-ness from responses
  * Aug 07, 2017 5731        bsteffen    Implement getContextList
+ * Sep  8, 2017 6255        tgurney     Check ownership before setting permissions
  *
  * </pre>
  *
@@ -366,12 +368,18 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         try {
             File theFile = getPath(file.getContext(), file.getPath());
             Path p = theFile.toPath();
+            Set<PosixFilePermission> permsToSet;
             if (theFile.isDirectory()) {
-                Files.setPosixFilePermissions(p,
-                        LocalizationFile.DIR_PERMISSIONS);
+                permsToSet = LocalizationFile.DIR_PERMISSIONS;
             } else {
-                Files.setPosixFilePermissions(p,
-                        LocalizationFile.FILE_PERMISSIONS);
+                permsToSet = LocalizationFile.FILE_PERMISSIONS;
+            }
+            String owner = Files.getOwner(p).getName();
+            if (owner.equals(System.getProperty("user.name"))) {
+                Files.setPosixFilePermissions(p, permsToSet);
+            } else {
+                handler.info("Not changing permissions for " + p
+                        + " because it is owned by user " + owner);
             }
         } catch (Exception e) {
             handler.error("Error setting permissions on " + file, e);

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,9 +30,9 @@ import jep.NamingConventionClassEnquirer;
 
 /**
  * Interfaces to a native Python interpreter with Jep.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -45,9 +45,10 @@ import jep.NamingConventionClassEnquirer;
  *                                     Add numpy as a shared module
  * Feb 17, 2017   5959     njensen     Add scipy modules as shared modules
  * Mar 16, 2017   5959     njensen     Add _strptime as shared module
- * 
+ * Sep 25, 2017   6457     randerso    Add scipy.constants as shared module
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 
@@ -62,7 +63,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
     /**
      * Constructor
-     * 
+     *
      * @param config
      *            the jep config to use with the interpreter
      * @throws JepException
@@ -73,7 +74,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
     /**
      * Constructor
-     * 
+     *
      * @param config
      *            the jep config to use with the interpreter
      * @param filePath
@@ -88,7 +89,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
     /**
      * Constructor
-     * 
+     *
      * @param config
      *            the jep config to use with the interpreter
      * @param preEvals
@@ -103,7 +104,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
     /**
      * Constructor
-     * 
+     *
      * @param config
      *            the jep config to use with the interpreter
      * @param filePath
@@ -126,6 +127,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
         Set<String> sharedModules = new HashSet<>();
         sharedModules.add("numpy");
         sharedModules.add("scipy");
+        sharedModules.add("scipy.constants");
         sharedModules.add("scipy.interpolate");
         sharedModules.add("_strptime");
         config.setSharedModules(sharedModules);
@@ -136,16 +138,16 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
     /**
      * Runs the preEvals and the script if provided
-     * 
+     *
      * @param filePath
      *            the path to the python script or null if no script is to be
      *            run
      * @param preEvals
      *            String statements to be run by the python interpreter before
      *            the file at filePath
-     * 
+     *
      * @throws JepException
-     * 
+     *
      */
     private void initializeJep(String filePath, List<String> preEvals)
             throws JepException {
@@ -164,7 +166,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
      * Evaluates an argument in the python interpreter. Should be overridden by
      * subclasses where the python scripts wants python objects, not just
      * references to Java objects.
-     * 
+     *
      * @param argName
      *            the name the argument will receive in the python interpreter
      * @param argValue
