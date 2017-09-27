@@ -687,6 +687,7 @@ public class UserAdministrationDialog extends CaveSWTDialog {
                         .get(existingRoleName);
                 rolesAndPermissions.updateRole(roleName,
                         new Role(existingRole));
+                setDirty(true);
                 addRole(roleName);
                 updateSelectedRole();
             }
