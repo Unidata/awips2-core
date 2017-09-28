@@ -63,13 +63,10 @@ import com.raytheon.uf.viz.core.exception.VizException;
 
 public class LocalizationInitializer {
 
-    protected boolean checkAlertviz;
-
     protected boolean promptUI;
 
-    public LocalizationInitializer(boolean promptUI, boolean checkAlertViz) {
+    public LocalizationInitializer(boolean promptUI) {
         this.promptUI = promptUI;
-        this.checkAlertviz = checkAlertViz;
     }
 
     public void run() throws Exception {
@@ -109,8 +106,7 @@ public class LocalizationInitializer {
 
     protected void setupServers() throws VizException {
         if (promptUI) {
-            ConnectivityPreferenceDialog dlg = new ConnectivityPreferenceDialog(
-                    checkAlertviz, "Unidata AWIPS");
+            ConnectivityPreferenceDialog dlg = new ConnectivityPreferenceDialog("Unidata AWIPS");
             if (dlg.open() == true) {
                 System.exit(0);
             }

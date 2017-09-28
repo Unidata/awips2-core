@@ -108,19 +108,6 @@ public class ConnectivityPreferenceDialog {
         }
     }
 
-    private class AlertVizCallback implements IConnectivityCallback {
-
-        @Override
-        public void connectionChecked(ConnectivityResult results) {
-            alertVizGood = results.hasConnectivity;
-            appendDetails(buildDetails(results));
-            if (!results.hasConnectivity && status == null) {
-                status = buildErrorMessage(results);
-            }
-        }
-
-    }
-
     private Shell shell;
 
     /**
@@ -135,12 +122,6 @@ public class ConnectivityPreferenceDialog {
     private String localization = "";
 
     private boolean localizationGood = false;
-
-    protected Text alertVizText;
-
-    protected String alertVizServer = null;
-
-    private boolean alertVizGood = true;
 
     private boolean siteGood = true;
 
@@ -158,8 +139,6 @@ public class ConnectivityPreferenceDialog {
 
     private IConnectivityCallback localizationCallback = new LocalizationCallback();
 
-    private IConnectivityCallback alertCallback = new AlertVizCallback();
-
     /**
      * Title of the dialog.
      */
@@ -169,7 +148,7 @@ public class ConnectivityPreferenceDialog {
 
     protected String details;
 
-    public ConnectivityPreferenceDialog(boolean checkAlertViz, String title) {
+    public ConnectivityPreferenceDialog(String title) {
         this.title = title;
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
@@ -177,12 +156,6 @@ public class ConnectivityPreferenceDialog {
         if (site == "") {
         	site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
         	LocalizationManager.getInstance().setCurrentSite(site);
-        }
-        if (checkAlertViz) {
-            alertVizServer = LocalizationManager.getInstance()
-                    .getLocalizationStore()
-                    .getString(LocalizationConstants.P_ALERT_SERVER);
-            alertVizGood = false;
         }
     }
 
@@ -371,20 +344,6 @@ public class ConnectivityPreferenceDialog {
         siteText.setText(site == null ? "" : site);
         siteText.setForeground(getTextColor(siteGood));
 
-        if (alertVizServer != null) {
-            label = new Label(textBoxComp, SWT.RIGHT);
-            label.setText("Alert Server:");
-            gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
-            gd.horizontalIndent = 20;
-            label.setLayoutData(gd);
-
-            alertVizText = new Text(textBoxComp, SWT.NONE);
-            gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
-            gd.minimumWidth = 300;
-            alertVizText.setLayoutData(gd);
-            alertVizText.setText(alertVizServer);
-            alertVizText.setForeground(getTextColor(alertVizGood));
-        }
     }
 
     /**
@@ -495,10 +454,6 @@ public class ConnectivityPreferenceDialog {
         LocalizationManager.getInstance().setCurrentServer(localization);
         IPersistentPreferenceStore localPrefs = LocalizationManager
                 .getInstance().getLocalizationStore();
-        if (alertVizServer != null) {
-            localPrefs.setValue(LocalizationConstants.P_ALERT_SERVER,
-                    alertVizServer);
-        }
 
         String serverOptions = ServerRemembrance.formatServerOptions(
                 localization, localPrefs,
@@ -530,18 +485,7 @@ public class ConnectivityPreferenceDialog {
         } else {
             validateLocalization();
         }
-        if (alertVizServer == null) {
-            alertVizGood = true;
-        } else if (alertVizText != null && !alertVizText.isDisposed()) {
-            String alertVizServer = alertVizText.getText().trim();
-            if (!alertVizGood || !this.alertVizServer.equals(alertVizServer)) {
-                this.alertVizServer = alertVizServer;
-                validateAlertviz();
-                alertVizText.setForeground(getTextColor(alertVizGood));
-            }
-        } else {
-            validateAlertviz();
-        }
+
         if (siteText != null && !siteText.isDisposed()) {
             String site = siteText.getText().trim();
             if (!siteGood || !this.site.equals(site)) {
@@ -553,7 +497,7 @@ public class ConnectivityPreferenceDialog {
             validateSite();
         }
 
-        boolean everythingGood = siteGood && localizationGood && alertVizGood;
+        boolean everythingGood = siteGood && localizationGood;
         updateStatus(everythingGood, status, details);
         return everythingGood;
     }
@@ -561,10 +505,6 @@ public class ConnectivityPreferenceDialog {
     private void validateLocalization() {
         ConnectivityManager.checkLocalizationServer(localization,
                 localizationCallback);
-    }
-
-    protected void validateAlertviz() {
-        ConnectivityManager.checkAlertService(alertVizServer, alertCallback);
     }
 
     protected void validateSite() {
@@ -606,18 +546,6 @@ public class ConnectivityPreferenceDialog {
 
     public boolean isLocalizationGood() {
         return localizationGood;
-    }
-
-    public void setAlertVizServer(String server) {
-        this.alertVizServer = server;
-    }
-
-    public String getAlertVizServer() {
-        return this.alertVizServer;
-    }
-
-    public boolean isAlertVizGood() {
-        return this.alertVizGood;
     }
 
     public String getSite() {

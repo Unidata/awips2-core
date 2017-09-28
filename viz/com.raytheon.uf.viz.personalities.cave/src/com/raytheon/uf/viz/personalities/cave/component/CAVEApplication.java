@@ -305,13 +305,12 @@ public class CAVEApplication implements IStandaloneComponent {
      * @throws Exception
      */
     protected void initializeLocalization() throws Exception {
-        initializeLocalization(true, false);
+        initializeLocalization(true);
     }
 
-    protected void initializeLocalization(boolean promptUI,
-            boolean checkAlertServer) throws Exception {
+    protected void initializeLocalization(boolean promptUI) throws Exception {
         PathManagerFactory.setAdapter(new CAVELocalizationAdapter());
-        new LocalizationInitializer(promptUI, checkAlertServer).run();
+        new LocalizationInitializer(promptUI).run();
         FrameworkUtil
                 .getBundle(getClass())
                 .getBundleContext()
