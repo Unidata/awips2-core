@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -45,21 +45,21 @@ import com.raytheon.viz.ui.dialogs.CalendarDialog;
 /**
  * Date/Time entry widget with read-only text and button to pop up and editable
  * dialog to enter the date and time.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 6, 2012             randerso    Initial creation
  * Apr 9, 2013  1860       randerso    Fix image disposed issued on Windows
  * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
- * 
+ * Sep 29, 2017 6461       tgurney     Add dateFormat to constructor
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class DateTimeEntry extends Composite {
@@ -70,7 +70,7 @@ public class DateTimeEntry extends Composite {
     public static interface IUpdateListener {
         /**
          * Called when the associated DateTimeEntry widget is updated.
-         * 
+         *
          * @param date
          *            the newly updated date
          */
@@ -91,12 +91,12 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Construct a DateTimeEnty widget
-     * 
+     *
      * @param parent
      */
-    public DateTimeEntry(Composite parent) {
+    public DateTimeEntry(Composite parent, String dateFormat) {
         super(parent, SWT.NONE);
-        dateFormat = DEFAULT_DATE_FORMAT;
+        this.dateFormat = dateFormat;
         sdf = new SimpleDateFormat(dateFormat);
         date = new Date();
         listeners = new ListenerList();
@@ -141,6 +141,10 @@ public class DateTimeEntry extends Composite {
         updateDate(this.date);
     }
 
+    public DateTimeEntry(Composite parent) {
+        this(parent, DEFAULT_DATE_FORMAT);
+    }
+
     private int getFieldCount() {
         int fieldCount = 0;
         if (dateFormat.contains("s")) {
@@ -168,7 +172,7 @@ public class DateTimeEntry extends Composite {
     /**
      * Sets the date format string used to format the date/time string for
      * display
-     * 
+     *
      * @param dateFormat
      *            the date format string see {@link SimpleDateFormat} for more
      *            information.
@@ -181,7 +185,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Sets the time zone used to format the date/time string for display
-     * 
+     *
      * @param tz
      *            the time zone
      */
@@ -192,7 +196,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Sets the contents of the receiver to the given date
-     * 
+     *
      * @param date
      *            the date
      */
@@ -202,7 +206,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Retrieve the date from the widget
-     * 
+     *
      * @return the date
      */
     public Date getDate() {
@@ -219,7 +223,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Add a listener to be called when this widget is updated.
-     * 
+     *
      * @param listener
      */
     public void addUpdateListener(IUpdateListener listener) {
@@ -228,7 +232,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Remove a listener
-     * 
+     *
      * @param listener
      */
     public void removeUpdateListener(IUpdateListener listener) {
@@ -237,7 +241,7 @@ public class DateTimeEntry extends Composite {
 
     /**
      * Notify listeners of the updated date
-     * 
+     *
      * @param date
      *            the updated date
      */
