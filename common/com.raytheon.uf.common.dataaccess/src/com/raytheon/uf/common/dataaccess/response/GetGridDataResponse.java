@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.geotools.coverage.grid.GridGeometry2D;
+import org.geotools.geometry.jts.ReferencedEnvelope;
 import org.opengis.coverage.grid.GridEnvelope;
 
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
@@ -33,6 +34,7 @@ import com.raytheon.uf.common.geospatial.LatLonReprojection;
 import com.raytheon.uf.common.geospatial.LatLonWrapper;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * Response for <code>GetGridDataRequest</code>.
@@ -44,13 +46,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 4, 2013            dgilling     Initial creation
+ * Oct 18, 2016 5916       bsteffen    Allow lazy loading of lat/lon data
  * 
  * </pre>
  * 
  * @author dgilling
- * @version 1.0
  */
-
 @DynamicSerialize
 public class GetGridDataResponse {
 
@@ -69,16 +70,28 @@ public class GetGridDataResponse {
     @DynamicSerializeElement
     private Map<String, float[]> siteLonGrids;
 
+    @DynamicSerializeElement
+    private Map<String, Envelope> siteEnvelopes;
+
+    @DynamicSerializeElement
+    private Map<String, String> siteCrsWkt;
+
     public GetGridDataResponse() {
         // no-op, for serialization only
     }
 
-    public GetGridDataResponse(final Collection<IGridData> gridData) {
-        this.gridData = new ArrayList<GridResponseData>(gridData.size());
-        siteNxValues = new HashMap<String, Integer>(gridData.size(), 1);
-        siteNyValues = new HashMap<String, Integer>(gridData.size(), 1);
-        siteLatGrids = new HashMap<String, float[]>(gridData.size(), 1);
-        siteLonGrids = new HashMap<String, float[]>(gridData.size(), 1);
+    public GetGridDataResponse(final Collection<IGridData> gridData,
+            final boolean includeLatLon) {
+        this.gridData = new ArrayList<>(gridData.size());
+        siteNxValues = new HashMap<>(gridData.size(), 1);
+        siteNyValues = new HashMap<>(gridData.size(), 1);
+        if (includeLatLon) {
+            siteLatGrids = new HashMap<>(gridData.size(), 1);
+            siteLonGrids = new HashMap<>(gridData.size(), 1);
+        } else {
+            siteEnvelopes = new HashMap<>(gridData.size(), 1);
+            siteCrsWkt = new HashMap<>(gridData.size(), 1);
+        }
 
         for (IGridData grid : gridData) {
             this.gridData.add(new GridResponseData(grid));
@@ -89,10 +102,18 @@ public class GetGridDataResponse {
                 GridEnvelope gridShape = gridGeometry.getGridRange();
                 siteNxValues.put(locationName, gridShape.getSpan(0));
                 siteNyValues.put(locationName, gridShape.getSpan(1));
-                LatLonWrapper latLonData = LatLonReprojection
-                        .getLatLons(gridGeometry);
-                siteLatGrids.put(locationName, latLonData.getLats());
-                siteLonGrids.put(locationName, latLonData.getLons());
+                if (includeLatLon) {
+                    LatLonWrapper latLonData = LatLonReprojection
+                            .getLatLons(gridGeometry);
+                    siteLatGrids.put(locationName, latLonData.getLats());
+                    siteLonGrids.put(locationName, latLonData.getLons());
+                } else {
+                    Envelope envelope = new Envelope(
+                            new ReferencedEnvelope(gridGeometry.getEnvelope()));
+                    siteEnvelopes.put(locationName, envelope);
+                    siteCrsWkt.put(locationName, gridGeometry
+                            .getCoordinateReferenceSystem().toWKT());
+                }
             }
         }
     }
@@ -136,4 +157,21 @@ public class GetGridDataResponse {
     public void setSiteLonGrids(Map<String, float[]> siteLonGrids) {
         this.siteLonGrids = siteLonGrids;
     }
+
+    public Map<String, Envelope> getSiteEnvelopes() {
+        return siteEnvelopes;
+    }
+
+    public void setSiteEnvelopes(Map<String, Envelope> siteEnvelopes) {
+        this.siteEnvelopes = siteEnvelopes;
+    }
+
+    public Map<String, String> getSiteCrsWkt() {
+        return siteCrsWkt;
+    }
+
+    public void setSiteCrsWkt(Map<String, String> siteCrsWkt) {
+        this.siteCrsWkt = siteCrsWkt;
+    }
+
 }

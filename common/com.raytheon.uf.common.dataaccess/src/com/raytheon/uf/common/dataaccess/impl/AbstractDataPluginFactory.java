@@ -20,7 +20,11 @@
 package com.raytheon.uf.common.dataaccess.impl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Date;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
@@ -70,6 +74,9 @@ import com.raytheon.uf.common.time.TimeRange;
  *                                    to use it.
  * Mar 04, 2015  4217     mapeters    Available times are sorted in DataAccessLayer.
  * Jul 27, 2016  2416     tgurney     Implement getNotificationFilter()
+ * Mar 06, 2017  6142     bsteffen    Allow requests to validate when using
+ *                                    dataURI as an identifier even if it is
+ *                                    not listed as a supported identifier.
  * 
  * 
  * </pre>
@@ -100,7 +107,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
             DataTime[] dataTimes = new DataTime[refTimes.length];
             int i = 0;
             for (Date refTime : refTimes) {
-                dataTimes[i++] = new DataTime(refTime);
+                dataTimes[i] = new DataTime(refTime);
+                i += 1;
             }
             return dataTimes;
         } else {
@@ -124,7 +132,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
             throw new DataRetrievalException(
                     "Failed to retrieve available data times for plugin "
                             + request.getDatatype() + " for request "
-                            + request.toString(), e);
+                            + request.toString(),
+                    e);
         }
 
         List<DataTime> dataTimes = new ArrayList<>();
@@ -139,8 +148,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     public IGeometryData[] getGeometryData(IDataRequest request,
             DataTime... times) {
         validateRequest(request);
-        DbQueryRequest dbQueryRequest = this
-                .buildDbQueryRequest(request, times);
+        DbQueryRequest dbQueryRequest = this.buildDbQueryRequest(request,
+                times);
         DbQueryResponse dbQueryResponse = executeDbQueryRequest(dbQueryRequest,
                 request.toString());
         return getGeometryData(request, dbQueryResponse);
@@ -160,8 +169,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     @Override
     public IGridData[] getGridData(IDataRequest request, DataTime... times) {
         validateRequest(request);
-        DbQueryRequest dbQueryRequest = this
-                .buildDbQueryRequest(request, times);
+        DbQueryRequest dbQueryRequest = this.buildDbQueryRequest(request,
+                times);
         DbQueryResponse dbQueryResponse = executeDbQueryRequest(dbQueryRequest,
                 request.toString());
         return getGridData(request, dbQueryResponse);
@@ -182,6 +191,29 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         validateRequest(request);
         return new DefaultNotificationFilter(request.getDatatype(),
                 buildConstraintsFromRequest(request));
+    }
+
+    @Override
+    protected Collection<String> checkForInvalidIdentifiers(
+            IDataRequest request) {
+        Collection<String> invalid = Collections.emptySet();
+        Map<String, Object> identifiers = request.getIdentifiers();
+        if (identifiers != null && !identifiers.isEmpty()) {
+            String[] optional = getOptionalIdentifiers(request);
+            String[] required = getRequiredIdentifiers(request);
+            if (optional != null && optional.length > 0
+                    || required != null && required.length > 0) {
+                invalid = new HashSet<>(identifiers.keySet());
+                if (optional != null) {
+                    invalid.removeAll(Arrays.asList(optional));
+                }
+                if (required != null) {
+                    invalid.removeAll(Arrays.asList(required));
+                }
+                invalid.remove(PluginDataObject.DATAURI_ID);
+            }
+        }
+        return invalid;
     }
 
     /**
@@ -214,8 +246,14 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
     protected TimeQueryRequest buildTimeQueryRequest(IDataRequest request) {
         TimeQueryRequest timeQueryRequest = new TimeQueryRequest();
         timeQueryRequest.setPluginName(request.getDatatype());
-        timeQueryRequest.setQueryTerms(this
-                .buildConstraintsFromRequest(request));
+        Map<String, RequestConstraint> constraints = buildDataURIBasedConstraints(
+                request);
+        if (constraints == null) {
+            constraints = this.buildConstraintsFromRequest(request);
+        }
+        constraints.put(DBQUERY_PLUGIN_NAME_KEY,
+                new RequestConstraint(request.getDatatype()));
+        timeQueryRequest.setQueryTerms(constraints);
 
         return timeQueryRequest;
     }
@@ -239,7 +277,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         } catch (Exception e1) {
             throw new DataRetrievalException(
                     "Unable to complete the DbQueryRequest for request: "
-                            + requestString, e1);
+                            + requestString,
+                    e1);
         }
 
         return dbQueryResponse;
@@ -289,10 +328,12 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         DbQueryRequest dbQueryRequest = this.buildDbQueryRequest(request);
         /* Add the TimeRange Constraint */
         if (timeRange != null) {
-            RequestConstraint afterReqStart = new RequestConstraint(timeRange
-                    .getStart().toString(), ConstraintType.GREATER_THAN_EQUALS);
-            RequestConstraint beforeReqEnd = new RequestConstraint(timeRange
-                    .getEnd().toString(), ConstraintType.LESS_THAN_EQUALS);
+            RequestConstraint afterReqStart = new RequestConstraint(
+                    timeRange.getStart().toString(),
+                    ConstraintType.GREATER_THAN_EQUALS);
+            RequestConstraint beforeReqEnd = new RequestConstraint(
+                    timeRange.getEnd().toString(),
+                    ConstraintType.LESS_THAN_EQUALS);
 
             dbQueryRequest.addConstraint(FIELD_VALID_START, afterReqStart);
             dbQueryRequest.addConstraint(FIELD_VALID_END, beforeReqEnd);
@@ -309,25 +350,8 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
      */
     protected DbQueryRequest buildDbQueryRequest(IDataRequest request) {
         DbQueryRequest dbQueryRequest = new DbQueryRequest();
-        Map<String, RequestConstraint> constraints = null;
-
-        Map<String, Object> identifiers = request.getIdentifiers();
-        if (identifiers != null) {
-            Object dataUri = identifiers.get(PluginDataObject.DATAURI_ID);
-            if (dataUri != null) {
-                try {
-                    Map<String, Object> dataUriMap = DataURIUtil
-                            .createDataURIMap((String) dataUri);
-                    constraints = RequestConstraint
-                            .toConstraintMapping(dataUriMap);
-                } catch (PluginException e) {
-                    throw new DataRetrievalException(
-                            "Unable to build DbQueryRequest for request: "
-                                    + request.toString(), e);
-                }
-            }
-        }
-
+        Map<String, RequestConstraint> constraints = buildDataURIBasedConstraints(
+                request);
         if (constraints == null) {
             constraints = this.buildConstraintsFromRequest(request);
         }
@@ -336,6 +360,27 @@ public abstract class AbstractDataPluginFactory extends AbstractDataFactory {
         dbQueryRequest.setConstraints(constraints);
 
         return dbQueryRequest;
+    }
+
+    public static Map<String, RequestConstraint> buildDataURIBasedConstraints(
+            IDataRequest request) {
+        Map<String, Object> identifiers = request.getIdentifiers();
+        if (identifiers != null) {
+            Object dataUri = identifiers.get(PluginDataObject.DATAURI_ID);
+            if (dataUri != null) {
+                try {
+                    Map<String, Object> dataUriMap = DataURIUtil
+                            .createDataURIMap((String) dataUri);
+                    return RequestConstraint.toConstraintMapping(dataUriMap);
+                } catch (PluginException e) {
+                    throw new DataRetrievalException(
+                            "Unable to build DbQueryRequest for request: "
+                                    + request.toString(),
+                            e);
+                }
+            }
+        }
+        return null;
     }
 
     protected IGridData[] getGridData(IDataRequest request,
