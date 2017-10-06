@@ -6,7 +6,6 @@
     <bean id="distributionPatterns" class="com.raytheon.uf.edex.distribution.DistributionPatterns" factory-method="getInstance"/>
   	<bean id="distributionSrv" class="com.raytheon.uf.edex.distribution.DistributionSrv" />
   	<bean id="handleoupDistributionSrv" class="com.raytheon.uf.edex.distribution.DistributionSrv" />
-  	<bean id="radarserverDistributionSrv" class="com.raytheon.uf.edex.distribution.DistributionSrv" /> 
 
     <camelContext id="distro"
         xmlns="http://camel.apache.org/schema/spring"
@@ -29,17 +28,6 @@
             <from uri="jms-durable:queue:handleoup.dropbox"/>
             <doTry>
 		    	<bean ref="handleoupDistributionSrv" method="route" />
-                <doCatch>
-                    <exception>java.lang.Throwable</exception>
-                    <to uri="log:distribution?level=ERROR"/>
-                </doCatch>
-            </doTry>
-        </route>
-        
-        <route id="radarserverDistribution">
-            <from uri="jms-durable:queue:radarserver.dropbox" />
-            <doTry>
-		    	<bean ref="radarserverDistributionSrv" method="route" />
                 <doCatch>
                     <exception>java.lang.Throwable</exception>
                     <to uri="log:distribution?level=ERROR"/>
