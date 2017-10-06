@@ -6,15 +6,7 @@
 	<mode name="ingest">
 		<exclude>.*request.*</exclude>
 		<exclude>edex-security.xml</exclude>
-		<exclude>rpgenvdata.*</exclude>
 		<exclude>taf.*</exclude>
-		<exclude>ldad.*</exclude>
-		<exclude>mosaic.*</exclude>
 		<exclude>shef.*</exclude>
-		<exclude>madis.*</exclude>
-		<exclude>retrieval.*</exclude>
-		<exclude>regionalsat.*</exclude>
-		<exclude>pointset-netcdf.*</exclude>
-		<exclude>profiler.*</exclude>
 	</mode>
 </edexModes>
