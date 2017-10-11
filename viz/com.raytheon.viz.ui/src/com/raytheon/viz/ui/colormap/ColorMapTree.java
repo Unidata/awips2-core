@@ -289,7 +289,7 @@ public class ColorMapTree {
             if (tree != null) {
                 tree.handleUpdate(message);
                 ColorMapTreeFactory factory = ColorMapTreeFactory.getInstance();
-                //factory.optimizeTree(tree);
+                factory.optimizeTree(tree);
                 factory.refresh();
             }
         }
