@@ -55,8 +55,7 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     on the UI thread.
  *                                    Converted to singleton.
  *                                    Added localized file observer.
- * Oct 14, 2015	 ----     mjames@ucar Only build for BASE level.
- * Jan 16, 2016	 ----     mjames@ucar Add USER level again.
+ * Oct 11, 2017  ----     mjames@ucar Only USER level.
  * 
  * </pre>
  * 
@@ -131,7 +130,7 @@ public class ColorMapTreeFactory {
     private ColorMapTreeFactory() {
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationLevel[] allLevels = pm.getAvailableLevels();
-        // Remove BASE
+        // Remove all but USER
         treesLevelLocalization = Arrays.copyOfRange(allLevels, allLevels.length-1,
                 allLevels.length);
     }
@@ -148,16 +147,6 @@ public class ColorMapTreeFactory {
                 IPathManager pm = PathManagerFactory.getPathManager();
                 LocalizationContext baseContext = pm.getContext(
                         LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
-
-                /*
-                 * Useful for testing delay in getting base tree.
-                 */
-                // try {
-                // baseTreeLock.wait(8000L);
-                // } catch (InterruptedException e) {
-                // e.printStackTrace();
-                // }
-
                 baseTree = new ColorMapTree(pm, baseContext,
                         ColorMapLoader.DIR_NAME);
                 optimizeTree(baseTree);

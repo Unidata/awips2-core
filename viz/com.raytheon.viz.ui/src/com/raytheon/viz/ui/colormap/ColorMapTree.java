@@ -34,6 +34,7 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.viz.core.localization.LocalizationManager;
 
 /**
  * ColorMapTree represents the directory structure of colormaps directory. The
@@ -53,6 +54,7 @@ import com.raytheon.uf.common.localization.LocalizationFile;
  * Aug 24, 2015  4393     njensen     Updates for observer changes
  * Nov 18, 2015  4834     njensen     API updates due to removal of LocalizationNotificationObserver
  * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Oct 11, 2017  ----     mjames@ucar Show only USER colormap file for connected user.
  * 
  * </pre>
  * 
@@ -68,6 +70,8 @@ public class ColorMapTree {
     private final LocalizationLevel level;
 
     private final LocalizationContext context;
+
+    private final LocalizationManager manager;
 
     private final Object filesLock = new Object();
 
@@ -87,6 +91,7 @@ public class ColorMapTree {
         this.pathManager = pathManager;
         this.level = null;
         this.context = context;
+        this.manager = null;
     }
 
     /**
@@ -101,6 +106,7 @@ public class ColorMapTree {
         this.pathManager = pathManager;
         this.level = level;
         this.context = null;
+        this.manager = null;
 
         LocalizationFile dir = pathManager.getLocalizationFile(
                 pathManager.getContext(LocalizationType.COMMON_STATIC, level),
@@ -136,6 +142,9 @@ public class ColorMapTree {
      * subdirectory of this tree.
      */
     public List<ColorMapTree> getSubTrees() {
+
+        String connectedUser = LocalizationManager.getInstance().getCurrentUser();
+
         synchronized (subTreesLock) {
             if (subTrees == null) {
                 subTrees = new ArrayList<>();
@@ -144,7 +153,9 @@ public class ColorMapTree {
                         LocalizationContext ctx = pathManager.getContext(
                                 LocalizationType.COMMON_STATIC, level);
                         ctx.setContextName(context);
-                        subTrees.add(new ColorMapTree(pathManager, ctx, path));
+                        if ( context.equalsIgnoreCase(connectedUser)) {
+                            subTrees.add(new ColorMapTree(pathManager, ctx, path));
+                        }
                     }
                 } else {
                     for (ILocalizationFile file : requestFiles()) {
@@ -278,7 +289,7 @@ public class ColorMapTree {
             if (tree != null) {
                 tree.handleUpdate(message);
                 ColorMapTreeFactory factory = ColorMapTreeFactory.getInstance();
-                factory.optimizeTree(tree);
+                //factory.optimizeTree(tree);
                 factory.refresh();
             }
         }
