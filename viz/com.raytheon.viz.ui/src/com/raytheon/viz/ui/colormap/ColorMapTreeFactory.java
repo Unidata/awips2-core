@@ -55,6 +55,7 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     on the UI thread.
  *                                    Converted to singleton.
  *                                    Added localized file observer.
+ * Oct 11, 2017  ----     mjames@ucar Only USER level.
  * 
  * </pre>
  * 
@@ -129,8 +130,8 @@ public class ColorMapTreeFactory {
     private ColorMapTreeFactory() {
         IPathManager pm = PathManagerFactory.getPathManager();
         LocalizationLevel[] allLevels = pm.getAvailableLevels();
-        // Remove BASE
-        treesLevelLocalization = Arrays.copyOfRange(allLevels, 1,
+        // Remove all but USER
+        treesLevelLocalization = Arrays.copyOfRange(allLevels, allLevels.length-1,
                 allLevels.length);
     }
 
@@ -146,16 +147,6 @@ public class ColorMapTreeFactory {
                 IPathManager pm = PathManagerFactory.getPathManager();
                 LocalizationContext baseContext = pm.getContext(
                         LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
-
-                /*
-                 * Useful for testing delay in getting base tree.
-                 */
-                // try {
-                // baseTreeLock.wait(8000L);
-                // } catch (InterruptedException e) {
-                // e.printStackTrace();
-                // }
-
                 baseTree = new ColorMapTree(pm, baseContext,
                         ColorMapLoader.DIR_NAME);
                 optimizeTree(baseTree);
@@ -255,18 +246,6 @@ public class ColorMapTreeFactory {
                         optimizeTree(tree);
 
                         synchronized (treesByLevel) {
-                            /*
-                             * Use for debugging. Simulates a long delay in
-                             * getting tree level's color map. Allows testing to
-                             * see if menu items for the tree levels are
-                             * properly handled.
-                             */
-                            // try {
-                            // treesByLevel.wait(3000L);
-                            // } catch (InterruptedException e) {
-                            // e.printStackTrace();
-                            // }
-
                             treesByLevel.put(level, tree);
                             for (ILevelMapsCallback listener : tlcListeners) {
                                 listener.treeCreated(level, tree);
