@@ -74,6 +74,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  *                                    when recycle fails.
  * Jul 30, 2015  17761    D. Friemdan Support time matching based on descriptor
  *                                    frame times.
+ * Sep 28, 2017  DR 20316 D. Friemdan Refresh on property change.
  * 
  * 
  * </pre>
@@ -803,7 +804,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @param updatedProps
      */
     public void propertiesChanged(ResourceProperties updatedProps) {
-
+        issueRefresh();
     }
 
     /**
