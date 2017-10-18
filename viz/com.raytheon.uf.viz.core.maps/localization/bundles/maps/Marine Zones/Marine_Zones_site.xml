@@ -41,7 +41,8 @@
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
                         <table>mapdata.marinezones</table>
-                        <constraint>wfo like '${site}%'</constraint>
+                        <constraint>position('${site}' in wfo) 
+                        in (select * from generate_series(1,char_length(wfo),3))</constraint>
                         <column name="wfo" />
                         <column name="EDITAREA" expression="id" />
                         <mapName>Coastal Marine Zones ${site}</mapName>

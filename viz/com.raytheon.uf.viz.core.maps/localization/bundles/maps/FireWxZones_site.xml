@@ -41,7 +41,8 @@
                         <table>mapdata.firewxzones</table>
                         <column name="EDITAREA" expression="state || 'Z' || zone" />
                         <column name="wfo" expression="cwa" />
-                        <constraint>cwa = '${site}'</constraint>
+                        <constraint>position('${site}' in cwa) 
+                        in (select * from generate_series(1,char_length(cwa),3))</constraint>
                         <mapName>Fire Wx Zones ${site}</mapName>
                     </resourceData>
                 </resource>

@@ -41,7 +41,8 @@
                     <properties isMapLayer="true" />
                     <resourceData xsi:type="dbMapResourceData">
                         <table>mapdata.zone</table>
-                        <constraint>cwa like '${site}%'</constraint>
+                        <constraint>position('${site}' in cwa) in 
+                        (select * from generate_series(1,char_length(cwa),3))</constraint>
                         <column name="wfo" expression="cwa" />
                         <column name="EDITAREA" expression="state || 'Z' || zone" />
                         <mapName>Forecast Zones ${site}</mapName>
