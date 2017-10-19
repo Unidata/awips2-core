@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,6 +33,9 @@ import java.util.Map;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy;
 import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
 
@@ -41,7 +44,7 @@ import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
  * from XML using JAXB. An instance of this class is thread-safe, it will use
  * separate marshallers and unmarshallers if used simultaneously by different
  * threads.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -58,10 +61,10 @@ import com.raytheon.uf.common.serialization.jaxb.PooledJaxbMarshallerStrategy;
  *                                      added MarshalOptions, no longer pools by default
  * Feb 18, 2015 4125       rjpeter      Added type safe unmarshalFromXml
  * Feb 10, 2016 5307       bkowal       Added Java 7 {@link Path} support.
+ * Oct 19, 2017 6367       tgurney     Replace stdout with logger
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
 public class JAXBManager {
@@ -72,12 +75,15 @@ public class JAXBManager {
 
     private final JaxbMarshallerStrategy marshStrategy;
 
+    private static final Logger logger = LoggerFactory
+            .getLogger(JAXBManager.class);
+
     /**
      * Constructor. Clazz should include any classes that this JAXBManager needs
      * to marshal to XML or unmarshal from XML. Does not need to include classes
      * contained as fields or inner classes of other classes already passed to
      * the constructor.
-     * 
+     *
      * @param clazz
      *            classes that this instance must know about for
      *            marshalling/unmarshalling
@@ -92,7 +98,7 @@ public class JAXBManager {
      * to marshal to XML or unmarshal from XML. Does not need to include classes
      * contained as fields or inner classes of other classes already passed to
      * the constructor.
-     * 
+     *
      * @param pooling
      *            whether or not to pool (un)marshallers
      * @param clazz
@@ -100,7 +106,8 @@ public class JAXBManager {
      *            marshalling/unmarshalling
      * @throws JAXBException
      */
-    public JAXBManager(boolean pooling, Class<?>... clazz) throws JAXBException {
+    public JAXBManager(boolean pooling, Class<?>... clazz)
+            throws JAXBException {
         this(pooling ? new PooledJaxbMarshallerStrategy()
                 : new JaxbMarshallerStrategy(), clazz);
     }
@@ -120,7 +127,7 @@ public class JAXBManager {
 
     /**
      * Returns the JAXB Context behind this JAXBManager.
-     * 
+     *
      * @return the JAXBContext
      * @throws JAXBException
      * @Deprecated TODO This method should be protected and the JAXBContext
@@ -140,7 +147,7 @@ public class JAXBManager {
                     jaxbContext = JAXBContext.newInstance(clazz,
                             getJaxbConfig());
                     if (clazz.length == 1) {
-                        System.out.println("JAXB context for "
+                        logger.info("JAXB context for "
                                 + clazz[0].getSimpleName() + " inited in: "
                                 + (System.currentTimeMillis() - t0) + " ms");
                     }
@@ -161,7 +168,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a string.
-     * 
+     *
      * @param xml
      *            The XML representation
      * @return A new instance from the XML representation
@@ -173,7 +180,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a string.
-     * 
+     *
      * @param clazz
      *            The class of the return object
      * @param xml
@@ -193,7 +200,7 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML pretty print representation in a
      * string.
-     * 
+     *
      * @param obj
      *            Object being marshalled
      * @return XML string representation of the object
@@ -205,7 +212,7 @@ public class JAXBManager {
 
     /**
      * Convert an instance of a class to an XML representation in a string.
-     * 
+     *
      * @param obj
      *            Object being marshalled
      * @param options
@@ -222,7 +229,7 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML representation and writes pretty
      * print formatted XML to file.
-     * 
+     *
      * @param obj
      *            Object to be marshaled
      * @param filePath
@@ -237,7 +244,7 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML representation and writes pretty
      * print formatted XML to file specified by a {@link Path}.
-     * 
+     *
      * @param obj
      *            Object to be marshaled
      * @param filePath
@@ -252,7 +259,7 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML representation and writes XML to
      * file.
-     * 
+     *
      * @param obj
      *            Object to be marshaled
      * @param filePath
@@ -269,7 +276,7 @@ public class JAXBManager {
     /**
      * Converts an instance of a class to a XML representation and writes XML to
      * the file specified by a {@link Path}.
-     * 
+     *
      * @param obj
      *            Object to be marshaled
      * @param filePath
@@ -292,7 +299,7 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML representation and writes pretty
      * print formatted XML to output stream.
-     * 
+     *
      * @param obj
      * @param out
      * @throws SerializationException
@@ -305,11 +312,11 @@ public class JAXBManager {
     /**
      * Convert an instance of a class to an XML representation and writes XML to
      * output stream.
-     * 
+     *
      * @param obj
      * @param out
      * @param options
-     * 
+     *
      * @throws SerializationException
      */
     public void marshalToStream(Object obj, OutputStream out,
@@ -324,7 +331,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a File.
-     * 
+     *
      * @param filePath
      *            The path to the XML file
      * @return A new instance from the XML representation
@@ -339,7 +346,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a File.
-     * 
+     *
      * @param file
      *            The XML file
      * @return A new instance from the XML representation
@@ -347,14 +354,15 @@ public class JAXBManager {
      * @Deprecated Use unmarshalFromXmlFile(Class<?>, File) instead
      */
     @Deprecated
-    public Object unmarshalFromXmlFile(File file) throws SerializationException {
+    public Object unmarshalFromXmlFile(File file)
+            throws SerializationException {
         return unmarshalFromXmlFile(Object.class, file);
     }
 
     /**
      * Instantiates an object of the specified type from the XML representation
      * in a File.
-     * 
+     *
      * @param clazz
      *            The class to cast the Object in the file to
      * @param filePath
@@ -369,7 +377,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a File.
-     * 
+     *
      * @param clazz
      *            The class to cast the Object in the file to
      * @param file
@@ -390,7 +398,7 @@ public class JAXBManager {
     /**
      * Instantiates an object from the XML representation in a File specified by
      * a {@link Path}.
-     * 
+     *
      * @param clazz
      *            The class to cast the Object in the file to
      * @param path
@@ -405,7 +413,7 @@ public class JAXBManager {
 
     /**
      * Instantiates an object from the XML representation in a stream.
-     * 
+     *
      * @param is
      *            The input stream. The stream will be closed by this operation.
      * @return A new instance from the XML representation
@@ -424,7 +432,7 @@ public class JAXBManager {
     /**
      * Instantiates an object of the specified type from the XML representation
      * in a stream.
-     * 
+     *
      * @param clazz
      *            The class to cast the Object to.
      * @param is
@@ -443,7 +451,7 @@ public class JAXBManager {
 
     /**
      * Unmarshals an object from an xml file.
-     * 
+     *
      * @param file
      *            the file to unmarshal an object from.
      * @return the object from the file
@@ -463,7 +471,7 @@ public class JAXBManager {
 
     /**
      * Unmarshals an object from an xml string.
-     * 
+     *
      * @param xml
      *            the xml string to unmarshal an object from.
      * @return the object from the string
