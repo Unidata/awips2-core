@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
-import java.util.UUID;
 
 import javax.jws.WebService;
 
@@ -63,16 +62,17 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Nov 15, 2012  1322      djohnson    Publicize ability to specify specific httpAddress.
  * Jan 24, 2013  1526      njensen     Switch from using postBinary() to postDynamicSerialize()
  * Jan 27, 2016  5170      tjensen     Added logging of stats to sendRequest
+ * Oct 19, 2017  6316      njensen     Get uniqueId from RequestWrapper
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
 
 public class ThriftClient {
 
-    private static abstract class ThriftServiceHandler implements
+    private abstract static class ThriftServiceHandler
+            implements
             InvocationHandler {
 
         @Override
@@ -285,9 +285,7 @@ public class ThriftClient {
     private static Object sendRequest(IServerRequest request,
             String httpAddress, String uri) throws VizException {
         httpAddress += uri;
-        String uniqueId = UUID.randomUUID().toString();
-        RequestWrapper wrapper = new RequestWrapper(request, VizApp.getWsId(),
-                uniqueId);
+        RequestWrapper wrapper = new RequestWrapper(request, VizApp.getWsId());
 
         Object rval = null;
         try {
@@ -298,7 +296,7 @@ public class ThriftClient {
 
             if (time >= SIMPLE_LOG_TIME) {
                 System.out.println("Took " + time + "ms to run request id["
-                        + uniqueId + "] " + request.toString());
+                        + wrapper.getUniqueId() + "] " + request.toString());
             }
             /**
              * Log that we have a message. Size information in NOT logged here.
@@ -311,11 +309,6 @@ public class ThriftClient {
                 new Exception() {
                     private static final long serialVersionUID = 1L;
 
-                    /*
-                     * (non-Javadoc)
-                     * 
-                     * @see java.lang.Throwable#toString()
-                     */
                     @Override
                     public String toString() {
                         return "(NOT AN ERROR) ThriftClient Diagnostic Stack For Long Requests:";
@@ -323,10 +316,7 @@ public class ThriftClient {
 
                 }.printStackTrace(System.out);
             }
-        } catch (IOException e) {
-            throw new VizCommunicationException(
-                    "unable to post request to server", e);
-        } catch (CommunicationException e) {
+        } catch (IOException | CommunicationException e) {
             throw new VizCommunicationException(
                     "unable to post request to server", e);
         } catch (Exception e) {

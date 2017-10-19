@@ -38,9 +38,6 @@ import java.util.Set;
 import java.util.TimeZone;
 import java.util.concurrent.ConcurrentHashMap;
 
-import net.sf.cglib.beans.BeanMap;
-import net.sf.cglib.reflect.FastClass;
-
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TField;
 import org.apache.thrift.protocol.TList;
@@ -62,6 +59,9 @@ import com.raytheon.uf.common.serialization.thrift.exception.FieldDeserializatio
 import com.raytheon.uf.common.serialization.thrift.exception.ListDeserializationException;
 import com.raytheon.uf.common.serialization.thrift.exception.MapDeserializationException;
 import com.raytheon.uf.common.serialization.thrift.exception.SetDeserializationException;
+
+import net.sf.cglib.beans.BeanMap;
+import net.sf.cglib.reflect.FastClass;
 
 /**
  * Provides a serialization/deserialization capability built on top of the
@@ -102,11 +102,11 @@ import com.raytheon.uf.common.serialization.thrift.exception.SetDeserializationE
  * Jun 15, 2015  4561     njensen     Major cleanup, added read and ignore methods
  * Jun 17, 2015  4564     njensen     Added date/time conversion in deserializeField()
  * Jul 16, 2015  4561     njensen     Improved read and ignore of collection types
+ * Oct 19, 2017  6316     njensen     Improved serialization error message
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 // Warnings are suppressed in this class because generics cause issues with the
 // extensive use of reflection. The erased objects are used instead.
@@ -130,11 +130,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     protected static Map<Class<?>, Byte> types;
 
-    protected static Map<String, Class<?>> fieldClass = new ConcurrentHashMap<String, Class<?>>();
+    protected static Map<String, Class<?>> fieldClass = new ConcurrentHashMap<>();
 
     /** Mapping of built in java types to thift types */
     static {
-        types = new HashMap<Class<?>, Byte>();
+        types = new HashMap<>();
         types.put(String.class, TType.STRING);
         types.put(Integer.class, TType.I32);
         types.put(Integer.TYPE, TType.I32);
@@ -397,7 +397,9 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             }
         } catch (TException e) {
             throw new SerializationException(
-                    "Error occurred during serialization of base type", e);
+                    "Error occurred during serialization of base type, object was "
+                            + val,
+                    e);
         }
 
     }
@@ -1451,7 +1453,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                         }
                     }
                     if (list == null) {
-                        list = new ArrayList<String>(innerList.size);
+                        list = new ArrayList<>(innerList.size);
                     }
                     for (i = 0; i < innerList.size; i++) {
                         list.add(readString());
@@ -1474,7 +1476,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                         }
                     }
                     if (list == null) {
-                        list = new ArrayList<String>(innerList.size);
+                        list = new ArrayList<>(innerList.size);
                     }
                     for (i = 0; i < innerList.size; i++) {
                         list.add(null);

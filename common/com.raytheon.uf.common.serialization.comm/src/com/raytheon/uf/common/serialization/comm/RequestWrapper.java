@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.serialization.comm;
 
+import java.util.UUID;
+
 import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
@@ -60,11 +62,17 @@ public class RequestWrapper implements IServerRequest {
 
     }
 
-    public RequestWrapper(IServerRequest request, WsId workstationId,
-            String uniqueId) {
+    public RequestWrapper(IServerRequest request, WsId workstationId) {
+        if (request == null) {
+            throw new IllegalArgumentException("request must not be null");
+        }
+        if (workstationId == null) {
+            throw new IllegalArgumentException(
+                    "workstationId must not be null");
+        }
         this.request = request;
         this.wsId = workstationId;
-        this.uniqueId = uniqueId;
+        this.uniqueId = UUID.randomUUID().toString();
     }
 
     public IServerRequest getRequest() {
@@ -100,8 +108,12 @@ public class RequestWrapper implements IServerRequest {
         } else {
             sb.append("null wsId");
         }
-        sb.append("][").append(uniqueId).append("] ")
-                .append(request.getClass().getSimpleName());
+        sb.append("][").append(uniqueId).append("] ");
+        if (request != null) {
+            sb.append(request.getClass().getSimpleName());
+        } else {
+            sb.append("null request");
+        }
         return sb.toString();
     }
 
