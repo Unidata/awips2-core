@@ -28,6 +28,9 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
@@ -65,9 +68,9 @@ import com.raytheon.uf.common.util.format.BytesFormat;
 /**
  * Data Store implementation that communicates with a PyPIES server over http.
  * The requests and responses are all DynamicSerialized.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -82,9 +85,10 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  * Feb 24, 2016  5389      nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
  * Feb 29, 2016  5420      tgurney     Remove timestampCheck arg from copy()
  * Nov 15, 2016  5992      bsteffen    Compress large records
- * 
+ * Oct 19, 2017  6367      tgurney     Use logger instead of stdout
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 public class PyPiesDataStore implements IDataStore {
@@ -104,6 +108,8 @@ public class PyPiesDataStore implements IDataStore {
     protected String filename;
 
     protected PypiesProperties props;
+
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
     public PyPiesDataStore(final File file, final boolean useLocking,
             final PypiesProperties props) {
@@ -178,7 +184,7 @@ public class PyPiesDataStore implements IDataStore {
     @Override
     public IDataRecord retrieve(final String group, final String dataset,
             final Request request)
-                    throws StorageException, FileNotFoundException {
+            throws StorageException, FileNotFoundException {
         RetrieveRequest req = new RetrieveRequest();
         req.setGroup(group);
         req.setDataset(dataset);
@@ -190,7 +196,7 @@ public class PyPiesDataStore implements IDataStore {
     @Override
     public IDataRecord[] retrieveDatasets(final String[] datasetGroupPath,
             final Request request)
-                    throws StorageException, FileNotFoundException {
+            throws StorageException, FileNotFoundException {
         DatasetDataRequest req = new DatasetDataRequest();
         req.setDatasetGroupPath(datasetGroupPath);
         req.setRequest(request);
@@ -201,7 +207,7 @@ public class PyPiesDataStore implements IDataStore {
     @Override
     public IDataRecord[] retrieveGroups(final String[] groups,
             final Request request)
-                    throws StorageException, FileNotFoundException {
+            throws StorageException, FileNotFoundException {
         GroupsRequest req = new GroupsRequest();
         req.setGroups(groups);
         req.setRequest(request);
@@ -304,7 +310,7 @@ public class PyPiesDataStore implements IDataStore {
         long time = System.currentTimeMillis() - t0;
 
         if (time >= SIMPLE_LOG_TIME) {
-            System.out.println("Took " + time + " ms to receive response for "
+            logger.info("Took " + time + " ms to receive response for "
                     + obj.getClass().getSimpleName() + " on file "
                     + obj.getFilename());
         }
