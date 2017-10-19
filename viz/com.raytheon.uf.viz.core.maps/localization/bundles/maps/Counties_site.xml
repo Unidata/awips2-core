@@ -42,8 +42,8 @@
                         <column name="EDITAREA"
                             expression="state || 'C' || substr(fips,3)" />
                         <column name="wfo" expression="cwa" />
-                        <constraint>cwa like '${site}%' OR cwa like
-                            '___${site}%'</constraint>
+                        <constraint>position('${site}' in cwa) in 
+                        (select * from generate_series(1,char_length(cwa),3))</constraint>
                         <mapName>County Boundaries ${site}</mapName>
                     </resourceData>
                 </resource>
