@@ -47,23 +47,23 @@ import com.sun.opengl.util.BufferUtil;
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
- * Aug 19, 2015  4709     bsteffen  Allow setting vertex attributes.
+ * Aug 19, 2015  4709     bsteffen  Allow setting vertex attributes
+ * Jul 24, 2017  6316     njensen   Safety check for null programs
  * 
  * </pre>
  * 
  * @author estrabal
- * @version 1.0
  */
 
 public class GLShaderProgram {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GLShaderProgram.class);
 
     private static enum State {
         INVALID, INITIALIZED, IN_USE;
     }
 
-    static public String NONE = "NONE";
+    public static final String NONE = "NONE";
 
     private final GL gl;
 
@@ -86,7 +86,7 @@ public class GLShaderProgram {
     // * attribute - Global read-only variables only available to the vertex
     // shader (and not the fragment shader). Passed from an OpenGL program,
     // these can be changed on a per vertex level.
-    private Map<String, Object> loadedUniforms = new HashMap<String, Object>();
+    private Map<String, Object> loadedUniforms = new HashMap<>();
 
     private Map<String, Integer> loadedAttributes = new HashMap<>();
 
@@ -111,7 +111,7 @@ public class GLShaderProgram {
                     "Error creating glsl program, could not create program object");
         }
 
-        List<Integer> shaderIds = new ArrayList<Integer>(2);
+        List<Integer> shaderIds = new ArrayList<>(2);
         if (vertexShader != null) {
             shaderIds.add(addShader(vertexShader, GL.GL_VERTEX_SHADER));
         }
@@ -197,6 +197,10 @@ public class GLShaderProgram {
             throws VizException {
         String program = GLProgramManager.getInstance().getProgramCode(
                 programName);
+        if (program == null) {
+            throw new IllegalStateException(
+                    "Error loading GLSL program " + programName);
+        }
         int shaderId = gl.glCreateShader(glShaderId);
         if (shaderId >= 0) {
             gl.glShaderSource(shaderId, 1, new String[] { program },
@@ -223,7 +227,7 @@ public class GLShaderProgram {
             gl.glUniform1i(getUniformLocation(uniformName), (Integer) value);
         } else if (value instanceof Boolean) {
             gl.glUniform1i(getUniformLocation(uniformName),
-                    ((Boolean) value) == true ? 1 : 0);
+                    ((Boolean) value) ? 1 : 0);
         } else if (value instanceof int[]) {
             int[] ints = (int[]) value;
             gl.glUniform1iv(getUniformLocation(uniformName), ints.length,
@@ -237,7 +241,8 @@ public class GLShaderProgram {
                     ((RGB) value).red / 255.0f, ((RGB) value).green / 255.0f,
                     ((RGB) value).blue / 255.0f);
         } else {
-            System.err.println("Cannot set uniform for type: "
+            throw new IllegalArgumentException(
+                    "Cannot set uniform for type: "
                     + value.getClass());
         }
     }
@@ -250,8 +255,8 @@ public class GLShaderProgram {
      */
     public void setUniform(String key, Object value) {
         if (value != null && state == State.IN_USE) {
-            if (loadedUniforms.containsKey(key) == false
-                    || value.equals(loadedUniforms.get(key)) == false) {
+            if (!loadedUniforms.containsKey(key)
+                    || !value.equals(loadedUniforms.get(key))) {
                 // we haven't loaded this uniform yet or it is different
                 // from last time
                 loadedUniforms.put(key, value);
@@ -308,15 +313,14 @@ public class GLShaderProgram {
         gl.glGetObjectParameterivARB(shader, GL.GL_OBJECT_COMPILE_STATUS_ARB,
                 compilecheck, 0);
         if (compilecheck[0] == GL.GL_FALSE) {
-            System.err.println("A compilation error occured in the " + type
-                    + " shader source file (" + name + ")");
-
             IntBuffer iVal = BufferUtil.newIntBuffer(1);
             gl.glGetObjectParameterivARB(shader,
                     GL.GL_OBJECT_INFO_LOG_LENGTH_ARB, iVal);
 
             int length = iVal.get();
             if (length <= 1) {
+                statusHandler.warn("A compilation error occured in the " + type
+                        + " shader source file (" + name + ")");
                 return true;
             }
             ByteBuffer infoLog = BufferUtil.newByteBuffer(length);
@@ -328,7 +332,6 @@ public class GLShaderProgram {
             statusHandler.handle(Priority.CRITICAL, "Problem occured during "
                     + type + " shader initialization of " + name + ": "
                     + new String(infoBytes));
-            System.err.println(new String(infoBytes));
             rval = true;
         }
 
@@ -347,7 +350,6 @@ public class GLShaderProgram {
         gl.glGetProgramiv(glslContext, GL.GL_LINK_STATUS, param, 0);
         if (param[0] == GL.GL_FALSE) {
             errors = true;
-            System.err.println("Error linking shader programs");
             IntBuffer iVal = BufferUtil.newIntBuffer(1);
             gl.glGetObjectParameterivARB(glslContext, GL.GL_INFO_LOG_LENGTH,
                     iVal);
@@ -362,7 +364,8 @@ public class GLShaderProgram {
                 statusHandler.handle(Priority.CRITICAL,
                         "Problem occured during shader program linking: "
                                 + new String(infoBytes));
-                System.err.println(new String(infoBytes));
+            } else {
+                statusHandler.warn("Error linking shader programs");
             }
         }
         return errors;
