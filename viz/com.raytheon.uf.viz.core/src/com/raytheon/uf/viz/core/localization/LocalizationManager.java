@@ -177,6 +177,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                     InstanceScope.INSTANCE, "localization");
             localizationStore.addPropertyChangeListener(this);
             loadHttpServer();
+            loadAlertServer();
             loadCurrentSite();
         } catch (ExceptionInInitializerError e) {
             statusHandler.handle(Priority.CRITICAL,
@@ -438,6 +439,18 @@ public class LocalizationManager implements IPropertyChangeListener {
                     .getString(LocalizationConstants.P_LOCALIZATION_HTTP_SERVER);
         }
         checkForServerOverride();
+    }
+
+    /**
+     * Check to see if the store has the alert server. If not store off the
+     * default
+     */
+    private void loadAlertServer() {
+        if (!localizationStore.contains(LocalizationConstants.P_ALERT_SERVER)) {
+            localizationStore.putValue(LocalizationConstants.P_ALERT_SERVER,
+                    LocalizationConstants.DEFAULT_ALERT_SERVER);
+            applyChanges();
+        }
     }
 
     private void loadCurrentSite() {

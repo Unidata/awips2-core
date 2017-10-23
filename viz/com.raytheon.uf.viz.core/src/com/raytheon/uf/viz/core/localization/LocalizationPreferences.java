@@ -202,7 +202,16 @@ public class LocalizationPreferences extends FieldEditorPreferencePage
             }
         });
         this.addField(localizationEditor);
+
+        if (LocalizationManager.internalAlertServer == false) {
+            alertEditor = new StringFieldEditor(
+                    LocalizationConstants.P_ALERT_SERVER, "&Alert Server: ",
+                    getFieldEditorParent());
+            alertEditor.setErrorMessage("Unable to connect to alert server");
+            this.addField(alertEditor);
+        }
         addConnectivityButton();
+        
         addRestartButton();
     }
 
