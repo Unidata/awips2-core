@@ -75,6 +75,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * Jul 30, 2015  17761    D. Friemdan Support time matching based on descriptor
  *                                    frame times.
  * Apr 18, 2017  6047     bsteffen    synchronize access to dataTimes to prevent
+ * Sep 28, 2017  DR 20316 D. Friemdan Refresh on property change.
  *                                    unexpected exceptions.
  * 
  * </pre>
@@ -809,7 +810,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @param updatedProps
      */
     public void propertiesChanged(ResourceProperties updatedProps) {
-
+        issueRefresh();
     }
 
     /**

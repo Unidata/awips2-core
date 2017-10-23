@@ -39,6 +39,7 @@ import org.apache.commons.lang3.Validate;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.NoDataAvailableException;
@@ -63,6 +64,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Jan 17, 2013  2651     bsteffen    Synchronize removeRsc for slightly better
  *                                    thread safety.
+ * Sep 28, 2017  DR 20316 D. Friemdan Refresh on reorder.
  * 
  * </pre>
  * 
@@ -696,6 +698,13 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
         set(to, element);
 
         cleanup();
+        AbstractVizResource<?, ?> resource = element.getResource();
+        if (resource != null) {
+            IDisplayPaneContainer container = resource.getResourceContainer();
+            if (container != null) {
+                container.refresh();
+            }
+        }
     }
 
     private void cleanup() {
