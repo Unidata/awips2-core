@@ -263,7 +263,7 @@
          download-size="0"
          install-size="0"
          version="2.6.0"/>
-         
+
    <plugin
          id="org.apache.commons.lang3"
          download-size="0"
@@ -452,5 +452,11 @@
          download-size="0"
          install-size="0"
          version="2.4.2"/>
+
+   <plugin
+         id="ar.com.hjg.pngj"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
 
 </feature>
