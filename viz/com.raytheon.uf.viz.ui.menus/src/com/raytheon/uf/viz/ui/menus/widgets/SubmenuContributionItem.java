@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -51,11 +51,11 @@ import com.raytheon.uf.viz.ui.menus.xml.MenuXMLMap;
  * submenu. Generally it is populated before a user can possibly open the menu
  * however the performance depends greatly on the complexity of the contribution
  * items in the submenu.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 26, 2009           chammack  Initial creation
@@ -64,9 +64,10 @@ import com.raytheon.uf.viz.ui.menus.xml.MenuXMLMap;
  * Dec 11, 2013  2602     bsteffen  Update MenuXMLMap.
  * Dec 21, 2015  5194     bsteffen  Restructure threading
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
- * 
+ * Oct 25, 2017  6270     mapeters  Handle null contribs
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class SubmenuContributionItem extends MenuManager {
@@ -92,12 +93,11 @@ public class SubmenuContributionItem extends MenuManager {
     protected volatile boolean doneAddingMenuService;
 
     /**
-     * 
+     *
      * @param includeSubstitutions
      * @param name
      * @param ci
      * @param removals
-     * @param mListener
      */
     public SubmenuContributionItem(VariableSubstitution[] includeSubstitutions,
             String id, String name, CommonAbstractMenuContribution[] ci,
@@ -154,6 +154,10 @@ public class SubmenuContributionItem extends MenuManager {
      * in a background thread.
      */
     protected void addContributedItems() {
+        if (contribs == null) {
+            // No contributions, do nothing
+            return;
+        }
         for (CommonAbstractMenuContribution contrib : contribs) {
             try {
                 IContribItemProvider provider = MenuXMLMap
@@ -179,8 +183,7 @@ public class SubmenuContributionItem extends MenuManager {
         IWorkbenchWindow window = PlatformUI.getWorkbench()
                 .getActiveWorkbenchWindow();
         String uri = MenuUtil.menuUri(getId());
-        IMenuService menuService = window
-                .getService(IMenuService.class);
+        IMenuService menuService = window.getService(IMenuService.class);
         menuService.populateContributionManager(this, uri);
     }
 
