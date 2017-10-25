@@ -36,7 +36,6 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.util.WorldWrapChecker;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.IExtent;
-import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGridMesh;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
 import com.raytheon.uf.viz.core.drawables.PaintStatus;
@@ -75,12 +74,13 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinates;
  * Jul 01, 2010           mschenke  Initial creation
  * Feb 21, 2014  2817     bsteffen  Remove Deprecated reproject.
  * Apr 05, 2016  5400     bsteffen  implement IGridMesh, javadoc.
+ * Oct 25, 2017  6387     bsteffen  implement IGLMesh
  * 
  * </pre>
  * 
  * @author mschenke
  */
-public abstract class AbstractGLMesh implements IGridMesh {
+public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
 
     private static final JobPool calculator = new JobPool("Mesh Calculator", 2,
             false);
@@ -97,8 +97,10 @@ public abstract class AbstractGLMesh implements IGridMesh {
 
     protected SharedCoordinateKey key;
 
-    // For world wrapping we maintain a set of triangle strips that fill in any
-    // cut segements.
+    /*
+     * For world wrapping we maintain a set of triangle strips that fill in any
+     * cut segments.
+     */
     private GLGeometryObject2D wwcVertexCoords;
 
     private GLGeometryObject2D wwcTextureCoords;
@@ -108,8 +110,10 @@ public abstract class AbstractGLMesh implements IGridMesh {
         public void run() {
             synchronized (calculate) {
                 if (internalState == State.CALCULATING) {
-                    // If we aren't in CALCULATING state, we were disposed while
-                    // waiting to run and shouldn't run now
+                    /*
+                     * If we aren't in CALCULATING state, we were disposed while
+                     * waiting to run and shouldn't run now
+                     */
                     if (calculateMesh()) {
                         internalState = State.CALCULATED;
                     } else {
@@ -142,8 +146,8 @@ public abstract class AbstractGLMesh implements IGridMesh {
         this.imageGeometry = imageGeometry;
         if (imageGeometry != null) {
             try {
-                imageCRSToLatLon = MapUtil.getTransformToLatLon(imageGeometry
-                        .getCoordinateReferenceSystem());
+                imageCRSToLatLon = MapUtil.getTransformToLatLon(
+                        imageGeometry.getCoordinateReferenceSystem());
             } catch (Throwable t) {
                 throw new VizException(
                         "Error construcing image to lat/lon transform", t);
@@ -154,10 +158,11 @@ public abstract class AbstractGLMesh implements IGridMesh {
         // Set up convenience transforms
         try {
             DefaultMathTransformFactory factory = new DefaultMathTransformFactory();
-            latLonToTargetGrid = factory.createConcatenatedTransform(MapUtil
-                    .getTransformFromLatLon(targetGeometry
-                            .getCoordinateReferenceSystem()), targetGeometry
-                    .getGridToCRS(PixelInCell.CELL_CENTER).inverse());
+            latLonToTargetGrid = factory.createConcatenatedTransform(
+                    MapUtil.getTransformFromLatLon(
+                            targetGeometry.getCoordinateReferenceSystem()),
+                    targetGeometry.getGridToCRS(PixelInCell.CELL_CENTER)
+                            .inverse());
         } catch (Throwable t) {
             internalState = State.INVALID;
             throw new VizException("Error projecting mesh", t);
@@ -167,7 +172,8 @@ public abstract class AbstractGLMesh implements IGridMesh {
         calculator.schedule(calculate);
     }
 
-    public final synchronized PaintStatus paint(IGraphicsTarget target,
+    @Override
+    public final synchronized PaintStatus paint(IGLTarget glTarget,
             PaintProperties paintProps) throws VizException {
         State internalState = this.internalState;
         if (internalState == State.NEW) {
@@ -177,13 +183,6 @@ public abstract class AbstractGLMesh implements IGridMesh {
             // Don't paint if invalid to avoid crashes
             return PaintStatus.ERROR;
         }
-
-        IGLTarget glTarget;
-        if (!(target instanceof IGLTarget)) {
-            throw new VizException("IGLTarget required ");
-        }
-
-        glTarget = (IGLTarget) target;
 
         try {
             if (internalState == State.CALCULATED) {
@@ -208,7 +207,7 @@ public abstract class AbstractGLMesh implements IGridMesh {
                 }
                 return PaintStatus.PAINTED;
             } else if (internalState == State.CALCULATING) {
-                target.setNeedsRefresh(true);
+                glTarget.setNeedsRefresh(true);
                 return PaintStatus.REPAINT;
             } else {
                 return PaintStatus.ERROR;
@@ -259,10 +258,10 @@ public abstract class AbstractGLMesh implements IGridMesh {
         try {
             double[][][] worldCoordinates = generateWorldCoords(imageGeometry,
                     imageCRSToLatLon);
-            vertexCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    geometryType, GL.GL_VERTEX_ARRAY));
-            vertexCoords.allocate(worldCoordinates.length
-                    * worldCoordinates[0].length);
+            vertexCoords = new GLGeometryObject2D(
+                    new GLGeometryObjectData(geometryType, GL.GL_VERTEX_ARRAY));
+            vertexCoords.allocate(
+                    worldCoordinates.length * worldCoordinates[0].length);
             // Check for world wrapping
             WorldWrapChecker wwc = new WorldWrapChecker(targetGeometry);
             for (int i = 0; i < worldCoordinates.length; ++i) {
@@ -272,7 +271,8 @@ public abstract class AbstractGLMesh implements IGridMesh {
                 for (int j = 0; j < strip.length; ++j) {
                     double[] next = strip[j];
                     if ((prev1 != null && wwc.check(prev1[0], next[0]))
-                            || (prev2 != null && wwc.check(prev2[0], next[0]))) {
+                            || (prev2 != null
+                                    && wwc.check(prev2[0], next[0]))) {
                         fixWorldWrap(wwc, prev2, prev1, next, i, j);
                         if ((prev1 != null && wwc.check(prev1[0], next[0]))
                                 || vSegment.size() > 1) {
@@ -287,8 +287,8 @@ public abstract class AbstractGLMesh implements IGridMesh {
                     prev1 = next;
                 }
 
-                vertexCoords.addSegment(vSegment.toArray(new double[vSegment
-                        .size()][]));
+                vertexCoords.addSegment(
+                        vSegment.toArray(new double[vSegment.size()][]));
             }
             return true;
         } catch (Exception e) {
@@ -431,13 +431,6 @@ public abstract class AbstractGLMesh implements IGridMesh {
         return out;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IMesh#intersects(com.raytheon.uf.viz.core.IExtent
-     * )
-     */
     @Override
     public boolean intersects(IExtent extent) {
         return false;

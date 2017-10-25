@@ -40,8 +40,8 @@ import com.raytheon.uf.viz.core.drawables.PaintStatus;
 import com.raytheon.uf.viz.core.drawables.ext.GraphicsExtension;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.raytheon.viz.core.gl.AbstractGLMesh;
 import com.raytheon.viz.core.gl.GLCapabilities;
+import com.raytheon.viz.core.gl.IGLMesh;
 import com.raytheon.viz.core.gl.IGLTarget;
 import com.raytheon.viz.core.gl.glsl.GLSLFactory;
 import com.raytheon.viz.core.gl.glsl.GLShaderProgram;
@@ -67,30 +67,21 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                    GLGeometryObject2D
  * May 19, 2016  5452     bsteffen    Enable show mesh lines with a system
  *                                    property.
+ * Oct 25, 2017  6387     bsteffen    Use IGLMesh instead of AbstractGLMesh
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
-public abstract class AbstractGLImagingExtension extends
-        GraphicsExtension<IGLTarget> implements IImagingExtension {
+public abstract class AbstractGLImagingExtension
+        extends GraphicsExtension<IGLTarget> implements IImagingExtension {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGLImagingExtension.class);
 
     public static final boolean SHOW_MESH_LINES = Boolean
             .getBoolean("showMeshLines");
-    
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.ext.IImagingExtension#drawRasters(
-     * com.raytheon.uf.viz.core.drawables.PaintProperties,
-     * com.raytheon.uf.viz.core.DrawableImage[])
-     */
+
     @Override
     public final boolean drawRasters(PaintProperties paintProps,
             DrawableImage... images) throws VizException {
@@ -119,7 +110,7 @@ public abstract class AbstractGLImagingExtension extends
         String shaderProgram = getShaderProgramName();
 
         int repaints = 0;
-        Set<String> errorMsgs = new HashSet<String>();
+        Set<String> errorMsgs = new HashSet<>();
 
         GLShaderProgram program = null;
         boolean attemptedToLoadShader = false;
@@ -186,7 +177,8 @@ public abstract class AbstractGLImagingExtension extends
                     }
 
                     if (drawCoverage(paintProps, extent,
-                            glImage.getTextureCoords(), 0) == PaintStatus.REPAINT) {
+                            glImage.getTextureCoords(),
+                            0) == PaintStatus.REPAINT) {
                         // Coverage not ready, needs repaint
                         ++repaints;
                     }
@@ -233,7 +225,7 @@ public abstract class AbstractGLImagingExtension extends
             program.endShader();
         }
 
-        if (errorMsgs.size() > 0) {
+        if (!errorMsgs.isEmpty()) {
             throw new VizException("Error rendering " + errorMsgs.size()
                     + " images: " + errorMsgs);
         }
@@ -243,7 +235,7 @@ public abstract class AbstractGLImagingExtension extends
             target.setNeedsRefresh(true);
         }
 
-        return needsRepaint == false;
+        return !needsRepaint;
     }
 
     /**
@@ -271,8 +263,8 @@ public abstract class AbstractGLImagingExtension extends
 
         // if mesh exists, use it
         if (mesh != null) {
-            if (mesh instanceof AbstractGLMesh) {
-                return ((AbstractGLMesh) mesh).paint(target, paintProps);
+            if (mesh instanceof IGLMesh) {
+                return ((IGLMesh) mesh).paint(target, paintProps);
             }
         } else if (coords != null) {
 
@@ -301,21 +293,21 @@ public abstract class AbstractGLImagingExtension extends
             /* allocate 2 vertex buffers */
             IntBuffer vboIds = IntBuffer.allocate(2);
             gl.glGenBuffers(2, vboIds);
-            /*  Upload the vertex coordiantes */
+            /* Upload the vertex coordinates */
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboIds.get(0));
             gl.glBufferData(GL.GL_ARRAY_BUFFER, 8 * 4, vertices.rewind(),
                     GL.GL_STREAM_DRAW);
             gl.glVertexPointer(2, GL.GL_FLOAT, 0, 0);
-            /*  Upload the texture coordiantes */
+            /* Upload the texture coordinates */
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, vboIds.get(1));
             gl.glBufferData(GL.GL_ARRAY_BUFFER, 8 * 4, texCoords.rewind(),
                     GL.GL_STREAM_DRAW);
             gl.glTexCoordPointer(2, GL.GL_FLOAT, 0, 0);
 
-            /*  Unbind */
+            /* Unbind */
             gl.glBindBuffer(GL.GL_ARRAY_BUFFER, 0);
 
-            /*  Do the actual draw */
+            /* Do the actual draw */
             gl.glDrawArrays(GL.GL_TRIANGLE_STRIP, 0, 4);
 
             /* Delete vertex buffers. */
@@ -382,12 +374,6 @@ public abstract class AbstractGLImagingExtension extends
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.drawables.ext.GraphicsExtension#
-     * getCompatibilityValue(com.raytheon.uf.viz.core.IGraphicsTarget)
-     */
     @Override
     public int getCompatibilityValue(IGLTarget target) {
         return Compatibilty.TARGET_COMPATIBLE;

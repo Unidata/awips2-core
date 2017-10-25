@@ -23,6 +23,8 @@ import java.nio.IntBuffer;
 
 import javax.media.opengl.GL;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.viz.core.gl.internal.GLTarget;
 
 /**
@@ -37,13 +39,14 @@ import com.raytheon.viz.core.gl.internal.GLTarget;
  * ------------- -------- ----------- --------------------------
  * Jun 06, 2011           mschenke    Initial creation
  * Apr 08, 2014  2950     bsteffen    Add max texture size.
+ * Oct 25, 2017  6387     bsteffen    Use IUFStatusHandler instead of System.out
+ *                                    and disable shaders when float textures
+ *                                    aren't available.
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public class GLCapabilities {
 
     private static GLCapabilities caps = null;
@@ -61,37 +64,33 @@ public class GLCapabilities {
     /** Does the video card support shaders */
     public boolean cardSupportsShaders = false;
 
-    public boolean textureRectangleSupported;
-
     public final int maxTextureSize;
 
     private GLCapabilities(GL gl) {
+        IUFStatusHandler logger = UFStatus.getHandler(GLCapabilities.class);
         String openGlVersion = gl.glGetString(GL.GL_VERSION);
         float glVersion = Float.parseFloat(openGlVersion.substring(0, 3));
 
         if (glVersion >= 1.4f) {
-            System.out.println("Enabling high end GL features");
+            logger.debug("Enabling high end GL features");
             cardSupportsHighEndFeatures = true;
 
         }
         boolean imagingAvailable = gl.isExtensionAvailable("GL_ARB_imaging");
-
-        System.out.println("Imaging is available: " + imagingAvailable);
-        this.textureRectangleSupported = gl
-                .isExtensionAvailable("GL_ARB_texture_rectangle");
+        logger.debug("Imaging is available: " + imagingAvailable);
 
         if (glVersion >= 2.0f && !GLTarget.FORCE_NO_SHADER) {
-            cardSupportsShaders = true;
-
-            if (this.textureRectangleSupported) {
-                gl.glEnable(GL.GL_TEXTURE_RECTANGLE_ARB);
-            }
-
-            if (this.textureRectangleSupported) {
-                gl.glDisable(GL.GL_TEXTURE_RECTANGLE_ARB);
+            boolean floatAvailable = gl
+                    .isExtensionAvailable("GL_ARB_texture_float");
+            if (!floatAvailable) {
+                logger.info(
+                        "Shader disabled because support for float textures is missing");
+            } else {
+                cardSupportsShaders = true;
             }
         }
-        System.out.println("Shader supported: " + cardSupportsShaders);
+        logger.debug("Shader supported: " + cardSupportsShaders);
+
         IntBuffer ib = IntBuffer.allocate(1);
         gl.glGetIntegerv(GL.GL_MAX_TEXTURE_SIZE, ib);
         ib.rewind();
