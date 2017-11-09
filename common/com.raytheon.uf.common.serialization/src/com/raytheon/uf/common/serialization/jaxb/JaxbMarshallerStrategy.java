@@ -74,7 +74,7 @@ public class JaxbMarshallerStrategy {
     private static final Logger log = Logger
             .getLogger(JaxbMarshallerStrategy.class.getName());
 
-    private boolean useValidation;
+    private boolean useValidation = true;
 
     public JaxbMarshallerStrategy() {
         this(true);
