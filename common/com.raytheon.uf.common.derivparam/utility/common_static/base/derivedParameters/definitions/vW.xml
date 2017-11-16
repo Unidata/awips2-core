@@ -86,18 +86,6 @@
         <Field unit="m*762/25" abbreviation="GH"/>
         <ConstantField value="40.0"/>
     </Method>
-    <Method models="profiler" levels="Station" name="QcFilter">
-        <Field abbreviation="vComponent"/>
-        <Field abbreviation="uvQualityCode"/>
-    </Method>
-    <Method models="profiler" levels="MB,FHAG" name="ColumnSample">
-        <Field level="Station" abbreviation="vW"/>
-        <Field level="Station" abbreviation="height"/>
-        <Field level="Station" abbreviation="numProfLvls"/>
-        <Field abbreviation="GH"/>
-        <Field abbreviation="vW" level="Surface"/>
-        <Field abbreviation="GH" level="Surface"/>
-    </Method>
     <Method models="modelsounding" levels="MB" name="Interp">
         <Field level="Station" abbreviation="vComp"/>
         <Field unit="hPa" level="Station" abbreviation="pressure"/>

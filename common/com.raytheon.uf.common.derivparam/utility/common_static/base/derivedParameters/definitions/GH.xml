@@ -157,18 +157,6 @@
         <Field level="Station" abbreviation="latitude" />
         <Field level="Station" abbreviation="longitude" />
     </Method>
-    <Method models="profiler" levels="MB,S" name="HeightOf">
-        <Field level="Station" abbreviation="latitude" />
-        <Field level="Station" abbreviation="longitude" />
-        <Field level="Station" abbreviation="validTime" />
-    </Method>
-    <Method models="profiler" levels="Surface" name="Alias">
-        <Field abbreviation="elevation" level="Station" />
-    </Method>
-    <Method models="profiler" levels="FHAG" name="Add">
-        <Field level="Station" abbreviation="elevation" />
-        <Field abbreviation="FHAG" />
-    </Method>
     <Method models="radarVWP" levels="FHAG" name="Add">
         <Field level="Station" abbreviation="staElev" />
         <Field abbreviation="FHAG" />
