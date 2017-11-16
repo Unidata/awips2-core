@@ -322,7 +322,7 @@
          id="org.slf4j"
          download-size="0"
          install-size="0"
-         version="1.7.21"/>
+         version="1.7.25"/>
 
    <plugin
          id="org.springframework"
