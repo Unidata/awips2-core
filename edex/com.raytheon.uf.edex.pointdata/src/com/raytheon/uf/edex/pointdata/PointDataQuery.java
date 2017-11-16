@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -32,6 +32,7 @@ import java.util.Set;
 
 import javax.measure.converter.UnitConverter;
 
+import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
@@ -43,6 +44,8 @@ import com.raytheon.uf.common.pointdata.ParameterDescription;
 import com.raytheon.uf.common.pointdata.PointDataContainer;
 import com.raytheon.uf.common.pointdata.PointDataDescription;
 import com.raytheon.uf.common.pointdata.PointDataView;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.plugin.PluginDao;
 import com.raytheon.uf.edex.database.plugin.PluginFactory;
@@ -51,20 +54,20 @@ import com.raytheon.uf.edex.pointdata.PointDataPluginDao.LevelRequest;
 
 /**
  * A query task for accessing point data
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 15, 2009            chammack    Initial creation
  * May 09, 2013 1869       bsteffen    Modified D2D time series of point data to
  *                                     work without dataURI.
- * 
+ * Nov 16, 2017 6367       tgurney     Send timing information to log file
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
 public class PointDataQuery {
@@ -77,21 +80,23 @@ public class PointDataQuery {
 
     protected PointDataPluginDao.LevelRequest requestStyle = LevelRequest.NONE;
 
-    public PointDataQuery(final String plugin) throws DataAccessLayerException,
-            PluginException {
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PointDataQuery.class);
+
+    public PointDataQuery(final String plugin)
+            throws DataAccessLayerException, PluginException {
         try {
             PluginDao pd = PluginFactory.getInstance().getPluginDao(plugin);
             if (!(pd instanceof PointDataPluginDao)) {
-                throw new PluginException(plugin
-                        + " DAO is not a point data DAO");
+                throw new PluginException(
+                        plugin + " DAO is not a point data DAO");
             }
             this.dao = (PointDataPluginDao<?>) pd;
             this.query = new DatabaseQuery(pd.getDaoClass());
         } catch (Exception e) {
-            e.printStackTrace();
             throw new DataAccessLayerException(
-                    "Unable to instantiate data access object on database: "
-                            + plugin, e);
+                    "Unable to instantiate data access object for " + plugin,
+                    e);
         }
     }
 
@@ -116,7 +121,8 @@ public class PointDataQuery {
         this.requestStyle = LevelRequest.ALL;
     }
 
-    public void requestSpecificLevel(final String parameter, final String vals) {
+    public void requestSpecificLevel(final String parameter,
+            final String vals) {
         String[] valList = vals.split(",");
         double[] d = new double[valList.length];
         for (int i = 0; i < d.length; i++) {
@@ -129,7 +135,7 @@ public class PointDataQuery {
 
     public ResponseMessageCatalog getAvailableParameters() throws Exception {
 
-        Set<String> parameters = new HashSet<String>();
+        Set<String> parameters = new HashSet<>();
 
         PointDataDbDescription dbDesc = dao.getPointDataDbDescription();
         if (dbDesc != null) {
@@ -139,7 +145,7 @@ public class PointDataQuery {
         }
         boolean needsDbQuery = false;
         for (String key : dao.getKeysRequiredForFileName()) {
-            if (!key.equals("dataTime.refTime")) {
+            if (!PluginDataObject.REFTIME_ID.equals(key)) {
                 needsDbQuery = true;
                 break;
             }
@@ -179,10 +185,10 @@ public class PointDataQuery {
         query.setMaxResults(limit);
         List<?> queryResults = dao.queryByCriteria(query);
 
-        List<Map<String, Object>> results = new ArrayList<Map<String, Object>>();
+        List<Map<String, Object>> results = new ArrayList<>();
 
         for (Object o : queryResults) {
-            Map<String, Object> workingMap = new HashMap<String, Object>();
+            Map<String, Object> workingMap = new HashMap<>();
             if (o instanceof Object[]) {
                 Object[] oArr = (Object[]) o;
                 for (int i = 0; i < fields.size(); i++) {
@@ -198,16 +204,11 @@ public class PointDataQuery {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.uengine.tasks.query.TableQuery#execute()
-     */
     public PointDataContainer execute() throws Exception {
 
-        List<String> hdf5attribList = new ArrayList<String>();
-        HashSet<String> dbAttribSet = new HashSet<String>();
-        List<DbParameterDescription> dbParamDesc = new ArrayList<DbParameterDescription>();
+        List<String> hdf5attribList = new ArrayList<>();
+        HashSet<String> dbAttribSet = new HashSet<>();
+        List<DbParameterDescription> dbParamDesc = new ArrayList<>();
 
         PointDataDbDescription dbDesc = dao.getPointDataDbDescription();
         if (dbDesc == null) {
@@ -231,13 +232,13 @@ public class PointDataQuery {
         }
 
         List<Map<String, Object>> dbResults = performDbQuery(
-                new ArrayList<String>(dbAttribSet), 999999);
+                new ArrayList<>(dbAttribSet), 999_999);
 
         if ((dbResults == null) || dbResults.isEmpty()) {
             return null;
         }
 
-        Map<Integer, Map<String, Object>> dbResultMap = new HashMap<Integer, Map<String, Object>>();
+        Map<Integer, Map<String, Object>> dbResultMap = new HashMap<>();
         PointDataContainer masterPDC = null;
 
         if (hdf5attribList.isEmpty()) {
@@ -247,21 +248,20 @@ public class PointDataQuery {
                 idArr[j] = (Integer) workingMap.get("id");
                 dbResultMap.put(idArr[j], workingMap);
             }
-            masterPDC = PointDataContainer
-                    .build(new IDataRecord[] { new IntegerDataRecord("id", "",
-                            idArr) });
+            masterPDC = PointDataContainer.build(new IDataRecord[] {
+                    new IntegerDataRecord("id", "", idArr) });
             masterPDC.setCurrentSz(masterPDC.getAllocatedSz());
         } else {
-            List<String> files = new ArrayList<String>();
-            List<List<Integer>> ids = new ArrayList<List<Integer>>();
-            List<List<Integer>> indexes = new ArrayList<List<Integer>>();
+            List<String> files = new ArrayList<>();
+            List<List<Integer>> ids = new ArrayList<>();
+            List<List<Integer>> indexes = new ArrayList<>();
 
             for (Map<String, Object> workingMap : dbResults) {
                 int id = (Integer) workingMap.get("id");
                 int idx = (Integer) workingMap.get("pointDataView.curIdx");
                 dbResultMap.put(id, workingMap);
                 // Clone is needed because getPointDataFileName alters the map
-                workingMap = new HashMap<String, Object>(workingMap);
+                workingMap = new HashMap<>(workingMap);
                 String fileName = dao.getPointDataFileName(workingMap);
                 int listIndex = files.indexOf(fileName);
                 if (listIndex == -1) {
@@ -269,9 +269,9 @@ public class PointDataQuery {
                     files.add(fileName);
                     ids.add(new ArrayList<Integer>());
                     indexes.add(new ArrayList<Integer>());
-                    hdf5attribList.retainAll(Arrays.asList(dao
-                            .getPointDataDescription(workingMap)
-                            .getParameterNames()));
+                    hdf5attribList.retainAll(Arrays
+                            .asList(dao.getPointDataDescription(workingMap)
+                                    .getParameterNames()));
                 }
                 ids.get(listIndex).add(id);
                 indexes.get(listIndex).add(idx);
@@ -279,7 +279,7 @@ public class PointDataQuery {
             long t0 = System.currentTimeMillis();
             for (int i = 0; i < files.size(); i++) {
                 File file = new File(files.get(i));
-                List<String> attribSet = new ArrayList<String>(hdf5attribList);
+                List<String> attribSet = new ArrayList<>(hdf5attribList);
                 int[] idxArr = new int[indexes.get(i).size()];
                 int[] idArr = new int[ids.get(i).size()];
                 for (int j = 0; j < idArr.length; j++) {
@@ -297,8 +297,8 @@ public class PointDataQuery {
                 }
             }
             long t1 = System.currentTimeMillis();
-            System.out
-                    .println("Total time spent on pointdata hdf5 retrieval (all files): "
+            statusHandler
+                    .info("Total time spent on pointdata hdf5 retrieval (all files): "
                             + (t1 - t0));
         }
 
@@ -310,15 +310,15 @@ public class PointDataQuery {
                     FloatDataRecord frec = new FloatDataRecord(
                             desc.getParameterName(), "", fdata);
                     if (desc.getFillValue() != null) {
-                        frec.setFillValue(Float.parseFloat(desc.getFillValue()));
+                        frec.setFillValue(
+                                Float.parseFloat(desc.getFillValue()));
                     }
                     masterPDC.add(frec, desc.getUnit());
                     break;
                 case INT:
                     int[] idata = new int[masterPDC.getCurrentSz()];
-                    masterPDC
-                            .add(new IntegerDataRecord(desc.getParameterName(),
-                                    "", idata), desc.getUnit());
+                    masterPDC.add(new IntegerDataRecord(desc.getParameterName(),
+                            "", idata), desc.getUnit());
                     break;
                 case LONG:
                     long[] ldata = new long[masterPDC.getCurrentSz()];

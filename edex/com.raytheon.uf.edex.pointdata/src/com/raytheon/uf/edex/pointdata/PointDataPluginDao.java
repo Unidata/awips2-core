@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,8 +33,6 @@ import java.util.Set;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import javax.xml.bind.JAXBException;
-
-import net.sf.cglib.beans.BeanMap;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -60,12 +58,14 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
 import com.raytheon.uf.edex.database.plugin.PluginDao;
 
+import net.sf.cglib.beans.BeanMap;
+
 /**
  * Provides an extension to PluginDao that provides access for PointData data
  * types
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
@@ -79,16 +79,16 @@ import com.raytheon.uf.edex.database.plugin.PluginDao;
  * Jan 03, 2014  2309     bsteffen    Allow fcstTime in hdf5 path.
  * Jan 09, 2014  1998     bclement    fixed NPE in persistToHDF5 when store failed
  * Nov 20, 2014  3853     njensen     Improved javadoc of getPointDataDescription()
- * 
+ * Nov 16, 2017  6367     tgurney     Send timing information to log file
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
-public abstract class PointDataPluginDao<T extends PluginDataObject> extends
-        PluginDao {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+public abstract class PointDataPluginDao<T extends PluginDataObject>
+        extends PluginDao {
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PointDataPluginDao.class);
 
     public static enum LevelRequest {
@@ -109,16 +109,10 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
             this.values = values;
         }
 
-        /**
-         * @return the parameter
-         */
         public String getParameter() {
             return parameter;
         }
 
-        /**
-         * @return the values
-         */
         public double[] getValues() {
             return values;
         }
@@ -134,16 +128,9 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
     public PointDataPluginDao(String pluginName) throws PluginException {
         super(pluginName);
         this.pathProvider = new PointDataHDFFileProvider();
-        this.beanMapCache = new LinkedBlockingQueue<BeanMap>();
+        this.beanMapCache = new LinkedBlockingQueue<>();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.db.dao.PluginDao#persistToHDF5(com.raytheon.uf.common
-     * .dataplugin.PluginDataObject[])
-     */
     @Override
     public StorageStatus persistToHDF5(PluginDataObject... records)
             throws PluginException {
@@ -152,9 +139,9 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
         // NOTE: currently making the assumption that models aren't
         // mixed in the records aggregate. If this isn't true,
         // some pre-processing will be needed.
-        Map<PointDataContainer, List<PointDataView>> containerMap = new HashMap<PointDataContainer, List<PointDataView>>(
+        Map<PointDataContainer, List<PointDataView>> containerMap = new HashMap<>(
                 records.length);
-        Map<PointDataContainer, File> fileMap = new HashMap<PointDataContainer, File>();
+        Map<PointDataContainer, File> fileMap = new HashMap<>();
 
         for (PluginDataObject p : records) {
             if (p instanceof IPointData) {
@@ -162,7 +149,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
                 List<PointDataView> views = containerMap
                         .get(pdv.getContainer());
                 if (views == null) {
-                    views = new ArrayList<PointDataView>();
+                    views = new ArrayList<>();
                     containerMap.put(pdv.getContainer(), views);
                 }
                 views.add(pdv);
@@ -175,17 +162,17 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
             }
         }
 
-        List<StorageStatus> ssList = new ArrayList<StorageStatus>();
+        List<StorageStatus> ssList = new ArrayList<>();
         try {
             for (PointDataContainer container : containerMap.keySet()) {
-                IDataStore ds = DataStoreFactory.getDataStore(fileMap
-                        .get(container));
+                IDataStore ds = DataStoreFactory
+                        .getDataStore(fileMap.get(container));
                 StorageProperties sp = new StorageProperties();
                 String compression = PluginRegistry.getInstance()
                         .getRegisteredObject(pluginName).getCompression();
                 if (compression != null) {
-                    sp.setCompression(StorageProperties.Compression
-                            .valueOf(compression));
+                    sp.setCompression(
+                            StorageProperties.Compression.valueOf(compression));
                 }
 
                 Set<String> params = container.getParameters();
@@ -214,20 +201,20 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
             }
             // Aggregate the storage status errors
             StorageStatus aggregatedStatus = new StorageStatus();
-            List<StorageException> se = new ArrayList<StorageException>();
+            List<StorageException> se = new ArrayList<>();
             for (StorageStatus ss : ssList) {
                 if (ss.hasExceptions()) {
                     se.addAll(Arrays.asList(ss.getExceptions()));
                 }
             }
 
-            aggregatedStatus.setExceptions(se.toArray(new StorageException[se
-                    .size()]));
+            aggregatedStatus
+                    .setExceptions(se.toArray(new StorageException[se.size()]));
             return aggregatedStatus;
         }
 
         finally {
-            System.out.println("Time spent in persist: "
+            statusHandler.info("Time spent in persist: "
                     + (System.currentTimeMillis() - t0));
         }
 
@@ -237,10 +224,8 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
         File file;
         String directory = p.getPluginName() + File.separator
                 + pathProvider.getHDFPath(p.getPluginName(), (IPersistable) p);
-        file = new File(directory
-                + File.separator
-                + pathProvider.getHDFFileName(p.getPluginName(),
-                        (IPersistable) p));
+        file = new File(directory + File.separator + pathProvider
+                .getHDFFileName(p.getPluginName(), (IPersistable) p));
         return file;
     }
 
@@ -271,21 +256,22 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
     /**
      * Gets the point data description for the dataplugin that is associated
      * with this DAO.
-     * 
+     *
      * TODO: Contemplate reworking this method or separating into two distinct
      * methods. Note that the map argument is ignored by almost all
      * implementations of this method. For the special cases the caller should
      * perhaps come up with a different solution.
-     * 
+     *
      * @param obj
      *            a map that is ignored by most implementations
      * @return the point data description for the dataplugin
      */
-    public PointDataDescription getPointDataDescription(Map<String, Object> obj) {
+    public PointDataDescription getPointDataDescription(
+            Map<String, Object> obj) {
         if (hdf5DataDescription == null) {
             try {
-                hdf5DataDescription = PointDataDescription.fromStream(this
-                        .getClass().getResourceAsStream(
+                hdf5DataDescription = PointDataDescription
+                        .fromStream(this.getClass().getResourceAsStream(
                                 "/res/pointdata/" + pluginName + ".xml"));
             } catch (SerializationException e) {
                 statusHandler.error("Unable to load " + pluginName
@@ -312,8 +298,8 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
     }
 
     public PointDataContainer getPointData(File file, int[] indexes, int[] ids,
-            String[] attributes, LevelRequest request) throws StorageException,
-            FileNotFoundException {
+            String[] attributes, LevelRequest request)
+            throws StorageException, FileNotFoundException {
 
         IndexIdPair[] iip = new IndexIdPair[ids.length];
         for (int i = 0; i < iip.length; i++) {
@@ -347,17 +333,17 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
             System.arraycopy(indexes, 0, copy, 0, indexes.length);
             dsRequest = Request.buildYLineRequest(copy);
         } else {
-            throw new IllegalArgumentException("Unknown LevelRequest: "
-                    + request);
+            throw new IllegalArgumentException(
+                    "Unknown LevelRequest: " + request);
         }
 
         long t0 = System.currentTimeMillis();
         IDataRecord[] recs = ds.retrieveDatasets(attributes, dsRequest);
         long t1 = System.currentTimeMillis();
-        System.out.println("Time spent on pointdata hdf5 retrieval from file "
+        statusHandler.info("Time spent on pointdata hdf5 retrieval from file "
                 + file.getPath() + ": " + (t1 - t0));
 
-        List<IDataRecord> recList = new ArrayList<IDataRecord>();
+        List<IDataRecord> recList = new ArrayList<>();
         if (request != LevelRequest.SPECIFIC) {
             recList.addAll(Arrays.asList(recs));
         } else {
@@ -473,7 +459,8 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
                 // went off the end of search. double check the other half of
                 // the array
                 boolean found = false;
-                search2: for (k = 0; (k < originalPointer) && (k < iip.length); k++) {
+                search2: for (k = 0; (k < originalPointer)
+                        && (k < iip.length); k++) {
                     if (iip[k].index == retrievedIndexes[i]) {
                         correlatedIds[i] = iip[k].id;
                         break search2;
@@ -489,8 +476,8 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
 
         IntegerDataRecord idr = new IntegerDataRecord("id", "", correlatedIds);
         recList.add(idr);
-        return PointDataContainer.build(recList.toArray(new IDataRecord[recList
-                .size()]));
+        return PointDataContainer
+                .build(recList.toArray(new IDataRecord[recList.size()]));
     }
 
     public abstract String[] getKeysRequiredForFileName();
@@ -522,12 +509,10 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
     }
 
     protected String generatePointDataFileName(T bean) {
-        return this.pluginName
-                + File.separator
+        return this.pluginName + File.separator
                 + this.pathProvider.getHDFPath(this.pluginName,
                         (IPersistable) bean)
-                + File.separator
-                + getPointDataFileName(bean).replace(".h5", "")
+                + File.separator + getPointDataFileName(bean).replace(".h5", "")
                 + DefaultPathProvider.fileNameFormat.get().format(
                         ((PluginDataObject) bean).getDataTime().getRefTime())
                 + ".h5";
@@ -541,9 +526,10 @@ public abstract class PointDataPluginDao<T extends PluginDataObject> extends
 
         @SuppressWarnings("unchecked")
         @Override
-        public String getHDFFileName(String pluginName, IPersistable persistable) {
-            StringBuilder tmp = new StringBuilder(getPointDataFileName(
-                    (T) persistable).replace(".h5", ""));
+        public String getHDFFileName(String pluginName,
+                IPersistable persistable) {
+            StringBuilder tmp = new StringBuilder(
+                    getPointDataFileName((T) persistable).replace(".h5", ""));
             Date refTime = ((PluginDataObject) persistable).getDataTime()
                     .getRefTime();
             tmp.append(fileNameFormat.get().format(refTime));
