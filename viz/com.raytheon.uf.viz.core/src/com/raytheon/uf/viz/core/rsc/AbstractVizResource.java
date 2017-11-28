@@ -20,9 +20,10 @@
 package com.raytheon.uf.viz.core.rsc;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Map;
+import java.util.NavigableSet;
 import java.util.Set;
+import java.util.concurrent.ConcurrentSkipListSet;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.core.runtime.IProgressMonitor;
@@ -62,27 +63,28 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Feb 04, 2009           chammack    Initial creation from original IVizResource
- * Mar 03, 2009  2032     jsanchez    Added getDescriptor and paintProps.
- * Mar 29, 2013  1638     mschenke    Fixed leak of data change listener
- * Jun 24, 2013  2140     randerso    Added getSafeName method
- * Nov 18, 2013  2544     bsteffen    Add recycleInternal so IResourceGroups
- *                                    can recycle better.
- * Mar 05, 2014  2843     bsteffen    Set status to disposed during recycle and
- *                                    when recycle fails.
- * Jul 30, 2015  17761    D. Friemdan Support time matching based on descriptor
- *                                    frame times.
- * Apr 18, 2017  6047     bsteffen    synchronize access to dataTimes to prevent
- * Sep 28, 2017  DR 20316 D. Friemdan Refresh on property change.
- *                                    unexpected exceptions.
+ * 
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -------------------------------------------
+ * Feb 04, 2009           chammack   Initial creation from original IVizResource
+ * Mar 03, 2009  2032     jsanchez   Added getDescriptor and paintProps.
+ * Mar 29, 2013  1638     mschenke   Fixed leak of data change listener
+ * Jun 24, 2013  2140     randerso   Added getSafeName method
+ * Nov 18, 2013  2544     bsteffen   Add recycleInternal so IResourceGroups can
+ *                                   recycle better.
+ * Mar 05, 2014  2843     bsteffen   Set status to disposed during recycle and
+ *                                   when recycle fails.
+ * Jul 30, 2015  17761    dfriemdan  Support time matching based on descriptor
+ *                                   frame times.
+ * Apr 18, 2017  6047     bsteffen   synchronize access to dataTimes to prevent
+ * Sep 28, 2017  20316    dfriemdan  Refresh on property change. unexpected
+ *                                   exceptions.
+ * Nov 28, 2017  5863     bsteffen   Change dataTimes to a NavigableSet
  * 
  * </pre>
  * 
  * @author chammack
  */
-@SuppressWarnings("unchecked")
 public abstract class AbstractVizResource<T extends AbstractResourceData, D extends IDescriptor> {
 
     protected static final transient IUFStatusHandler statusHandler = UFStatus
@@ -97,10 +99,11 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     private PaintStatus paintStatus = PaintStatus.REPAINT;
 
     /**
-     * Should be returned if a resource does not pertain to time (e.g. static
-     * map backgrounds)
+     * @deprecated {@link #isTimeAgnostic()} should be used to check if a
+     *             resource is time agnostic.
      */
-    public static final List<DataTime> TIME_AGNOSTIC = Collections.emptyList();
+    public static final NavigableSet<DataTime> TIME_AGNOSTIC = Collections
+            .emptyNavigableSet();
 
     /**
      * The descriptor that this resource is contained in. This is frequently
@@ -122,7 +125,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * to load and unload specific times from the list of times as they become
      * available or no longer needed.
      */
-    protected List<DataTime> dataTimes = TIME_AGNOSTIC;
+    protected final NavigableSet<DataTime> dataTimes;
 
     /**
      * The LoadProperties used to load the resource
@@ -168,9 +171,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     };
 
     /**
-     * The base constructor
-     * 
-     * This must be implemented and called by any concrete class class
+     * Create a new time agnostic resource.
      * 
      * @param resourceData
      *            the resource data
@@ -179,6 +180,20 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      */
     protected AbstractVizResource(T resourceData,
             LoadProperties loadProperties) {
+        this(resourceData, loadProperties, true);
+    }
+
+    /**
+     * Create a new resource.
+     * 
+     * @param resourceData
+     *            the resource data
+     * @param timeAgnostic
+     *            true if this resource is time agnostic which causes
+     *            {@link #dataTimes} to be set to an empty unmodifiable set.
+     */
+    protected AbstractVizResource(T resourceData, LoadProperties loadProperties,
+            boolean timeAgnostic) {
         this.resourceData = resourceData;
         this.loadProperties = loadProperties;
         refreshListeners = new CopyOnWriteArraySet<>();
@@ -189,6 +204,11 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
         if (resourceData != null) {
             resourceData.addChangeListener(changeListener);
+        }
+        if (timeAgnostic) {
+            this.dataTimes = TIME_AGNOSTIC;
+        } else {
+            this.dataTimes = new ConcurrentSkipListSet<>();
         }
     }
 
@@ -242,13 +262,13 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     }
 
     /**
-     * Get a list of displayable times
+     * Get a list of displayable times. The list will be sorted according to the natural ordering of DataTimes.
      * 
      * @return the currently loaded set of datatimes
      */
     public DataTime[] getDataTimes() {
         synchronized (dataTimes) {
-            return this.dataTimes.toArray(new DataTime[this.dataTimes.size()]);
+            return this.dataTimes.toArray(new DataTime[0]);
         }
     }
 
@@ -814,7 +834,8 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     }
 
     /**
-     * Method that declares if the resource is time agnostic
+     * Method that declares if the resource is time agnostic. A time agnostic
+     * resource does not pertain to time (e.g. static map backgrounds)
      * 
      * @return true if resource is time agnostic
      */

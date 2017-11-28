@@ -149,6 +149,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 14, 2015  4079     bsteffen  Move to core.grid, add getDisplayUnit
  * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
  * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
+ * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * 
  * </pre>
  * 
@@ -158,7 +159,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 public abstract class AbstractGridResource<T extends AbstractResourceData>
         extends AbstractVizResource<T, IMapDescriptor>
         implements ImageProvider, Interrogatable {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
 
     /* Unknown source, provides acceptable vector size. */
@@ -186,26 +187,26 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /** @deprecated Use {@link Interrogator#VALUE} */
     @Deprecated
-    public static final String INTERROGATE_VALUE = "value";
+    private static final String INTERROGATE_VALUE = "value";
 
     /** @deprecated Use {@link Interrogator#VALUE} */
     @Deprecated
-    public static final String INTERROGATE_UNIT = "unit";
+    private static final String INTERROGATE_UNIT = "unit";
 
     /** @deprecated Use {@link #DIRECTION_INTERROGATE_KEY} */
     @Deprecated
-    public static final String INTERROGATE_DIRECTION = "direction";
+    private static final String INTERROGATE_DIRECTION = "direction";
 
     private final GridDataRequestRunner requestRunner;
 
-    private Map<DataTime, List<PluginDataObject>> pdoMap = new ConcurrentHashMap<DataTime, List<PluginDataObject>>();
+    private Map<DataTime, List<PluginDataObject>> pdoMap = new ConcurrentHashMap<>();
 
-    private Map<DataTime, List<IRenderable>> renderableMap = new ConcurrentHashMap<DataTime, List<IRenderable>>();
+    private Map<DataTime, List<IRenderable>> renderableMap = new ConcurrentHashMap<>();
 
     /**
      * This is a local cache of data that is used when sampling or reprojected.
      */
-    private Map<DataTime, List<GeneralGridData>> dataMap = new ConcurrentHashMap<DataTime, List<GeneralGridData>>();
+    private Map<DataTime, List<GeneralGridData>> dataMap = new ConcurrentHashMap<>();
 
     /**
      * StylePreferences from the styleManager appropriate for the display type
@@ -220,7 +221,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     protected AbstractGridResource(T resourceData,
             LoadProperties loadProperties) {
-        super(resourceData, loadProperties);
+        super(resourceData, loadProperties, false);
         resourceData.addChangeListener(new IResourceDataChanged() {
             @Override
             public void resourceChanged(ChangeType type, Object object) {
@@ -254,7 +255,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 }
             }
         });
-        dataTimes = new ArrayList<DataTime>();
         requestRunner = new GridDataRequestRunner(this);
         // Capabilities need to be inited in construction for things like the
         // image combination tool.
@@ -277,7 +277,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         }
         List<PluginDataObject> pdos = this.pdoMap.get(time);
         if (pdos == null) {
-            pdos = new ArrayList<PluginDataObject>();
+            pdos = new ArrayList<>();
             this.pdoMap.put(time, pdos);
         }
         if (pdos.contains(pdo)) {
@@ -297,9 +297,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         }
         requestRunner.remove(time);
         dataMap.remove(time);
-        if (!dataTimes.contains(dataTimes)) {
-            dataTimes.add(time);
-        }
+        dataTimes.add(time);
     }
 
     /**
@@ -386,7 +384,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      */
     protected void initCapabilities() {
         DisplayType displayType = getDisplayType();
-        List<DisplayType> altDisplayTypes = new ArrayList<DisplayType>();
+        List<DisplayType> altDisplayTypes = new ArrayList<>();
         switch (displayType) {
         case IMAGE:
             if (!hasCapability(ImagingCapability.class)) {
@@ -403,8 +401,20 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             altDisplayTypes.add(DisplayType.BARB);
             altDisplayTypes.add(DisplayType.ARROW);
             altDisplayTypes.add(DisplayType.STREAMLINE);
+            altDisplayTypes.add(DisplayType.IMAGE);
+            getCapability(ColorableCapability.class);
+            getCapability(DensityCapability.class);
+            getCapability(MagnificationCapability.class);
+            getCapability(OutlineCapability.class);
+            break;
         case DUALARROW:
             altDisplayTypes.add(DisplayType.ARROW);
+            altDisplayTypes.add(DisplayType.IMAGE);
+            getCapability(ColorableCapability.class);
+            getCapability(DensityCapability.class);
+            getCapability(MagnificationCapability.class);
+            getCapability(OutlineCapability.class);
+            break;
         case CONTOUR:
             altDisplayTypes.add(DisplayType.IMAGE);
             getCapability(ColorableCapability.class);
@@ -768,7 +778,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 } else if (renderable instanceof ContourRenderable) {
                     ((ContourRenderable) renderable).dispose();
                 } else {
-                    System.err.println("Undisposed renderable of type: "
+                    statusHandler.warn("Undisposed renderable of type: "
                             + renderable.getClass().getSimpleName());
                 }
             }
@@ -872,7 +882,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             ColorMapParameters cmp = getCapability(ColorMapCapability.class)
                     .getColorMapParameters();
             if (cmp.getDataMapping() != null) {
-                double imageVal = cmp.getDisplayToImageConverter()
+                double imageVal = cmp.getDisplayToColorMapConverter()
                         .convert(value.getValue().doubleValue());
                 String mapResult = cmp.getDataMapping()
                         .getLabelValueForDataValue(imageVal);
@@ -1078,7 +1088,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (list == null) {
             return null;
         }
-        return new ArrayList<PluginDataObject>(list);
+        return new ArrayList<>(list);
     }
 
     @Override
@@ -1095,7 +1105,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             return Collections.emptyList();
         }
 
-        List<DrawableImage> images = new ArrayList<DrawableImage>();
+        List<DrawableImage> images = new ArrayList<>();
         for (IRenderable renderable : renderables) {
             images.addAll(((TileSetRenderable) renderable)
                     .getImagesToRender(target, paintProps));
@@ -1126,7 +1136,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     return Collections.emptyList();
                 }
 
-                renderables = new ArrayList<IRenderable>(dataList.size());
+                renderables = new ArrayList<>(dataList.size());
                 for (GeneralGridData data : dataList) {
                     IRenderable renderable = createRenderable(target, data);
                     if (renderable != null) {
