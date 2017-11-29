@@ -187,7 +187,7 @@
          id="com.fasterxml.jackson"
          download-size="0"
          install-size="0"
-         version="0.0.0"/>
+         version="2.8.10"/>
 
    <plugin
          id="javax.servlet"
