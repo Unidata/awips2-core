@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -119,15 +119,15 @@ import com.raytheon.viz.core.contours.rsc.displays.GriddedStreamlineDisplay;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *
  * A single resource that can be easily extended to draw contours, images, wind
  * barbs, arrows, streamlines, or icons for any data that can be represented as
  * a grid.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 09, 2011  7738     bsteffen  Initial creation
@@ -150,9 +150,9 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
  * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
- * 
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @param <T>
  */
@@ -187,15 +187,15 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /** @deprecated Use {@link Interrogator#VALUE} */
     @Deprecated
-    private static final String INTERROGATE_VALUE = "value";
+    protected static final String INTERROGATE_VALUE = "value";
 
     /** @deprecated Use {@link Interrogator#VALUE} */
     @Deprecated
-    private static final String INTERROGATE_UNIT = "unit";
+    protected static final String INTERROGATE_UNIT = "unit";
 
     /** @deprecated Use {@link #DIRECTION_INTERROGATE_KEY} */
     @Deprecated
-    private static final String INTERROGATE_DIRECTION = "direction";
+    protected static final String INTERROGATE_DIRECTION = "direction";
 
     private final GridDataRequestRunner requestRunner;
 
@@ -264,7 +264,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * Adds the pdo to the appropriate time and removes any renderable or data
      * cached for that time.
-     * 
+     *
      * @param pdo
      */
     protected void addDataObject(PluginDataObject pdo) {
@@ -303,7 +303,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * Should be called immediately after construction if this resource was
      * created from another GridResource to prevent requesting data again.
-     * 
+     *
      * @param data
      */
     protected void setData(Map<DataTime, List<GeneralGridData>> data) {
@@ -314,7 +314,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Update a renderable to reflect a changed capability.
-     * 
+     *
      * @param renderable
      * @param capability
      */
@@ -434,7 +434,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Gets style preferences from the StyleManager
-     * 
+     *
      * @throws StyleException
      */
     protected void initStylePreferences() throws StyleException {
@@ -500,7 +500,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Create a renderable for this data.
-     * 
+     *
      * @param target
      * @param data
      * @return
@@ -653,7 +653,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * Called the first time an image is drawn to initialize the color map
      * parameters
-     * 
+     *
      * @param data
      * @return
      * @throws VizException
@@ -697,14 +697,14 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Get the match criteria used for looking up style rules and/or colormaps.
-     * 
+     *
      * @return
      */
     public abstract ParamLevelMatchCriteria getMatchCriteria();
 
     /**
      * This method should return a data object for the given time and/or pdos.
-     * 
+     *
      * @param pdos
      *            Any pdos that have been added for this time.
      * @return
@@ -730,7 +730,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * Combine data records that are in the same grid space to avoid areas of
      * overlapping data.
-     * 
+     *
      * @param dataList
      * @return
      */
@@ -763,7 +763,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Dispose of a renderable.
-     * 
+     *
      * @param renderable
      */
     private void disposeRenderable(final IRenderable renderable) {
@@ -817,7 +817,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      * Attempt to reproject the renderable, if the renderable cannot be
      * reprojected return false and it will be disposed and a new one made for
      * the new projection.
-     * 
+     *
      * @param renderable
      * @return
      * @throws VizException
@@ -1036,7 +1036,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     /**
      * Shorthand method to get the DisplayType from the capability.
-     * 
+     *
      * @return
      */
     public DisplayType getDisplayType() {
@@ -1061,7 +1061,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * Reset renderables and any other data caches, data will be rerequested
      * next time it is needed.
-     * 
+     *
      */
     protected void clearRequestedData() {
         requestRunner.stopAndClear();
