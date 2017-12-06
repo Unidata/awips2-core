@@ -39,6 +39,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 10, 2016 4630       rjpeter     Initial creation
+ * Sep 08, 2017 DR 20135   D. Friedman Add system property to enable index rebuilding
  * 
  * </pre>
  * 
@@ -53,6 +54,8 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
     protected final List<Threshold> warningThresholds;
 
     protected final List<Threshold> criticalThresholds;
+
+    protected static final String REINDEXING_ENABLED_PROPERTY = "database.health.reindex.enable";
 
     public DatabaseBloatMonitor(BloatDao dao,
             List<Threshold> warningThresholds,
@@ -118,6 +121,8 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
                 criticalThresholds);
         List<IndexBloat> warningLevel = filter(indexBloatData,
                 warningThresholds);
+        boolean reindex = Boolean.parseBoolean(
+                System.getProperty(REINDEXING_ENABLED_PROPERTY, "true"));
 
         // print warning level messages
         for (IndexBloat info : warningLevel) {
@@ -132,24 +137,28 @@ public class DatabaseBloatMonitor implements DatabaseMonitor {
 
         for (IndexBloat info : criticalLevel) {
             if (EDEXUtil.isRunning()) {
+                String action = reindex ? "Reindexing..." : "Reindexing is disabled.  Manual reindex recommended.";
                 logger.warn(String
-                        .format("Database [%s] Index [%s] on Table [%s] has reached bloat CRITICAL threshold.  Index Size [%s], Bloat amount [%s], Bloat Percentage [%.2f].  Reindexing...",
+                        .format("Database [%s] Index [%s] on Table [%s] has reached bloat CRITICAL threshold.  Index Size [%s], Bloat amount [%s], Bloat Percentage [%.2f].  %s",
                                 getDatabase(),
                                 info.getIndexName(),
                                 info.getTableName(),
                                 SizeUtil.prettyByteSize(info.getRealSizeBytes()),
                                 SizeUtil.prettyByteSize(info.getBloatBytes()),
-                                info.getBloatPercent()));
-                try {
-                    long start = System.currentTimeMillis();
-                    dao.reindex(info);
-                    logger.info("REINDEX took: "
-                            + (System.currentTimeMillis() - start)
-                            + " ms. Bloat is now zero.");
-                } catch (Exception e) {
-                    logger.error(
-                            "Error occurred reindexing " + info.getIndexName(),
-                            e);
+                                info.getBloatPercent(),
+                                action));
+                if (reindex) {
+                    try {
+                        long start = System.currentTimeMillis();
+                        dao.reindex(info);
+                        logger.info("REINDEX took: "
+                                + (System.currentTimeMillis() - start)
+                                + " ms. Bloat is now zero.");
+                    } catch (Exception e) {
+                        logger.error(
+                                "Error occurred reindexing " + info.getIndexName(),
+                                e);
+                    }
                 }
             }
         }
