@@ -1,58 +1,11 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-    xmlns:util="http://www.springframework.org/schema/util"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
     http://www.springframework.org/schema/beans/spring-beans.xsd
     http://camel.apache.org/schema/spring
     http://camel.apache.org/schema/spring/camel-spring.xsd
     http://www.springframework.org/schema/util
     http://www.springframework.org/schema/util/spring-util.xsd">
-
-    <bean id="dbMonitorRegistry" class="com.raytheon.uf.edex.database.health.DatabaseMonitorRegistry"
-        factory-method="getInstance">
-    </bean>
-
-    <!-- Warning Thresholds: First arg is size of table/index in MB,
-         second is percent of table that is bloat -->
-    <util:list id="warningThresholds">
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="1000" />
-            <constructor-arg value="25" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="500" />
-            <constructor-arg value="30" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="100" />
-            <constructor-arg value="40" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="10" />
-            <constructor-arg value="50" />
-        </bean>
-    </util:list>
-
-    <!-- Critical Thresholds: First arg is size of table/index in MB,
-         second is percent of table that is bloat -->
-    <util:list id="criticalThresholds">
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="1000" />
-            <constructor-arg value="30" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="500" />
-            <constructor-arg value="40" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="100" />
-            <constructor-arg value="50" />
-        </bean>
-        <bean class="com.raytheon.uf.edex.database.health.Threshold">
-            <constructor-arg value="10" />
-            <constructor-arg value="60" />
-        </bean>
-    </util:list>
 
     <bean id="metadataBloatMonitor" class="com.raytheon.uf.edex.database.health.DatabaseBloatMonitor">
         <constructor-arg>
@@ -87,7 +40,7 @@
     <camelContext id="clusteredDatabaseMonitor" xmlns="http://camel.apache.org/schema/spring"
         errorHandlerRef="errorHandler">
         <!-- Route to periodically check the health of the database -->
-        <route id="jmsPooledResourceChecker">
+        <route id="clusteredDatabaseMonitorRoute">
             <from
                 uri="timer://databaseMonitor?period=2h&amp;delay=30m&amp;fixedRate=true" />
             <doTry>
