@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -54,6 +54,7 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 
 import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.ILocalizationPathObserver;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.MenuSerialization;
@@ -63,25 +64,26 @@ import com.raytheon.uf.common.menus.xml.VariableSubstitution;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
 
 /**
  * Discover the menu contributions present in localization.
- * 
+ *
  * This will check several locations:
  * <UL>
  * <LI>The plugin localization directory
  * <LI>The cave static directory
  * <LI>The user and site localization directory
  * </UL>
- * 
- * 
- * 
+ *
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 12, 2009  2214     chammack  Initial creation
@@ -89,15 +91,16 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  *                                  method to retrieve localized site.
  * Mar 20, 2013  1638     mschenke  Removed menu creation job use
  * May 04, 2015  4284     bsteffen  Copy subMenuId
- * Dec 10, 2015  5193      bsteffen     Eclipse 4 Upgrade: Workaround 48143 
+ * Dec 10, 2015  5193      bsteffen     Eclipse 4 Upgrade: Workaround 48143
  * Jan 15, 2016  5242     kbisanz   Replaced LocalizationFile with
  *                                  ILocalizationFile
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
- * 
+ * Dec 06, 2017  6355     nabowle   Observe path changes to rediscover menu
+ *                                  contributions.
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
 public class DiscoverMenuContributions {
@@ -106,52 +109,65 @@ public class DiscoverMenuContributions {
 
     private static boolean ran = false;
 
-    public static Schema schema;
+    private static List<AbstractContributionFactory> factories = new ArrayList<>();
+
+    private static MenuPathObserver observer;
+
+    public static final Schema schema;
+
+    static {
+        Schema sch = null;
+        try {
+            URL url = FileLocator.find(Activator.getDefault().getBundle(),
+                    new Path("menus.xsd"), null);
+            if (url == null) {
+                statusHandler.handle(Priority.CRITICAL,
+                        "Unable to load menu schema, menus will not operate properly");
+            }
+            url = FileLocator.resolve(url);
+            InputStream is = (InputStream) url.getContent();
+            StreamSource ss = new StreamSource(is);
+            sch = SchemaFactory.newInstance(XMLConstants.W3C_XML_SCHEMA_NS_URI)
+                    .newSchema(ss);
+        } catch (Exception e1) {
+            statusHandler.handle(Priority.CRITICAL,
+                    "Error reading menu schema, menus will not operate properly",
+                    e1);
+        }
+        schema = sch;
+    }
 
     public static void discoverContributions() {
-        discoverContributions(new String[] { "menus" });
+        discoverContributions("menus");
     }
 
     public static synchronized void discoverContributions(
-            final String[] menuArray) {
+            final String... menus) {
         if (ran) {
             return;
         }
 
         ran = true;
-        workaround48143();
-        try {
 
-            URL url = FileLocator.find(Activator.getDefault().getBundle(),
-                    new Path("menus.xsd"), null);
-            if (url == null) {
-                statusHandler
-                        .handle(Priority.CRITICAL,
-                                "Unable to load menu schema, menus will not operate properly");
+        if (observer == null) {
+            observer = new MenuPathObserver();
+            for (String menu : menus) {
+                PathManagerFactory.getPathManager()
+                        .addLocalizationPathObserver(menu, observer);
             }
-            url = FileLocator.resolve(url);
-
-            InputStream is = (InputStream) url.getContent();
-            StreamSource ss = new StreamSource(is);
-            schema = SchemaFactory.newInstance(
-                    XMLConstants.W3C_XML_SCHEMA_NS_URI).newSchema(ss);
-
-        } catch (Exception e1) {
-            statusHandler
-                    .handle(Priority.CRITICAL,
-                            "Error reading menu schema, menus will not operate properly",
-                            e1);
         }
+
+        workaround48143();
 
         ILocalizationFile[] file = null;
 
-        if (menuArray.length == 1) {
-            file = PathManagerFactory.getPathManager().listStaticFiles(
-                    menuArray[0], new String[] { "index.xml" }, true, true);
+        if (menus.length == 1) {
+            file = PathManagerFactory.getPathManager().listStaticFiles(menus[0],
+                    new String[] { "index.xml" }, true, true);
         } else {
             List<ILocalizationFile> fileList = new ArrayList<>();
 
-            for (String menu : menuArray) {
+            for (String menu : menus) {
                 ILocalizationFile[] files = PathManagerFactory.getPathManager()
                         .listStaticFiles(menu, new String[] { "index.xml" },
                                 true, true);
@@ -174,13 +190,14 @@ public class DiscoverMenuContributions {
             return;
         }
 
+        List<AbstractContributionFactory> newFactories = new ArrayList<>();
+        IMenuService menuService = PlatformUI.getWorkbench()
+                .getService(IMenuService.class);
         for (ILocalizationFile lf : file) {
             try (InputStream is = lf.openInputStream()) {
                 final CommonMenuContributionFile mcf = (CommonMenuContributionFile) um
                         .unmarshal(is);
                 if (mcf.contribution != null) {
-                    IMenuService menuService = (IMenuService) PlatformUI
-                            .getWorkbench().getService(IMenuService.class);
                     for (final CommonIncludeMenuItem im : mcf.contribution) {
                         final IncludeMenuItem imc = new IncludeMenuItem();
                         imc.fileName = im.fileName;
@@ -201,8 +218,7 @@ public class DiscoverMenuContributions {
                                     IContributionRoot additions) {
                                 try {
                                     IContributionItem[] items = imc
-                                            .getContributionItems(
-                                                    null,
+                                            .getContributionItems(null,
                                                     new VariableSubstitution[0],
                                                     new HashSet<String>());
                                     Expression exp = null;
@@ -227,8 +243,8 @@ public class DiscoverMenuContributions {
                                     }
 
                                     for (IContributionItem item : items) {
-                                        additions
-                                                .addContributionItem(item, exp);
+                                        additions.addContributionItem(item,
+                                                exp);
                                     }
                                 } catch (VizException e) {
                                     statusHandler.handle(Priority.SIGNIFICANT,
@@ -236,7 +252,7 @@ public class DiscoverMenuContributions {
                                 }
                             }
                         };
-                        menuService.addContributionFactory(viewMenuAddition);
+                        newFactories.add(viewMenuAddition);
                     }
                 }
             } catch (JAXBException | IOException | LocalizationException
@@ -246,13 +262,22 @@ public class DiscoverMenuContributions {
 
             }
         }
+
+        for (AbstractContributionFactory factory : factories) {
+            menuService.removeContributionFactory(factory);
+
+        }
+        for (AbstractContributionFactory factory : newFactories) {
+            menuService.addContributionFactory(factory);
+        }
+        factories = newFactories;
     }
 
     /**
      * Workaround to an eclipse bug: "visibleWhen has no effect for MenuManager
      * added in AbstractContributionFactory"
      * https://bugs.eclipse.org/bugs/show_bug.cgi?id=484143
-     * 
+     *
      * If this bug is fixed then this method should be removed. This method will
      * add an EventHandler for UIElement changes and update the MenuManager
      * visibility to match the MMenuElement visibility
@@ -298,5 +323,17 @@ public class DiscoverMenuContributions {
                 }
             }
         });
+    }
+
+    public static class MenuPathObserver implements ILocalizationPathObserver {
+        @Override
+        public void fileChanged(ILocalizationFile file) {
+            VizApp.runAsync(() -> {
+                synchronized (DiscoverMenuContributions.class) {
+                    ran = false;
+                    discoverContributions();
+                }
+            });
+        }
     }
 }
