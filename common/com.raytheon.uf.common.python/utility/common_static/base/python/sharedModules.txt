@@ -1,0 +1,11 @@
+## Adds the following modules to Jep's shared modules feature to prevent issues when disposing interpreters.
+## These should be line separated names of modules.
+## This is an incremental override file so if you are missing a module you can create a site override and the modules from all levels will be combined.
+## You should report missing modules so they make it into the base file.
+
+numpy
+_strptime
+scipy
+scipy.constants
+scipy.interpolate
+scipy.sparse.linalg

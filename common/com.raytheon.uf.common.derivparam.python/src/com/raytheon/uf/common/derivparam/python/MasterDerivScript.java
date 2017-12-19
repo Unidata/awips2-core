@@ -25,9 +25,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import jep.JepException;
-import jep.NDArray;
-
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
@@ -36,8 +33,12 @@ import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.derivparam.library.DerivedParameterRequest;
 import com.raytheon.uf.common.inventory.tree.CubeLevel;
 import com.raytheon.uf.common.python.PythonInterpreter;
+import com.raytheon.uf.common.python.PythonSharedModulesUtil;
 
 import jep.JepConfig;
+import jep.JepException;
+import jep.NDArray;
+
 /**
  * A script for running the master derived parameter script, which can run any
  * of the derived parameter scripts
@@ -53,8 +54,9 @@ import jep.JepConfig;
  * Apr 11, 2014  2947     bsteffen    Allow returning NaN
  * May 01, 2014  3101     njensen     Safe cast result shape values to Number
  * Apr 20, 2015  4259     njensen     Updated for new Jep API
- * Nov 02, 2016  5979     njensen   Cast to Number where applicable
- * Jan 04, 2017  5959     njensen   Use JepConfig in constructor
+ * Nov 02, 2016  5979     njensen     Cast to Number where applicable
+ * Jan 04, 2017  5959     njensen     Use JepConfig in constructor
+ * Dec 19, 2017  7149     njensen     Set shared modules on JepConfig
  * 
  * </pre>
  * 
@@ -87,7 +89,9 @@ public class MasterDerivScript extends PythonInterpreter {
     public MasterDerivScript(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
         super(new JepConfig().setIncludePath(includePath)
-                .setClassLoader(classLoader), preEvals);
+                .setClassLoader(classLoader)
+                .setSharedModules(PythonSharedModulesUtil.getSharedModules()),
+                preEvals);
     }
 
     public Object executeFunction(String name, List<Object> args)

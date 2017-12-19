@@ -19,9 +19,7 @@
  **/
 package com.raytheon.uf.common.python;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import jep.Jep;
 import jep.JepConfig;
@@ -46,6 +44,8 @@ import jep.NamingConventionClassEnquirer;
  * Feb 17, 2017   5959     njensen     Add scipy modules as shared modules
  * Mar 16, 2017   5959     njensen     Add _strptime as shared module
  * Sep 25, 2017   6457     randerso    Add scipy.constants as shared module
+ * Dec 19, 2017   7149     njensen     Remove scipy as shared modules
+ *                                     scipy modules should be contributed by JepConfigs
  *
  * </pre>
  *
@@ -121,16 +121,10 @@ public abstract class PythonInterpreter implements AutoCloseable {
                 .setRedirectOutputStreams(true);
 
         /*
-         * prevent issues when disposing interpreters that are using numpy or
-         * scipy
+         * require numpy and _strptime to prevent issues and memory leaks when
+         * disposing interpreters
          */
-        Set<String> sharedModules = new HashSet<>();
-        sharedModules.add("numpy");
-        sharedModules.add("scipy");
-        sharedModules.add("scipy.constants");
-        sharedModules.add("scipy.interpolate");
-        sharedModules.add("_strptime");
-        config.setSharedModules(sharedModules);
+        config.addSharedModules("numpy", "_strptime");
 
         jep = new Jep(config);
         initializeJep(filePath, preEvals);
