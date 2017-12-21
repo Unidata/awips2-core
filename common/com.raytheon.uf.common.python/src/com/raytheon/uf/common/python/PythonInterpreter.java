@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.python;
 
 import java.util.List;
+import java.util.Set;
 
 import jep.Jep;
 import jep.JepConfig;
@@ -44,8 +45,7 @@ import jep.NamingConventionClassEnquirer;
  * Feb 17, 2017   5959     njensen     Add scipy modules as shared modules
  * Mar 16, 2017   5959     njensen     Add _strptime as shared module
  * Sep 25, 2017   6457     randerso    Add scipy.constants as shared module
- * Dec 19, 2017   7149     njensen     Remove scipy as shared modules
- *                                     scipy modules should be contributed by JepConfigs
+ * Dec 19, 2017   7149     njensen     Get shared modules from config file
  *
  * </pre>
  *
@@ -122,9 +122,13 @@ public abstract class PythonInterpreter implements AutoCloseable {
 
         /*
          * require numpy and _strptime to prevent issues and memory leaks when
-         * disposing interpreters
+         * disposing interpreters. It's ok to have duplicates from the
+         * JepConfig, the Set will take care of those.
          */
-        config.addSharedModules("numpy", "_strptime");
+        Set<String> shared = PythonSharedModulesUtil.getSharedModules();
+        for (String module : shared) {
+            config.addSharedModules(module);
+        }
 
         jep = new Jep(config);
         initializeJep(filePath, preEvals);

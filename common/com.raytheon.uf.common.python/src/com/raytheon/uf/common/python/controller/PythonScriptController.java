@@ -60,7 +60,7 @@ import jep.JepException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 12, 2012            dgilling    Initial creation
- * Dec 19, 2017 7149       njensen     Updated constructor to take a JepConfig
+ * Dec 19, 2017 7149       njensen     Added constructor to take a JepConfig
  * 
  * </pre>
  * 
@@ -82,6 +82,13 @@ public abstract class PythonScriptController extends PythonScript implements
     protected Set<String> pendingAdds = new HashSet<>();
 
     protected Set<String> pendingReloads = new HashSet<>();
+
+    protected PythonScriptController(String filePath, String anIncludePath,
+            ClassLoader classLoader, String aPythonClassName)
+            throws JepException {
+        super(filePath, anIncludePath, classLoader);
+        this.pythonClassName = aPythonClassName;
+    }
 
 
     protected PythonScriptController(JepConfig config, String filePath,
