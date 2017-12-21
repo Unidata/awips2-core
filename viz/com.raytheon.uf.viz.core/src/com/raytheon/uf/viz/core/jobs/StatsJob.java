@@ -26,8 +26,6 @@ import org.eclipse.core.runtime.jobs.Job;
 
 import com.raytheon.uf.common.comm.NetworkStatistics;
 import com.raytheon.uf.common.comm.NetworkStatistics.NetworkTraffic;
-import com.raytheon.uf.common.status.IPerformanceStatusHandler;
-import com.raytheon.uf.common.status.PerformanceStatus;
 
 /**
  * Stats job for thin client. Logs network stats every minute to console
@@ -40,6 +38,7 @@ import com.raytheon.uf.common.status.PerformanceStatus;
  * ------------ ---------- ----------- --------------------------
  * Nov 2, 2011             mschenke    Initial creation
  * Jan 27, 2016 5170       tjensen     Changed to only display byte stats when configured
+ * Dec 11, 2017            mjames@ucar Less logging
  * 
  * </pre>
  * 
@@ -48,9 +47,6 @@ import com.raytheon.uf.common.status.PerformanceStatus;
  */
 
 public class StatsJob extends Job {
-
-    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("StatsJob:");
 
     private NetworkStatistics stats;
 
@@ -93,8 +89,6 @@ public class StatsJob extends Job {
                             + NetworkStatistics.toString(receivedInLastMinute)
                             + " received";
                 }
-                perfLog.log("Last minute sent " + requestCountInLastMinute
-                        + " messages" + bytesMsg);
             }
             if (doBytes) {
                 lastSent = total.getBytesSent();
@@ -110,12 +104,7 @@ public class StatsJob extends Job {
                             + NetworkStatistics.toString(lastReceived)
                             + " received";
                 }
-                perfLog.log("Total sent " + total.getRequestCount()
-                        + " messages" + bytesTotalMsg);
                 NetworkTraffic[] mapped = stats.getMappedTrafficStats();
-                for (NetworkTraffic nt : mapped) {
-                    perfLog.log(nt.toString());
-                }
             }
 
             try {

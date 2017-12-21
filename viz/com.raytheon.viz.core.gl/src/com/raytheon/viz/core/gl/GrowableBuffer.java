@@ -39,6 +39,7 @@ import java.nio.ShortBuffer;
  *    Date         Ticket#     Engineer    Description
  *    ------------ ----------  ----------- --------------------------
  *    Nov 12, 2007             chammack    Initial Creation.
+ *    Dec 20, 2017             mjames@ucar Less logging.
  * 
  * </pre>
  * 
@@ -273,8 +274,6 @@ public final class GrowableBuffer<B extends java.nio.Buffer> {
             oldDirectBuffer.limit(0);
             oldDirectBuffer = null;
         }
-
-        System.out.println("Grew from " + oldSize + " to " + curSize);
     }
 
     public void position(int position) {

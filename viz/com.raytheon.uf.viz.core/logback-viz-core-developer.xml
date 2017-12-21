@@ -27,7 +27,7 @@
    <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
       <filter class="com.raytheon.uf.common.logback.filter.InvertedThresholdFilter">
-         <level>INFO</level>
+         <level>WARN</level>
       </filter>
    </appender>
 
@@ -60,13 +60,13 @@
    </logger>
 
    <logger name="com.raytheon">
-      <level value="INFO"/>
+      <level value="WARN"/>
    </logger>
    <logger name="mx4j">
       <level value="ERROR"/>
    </logger>
    <logger name="org.apache">
-      <level value="INFO"/>
+      <level value="WARN"/>
    </logger>
    <logger name="org.apache.commons.beanutils">
       <level value="WARN"/>
@@ -84,7 +84,7 @@
       <level value="ERROR"/>
    </logger>
    <root> 
-      <level value="INFO"/> 
+      <level value="WARN"/> 
       <appender-ref ref="console"/> 
       <appender-ref ref="errConsole"/>
     </root> 
