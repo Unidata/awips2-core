@@ -37,6 +37,7 @@ import org.osgi.framework.BundleContext;
  * Mar 05, 2013 1754       djohnson     Catch exceptions and allow as much of the Spring container to boot as possible.
  * May 23, 2013 2005       njensen      Added springSuccess flag
  * Nov 12, 2013 2361       njensen      Print out time spent on each spring context
+ * Dec 11, 2017            mjames@ucar  Less logging
  * 
  * </pre>
  * 
@@ -156,9 +157,6 @@ public class Activator implements BundleActivator {
                             appCtx = new OSGIXmlApplicationContext(
                                     files.toArray(new String[0]), bundle);
                         }
-                        System.out.println("Bundle " + bundle.getSymbolicName()
-                                + " spring init took: "
-                                + (System.currentTimeMillis() - t0));
                     } catch (Throwable t) {
                         // No access to the statusHandler yet, so print the
                         // stack trace to the console. By catching this, we also

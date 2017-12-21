@@ -72,6 +72,7 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Jul 13, 2015  4500     rjpeter      Fix SQL Injection concerns.
  * Dec 17, 2015  5166     kbisanz      Update logging to use SLF4J
  * Jun 20, 2016  5679     rjpeter      Add admin database account.
+ * Dec 14, 2017           mjames@ucar  Less logging.
  * 
  * </pre>
  * 
@@ -189,17 +190,12 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                         .getPluginName());
 
                 if (initialized == null) {
-                    logger.info("Exporting DDL for " + pluginName
-                            + " plugin...");
                     exportSchema(props, sessFactory, false);
                     pvd.runPluginScripts(props);
                     PluginVersion pv = new PluginVersion(props.getPluginName(),
                             true, props.getTableName());
                     pvd.saveOrUpdate(pv);
-                    logger.info(pluginName + " plugin initialization complete!");
                 } else if (initialized == false) {
-                    logger.info("Exporting DDL for " + pluginName
-                            + " plugin...");
                     dropSchema(props, sessFactory);
                     exportSchema(props, sessFactory, false);
                     pvd.runPluginScripts(props);
@@ -207,7 +203,6 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     pv.setInitialized(true);
                     pv.setTableName(props.getTableName());
                     pvd.saveOrUpdate(pv);
-                    logger.info(pluginName + " plugin initialization complete!");
                 }
             }
         } catch (Exception e) {

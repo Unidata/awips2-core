@@ -103,14 +103,14 @@
    </logger>
 
    <logger name="com.raytheon">
-      <level value="INFO"/>
+      <level value="WARN"/>
    </logger>
 
    <logger name="mx4j">
       <level value="ERROR"/>
    </logger>
    <logger name="org.apache">
-      <level value="INFO"/>
+      <level value="WARN"/>
    </logger>
    <logger name="org.apache.commons.beanutils">
       <level value="WARN"/>
@@ -128,7 +128,7 @@
       <level value="ERROR"/>
    </logger>
    <root> 
-      <level value="INFO"/> 
+      <level value="WARN"/> 
       <appender-ref ref="consoleLog"/>
     </root> 
 </configuration> 

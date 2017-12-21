@@ -37,6 +37,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 1, 2014            ekladstrup     Initial creation
+ * Dec 11, 2017           mjames@ucar    Less logging
  * 
  * </pre>
  * 
@@ -92,11 +93,6 @@ public class DataCubeAdapters {
                                     + adapter.getClass().getCanonicalName());
                 } else {
                     adapters.put(plugin, adapter);
-                    statusHandler
-                            .handle(Priority.VERBOSE, "Registered "
-                                    + adapter.getClass().getCanonicalName()
-                                    + " IDataCubeAdapter for plugin \""
-                                    + plugin + "\"");
                 }
             }
         }

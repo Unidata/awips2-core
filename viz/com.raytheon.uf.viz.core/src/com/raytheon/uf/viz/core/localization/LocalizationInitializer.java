@@ -54,6 +54,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  *                                     provided by EDEX.
  * Feb 04, 2014 2704       njensen     Pass connectivity dialog title
  * Jun 24, 2015           mjames@ucar  Formatting changes for Unidata AWIPS II
+ * Dec 11, 2017           mjames@ucar  Less logging
  * 
  * </pre>
  * 
@@ -103,8 +104,6 @@ public class LocalizationInitializer {
                 }
             }
         }
-        System.out.println("Time to setup CAVE_CONFIG = "
-                + (System.currentTimeMillis() - t0));
     }
 
     protected void setupServers() throws VizException {
