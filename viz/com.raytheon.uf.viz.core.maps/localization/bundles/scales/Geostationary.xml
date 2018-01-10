@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bundle>
     <displayList>
-		<displays xsi:type="d2DMapRenderableDisplay" scale="Geostationary" mapCenter="-90.0 0.0 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+		<displays xsi:type="d2DMapRenderableDisplay" scale="Geostationary" mapCenter="-75.0 0.0 0.0" zoomLevel="1.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties loadWithoutData="false">
@@ -119,7 +119,7 @@
   PROJECTION["Geostationary"],
   PARAMETER["semi_major", 6371229.0],
   PARAMETER["semi_minor", 6371229.0],
-  PARAMETER["central_meridian", -90.0],
+  PARAMETER["central_meridian", -75.0],
   PARAMETER["latitude_of_origin", 0.0],
   PARAMETER["false_easting", 0.0],
   PARAMETER["false_northing", 0.0],
