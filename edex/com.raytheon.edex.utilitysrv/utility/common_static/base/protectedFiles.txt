@@ -195,3 +195,6 @@ SITE:common_static/vtec/remote-etn-partners.properties
 
 # Radar Files
 SITE:common_static/rpgenvdata/EnvironParamsLevelTable.xml
+
+# AlertViz files
+SITE:cave_static/alertViz/AlertVizForced.xml
