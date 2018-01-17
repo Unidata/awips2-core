@@ -52,7 +52,6 @@ import com.vividsolutions.jts.geom.Coordinate;
  * </pre>
  *
  * @author jkorman
- * @version 1.0
  */
 public class SPIContainer implements SPI_InfoProvider {
 
@@ -85,20 +84,31 @@ public class SPIContainer implements SPI_InfoProvider {
      * @param filePath
      */
     public SPIContainer(File filePath) {
-        try (Reader input = new FileReader(filePath)) {
-            idMap = populateCatalog(input);
-        } catch (IOException e) {
-            statusHandler.error("Could not read from SPI file " + filePath, e);
-            idMap = null;
+        if ((filePath != null) && (filePath.exists())) {
+            try (Reader input = new FileReader(filePath)) {
+                this.idMap = populateCatalog(input);
+            } catch (IOException e) {
+                statusHandler.error("Could not read from SPI file " + filePath,
+                        e);
+                this.idMap = null;
+            }
+        } else {
+            statusHandler.warn("SPI file [" + filePath + "] does not exist.");
+            this.idMap = null;
         }
     }
 
     public SPIContainer(ILocalizationFile file) {
-        try (Reader input = new InputStreamReader(file.openInputStream())) {
-            idMap = populateCatalog(input);
-        } catch (IOException | LocalizationException e) {
-            statusHandler.error("Could not read from SPI file " + file, e);
-            idMap = null;
+        if ((file != null) && (file.exists())) {
+            try (Reader input = new InputStreamReader(file.openInputStream())) {
+                this.idMap = populateCatalog(input);
+            } catch (IOException | LocalizationException e) {
+                statusHandler.error("Could not read from SPI file " + file, e);
+                this.idMap = null;
+            }
+        } else {
+            statusHandler.warn("SPI file [" + file + "] does not exist.");
+            this.idMap = null;
         }
     }
 
