@@ -37,6 +37,7 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
  * Apr 26, 2010            bsteffen    Initial creation
  * Mar 03, 2014 2792       njensen     Enforce getDensity() will never return
  *                                        above MAX
+ * Jan 18, 2018 6556       njensen     Set max threshold to 99999.0
  * 
  * 
  * </pre>
@@ -47,7 +48,7 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 @XmlAccessorType(XmlAccessType.NONE)
 public class DensityCapability extends AbstractCapability {
 
-    public static final Double MAX_THRESHOLD = 4.0;
+    public static final Double MAX_THRESHOLD = 99999.0;
 
     private static final double[] DEFAULT_DENSITY_VALUES = { 0.0, 0.33, 0.5,
             0.67, 1.0, 1.25, 1.5, 2.0, 99999.0 };
@@ -119,11 +120,6 @@ public class DensityCapability extends AbstractCapability {
         this.densityValues = densityValues;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability#clone()
-     */
     @Override
     public DensityCapability clone() {
         return new DensityCapability(this);
@@ -132,7 +128,7 @@ public class DensityCapability extends AbstractCapability {
     public static String getDensityAsString(Double density) {
         if (density < MAX_THRESHOLD) {
             if (density.intValue() == density.doubleValue()) {
-                return "" + density.intValue();
+                return Integer.toString(density.intValue());
             } else {
                 return Double.toString(density);
             }
