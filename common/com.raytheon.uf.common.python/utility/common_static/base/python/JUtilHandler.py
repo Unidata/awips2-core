@@ -39,6 +39,7 @@ import JUtil
 # Apr 23, 2015  4259     njensen   Updated for new Jep API
 # Nov 21, 2016  5959     njensen   Removed primitive conversions for Jep 3.6
 # Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
+# Nov 17, 2017  20471    randerson Removed String() cast from _toJavaString()
 #
 #
 
@@ -89,7 +90,7 @@ def _toJavaString(val):
     '''
     Turns a Python str to a Java String
     '''
-    return String(str(val))
+    return str(val)
 
 def _toJavaDate(val):
     '''
