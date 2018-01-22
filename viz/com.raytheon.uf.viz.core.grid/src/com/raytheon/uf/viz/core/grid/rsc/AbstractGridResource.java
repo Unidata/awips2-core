@@ -477,7 +477,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 params = createColorMapParameters(data);
                 if (params.getColorMap() == null) {
                     if (params.getColorMapName() == null) {
-                        params.setColorMapName("Grid/gridded data");
+                        params.setColorMapName("Grid/Gridded Data");
                     }
                     params.setColorMap(ColorMapLoader.loadColorMap(params
                             .getColorMapName()));
