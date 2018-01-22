@@ -139,7 +139,7 @@ public class TopoResource extends
         }
 
         // Default colormap
-        String colorMapName = "topo";
+        String colorMapName = "Topography";
 
         ColorMapParameters params = getCapability(ColorMapCapability.class)
                 .getColorMapParameters();
