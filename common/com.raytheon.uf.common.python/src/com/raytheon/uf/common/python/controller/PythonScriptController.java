@@ -27,8 +27,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import jep.JepException;
-
 import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
@@ -41,6 +39,9 @@ import com.raytheon.uf.common.python.PythonScript;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+
+import jep.JepConfig;
+import jep.JepException;
 
 /**
  * Base controller for executing python scripts in a similar manner. Sub-classes
@@ -58,12 +59,12 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * 
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 12, 2012            dgilling     Initial creation
+ * Dec 12, 2012            dgilling    Initial creation
+ * Dec 19, 2017 7149       njensen     Added constructor to take a JepConfig
  * 
  * </pre>
  * 
  * @author dgilling
- * @version 1.0
  */
 
 public abstract class PythonScriptController extends PythonScript implements
@@ -76,32 +77,23 @@ public abstract class PythonScriptController extends PythonScript implements
 
     protected final String pythonClassName;
 
-    protected Set<String> pendingRemoves = new HashSet<String>();
+    protected Set<String> pendingRemoves = new HashSet<>();
 
-    protected Set<String> pendingAdds = new HashSet<String>();
+    protected Set<String> pendingAdds = new HashSet<>();
 
-    protected Set<String> pendingReloads = new HashSet<String>();
+    protected Set<String> pendingReloads = new HashSet<>();
 
-    /**
-     * Constructor
-     * 
-     * @param filePath
-     *            path to the python interface, which should be based on
-     *            MasterInterface.py
-     * @param anIncludePath
-     *            path of directories to include
-     * @param classLoader
-     *            Java classloader
-     * @param aPythonClassName
-     *            the class name for the python scripts
-     * @throws JepException
-     *             If a python Error is thrown during instantiation of the
-     *             underlying python script.
-     */
     protected PythonScriptController(String filePath, String anIncludePath,
             ClassLoader classLoader, String aPythonClassName)
             throws JepException {
         super(filePath, anIncludePath, classLoader);
+        this.pythonClassName = aPythonClassName;
+    }
+
+
+    protected PythonScriptController(JepConfig config, String filePath,
+            String aPythonClassName) throws JepException {
+        super(config, filePath);
         this.pythonClassName = aPythonClassName;
     }
 
@@ -114,7 +106,7 @@ public abstract class PythonScriptController extends PythonScript implements
      * @return an argument map
      */
     protected Map<String, Object> getStarterMap(String moduleName) {
-        Map<String, Object> args = new HashMap<String, Object>();
+        Map<String, Object> args = new HashMap<>();
         args.put(PyConstants.MODULE_NAME, moduleName);
         args.put(PyConstants.CLASS_NAME, pythonClassName);
         return args;
@@ -174,7 +166,7 @@ public abstract class PythonScriptController extends PythonScript implements
      *             If an Error is thrown during python execution.
      */
     public boolean isInstantiated(String moduleName) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<String, Object>(1);
+        HashMap<String, Object> argMap = new HashMap<>(1);
         argMap.put(PyConstants.MODULE_NAME, moduleName);
         return (Boolean) execute("isInstantiated", INTERFACE, argMap);
     }
@@ -294,7 +286,7 @@ public abstract class PythonScriptController extends PythonScript implements
     protected void reloadModule(String name) throws JepException {
         boolean wasInstantiated = isInstantiated(name);
 
-        HashMap<String, Object> argMap = new HashMap<String, Object>(1);
+        HashMap<String, Object> argMap = new HashMap<>(1);
         argMap.put(PyConstants.MODULE_NAME, name);
         execute("reloadModule", INTERFACE, argMap);
 
@@ -316,7 +308,7 @@ public abstract class PythonScriptController extends PythonScript implements
      *             If an Error is thrown during python execution.
      */
     protected void removeModule(String name) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<String, Object>(1);
+        HashMap<String, Object> argMap = new HashMap<>(1);
         argMap.put(PyConstants.MODULE_NAME, name);
         execute("removeModule", INTERFACE, argMap);
     }
@@ -330,7 +322,7 @@ public abstract class PythonScriptController extends PythonScript implements
      *             If an Error is thrown during python execution.
      */
     protected void addModule(String name) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<String, Object>(1);
+        HashMap<String, Object> argMap = new HashMap<>(1);
         argMap.put(PyConstants.MODULE_NAME, name);
         execute("addModule", INTERFACE, argMap);
     }
