@@ -29,7 +29,7 @@
      	<minValue>-0.5</minValue>
      	<maxValue>16.404</maxValue>
      </range>
-     <defaultColormap>topo</defaultColormap>
+     <defaultColormap>Topography</defaultColormap>
      <colorbarLabeling> 
  	    <values>0 2 4 6 8 10 12 14</values> 
  	 </colorbarLabeling>      
