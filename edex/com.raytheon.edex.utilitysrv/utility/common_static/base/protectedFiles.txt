@@ -1,15 +1,22 @@
-# The layout of this file is a line that starts with '#' is treated as a
-# comment and any other line is treated as a protected base file in the format
-# localization_level:localization_type/subpath/to/file
+# The layout of this file is:
+# - A line that starts with '#' is treated as a comment
+# - A line in this format is treated as a protected localization file:
+#   localization_level:localization_type/subpath/to/file
+# - A line in this format (note the trailing slash) is a protected directory
+#   localization_level:localization_type/subpath/to/directory/
 #
-# A simple example would be 
+# Example of protected file:
 # BASE:common_static/textdb/textCategoryClass.txt
+#
+# Example of protected directory:
+# SITE:common_static/aviation/configuration/tafs/
 
 #SCAN_COMMON files
 SITE:common_static/scan/SCANRunSiteConfig.xml
 
 #AvnFPS files
 SITE:common_static/aviation/avnwatch/aviationForecasterConfig.xml
+SITE:common_static/aviation/config/tafs/
 
 #D2D files
 BASE:cave_static/derivedParameters/DerivedParameterInterface.py

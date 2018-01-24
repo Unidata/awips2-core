@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -40,20 +40,21 @@ import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 
 /**
  * Class for managing the protected file list. <br/>
  * <br/>
- * 
+ *
  * When a plugin adds a file to PLUGIN_DIR it should only have entries for files
  * in the plugin or related packages only installed with the plugin. The name of
  * file placeed in PLUGIN_DIR should be based on the plugin name so it will be
  * unique. For example plugin: com.raytheon.uf.viz.bmh use the name:
  * com.raytheon.uf.viz.bmh.protectedFiles.txt
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -61,9 +62,10 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
  * Apr 08, 2015 4346       rferrel     Load plugin entries into the BASE entry.
  * Jul 11, 2016 5750       tgurney     Move protectedFiles.txt to common_static
  * Aug 04, 2017 6379       njensen     Moved to new plugin, cleanup
- * 
+ * Jan 24, 2018 6610       tgurney     Add support for directory protection
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
@@ -90,16 +92,16 @@ public class ProtectedFiles {
             + "# A simple example would be: %s:cave_static/gfe/userPython/textProducts/AFD.py\n"
             + "# Any entries in this file will only apply for users localized to the site\n";
 
-    private static ProtectedFiles base = new ProtectedFiles(PathManagerFactory
-            .getPathManager().getContext(LocalizationType.COMMON_STATIC,
-                    LocalizationLevel.BASE));
+    private static ProtectedFiles base = new ProtectedFiles(
+            PathManagerFactory.getPathManager().getContext(
+                    LocalizationType.COMMON_STATIC, LocalizationLevel.BASE));
 
     private static Map<String, ProtectedFiles> sites = new HashMap<>();
 
     /**
      * Add the list of protected files into protectedFiles.txt for the site with
      * siteId
-     * 
+     *
      * @param siteId
      *            The site to add the protected files to
      * @param protectedFileList
@@ -114,7 +116,7 @@ public class ProtectedFiles {
     /**
      * Given the localized site, type and path to check, determine the level at
      * which the file is protected at
-     * 
+     *
      * @param localizedSite
      * @param type
      * @param path
@@ -144,8 +146,8 @@ public class ProtectedFiles {
         ProtectedFiles site = sites.get(siteId);
         if (site == null) {
             LocalizationContext siteContext = PathManagerFactory
-                    .getPathManager().getContextForSite(
-                            LocalizationType.COMMON_STATIC, siteId);
+                    .getPathManager()
+                    .getContextForSite(LocalizationType.COMMON_STATIC, siteId);
             site = new ProtectedFiles(siteContext);
             sites.put(siteId, site);
         }
@@ -212,22 +214,21 @@ public class ProtectedFiles {
                             LocalizationType.COMMON_STATIC,
                             LocalizationLevel.BASE);
                     String[] extensions = { ".txt" };
-                    LocalizationFile[] files = pm.listFiles(context,
-                            PLUGIN_DIR, extensions, false, true);
+                    LocalizationFile[] files = pm.listFiles(context, PLUGIN_DIR,
+                            extensions, false, true);
                     for (LocalizationFile f : files) {
                         parseFile(f.getFile());
                     }
                 }
             } catch (IOException e) {
-                logger.error(
-                        "Error reading protected file list", e);
+                logger.error("Error reading protected file list", e);
             }
         }
     }
 
     /**
      * Add the file's entries to the protected file set.
-     * 
+     *
      * @param file
      * @throws IOException
      */
@@ -244,7 +245,7 @@ public class ProtectedFiles {
 
     /**
      * Gets the level of protection for this LocalizationType.
-     * 
+     *
      * @param type
      *            The LocalizationType
      * @param subPath
@@ -261,13 +262,32 @@ public class ProtectedFiles {
         LocalizationLevel[] levels = PathManagerFactory.getPathManager()
                 .getAvailableLevels();
 
+        // Search backwards so we get highest protected level in case of
+        // duplicate entries at different levels
         for (int i = levels.length - 1; i >= 0; --i) {
-            // Search backwards so we get highest protected level in case of
-            // duplicate entries at different levels
             LocalizationLevel level = levels[i];
             String levelPath = level.name() + ":" + path;
             if (protectedFiles.contains(levelPath)) {
                 protectionLevel = level;
+                break;
+            }
+            String parentPath = LocalizationUtil.getParent(path);
+            // Check each parent path until hitting the root (empty string)
+            while (!parentPath.isEmpty()) {
+                // Protected directories must end with path separator
+                String levelParentPath = level.name() + ":" + parentPath
+                        + IPathManager.SEPARATOR;
+                if (protectedFiles.contains(levelParentPath)) {
+                    protectionLevel = level;
+                    break;
+                }
+                parentPath = LocalizationUtil.getParent(parentPath);
+            }
+            if (protectionLevel != null) {
+                /*
+                 * Need this to break from outer loop if path matches a
+                 * protected directory
+                 */
                 break;
             }
         }
