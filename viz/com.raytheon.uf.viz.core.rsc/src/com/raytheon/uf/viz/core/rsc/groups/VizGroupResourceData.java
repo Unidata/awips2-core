@@ -19,9 +19,7 @@
  **/
 package com.raytheon.uf.viz.core.rsc.groups;
 
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
@@ -58,6 +56,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceList;
  * Jun 21, 2013  15394    mgamazaychikov  Remove implementation of
  *                                        resourceChanged
  * Sep 12, 2016  3241     bsteffen        Move to uf.viz.core.rsc plugin
+ * Jan 24, 2018  6758     njensen         Remove duplicate list of resources
  * 
  * </pre>
  * 
@@ -73,8 +72,6 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
 
     @XmlAttribute
     protected String name;
-
-    private List<AbstractVizResource<?, ?>> rscs = new ArrayList<AbstractVizResource<?, ?>>();
 
     public VizGroupResourceData() {
         super();
@@ -92,6 +89,7 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
         mergeMetadataMap();
         AbstractVizResource<?, ?> resource = super.construct(loadProperties, descriptor);
 
+        boolean rscConstructed = false;
         for (int i = 0; i < resourceList.size(); i++) {
             try {
                 AbstractVizResource rsc = resourceList.get(i).getResourceData()
@@ -100,12 +98,12 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
                 rsc.setDescriptor(descriptor);
                 rsc.getResourceData().addChangeListener(this);
                 resourceList.get(i).setResource(rsc);
-                rscs.add(rsc);
+                rscConstructed = true;
             } catch (NoDataAvailableException e) {
                 // Do nothing
             }
         }
-        if (rscs.size() == 0) {
+        if (!rscConstructed) {
             throw new NoDataAvailableException();
         }
 
@@ -114,7 +112,7 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
 
     public void mergeMetadataMap() {
         if ((this.metadataMap == null) || this.metadataMap.isEmpty()) {
-            this.metadataMap = new HashMap<String, RequestConstraint>();
+            this.metadataMap = new HashMap<>();
 
             for (ResourcePair rp : resourceList) {
                 Object obj = rp.getResourceData();
@@ -295,11 +293,4 @@ public class VizGroupResourceData extends AbstractRequestableResourceData
         return super.getMetadataMap();
     }
 
-    public List<AbstractVizResource<?, ?>> getRscs() {
-        return rscs;
-    }
-
-    public void setRscs(List<AbstractVizResource<?, ?>> rscs) {
-        this.rscs = rscs;
-    }
 }

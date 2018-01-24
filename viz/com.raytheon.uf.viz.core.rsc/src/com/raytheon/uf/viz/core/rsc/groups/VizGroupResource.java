@@ -43,6 +43,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * Jan 28, 2011  3298     mpduff    Initial creation
  * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
+ * Jan 24, 2018  6758     njensen   Updated for VizGroupResourceData changes
  * 
  * </pre>
  * 
@@ -99,26 +100,31 @@ public class VizGroupResource
 
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
-        for (AbstractVizResource<?, ?> resource : resourceData.getRscs()) {
-            if (resource != null) {
-                resource.init(target);
+        for (ResourcePair pair : resourceData.getResourceList()) {
+            if (pair.getResource() != null) {
+                pair.getResource().init(target);
             }
         }
 
         // steal child resources capabilities
-        for (AbstractVizResource<?, ?> rcs : getResourceData().getRscs()) {
-            for (AbstractCapability capability : rcs.getCapabilities()
-                    .getCapabilityClassCollection()) {
-                this.getCapabilities().addCapability(capability);
-                capability.setResourceData(resourceData);
-            }
+        for (ResourcePair pair : getResourceData().getResourceList()) {
+            AbstractVizResource<?, ?> rsc = pair.getResource();
+            if (rsc != null)
+                for (AbstractCapability capability : rsc.getCapabilities()
+                        .getCapabilityClassCollection()) {
+                    this.getCapabilities().addCapability(capability);
+                    capability.setResourceData(resourceData);
+                }
         }
 
         // Spread my master capability set to all my children
         for (AbstractCapability capability : getCapabilities()
                 .getCapabilityClassCollection()) {
-            for (AbstractVizResource<?, ?> rcs : getResourceData().getRscs()) {
-                rcs.getCapabilities().addCapability(capability);
+            for (ResourcePair pair : getResourceData().getResourceList()) {
+                AbstractVizResource<?, ?> rsc = pair.getResource();
+                if (rsc != null) {
+                    rsc.getCapabilities().addCapability(capability);
+                }
             }
         }
     }
