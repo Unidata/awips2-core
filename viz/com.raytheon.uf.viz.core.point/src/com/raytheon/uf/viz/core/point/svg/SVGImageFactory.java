@@ -20,9 +20,11 @@
 package com.raytheon.uf.viz.core.point.svg;
 
 import java.awt.Graphics2D;
+import java.awt.RenderingHints;
 import java.awt.image.BufferedImage;
 import java.awt.image.IndexColorModel;
 import java.io.IOException;
+import java.util.Arrays;
 
 import org.apache.batik.anim.dom.SAXSVGDocumentFactory;
 import org.apache.batik.bridge.BridgeContext;
@@ -61,11 +63,11 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * Oct 27, 2015  4798     bsteffen  Initial creation
+ * Jan 26, 2018  6698     njensen   Added antialiasing support
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class SVGImageFactory {
 
@@ -77,8 +79,7 @@ public class SVGImageFactory {
 
     private final BridgeContext bridgeContext;
 
-    public SVGImageFactory(String localizationPath)
-            throws VizException {
+    public SVGImageFactory(String localizationPath) throws VizException {
         this(loadLocalizationSVG(localizationPath));
     }
 
@@ -88,22 +89,82 @@ public class SVGImageFactory {
         this.builder = new GVTBuilder();
     }
 
-    public BufferedImage createSingleColorImage(RGB color, int width, int height) {
-        byte[] red = { 0, (byte) color.red };
-        byte[] green = { 0, (byte) color.green };
-        byte[] blue = { 0, (byte) color.blue };
-        IndexColorModel colorModel = new IndexColorModel(8, 2, red, green,
-                blue, 0);
-        BufferedImage image = new BufferedImage(width, height,
-                BufferedImage.TYPE_BYTE_INDEXED, colorModel);
-        return paint(image);
+    public BufferedImage createSingleColorImage(RGB color, int width,
+            int height) {
+        return createSingleColorImage(color, width, height, false, false);
     }
 
-    public BufferedImage paint(BufferedImage image) {
+    public BufferedImage createSingleColorImage(RGB color, int width,
+            int height, boolean alpha, boolean antialias) {
+        BufferedImage image = null;
+        IndexColorModel colorModel = buildColorModel(color, alpha);
+        if (alpha) {
+            // first paint the image in TYPE_INT_ARGB
+            image = new BufferedImage(width, height,
+                    BufferedImage.TYPE_INT_ARGB);
+        } else {
+            image = new BufferedImage(width, height,
+                    BufferedImage.TYPE_BYTE_INDEXED, colorModel);
+        }
+        image = paint(image, antialias);
+
+        if (alpha) {
+            // now convert the image to a TYPE_BYTE_INDEXED to save memory
+            image = transformFromArgbToIndexed(image, colorModel);
+        }
+
+        return image;
+    }
+
+    private BufferedImage transformFromArgbToIndexed(BufferedImage image,
+            IndexColorModel colorModel) {
+        int width = image.getWidth();
+        int height = image.getHeight();
+        BufferedImage newImage = new BufferedImage(width, height,
+                BufferedImage.TYPE_BYTE_INDEXED, colorModel);
+        for (int x = 0; x < width; x++) {
+            for (int y = 0; y < height; y++) {
+                newImage.setRGB(x, y, image.getRGB(x, y));
+            }
+        }
+        return newImage;
+    }
+
+    private IndexColorModel buildColorModel(RGB color, boolean alpha) {
+        IndexColorModel colorModel = null;
+        if (alpha) {
+            int size = 32;
+            byte[] red = new byte[size];
+            byte[] green = new byte[size];
+            byte[] blue = new byte[size];
+            byte[] alphaArray = new byte[size];
+            Arrays.fill(red, (byte) color.red);
+            Arrays.fill(green, (byte) color.green);
+            Arrays.fill(blue, (byte) color.blue);
+            for (int i = 0; i < size; i++) {
+                alphaArray[i] = (byte) (i * 8);
+            }
+            colorModel = new IndexColorModel(8, size, red, green, blue,
+                    alphaArray);
+        } else {
+            byte[] red = { 0, (byte) color.red };
+            byte[] green = { 0, (byte) color.green };
+            byte[] blue = { 0, (byte) color.blue };
+            colorModel = new IndexColorModel(8, red.length, red, green, blue,
+                    0);
+        }
+        return colorModel;
+    }
+
+    protected BufferedImage paint(BufferedImage image, boolean antiAliased) {
         GraphicsNode gn = builder.build(bridgeContext, document);
         Graphics2D g2d = null;
         try {
             g2d = image.createGraphics();
+            if (antiAliased) {
+                g2d.setRenderingHint(RenderingHints.KEY_ANTIALIASING,
+                        RenderingHints.VALUE_ANTIALIAS_ON);
+            }
             gn.paint(g2d);
         } finally {
             if (g2d != null) {
@@ -124,8 +185,8 @@ public class SVGImageFactory {
         try {
             return f.createDocument(file.getFile().toURI().toString());
         } catch (IOException e) {
-            throw new VizException("Error loading symbol file: "
-                    + localizationPath, e);
+            throw new VizException(
+                    "Error loading symbol file: " + localizationPath, e);
         }
     }
 
