@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -54,16 +54,16 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * Provides a base implementation for creating visualizations that participate
  * in a descriptor. Examples of concrete implementations include displaying map
  * vector data, interactive drawing, and XY visualization of numerical data.
- * 
+ *
  * Unlike the original IVizResource implementation, the AbstractVizResource is
  * not serialized in its entirety. Instead, just the AbstractResourceData that
  * it contains is serialized.
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer   Description
  * ------------- -------- ---------- -------------------------------------------
  * Feb 04, 2009           chammack   Initial creation from original IVizResource
@@ -80,9 +80,10 @@ import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
  * Sep 28, 2017  20316    dfriemdan  Refresh on property change. unexpected
  *                                   exceptions.
  * Nov 28, 2017  5863     bsteffen   Change dataTimes to a NavigableSet
- * 
+ * Jan 31, 2018  5863     mapeters   Add time-agnostic check in remove(DataTime)
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public abstract class AbstractVizResource<T extends AbstractResourceData, D extends IDescriptor> {
@@ -102,6 +103,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * @deprecated {@link #isTimeAgnostic()} should be used to check if a
      *             resource is time agnostic.
      */
+    @Deprecated
     public static final NavigableSet<DataTime> TIME_AGNOSTIC = Collections
             .emptyNavigableSet();
 
@@ -172,7 +174,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Create a new time agnostic resource.
-     * 
+     *
      * @param resourceData
      *            the resource data
      * @param capabilities
@@ -185,7 +187,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Create a new resource.
-     * 
+     *
      * @param resourceData
      *            the resource data
      * @param timeAgnostic
@@ -214,10 +216,10 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Set the descriptor for the resource
-     * 
+     *
      * This method will be called prior to paint, or when the Descriptor
      * changes.
-     * 
+     *
      * @param descriptor
      *            the descriptor
      */
@@ -227,7 +229,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Return the descriptor
-     * 
+     *
      * @return the descriptor
      */
     public D getDescriptor() {
@@ -236,7 +238,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Return the resource data
-     * 
+     *
      * @return the resource data
      */
     public T getResourceData() {
@@ -252,7 +254,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Check for capability in resource.
-     * 
+     *
      * @param capability
      * @return true if resource has the capability; false otherwise
      */
@@ -262,8 +264,9 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     }
 
     /**
-     * Get a list of displayable times. The list will be sorted according to the natural ordering of DataTimes.
-     * 
+     * Get a list of displayable times. The list will be sorted according to the
+     * natural ordering of DataTimes.
+     *
      * @return the currently loaded set of datatimes
      */
     public DataTime[] getDataTimes() {
@@ -286,22 +289,24 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Remove a data time from the list of available times.
-     * 
+     *
      * It may be a good idea to override this method and dispose of any data
      * that is no longer relevant.
-     * 
+     *
      * @param dataTime
      *            the data time to remove
      */
     public void remove(DataTime dataTime) {
-        synchronized (dataTimes) {
-            this.dataTimes.remove(dataTime);
+        if (!isTimeAgnostic()) {
+            synchronized (dataTimes) {
+                this.dataTimes.remove(dataTime);
+            }
         }
     }
 
     /**
      * Return the name of the resource
-     * 
+     *
      * @return the name of the resource
      */
     public String getName() {
@@ -319,16 +324,16 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Perform an inspect operation at a particular point of interest.
-     * 
+     *
      * An inspect operation returns a simple string result.
-     * 
-     * 
+     *
+     *
      * The point of interest is provided as a ReferencedCoordinate, which can be
      * expressed as a pixel, world or CRS coordinate (if applicable)
-     * 
+     *
      * Inspect may frequently be implemented by calling interrogate, and
      * formatting the result as a string.
-     * 
+     *
      * @param coord
      *            the coordinate
      * @return a string that represents the result of inspecting that point
@@ -341,13 +346,13 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Perform an interrogate operation at a particular point of interest.
-     * 
+     *
      * An interrogate operation returns an unformatted hashmap of data. This
      * data can be formatted by the user.
-     * 
+     *
      * The point of interest is provided as a ReferencedCoordinate, which can be
      * expressed as a pixel, world or CRS coordinate (if applicable)
-     * 
+     *
      * @param coord
      * @return the data values at coord
      * @throws VizException
@@ -361,7 +366,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Notify the resource that the CoordinateReferenceSystem has changed, and
      * that the resource should use this new CRS for rendering its data.
-     * 
+     *
      * @param crs
      *            the new Coordinate Reference System
      * @throws VizException
@@ -375,7 +380,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * listener to the resource data on initialization, this method will be
      * called when a change occurs and resources can opt to override this method
      * instead of adding and managing their own listeners
-     * 
+     *
      * @param type
      * @param updateObject
      */
@@ -386,11 +391,11 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Do not call this method unless calling from initInternal in a blended
      * resource
-     * 
+     *
      * This method will be called before paint.
-     * 
+     *
      * This method is frequently used for longer running pre-processing steps.
-     * 
+     *
      * @param target
      *            the graphics target
      * @throws VizException
@@ -409,14 +414,14 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Dispose the resource
-     * 
+     *
      * The resource should release any native resources such as SWT colors and
      * Renderable Resources such as IWireframeShapes.
-     * 
+     *
      * For improving garbage collection, it is also often desirable to clear any
      * collections or maps so that the objects are more likely to be flagged by
      * the garbage collector.
-     * 
+     *
      */
     public final void dispose() {
         if (status == ResourceStatus.INITIALIZED) {
@@ -441,7 +446,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Return the capabilities for the resource
-     * 
+     *
      * @return the capabilities
      */
     public Capabilities getCapabilities() {
@@ -471,7 +476,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * unload resource from specified list
-     * 
+     *
      * @param list
      */
     public void unload(ResourceList list) {
@@ -557,7 +562,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Get the current status of the resource
-     * 
+     *
      * @return The current status
      */
     public ResourceStatus getStatus() {
@@ -566,7 +571,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * This method will do the actual painting of the resource
-     * 
+     *
      * @param target
      *            the graphics target
      * @param paintProps
@@ -582,7 +587,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
      * time paint is called. RESOURCES THAT PAINT INTERNAL RESOURCES SHOULD NOT
      * CALL THIS METHOD, CALL init(IGraphicsTarget) INSTEAD SO ResourceStatus
      * GETS SET PROPERLY
-     * 
+     *
      * @param target
      * @throws VizException
      */
@@ -603,7 +608,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Register a refresh listener on the resource, IRefreshListener.refresh
      * will be called from issueRefresh
-     * 
+     *
      * @param listener
      *            the refresh listener
      */
@@ -619,7 +624,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Remove a refresh listener from the resource, IRefreshListener.refresh
      * will be called from issueRefresh
-     * 
+     *
      * @param listener
      *            the refresh listener
      */
@@ -638,7 +643,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Register a dispose listener on the resource, IDisposeListener.dispose
      * will be called when the resource is disposed
-     * 
+     *
      * @param listener
      *            the dispose listener
      */
@@ -655,7 +660,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Remove a dispose listener from the resource
-     * 
+     *
      * @param listener
      *            the dispose listener
      */
@@ -674,7 +679,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Register a init listener on the resource, IInitListener.inited will be
      * called when the resource is initialized
-     * 
+     *
      * @param listener
      *            the init listener
      */
@@ -689,7 +694,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Remove a init listener from the resource
-     * 
+     *
      * @param listener
      *            the init listener
      */
@@ -708,7 +713,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Register a paint listener on the resource, IPaintListener.painted will be
      * called when the resource is painted
-     * 
+     *
      * @param listener
      *            the paint listener
      */
@@ -723,7 +728,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Remove a paint listener from the resource
-     * 
+     *
      * @param listener
      *            the paint listener
      */
@@ -742,7 +747,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Register a paint listener on the resource, IPaintListener.painted will be
      * called when the resource is painted
-     * 
+     *
      * @param listener
      *            the paint listener
      */
@@ -757,7 +762,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Remove a paint listener from the resource
-     * 
+     *
      * @param listener
      *            the paint listener
      */
@@ -775,7 +780,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Update the resources paint status
-     * 
+     *
      * @param newStatus
      */
     protected final void updatePaintStatus(PaintStatus newStatus) {
@@ -826,7 +831,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Notified when the ResourceProperties change, gets called when setVisible,
      * setHoverOn, and setBlinking is called
-     * 
+     *
      * @param updatedProps
      */
     public void propertiesChanged(ResourceProperties updatedProps) {
@@ -836,7 +841,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Method that declares if the resource is time agnostic. A time agnostic
      * resource does not pertain to time (e.g. static map backgrounds)
-     * 
+     *
      * @return true if resource is time agnostic
      */
     public boolean isTimeAgnostic() {
@@ -846,7 +851,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
     /**
      * Looks up the ResourceProperties in the resouce's descriptor's resource
      * list
-     * 
+     *
      * @return the resource properties, may be null
      */
     public ResourceProperties getProperties() {
@@ -855,7 +860,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Get the container the resource is loaded to
-     * 
+     *
      * @return the container
      */
     public IDisplayPaneContainer getResourceContainer() {
@@ -871,7 +876,7 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * set the properties for this resource
-     * 
+     *
      * @param properties
      *            the resource properties
      */
@@ -881,10 +886,10 @@ public abstract class AbstractVizResource<T extends AbstractResourceData, D exte
 
     /**
      * Gets the resource name or class name if resource.getName() fails.
-     * 
+     *
      * This should only be used to get as good a name as possible for the
      * resource in exceptional conditions.
-     * 
+     *
      * @return the safe resource name
      */
     public final String getSafeName() {
