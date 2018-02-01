@@ -96,6 +96,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Aug 19, 2015 4763        rjpeter     Update mappedSql to remove distinct and function definitions from name mapping.
  * Nov 20, 2015 5140        bsteffen    Update mappedSql to ignore comma in function argument lists.
  * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
+ * Jan 31, 2018 6945        tgurney     Add maxResults param to executeHQLQuery
  *
  * </pre>
  *
@@ -282,7 +283,7 @@ public class CoreDao {
                         List<?> list = criteria
                                 .getExecutableCriteria(getCurrentSession())
                                 .list();
-                        if (list.size() > 0) {
+                        if (!list.isEmpty()) {
                             return (PluginDataObject) list.get(0);
                         } else {
                             return null;
@@ -712,6 +713,24 @@ public class CoreDao {
      */
     public QueryResult executeHQLQuery(final String hqlQuery,
             final Map<String, Object> paramMap) {
+        return executeHQLQuery(hqlQuery, paramMap, 0);
+    }
+
+    /**
+     * Executes an HQL query
+     *
+     * @param hqlQuery
+     *            The HQL query string
+     * @param paramMap
+     *            The parameters names and values to query against
+     * @param maxResults
+     *            Maximum number of objects to return (less than 1 means
+     *            unlimited)
+     *
+     * @return The list of objects returned by the query
+     */
+    public QueryResult executeHQLQuery(final String hqlQuery,
+            final Map<String, Object> paramMap, int maxResults) {
         QueryResult result = txTemplate
                 .execute(new TransactionCallback<QueryResult>() {
                     @Override
@@ -722,6 +741,9 @@ public class CoreDao {
                         // hibQuery.setCacheMode(CacheMode.NORMAL);
                         // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
                         hibQuery.setCacheable(true);
+                        if (maxResults > 0) {
+                            hibQuery.setMaxResults(maxResults);
+                        }
                         addParamsToQuery(hibQuery, paramMap);
 
                         List<?> queryResult = hibQuery.list();
@@ -987,9 +1009,9 @@ public class CoreDao {
             for (int i = 0; i < group.length(); i += 1) {
                 char c = group.charAt(i);
                 if (inQoutes) {
-                    if (escape == false && c == '\'') {
+                    if (!escape && c == '\'') {
                         inQoutes = false;
-                    } else if (escape == false && c == '\\') {
+                    } else if (!escape && c == '\\') {
                         escape = true;
                     } else {
                         escape = false;
@@ -1029,7 +1051,8 @@ public class CoreDao {
                     }
                 }
 
-                result.addColumnName(col.trim(), colIndex++);
+                result.addColumnName(col.trim(), colIndex);
+                colIndex++;
             }
         } else {
             logger.error("Unable to map query columns for query [" + sql + "]");
@@ -1190,7 +1213,7 @@ public class CoreDao {
         try {
             daoClass = this.getClass().getClassLoader().loadClass(fqn);
         } catch (ClassNotFoundException e) {
-            logger.warn("Unable to load class: " + fqn);
+            logger.warn("Unable to load class: " + fqn, e);
         }
     }
 
