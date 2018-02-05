@@ -20,6 +20,7 @@
 package com.raytheon.viz.core.gl;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.media.opengl.GL;
@@ -27,6 +28,7 @@ import javax.media.opengl.GL;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
+import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.coverage.grid.GridGeometry;
 import org.opengis.referencing.datum.PixelInCell;
 import org.opengis.referencing.operation.MathTransform;
@@ -75,6 +77,7 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinates;
  * Feb 21, 2014  2817     bsteffen  Remove Deprecated reproject.
  * Apr 05, 2016  5400     bsteffen  implement IGridMesh, javadoc.
  * Oct 25, 2017  6387     bsteffen  implement IGLMesh
+ * Feb 05, 2018  7209     bsteffen  Remove unreasonably large triangles.
  * 
  * </pre>
  * 
@@ -262,23 +265,26 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
                     new GLGeometryObjectData(geometryType, GL.GL_VERTEX_ARRAY));
             vertexCoords.allocate(
                     worldCoordinates.length * worldCoordinates[0].length);
+            UnreasonablyLargeTriangleFilter filter = new UnreasonablyLargeTriangleFilter(
+                    key, targetGeometry, imageGeometry, vertexCoords);
             // Check for world wrapping
             WorldWrapChecker wwc = new WorldWrapChecker(targetGeometry);
+            List<double[]> vSegment = new ArrayList<>();
             for (int i = 0; i < worldCoordinates.length; ++i) {
                 double[][] strip = worldCoordinates[i];
-                List<double[]> vSegment = new ArrayList<>();
-                double[] prev1 = null, prev2 = null;
+                double[] prev1 = null;
+                double[] prev2 = null;
                 for (int j = 0; j < strip.length; ++j) {
                     double[] next = strip[j];
-                    if ((prev1 != null && wwc.check(prev1[0], next[0]))
-                            || (prev2 != null
-                                    && wwc.check(prev2[0], next[0]))) {
+                    boolean wrap1 = prev1 != null
+                            && wwc.check(prev1[0], next[0]);
+                    boolean wrap2 = prev2 != null
+                            && wwc.check(prev2[0], next[0]);
+                    if (wrap1 || wrap2) {
                         fixWorldWrap(wwc, prev2, prev1, next, i, j);
-                        if ((prev1 != null && wwc.check(prev1[0], next[0]))
-                                || vSegment.size() > 1) {
-                            vertexCoords.addSegment(vSegment
-                                    .toArray(new double[vSegment.size()][]));
-                            vSegment = new ArrayList<>();
+                        if (wrap1 || vSegment.size() > 1) {
+                            filter.addSegment(vSegment);
+                            vSegment.clear();
                         }
                     }
                     vSegment.add(worldToPixel(next));
@@ -286,9 +292,9 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
                     prev2 = prev1;
                     prev1 = next;
                 }
+                filter.addSegment(vSegment);
+                vSegment.clear();
 
-                vertexCoords.addSegment(
-                        vSegment.toArray(new double[vSegment.size()][]));
             }
             return true;
         } catch (Exception e) {
@@ -452,5 +458,89 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
     protected abstract double[][][] generateWorldCoords(
             GridGeometry2D imageGeometry, MathTransform mt)
             throws TransformException;
+
+    /**
+     * A wrapper around {@link GLGeometryObject2D} that detects and removes
+     * unreasonably large triangles. The main purpose of this is to remove
+     * invalid triangles that form around inconsistencies in a reprojection. For
+     * example the opposite of the origin in a stereographic projection is often
+     * inverted, resulting in a single triangle covering the entire area of the
+     * world. Rather than trying to determine and detect all possibility
+     * inconsistencies, it is easier to just remove unreasonably large
+     * triangles.
+     * 
+     * A triangle is considered unreasonably large when a single pixel from the
+     * source image would be large enough to cover the entire area of the target
+     * screen. Although a valid mesh could theoretically generate a triangle
+     * this big, it wouldn't be displaying much useful information. Calculating
+     * exactly when a specific triangle is unreasonably large would be slow and
+     * complicated so this class should just be considered an estimate.
+     */
+    private static class UnreasonablyLargeTriangleFilter {
+
+        private final GLGeometryObject2D vertexCoords;
+
+        private final double limit;
+
+        private UnreasonablyLargeTriangleFilter(SharedCoordinateKey key,
+                GeneralGridGeometry targetGeometry,
+                GridGeometry2D sourceGeometry,
+                GLGeometryObject2D vertexCoords) {
+            this.vertexCoords = vertexCoords;
+            GridEnvelope sourcePixelRange = sourceGeometry.getGridRange();
+            GridEnvelope targetPixelRange = targetGeometry.getGridRange();
+
+            int meshDivisions = key.horizontalDivisions * key.verticalDivisions;
+            int sourcePixels = sourcePixelRange.getSpan(0)
+                    * sourcePixelRange.getSpan(1);
+            int targetPixels = targetPixelRange.getSpan(0)
+                    * targetPixelRange.getSpan(1);
+            limit = Math.sqrt(targetPixels * sourcePixels / meshDivisions);
+        }
+
+        /**
+         * Filter a set of coordinates and add any reasonably sized triangles to
+         * the GLGeometryObject.
+         * 
+         * @param segment
+         *            a set of coordinates making up a strip of triangles
+         */
+        public void addSegment(List<double[]> segment) {
+            double[][] array = new double[segment.size()][];
+            for (int i = 0; i < segment.size(); i += 1) {
+                double[] next = segment.get(i);
+                boolean valid = true;
+                if (i > 0) {
+                    valid &= check(next, array[i - 1]);
+                }
+                if (i > 1) {
+                    valid &= check(next, array[i - 2]);
+                }
+                if (!valid) {
+                    double[][] alreadyDone = Arrays.copyOf(array, i);
+                    vertexCoords.addSegment(alreadyDone);
+                    // reset and continue on.
+                    segment = segment.subList(i, segment.size());
+                    array = new double[segment.size()][];
+                    i = 0;
+                }
+                array[i] = next;
+            }
+            vertexCoords.addSegment(array);
+        }
+
+        private boolean check(double[] p1, double[] p2) {
+            double dx = Math.abs(p1[0] - p2[0]);
+            double dy = Math.abs(p1[1] - p2[1]);
+            /*
+             * To save time, the x distance and the y distance are checked
+             * independently rather than calculating a true distance. Although
+             * this may allow a few edge cases to slip through, this filter
+             * shouldn't generally be considered accurate enough that this
+             * matters.
+             */
+            return dx < limit && dy < limit;
+        }
+    }
 
 }
