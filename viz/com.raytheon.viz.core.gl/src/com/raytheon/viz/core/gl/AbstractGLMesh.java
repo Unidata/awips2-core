@@ -490,10 +490,15 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
             GridEnvelope sourcePixelRange = sourceGeometry.getGridRange();
             GridEnvelope targetPixelRange = targetGeometry.getGridRange();
 
-            int meshDivisions = key.horizontalDivisions * key.verticalDivisions;
-            int sourcePixels = sourcePixelRange.getSpan(0)
+            /*
+             * Everything is a double because the math to calculate the limit
+             * can get some really big intermediate values.
+             */
+            double meshDivisions = key.horizontalDivisions
+                    * key.verticalDivisions;
+            double sourcePixels = sourcePixelRange.getSpan(0)
                     * sourcePixelRange.getSpan(1);
-            int targetPixels = targetPixelRange.getSpan(0)
+            double targetPixels = targetPixelRange.getSpan(0)
                     * targetPixelRange.getSpan(1);
             limit = Math.sqrt(targetPixels * sourcePixels / meshDivisions);
         }
