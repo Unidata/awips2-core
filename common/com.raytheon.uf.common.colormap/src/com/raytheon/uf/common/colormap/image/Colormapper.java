@@ -68,9 +68,13 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  */
 public class Colormapper {
 
-    private static final int COLOR_MODEL_NUMBER_BITS = 8;
+    /*
+     * These constants are public as they are used in the OGC and possibly other
+     * plugins
+     */
+    public static final int COLOR_MODEL_NUMBER_BITS = 8;
 
-    private static final float MAX_VALUE = 255.0f;
+    public static final float MAX_VALUE = 255.0f;
 
     private static final int TRANSPARENT = new Color(0, 0, 0, 0).getRGB();
 
