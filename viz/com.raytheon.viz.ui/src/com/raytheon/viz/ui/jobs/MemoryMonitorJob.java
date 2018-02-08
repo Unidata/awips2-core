@@ -19,6 +19,8 @@
  **/
 package com.raytheon.viz.ui.jobs;
 
+import java.text.ParseException;
+
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
@@ -27,6 +29,8 @@ import org.eclipse.ui.IWorkbenchWindow;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.util.SizeUtil;
+import com.raytheon.uf.common.util.format.BytesFormat;
 import com.raytheon.viz.ui.VizWorkbenchManager;
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
@@ -42,6 +46,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 14, 2014 2594       bclement     Initial creation
+ * Feb 7, 2018  19577      anilsonm     change threshold to memory units and compute free memory against it
  * 
  * </pre>
  * 
@@ -57,39 +62,53 @@ public class MemoryMonitorJob extends Job {
 
     public static final String MONITOR_PERIOD_PROPERTY = "viz.memory.monitor.period";
 
-    private static final int DEFAULT_THRESHOLD = 95; // 95% memory usage
+    private static final long DEFAULT_THRESHOLD = 10 * SizeUtil.BYTES_PER_MB; // approx 10MB
 
     private static final long DEFAULT_PERIOD = 10 * 1000; // ten seconds
 
-    private final double threshold;
+    private final long threshold;
 
     private final long period;
 
     private boolean notified = false;
 
+    private static final long MINIMUM_THRESHOLD = 1 * SizeUtil.BYTES_PER_MB; // approx 1MB
+
+    private static long lBytes = 0;
+
+    static{
+        String threshold = System.getProperty(THRESHOLD_PROPERTY);
+
+        try {
+            lBytes = new BytesFormat().parse(threshold);
+        } catch (ParseException e) {
+            String msg = "Invalid argument specified for :"+THRESHOLD_PROPERTY;
+            log.error(msg, e);
+            lBytes = DEFAULT_THRESHOLD;
+        }
+    }
+
     /**
      * Default constructor, get configuration from system properties
      */
     public MemoryMonitorJob() {
-        this("Low Memory Monitor", Integer.getInteger(THRESHOLD_PROPERTY,
-                DEFAULT_THRESHOLD), Long.getLong(MONITOR_PERIOD_PROPERTY,
-                DEFAULT_PERIOD));
+        this("Low Memory Monitor", lBytes, Long.getLong(MONITOR_PERIOD_PROPERTY, DEFAULT_PERIOD));
     }
 
     /**
      * @param name
      *            job name
      * @param threshold
-     *            percent of memory used when notification should be triggered
-     *            (0-100)
+     *            memory (in units) used when notification should be triggered
      * @param period
      *            period between memory checks in milliseconds
      */
-    public MemoryMonitorJob(String name, int threshold, long period) {
+    public MemoryMonitorJob(String name, long threshold, long period) {
         super(name);
-        if (threshold < 0 || threshold > 100){
+        //log an error and use the DEFAULT_THRESHOLD if threshold < 1M
+        if (threshold < MINIMUM_THRESHOLD){
             logInvalidProperty(THRESHOLD_PROPERTY,
-                    "Threshold value must be between 0 and 100",
+                    "Threshold value must be minimum 1MB",
                     DEFAULT_THRESHOLD);
             this.threshold = DEFAULT_THRESHOLD;
         } else {
@@ -125,10 +144,10 @@ public class MemoryMonitorJob extends Job {
             Runtime runtime = Runtime.getRuntime();
             long usedMemory = runtime.totalMemory() - runtime.freeMemory();
             long maxMemory = runtime.maxMemory();
+            long availMemory = maxMemory - usedMemory;
 
-            if ((((double) usedMemory / maxMemory) * 100) > threshold) {
+            if (availMemory < threshold) {
                 if (!notified) { // don't pester the user
-                    long availMemory = maxMemory - usedMemory;
                     notified = notify(availMemory);
                 }
             } else {
