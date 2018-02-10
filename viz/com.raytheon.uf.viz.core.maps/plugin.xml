@@ -100,7 +100,7 @@
       <editor
             class="com.raytheon.uf.viz.core.maps.display.VizMapEditor"
             default="true"
-            icon="icons/map.gif"  
+            icon="icons/globe.png"  
             id="com.raytheon.viz.ui.glmap.GLMapEditor"
             name="Map">
       </editor>
