@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,6 +31,7 @@ import com.raytheon.uf.common.localization.FileUpdatedMessage;
 import com.raytheon.uf.common.localization.FileUpdatedMessage.FileChangeType;
 import com.raytheon.uf.common.localization.ILocalizationFileObserver;
 import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.python.PyConstants;
@@ -38,7 +39,6 @@ import com.raytheon.uf.common.python.PythonErrorExtractor;
 import com.raytheon.uf.common.python.PythonScript;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 
 import jep.JepConfig;
 import jep.JepException;
@@ -52,23 +52,27 @@ import jep.JepException;
  * Script instances are "cached" within the interpreter, so this class
  * implements the ILocalizationFileObserver interface so the cached instances
  * can be properly updated as necessary.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 12, 2012            dgilling    Initial creation
- * Dec 19, 2017 7149       njensen     Added constructor to take a JepConfig
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 12, 2012           dgilling  Initial creation
+ * Dec 19, 2017  7149     njensen   Added constructor to take a JepConfig
+ * Feb 13, 2018  6906     randerso  Remove and re-add module if one still exists
+ *                                  at another LocalizationLevel. Called
+ *                                  reloadModules() after all file updates have
+ *                                  been completed.
+ *
  * </pre>
- * 
+ *
  * @author dgilling
  */
 
-public abstract class PythonScriptController extends PythonScript implements
-        ILocalizationFileObserver {
+public abstract class PythonScriptController extends PythonScript
+        implements ILocalizationFileObserver {
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PythonScriptController.class);
@@ -81,15 +85,12 @@ public abstract class PythonScriptController extends PythonScript implements
 
     protected Set<String> pendingAdds = new HashSet<>();
 
-    protected Set<String> pendingReloads = new HashSet<>();
-
     protected PythonScriptController(String filePath, String anIncludePath,
             ClassLoader classLoader, String aPythonClassName)
             throws JepException {
         super(filePath, anIncludePath, classLoader);
         this.pythonClassName = aPythonClassName;
     }
-
 
     protected PythonScriptController(JepConfig config, String filePath,
             String aPythonClassName) throws JepException {
@@ -100,7 +101,7 @@ public abstract class PythonScriptController extends PythonScript implements
     /**
      * Convenience method for getting an argument map with moduleNames and
      * classNames
-     * 
+     *
      * @param moduleName
      *            the name of the module
      * @return an argument map
@@ -115,7 +116,7 @@ public abstract class PythonScriptController extends PythonScript implements
     /**
      * Gets formatted list of errors detailing errors trying to import python
      * scripts based on initial scan.
-     * 
+     *
      * @return a list of error messages
      * @throws JepException
      *             If an Error is thrown during python execution.
@@ -127,7 +128,7 @@ public abstract class PythonScriptController extends PythonScript implements
 
     /**
      * Checks if a module has the specified method
-     * 
+     *
      * @param moduleName
      *            the name of the module to check
      * @param methodName
@@ -145,7 +146,7 @@ public abstract class PythonScriptController extends PythonScript implements
 
     /**
      * Instantiates an instance of the class in the module
-     * 
+     *
      * @param moduleName
      *            the name of the module to instantiate
      * @throws JepException
@@ -158,7 +159,7 @@ public abstract class PythonScriptController extends PythonScript implements
 
     /**
      * Determines whether or not a specified module has been instantiated.
-     * 
+     *
      * @param moduleName
      *            The name of the module to check.
      * @return If the module has been instantiated or not.
@@ -166,14 +167,14 @@ public abstract class PythonScriptController extends PythonScript implements
      *             If an Error is thrown during python execution.
      */
     public boolean isInstantiated(String moduleName) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<>(1);
-        argMap.put(PyConstants.MODULE_NAME, moduleName);
+        Map<String, Object> argMap = Collections
+                .singletonMap(PyConstants.MODULE_NAME, moduleName);
         return (Boolean) execute("isInstantiated", INTERFACE, argMap);
     }
 
     /**
      * Returns the names of the specified method's arguments
-     * 
+     *
      * @param moduleName
      *            the name of the module
      * @param methodName
@@ -192,13 +193,6 @@ public abstract class PythonScriptController extends PythonScript implements
         return Collections.unmodifiableList(list);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.localization.ILocalizationFileObserver#fileUpdated
-     * (com.raytheon.uf.common.localization.FileUpdatedMessage)
-     */
     @Override
     public void fileUpdated(FileUpdatedMessage message) {
         File file = new File(message.getFileName());
@@ -208,22 +202,36 @@ public abstract class PythonScriptController extends PythonScript implements
         LocalizationFile lf = pm.getLocalizationFile(message.getContext(),
                 message.getFileName());
 
-        if (message.getChangeType() == FileChangeType.ADDED) {
-            if (lf != null) {
-                lf.getFile();
-            }
-            pendingAdds.add(name);
-        } else if (changeType == FileChangeType.DELETED) {
+        // remove the local file if it still exists
+        // TODO: is this really necessary
+        if (changeType == FileChangeType.DELETED) {
             if (lf != null) {
                 File toDelete = lf.getFile();
                 toDelete.delete();
             }
-            pendingRemoves.add(name);
-        } else if (changeType == FileChangeType.UPDATED) {
-            if (lf != null) {
-                lf.getFile();
+        }
+        pendingRemoves.add(name);
+
+        // check for modules at other levels
+        Map<LocalizationLevel, LocalizationFile> otherLevels = pm
+                .getTieredLocalizationFile(
+                        message.getContext().getLocalizationType(),
+                        message.getFileName());
+        if (otherLevels.isEmpty()) {
+            // remove from adds in case of deleting from multiple levels at once
+            pendingAdds.remove(name);
+        } else {
+            /*
+             * this is necessary when deleting multiple levels at once because
+             * getTieredLocalizationFile seems to be behind at the time the
+             * update notification is received
+             */
+            for (LocalizationFile otherLf : otherLevels.values()) {
+                if (otherLf.exists()) {
+                    pendingAdds.add(name);
+                    break;
+                }
             }
-            pendingReloads.add(name);
         }
     }
 
@@ -232,98 +240,72 @@ public abstract class PythonScriptController extends PythonScript implements
      * updated. This must be called from the correct thread to work.
      */
     public void processFileUpdates() {
-        for (String toolName : pendingRemoves) {
-            try {
-                removeModule(toolName);
-            } catch (JepException e) {
-                statusHandler.handle(Priority.PROBLEM, "Error removing module "
-                        + toolName, e);
-            }
-        }
-        pendingRemoves.clear();
-
-        for (String toolName : pendingAdds) {
-            try {
-                addModule(toolName);
-            } catch (JepException e) {
-                String pythonErrMsg = PythonErrorExtractor.getPythonError(e,
-                        toolName);
-                if (pythonErrMsg == null) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Error adding module " + toolName, e);
-                } else {
-                    statusHandler.error(pythonErrMsg, e);
+        if (needsUpdated()) {
+            for (String toolName : pendingRemoves) {
+                try {
+                    removeModule(toolName);
+                } catch (JepException e) {
+                    statusHandler.error("Error removing module " + toolName, e);
                 }
             }
-        }
-        pendingAdds.clear();
+            pendingRemoves.clear();
 
-        for (String toolName : pendingReloads) {
-            try {
-                reloadModule(toolName);
-            } catch (JepException e) {
-                String pythonErrMsg = PythonErrorExtractor.getPythonError(e,
-                        toolName);
-                if (pythonErrMsg == null) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Error reloading module " + toolName + "\n", e);
-                } else {
-                    statusHandler.error(pythonErrMsg, e);
+            for (String toolName : pendingAdds) {
+                try {
+                    addModule(toolName);
+                } catch (JepException e) {
+                    String pythonErrMsg = PythonErrorExtractor.getPythonError(e,
+                            toolName);
+                    if (pythonErrMsg == null) {
+                        statusHandler.error("Error adding module " + toolName,
+                                e);
+                    } else {
+                        statusHandler.error(pythonErrMsg, e);
+                    }
                 }
             }
-        }
-        pendingReloads.clear();
-    }
+            pendingAdds.clear();
 
-    /**
-     * Reload an updated module in the interpreter's "cache".
-     * 
-     * @param name
-     *            Module to be reloaded.
-     * @throws JepException
-     *             If an Error is thrown during python execution.
-     */
-    protected void reloadModule(String name) throws JepException {
-        boolean wasInstantiated = isInstantiated(name);
-
-        HashMap<String, Object> argMap = new HashMap<>(1);
-        argMap.put(PyConstants.MODULE_NAME, name);
-        execute("reloadModule", INTERFACE, argMap);
-
-        // it was already initialized, need to get a new instance in the
-        // interpreter now that the module was reloaded
-        // if it wasn't already initialized, it's either a utility or will be
-        // initialized when it's first used
-        if (wasInstantiated) {
-            instantiatePythonScript(name);
+            try {
+                execute("reloadModules", INTERFACE, null);
+            } catch (JepException e) {
+                statusHandler.error(e.getLocalizedMessage(), e);
+            }
         }
     }
 
     /**
      * Add a module to the interpreter's "cache".
-     * 
+     *
      * @param name
      *            Module to be added.
      * @throws JepException
      *             If an Error is thrown during python execution.
      */
     protected void removeModule(String name) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<>(1);
-        argMap.put(PyConstants.MODULE_NAME, name);
+        Map<String, Object> argMap = Collections
+                .singletonMap(PyConstants.MODULE_NAME, name);
         execute("removeModule", INTERFACE, argMap);
     }
 
     /**
      * Remove a module from the interpreter's "cache".
-     * 
+     *
      * @param name
      *            Module to be removed.
      * @throws JepException
      *             If an Error is thrown during python execution.
      */
     protected void addModule(String name) throws JepException {
-        HashMap<String, Object> argMap = new HashMap<>(1);
-        argMap.put(PyConstants.MODULE_NAME, name);
+        Map<String, Object> argMap = Collections
+                .singletonMap(PyConstants.MODULE_NAME, name);
         execute("addModule", INTERFACE, argMap);
+    }
+
+    /**
+     * @return true if modules need to be updated
+     */
+    public boolean needsUpdated() {
+        return !(pendingAdds.isEmpty() && pendingRemoves.isEmpty());
     }
 }

@@ -58,20 +58,23 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 3, 2010            mschenke     Initial creation
- * Feb 18, 2015 4132      mapeters     Fixed issue with deleting overrides.
- * Jun 29, 2015 946       rferrel      Do not allow delete of a protected level file.
- * Nov 13, 2015 4946      mapeters     Use SWTMessageBox instead of MessageDialog.
- * Jan 15, 2016 5242      kbisanz      Replaced LocalizationFile with
- *                                     ILocalizationFile where possible
- * Jan 27, 2016 5054      randerso     Cleaned up SWTMessageBox
- * Mar 25, 2016 5214      mapeters     Support deletion of directories.
- * Apr 12, 2016 4946      mapeters     Fixed issue where action did nothing if prompt == false
- * Jun 02, 2016 4907      mapeters     Close merge/compare editors of deleted files
- * Aug 15, 2016 5834      njensen      Enable delete regardless of protection level
- * Jun 22, 2017 4818      mapeters     Changed setCloseCallback to addCloseCallback
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 03, 2010           mschenke  Initial creation
+ * Feb 18, 2015  4132     mapeters  Fixed issue with deleting overrides.
+ * Jun 29, 2015  946      rferrel   Do not allow delete of a protected level
+ *                                  file.
+ * Nov 13, 2015  4946     mapeters  Use SWTMessageBox instead of MessageDialog.
+ * Jan 15, 2016  5242     kbisanz   Replaced LocalizationFile with
+ *                                  ILocalizationFile where possible
+ * Jan 27, 2016  5054     randerso  Cleaned up SWTMessageBox
+ * Mar 25, 2016  5214     mapeters  Support deletion of directories.
+ * Apr 12, 2016  4946     mapeters  Fixed issue where action did nothing if
+ *                                  prompt == false
+ * Jun 02, 2016  4907     mapeters  Close merge/compare editors of deleted files
+ * Aug 15, 2016  5834     njensen   Enable delete regardless of protection level
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ * Feb 08, 2018  6906     randerso  Fix deletion of pyc files
  *
  * </pre>
  *
@@ -91,7 +94,7 @@ public class DeleteAction extends Action {
     /**
      * Map of extensions associated with the key extension.
      */
-    private Map<String, String> associatedExtensions = new HashMap<>();
+    private Map<String, String[]> associatedExtensions = new HashMap<>();
 
     public DeleteAction(IWorkbenchPage page, LocalizationFile[] toDelete) {
         this(page, toDelete, true);
@@ -259,10 +262,9 @@ public class DeleteAction extends Action {
             if (parts.length > 1) {
                 // file has an extension, delete associated extensions if any
                 String ext = parts[parts.length - 1];
-                String associated = associatedExtensions.get(ext);
+                String[] extensions = associatedExtensions.get(ext);
 
-                if (associated != null) {
-                    String[] extensions = associated.split(",");
+                if (extensions != null) {
                     String path = file.getPath().substring(0,
                             file.getPath().lastIndexOf(name));
 
@@ -312,6 +314,6 @@ public class DeleteAction extends Action {
      */
     private void populateAssociatedExtensions() {
         // Python: .py = .pyo, .pyc
-        associatedExtensions.put("py", "pyo, pyc");
+        associatedExtensions.put("py", new String[] { "pyo", "pyc" });
     }
 }
