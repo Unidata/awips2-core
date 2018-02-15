@@ -80,6 +80,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Mar 02, 2017  6153     bsteffen  Reset descriptor on shared maps when
  *                                  removing a pane.
  * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
+ * Feb 14, 2018  6866     njensen   Don't mess with map layers while swapping
  * 
  * </pre>
  * 
@@ -87,7 +88,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 
  */
 public class PaneManager extends InputAdapter implements IMultiPaneEditor {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PaneManager.class);
 
     /** The map input manager */
@@ -121,8 +123,8 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         // Add us as input handler, virtual cursor
         inputManager.registerMouseHandler(this, InputPriority.PART);
 
-        displayPanes = new ArrayList<VizDisplayPane>();
-        listeners = new HashSet<ISelectedPanesChangedListener>();
+        displayPanes = new ArrayList<>();
+        listeners = new HashSet<>();
     }
 
     public void initializeComponents(IDisplayPaneContainer container,
@@ -147,7 +149,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                 if (waiting) {
                     return;
                 }
-                if (displayPanes.size() > 0) {
+                if (!displayPanes.isEmpty()) {
                     waiting = true;
                     VizApp.runAsync(new Runnable() {
                         @Override
@@ -191,8 +193,9 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
     }
 
+    @Override
     public void hidePane(IDisplayPane pane) {
-        if (pane.isVisible() == true) {
+        if (pane.isVisible()) {
             VizDisplayPane glPane = (VizDisplayPane) pane;
             --displayedPaneCount;
             pane.setVisible(false);
@@ -209,8 +212,9 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         refresh();
     }
 
+    @Override
     public void showPane(IDisplayPane pane) {
-        if (pane.isVisible() == false) {
+        if (!pane.isVisible()) {
             VizDisplayPane glPane = (VizDisplayPane) pane;
             ++displayedPaneCount;
             pane.setVisible(true);
@@ -255,7 +259,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     }
 
     public IRenderableDisplay[] getRenderableDisplays() {
-        List<IRenderableDisplay> rDisplays = new ArrayList<IRenderableDisplay>();
+        List<IRenderableDisplay> rDisplays = new ArrayList<>();
         for (IDisplayPane pane : displayPanes) {
             rDisplays.add(pane.getRenderableDisplay());
         }
@@ -282,7 +286,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         GridEnvelope ge = pane.getDescriptor().getGridGeometry().getGridRange();
         IExtent extent = new PixelExtent(ge);
         // Verify grid space is within the extent, otherwiser return null
-        if (world == null || extent.contains(world) == false) {
+        if (world == null || !extent.contains(world)) {
             return null;
         }
         // use descriptor to convert pixel world to CRS world space
@@ -318,6 +322,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         return pane.gridToScreen(grid);
     }
 
+    @Override
     public void registerMouseHandler(IInputHandler handler,
             InputPriority priority) {
         inputManager.registerMouseHandler(handler, priority);
@@ -329,6 +334,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
      * @param handler
      *            the handler to register
      */
+    @Override
     public void registerMouseHandler(IInputHandler handler) {
         inputManager.registerMouseHandler(handler);
     }
@@ -339,6 +345,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
      * @param handler
      *            the handler to unregister
      */
+    @Override
     public void unregisterMouseHandler(IInputHandler handler) {
         inputManager.unregisterMouseHandler(handler);
     }
@@ -386,11 +393,6 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         return retval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.IDisplayContainer#getDisplayPanes()
-     */
     @Override
     public IDisplayPane[] getDisplayPanes() {
         return displayPanes.toArray(new VizDisplayPane[displayPanes.size()]);
@@ -405,11 +407,6 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         return inputManager;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.IDisplayPaneContainer#getActiveDisplayPane()
-     */
     @Override
     public IDisplayPane getActiveDisplayPane() {
         if (activatedPane == null) {
@@ -426,23 +423,11 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         return activatedPane;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPanelEditor#getSelectedPane()
-     */
     @Override
     public IDisplayPane getSelectedPane(String action) {
         return selectedPanes == null ? null : selectedPanes.get(action);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#getSelectedPanes(java.lang
-     * .String)
-     */
     @Override
     public IDisplayPane[] getSelectedPanes(String action) {
         IDisplayPane pane = getSelectedPane(action);
@@ -452,35 +437,16 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         return new IDisplayPane[] { pane };
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPanelEditor#getNumberofPanes()
-     */
     @Override
     public int getNumberofPanes() {
         return displayPanes.size();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#isSelectedPane(com.raytheon
-     * .viz.core.IDisplayPane)
-     */
     @Override
     public boolean isSelectedPane(String action, IDisplayPane pane) {
         return getSelectedPane(action) == pane;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.editor.IMultiPaneEditor#setSelectedPane(com.raytheon
-     * .viz.core.IDisplayPane)
-     */
     @Override
     public void setSelectedPane(String action, IDisplayPane pane) {
         if (pane != null && !displayPanes.contains(pane)) {
@@ -488,7 +454,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                     "setSelectedPane called with pane not in this IMultiPaneEditor");
         }
         if (selectedPanes == null) {
-            selectedPanes = new HashMap<String, IDisplayPane>();
+            selectedPanes = new HashMap<>();
         }
         selectedPanes.put(action, pane);
 
@@ -502,22 +468,26 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
     protected IDisplayPane addPane(IRenderableDisplay renderableDisplay,
             Composite canvasComp) {
 
-        if (displayPanes.size() > 0) {
-            for (ResourcePair rp : renderableDisplay.getDescriptor()
-                    .getResourceList()) {
-                if (rp.getProperties().isMapLayer()) {
-                    renderableDisplay.getDescriptor().getResourceList()
-                            .remove(rp);
-                }
-            }
-
-            for (IDisplayPane gp : displayPanes) {
-                for (ResourcePair rp : gp.getDescriptor().getResourceList()) {
+        if (renderableDisplay != null && !renderableDisplay.isSwapping()) {
+            if (!displayPanes.isEmpty()) {
+                for (ResourcePair rp : renderableDisplay.getDescriptor()
+                        .getResourceList()) {
                     if (rp.getProperties().isMapLayer()) {
                         renderableDisplay.getDescriptor().getResourceList()
-                                .add(rp);
+                                .remove(rp);
                     }
                 }
+
+                for (IDisplayPane gp : displayPanes) {
+                    for (ResourcePair rp : gp.getDescriptor()
+                            .getResourceList()) {
+                        if (rp.getProperties().isMapLayer()) {
+                            renderableDisplay.getDescriptor().getResourceList()
+                                    .add(rp);
+                        }
+                    }
+                }
+
             }
         }
 
@@ -536,7 +506,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                     activatedPane = pane;
                 }
                 ++displayedPaneCount;
-                if (displayPanes.size() > 0) {
+                if (!displayPanes.isEmpty()) {
                     pane.getRenderableDisplay().setBackgroundColor(
                             displayPanes.get(0).getRenderableDisplay()
                                     .getBackgroundColor());
@@ -547,7 +517,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
                                             .getBackgroundColor());
                 }
 
-                if (displayPanes.size() > 0) {
+                if (!displayPanes.isEmpty()) {
                     pane.getDescriptor().synchronizeTimeMatching(
                             displayPanes.get(0).getDescriptor());
                 }
@@ -589,7 +559,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
         boolean wasVisible = pane.isVisible();
         displayPanes.remove(pane);
-        if (activatedPane == pane && displayPanes.size() > 0) {
+        if (activatedPane == pane && !displayPanes.isEmpty()) {
             activatedPane = displayPanes.get(0);
         } else {
             activatedPane = null;
@@ -605,14 +575,17 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
 
         // Undo map sharing that was done in addPane
-        IDescriptor descriptor = pane.getDescriptor();
-        if (descriptor != null) {
-            for (ResourcePair rp : descriptor.getResourceList()) {
-                if (rp.getProperties().isMapLayer()) {
-                    AbstractVizResource<?, ?> resource = rp.getResource();
-                    if (resource != null
-                            && resource.getDescriptor() == descriptor) {
-                        resetDescriptor(rp);
+        if (pane.getRenderableDisplay() != null
+                && !pane.getRenderableDisplay().isSwapping()) {
+            IDescriptor descriptor = pane.getDescriptor();
+            if (descriptor != null) {
+                for (ResourcePair rp : descriptor.getResourceList()) {
+                    if (rp.getProperties().isMapLayer()) {
+                        AbstractVizResource<?, ?> resource = rp.getResource();
+                        if (resource != null
+                                && resource.getDescriptor() == descriptor) {
+                            resetDescriptor(rp);
+                        }
                     }
                 }
             }
@@ -691,66 +664,30 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         composite = null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * addRenderableDisplayChangedListener
-     * (com.raytheon.uf.viz.core.IRenderableDisplayChangedListener)
-     */
     @Override
     public void addRenderableDisplayChangedListener(
             IRenderableDisplayChangedListener displayChangedListener) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * notifyRenderableDisplayChangedListeners
-     * (com.raytheon.uf.viz.core.IDisplayPane,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay)
-     */
     @Override
     public void notifyRenderableDisplayChangedListeners(IDisplayPane pane,
             IRenderableDisplay display, DisplayChangeType type) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @seecom.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * removeRenderableDisplayChangedListener
-     * (com.raytheon.uf.viz.core.IRenderableDisplayChangedListener)
-     */
     @Override
     public void removeRenderableDisplayChangedListener(
             IRenderableDisplayChangedListener displayChangedListener) {
-
+        // no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#
-     * addSelectedPaneChangedListener
-     * (com.raytheon.viz.ui.editor.ISelectedPaneChangedListener)
-     */
     @Override
     public void addSelectedPaneChangedListener(
             ISelectedPanesChangedListener listener) {
         listeners.add(listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.ui.editor.IMultiPaneEditor#
-     * removeSelectedPaneChangedListener
-     * (com.raytheon.viz.ui.editor.ISelectedPaneChangedListener)
-     */
     @Override
     public void removeSelectedPaneChangedListener(
             ISelectedPanesChangedListener listener) {
