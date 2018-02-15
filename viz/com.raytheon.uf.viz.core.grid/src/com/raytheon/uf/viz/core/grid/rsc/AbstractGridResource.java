@@ -150,6 +150,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
  * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
+ * Feb 15, 2018  6902     njensen   Added interrogate support for Direction To
  *
  * </pre>
  *
@@ -159,6 +160,7 @@ import com.vividsolutions.jts.geom.Coordinate;
 public abstract class AbstractGridResource<T extends AbstractResourceData>
         extends AbstractVizResource<T, IMapDescriptor>
         implements ImageProvider, Interrogatable {
+
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
 
@@ -170,8 +172,16 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     private static final int IMAGE_TILE_SIZE = 1024;
 
+    /** @deprecated Use {@link #DIRECTION_FROM_INTERROGATE_KEY} instead */
+    @Deprecated
     public static final InterrogationKey<Number> DIRECTION_INTERROGATE_KEY = new StringInterrogationKey<>(
             "GridVectorDirection", Number.class);
+
+    public static final InterrogationKey<Number> DIRECTION_FROM_INTERROGATE_KEY = new StringInterrogationKey<>(
+            "GridVectorDirectionFrom", Number.class);
+
+    public static final InterrogationKey<Number> DIRECTION_TO_INTERROGATE_KEY = new StringInterrogationKey<>(
+            "GridVectorDirectionTo", Number.class);
 
     /**
      * This is needed because the user wants to see the unit exactly as it
@@ -193,7 +203,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     @Deprecated
     protected static final String INTERROGATE_UNIT = "unit";
 
-    /** @deprecated Use {@link #DIRECTION_INTERROGATE_KEY} */
+    /** @deprecated Use {@link #DIRECTION_FROM_INTERROGATE_KEY} */
     @Deprecated
     protected static final String INTERROGATE_DIRECTION = "direction";
 
@@ -867,7 +877,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     public String inspect(ReferencedCoordinate coord) throws VizException {
         InterrogateMap map = interrogate(coord, getTimeForResource(),
                 Interrogator.VALUE, UNIT_STRING_INTERROGATE_KEY,
-                DIRECTION_INTERROGATE_KEY);
+                DIRECTION_FROM_INTERROGATE_KEY);
         if (map == null || map.isEmpty()) {
             return "NO DATA";
         }
@@ -891,8 +901,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 }
             }
         }
-        if (map.containsKey(DIRECTION_INTERROGATE_KEY)) {
-            double dir = map.get(DIRECTION_INTERROGATE_KEY).doubleValue();
+        if (map.containsKey(DIRECTION_FROM_INTERROGATE_KEY)) {
+            double dir = map.get(DIRECTION_FROM_INTERROGATE_KEY).doubleValue();
             result = String.format("%.0f\u00B0 ", dir) + result;
         }
         return result;
@@ -903,6 +913,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         Set<InterrogationKey<?>> result = new HashSet<>();
         result.add(Interrogator.VALUE);
         result.add(DIRECTION_INTERROGATE_KEY);
+        result.add(DIRECTION_FROM_INTERROGATE_KEY);
+        result.add(DIRECTION_TO_INTERROGATE_KEY);
         result.add(DATA_SOURCE_INTERROGATE_KEY);
         return result;
     }
@@ -956,12 +968,29 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     }
                 }
             }
+
             if ((keySet.contains(DIRECTION_INTERROGATE_KEY)
-                    && data.isVector())) {
-                GridSampler sampler = new GridSampler(data.getDirectionFrom(),
-                        interpolation);
-                Double dir = sampler.sample(pixel.x, pixel.y);
-                result.put(DIRECTION_INTERROGATE_KEY, dir);
+                    || keySet.contains(DIRECTION_FROM_INTERROGATE_KEY)
+                    || keySet.contains(DIRECTION_TO_INTERROGATE_KEY))
+                    && data.isVector()) {
+
+                if (keySet.contains(DIRECTION_INTERROGATE_KEY)
+                        || keySet.contains(DIRECTION_FROM_INTERROGATE_KEY)) {
+                    GridSampler samplerFrom = new GridSampler(
+                            data.getDirectionFrom(),
+                            interpolation);
+                    Double dir = samplerFrom.sample(pixel.x, pixel.y);
+                    result.put(DIRECTION_INTERROGATE_KEY, dir);
+                    result.put(DIRECTION_FROM_INTERROGATE_KEY, dir);
+                }
+
+                if (keySet.contains(DIRECTION_TO_INTERROGATE_KEY)) {
+                    GridSampler samplerTo = new GridSampler(
+                            data.getDirectionTo(), interpolation);
+                    Double dir = samplerTo.sample(pixel.x, pixel.y);
+                    result.put(DIRECTION_TO_INTERROGATE_KEY, dir);
+                }
+
             }
         }
         return result;
@@ -997,13 +1026,13 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             throws VizException {
         InterrogateMap map = interrogate(coord, getTimeForResource(),
                 Interrogator.VALUE, UNIT_STRING_INTERROGATE_KEY,
-                DIRECTION_INTERROGATE_KEY);
+                DIRECTION_FROM_INTERROGATE_KEY);
         if (map == null || map.isEmpty()) {
             return null;
         }
         Measure<? extends Number, ?> value = map.get(Interrogator.VALUE);
         String unitString = map.get(UNIT_STRING_INTERROGATE_KEY);
-        Number direction = map.get(DIRECTION_INTERROGATE_KEY);
+        Number direction = map.get(DIRECTION_FROM_INTERROGATE_KEY);
 
         Map<String, Object> result = new HashMap<>();
         if (value != null) {
