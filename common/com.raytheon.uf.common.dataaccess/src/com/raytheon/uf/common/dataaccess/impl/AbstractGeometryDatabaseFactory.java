@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -37,6 +37,7 @@ import com.raytheon.uf.common.dataaccess.geom.IGeometryData.Type;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil;
 import com.raytheon.uf.common.dataaccess.util.DatabaseQueryUtil.QUERY_MODE;
 import com.raytheon.uf.common.dataplugin.level.Level;
+import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
 import com.raytheon.uf.common.time.BinOffset;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
@@ -45,11 +46,11 @@ import com.vividsolutions.jts.geom.Geometry;
 /**
  * Abstracts the retrieval of geometry data by running queries directly against
  * the database.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jan 29, 2013           bkowal    Initial creation
@@ -82,9 +83,10 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                  IDataRequest
  * Jul 27, 2016  2416     tgurney   Stub impl of getNotificationFilter()
  * Oct 06, 2016  5926     dgilling  Add executeGetColumns.
- * 
+ * Feb 19, 2018  7220     mapeters  Improve filtering of available identifier values
+ *
  * </pre>
- * 
+ *
  * @author bkowal
  */
 
@@ -103,6 +105,8 @@ public abstract class AbstractGeometryDatabaseFactory
 
     protected static final String DEFAULT_SCHEMA = "public";
 
+    private static final String TABLE = "table";
+
     private final String databaseName;
 
     private final String[] requiredIdentifiers;
@@ -111,7 +115,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Constructor
-     * 
+     *
      * @param databaseName
      *            the name of the database to execute queries against
      * @param requiredIdentifiers
@@ -119,7 +123,7 @@ public abstract class AbstractGeometryDatabaseFactory
      *            (ifdef)
      * @param optionalIdentifiers
      *            the optional identifiers that can constrain the request
-     * 
+     *
      */
     public AbstractGeometryDatabaseFactory(String databaseName,
             String[] requiredIdentifiers, String[] optionalIdentifiers) {
@@ -173,7 +177,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Runs a query to retrieve Data Times from the database.
-     * 
+     *
      * @param query
      *            the query to execute
      * @param request
@@ -210,7 +214,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Runs a query to retrieve IGeometryData from the database.
-     * 
+     *
      * @param query
      *            the query to execute
      * @param request
@@ -226,7 +230,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Runs a query to retrieve raw data from the database.
-     * 
+     *
      * @param query
      *            the query to execute
      * @param request
@@ -288,13 +292,13 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a query that will be used to retrieve time from the database based
      * on the provided request.
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @param refTimeOnly
      *            true if only unique refTimes should be returned(without a
      *            forecastHr)
-     * 
+     *
      * @return the query
      */
     protected abstract String assembleGetTimes(IDataRequest request,
@@ -303,7 +307,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a query used to retrieve data from the database based on the
      * provided request and a list of DataTimes.
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @param times
@@ -317,7 +321,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a query used to retrieve data from the database based on the
      * provided request and the specified TimeRange.
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @param timeRange
@@ -331,7 +335,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a query used to retrieve location information from the database
      * based on the provided request
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @return the query
@@ -342,7 +346,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a query used to retrieve all valid identifier values based on the
      * provided request and identifier
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @param identifierKey
@@ -352,10 +356,10 @@ public abstract class AbstractGeometryDatabaseFactory
     protected String assembleGetIdentifierValues(IDataRequest request,
             String identifierKey) {
         String query;
-        if (identifierKey.equals("table")) {
+        if (identifierKey.equals(TABLE)) {
             query = assembleGetTableNames();
         } else {
-            query = assembleGetColumnValues(extractTableName(request),
+            query = assembleGetColumnValues(request, extractTableName(request),
                     identifierKey);
         }
         return query;
@@ -366,7 +370,7 @@ public abstract class AbstractGeometryDatabaseFactory
      * in the current database, excluding information_schema and system
      * catalogs. Each table name is qualified with the name of its schema, even
      * if all are in schema 'public'.
-     * 
+     *
      * @return the query
      */
     protected String assembleGetTableNames() {
@@ -381,24 +385,46 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Builds a query used to retrieve all values in a single column of a table.
-     * 
+     *
      * @param tableName
      *            name of the table
      * @param columnName
      *            name of the column
      * @return the query
      */
-    protected String assembleGetColumnValues(String tableName,
-            String columnName) {
-        return String.format(
-                "select distinct %1$s from %2$s where %1$s is not null order by %1$s;",
-                columnName, tableName);
+    protected String assembleGetColumnValues(IDataRequest request,
+            String tableName, String columnName) {
+        StringBuilder sql = new StringBuilder("select distinct ");
+        sql.append(columnName).append(" from ").append(tableName);
+        sql.append(" where ").append(columnName).append(" is not null");
+
+        for (Map.Entry<String, Object> entry : request.getIdentifiers()
+                .entrySet()) {
+            String key = entry.getKey();
+            if (TABLE.equals(key)) {
+                continue;
+            }
+            Object value = entry.getValue();
+
+            RequestConstraint rc;
+            if (value instanceof RequestConstraint) {
+                rc = (RequestConstraint) value;
+            } else {
+                rc = new RequestConstraint(value.toString());
+            }
+
+            sql.append(" and ").append(key).append(rc.toSqlString());
+        }
+
+        sql.append(" order by " + columnName + ";");
+
+        return sql.toString();
     }
 
     /**
      * Extracts and returns value of "table" identifier from request. Never
      * returns null; throws exception instead.
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @return the table name
@@ -406,7 +432,7 @@ public abstract class AbstractGeometryDatabaseFactory
      *             if value for identifier "table" is null or empty
      */
     protected String extractTableName(IDataRequest request) {
-        String tableName = (String) request.getIdentifiers().get("table");
+        String tableName = (String) request.getIdentifiers().get(TABLE);
         if (tableName == null || tableName.isEmpty()) {
             throw new IncompatibleRequestException(
                     "You must provide a non-null, non-empty value for "
@@ -420,7 +446,7 @@ public abstract class AbstractGeometryDatabaseFactory
      * strings: schema name and table name. If the value of "table" in the
      * request does not include the schema, the returned schema will be the
      * default schema.
-     * 
+     *
      * @param request
      *            the original request that we are processing
      * @return array containing schema name and table name
@@ -447,7 +473,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds a postgres-specific SQL query used to retrieve available
      * parameters (columns) of the requested table from the database.
-     * 
+     *
      * @param request
      *            the request that we are processing
      * @return the query
@@ -465,7 +491,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Builds the data objects that will be returned by calls to getData() on
      * the factory
-     * 
+     *
      * @param serverResult
      *            the results from the query run on the server
      * @param paramNames
@@ -495,7 +521,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Constructs a single IGeometryData
-     * 
+     *
      * @param data
      *            the raw data associated with a single row retrieved from the
      *            database
@@ -510,7 +536,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Constructs a DefaultGeometryData based on the provided information
-     * 
+     *
      * @param time
      *            the provided DataTime
      * @param level
@@ -534,7 +560,7 @@ public abstract class AbstractGeometryDatabaseFactory
 
     /**
      * Constructs a DefaultGeometryData based on the provided information
-     * 
+     *
      * @param time
      *            the provided DataTime
      * @param level
@@ -599,7 +625,7 @@ public abstract class AbstractGeometryDatabaseFactory
     /**
      * Queries the the table specified by the given request to determine which
      * of the given columnsToCheck it contains.
-     * 
+     *
      * @param columnsToCheck
      *            the columns to check the existence of
      * @param request

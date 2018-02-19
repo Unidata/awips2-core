@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,11 +38,11 @@ import com.vividsolutions.jts.io.WKBReader;
 /**
  * {@code IDataFactory} implementation for retrieving geometry data and metadata
  * from station database tables. Data will be time and level agnostic.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 24, 2015   4585     dgilling    Initial creation
@@ -50,14 +50,15 @@ import com.vividsolutions.jts.io.WKBReader;
  * Jun 13, 2016   5574     tgurney     Add RequestConstraint query support
  * Jul 05, 2016   5728     mapeters    Use RequestConstraint to build IN
  *                                     constraints
- * 
+ * Feb 19, 2018   7220     mapeters    Improve filtering of available identifier values
+ *
  * </pre>
- * 
+ *
  * @author dgilling
  */
 
-public class StationGeometryTimeAgnosticDatabaseFactory extends
-        AbstractGeometryTimeAgnosticDatabaseFactory {
+public class StationGeometryTimeAgnosticDatabaseFactory
+        extends AbstractGeometryTimeAgnosticDatabaseFactory {
 
     /*
      * we don't want to let them use the_geom as a parameter since it will come
@@ -122,13 +123,14 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
         try {
             geometry = (wkbReader.get()).read((byte[]) geomWKB);
         } catch (ParseException e) {
-            throw new DataRetrievalException("Failed to parse the geometry.", e);
+            throw new DataRetrievalException("Failed to parse the geometry.",
+                    e);
         }
 
         String location = (String) data[1];
 
-        return super.buildGeometryData(null, null, geometry, location, attrs,
-                2, data, paramNames);
+        return super.buildGeometryData(null, null, geometry, location, attrs, 2,
+                data, paramNames);
     }
 
     private String assembleQuery(IDataRequest request, boolean dataQuery) {
@@ -217,7 +219,8 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
         return stringBuilder.toString();
     }
 
-    private static String buildInConstraint(String fieldName, Object[] elements) {
+    private static String buildInConstraint(String fieldName,
+            Object[] elements) {
         String[] strElements = new String[elements.length];
         for (int i = 0; i < elements.length; ++i) {
             strElements[i] = String.valueOf(elements[i]);
@@ -239,6 +242,6 @@ public class StationGeometryTimeAgnosticDatabaseFactory extends
     @Override
     protected String assembleGetIdentifierValues(IDataRequest request,
             String identifierKey) {
-        return assembleGetColumnValues(tableName, identifierKey);
+        return assembleGetColumnValues(request, tableName, identifierKey);
     }
 }
