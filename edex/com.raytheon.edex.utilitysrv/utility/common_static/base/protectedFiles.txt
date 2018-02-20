@@ -24,10 +24,10 @@ BASE:cave_static/derivedParameters/DerivedParameterInterface.py
 # GFE protected files
 BASE:cave_static/gfe/userPython/textProducts/HLSTCV_Common.py
 BASE:cave_static/gfe/userPython/textProducts/MultipleElementTable.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/DefaultCallToActions.py
+BASE:cave_static/gfe/userPython/textUtilities/DefaultCallToActions.py
 
-CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultAreaDictionary.py
-CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultCityLocation.py
+CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultAreaDictionary.py
+CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultCityLocation.py
 
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py
@@ -84,34 +84,34 @@ BASE:common_static/gfe/textproducts/templates/utility/FireWxZones_EA_Site_MultiP
 BASE:common_static/gfe/textproducts/templates/utility/MarineZones_EA_Site_MultiPil_Definition.py
 BASE:common_static/gfe/textproducts/templates/utility/PublicZones_EA_Site_MultiPil_Definition.py
 
-BASE:cave_static/gfe/userPython/textUtilities/regular/VTECMessageType.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/CombinedPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/CommonUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigurableIssuance.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigVariables.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/DiscretePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/EditAreaUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/FirePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Header.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Holidays.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Interfaces.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/MarinePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ModuleAccessor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/PhraseBuilder.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SAF_Overrides.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/FWS_Overrides.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SampleAnalysis.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ScalarPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SimpleTableUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/StringUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TableBuilder.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TextRules.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TextUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TimeDescriptor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TimeRangeUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/UnitConvertor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/VectorRelatedPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/WxPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/VTECMessageType.py
+BASE:cave_static/gfe/userPython/textUtilities/CombinedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/CommonUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/ConfigurableIssuance.py
+BASE:cave_static/gfe/userPython/textUtilities/ConfigVariables.py
+BASE:cave_static/gfe/userPython/textUtilities/DiscretePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/EditAreaUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/FirePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/Header.py
+BASE:cave_static/gfe/userPython/textUtilities/Holidays.py
+BASE:cave_static/gfe/userPython/textUtilities/Interfaces.py
+BASE:cave_static/gfe/userPython/textUtilities/MarinePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/ModuleAccessor.py
+BASE:cave_static/gfe/userPython/textUtilities/PhraseBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/SAF_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/FWS_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/SampleAnalysis.py
+BASE:cave_static/gfe/userPython/textUtilities/ScalarPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/SimpleTableUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/StringUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/TableBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/TextRules.py
+BASE:cave_static/gfe/userPython/textUtilities/TextUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/TimeDescriptor.py
+BASE:cave_static/gfe/userPython/textUtilities/TimeRangeUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/UnitConvertor.py
+BASE:cave_static/gfe/userPython/textUtilities/VectorRelatedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/WxPhrases.py
 
 BASE:cave_static/gfe/userPython/utilities/ISC_Utility.py
 BASE:cave_static/gfe/userPython/utilities/SmartScript.py
