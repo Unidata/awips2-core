@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,11 +35,11 @@ import com.vividsolutions.jts.io.WKBReader;
  * A data factory for retrieving data from the maps database. Currently, the
  * name of the table to retrieve data from and the name of the geometry field of
  * interest are required identifiers.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 28, 2013            bkowal      Initial creation
@@ -51,14 +51,14 @@ import com.vividsolutions.jts.io.WKBReader;
  * Aug 13, 2015 4705       bkowal      Make parameters optional. Fixed implementation of optional
  *                                     location field.
  * Apr 26, 2016 5587       tgurney     Support getIdentifierValues()
- * 
+ * Feb 19, 2018 7220       mapeters    Improve filtering of available identifier values
+ *
  * </pre>
- * 
+ *
  * @author bkowal
- * @version 1.0
  */
-public class MapsGeometryFactory extends
-        AbstractGeometryTimeAgnosticDatabaseFactory {
+public class MapsGeometryFactory
+        extends AbstractGeometryTimeAgnosticDatabaseFactory {
     private static final String[] REQUIRED_IDENTIFIERS = new String[] {
             MapsQueryAssembler.REQUIRED_IDENTIFIERS.IDENTIFIER_TABLE,
             MapsQueryAssembler.REQUIRED_IDENTIFIERS.IDENTIFIER_GEOM_FIELD };
@@ -99,7 +99,7 @@ public class MapsGeometryFactory extends
         Geometry geometry = null;
         Object object = data[0];
         int dataIndex = 1;
-        if ((object instanceof byte[]) == false) {
+        if (!(object instanceof byte[])) {
             throw new DataRetrievalException(
                     "Retrieved Geometry was not the expected type; was expecting byte[], received: "
                             + object.getClass().getName());
@@ -107,7 +107,8 @@ public class MapsGeometryFactory extends
         try {
             geometry = (wkbReaderWrapper.get()).read((byte[]) object);
         } catch (ParseException e) {
-            throw new DataRetrievalException("Failed to parse the geometry.", e);
+            throw new DataRetrievalException("Failed to parse the geometry.",
+                    e);
         }
         String location = null;
         /*
@@ -143,7 +144,7 @@ public class MapsGeometryFactory extends
         } else if (identifierKey.equals(geomField)) {
             query = assembleGetGeomFieldNames(request);
         } else {
-            query = assembleGetColumnValues(extractTableName(request),
+            query = assembleGetColumnValues(request, extractTableName(request),
                     identifierKey);
         }
         return query;
@@ -153,12 +154,10 @@ public class MapsGeometryFactory extends
         String[] tableParsed = splitTableName(request);
         String schema = tableParsed[0];
         String tableName = tableParsed[1];
-        return String.format(
-                "select distinct column_name "
-                        + "from information_schema.columns "
-                        + "where table_name = '%s' "
-                        + "and table_schema = '%s'"
-                        + "and column_name like 'the_geom%%' "
-                        + "order by column_name", tableName, schema);
+        return String.format("select distinct column_name "
+                + "from information_schema.columns "
+                + "where table_name = '%s' " + "and table_schema = '%s'"
+                + "and column_name like 'the_geom%%' " + "order by column_name",
+                tableName, schema);
     }
 }
