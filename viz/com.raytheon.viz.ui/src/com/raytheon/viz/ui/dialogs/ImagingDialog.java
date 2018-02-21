@@ -98,11 +98,12 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  *                                  color dialog
  * Sep 12, 2016  3241     bsteffen  Remove image combination from core imaging
  *                                  dialog
+ * Feb 20, 2018  6908     njensen   Get imaging capability from blended resource
+ *                                  if blended
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class ImagingDialog extends CaveSWTDialog implements
         IVizEditorChangedListener, IRenderableDisplayChangedListener,
@@ -164,7 +165,7 @@ public class ImagingDialog extends CaveSWTDialog implements
      */
     private Button interpolateColorsCheckbox;
 
-    private final String UNSAVED_CMAP_DISPLAY_NAME = "Untitled Colormap";
+    private static final String UNSAVED_CMAP_DISPLAY_NAME = "Untitled Colormap";
 
     private boolean fromControl = false;
 
@@ -208,7 +209,6 @@ public class ImagingDialog extends CaveSWTDialog implements
      * 
      * @param parentShell
      * @param initialEditor
-     * @param dialogTitle
      */
     public ImagingDialog(Shell parentShell, IDisplayPaneContainer initialEditor) {
         this(parentShell);
@@ -631,7 +631,7 @@ public class ImagingDialog extends CaveSWTDialog implements
      * @return
      */
     private List<AbstractVizResource<?, ?>> getResourcesToEdit(Type type) {
-        List<AbstractVizResource<?, ?>> rscsToEdit = new ArrayList<AbstractVizResource<?, ?>>();
+        List<AbstractVizResource<?, ?>> rscsToEdit = new ArrayList<>();
 
         if (currentEditor != null) {
             for (IDisplayPane pane : getDisplayPanesToEdit()) {
@@ -673,7 +673,7 @@ public class ImagingDialog extends CaveSWTDialog implements
      * @return
      */
     private IDisplayPane[] getDisplayPanesToEdit() {
-        List<IDisplayPane> panesToEdit = new ArrayList<IDisplayPane>();
+        List<IDisplayPane> panesToEdit = new ArrayList<>();
         if (currentEditor != null) {
             IDisplayPane[] panes = currentEditor.getDisplayPanes();
             if (currentEditor instanceof IMultiPaneEditor) {
@@ -897,8 +897,12 @@ public class ImagingDialog extends CaveSWTDialog implements
             brightnessText.setVisible(true);
             contrastText.setVisible(true);
 
-            ImagingCapability imgCap = topResource
-                    .getCapability(ImagingCapability.class);
+            ImagingCapability imgCap = null;
+            if (blended) {
+                imgCap = firstResource.getCapability(ImagingCapability.class);
+            } else {
+                imgCap = topResource.getCapability(ImagingCapability.class);
+            }
             brightnessScale
                     .setSelection((int) (imgCap.getBrightness() * 100.0f));
 
