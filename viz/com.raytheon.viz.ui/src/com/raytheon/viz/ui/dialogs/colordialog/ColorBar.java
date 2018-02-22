@@ -77,6 +77,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Feb 27, 2017  6116     mapeters    Don't hardcode size of nav buttons
  * Feb 07, 2018  6816     randerso    Fix colorbar labeling for GFE logFactor
  *                                    color maps
+ * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
  *
  * </pre>
  *
@@ -446,6 +447,11 @@ public class ColorBar extends Composite
             gc.setAlpha(colorData.alphaValue);
             int topSliderX = reIndex(getColorCount(), bar.width,
                     topSliderIndex);
+            /*
+             * reIndex positions it at the middle, additional math is needed to
+             * shift it to the left edge of the color
+             */
+            topSliderX -= bar.width / getColorCount() / 2;
             int[] topArrowPolygon = calcTopArrow(topSliderX);
             gc.fillPolygon(topArrowPolygon);
             gc.setAlpha(255);
@@ -455,7 +461,7 @@ public class ColorBar extends Composite
             /* Draw text that is displayed next to the top slider arrow. */
             gc.setForeground(white);
             gc.setFont(font);
-            String text = getSliderText(topSliderIndex);
+            String text = getSliderText(topSliderIndex - 0.5);
             int x = topSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (topSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -475,6 +481,11 @@ public class ColorBar extends Composite
             gc.setAlpha(colorData.alphaValue);
             int bottomSliderX = reIndex(getColorCount(), bar.width,
                     bottomSliderIndex);
+            /*
+             * reIndex positions it at the middle, additional math is needed to
+             * shift it to the right edge of the color
+             */
+            bottomSliderX += bar.width / getColorCount() / 2;
             int[] bottomArrowPolygon = calcBottomArrow(bottomSliderX);
             gc.fillPolygon(bottomArrowPolygon);
             gc.setAlpha(255);
@@ -483,7 +494,7 @@ public class ColorBar extends Composite
 
             /* Draw text that is displayed next to the bottom slider arrow. */
             gc.setForeground(white);
-            text = getSliderText(bottomSliderIndex);
+            text = getSliderText(bottomSliderIndex + 0.5);
             x = bottomSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (bottomSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -908,7 +919,7 @@ public class ColorBar extends Composite
      * @param index
      * @return
      */
-    protected String getSliderText(int index) {
+    protected String getSliderText(double index) {
         int size = getColorCount();
         UnitConverter unitConv = cmapParams.getColorMapToDisplayConverter();
 
@@ -931,20 +942,20 @@ public class ColorBar extends Composite
             }
 
         } else if (cmapParams.getLogFactor() > 0.0) {
-            double idx = (double) index / (size - 1);
+            double idx = index / (size - 1);
             value = Colormapper.getLogFactorValue(idx, min, max,
                     cmapParams.getLogFactor());
             if (index > 0) {
-                idx = (double) (index - 1) / (size - 1);
+                idx = (index - 1) / (size - 1);
                 lastVal = Colormapper.getLogFactorValue(idx, min, max,
                         cmapParams.getLogFactor());
             }
         } else {
             // linear color mapping
-            double idx = (double) index / (size - 1);
+            double idx = index / (size - 1);
             value = Colormapper.getLinearValue(idx, min, max);
             if (index > 0) {
-                idx = (double) (index - 1) / (size - 1);
+                idx = (index - 1) / (size - 1);
                 lastVal = Colormapper.getLinearValue(idx, min, max);
             }
         }
