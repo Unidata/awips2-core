@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -86,10 +86,10 @@ import com.vividsolutions.jts.io.WKBReader;
 
 /**
  * Databased map resource for line and polygon data
- * 
+ *
  * <pre>
- * 
- * SOFTWARE HISTORY 
+ *
+ * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 19, 2009            randerso    Initial creation
@@ -108,22 +108,22 @@ import com.vividsolutions.jts.io.WKBReader;
  * Oct 23, 2014 3685       randerso    Fix nullPointer if shadingField contains a null
  * Nov 04, 2015 5070       randerso    Change map resources to use a preference based font
  *                                     Move management of font magnification into AbstractMapResource
- * 
+ * Feb 27, 2818 7012       tgurney     Dedupe map query fields
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
-public class DbMapResource extends
-        AbstractDbMapResource<DbMapResourceData, MapDescriptor> implements
-        Interrogatable {
+public class DbMapResource
+        extends AbstractDbMapResource<DbMapResourceData, MapDescriptor>
+        implements Interrogatable {
 
     /**
      * A key to be used in
      * {@link #interrogate(ReferencedCoordinate, DataTime, InterrogationKey...)
      * for retrieving the current label or null if the geometries are unlabeled.
      */
-    public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<String>(
+    public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<>(
             "label", String.class);
 
     private static final String GID = "gid";
@@ -144,8 +144,8 @@ public class DbMapResource extends
         public LabelNode(String label, Point c, IGraphicsTarget target,
                 IFont font) {
             this.label = label;
-            this.location = descriptor.worldToPixel(new double[] {
-                    c.getCoordinate().x, c.getCoordinate().y });
+            this.location = descriptor.worldToPixel(
+                    new double[] { c.getCoordinate().x, c.getCoordinate().y });
             DrawableString ds = new DrawableString(label, null);
             ds.font = font;
             rect = target.getStringsBounds(ds);
@@ -175,17 +175,17 @@ public class DbMapResource extends
 
     private class Request extends AbstractMapRequest<DbMapResource> {
 
-        Random rand = new Random(System.currentTimeMillis());
+        private Random rand = new Random(System.currentTimeMillis());
 
-        IMapDescriptor descriptor;
+        private IMapDescriptor descriptor;
 
-        String geomField;
+        private String geomField;
 
-        String labelField;
+        private String labelField;
 
-        String shadingField;
+        private String shadingField;
 
-        Map<Object, RGB> colorMap;
+        private Map<Object, RGB> colorMap;
 
         Request(IGraphicsTarget target, IMapDescriptor descriptor,
                 DbMapResource rsc, Geometry boundingGeom, String geomField,
@@ -201,7 +201,7 @@ public class DbMapResource extends
 
         RGB getColor(Object key) {
             if (colorMap == null) {
-                colorMap = new HashMap<Object, RGB>();
+                colorMap = new HashMap<>();
             }
             RGB color = colorMap.get(key);
             if (color == null) {
@@ -251,13 +251,6 @@ public class DbMapResource extends
             super();
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see
-         * com.raytheon.uf.viz.core.maps.rsc.AbstractMapQueryJob#getNewResult
-         * (com.raytheon.uf.viz.core.maps.rsc.AbstractMapRequest)
-         */
         @Override
         protected Result getNewResult(Request req) {
             return new Result(req);
@@ -267,37 +260,38 @@ public class DbMapResource extends
         protected void processRequest(Request req, final Result result)
                 throws Exception {
             String table = resourceData.getTable();
-            List<String> constraints = new ArrayList<String>();
+            List<String> constraints = new ArrayList<>();
             if (resourceData.getConstraints() != null) {
                 constraints
                         .addAll(Arrays.asList(resourceData.getConstraints()));
             }
-            List<String> fields = new ArrayList<String>();
+            Set<String> fields = new HashSet<>();
             fields.add(GID);
-            if ((req.labelField != null) && !fields.contains(req.labelField)) {
-                fields.add(req.labelField);
+            if (req.labelField != null) {
+                fields.add(req.labelField.toLowerCase());
             }
-            if ((req.shadingField != null)
-                    && !fields.contains(req.shadingField)) {
-                fields.add(req.shadingField);
+            if (req.shadingField != null) {
+                fields.add(req.shadingField.toLowerCase());
             }
 
             if (resourceData.getColumns() != null) {
                 for (ColumnDefinition column : resourceData.getColumns()) {
-                    if (fields.contains(column.getName())) {
-                        fields.remove(column.getName());
+                    if (fields.contains(column.getName().toLowerCase())) {
+                        fields.remove(column.getName().toLowerCase());
                     }
                     fields.add(column.toString());
                 }
             }
+
             double[] lev = getLevels();
-            QueryResult mappedResult = DbMapQueryFactory.getMapQuery(
-                    resourceData.getTable(), getGeomField(lev[lev.length - 1]))
-                    .queryWithinGeometry(req.getBoundingGeom(), fields,
-                            constraints);
-            Map<Integer, Geometry> gidMap = new HashMap<Integer, Geometry>(
+            QueryResult mappedResult = DbMapQueryFactory
+                    .getMapQuery(resourceData.getTable(),
+                            getGeomField(lev[lev.length - 1]))
+                    .queryWithinGeometry(req.getBoundingGeom(),
+                            new ArrayList<>(fields), constraints);
+            Map<Integer, Geometry> gidMap = new HashMap<>(
                     mappedResult.getResultCount() * 2);
-            List<Integer> toRequest = new ArrayList<Integer>(
+            List<Integer> toRequest = new ArrayList<>(
                     mappedResult.getResultCount());
             for (int i = 0; i < mappedResult.getResultCount(); ++i) {
                 if (checkCanceled(result)) {
@@ -306,8 +300,8 @@ public class DbMapResource extends
 
                 int gid = ((Number) mappedResult.getRowColumnValue(i, GID))
                         .intValue();
-                Geometry geom = GeometryCache.getGeometry(table, "" + gid,
-                        req.geomField);
+                Geometry geom = GeometryCache.getGeometry(table,
+                        Integer.toString(gid), req.geomField);
                 if (geom != null) {
                     gidMap.put(gid, geom);
                 } else {
@@ -315,7 +309,7 @@ public class DbMapResource extends
                 }
             }
 
-            if (toRequest.size() > 0) {
+            if (!toRequest.isEmpty()) {
                 WKBReader wkbReader = new WKBReader();
                 StringBuilder geomQuery = new StringBuilder();
                 geomQuery.append("SELECT ").append(GID).append(", ST_AsBinary(")
@@ -348,23 +342,22 @@ public class DbMapResource extends
                         byte[] wkb = (byte[]) obj;
                         g = wkbReader.read(wkb);
                     } else {
-                        statusHandler.handle(
-                                Priority.ERROR,
+                        statusHandler.handle(Priority.ERROR,
                                 "Expected byte[] received "
                                         + obj.getClass().getName() + ": "
                                         + obj.toString() + "\n  table=\""
                                         + resourceData.getTable() + "\"");
                     }
                     gidMap.put(gid, g);
-                    GeometryCache
-                            .putGeometry(table, "" + gid, req.geomField, g);
+                    GeometryCache.putGeometry(table, Integer.toString(gid),
+                            req.geomField, g);
                 }
             }
 
             IWireframeShape newOutlineShape = req.getTarget()
                     .createWireframeShape(false, req.descriptor);
 
-            List<LabelNode> newLabels = new ArrayList<LabelNode>();
+            List<LabelNode> newLabels = new ArrayList<>();
 
             IShadedShape newShadedShape = null;
             if (req.shadingField != null) {
@@ -378,10 +371,10 @@ public class DbMapResource extends
             geomData.setWorldWrapCorrect(true);
             geomData.setPointStyle(PointStyle.CROSS);
 
-            List<Geometry> resultingGeoms = new ArrayList<Geometry>(
+            List<Geometry> resultingGeoms = new ArrayList<>(
                     mappedResult.getResultCount());
 
-            Set<String> unlabelablePoints = new HashSet<String>(0);
+            Set<String> unlabelablePoints = new HashSet<>(0);
 
             int numPoints = 0;
             for (int i = 0; i < mappedResult.getResultCount(); ++i) {
@@ -407,8 +400,7 @@ public class DbMapResource extends
                         label = obj.toString();
                     }
                     int numGeometries = g.getNumGeometries();
-                    List<Geometry> gList = new ArrayList<Geometry>(
-                            numGeometries);
+                    List<Geometry> gList = new ArrayList<>(numGeometries);
                     for (int polyNum = 0; polyNum < numGeometries; polyNum++) {
                         Geometry poly = g.getGeometryN(polyNum);
                         gList.add(poly);
@@ -434,7 +426,8 @@ public class DbMapResource extends
                         } catch (TopologyException e) {
                             statusHandler.handle(Priority.VERBOSE,
                                     "Invalid geometry cannot be labeled: "
-                                            + label, e);
+                                            + label,
+                                    e);
                             unlabelablePoints.add(label);
                         }
                     }
@@ -501,7 +494,8 @@ public class DbMapResource extends
 
     private MapQueryJob queryJob;
 
-    public DbMapResource(DbMapResourceData data, LoadProperties loadProperties) {
+    public DbMapResource(DbMapResourceData data,
+            LoadProperties loadProperties) {
         super(data, loadProperties);
         queryJob = new MapQueryJob();
     }
@@ -545,8 +539,8 @@ public class DbMapResource extends
         int screenWidth = canvasBounds.width;
         double worldToScreenRatio = screenExtent.getWidth() / screenWidth;
 
-        int displayWidth = (int) (descriptor.getMapWidth() * paintProps
-                .getZoomLevel());
+        int displayWidth = (int) (descriptor.getMapWidth()
+                * paintProps.getZoomLevel());
         double kmPerPixel = (displayWidth / screenWidth) / 1000.0;
 
         double simpLev = getSimpLev(paintProps);
@@ -566,8 +560,7 @@ public class DbMapResource extends
         if ((simpLev < lastSimpLev)
                 || (isLabeled && !labelField.equals(lastLabelField))
                 || (isShaded && !shadingField.equals(lastShadingField))
-                || (lastExtent == null)
-                || !lastExtent.getEnvelope().contains(
+                || (lastExtent == null) || !lastExtent.getEnvelope().contains(
                         clipToProjExtent(screenExtent).getEnvelope())) {
             if (!paintProps.isZooming()) {
                 PixelExtent expandedExtent = getExpandedExtent(screenExtent);
@@ -587,10 +580,12 @@ public class DbMapResource extends
         Result result = queryJob.getLatestResult();
         if (result != null) {
             if (result.isFailed()) {
-                lastExtent = null; // force to re-query when re-enabled
+                // force to re-query when re-enabled
+                lastExtent = null;
                 throw new VizException(
                         "Error processing map query request for: "
-                                + result.getName(), result.getCause());
+                                + result.getName(),
+                        result.getCause());
             }
 
             if (outlineShape != null) {
@@ -634,11 +629,9 @@ public class DbMapResource extends
                     .getyOffset() * worldToScreenRatio;
             RGB color = getCapability(ColorableCapability.class).getColor();
             IExtent extent = paintProps.getView().getExtent();
-            List<DrawableString> strings = new ArrayList<DrawableString>(
-                    labels.size());
-            List<LabelNode> selectedNodes = new ArrayList<LabelNode>(
-                    labels.size());
-            List<IExtent> extents = new ArrayList<IExtent>();
+            List<DrawableString> strings = new ArrayList<>(labels.size());
+            List<LabelNode> selectedNodes = new ArrayList<>(labels.size());
+            List<IExtent> extents = new ArrayList<>();
             String lastLabel = null;
             // get min distance
             double density = this.getCapability(DensityCapability.class)
@@ -668,13 +661,13 @@ public class DbMapResource extends
                 string.verticallAlignment = VerticalAlignment.MIDDLE;
                 boolean add = true;
 
-                IExtent strExtent = new PixelExtent(
-                        node.location[0],
+                IExtent strExtent = new PixelExtent(node.location[0],
                         node.location[0]
                                 + (node.rect.getWidth() * worldToScreenRatio),
                         node.location[1],
                         node.location[1]
-                                + ((node.rect.getHeight() - node.rect.getY()) * worldToScreenRatio));
+                                + ((node.rect.getHeight() - node.rect.getY())
+                                        * worldToScreenRatio));
 
                 if ((lastLabel != null) && lastLabel.equals(node.label)) {
                     // check intersection of extents
@@ -702,7 +695,7 @@ public class DbMapResource extends
     /**
      * checks if the potentialNode has the same text AND is to close to an
      * already selected node
-     * 
+     *
      * @param potentialNode
      * @param selectedDrawList
      * @param minScreenDistance
@@ -753,18 +746,18 @@ public class DbMapResource extends
 
     @Override
     public Set<InterrogationKey<?>> getInterrogationKeys() {
-        HashSet<InterrogationKey<?>> keys = new HashSet<InterrogationKey<?>>();
+        HashSet<InterrogationKey<?>> keys = new HashSet<>();
         /* the geometry at current simplification level */
         keys.add(Interrogator.GEOMETRY);
         /* the label if labeling is turned on */
         keys.add(LABEL_KEY);
         /* Also allow them to pull out any possible label fields */
         for (String label : getLabelFields()) {
-            keys.add(new StringInterrogationKey<String>(label, String.class));
+            keys.add(new StringInterrogationKey<>(label, String.class));
         }
         /* Allow requesting different simplification levels. */
         for (double level : getLevels()) {
-            keys.add(new StringInterrogationKey<Geometry>(getGeomField(level),
+            keys.add(new StringInterrogationKey<>(getGeomField(level),
                     Geometry.class));
         }
         return keys;
@@ -775,8 +768,8 @@ public class DbMapResource extends
             DataTime time, InterrogationKey<?>... keys) {
         /* Need to separate the geometry keys from the label keys */
         List<InterrogationKey<?>> keyList = Arrays.asList(keys);
-        Map<InterrogationKey<Geometry>, String> geomKeys = new HashMap<InterrogationKey<Geometry>, String>();
-        Map<InterrogationKey<String>, String> labelKeys = new HashMap<InterrogationKey<String>, String>();
+        Map<InterrogationKey<Geometry>, String> geomKeys = new HashMap<>();
+        Map<InterrogationKey<String>, String> labelKeys = new HashMap<>();
         if (keyList.contains(Interrogator.GEOMETRY) && (lastSimpLev != 0)) {
             geomKeys.put(Interrogator.GEOMETRY, getGeomField(lastSimpLev));
         }
@@ -788,7 +781,7 @@ public class DbMapResource extends
             }
         }
         for (String label : getLabelFields()) {
-            StringInterrogationKey<String> key = new StringInterrogationKey<String>(
+            StringInterrogationKey<String> key = new StringInterrogationKey<>(
                     label, String.class);
             if (keyList.contains(key)) {
                 labelKeys.put(key, label);
@@ -797,7 +790,7 @@ public class DbMapResource extends
         /* Allow requesting different simplification levels. */
         for (double level : getLevels()) {
             String geomField = getGeomField(level);
-            StringInterrogationKey<Geometry> key = new StringInterrogationKey<Geometry>(
+            StringInterrogationKey<Geometry> key = new StringInterrogationKey<>(
                     geomField, Geometry.class);
             if (keyList.contains(key)) {
                 geomKeys.put(key, geomField);
@@ -810,34 +803,30 @@ public class DbMapResource extends
         /* Prepare a db request */
         Point boundingGeom = null;
         try {
-            boundingGeom = new GeometryFactory().createPoint(coordinate
-                    .asLatLon());
-        } catch (TransformException e) {
-            statusHandler.error(
-                    "Unable to transform coordinate for interrogate", e);
-            return map;
-        } catch (FactoryException e) {
-            statusHandler.error(
-                    "Unable to transform coordinate for interrogate", e);
+            boundingGeom = new GeometryFactory()
+                    .createPoint(coordinate.asLatLon());
+        } catch (TransformException | FactoryException e) {
+            statusHandler
+                    .error("Unable to transform coordinate for interrogate", e);
             return map;
         }
         String geomField = null;
-        List<String> fields = new ArrayList<String>(labelKeys.values());
+        List<String> fields = new ArrayList<>(labelKeys.values());
         if (geomKeys.isEmpty()) {
             geomField = getGeomField(lastSimpLev);
         } else {
             geomField = geomKeys.values().iterator().next();
             fields.add(GID);
         }
-        List<String> constraints = new ArrayList<String>();
+        List<String> constraints = new ArrayList<>();
         if (resourceData.getConstraints() != null) {
             constraints.addAll(Arrays.asList(resourceData.getConstraints()));
         }
         QueryResult mappedResult = null;
         try {
-            mappedResult = DbMapQueryFactory.getMapQuery(
-                    resourceData.getTable(), geomField).queryWithinGeometry(
-                    boundingGeom, fields, constraints);
+            mappedResult = DbMapQueryFactory
+                    .getMapQuery(resourceData.getTable(), geomField)
+                    .queryWithinGeometry(boundingGeom, fields, constraints);
         } catch (VizException e) {
             statusHandler.error("Unable to query database for interrogate", e);
             return map;
@@ -848,9 +837,8 @@ public class DbMapResource extends
         /* Process all labels */
         for (Entry<InterrogationKey<String>, String> entry : labelKeys
                 .entrySet()) {
-            map.put(entry.getKey(),
-                    mappedResult.getRowColumnValue(0, entry.getValue())
-                            .toString());
+            map.put(entry.getKey(), mappedResult
+                    .getRowColumnValue(0, entry.getValue()).toString());
         }
         /* Process all geoms */
         for (Entry<InterrogationKey<Geometry>, String> entry : geomKeys
