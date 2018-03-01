@@ -198,33 +198,33 @@ public class BundleLoader extends Job {
 
                 int numItems = items.length;
                 if (numItems > 0) {
-                    InstantiationTask[] tasks = new InstantiationTask[numItems];
-                    for (int i = 0; i < numItems; i++) {
-                        tasks[i] = new InstantiationTask(items[i]);
-                    }
+                    LoadItem first = items[0];
+                    IRenderableDisplay loadFrom = first.loadFrom;
+                    IDisplayPane loadTo = first.loadTo;
 
-                    for (int i = 0; i < numItems; ++i) {
-                        Thread t = new Thread(tasks[i]);
-                        if (i == 0) {
-                            Thread threadZero = t;
-                            IRenderableDisplay loadFrom = items[i].loadFrom;
-                            IDisplayPane loadTo = items[i].loadTo;
-
-                            AbstractTimeMatcher destTimeMatcher = loadTo
-                                    .getDescriptor().getTimeMatcher();
-                            if (destTimeMatcher != null) {
-                                AbstractTimeMatcher srcTimeMatcher = loadFrom
-                                        .getDescriptor().getTimeMatcher();
-                                if (srcTimeMatcher != null) {
-                                    destTimeMatcher.copyFrom(srcTimeMatcher);
-                                }
-                                destTimeMatcher.resetMultiload();
-                            }
-                            threadZero.start();
-                            threads.add(threadZero);
-                        } else {
-                            threads.add(t);
+                    AbstractTimeMatcher destTimeMatcher = loadTo.getDescriptor()
+                            .getTimeMatcher();
+                    if (destTimeMatcher != null) {
+                        AbstractTimeMatcher srcTimeMatcher = loadFrom
+                                .getDescriptor().getTimeMatcher();
+                        if (srcTimeMatcher != null) {
+                            destTimeMatcher.copyFrom(srcTimeMatcher);
                         }
+                        /*
+                         * resetMultiload() must come before the
+                         * load(IDisplayPane, IRenderableDisplay) call that is
+                         * currently in the InstantiationTask constructor
+                         */
+                        destTimeMatcher.resetMultiload();
+                    }
+                    InstantiationTask task = new InstantiationTask(first);
+                    Thread threadZero = new Thread(task);
+                    threadZero.start();
+                    threads.add(threadZero);
+
+                    for (int i = 1; i < numItems; i++) {
+                        Thread t = new Thread(new InstantiationTask(items[i]));
+                        threads.add(t);
                     }
                 }
             }
