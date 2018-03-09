@@ -29,8 +29,10 @@ import org.eclipse.core.commands.ExecutionException;
 
 import com.raytheon.uf.viz.core.DescriptorMap;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
+import com.raytheon.uf.viz.core.drawables.ResourcePair;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Bundle;
+import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.viz.ui.BundleLoader;
 import com.raytheon.viz.ui.BundleLoader.BundleInfoType;
 import com.raytheon.viz.ui.BundleProductLoader;
@@ -50,11 +52,11 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 30, 2013  2310     bsteffen    Initial creation
+ * Mar 09, 2018  6731     bsteffen    Close empty editors when data is not loaded.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class LoadBundleHandler extends AbstractHandler {
 
@@ -89,9 +91,38 @@ public class LoadBundleHandler extends AbstractHandler {
             Bundle bundle = BundleLoader.getBundle(getBundleFile(event),
                     getVariableSubstitutions(event),
                     BundleInfoType.FILE_LOCATION);
+            boolean hasData = hasDataResource(bundle);
 
             AbstractEditor editor = UiUtil.createOrOpenEditor(
                     getEditorType(event, bundle), bundle.getDisplays());
+            if (hasData) {
+                /*
+                 * If the editor is newly created from the bundle then the
+                 * editor will have the exact same displays as the bundle.
+                 */
+                boolean newEditor = true;
+                IRenderableDisplay[] editorDisplays = UiUtil
+                        .getDisplaysFromContainer(editor);
+                IRenderableDisplay[] bundleDisplays = bundle.getDisplays();
+                if (editorDisplays.length == bundleDisplays.length) {
+                    for (int i = 0; i < editorDisplays.length; i += 1) {
+                        if (editorDisplays[i] != bundleDisplays[i]) {
+                            newEditor = false;
+                        }
+                    }
+                } else {
+                    newEditor = false;
+                }
+                /*
+                 * If the bundle is supposed to load data, and the editor is a
+                 * new editor, and the data resources weren't loaded, then close
+                 * the editor since data didn't load.
+                 */
+                if (newEditor && !hasDataResource(bundle)) {
+                    editor.getSite().getPage().closeEditor(editor, false);
+                }
+            }
+
             BundleLoader loader;
             if (isFullBundleLoad(event)) {
                 loader = new BundleLoader(editor, bundle);
@@ -108,21 +139,22 @@ public class LoadBundleHandler extends AbstractHandler {
     protected String getBundleFile(ExecutionEvent event) {
         if (this.bundleFile != null) {
             return bundleFile;
-        } else if (event != null){
+        } else if (event != null) {
             return event.getParameter("bundleFile");
-        }else{
+        } else {
             throw new IllegalStateException(
                     "LoadBundleHandler requires a bundle file.");
         }
     }
 
-    protected Map<String, String> getVariableSubstitutions(ExecutionEvent event) {
+    protected Map<String, String> getVariableSubstitutions(
+            ExecutionEvent event) {
         if (this.variableSubstitutions != null) {
             return variableSubstitutions;
-        } else if (event != null){
-            Map<String,String> variableSubstitutions = new HashMap<String, String>();
-            Map<?,?> parameters = event.getParameters();
-            for(Entry<?, ?> parameter : parameters.entrySet()){
+        } else if (event != null) {
+            Map<String, String> variableSubstitutions = new HashMap<>();
+            Map<?, ?> parameters = event.getParameters();
+            for (Entry<?, ?> parameter : parameters.entrySet()) {
                 if (parameter.getKey() instanceof String
                         && parameter.getValue() instanceof String) {
                     variableSubstitutions.put((String) parameter.getKey(),
@@ -130,7 +162,7 @@ public class LoadBundleHandler extends AbstractHandler {
                 }
             }
             return variableSubstitutions;
-        }else{
+        } else {
             return null;
         }
     }
@@ -138,17 +170,17 @@ public class LoadBundleHandler extends AbstractHandler {
     protected String getEditorType(ExecutionEvent event, Bundle bundle) {
         if (this.editorType != null) {
             return editorType;
-        }else if(event != null){
+        } else if (event != null) {
             String editorType = event.getParameter("editorType");
-            if(editorType != null){
+            if (editorType != null) {
                 return editorType;
             }
         }
         String editorType = bundle.getEditor();
         if (editorType == null) {
             for (IRenderableDisplay display : bundle.getDisplays()) {
-                String descEditorType = DescriptorMap.getEditorId(display
-                        .getDescriptor().getClass().getName());
+                String descEditorType = DescriptorMap.getEditorId(
+                        display.getDescriptor().getClass().getName());
                 if (descEditorType != null) {
                     if (editorType == null) {
                         editorType = descEditorType;
@@ -168,8 +200,32 @@ public class LoadBundleHandler extends AbstractHandler {
             return fullBundleLoad;
         } else if (event != null) {
             return Boolean.valueOf(event.getParameter("fullBundleLoad"));
-        }else{
+        } else {
             return false;
         }
+    }
+
+    /**
+     * Determine if the bundle contains any data resources. For this function a
+     * data resources is considered any resource that is not flagged as a system
+     * resource or a map resource.
+     * 
+     * @param bundle
+     *            the bundle to check
+     * @return true if there are any data resources.
+     */
+    private boolean hasDataResource(Bundle bundle) {
+        for (IRenderableDisplay display : bundle.getDisplays()) {
+            for (ResourcePair resourcePair : display.getDescriptor()
+                    .getResourceList()) {
+                ResourceProperties props = resourcePair.getProperties();
+                if (props != null) {
+                    if (!props.isMapLayer() && !props.isSystemResource()) {
+                        return true;
+                    }
+                }
+            }
+        }
+        return false;
     }
 }
