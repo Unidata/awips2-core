@@ -23,6 +23,7 @@ package com.raytheon.uf.edex.database.purge;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Objects;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -56,11 +57,12 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * 01/28/2016   #5262       bkowal      Handle empty key/value pairs in rules non-default
  *                                      rules.
  * Apr 14, 2017 6003        tgurney     Add modTimeToWaitApplied flag
+ * Mar 08, 2018 6961        tgurney     versionsToKeep allow null and negative
+ *                                      values, change meaning of 0
  *
  * </pre>
  *
  * @author bphillip
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class PurgeRule {
@@ -103,10 +105,14 @@ public class PurgeRule {
     @XmlElements({ @XmlElement(name = "keyValue", type = PurgeKeyValue.class) })
     private List<PurgeKeyValue> keyValues;
 
-    /** The number of versions to keep */
+    /**
+     * The number of versions to keep. null means keep all versions that meet
+     * any other specified criteria. A negative value means disable purge
+     * entirely.
+     */
     @XmlElement
     @DynamicSerializeElement
-    private int versionsToKeep = 0;
+    private Integer versionsToKeep = null;
 
     /**
      * Max period between the current time and oldest time stamp of files to
@@ -245,7 +251,11 @@ public class PurgeRule {
      * @return True if versions to keep are specified
      */
     public boolean isVersionsToKeepSpecified() {
-        return versionsToKeep != 0;
+        return versionsToKeep != null;
+    }
+
+    public boolean isPurgeEnabled() {
+        return versionsToKeep == null || versionsToKeep >= 0;
     }
 
     /**
@@ -421,8 +431,8 @@ public class PurgeRule {
             }
         }
 
-        builder.append("VersionToKeep: ").append(this.versionsToKeep)
-                .append("  ");
+        builder.append("VersionToKeep: ")
+                .append(Objects.toString(this.versionsToKeep)).append("  ");
         builder.append("Period: ").append(this.period).append("  ");
         builder.append("Delta: ").append(this.delta).append("  ");
         builder.append("Round: ").append(this.round).append("  ");
@@ -518,7 +528,7 @@ public class PurgeRule {
      *            The string builder to append to
      */
     private void getVersionsClause(StringBuilder builder) {
-        if (isVersionsToKeepSpecified()) {
+        if (isPurgeEnabled() && isVersionsToKeepSpecified()) {
             builder.append("keep the ").append(versionsToKeep)
                     .append(" most recent versions of data ");
         } else {
@@ -657,7 +667,8 @@ public class PurgeRule {
      * @return the versionsToKeep
      */
     public int getVersionsToKeep() {
-        if (modTimeToWaitApplied) {
+        if (modTimeToWaitApplied && versionsToKeep != null
+                && isPurgeEnabled()) {
             return versionsToKeep + 1;
         }
         return versionsToKeep;

@@ -129,7 +129,9 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Apr 14, 2017  6003     tgurney     Fix modTimeToWait behavior for rules that
  *                                    match multiple keys
  * Feb 20, 2018  7123     bsteffen    Add postPurge() method
- * 
+ * Mar 08, 2018  6961     tgurney     Update purge versionsToKeep handling,
+ *                                    treat 0 as "keep no data"
+ *
  * </pre>
  *
  * @author bphillip
@@ -688,7 +690,7 @@ public abstract class PluginDao extends CoreDao {
     /**
      * Called after purging records to allow subtypes to perform additional
      * cleanup tasks. Default behavior is to do nothing.
-     * 
+     *
      * @throws PluginException
      */
     protected void postPurge() throws PluginException {
@@ -853,8 +855,8 @@ public abstract class PluginDao extends CoreDao {
         if (rules == null) {
             PurgeLogger.logWarn("No rules found for purgeKeys: "
                     + Arrays.toString(purgeKeys), pluginName);
-            return new RuleResult(Collections.<Date> emptySet(),
-                    Collections.<Date> emptySet(), 0);
+            return new RuleResult(Collections.<Date>emptySet(),
+                    Collections.<Date>emptySet(), 0);
         }
         /*
          * This section applies the purge rule
@@ -883,6 +885,12 @@ public abstract class PluginDao extends CoreDao {
         Set<Date> timesPurged = new HashSet<>();
 
         for (PurgeRule rule : rules) {
+            if (!rule.isPurgeEnabled()) {
+                PurgeLogger.logInfo("Purge rule is disabled (purge keys: "
+                        + Arrays.toString(purgeKeys) + ")", pluginName);
+                return new RuleResult(Collections.<Date>emptySet(),
+                        Collections.<Date>emptySet(), 0);
+            }
             rule.setModTimeToWaitApplied(false);
             // Holds the times kept by this rule
             List<Date> timesKeptByRule = new ArrayList<>();
@@ -919,8 +927,8 @@ public abstract class PluginDao extends CoreDao {
                     if (maxRefTime == null) {
                         PurgeLogger.logInfo("No data available to purge",
                                 pluginName);
-                        return new RuleResult(Collections.<Date> emptySet(),
-                                Collections.<Date> emptySet(), 0);
+                        return new RuleResult(Collections.<Date>emptySet(),
+                                Collections.<Date>emptySet(), 0);
                     } else {
                         periodCutoffTime = new Date(maxRefTime.getTime()
                                 - rule.getPeriodInMillis());
@@ -940,23 +948,24 @@ public abstract class PluginDao extends CoreDao {
 
                     if (rule.isDeltaTimeMultiple()) {
                         if (dateTimeAsLong % delta == 0) {
-                            // If the versions to keep is zero we keep it if
-                            // it does not exceed the period specified, if
-                            // any
-                            if (rule.getVersionsToKeep() == 0) {
+                            if (!rule.isVersionsToKeepSpecified()) {
+                                /*
+                                 * Keep it if it does not exceed the period
+                                 * specified, if any
+                                 */
                                 if (rule.isPeriodSpecified()
                                         && refTime.before(periodCutoffTime)) {
                                     timesPurgedByRule.add(refTime);
                                 } else {
                                     timesKeptByRule.add(refTime);
                                 }
-                            }
-
-                            // If the versions to keep is not zero and
-                            // adding this will not exceed the specified
-                            // number of versions to keep and it does not
-                            // exceed the period specified, the time is kept
-                            else if (rule.getVersionsToKeep() > 0) {
+                            } else {
+                                /*
+                                 * If the versions to keep is specified and
+                                 * adding this will not exceed the specified
+                                 * number of versions to keep and it does not
+                                 * exceed the period specified, the time is kept
+                                 */
                                 if (rule.isRoundSpecified()) {
                                     if (roundedTimes.size() < rule
                                             .getVersionsToKeep()) {
