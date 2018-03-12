@@ -50,6 +50,7 @@ import com.raytheon.uf.viz.core.rsc.ResourceProperties;
  * Sep 05, 2007           chammack  Initial Creation.
  * Oct 22, 2013  2491     bsteffen  Remove ISerializableObject
  * Jan 04, 2018  6753     bsteffen  Instantiate resources in a group in order.
+ * Mar 09, 2018  6731     bsteffen  Remove resources that fail instantiation from groups.
  * 
  * </pre>
  * 
@@ -67,17 +68,10 @@ public class ResourcePair {
 
     protected transient LoadProperties loadProperties;
 
-    /**
-     * @return the resource
-     */
     public AbstractVizResource<?, ?> getResource() {
         return resource;
     }
 
-    /**
-     * @param resource
-     *            the resource to set
-     */
     public void setResource(AbstractVizResource<?, ?> resource) {
         this.resource = resource;
         if (this.properties != null) {
@@ -85,9 +79,6 @@ public class ResourcePair {
         }
     }
 
-    /**
-     * @return the resourceData
-     */
     @XmlElement
     public AbstractResourceData getResourceData() {
         if (this.resource != null) {
@@ -96,9 +87,6 @@ public class ResourcePair {
         return resourceData;
     }
 
-    /**
-     * @return the LoadProperties
-     */
     @XmlElement
     public LoadProperties getLoadProperties() {
         if (this.resource != null) {
@@ -107,34 +95,19 @@ public class ResourcePair {
         return this.loadProperties;
     }
 
-    /**
-     * @param loadProperties
-     *            the load properties
-     */
     public void setLoadProperties(LoadProperties loadProperties) {
         this.loadProperties = loadProperties;
     }
 
-    /**
-     * @param resourceData
-     *            the resourceData to set
-     */
     public void setResourceData(AbstractResourceData resourceData) {
         this.resourceData = resourceData;
     }
 
-    /**
-     * @return the properties
-     */
     @XmlElement
     public ResourceProperties getProperties() {
         return properties;
     }
 
-    /**
-     * @param properties
-     *            the properties to set
-     */
     public void setProperties(ResourceProperties properties) {
         this.properties = properties;
         if (properties != null) {
@@ -142,11 +115,6 @@ public class ResourcePair {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -158,11 +126,6 @@ public class ResourcePair {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -261,8 +224,11 @@ public class ResourcePair {
                 }
                 for (ResourcePair rp : orderedList) {
                     if (rp.getResource() == null) {
-                        rp.instantiateResource(descriptor, false);
-                        rscList.firePostAddListeners(rp);
+                        if (rp.instantiateResource(descriptor, false)) {
+                            rscList.firePostAddListeners(rp);
+                        } else {
+                            rscList.remove(rp);
+                        }
                     }
                 }
             }
@@ -280,11 +246,6 @@ public class ResourcePair {
         return success;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
         return "Resource: " + resource + " Properties: " + properties;
