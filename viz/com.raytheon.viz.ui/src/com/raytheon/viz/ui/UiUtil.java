@@ -45,8 +45,11 @@ import org.eclipse.ui.internal.WorkbenchPage;
 import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
@@ -74,6 +77,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Dec 21, 2015 5191       bsteffen    Updated layoutId for Eclipse 4.
  * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
  * May 03, 2016 3292       bsteffen    Preserve editor order in getActiveDisplayMap.
+ * Mar 12, 2018 6757       njensen     Copy active editor's loop properties for new editor
  * 
  * </pre>
  * 
@@ -82,6 +86,9 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
 public class UiUtil {
 
     public static final String SECONDARY_ID_SEPARATOR = ":";
+
+    protected static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(UiUtil.class);
 
     public static class ContainerPart {
 
@@ -108,8 +115,8 @@ public class UiUtil {
      */
     @SuppressWarnings("restriction")
     public static List<ContainerPart> getActiveDisplayMap() {
-        List<ContainerPart> parts = new ArrayList<ContainerPart>();
-        Map<String, ContainerPart> partMap = new LinkedHashMap<String, ContainerPart>();
+        List<ContainerPart> parts = new ArrayList<>();
+        Map<String, ContainerPart> partMap = new LinkedHashMap<>();
 
         IWorkbenchWindow window = VizWorkbenchManager.getInstance()
                 .getCurrentWindow();
@@ -128,11 +135,13 @@ public class UiUtil {
 
                     if (part instanceof IDisplayPaneContainer) {
                         IDisplayPaneContainer container = (IDisplayPaneContainer) part;
-                        IRenderableDisplay[] editorDisplays = getDisplaysFromContainer(container);
-                        if (editorDisplays != null && editorDisplays.length > 0) {
+                        IRenderableDisplay[] editorDisplays = getDisplaysFromContainer(
+                                container);
+                        if (editorDisplays != null
+                                && editorDisplays.length > 0) {
                             ContainerPart cp = partMap.get(ref.getId());
                             if (cp == null) {
-                                List<Container> list = new ArrayList<Container>();
+                                List<Container> list = new ArrayList<>();
                                 cp = new ContainerPart(ref.getId(), list);
                                 partMap.put(ref.getId(), cp);
                             }
@@ -159,14 +168,15 @@ public class UiUtil {
 
                     if (view instanceof IDisplayPaneContainer) {
                         IDisplayPaneContainer container = (IDisplayPaneContainer) view;
-                        IRenderableDisplay[] displays = getDisplaysFromContainer(container);
+                        IRenderableDisplay[] displays = getDisplaysFromContainer(
+                                container);
 
                         if (displays != null && displays.length > 0) {
                             String id = ref.getId() + SECONDARY_ID_SEPARATOR
                                     + ref.getSecondaryId();
                             ContainerPart cp = partMap.get(id);
                             if (cp == null) {
-                                List<Container> list = new ArrayList<Container>();
+                                List<Container> list = new ArrayList<>();
                                 cp = new ContainerPart(id, list);
                                 partMap.put(id, cp);
                             }
@@ -191,7 +201,7 @@ public class UiUtil {
      */
     public static IRenderableDisplay[] getDisplaysFromContainer(
             IDisplayPaneContainer container) {
-        List<IRenderableDisplay> displays = new ArrayList<IRenderableDisplay>();
+        List<IRenderableDisplay> displays = new ArrayList<>();
 
         IDisplayPane[] panes = container.getDisplayPanes();
         for (IDisplayPane pane : panes) {
@@ -282,9 +292,10 @@ public class UiUtil {
 
             for (IViewReference r : refs) {
                 if (id.equals(r.getId())
-                        && ((secondaryId != null && r.getSecondaryId() != null && secondaryId
-                                .equals(r.getSecondaryId())) || (secondaryId == null || r
-                                .getSecondaryId() == null))) {
+                        && ((secondaryId != null && r.getSecondaryId() != null
+                                && secondaryId.equals(r.getSecondaryId()))
+                                || (secondaryId == null
+                                        || r.getSecondaryId() == null))) {
                     return (IViewPart) r.getPart(true);
                 }
             }
@@ -382,17 +393,23 @@ public class UiUtil {
     public static AbstractEditor createOrOpenEditor(
             IWorkbenchWindow windowToLoadTo, String editor,
             IRenderableDisplay... displays) {
-        String editorName = (editor == null ? "com.raytheon.viz.ui.glmap.GLMapEditor"
-                : editor);
+        String editorName = (editor == null
+                ? "com.raytheon.viz.ui.glmap.GLMapEditor" : editor);
         if (windowToLoadTo == null) {
             windowToLoadTo = getCurrentWindow();
         }
+
         // Check the current editor first
         IEditorPart ep = EditorUtil.getActiveEditor(windowToLoadTo);
+        LoopProperties loopProps = null;
         if (ep instanceof AbstractEditor) {
             AbstractEditor currentEditor = (AbstractEditor) ep;
-            if (currentEditor != null
-                    && currentEditor.getEditorSite().getId().equals(editorName)) {
+            /*
+             * copy the current editor's loop properties in case we open a new
+             * editor
+             */
+            loopProps = new LoopProperties(currentEditor.getLoopProperties());
+            if (currentEditor.getEditorSite().getId().equals(editorName)) {
                 currentEditor = makeCompatible(currentEditor, displays);
                 if (currentEditor != null) {
                     return currentEditor;
@@ -422,7 +439,7 @@ public class UiUtil {
 
         // If we get here, the editor isn't there, or has a different number of
         // panes... construct it
-        return createEditor(windowToLoadTo, editorName, displays);
+        return createEditor(windowToLoadTo, editorName, loopProps, displays);
     }
 
     private static AbstractEditor makeCompatible(AbstractEditor currentEditor,
@@ -479,13 +496,22 @@ public class UiUtil {
      */
     public static AbstractEditor createEditor(IWorkbenchWindow windowToLoadTo,
             String editor, IRenderableDisplay... displays) {
-        String editorName = (editor == null ? "com.raytheon.viz.ui.glmap.GLMapEditor"
-                : editor);
+        return createEditor(windowToLoadTo, editor, null, displays);
+    }
+
+    public static AbstractEditor createEditor(IWorkbenchWindow windowToLoadTo,
+            String editor, LoopProperties loopProps,
+            IRenderableDisplay... displays) {
+        String editorName = (editor == null
+                ? "com.raytheon.viz.ui.glmap.GLMapEditor" : editor);
         if (windowToLoadTo == null) {
             windowToLoadTo = getCurrentWindow();
         }
         AbstractEditor aEditor = null;
-        EditorInput cont = new EditorInput(displays);
+        if (loopProps == null) {
+            loopProps = new LoopProperties();
+        }
+        EditorInput cont = new EditorInput(loopProps, displays);
         try {
             IWorkbenchPage activePage = windowToLoadTo.getActivePage();
             if (activePage != null) {
@@ -493,10 +519,9 @@ public class UiUtil {
                         editorName);
             }
         } catch (PartInitException e) {
-            UiPlugin.getDefault()
-                    .getLog()
-                    .log(new Status(IStatus.ERROR, UiPlugin.PLUGIN_ID,
-                            "Error constituting editor", e));
+            UiPlugin.getDefault().getLog().log(new Status(IStatus.ERROR,
+                    UiPlugin.PLUGIN_ID,
+                    "Error creating and opening editor " + editorName, e));
         }
         return aEditor;
     }
@@ -552,7 +577,7 @@ public class UiUtil {
                 }
             }
         } catch (Throwable t) {
-            t.printStackTrace();
+            statusHandler.debug("Error updating cool bar", t);
         }
     }
 

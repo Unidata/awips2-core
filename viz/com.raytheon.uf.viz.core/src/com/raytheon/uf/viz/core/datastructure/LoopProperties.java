@@ -34,17 +34,16 @@ import org.eclipse.ui.commands.ICommandService;
  * 
  * SOFTWARE HISTORY
  * 
- * Date       	 Ticket#  Engineer    Description
+ * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 30, 2007           randerso    Initial Creation.
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Jun 23, 2014  3307     njensen     Fix xml serialization of looping field
+ * Mar 12, 2018  6757     njensen     Added copy constructor
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1
- * 
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class LoopProperties {
@@ -105,6 +104,27 @@ public class LoopProperties {
 
     private long currentDrawTime = 0;
 
+    /**
+     * Nullary constructor
+     */
+    public LoopProperties() {
+
+    }
+
+    /**
+     * Copy constructor
+     * 
+     * @param original
+     */
+    public LoopProperties(LoopProperties original) {
+        this.firstFrameDwell = original.firstFrameDwell;
+        this.fwdFrameTime = original.fwdFrameTime;
+        this.isLooping = original.isLooping;
+        this.lastFrameDwell = original.lastFrameDwell;
+        this.mode = original.mode;
+        this.revFrameTime = original.revFrameTime;
+    }
+
     public int getFwdFrameTime() {
         return fwdFrameTime;
     }
@@ -154,8 +174,8 @@ public class LoopProperties {
         this.isLooping = isLooping;
 
         if (PlatformUI.isWorkbenchRunning()) {
-            ICommandService service = (ICommandService) PlatformUI
-                    .getWorkbench().getService(ICommandService.class);
+            ICommandService service = PlatformUI.getWorkbench()
+                    .getService(ICommandService.class);
 
             service.refreshElements("com.raytheon.viz.ui.tools.looping.loop",
                     null);
