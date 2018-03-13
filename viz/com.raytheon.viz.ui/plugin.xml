@@ -70,9 +70,9 @@
             name="100-------------"
             sortID="100"/>
       <contextualMenu
-            actionClass="com.raytheon.viz.ui.cmenu.LoadAsGraphicsAction"
+            actionClass="com.raytheon.viz.ui.cmenu.LoadAsContoursAction"
             capabilityClass="com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability"
-            name="Load as Graphics"
+            name="Load as Contours"
             sortID="109">
       </contextualMenu>
       <contextualMenu
