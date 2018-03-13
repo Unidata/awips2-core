@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -75,37 +75,38 @@ import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Creates a GL Context for drawing
- * 
+ *
  * <P>
  * Typical usage:
  * </P>
- * 
+ *
  * <pre>
- * 
+ *
  *       Composite c = ....;
- *       
- *       GLDisplayPane glDisplayPane = new GLDisplayPane(c, 
- *                                     MapDescriptor.DEFAULT_WIDTH, 
+ *
+ *       GLDisplayPane glDisplayPane = new GLDisplayPane(c,
+ *                                     MapDescriptor.DEFAULT_WIDTH,
  *                                     MapDescriptor.DEFAULT_HEIGHT);
- * 
+ *
  * </pre>
- * 
+ *
  * <pre>
- * 
- *           SOFTWARE HISTORY
- *          
- *           Date         Ticket#     Engineer    Description
- *           ------------ ----------  ----------- --------------------------
- *           Oct 25, 2006             chammack    Initial Creation.
- *           20 Nov 2007              ebabin      Fix location of sample,lat/lon menu add.
- *           14 Jan 2007              ebabin      Update to remove lat/lon only for GLEditor an Gl4panelEDitor.
- *           Jul 9, 2008  #1228       chammack    Add capability for perspective contributed right click menus
- *           Oct 27, 2009 #2354       bsteffen    Configured input handler to use mouse preferences
- *           Aug 3, 2015  ASM #14474  D. Friedman Respond to resize immediately
+ *
+ * SOFTWARE HISTORY
+ *
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
+ * Oct 25, 2006             chammack    Initial Creation.
+ * 20 Nov 2007              ebabin      Fix location of sample,lat/lon menu add.
+ * 14 Jan 2007              ebabin      Update to remove lat/lon only for GLEditor an Gl4panelEDitor.
+ * Jul 9, 2008  #1228       chammack    Add capability for perspective contributed right click menus
+ * Oct 27, 2009 #2354       bsteffen    Configured input handler to use mouse preferences
+ * Aug 3, 2015  ASM #14474  D. Friedman Respond to resize immediately
+ * Mar 13, 2018 7160        tgurney     getDisplay check for disposed canvas
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 public class VizDisplayPane implements IDisplayPane {
     private static final transient IUFStatusHandler statusHandler = UFStatus
@@ -169,7 +170,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * Abstract display pane constructor
-     * 
+     *
      * @param container
      * @param canvasComp
      *            the composite to use with the canvas
@@ -184,7 +185,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * Abstract display pane constructor
-     * 
+     *
      * @param container
      * @param canvasComp
      *            the composite to use with the canvas
@@ -239,6 +240,7 @@ public class VizDisplayPane implements IDisplayPane {
             menuMgr.setRemoveAllWhenShown(true);
 
             menuMgr.addMenuListener(new IMenuListener() {
+                @Override
                 public void menuAboutToShow(IMenuManager manager) {
                     VizDisplayPane.this.menuAboutToShow(manager);
                 }
@@ -255,18 +257,20 @@ public class VizDisplayPane implements IDisplayPane {
     /**
      * Add any kind of listeners to the canvas, defaults are refresh, resize,
      * dispose, and mouse wheel
-     * 
+     *
      * @param canvas2
      */
     protected void addCanvasListeners(Canvas canvas) {
         // Add canvas refresh,resize,dispose listeners
         canvas.addListener(SWT.Paint, new Listener() {
+            @Override
             public void handleEvent(Event event) {
                 refresh();
             }
         });
 
         canvas.addListener(SWT.Resize, new Listener() {
+            @Override
             public void handleEvent(Event event) {
                 resize();
             }
@@ -338,8 +342,8 @@ public class VizDisplayPane implements IDisplayPane {
                     .getInstance(window).getActivePerspectiveManager();
 
             if (perspectiveManager != null) {
-                perspectiveManager
-                        .addContextMenuItems(manager, container, this);
+                perspectiveManager.addContextMenuItems(manager, container,
+                        this);
             }
 
         }
@@ -347,7 +351,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * Add the context menu items for the context menu contributor
-     * 
+     *
      * @param contributor
      * @param manager
      */
@@ -360,21 +364,12 @@ public class VizDisplayPane implements IDisplayPane {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#addListener(int,
-     * org.eclipse.swt.widgets.Listener)
-     */
+    @Override
     public void addListener(int eventType, Listener listener) {
         canvas.addListener(eventType, listener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getTarget()
-     */
+    @Override
     public IGraphicsTarget getTarget() {
         return target;
     }
@@ -391,7 +386,7 @@ public class VizDisplayPane implements IDisplayPane {
             }
 
             if (this.renderableDisplay != null
-                    && this.renderableDisplay.isSwapping() == false) {
+                    && !this.renderableDisplay.isSwapping()) {
                 this.renderableDisplay.dispose();
                 container.notifyRenderableDisplayChangedListeners(this,
                         renderableDisplay, DisplayChangeType.REMOVE);
@@ -399,15 +394,11 @@ public class VizDisplayPane implements IDisplayPane {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#dispose()
-     */
+    @Override
     public void dispose() {
         disposePane();
 
-        if (canvas.isDisposed() == false) {
+        if (!canvas.isDisposed()) {
             // Dispose was called outside of our own canvas listener so
             // destroy the canvas composite so the pane disappears
             canvasComp.dispose();
@@ -426,8 +417,8 @@ public class VizDisplayPane implements IDisplayPane {
             return;
         }
 
-        zoomLevel = renderableDisplay.recalcZoomLevel(renderableDisplay
-                .getDimensions());
+        zoomLevel = renderableDisplay
+                .recalcZoomLevel(renderableDisplay.getDimensions());
 
         Rectangle bounds = getBounds();
         if (bounds == null || bounds.width == 0 || bounds.height == 0) {
@@ -455,7 +446,8 @@ public class VizDisplayPane implements IDisplayPane {
                 if (zoomLevel * factor > IRenderableDisplay.MAX_ZOOM_LEVEL) {
                     factor = IRenderableDisplay.MAX_ZOOM_LEVEL / zoomLevel;
                     zoomRequest = 0.0;
-                } else if (zoomLevel * factor < IRenderableDisplay.MIN_ZOOM_LEVEL) {
+                } else if (zoomLevel
+                        * factor < IRenderableDisplay.MIN_ZOOM_LEVEL) {
                     factor = IRenderableDisplay.MIN_ZOOM_LEVEL / zoomLevel;
                     zoomRequest = 0.0;
                 }
@@ -466,8 +458,8 @@ public class VizDisplayPane implements IDisplayPane {
                             lastMouseY, target);
                 }
 
-                zoomLevel = renderableDisplay.recalcZoomLevel(renderableDisplay
-                        .getDimensions());
+                zoomLevel = renderableDisplay
+                        .recalcZoomLevel(renderableDisplay.getDimensions());
             }
 
             isZooming = zoomRequest != 0.0;
@@ -495,7 +487,7 @@ public class VizDisplayPane implements IDisplayPane {
      * Actually perform the draw. This should never be called directly, and
      * should only be scheduled via the Redraw Job (preferably by calling
      * refresh()).
-     * 
+     *
      * @param endFrame
      *            should the frame be terminated
      * @param is
@@ -512,12 +504,12 @@ public class VizDisplayPane implements IDisplayPane {
             try {
                 PaintProperties paintProps = new PaintProperties(1.0f,
                         (float) zoomLevel, renderableDisplay.getView(),
-                        getBounds(), isZoomInProgress, renderableDisplay
-                                .getDescriptor().getFramesInfo());
+                        getBounds(), isZoomInProgress,
+                        renderableDisplay.getDescriptor().getFramesInfo());
 
                 if (this.container != null) {
-                    paintProps.setLoopProperties(this.container
-                            .getLoopProperties());
+                    paintProps.setLoopProperties(
+                            this.container.getLoopProperties());
                 }
 
                 renderableDisplay.paint(target, paintProps);
@@ -531,10 +523,10 @@ public class VizDisplayPane implements IDisplayPane {
                     refresh();
                 }
             } catch (RuntimeException e) {
-                statusHandler.handle(
-                        Priority.SIGNIFICANT,
+                statusHandler.handle(Priority.SIGNIFICANT,
                         "Internal exception occurred while drawing: "
-                                + e.getMessage(), e);
+                                + e.getMessage(),
+                        e);
             } catch (Exception e) {
                 statusHandler.handle(Priority.SIGNIFICANT, e.getMessage(), e);
             }
@@ -543,7 +535,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * Paints the virtual cursor to the screen
-     * 
+     *
      * @param paintProps
      * @param virtualCursor
      * @throws VizException
@@ -576,11 +568,7 @@ public class VizDisplayPane implements IDisplayPane {
         this.target.drawCircle(circle);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#shiftExtent(float, float)
-     */
+    @Override
     public void shiftExtent(double[] startScreen, double[] endScreen) {
         if (canvas.isDisposed()) {
             return;
@@ -591,13 +579,7 @@ public class VizDisplayPane implements IDisplayPane {
         this.target.setNeedsRefresh(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.IDisplayPane#setRenderableDisplay(com.raytheon
-     * .viz.core.drawables.IRenderableDisplay)
-     */
+    @Override
     public void setRenderableDisplay(IRenderableDisplay renderableRsc) {
         if (this.renderableDisplay == renderableRsc) {
             return;
@@ -644,29 +626,17 @@ public class VizDisplayPane implements IDisplayPane {
         this.target.init();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getRenderableDisplay()
-     */
+    @Override
     public IRenderableDisplay getRenderableDisplay() {
         return this.renderableDisplay;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#refresh()
-     */
+    @Override
     public void refresh() {
         this.target.setNeedsRefresh(true);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getBounds()
-     */
+    @Override
     public Rectangle getBounds() {
         if (canvas.isDisposed()) {
             return null;
@@ -675,23 +645,15 @@ public class VizDisplayPane implements IDisplayPane {
         return this.canvas.getBounds();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#setFocus()
-     */
+    @Override
     public void setFocus() {
-        if (canvas != null && canvas.isDisposed() == false) {
+        if (canvas != null && !canvas.isDisposed()) {
             canvas.setFocus();
             refresh();
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#zoom(int, int, int)
-     */
+    @Override
     public void zoom(final int value, int mouseX, int mouseY) {
         lastMouseX = mouseX;
         lastMouseY = mouseY;
@@ -703,110 +665,57 @@ public class VizDisplayPane implements IDisplayPane {
         refresh();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#zoom(int)
-     */
+    @Override
     public void zoom(final int value) {
         zoom(value, 0, 0);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getZoomLevel()
-     */
+    @Override
     public double getZoomLevel() {
         return zoomLevel;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#setZoomLevel(double)
-     */
+    @Override
     public void setZoomLevel(double zoomLevel) {
         this.zoomLevel = zoomLevel;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getLastMouseX()
-     */
+    @Override
     public int getLastMouseX() {
         return lastMouseX;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.IDisplayPane#getLastMouseY()
-     */
+    @Override
     public int getLastMouseY() {
         return lastMouseY;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPane#getLastClickX()
-     */
+    @Override
     public int getLastClickX() {
         return lastClickX;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPane#getLastClickY()
-     */
+    @Override
     public int getLastClickY() {
         return lastClickY;
     }
 
-    /**
-     * Add a focus listener
-     * 
-     * @param listener
-     *            the focus listener
-     */
     public void addFocusListener(FocusListener listener) {
         canvas.addFocusListener(listener);
     }
 
-    /**
-     * Remove a focus listener
-     * 
-     * @param listener
-     *            the focus listener
-     */
     public void removeFocusListener(FocusListener listener) {
         canvas.removeFocusListener(listener);
     }
 
-    /**
-     * Add a mouse track listener
-     * 
-     * @param listener
-     *            the mouse track listener
-     */
     public void addMouseTrackListener(MouseTrackListener listener) {
         canvas.addMouseTrackListener(listener);
     }
 
-    /**
-     * @return the virtualCursor
-     */
     public Coordinate getVirtualCursor() {
         return virtualCursor;
     }
 
-    /**
-     * @param virtualCursor
-     *            the virtualCursor to set
-     */
     public void setVirtualCursor(Coordinate virtualCursor) {
         if (virtualCursor != null && this.renderableDisplay != null) {
             double[] out = this.getDescriptor().worldToPixel(
@@ -831,16 +740,10 @@ public class VizDisplayPane implements IDisplayPane {
         if (renderableDisplay != null) {
             renderableDisplay.calcPixelExtent(clientArea);
             zoomLevel = renderableDisplay
-                    .recalcZoomLevel(renderableDisplay
-                            .getDimensions());
+                    .recalcZoomLevel(renderableDisplay.getDimensions());
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.IDisplayPane#getDescriptor()
-     */
     @Override
     public IDescriptor getDescriptor() {
         IDescriptor desc = null;
@@ -850,41 +753,32 @@ public class VizDisplayPane implements IDisplayPane {
         return desc;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.IDisplayPane#getDisplay()
-     */
     @Override
     public Display getDisplay() {
-        return this.canvas.getDisplay();
+        if (!this.canvas.isDisposed()) {
+            return this.canvas.getDisplay();
+        }
+        return null;
     }
 
     /**
      * Scale this pane's display to the display bounds.
      */
+    @Override
     public void scaleToClientArea() {
         renderableDisplay.scaleToClientArea(getBounds());
     }
 
-    /**
-     * 
-     */
+    @Override
     public double[] screenToGrid(double x, double y, double depth) {
         return renderableDisplay.screenToGrid(x, y, depth, target);
     }
 
-    /**
-     * 
-     */
+    @Override
     public double[] gridToScreen(double[] grid) {
         return renderableDisplay.gridToScreen(grid, target);
     }
 
-    /**
-     * 
-     * @param zoomLevel
-     */
     public void zoom(double zoomLevel) {
         renderableDisplay.zoom(zoomLevel);
     }
@@ -894,9 +788,6 @@ public class VizDisplayPane implements IDisplayPane {
         renderableDisplay.clear();
     }
 
-    /**
-     * @return the canvas
-     */
     public Canvas getCanvas() {
         return canvas;
     }
@@ -908,32 +799,17 @@ public class VizDisplayPane implements IDisplayPane {
         return canvasComp;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPane#setVisible(boolean)
-     */
     @Override
     public void setVisible(boolean visible) {
         canvasComp.setVisible(visible);
         canvas.setVisible(visible);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPane#isVisible()
-     */
     @Override
     public boolean isVisible() {
         return canvas.isVisible();
     }
 
-    /**
-     * 
-     * @param menuJob
-     * @param e
-     */
     protected void handleMouseDownOnCanvas(MouseEvent e) {
         lastClickX = lastMouseX = e.x;
         lastClickY = lastMouseY = e.y;
@@ -950,7 +826,7 @@ public class VizDisplayPane implements IDisplayPane {
                     VizApp.runSync(new Runnable() {
                         @Override
                         public void run() {
-                            if (canvas.isDisposed() == false
+                            if (!canvas.isDisposed()
                                     && canvasComp.getMenu() != null) {
                                 showMenu();
                             }
@@ -981,7 +857,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * mouse event was double clicked on the canvas
-     * 
+     *
      * @param e
      */
     protected void mouseDoubleClickOnCanvas(MouseEvent e) {
@@ -990,7 +866,7 @@ public class VizDisplayPane implements IDisplayPane {
 
     /**
      * handle mouse up on canvas event
-     * 
+     *
      * @param e
      */
     protected void handleMouseUpOnCanvas(MouseEvent e) {
