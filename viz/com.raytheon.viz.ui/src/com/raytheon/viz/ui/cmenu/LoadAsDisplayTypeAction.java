@@ -46,72 +46,73 @@ import com.raytheon.uf.viz.core.rsc.capabilities.DisplayTypeCapability;
  * <pre>
  * 
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Apr 26, 2010           bsteffen    Initial creation
- * Aug 10, 2011           njensen     Added runWithEvent
- * Oct 22, 2013  2491     bsteffen    Switch serialization to
- *                                    ProcedureXmlManager
- * Apr 06, 2015  ASM17215 D. Friedman Load in Job
- * Jun 11, 2015  ASM17603 D. Friedman Fix 17215: Load to correct pane
+ * 
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -------------------------------------------
+ * Apr 26, 2010           bsteffen   Initial creation
+ * Aug 10, 2011           njensen    Added runWithEvent
+ * Oct 22, 2013  2491     bsteffen   Switch serialization to ProcedureXmlManager
+ * Apr 06, 2015  17215    dfriedman  Load in Job
+ * Jun 11, 2015  17603    dfriedman  Fix 17215: Load to correct pane
+ * Mar 14, 2018  6700     bsteffen   Move performLoad to a separate method to
+ *                                   allow subclasses to customize.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
-
 public abstract class LoadAsDisplayTypeAction extends AbstractRightClickAction {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(LoadAsDisplayTypeAction.class);
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.jface.action.Action#run()
-     */
     @Override
     public void run() {
         // Capture active pane now, then instantiate in a job.
         final IDescriptor descriptor = getDescriptor();
-        Job job = new Job("Loading as " + getDisplayType().toString().toLowerCase()) {
+        Job job = new Job(
+                "Loading as " + getDisplayType().toString().toLowerCase()) {
 
             @Override
             protected IStatus run(IProgressMonitor monitor) {
-                try {
-                    ProcedureXmlManager jaxb = ProcedureXmlManager.getInstance();
-                    ResourcePair rp = selectedRsc;
-                    ResourceGroup group = new ResourceGroup();
-                    group.getResourceList().add(rp);
-                    String xml = jaxb.marshal(group);
-                    group = jaxb.unmarshal(ResourceGroup.class, xml);
-                    rp = group.getResourceList().get(0);
-                    rp.setProperties(new ResourceProperties());
-                    rp.getLoadProperties()
-                            .getCapabilities()
-                            .getCapability(rp.getResourceData(),
-                                    DisplayTypeCapability.class)
-                            .setDisplayType(getDisplayType());
-                    rp.instantiateResource(descriptor);
-                    descriptor.getResourceList().add(rp);
-                } catch (SerializationException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Unexpected error cloning resource", e);
-                } catch (VizException e) {
-                    statusHandler.handle(Priority.PROBLEM,
-                            "Unexpected error cloning resource", e);
-                }
+                performLoad(descriptor, selectedRsc);
                 return Status.OK_STATUS;
             }
         };
         job.schedule();
     }
 
-    /*
-     * (non-Javadoc)
+    /**
+     * the {@link #run()} method is on the UI thread so it starts a job which
+     * calls this method to perform the actual loading.
      * 
-     * @see org.eclipse.jface.action.Action#getText()
+     * @param descriptor
+     *            the IDescriptor to load to
+     * @param selectedRsc
+     *            the resourcePair that was selected
      */
+    protected void performLoad(IDescriptor descriptor,
+            ResourcePair selectedRsc) {
+        try {
+            ProcedureXmlManager jaxb = ProcedureXmlManager.getInstance();
+            ResourcePair rp = selectedRsc;
+            ResourceGroup group = new ResourceGroup();
+            group.getResourceList().add(rp);
+            String xml = jaxb.marshal(group);
+            group = jaxb.unmarshal(ResourceGroup.class, xml);
+            rp = group.getResourceList().get(0);
+            rp.setProperties(new ResourceProperties());
+            rp.getLoadProperties().getCapabilities()
+                    .getCapability(rp.getResourceData(),
+                            DisplayTypeCapability.class)
+                    .setDisplayType(getDisplayType());
+            rp.instantiateResource(descriptor);
+            descriptor.getResourceList().add(rp);
+        } catch (VizException | SerializationException e) {
+            statusHandler.handle(Priority.PROBLEM,
+                    "Unexpected error cloning resource", e);
+        }
+    }
+
     @Override
     public String getText() {
         String typeString = getDisplayType().toString();
@@ -136,13 +137,16 @@ public abstract class LoadAsDisplayTypeAction extends AbstractRightClickAction {
     @Override
     public boolean isEnabled() {
         AbstractVizResource<?, ?> rsc = getSelectedRsc();
-        AbstractResourceData rrd = rsc.getResourceData();
-        if (rsc != null && rrd != null) {
+        AbstractResourceData rrd = null;
+        if (rsc != null) {
+            rrd = rsc.getResourceData();
+        }
+
+        if (rrd != null) {
             for (ResourcePair rp : rsc.getDescriptor().getResourceList()) {
                 AbstractVizResource<?, ?> rsc2 = rp.getResource();
-                if (rsc2 != null
-                        && rsc2 != rsc
-                        && rrd.equals(rsc2.getResourceData()) == true
+                if (rsc2 != null && rsc2 != rsc
+                        && rrd.equals(rsc2.getResourceData())
                         && rsc2.getCapability(DisplayTypeCapability.class)
                                 .getDisplayType() == getDisplayType()) {
                     return false;
