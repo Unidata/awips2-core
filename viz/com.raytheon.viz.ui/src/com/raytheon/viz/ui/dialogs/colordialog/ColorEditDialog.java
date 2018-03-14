@@ -90,6 +90,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Feb 17, 2016  5331     tgurney     Make undo() restore original colormap name when appropriate
  * Mar 02, 2016  4834     bsteffen    Save sets the current name correctly.
  * Jun 22, 2017  4818     mapeters    Changed setCloseCallback to addCloseCallback
+ * Mar 14, 2018  6690     tgurney     Fix delete of colormaps in subdirs
  *
  * </pre>
  *
@@ -397,7 +398,6 @@ public class ColorEditDialog extends CaveSWTDialog
             undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
             redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
             saveBtn.setEnabled(currentColormapName != null);
-            deleteBtn.setEnabled(currentColormapName != null);
             colorEditComp.enableAlphaOnly();
         }
         updateTitleText();
@@ -849,22 +849,28 @@ public class ColorEditDialog extends CaveSWTDialog
     }
 
     private void deleteSelected() {
-        int index = currentColormapName.lastIndexOf(File.separator);
-        String shortName = currentColormapName.substring(index + 1,
-                currentColormapName.length());
-        String message = "Delete color table: " + shortName + ". Are you sure?";
-        boolean okToDelete = MessageDialog.openConfirm(shell,
-                "Confirm Delete Color Table", message);
-        if (okToDelete) {
-            try {
-                // only allow deletes of USER level
-                ColorUtil.deleteColorMap(shortName, LocalizationLevel.USER);
-                deleteBtn.setEnabled(false);
-            } catch (LocalizationException e) {
-                String err = "Error performing delete of colormap";
-                statusHandler.handle(Priority.PROBLEM, err, e);
+        String cName = cap.getColorMapParameters().getColorMapName();
+        if (cName != null) {
+            int index = cName.lastIndexOf(File.separator);
+            String shortName = cName.substring(index + 1, cName.length());
+            String message = "Delete color table: " + shortName
+                    + ". Are you sure?";
+            boolean okToDelete = MessageDialog.openConfirm(shell,
+                    "Confirm Delete Color Table", message);
+            if (okToDelete) {
+                try {
+                    // split into: localization level, context name, path
+                    String[] fullPath = cName.split(IPathManager.SEPARATOR, 3);
+                    if (LocalizationLevel.USER.toString().equals(fullPath[0])) {
+                        ColorUtil.deleteColorMap(fullPath[2],
+                                LocalizationLevel.USER);
+                    }
+                    deleteBtn.setEnabled(false);
+                } catch (LocalizationException e) {
+                    String err = "Error performing delete of colormap";
+                    statusHandler.handle(Priority.PROBLEM, err, e);
+                }
             }
-
         }
     }
 
