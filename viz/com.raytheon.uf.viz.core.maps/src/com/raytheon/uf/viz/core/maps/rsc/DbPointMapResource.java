@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 
@@ -40,6 +41,7 @@ import com.raytheon.uf.viz.core.IGraphicsTarget.PointStyle;
 import com.raytheon.uf.viz.core.IGraphicsTarget.VerticalAlignment;
 import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
+import com.raytheon.uf.viz.core.drawables.PaintStatus;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
 import com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob;
@@ -59,27 +61,31 @@ import com.vividsolutions.jts.io.WKBReader;
 
 /**
  * Databased map resource for point data
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Mar 19, 2009           randerso    Initial creation
- * Apr 09, 2014  2997     randerso    Replaced buildEnvelope with buildBoundingGeometry
- * May 14, 2014  3074     bsteffen    Remove WORD_WRAP TextStyle and handle
- *                                    wrapping locally.
- * Aug 11, 2014  3459     randerso    Cleaned up MapQueryJob implementation
- * Nov 04, 2015  5070     randerso    Change map resources to use a preference based font
- *                                    Move management of font magnification into AbstractMapResource
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 19, 2009           randerso  Initial creation
+ * Apr 09, 2014  2997     randerso  Replaced buildEnvelope with
+ *                                  buildBoundingGeometry
+ * May 14, 2014  3074     bsteffen  Remove WORD_WRAP TextStyle and handle
+ *                                  wrapping locally.
+ * Aug 11, 2014  3459     randerso  Cleaned up MapQueryJob implementation
+ * Nov 04, 2015  5070     randerso  Change map resources to use a preference
+ *                                  based font Move management of font
+ *                                  magnification into AbstractMapResource
+ * Mar 15, 2018  6967     randerso  Set paint status to incomplete until first
+ *                                  painted
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
-public class DbPointMapResource extends
-        AbstractDbMapResource<DbPointMapResourceData, MapDescriptor> {
+public class DbPointMapResource
+        extends AbstractDbMapResource<DbPointMapResourceData, MapDescriptor> {
 
     private class LabelNode {
         private final String label;
@@ -98,10 +104,10 @@ public class DbPointMapResource extends
             try {
                 screenLoc = location.asPixel(descriptor.getGridGeometry());
             } catch (Exception e) {
-                statusHandler.handle(
-                        Priority.PROBLEM,
+                statusHandler.handle(Priority.PROBLEM,
                         "Error converting lat/lon to screen space: "
-                                + e.getLocalizedMessage(), e);
+                                + e.getLocalizedMessage(),
+                        e);
             }
         }
 
@@ -152,9 +158,9 @@ public class DbPointMapResource extends
 
     private class Request extends AbstractMapRequest<DbPointMapResource> {
 
-        String labelField;
+        private String labelField;
 
-        String goodnessField;
+        private String goodnessField;
 
         public Request(IGraphicsTarget target, DbPointMapResource rsc,
                 String labelField, String goodnessField,
@@ -174,11 +180,6 @@ public class DbPointMapResource extends
             super(request);
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult#dispose()
-         */
         @Override
         public void dispose() {
             if (labels != null) {
@@ -195,35 +196,20 @@ public class DbPointMapResource extends
             super();
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see
-         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob#getNewResult
-         * (com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest)
-         */
         @Override
         protected Result getNewResult(Request req) {
             return new Result(req);
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see
-         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapQueryJob#processRequest
-         * (com.raytheon.uf.viz.core.maps.jobs.AbstractMapRequest,
-         * com.raytheon.uf.viz.core.maps.jobs.AbstractMapResult)
-         */
         @Override
         protected void processRequest(Request req, final Result result)
                 throws Exception {
-            List<String> columns = new ArrayList<String>();
+            List<String> columns = new ArrayList<>();
             if (req.labelField != null) {
                 columns.add(req.labelField);
             }
             if ((req.goodnessField != null)
-                    && (req.goodnessField != req.labelField)) {
+                    && (!req.goodnessField.equals(req.labelField))) {
                 columns.add(req.goodnessField);
             }
             if (resourceData.getColumns() != null) {
@@ -242,12 +228,13 @@ public class DbPointMapResource extends
                 constraints = Arrays.asList(resourceData.getConstraints());
             }
 
-            QueryResult results = DbMapQueryFactory.getMapQuery(
-                    resourceData.getTable(), resourceData.getGeomField())
+            QueryResult results = DbMapQueryFactory
+                    .getMapQuery(resourceData.getTable(),
+                            resourceData.getGeomField())
                     .queryWithinGeometry(req.getBoundingGeom(), columns,
                             constraints);
 
-            List<LabelNode> newLabels = new ArrayList<LabelNode>();
+            List<LabelNode> newLabels = new ArrayList<>();
 
             WKBReader wkbReader = new WKBReader();
             for (int c = 0; c < results.getResultCount(); c++) {
@@ -270,8 +257,8 @@ public class DbPointMapResource extends
 
                 if (g != null) {
                     String label = "";
-                    if ((req.labelField != null)
-                            && (results.getRowColumnValue(c, req.labelField) != null)) {
+                    if ((req.labelField != null) && (results
+                            .getRowColumnValue(c, req.labelField) != null)) {
                         Object r = results.getRowColumnValue(c, req.labelField);
                         if (r instanceof BigDecimal) {
                             label = Double.toString(((Number) r).doubleValue());
@@ -330,18 +317,18 @@ public class DbPointMapResource extends
 
     private MapQueryJob queryJob;
 
+    /**
+     * Constructor
+     *
+     * @param data
+     * @param loadProperties
+     */
     public DbPointMapResource(DbPointMapResourceData data,
             LoadProperties loadProperties) {
         super(data, loadProperties);
         queryJob = new MapQueryJob();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.maps.rsc.AbstractDbMapResource#disposeInternal()
-     */
     @Override
     protected void disposeInternal() {
         queryJob.stop();
@@ -357,8 +344,8 @@ public class DbPointMapResource extends
         int screenWidth = canvasBounds.width;
         double worldToScreenRatio = screenExtent.getWidth() / screenWidth;
 
-        int displayWidth = (int) (descriptor.getMapWidth() * paintProps
-                .getZoomLevel());
+        int displayWidth = (int) (descriptor.getMapWidth()
+                * paintProps.getZoomLevel());
         double kmPerPixel = (displayWidth / screenWidth) / 1000.0;
 
         double magnification = getCapability(MagnificationCapability.class)
@@ -372,8 +359,7 @@ public class DbPointMapResource extends
                 .getLabelField();
         boolean isLabeled = labelField != null;
         if ((isLabeled && !labelField.equals(lastLabelField))
-                || (lastExtent == null)
-                || !lastExtent.getEnvelope().contains(
+                || (lastExtent == null) || !lastExtent.getEnvelope().contains(
                         clipToProjExtent(screenExtent).getEnvelope())) {
             if (!paintProps.isZooming()) {
                 PixelExtent expandedExtent = getExpandedExtent(screenExtent);
@@ -388,13 +374,24 @@ public class DbPointMapResource extends
             }
         }
 
+        // if queryJob is running
+        if (queryJob.getState() != Job.NONE) {
+            updatePaintStatus(PaintStatus.INCOMPLETE);
+        }
+
         Result result = queryJob.getLatestResult();
+
+        // if query job has just completed
         if (result != null) {
+            updatePaintStatus(PaintStatus.PAINTED);
+
             if (result.isFailed()) {
-                lastExtent = null; // force to re-query when re-enabled
+                // force to re-query when re-enabled
+                lastExtent = null;
                 throw new VizException(
                         "Error processing map query request for: "
-                                + result.getName(), result.getCause());
+                                + result.getName(),
+                        result.getCause());
             }
             labels = result.labels;
         }
@@ -426,8 +423,8 @@ public class DbPointMapResource extends
                     / screenToWorldRatio;
             offsetY -= getCapability(LabelableCapability.class).getyOffset()
                     / screenToWorldRatio;
-            List<double[]> points = new ArrayList<double[]>();
-            List<DrawableString> strings = new ArrayList<DrawableString>();
+            List<double[]> points = new ArrayList<>();
+            List<DrawableString> strings = new ArrayList<>();
             for (LabelNode node : labels) {
                 try {
                     if (node.getDistance() > threshold) {
@@ -440,7 +437,8 @@ public class DbPointMapResource extends
                                         "$1\n");
                                 DrawableString str = new DrawableString(label,
                                         color);
-                                str.setCoordinates(c.x + offsetX, c.y + offsetY);
+                                str.setCoordinates(c.x + offsetX,
+                                        c.y + offsetY);
                                 str.horizontalAlignment = horizAlign;
                                 str.verticallAlignment = VerticalAlignment.MIDDLE;
                                 str.font = getFont(target);

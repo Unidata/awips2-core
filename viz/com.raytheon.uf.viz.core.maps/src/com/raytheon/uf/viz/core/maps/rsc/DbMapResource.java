@@ -33,6 +33,7 @@ import java.util.Map.Entry;
 import java.util.Random;
 import java.util.Set;
 
+import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
 import org.opengis.referencing.FactoryException;
@@ -58,6 +59,7 @@ import com.raytheon.uf.viz.core.drawables.JTSCompiler;
 import com.raytheon.uf.viz.core.drawables.JTSCompiler.JTSGeometryData;
 import com.raytheon.uf.viz.core.drawables.JTSCompiler.PointStyle;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
+import com.raytheon.uf.viz.core.drawables.PaintStatus;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
@@ -90,25 +92,33 @@ import com.vividsolutions.jts.io.WKBReader;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 19, 2009            randerso    Initial creation
- * Sep 18, 2012 1019       randerso    improved error handling
- * Aug 12, 2013 1133       bsteffen    Better error handling for invalid
- *                                     polygons in map resource.
- * Nov 06, 2013 2361       njensen     Prepopulate fields in initInternal
- *                                     instead of constructor for speed
- * Feb 18, 2014 2819       randerso    Removed unnecessary clones of geometries
- * Apr 09, 2014 2997       randerso    Replaced buildEnvelope with buildBoundingGeometry
- * May 15, 2014 2820       bsteffen    Implement Interrogatable
- * Jul 25, 2014 3447       bclement    reset map query job on dispose
- * Aug 01, 2014 3471       mapeters    Updated deprecated createShadedShape() calls.
- * Aug 11, 2014 3459       randerso    Cleaned up MapQueryJob implementation
- * Aug 13, 2014 3492       mapeters    Updated deprecated createWireframeShape() calls.
- * Oct 23, 2014 3685       randerso    Fix nullPointer if shadingField contains a null
- * Nov 04, 2015 5070       randerso    Change map resources to use a preference based font
- *                                     Move management of font magnification into AbstractMapResource
- * Feb 27, 2818 7012       tgurney     Dedupe map query fields
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 19, 2009           randerso  Initial creation
+ * Sep 18, 2012  1019     randerso  improved error handling
+ * Aug 12, 2013  1133     bsteffen  Better error handling for invalid polygons
+ *                                  in map resource.
+ * Nov 06, 2013  2361     njensen   Prepopulate fields in initInternal instead
+ *                                  of constructor for speed
+ * Feb 18, 2014  2819     randerso  Removed unnecessary clones of geometries
+ * Apr 09, 2014  2997     randerso  Replaced buildEnvelope with
+ *                                  buildBoundingGeometry
+ * May 15, 2014  2820     bsteffen  Implement Interrogatable
+ * Jul 25, 2014  3447     bclement  reset map query job on dispose
+ * Aug 01, 2014  3471     mapeters  Updated deprecated createShadedShape()
+ *                                  calls.
+ * Aug 11, 2014  3459     randerso  Cleaned up MapQueryJob implementation
+ * Aug 13, 2014  3492     mapeters  Updated deprecated createWireframeShape()
+ *                                  calls.
+ * Oct 23, 2014  3685     randerso  Fix nullPointer if shadingField contains a
+ *                                  null
+ * Nov 04, 2015  5070     randerso  Change map resources to use a preference
+ *                                  based font Move management of font
+ *                                  magnification into AbstractMapResource
+ * Feb 27, 2818  7012     tgurney   Dedupe map query fields
+ * Mar 15, 2018  6967     randerso  Set paint status to incomplete until first
+ *                                  painted
  *
  * </pre>
  *
@@ -120,7 +130,7 @@ public class DbMapResource
 
     /**
      * A key to be used in
-     * {@link #interrogate(ReferencedCoordinate, DataTime, InterrogationKey...)
+     * {@link #interrogate(ReferencedCoordinate, DataTime, InterrogationKey...)}
      * for retrieving the current label or null if the geometries are unlabeled.
      */
     public static final InterrogationKey<String> LABEL_KEY = new StringInterrogationKey<>(
@@ -362,7 +372,7 @@ public class DbMapResource
             IShadedShape newShadedShape = null;
             if (req.shadingField != null) {
                 newShadedShape = req.getTarget().createShadedShape(false,
-                        req.descriptor.getGridGeometry(), true);
+                        req.descriptor.getGridGeometry());
             }
 
             JTSCompiler jtsCompiler = new JTSCompiler(newShadedShape,
@@ -494,6 +504,12 @@ public class DbMapResource
 
     private MapQueryJob queryJob;
 
+    /**
+     * Constructor
+     *
+     * @param data
+     * @param loadProperties
+     */
     public DbMapResource(DbMapResourceData data,
             LoadProperties loadProperties) {
         super(data, loadProperties);
@@ -577,8 +593,17 @@ public class DbMapResource
             }
         }
 
+        // if queryJob is running
+        if (queryJob.getState() != Job.NONE) {
+            updatePaintStatus(PaintStatus.INCOMPLETE);
+        }
+
         Result result = queryJob.getLatestResult();
+
+        // if query job has just completed
         if (result != null) {
+            updatePaintStatus(PaintStatus.PAINTED);
+
             if (result.isFailed()) {
                 // force to re-query when re-enabled
                 lastExtent = null;
@@ -693,28 +718,23 @@ public class DbMapResource
     }
 
     /**
-     * checks if the potentialNode has the same text AND is to close to an
-     * already selected node
+     * Checks if the potentialNode is too close to an already selected node
      *
      * @param potentialNode
      * @param selectedDrawList
      * @param minScreenDistance
-     * @return
+     * @return true if should draw
      */
     protected boolean shouldDraw(LabelNode potentialNode,
             List<LabelNode> selectedDrawList, double minScreenDistance) {
         boolean rval = false;
 
-        // String label = potentialNode.getLabel();
         double x = potentialNode.getLocation()[0];
         double y = potentialNode.getLocation()[1];
         double minDistance = Double.MAX_VALUE;
 
         // check already selected labels
         for (LabelNode node : selectedDrawList) {
-            // if (!node.getLabel().equals(label)) {
-            // continue;
-            // }
             double distance = Math.abs(node.getLocation()[0] - x)
                     + Math.abs(node.getLocation()[1] - y);
             minDistance = Math.min(distance, minDistance);

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -49,22 +49,28 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
 
 /**
  * Base class for database map resources
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 10, 2011            randerso    Initial creation
- * Apr 17, 2014  #2997     randerso    Moved buildBoundingGeometry up from DbMapResource
- * Aug 21, 2014  #3459     randerso    Restructured Map resource class hierarchy
- * Jan 29, 2015  #4062     randerso    Added a buffer to bounding Geometry
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 10, 2011           randerso  Initial creation
+ * Apr 17, 2014  2997     randerso  Moved buildBoundingGeometry up from
+ *                                  DbMapResource
+ * Aug 21, 2014  3459     randerso  Restructured Map resource class hierarchy
+ * Jan 29, 2015  4062     randerso  Added a buffer to bounding Geometry
+ * Mar 15, 2018  6967     randerso  Code cleanup
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
+ *
+ * @param <T>
+ *            the resource data type
+ * @param <D>
+ *            the descriptor type
  */
 
 public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData, D extends IMapDescriptor>
@@ -76,10 +82,6 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
 
     private String geometryType;
 
-    /**
-     * @param resourceData
-     * @param loadProperties
-     */
     protected AbstractDbMapResource(T resourceData,
             LoadProperties loadProperties) {
         super(resourceData, loadProperties);
@@ -91,8 +93,9 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
     public List<String> getLabelFields() {
         if (this.labelFields == null) {
             try {
-                this.labelFields = DbMapQueryFactory.getMapQuery(
-                        resourceData.getTable(), resourceData.getGeomField())
+                this.labelFields = DbMapQueryFactory
+                        .getMapQuery(resourceData.getTable(),
+                                resourceData.getGeomField())
                         .getColumnNamesWithoutGeometries();
                 ColumnDefinition[] columns = resourceData.getColumns();
                 if (columns != null) {
@@ -114,13 +117,13 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
     protected double[] getLevels() {
         if (levels == null) {
             try {
-                List<Double> results = DbMapQueryFactory.getMapQuery(
-                        resourceData.getTable(), resourceData.getGeomField())
+                List<Double> results = DbMapQueryFactory
+                        .getMapQuery(resourceData.getTable(),
+                                resourceData.getGeomField())
                         .getLevels();
                 levels = new double[results.size()];
-                int i = 0;
-                for (Double d : results) {
-                    levels[i++] = d;
+                for (int i = 0; i < results.size(); i++) {
+                    levels[i] = results.get(i);
                 }
                 Arrays.sort(levels);
             } catch (VizException e) {
@@ -134,9 +137,9 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
 
     /**
      * Determine simplification level
-     * 
+     *
      * @param paintProps
-     * @return
+     * @return the current simplification level to use
      */
     protected double getSimpLev(PaintProperties paintProps) {
         PixelExtent screenExtent = (PixelExtent) paintProps.getView()
@@ -174,8 +177,9 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
     protected String getGeometryType() {
         if (geometryType == null) {
             try {
-                geometryType = DbMapQueryFactory.getMapQuery(
-                        resourceData.getTable(), resourceData.getGeomField())
+                geometryType = DbMapQueryFactory
+                        .getMapQuery(resourceData.getTable(),
+                                resourceData.getGeomField())
                         .getGeometryType();
             } catch (Throwable e) {
                 statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
@@ -231,10 +235,10 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
                 targetCRS);
 
         double threshold = kmPerPixel * SPEED_UP;
-        int maxHorDivisions = (int) Math.ceil(extent.getWidth() / SPEED_UP
-                / worldToScreenRatio);
-        int maxVertDivisions = (int) Math.ceil(extent.getHeight() / SPEED_UP
-                / worldToScreenRatio);
+        int maxHorDivisions = (int) Math
+                .ceil(extent.getWidth() / SPEED_UP / worldToScreenRatio);
+        int maxVertDivisions = (int) Math
+                .ceil(extent.getHeight() / SPEED_UP / worldToScreenRatio);
 
         Geometry g = null;
         try {
@@ -244,14 +248,15 @@ public abstract class AbstractDbMapResource<T extends AbstractDbMapResourceData,
 
             CoordinateSequenceTransformer cst = new DefaultCoordinateSequenceTransformer(
                     PackedCoordinateSequenceFactory.DOUBLE_FACTORY);
-            final GeometryTransformer transformer = new GeometryTransformer(cst);
+            final GeometryTransformer transformer = new GeometryTransformer(
+                    cst);
             MathTransform toLL = MapUtil.getTransformToLatLon(targetCRS);
             transformer.setMathTransform(toLL);
 
             g = transformer.transform(g);
         } catch (Exception e1) {
-            statusHandler
-                    .handle(Priority.PROBLEM, e1.getLocalizedMessage(), e1);
+            statusHandler.handle(Priority.PROBLEM, e1.getLocalizedMessage(),
+                    e1);
         }
 
         // Add just a little buffer to get past EnvelopeIntersection limiting
