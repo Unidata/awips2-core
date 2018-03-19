@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -50,35 +50,43 @@ import javax.jms.Topic;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Job to monitor the JMS topic containing notification messages, delegating the
  * messages to the appropriate listeners. Listener execution is performed in
  * isolated threads, so users may perform appropriate operations inside the
  * listener method.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * May 08, 2008  1127     randerso    Initial Creation
- * Sep 03, 2008  1448     chammack    Refactored notification observer interface
- * Apr 23, 2013  1939     randerso    Add separate connect method to allow application
- *                                    to complete initialization before connecting to JMS.
- * Oct 15, 2013  2389      rjpeter    Updated synchronization to remove session leaks.
- * Jul 21, 2014  3390      bsteffen   Extracted logic from the NotificationManagerJob
- * Oct 23, 2014  3390      bsteffen   Fix concurrency of disconnect and name threads.
- * Apr 06, 2015  3343      rjpeter    Fix deadlock and reconnect.
- * Feb 11, 2016  4630      rjpeter    Fix memory leak.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * May 08, 2008  1127     randerso  Initial Creation
+ * Sep 03, 2008  1448     chammack  Refactored notification observer interface
+ * Apr 23, 2013  1939     randerso  Add separate connect method to allow
+ *                                  application to complete initialization
+ *                                  before connecting to JMS.
+ * Oct 15, 2013  2389     rjpeter   Updated synchronization to remove session
+ *                                  leaks.
+ * Jul 21, 2014  3390     bsteffen  Extracted logic from the
+ *                                  NotificationManagerJob
+ * Oct 23, 2014  3390     bsteffen  Fix concurrency of disconnect and name
+ *                                  threads.
+ * Apr 06, 2015  3343     rjpeter   Fix deadlock and reconnect.
+ * Feb 11, 2016  4630     rjpeter   Fix memory leak.
+ * Mar 19, 2018  7141     randerso  Use a single timer for all
+ *                                  ReconnectTimerTasks
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1
  */
-public class JmsNotificationManager implements ExceptionListener, AutoCloseable {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+public class JmsNotificationManager
+        implements ExceptionListener, AutoCloseable {
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(JmsNotificationManager.class);
 
     private static final int IN_MEM_MESSAGE_LIMIT = 5000;
@@ -98,11 +106,6 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             this.queryString = queryString;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#hashCode()
-         */
         @Override
         public int hashCode() {
             final int prime = 31;
@@ -114,11 +117,6 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             return result;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
         @Override
         public boolean equals(Object obj) {
             if (this == obj) {
@@ -166,15 +164,12 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     private final AtomicBoolean reconnectScheduled = new AtomicBoolean(false);
 
+    private final Timer reconnectTimer = new Timer("JMSReconnectTimer", true);
+
     /**
      * Timer task that updates reconnectScheduled and attempts to connect.
      */
     private class ReconnectTimerTask extends TimerTask {
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.util.TimerTask#run()
-         */
         @Override
         public void run() {
             reconnectScheduled.set(false);
@@ -183,14 +178,25 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     }
 
+    /**
+     * Construct a JmsNotificationManager with a default thread name prefix
+     *
+     * @param connectionFactory
+     */
     public JmsNotificationManager(ConnectionFactory connectionFactory) {
         this(connectionFactory, "JmsNotificationPool");
     }
 
+    /**
+     * Construct a JmsNotificationManager with a specified thread name prefix
+     *
+     * @param connectionFactory
+     * @param notificationThreadNamePrefix
+     */
     public JmsNotificationManager(ConnectionFactory connectionFactory,
             String notificationThreadNamePrefix) {
         this.connectionFactory = connectionFactory;
-        this.listeners = new HashMap<ListenerKey, NotificationListener>();
+        this.listeners = new HashMap<>();
         executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0,
                 TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
                 new NamedThreadFactory(notificationThreadNamePrefix));
@@ -198,7 +204,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     /**
      * Initiate the jms connection.
-     * 
+     *
      * @param notifyError
      *            whether to report errors(through UFStatus) or ignore them.
      */
@@ -232,10 +238,9 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                 } catch (JMSException e) {
                     successful = false;
                     if (notifyError) {
-                        statusHandler
-                                .handle(Priority.SIGNIFICANT,
-                                        "NotificationManager failed to setup message listener.",
-                                        e);
+                        statusHandler.handle(Priority.SIGNIFICANT,
+                                "NotificationManager failed to setup message listener.",
+                                e);
                     }
                 }
             }
@@ -249,8 +254,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /**
      * Creates a new AUTO_ACKNOWLEDGE session if connected to JMS, otherwise
      * returns null.
-     * 
-     * @return
+     *
+     * @return the created session or null if not connected
      * @throws JMSException
      */
     protected synchronized Session createSession() throws JMSException {
@@ -261,6 +266,12 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         }
     }
 
+    /**
+     * Disconnect this JmsNotificationManager
+     *
+     * @param notifyError
+     *            true if errors should be logged
+     */
     public synchronized void disconnect(boolean notifyError) {
         if (connection != null) {
             connected = false;
@@ -282,10 +293,9 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                 connection.close();
             } catch (Exception e) {
                 if (notifyError) {
-                    statusHandler
-                            .handle(Priority.SIGNIFICANT,
-                                    "NotificationManager failed to close a connection.",
-                                    e);
+                    statusHandler.handle(Priority.SIGNIFICANT,
+                            "NotificationManager failed to close a connection.",
+                            e);
                 }
             }
             /* Since threads should not be needed for now, let them finish. */
@@ -306,7 +316,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
          * Schedule task to attempt to reconnect in 5 seconds.
          */
         if (reconnectScheduled.compareAndSet(false, true)) {
-            new Timer().schedule(new ReconnectTimerTask(), 5 * 1000);
+            reconnectTimer.schedule(new ReconnectTimerTask(),
+                    5 * TimeUtil.MILLIS_PER_SECOND);
         }
 
         synchronized (listeners) {
@@ -322,10 +333,28 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         }
     }
 
+    /**
+     * Register for notification messages using a callback.
+     *
+     * @param queue
+     *            message queue
+     * @param obs
+     *            the notification observer callback
+     */
     public void addQueueObserver(String queue, INotificationObserver obs) {
         addQueueObserver(queue, obs, null);
     }
 
+    /**
+     * Register for notification messages using a callback.
+     *
+     * @param queue
+     *            message queue
+     * @param obs
+     *            the notification observer callback
+     * @param queryString
+     *            filter to only match certain messages
+     */
     public void addQueueObserver(String queue, INotificationObserver obs,
             String queryString) {
         ListenerKey key = new ListenerKey(queue, queryString);
@@ -348,8 +377,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler.error(
-                        "NotificationManager failed to create queue consumer for queue ["
+                statusHandler
+                        .error("NotificationManager failed to create queue consumer for queue ["
                                 + queue + "].", e);
             }
         }
@@ -357,16 +386,26 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
     /**
      * Register for notification messages using a callback.
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
-     *            the alert observer callback
+     *            the notification observer callback
      */
     public void addObserver(String topic, INotificationObserver obs) {
         addObserver(topic, obs, null);
     }
 
+    /**
+     * Register for notification messages using a callback.
+     *
+     * @param topic
+     *            message topic
+     * @param obs
+     *            the notification observer callback
+     * @param queryString
+     *            filter to only match certain messages
+     */
     public void addObserver(String topic, INotificationObserver obs,
             String queryString) {
         ListenerKey key = new ListenerKey(topic, queryString);
@@ -389,8 +428,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler.error(
-                        "NotificationManager failed to create topic consumer for topic ["
+                statusHandler
+                        .error("NotificationManager failed to create topic consumer for topic ["
                                 + topic + "].", e);
             }
         }
@@ -399,7 +438,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
@@ -412,7 +451,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
@@ -438,9 +477,10 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
-     * @param topic
+     *
+     * @param queue
      *            message topic
+     * @param queryString
      * @param obs
      *            the observer to remove
      */
@@ -497,8 +537,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
         public NotificationListener(ExecutorService executorService, String id,
                 String queryString, Type type) {
             this.executorService = executorService;
-            this.observers = new ArrayList<INotificationObserver>();
-            this.jobWrappers = new HashMap<INotificationObserver, JobWrapper>();
+            this.observers = new ArrayList<>();
+            this.jobWrappers = new HashMap<>();
             this.type = type;
             this.id = id;
             this.queryString = queryString;
@@ -576,11 +616,6 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             }
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see javax.jms.MessageListener#onMessage(javax.jms.Message)
-         */
         @Override
         public void onMessage(Message msg) {
             synchronized (observers) {
@@ -621,7 +656,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
     /**
      * Provides internal insulation from slow-running processes by forming a
      * queue
-     * 
+     *
      */
     private static class JobWrapper implements Runnable {
 
@@ -641,14 +676,14 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                 INotificationObserver observer) {
             // super("Alert thread for " + observer);
             this.observer = observer;
-            this.messages = new ConcurrentLinkedQueue<Message>();
+            this.messages = new ConcurrentLinkedQueue<>();
             this.messageCount = new AtomicInteger(0);
             this.executorService = executorService;
         }
 
         @Override
         public void run() {
-            List<NotificationMessage> messageList = new ArrayList<NotificationMessage>();
+            List<NotificationMessage> messageList = new ArrayList<>();
             // one error log messages per execution of job
             boolean errorLogged = false;
             while (!this.messages.isEmpty()) {
@@ -658,16 +693,16 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
                     Message msg = messages.remove();
 
                     if (!(msg instanceof BytesMessage)) {
-                        statusHandler
-                                .error("Incoming message was not a binary message as expected");
+                        statusHandler.error(
+                                "Incoming message was not a binary message as expected");
                     } else {
                         messageList.add(new NotificationMessage(msg));
                     }
                 }
 
                 try {
-                    observer.notificationArrived(messageList
-                            .toArray(new NotificationMessage[messageList.size()]));
+                    observer.notificationArrived(messageList.toArray(
+                            new NotificationMessage[messageList.size()]));
                 } catch (Throwable e) {
                     if (!errorLogged) {
                         statusHandler.error(
@@ -681,7 +716,7 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
         /**
          * Add the message to the queue
-         * 
+         *
          * @param msg
          *            the msg
          */
@@ -690,7 +725,8 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
             if (messageCount.incrementAndGet() > IN_MEM_MESSAGE_LIMIT) {
                 messageCount.decrementAndGet();
                 messages.remove();
-                if ((System.currentTimeMillis() - lastErrorPrintTime) > 600000) {
+                if ((System.currentTimeMillis() - lastErrorPrintTime) > 10
+                        * TimeUtil.MILLIS_PER_MINUTE) {
                     statusHandler
                             .error("Message queue size exceeded for observer "
                                     + observer
@@ -727,16 +763,16 @@ public class JmsNotificationManager implements ExceptionListener, AutoCloseable 
 
         public NamedThreadFactory(String namePrefix) {
             SecurityManager s = System.getSecurityManager();
-            group = (s != null) ? s.getThreadGroup() : Thread.currentThread()
-                    .getThreadGroup();
+            group = (s != null) ? s.getThreadGroup()
+                    : Thread.currentThread().getThreadGroup();
             this.namePrefix = namePrefix + "-" + poolNumber.getAndIncrement()
                     + "-thread-";
         }
 
         @Override
         public Thread newThread(Runnable r) {
-            Thread t = new Thread(group, r, namePrefix
-                    + threadNumber.getAndIncrement(), 0);
+            Thread t = new Thread(group, r,
+                    namePrefix + threadNumber.getAndIncrement(), 0);
             if (t.isDaemon()) {
                 t.setDaemon(false);
             }
