@@ -78,6 +78,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Feb 07, 2018  6816     randerso    Fix colorbar labeling for GFE logFactor
  *                                    color maps
  * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
+ * Mar 19, 2018  6738     tgurney     Add getHistory, setHistory
  *
  * </pre>
  *
@@ -172,6 +173,26 @@ public class ColorBar extends Composite
     };
 
     private NumberFormat numberFormat = null;
+
+    public static class History {
+
+        public int currentColorIndex = 0;
+
+        public List<List<ColorData>> colorHistory = new ArrayList<>();
+
+        public History(int currentColorIndex,
+                List<List<ColorData>> colorHistory) {
+            this.currentColorIndex = currentColorIndex;
+            for (List<ColorData> colorDatas : colorHistory) {
+                this.colorHistory.add(new ArrayList<>(colorDatas));
+            }
+        }
+
+        public List<ColorData> getCurrentColors() {
+            return this.colorHistory.get(currentColorIndex);
+        }
+
+    }
 
     /**
      * Constructor.
@@ -1225,4 +1246,15 @@ public class ColorBar extends Composite
         index = Math.min(newWidth - 1, index);
         return index;
     }
+
+    public History getHistory() {
+        return new History(currentColorIndex, colorHistory);
+    }
+
+    public void setHistory(History h) {
+        this.currentColorIndex = h.currentColorIndex;
+        this.colorHistory = h.colorHistory;
+        repaintColorbars();
+    }
+
 }

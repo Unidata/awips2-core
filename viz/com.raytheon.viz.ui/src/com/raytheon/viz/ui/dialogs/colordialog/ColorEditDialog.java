@@ -91,6 +91,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Mar 02, 2016  4834     bsteffen    Save sets the current name correctly.
  * Jun 22, 2017  4818     mapeters    Changed setCloseCallback to addCloseCallback
  * Mar 14, 2018  6690     tgurney     Fix delete of colormaps in subdirs
+ * Mar 19, 2018  6738     tgurney     Keep color bar history even when opening/closing dialog
  *
  * </pre>
  *
@@ -118,44 +119,20 @@ public class ColorEditDialog extends CaveSWTDialog
 
     private IDisplayPaneContainer container;
 
-    /**
-     * Interpolate button.
-     */
     private Button interpolateBtn;
 
-    /**
-     * Undo button.
-     */
     private Button undoBtn;
 
-    /**
-     * Redo button.
-     */
     private Button redoBtn;
 
-    /**
-     * Revert button.
-     */
     private Button revertBtn;
 
-    /**
-     * Save button.
-     */
     private Button saveBtn;
 
-    /**
-     * Save As button.
-     */
     private Button saveAsBtn;
 
-    /**
-     * Office save as button.
-     */
     private Button officeSaveAsBtn;
 
-    /**
-     * Delete button.
-     */
     private Button deleteBtn;
 
     private AbstractVizResource<?, ?> singleResourceToEdit;
@@ -165,6 +142,12 @@ public class ColorEditDialog extends CaveSWTDialog
     private SaveColorMapDialog officeSaveAsDialog;
 
     private SaveColorMapDialog saveAsDialog;
+
+    /**
+     * Used to save the undo/redo history when dialog is closed and recall it
+     * when dialog is opened again
+     */
+    private static ColorBar.History savedColorBarHistory;
 
     public static synchronized void openDialog(Shell parent,
             IDisplayPaneContainer container,
@@ -186,12 +169,6 @@ public class ColorEditDialog extends CaveSWTDialog
         }
     }
 
-    /**
-     * Constructor.
-     *
-     * @param parent
-     *            Parent shell.
-     */
     private ColorEditDialog(Shell parent, IDisplayPaneContainer container,
             AbstractVizResource<?, ?> singleRscToEdit, boolean rightImages) {
         super(parent, SWT.DIALOG_TRIM | SWT.MIN);
@@ -204,7 +181,11 @@ public class ColorEditDialog extends CaveSWTDialog
         cap = getCapabilityToEdit();
         currentColormapName = getCurrentColormapName(cap);
         savedColormapName = currentColormapName;
-
+        addCloseCallback((Object unused) -> {
+            synchronized (ColorEditDialog.class) {
+                savedColorBarHistory = colorEditComp.getColorBar().getHistory();
+            }
+        });
         if (container != null) {
             // Editor switching (who is the active editor!?)
             VizWorkbenchManager.getInstance().addListener(this);
@@ -417,6 +398,20 @@ public class ColorEditDialog extends CaveSWTDialog
         colorEditComp.setLayout(mainLayout);
         colorEditComp
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
+        if (savedColorBarHistory != null) {
+            if (savedColorBarHistory.getCurrentColors()
+                    .equals(colorEditComp.getColorBar().getCurrentColors())) {
+                colorEditComp.getColorBar().setHistory(savedColorBarHistory);
+            } else {
+                /*
+                 * invalidate saved history if opening with a different color
+                 * map from last time
+                 */
+                synchronized (ColorEditDialog.class) {
+                    savedColorBarHistory = null;
+                }
+            }
+        }
         createBottomButtons(shell);
         if (cap != null) {
             updateTitleText();
@@ -425,9 +420,6 @@ public class ColorEditDialog extends CaveSWTDialog
         }
     }
 
-    /**
-     * Create the bottom control buttons.
-     */
     private void createBottomButtons(Composite parent) {
         // Create a composite that will contain the control buttons.
         Composite bottonBtnComposite = new Composite(parent, SWT.NONE);
@@ -453,7 +445,7 @@ public class ColorEditDialog extends CaveSWTDialog
         gd = new GridData(GridData.FILL_HORIZONTAL);
         undoBtn = new Button(bottonBtnComposite, SWT.PUSH);
         undoBtn.setText("Undo");
-        undoBtn.setEnabled(false);
+        undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
         undoBtn.setLayoutData(gd);
         undoBtn.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -466,7 +458,7 @@ public class ColorEditDialog extends CaveSWTDialog
         gd = new GridData(GridData.FILL_HORIZONTAL);
         redoBtn = new Button(bottonBtnComposite, SWT.PUSH);
         redoBtn.setText("Redo");
-        redoBtn.setEnabled(false);
+        redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
         redoBtn.setLayoutData(gd);
         redoBtn.addSelectionListener(new SelectionAdapter() {
             @Override
