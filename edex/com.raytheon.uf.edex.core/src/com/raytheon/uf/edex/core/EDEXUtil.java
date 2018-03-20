@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -40,27 +40,32 @@ import com.raytheon.uf.edex.core.exception.ShutdownException;
 
 /**
  * Contains utility methods for use by EDEX.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 04/23/2008   1088        chammack    Split from Util
- * 11/22/2010   2235        cjeanbap    Added audio file to StatusMessage.
- * 02/02/2011   6500        cjeanbap    Added paramter to method signature and
- *                                      properly assign source value.
- * 06/12/2012   0609        djohnson    Use EDEXUtil for EDEX_HOME.
- * 03/18/2013   1802        bphillip    Added getList utility function
- * 04/10/2014   2726        rjpeter     Added methods for waiting for edex to be running.
- * 06/25/2014   3165        njensen     Remove dead code
- * Jul 16, 2014 2914        garmendariz Remove EnvProperties
- * Jul 27, 2015 4654        skorolev    Added filters in sendMessageAlertViz
- * Dec 17, 2015 5166        kbisanz     Update logging to use SLF4J
- * Apr 25, 2016 5604        rjpeter     Updated checkPersistenceTimes to utilize same object for each call.
- * Apr 19, 2017 6187        njensen     Improved logging
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Apr 23, 2008  1088        chammack     Split from Util
+ * Nov 22, 2010  2235        cjeanbap     Added audio file to StatusMessage.
+ * Feb 02, 2011  6500        cjeanbap     Added paramter to method signature and
+ *                                        properly assign source value.
+ * Jun 12, 2012  609         djohnson     Use EDEXUtil for EDEX_HOME.
+ * Mar 18, 2013  1802        bphillip     Added getList utility function
+ * Apr 10, 2014  2726        rjpeter      Added methods for waiting for edex to
+ *                                        be running.
+ * Jun 25, 2014  3165        njensen      Remove dead code
+ * Jul 16, 2014  2914        garmendariz  Remove EnvProperties
+ * Jul 27, 2015  4654        skorolev     Added filters in sendMessageAlertViz
+ * Dec 17, 2015  5166        kbisanz      Update logging to use SLF4J
+ * Apr 25, 2016  5604        rjpeter      Updated checkPersistenceTimes to
+ *                                        utilize same object for each call.
+ * Apr 19, 2017  6187        njensen      Improved logging
+ * Mar 20, 2018  7096        randerso     Remove call to
+ *                                        StatusMessage.setEventTime()
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class EDEXUtil implements ApplicationContextAware {
@@ -147,7 +152,7 @@ public class EDEXUtil implements ApplicationContextAware {
     /**
      * Retrieve an object from the ESB context This object could be a Spring
      * Bean, a context or a property container
-     * 
+     *
      * @param name
      *            name of the object
      * @return The instance
@@ -158,8 +163,8 @@ public class EDEXUtil implements ApplicationContextAware {
         try {
             result = CONTEXT.getBean(name);
         } catch (Exception e) {
-            logger.error("Unable to retrieve component: " + name
-                    + " from ESB.", e);
+            logger.error("Unable to retrieve component: " + name + " from ESB.",
+                    e);
         }
 
         return result;
@@ -169,7 +174,7 @@ public class EDEXUtil implements ApplicationContextAware {
     /**
      * Retrieve an object from the ESB context This object could be a Spring
      * Bean, a context or a property container
-     * 
+     *
      * @param clazz
      *            the return class type
      * @param name
@@ -191,7 +196,7 @@ public class EDEXUtil implements ApplicationContextAware {
         synchronized (waiter) {
             try {
                 while (!isRunning()) {
-                    waiter.wait(15000);
+                    waiter.wait(15 * TimeUtil.MILLIS_PER_SECOND);
                 }
             } catch (InterruptedException e) {
                 // ignore
@@ -214,7 +219,7 @@ public class EDEXUtil implements ApplicationContextAware {
 
     /**
      * True if shutdown has been initiated, false otherwise.
-     * 
+     *
      * @return
      */
     public static boolean isShuttingDown() {
@@ -223,7 +228,7 @@ public class EDEXUtil implements ApplicationContextAware {
 
     /**
      * If EDEX is shutting down throws a ShutdownException
-     * 
+     *
      * @throws ShutdownException
      */
     public static void checkShuttingDown() throws ShutdownException {
@@ -264,7 +269,7 @@ public class EDEXUtil implements ApplicationContextAware {
 
     /**
      * Send a message to alertViz with filters
-     * 
+     *
      * @param priority
      * @param pluginName
      * @param source
@@ -274,9 +279,9 @@ public class EDEXUtil implements ApplicationContextAware {
      * @param audioFile
      * @param filters
      */
-    public static void sendMessageAlertViz(Priority priority,
-            String pluginName, String source, String category, String message,
-            String details, String audioFile, Map<String, String> filters) {
+    public static void sendMessageAlertViz(Priority priority, String pluginName,
+            String source, String category, String message, String details,
+            String audioFile, Map<String, String> filters) {
 
         StatusMessage sm = new StatusMessage();
         sm.setPriority(priority);
@@ -286,7 +291,6 @@ public class EDEXUtil implements ApplicationContextAware {
         sm.setMachineToCurrent();
         sm.setSourceKey(source);
         sm.setDetails(details);
-        sm.setEventTime(new Date());
         sm.setAudioFile(audioFile);
         sm.setFilters(filters);
         try {
@@ -298,7 +302,7 @@ public class EDEXUtil implements ApplicationContextAware {
 
     /**
      * Send a message to alertViz
-     * 
+     *
      * @param priority
      * @param pluginName
      * @param source
@@ -307,9 +311,9 @@ public class EDEXUtil implements ApplicationContextAware {
      * @param details
      * @param audioFile
      */
-    public static void sendMessageAlertViz(Priority priority,
-            String pluginName, String source, String category, String message,
-            String details, String audioFile) {
+    public static void sendMessageAlertViz(Priority priority, String pluginName,
+            String source, String category, String message, String details,
+            String audioFile) {
 
         sendMessageAlertViz(priority, pluginName, source, category, message,
                 details, audioFile, null);

@@ -1,25 +1,23 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.alertmonitor;
-
-import java.util.Date;
 
 import com.raytheon.uf.common.message.StatusMessage;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -28,17 +26,21 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * UFStatus abstract base class for for monitor event handlers.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * ???          ???        ???         Initial creation
- * Jun 14, 2017 6316       njensen     Removed inherited interface default methods
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * ???           ???         ???          Initial creation
+ * Jun 14, 2017  6316        njensen      Removed inherited interface default
+ *                                        methods
+ * Mar 20, 2018  7096        randerso     Remove call to
+ *                                        StatusMessage.setEventTime()
+ *
  * </pre>
- * 
+ *
  */
 public abstract class AbstractMonitorHandler implements IUFStatusHandler {
 
@@ -124,7 +126,7 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
 
     /**
      * Send a message to alertViz
-     * 
+     *
      * @param priority
      * @param message
      * @param details
@@ -137,7 +139,7 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
 
     /**
      * Send a message to alertViz
-     * 
+     *
      * @param priority
      * @param category
      * @param message
@@ -154,7 +156,6 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
         sm.setMessage(message);
         sm.setSourceKey(source);
         sm.setDetails(details);
-        sm.setEventTime(new Date());
         sm.setAudioFile(audioFile);
 
         try {
@@ -166,7 +167,7 @@ public abstract class AbstractMonitorHandler implements IUFStatusHandler {
     }
 
     /**
-     * 
+     *
      * @param sm
      * @throws Exception
      */
