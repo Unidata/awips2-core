@@ -25,24 +25,38 @@ import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 
-public class ToolbarSubmenuContributionItem extends ContributionItem
-{
+/**
+ * 
+ * Submenu contribution item for toolbars
+ * 
+ * <pre>
+ *
+ * SOFTWARE HISTORY
+ *
+ * Date         Ticket#    Engineer    Description
+ * ------------ ---------- ----------- --------------------------
+ * Mar 20, 2018 6903       njensen     Added null checks in dispose()
+ *
+ * </pre>
+ *
+ */
+public class ToolbarSubmenuContributionItem extends ContributionItem {
     private IContributionItem[] contribs;
 
     private String name;
-    
+
     private MenuItem widget;
-    
+
     protected Menu menu;
 
-    public ToolbarSubmenuContributionItem(String name, IContributionItem[] ci, String id) {
+    public ToolbarSubmenuContributionItem(String name, IContributionItem[] ci,
+            String id) {
         super(id);
         this.contribs = ci;
-        this.name = name;        
+        this.name = name;
     }
-    
-    public IContributionItem[] getContributions()
-    {
+
+    public IContributionItem[] getContributions() {
         return contribs;
     }
 
@@ -61,40 +75,40 @@ public class ToolbarSubmenuContributionItem extends ContributionItem
         }
 
         item.setData(this);
-        
-        item.setText(this.name);        
+
+        item.setText(this.name);
 
         widget = item;
-        
+
         createMenu();
-        
+
         update(null);
     }
 
-    
     @Override
     public void dispose() {
         super.dispose();
-        widget.dispose();
-        widget = null;
-        menu.dispose();
-        menu = null;
-        for (int i = 0; i < contribs.length; i++)
-        {
+        if (widget != null) {
+            widget.dispose();
+            widget = null;
+        }
+
+        if (menu != null) {
+            menu.dispose();
+            menu = null;
+        }
+        for (int i = 0; i < contribs.length; i++) {
             contribs[i].dispose();
         }
     }
 
-    private void createMenu()
-    {
+    private void createMenu() {
         menu = new Menu(widget.getParent().getShell(), SWT.DROP_DOWN);
-        
-        for (int i = 0; i < contribs.length; i++)
-        {
-            contribs[i].fill(menu, -1);   
+
+        for (int i = 0; i < contribs.length; i++) {
+            contribs[i].fill(menu, -1);
         }
-        
+
         widget.setMenu(menu);
     }
 }
-
