@@ -44,7 +44,6 @@ import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.GenericResourceData;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
 import com.raytheon.uf.viz.core.rsc.RenderingOrderFactory.ResourceOrder;
-import com.raytheon.uf.viz.core.rsc.ResourceList;
 import com.raytheon.uf.viz.core.rsc.ResourceProperties;
 import com.raytheon.uf.viz.core.rsc.capabilities.ColorableCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.MagnificationCapability;
@@ -69,14 +68,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  different
  * Aug 08, 2016  2676     bsteffen  SamplingInputAdapter will track container
  *                                  itself.
+ * Mar 21, 2018  7245     mduff     Changed doHover to take a  List<ResourcePair> rather than ResourceList.
  * 
  * </pre>
  * 
  * @author mschenke
  */
-public class SamplingResource extends
-        AbstractVizResource<GenericResourceData, IDescriptor> implements
-        ISamplingResource {
+public class SamplingResource
+        extends AbstractVizResource<GenericResourceData, IDescriptor>
+        implements ISamplingResource {
     protected static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(SamplingResource.class);
 
@@ -96,7 +96,7 @@ public class SamplingResource extends
         public RGB[] colors;
     }
 
-    boolean sampling = false;
+    private boolean sampling = false;
 
     private SamplingInputAdapter<?> inputAdapter = getSamplingInputHandler();
 
@@ -121,11 +121,6 @@ public class SamplingResource extends
         return new SamplingInputAdapter<>(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#disposeInternal()
-     */
     @Override
     protected void disposeInternal() {
         inputAdapter.unregister();
@@ -135,76 +130,50 @@ public class SamplingResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         inputAdapter.register(getResourceContainer());
         hoverFont = target.initializeFont(getClass().getName());
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.sampling.ISamplingResource#isSampling()
-     */
     @Override
     public boolean isSampling() {
         return sampling;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.sampling.ISamplingResource#setSampling(boolean
-     * )
-     */
     @Override
     public void setSampling(boolean sampling) {
         this.sampling = sampling;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#paintInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
-        if (sampleCoord == null || isSampling() == false) {
+        if (sampleCoord == null || !isSampling()) {
             return;
         }
 
         hoverFont.setMagnification(getCapability(MagnificationCapability.class)
                 .getMagnification().floatValue());
-        SampleResult result = doHover(sampleCoord, descriptor.getResourceList());
+        SampleResult result = doHover(sampleCoord,
+                descriptor.getResourceList());
         paintResult(target, paintProps, sampleCoord, result);
     }
 
     protected SampleResult doHover(ReferencedCoordinate coord,
-            ResourceList resources) {
+            List<ResourcePair> resources) {
         SampleResult result = new SampleResult();
-        List<String> labelList = new ArrayList<String>();
-        List<RGB> colorList = new ArrayList<RGB>();
+        List<String> labelList = new ArrayList<>();
+        List<RGB> colorList = new ArrayList<>();
         try {
             int size = resources.size();
             for (int i = size - 1; i >= 0; --i) {
                 ResourcePair rp = resources.get(i);
                 String retVal = recursiveHoverSearch(rp, coord);
-                if (retVal != null && retVal.length() > 0) {
+                if (retVal != null && !retVal.isEmpty()) {
                     RGB color = null;
-                    if (rp.getResource().hasCapability(
-                            ColorableCapability.class)) {
+                    if (rp.getResource()
+                            .hasCapability(ColorableCapability.class)) {
                         color = rp.getResource()
                                 .getCapability(ColorableCapability.class)
                                 .getColor();
@@ -224,8 +193,8 @@ public class SamplingResource extends
                 }
             }
         } catch (Throwable t) {
-            statusHandler.handle(Priority.PROBLEM, "Error sampling resources: "
-                    + t.getLocalizedMessage(), t);
+            statusHandler.handle(Priority.PROBLEM,
+                    "Error sampling resources: " + t.getLocalizedMessage(), t);
         }
 
         result.labels = labelList.toArray(new String[labelList.size()]);
@@ -271,8 +240,8 @@ public class SamplingResource extends
                 double ratioY = canvasHeight / extentHeight;
 
                 if (result.labels.length > 0) {
-                    List<String[]> strsToUse = new ArrayList<String[]>();
-                    List<RGB> colorsToUse = new ArrayList<RGB>();
+                    List<String[]> strsToUse = new ArrayList<>();
+                    List<RGB> colorsToUse = new ArrayList<>();
                     HorizontalAlignment[] alignments = new HorizontalAlignment[result.labels.length];
                     boolean[] modified = new boolean[result.labels.length];
                     for (int i = 0; i < modified.length; ++i) {
@@ -310,7 +279,7 @@ public class SamplingResource extends
                                 alignments, c, ratioX, horizontalAlignment);
                     }
 
-                    List<String> actualStrs = new ArrayList<String>();
+                    List<String> actualStrs = new ArrayList<>();
                     for (int i = 0; i < strsToUse.size(); ++i) {
                         String[] strs = strsToUse.get(i);
                         for (int j = 1; j < strs.length; ++j) {
@@ -319,14 +288,12 @@ public class SamplingResource extends
                         }
                     }
 
-                    String[] newStrs = actualStrs.toArray(new String[actualStrs
-                            .size()]);
+                    String[] newStrs = actualStrs
+                            .toArray(new String[actualStrs.size()]);
 
-                    double referencePtY = adjustLabelWrapY(
-                            target,
-                            newStrs,
-                            c.y
-                                    + (AbstractRenderableDisplay.CURSOR_HEIGHT / ratioY),
+                    double referencePtY = adjustLabelWrapY(target, newStrs,
+                            c.y + (AbstractRenderableDisplay.CURSOR_HEIGHT
+                                    / ratioY),
                             paintProps.getView().getExtent(), ratioY);
 
                     DrawableString dString = new DrawableString(newStrs,
@@ -336,7 +303,8 @@ public class SamplingResource extends
                     dString.addTextStyle(TextStyle.BLANKED);
                     dString.verticallAlignment = verticalAlignment;
                     if (horizontalAlignment == HorizontalAlignment.RIGHT) {
-                        c.x -= (target.getStringsBounds(dString).getWidth() / ratioX);
+                        c.x -= (target.getStringsBounds(dString).getWidth()
+                                / ratioX);
 
                     }
                     dString.setCoordinates(c.x, referencePtY);
@@ -348,10 +316,10 @@ public class SamplingResource extends
         } catch (Exception e) {
             if (errorInHovering) {
                 // Keep down the number of error messages
-                statusHandler.handle(
-                        Priority.PROBLEM,
+                statusHandler.handle(Priority.PROBLEM,
                         "Error painting sample text: "
-                                + e.getLocalizedMessage(), e);
+                                + e.getLocalizedMessage(),
+                        e);
             }
             errorInHovering = true;
         } finally {
@@ -363,15 +331,15 @@ public class SamplingResource extends
             PaintProperties paintProps, List<String[]> strsToUse,
             boolean[] modified, HorizontalAlignment[] alignments, Coordinate c,
             double ratioX, HorizontalAlignment targetAlignment) {
-        List<String[]> strsToUseInternal = new ArrayList<String[]>();
+        List<String[]> strsToUseInternal = new ArrayList<>();
         for (int i = 0; i < strsToUse.size(); ++i) {
             String str = strsToUse.get(i)[0];
             String[] split = str.split("[ ]");
             boolean done = false;
             int divideBy = strsToUse.get(i).length - 1;
             int maxDivisions = 0;
-            for (int j = 0; j < split.length; ++j) {
-                if (split[j].isEmpty() == false) {
+            for (String element : split) {
+                if (!element.isEmpty()) {
                     ++maxDivisions;
                 }
             }
@@ -388,38 +356,40 @@ public class SamplingResource extends
                     }
 
                     int approxLenPerStr = str.length() / divideBy;
-                    List<String> strs = new ArrayList<String>();
+                    List<String> strs = new ArrayList<>();
 
                     for (int j = 0; j < split.length;) {
-                        String line = split[j++];
+                        StringBuilder line = new StringBuilder(split[j]);
+                        j++;
                         while (j < split.length) {
                             String s = split[j];
                             if (s.length() + line.length() <= approxLenPerStr) {
                                 if (!s.isEmpty()) {
                                     if (j == split.length - 1
-                                            && split[1].equalsIgnoreCase("=")) {
-                                        line = split[split.length - 1];
+                                            && "=".equalsIgnoreCase(split[1])) {
+                                        line = new StringBuilder(
+                                                split[split.length - 1]);
                                     } else {
-                                        line += " " + s;
+                                        line.append(" ").append(s);
                                     }
                                 } else {
-                                    line += " ";
+                                    line.append(" ");
                                 }
                                 ++j;
                             } else {
                                 break;
                             }
                         }
-                        strs.add(line);
+                        strs.add(line.toString());
                     }
 
                     test = strs.toArray(new String[strs.size()]);
 
                     HorizontalAlignment alignment = adjustLabelWrapX(target,
-                            test, c.x, paintProps.getView().getExtent(),
-                            ratioX, alignments[i]);
-                    if (alignment == alignments[i]
-                            && (targetAlignment == null || alignment == targetAlignment)) {
+                            test, c.x, paintProps.getView().getExtent(), ratioX,
+                            alignments[i]);
+                    if (alignment == alignments[i] && (targetAlignment == null
+                            || alignment == targetAlignment)) {
                         // the alignment was not changed and we are the target
                         // alignment, we are done
                         done = true;
@@ -538,7 +508,8 @@ public class SamplingResource extends
         // check to see if height extends map height
         if (referencePoint + maxHeightInGl > extent.getMaxY()) {
             verticalAlignment = VerticalAlignment.BOTTOM;
-            referencePoint -= (AbstractRenderableDisplay.CURSOR_HEIGHT / ratioY);
+            referencePoint -= (AbstractRenderableDisplay.CURSOR_HEIGHT
+                    / ratioY);
         }
 
         // return adjusted point
