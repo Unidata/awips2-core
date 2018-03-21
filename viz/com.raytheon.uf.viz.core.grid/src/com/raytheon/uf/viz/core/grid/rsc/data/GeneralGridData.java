@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -51,14 +51,14 @@ import com.raytheon.uf.common.numeric.source.OffsetDataSource;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *
  * A class which holds data for a grid. Includes FloatBuffers for holding scalar
  * or vector data as well as the dataUnits.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Mar 09, 2011           bsteffen    Initial creation
@@ -76,9 +76,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Feb 28, 2013  2791     bsteffen    Use DataSource instead of FloatBuffers
  *                                    for data access
  * May 14, 2015  4079     bsteffen    Move to core.grid
- * 
+ * Mar 21, 2018  6936     dgilling    Apply 180 degree correction to
+ *                                    createVectorData.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
@@ -96,7 +98,7 @@ public class GeneralGridData {
 
     /**
      * Create a scalar grid data object from float data.
-     * 
+     *
      * @param scalarData
      * @param dataUnit
      * @return
@@ -111,7 +113,7 @@ public class GeneralGridData {
 
     /**
      * Create a scalar grid data object from any data source
-     * 
+     *
      * @param scalarData
      * @param dataUnit
      * @return
@@ -125,7 +127,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the magnitude and direction of
      * the vector as floats.
-     * 
+     *
      * @param magnitude
      * @param direction
      * @param dataUnit
@@ -139,7 +141,11 @@ public class GeneralGridData {
         FloatBuffer vComponent = FloatBuffer.allocate(magnitude.capacity());
         FloatBuffer uComponent = FloatBuffer.allocate(magnitude.capacity());
         while (magnitude.hasRemaining()) {
-            double angle = Math.toRadians(direction.get());
+            /*
+             * add 180 degrees because meteorology uses direction from for
+             * vectors
+             */
+            double angle = Math.toRadians(direction.get() + 180f);
             double mag = magnitude.get();
             vComponent.put((float) (Math.cos(angle) * mag));
             uComponent.put((float) (Math.sin(angle) * mag));
@@ -151,7 +157,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the u and v components of the
      * vector as floats.
-     * 
+     *
      * @param uComponent
      * @param vComponent
      * @param dataUnit
@@ -168,7 +174,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the u and v components of the
      * vector as any data source.
-     * 
+     *
      * @param uComponent
      * @param vComponent
      * @param dataUnit
@@ -202,7 +208,7 @@ public class GeneralGridData {
     /**
      * Attempt to convert this data to the new unit. If this is successful then
      * the dataUnit and data will be changed.
-     * 
+     *
      * @param unit
      * @return true if units are compatible, false if data is unchanged.
      */
@@ -238,7 +244,7 @@ public class GeneralGridData {
 
     /**
      * Create a new GeneralGridData that is a reprojected version of this data.
-     * 
+     *
      * @param newGridGeometry
      * @param interpolation
      * @return
@@ -361,8 +367,8 @@ public class GeneralGridData {
      * have the same CRS and grid spacing. This function will create a larger
      * grid geometry which incorporates the data from both sources and fills in
      * NaN for any areas which are not covered by either source.
-     * 
-     * 
+     *
+     *
      * @param data1
      * @param data2
      * @return merged data or null if they are not compatible
@@ -451,7 +457,7 @@ public class GeneralGridData {
         return new MergedDataSource(data1, data2);
     }
 
-    private static abstract class VectorDataSource implements DataSource {
+    private abstract static class VectorDataSource implements DataSource {
 
         protected final DataSource uComponent;
 
@@ -507,7 +513,7 @@ public class GeneralGridData {
 
     private static final class MergedDataSource implements DataSource {
 
-        DataSource[] sources;
+        private final DataSource[] sources;
 
         public MergedDataSource(DataSource... sources) {
             this.sources = sources;
@@ -519,7 +525,7 @@ public class GeneralGridData {
             double total = 0;
             for (DataSource source : sources) {
                 double val = source.getDataValue(x, y);
-                if (Double.isNaN(val) == false) {
+                if (!Double.isNaN(val)) {
                     total += val;
                     count += 1;
                 }
