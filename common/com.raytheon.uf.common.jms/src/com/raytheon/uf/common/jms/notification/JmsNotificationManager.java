@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.common.jms.notification;
 
+import java.time.Duration;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -50,7 +52,6 @@ import javax.jms.Topic;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Job to monitor the JMS topic containing notification messages, delegating the
@@ -317,7 +318,7 @@ public class JmsNotificationManager
          */
         if (reconnectScheduled.compareAndSet(false, true)) {
             reconnectTimer.schedule(new ReconnectTimerTask(),
-                    5 * TimeUtil.MILLIS_PER_SECOND);
+                    Duration.of(5, ChronoUnit.SECONDS).toMillis());
         }
 
         synchronized (listeners) {
@@ -725,8 +726,8 @@ public class JmsNotificationManager
             if (messageCount.incrementAndGet() > IN_MEM_MESSAGE_LIMIT) {
                 messageCount.decrementAndGet();
                 messages.remove();
-                if ((System.currentTimeMillis() - lastErrorPrintTime) > 10
-                        * TimeUtil.MILLIS_PER_MINUTE) {
+                if ((System.currentTimeMillis() - lastErrorPrintTime) > Duration
+                        .of(10, ChronoUnit.MINUTES).toMillis()) {
                     statusHandler
                             .error("Message queue size exceeded for observer "
                                     + observer

@@ -2,14 +2,13 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Common JMS Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.jms
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Require-Bundle: javax.jms,
  com.raytheon.uf.common.status,
  org.apache.qpid,
  com.raytheon.uf.common.serialization;bundle-version="1.14.0",
- com.raytheon.uf.common.util;bundle-version="1.14.0",
- com.raytheon.uf.common.time;bundle-version="1.16.0"
+ com.raytheon.uf.common.util;bundle-version="1.14.0"
 Export-Package: com.raytheon.uf.common.jms,
  com.raytheon.uf.common.jms.notification
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
