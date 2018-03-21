@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -40,32 +40,35 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * Describes the StatusMessage that is transmitted to alertviz for notifications
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 8, 2008  1433       chammack    Initial creation
- * Nov 11,2010  2235       cjeanbap    Added attribute, audioFile.
- * Feb  7,2011  6329       rferrel     Checks to make sure details 
- *                                     and message are never null.
- * Apr 10, 2013 1893       bsteffen    Switch machine to be LOCAL instead of
- *                                     using RuntimeMXBean
- * Jun 24, 2013 2135       randerso    Fixed NullPointerException in buildMessageAndDetails
- * Sep 12, 2014 3583       bclement     removed ISerializableObject
- * Jul 27, 2015 4654       skorolev    Added localization level filters. Corrected annotation for filters.
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Sep 08, 2008  1433        chammack     Initial creation
+ * Nov 11,2010   2235        cjeanbap     Added attribute, audioFile.
+ * Feb  7,2011   6329        rferrel      Checks to make sure details and
+ *                                        message are never null.
+ * Apr 10, 2013  1893        bsteffen     Switch machine to be LOCAL instead of
+ *                                        using RuntimeMXBean
+ * Jun 24, 2013  2135        randerso     Fixed NullPointerException in
+ *                                        buildMessageAndDetails
+ * Sep 12, 2014  3583        bclement     removed ISerializableObject
+ * Jul 27, 2015  4654        skorolev     Added localization level filters.
+ *                                        Corrected annotation for filters.
+ * Mar 20, 2018  7096        randerso     Ensure eventTime is not set to null
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.FIELD)
 @XmlRootElement
 @DynamicSerialize
 public class StatusMessage implements IMessage {
 
-    private static final int MAX_DETAILS_LENGTH = 32000;
+    private static final int MAX_DETAILS_LENGTH = 32_000;
 
     private static final int MAX_MESSAGE_LENGTH = 1024;
 
@@ -125,7 +128,7 @@ public class StatusMessage implements IMessage {
      */
     @XmlAttribute
     @DynamicSerializeElement
-    private Date eventTime;
+    private Date eventTime = new Date();
 
     /**
      * Optional: The primary key of the db (used internally)
@@ -172,7 +175,6 @@ public class StatusMessage implements IMessage {
      */
     public StatusMessage(String sourceKey, String category, Priority priority,
             String plugin, String message, Throwable throwable) {
-        super();
         this.sourceKey = sourceKey;
         this.category = category;
         this.priority = priority;
@@ -200,15 +202,15 @@ public class StatusMessage implements IMessage {
             shortenedMsg = "No message: ";
         }
 
-        StringBuffer detailsBuffer = new StringBuffer();
-        detailsBuffer.append(msg);
+        StringBuilder detailsBuilder = new StringBuilder();
+        detailsBuilder.append(msg);
 
         String exception = exceptionToString(throwable);
         if (exception != null) {
-            detailsBuffer.append(exception);
+            detailsBuilder.append(exception);
         }
 
-        String details = detailsBuffer.toString();
+        String details = detailsBuilder.toString();
         if (details.length() > MAX_DETAILS_LENGTH) {
             details = details.substring(0, MAX_DETAILS_LENGTH);
         }
@@ -277,7 +279,7 @@ public class StatusMessage implements IMessage {
     }
 
     /**
-     * 
+     *
      * @return the plugin
      */
     public String getPlugin() {
@@ -285,7 +287,7 @@ public class StatusMessage implements IMessage {
     }
 
     /**
-     * 
+     *
      * @param plugin
      *            the plugin to set
      */
@@ -362,9 +364,12 @@ public class StatusMessage implements IMessage {
 
     /**
      * @param eventTime
-     *            the eventTime to set
+     *            the eventTime to set (must not be null)
      */
     public void setEventTime(Date eventTime) {
+        if (eventTime == null) {
+            throw new IllegalArgumentException("eventTime must not be null");
+        }
         this.eventTime = eventTime;
     }
 
@@ -423,7 +428,7 @@ public class StatusMessage implements IMessage {
 
     @Override
     public Map<String, Object> getHeaders() {
-        Map<String, Object> headers = new HashMap<String, Object>();
+        Map<String, Object> headers = new HashMap<>();
         headers.put("SOURCE", sourceKey);
         headers.put("PLUGIN", plugin);
         headers.put("CATEGORY", category);
@@ -444,8 +449,9 @@ public class StatusMessage implements IMessage {
         String statusMsg = getMessage();
         String detailsMsg = getDetails();
         boolean useBothMsgs = detailsMsg.length() > statusMsg.length();
-        int bufferLength = useBothMsgs ? statusMsg.length() + 65
-                + detailsMsg.length() : statusMsg.length() + 64;
+        int bufferLength = useBothMsgs
+                ? statusMsg.length() + 65 + detailsMsg.length()
+                : statusMsg.length() + 64;
         StringBuilder sb = new StringBuilder(bufferLength);
 
         if (getCategory() != null) {
