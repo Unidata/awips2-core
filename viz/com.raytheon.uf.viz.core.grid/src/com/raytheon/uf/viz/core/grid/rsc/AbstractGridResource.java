@@ -151,6 +151,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * Feb 15, 2018  6902     njensen   Added interrogate support for Direction To
+ * Mar 21, 208   7157     njensen   Improved if statement in createColorMapParameters()
  *
  * </pre>
  *
@@ -689,10 +690,14 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 && oldParameters.getColorMapMin() <= newParameters
                         .getColorMapMin()
                 && oldParameters.getColorMapMax() >= newParameters
-                        .getColorMapMax()) {
-            // if the oldParameters have a larger range than the new parameters,
-            // reuse the old parameters. This is useful when the resource is
-            // sharing capabilities, for example in an FFGVizGroupResource.
+                        .getColorMapMax()
+                && oldParameters.getColorMapMax() != oldParameters
+                        .getColorMapMin()) {
+            /*
+             * If the oldParameters have a larger range than the new parameters,
+             * reuse the old parameters. This is useful when the resource is
+             * sharing capabilities, for example in an FFGVizGroupResource.
+             */
             newParameters = oldParameters;
         } else if (oldParameters != null) {
             newParameters.setColorMapName(oldParameters.getColorMapName());
@@ -977,8 +982,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 if (keySet.contains(DIRECTION_INTERROGATE_KEY)
                         || keySet.contains(DIRECTION_FROM_INTERROGATE_KEY)) {
                     GridSampler samplerFrom = new GridSampler(
-                            data.getDirectionFrom(),
-                            interpolation);
+                            data.getDirectionFrom(), interpolation);
                     Double dir = samplerFrom.sample(pixel.x, pixel.y);
                     result.put(DIRECTION_INTERROGATE_KEY, dir);
                     result.put(DIRECTION_FROM_INTERROGATE_KEY, dir);
