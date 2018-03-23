@@ -100,6 +100,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  *                                  dialog
  * Feb 20, 2018  6908     njensen   Get imaging capability from blended resource
  *                                  if blended
+ * Mar 23, 2018  6865     njensen   Improve dialog title
  * 
  * </pre>
  * 
@@ -108,7 +109,8 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 public class ImagingDialog extends CaveSWTDialog implements
         IVizEditorChangedListener, IRenderableDisplayChangedListener,
         AddListener, RemoveListener, IResourceDataChanged, IDisposeListener {
-    private final transient IUFStatusHandler statusHandler = UFStatus
+
+    private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(ImagingDialog.class);
 
     private static enum Type {
@@ -201,7 +203,7 @@ public class ImagingDialog extends CaveSWTDialog implements
     private ImagingDialog(Shell parentShell) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
                 | CAVE.DO_NOT_BLOCK);
-        setText("Imaging...");
+        setText("Imaging");
     }
 
     /**
