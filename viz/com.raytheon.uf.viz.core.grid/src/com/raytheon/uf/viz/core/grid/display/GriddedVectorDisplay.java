@@ -76,14 +76,16 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                    buffers to DataSource
  * May 14, 2015  4079     bsteffen    Move to core.grid
  * Oct 16, 2015  4849     bsteffen    Fix antimeridian direction.
+ * Mar 26, 2018  6826     njensen     Use magnification 0.2 so tiny barbs
+ *                                    appear for 0 magnification
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(GriddedVectorDisplay.class);
 
     private final DataSource magnitude;
@@ -107,7 +109,7 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
     private GeodeticCalculator gc;
 
     /** used to avoid spamming the logs. */
-    private transient boolean logProjectionProblems = true;
+    private boolean logProjectionProblems = true;
 
     /**
      * 
@@ -192,7 +194,7 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
         double dir = this.direction.getDataValue((int) ijcoord.x,
                 (int) ijcoord.y);
 
-        if (dir < -999999 || dir > 9999999) {
+        if (dir < -999_999 || dir > 9_999_999) {
             // perhaps this check should limit +/- 180
             return;
         }
@@ -268,7 +270,7 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
             vectorRenderable.paintDualArrow(plotLoc, spd, dir);
             break;
         default:
-            throw new VizException("Unsupported disply type: " + displayType);
+            throw new VizException("Unsupported display type: " + displayType);
         }
     }
 
@@ -305,6 +307,9 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
      */
     @Override
     public boolean setMagnification(double magnification) {
+        if (magnification == 0.0) {
+            magnification = 0.2;
+        }
         if (super.setMagnification(magnification)) {
             disposeResources();
             if (this.target != null) {
@@ -328,13 +333,6 @@ public class GriddedVectorDisplay extends AbstractGriddedDisplay<Coordinate> {
         return coord;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.contours.rsc.displays.AbstractGriddedImageDisplay
-     * #getImage(com.raytheon.uf.common.geospatial.ReferencedCoordinate)
-     */
     @Override
     protected Coordinate getResource(Coordinate coord) {
         return coord;
