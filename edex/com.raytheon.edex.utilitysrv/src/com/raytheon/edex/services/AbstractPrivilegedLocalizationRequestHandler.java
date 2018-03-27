@@ -45,6 +45,7 @@ import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
  * May 28, 2014  3211     njensen   Updated for IAuthorizer changes
  * May 18, 2017  6242     randerso  Changed to use new roles and permissions
  *                                  framework
+ * Mar 16, 2018  7236     mapeters  Fix reading of system-level files
  *
  * </pre>
  *
@@ -72,6 +73,15 @@ public abstract class AbstractPrivilegedLocalizationRequestHandler<T extends Abs
     protected AuthorizationResponse getAuthorizationResponse(IUser user,
             String operation, LocalizationContext context, String fileName,
             String myContextName) throws AuthorizationException {
+        /*
+         * Allow everyone to read for now
+         *
+         * If/when we decide to implement read permissions remove the following
+         * if statement
+         */
+        if ("read".equals(operation)) {
+            return new AuthorizationResponse(true);
+        }
 
         String contextName = context.getContextName();
         LocalizationLevel level = context.getLocalizationLevel();
@@ -83,16 +93,6 @@ public abstract class AbstractPrivilegedLocalizationRequestHandler<T extends Abs
                     "Modification to system level configuration is prohibited.");
         } else if (level == LocalizationLevel.USER && contextsMatch) {
             // Don't prevent users from modifying own files
-            return new AuthorizationResponse(true);
-        }
-
-        /*
-         * Allow everyone to read for now
-         *
-         * If/when we decide to implement read permissions remove the following
-         * if statement
-         */
-        if ("read".equals(operation)) {
             return new AuthorizationResponse(true);
         }
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -54,9 +54,9 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 
 /**
  * A generalized implementation for interfacing with LocalizationFiles.
- * 
- * 
- * 
+ *
+ *
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -65,7 +65,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 23, 2012 1322       djohnson    Allow test code in the same package to clear fileCache.
  * Jul 24, 2014 3378       bclement    cache implementation provided by localization adapter
  * Jul 25, 2014 3378       bclement    implements ILocalizationFileObserver
- * Sep 08, 2014 3592       randerso    Added single type listStaticFiles, 
+ * Sep 08, 2014 3592       randerso    Added single type listStaticFiles,
  *                                     getStaticLocalizationFile, and getStaticFile APIs
  * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
  * Aug 24, 2015 4393       njensen     Added field observer
@@ -76,15 +76,16 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Aug 15, 2016 5834       njensen     Reuse protected file level in fireListeners()
  * Jun 22, 2017 6339       njensen     listFiles() now has an eager filter
  * Aug 04, 2017 6379       njensen     Updated LocalizationFile constructor signature
- * 
+ * Dec 07, 2017 6355       nabowle     Normalize observed paths that end with SEPARATOR.
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class PathManager implements IPathManager {
 
-    private static final IUFStatusHandler statusHandler = UFStatus.getHandler(
-            PathManager.class, "Localization");
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PathManager.class, "Localization");
 
     private static final Comparator<LocalizationContext> LOCALIZATION_CTX_COMPARATOR = new Comparator<LocalizationContext>() {
 
@@ -148,8 +149,8 @@ public class PathManager implements IPathManager {
         return this.getStaticLocalizationFile(types, name);
     }
 
-    private LocalizationFile getStaticLocalizationFile(
-            LocalizationType[] types, String name) {
+    private LocalizationFile getStaticLocalizationFile(LocalizationType[] types,
+            String name) {
         Validate.notNull(name, "Path name must not be null");
         name = name.replace(File.separator, IPathManager.SEPARATOR);
 
@@ -265,8 +266,8 @@ public class PathManager implements IPathManager {
 
         List<LocalizationContext> ctxToCheck = new ArrayList<>(contexts.length);
         for (LocalizationContext ctx : contexts) {
-            LocalizationFile cached = fileCache.get(new LocalizationFileKey(
-                    name, ctx));
+            LocalizationFile cached = fileCache
+                    .get(new LocalizationFileKey(name, ctx));
             if (cached != null) {
                 if (!cached.isNull()) {
                     availableFiles.put(ctx, cached);
@@ -279,8 +280,9 @@ public class PathManager implements IPathManager {
         if (!ctxToCheck.isEmpty()) {
             ListResponse[] entry = null;
             try {
-                entry = this.adapter.getLocalizationMetadata(ctxToCheck
-                        .toArray(new LocalizationContext[ctxToCheck.size()]),
+                entry = this.adapter.getLocalizationMetadata(
+                        ctxToCheck.toArray(
+                                new LocalizationContext[ctxToCheck.size()]),
                         name);
             } catch (LocalizationException e) {
                 // Error on server, no files will be returned
@@ -315,7 +317,7 @@ public class PathManager implements IPathManager {
     /**
      * Creates a LocalizationFile from a {@link ListResponse}, callers need to
      * synchronize on fileCache before calling
-     * 
+     *
      * @param response
      * @return
      */
@@ -330,13 +332,13 @@ public class PathManager implements IPathManager {
                     response.fileName);
             if (file != null) {
                 // No cache file available but path is resolved, create
-                lf = new LocalizationFile(this.adapter, response.context,
-                        file, response.date, response.fileName,
-                        response.checkSum, response.isDirectory);
+                lf = new LocalizationFile(this.adapter, response.context, file,
+                        response.date, response.fileName, response.checkSum,
+                        response.isDirectory);
             } else {
                 // file does not exist
-                lf = new LocalizationFile(this.adapter, response.context,
-                        null, null, response.fileName,
+                lf = new LocalizationFile(this.adapter, response.context, null,
+                        null, response.fileName,
                         ILocalizationFile.NON_EXISTENT_CHECKSUM, false);
             }
             fileCache.put(key, lf);
@@ -346,7 +348,8 @@ public class PathManager implements IPathManager {
 
     @Override
     public LocalizationFile[] listFiles(LocalizationContext context,
-            String name, String[] filter, boolean recursive, boolean filesOnly) {
+            String name, String[] filter, boolean recursive,
+            boolean filesOnly) {
         Validate.notNull(name, "Path name must not be null");
         Validate.notNull(context, "Context must not be null");
 
@@ -356,7 +359,8 @@ public class PathManager implements IPathManager {
 
     @Override
     public LocalizationFile[] listFiles(LocalizationContext[] contexts,
-            String name, String[] filter, boolean recursive, boolean filesOnly) {
+            String name, String[] filter, boolean recursive,
+            boolean filesOnly) {
         try {
             List<LocalizationFile> files = new ArrayList<>();
             String eagerFilter = null;
@@ -390,7 +394,7 @@ public class PathManager implements IPathManager {
     /**
      * Convenience method that checks to see if a file string ends with a set of
      * extensions. If extensions is null, true is returned.
-     * 
+     *
      * @param name
      *            the file name
      * @param extensions
@@ -413,7 +417,8 @@ public class PathManager implements IPathManager {
 
     @Override
     public LocalizationFile[] listStaticFiles(LocalizationType type,
-            String name, String[] filter, boolean recursive, boolean filesOnly) {
+            String name, String[] filter, boolean recursive,
+            boolean filesOnly) {
 
         return this.listStaticFiles(new LocalizationType[] { type }, name,
                 filter, recursive, filesOnly);
@@ -430,7 +435,8 @@ public class PathManager implements IPathManager {
     }
 
     private LocalizationFile[] listStaticFiles(LocalizationType[] types,
-            String name, String[] filter, boolean recursive, boolean filesOnly) {
+            String name, String[] filter, boolean recursive,
+            boolean filesOnly) {
         Validate.notNull(name, "Path name must not be null");
 
         List<LocalizationContext> contexts = new ArrayList<>();
@@ -459,7 +465,8 @@ public class PathManager implements IPathManager {
      */
     @Override
     public LocalizationFile[] listStaticFiles(LocalizationContext[] contexts,
-            String name, String[] filter, boolean recursive, boolean filesOnly) {
+            String name, String[] filter, boolean recursive,
+            boolean filesOnly) {
         Validate.notNull(name, "Path name must not be null");
         Validate.notNull(contexts, "Search contexts must not be null");
 
@@ -501,7 +508,8 @@ public class PathManager implements IPathManager {
     }
 
     @Override
-    public LocalizationContext[] getLocalSearchHierarchy(LocalizationType type) {
+    public LocalizationContext[] getLocalSearchHierarchy(
+            LocalizationType type) {
         return this.adapter.getLocalSearchHierarchy(type);
     }
 
@@ -521,8 +529,8 @@ public class PathManager implements IPathManager {
     }
 
     @Override
-    public void storeCache(File cacheFile) throws IOException,
-            SerializationException {
+    public void storeCache(File cacheFile)
+            throws IOException, SerializationException {
         Map<SerializableKey, ListResponseEntry> cacheObject = new HashMap<>(
                 fileCache.size() * 2);
         for (Map.Entry<LocalizationFileKey, LocalizationFile> entry : fileCache
@@ -549,8 +557,8 @@ public class PathManager implements IPathManager {
 
     @Override
     @SuppressWarnings("unchecked")
-    public void restoreCache(File cacheFile) throws IOException,
-            SerializationException {
+    public void restoreCache(File cacheFile)
+            throws IOException, SerializationException {
         PathManager pm = (PathManager) PathManagerFactory.getPathManager();
         FileInputStream fin = new FileInputStream(cacheFile);
         Map<SerializableKey, ListResponseEntry> cacheObject;
@@ -567,13 +575,12 @@ public class PathManager implements IPathManager {
             SerializableKey key = entry.getKey();
             if (lre.getContext() != null && lre.getFileName() != null) {
                 LocalizationFile file = new LocalizationFile(pm.adapter,
-                        lre.getContext(), pm.adapter.getPath(lre.getContext(),
-                                lre.getFileName()), lre.getDate(),
-                        lre.getFileName(), lre.getChecksum(),
+                        lre.getContext(),
+                        pm.adapter.getPath(lre.getContext(), lre.getFileName()),
+                        lre.getDate(), lre.getFileName(), lre.getChecksum(),
                         lre.isDirectory());
-                fileCache.put(
-                        new LocalizationFileKey(key.getFileName(), key
-                                .getContext()), file);
+                fileCache.put(new LocalizationFileKey(key.getFileName(),
+                        key.getContext()), file);
             }
         }
     }
@@ -648,6 +655,11 @@ public class PathManager implements IPathManager {
             path = SEPARATOR;
         }
 
+        // remove a trailing SEPARATORs
+        while (path.endsWith(SEPARATOR) && !SEPARATOR.equals(path)) {
+            path = path.substring(0, path.length() - 1);
+        }
+
         Collection<ILocalizationPathObserver> observers = null;
 
         observers = listenerMap.get(path);
@@ -670,7 +682,8 @@ public class PathManager implements IPathManager {
     @Override
     public void removeLocalizationPathObserver(
             ILocalizationPathObserver observer) {
-        for (Collection<ILocalizationPathObserver> value : listenerMap.values()) {
+        for (Collection<ILocalizationPathObserver> value : listenerMap
+                .values()) {
             value.remove(observer);
         }
     }
@@ -686,13 +699,13 @@ public class PathManager implements IPathManager {
 
     /**
      * Fires the listeners for changes to localization files.
-     * 
+     *
      * This method is intentionally not on the IPathManager interface as it
      * should not be a public method. It should only be accessible by the
      * classes listening for the updates (e.g.
      * CAVELocalizationNotificationObserver), however, that is not easily
      * do-able at this time without making it public.
-     * 
+     *
      * @param fum
      */
     public void fireListeners(FileUpdatedMessage fum) {
