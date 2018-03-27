@@ -1302,20 +1302,39 @@ public class CoreDao {
     }
 
     /**
+     * Execute the named query
+     *
      * @param queryName
+     *            name of {@link NamedQuery}
      * @return list of objects
      */
     public List<?> findByNamedQuery(final String queryName) {
+        return findByNamedQuery(queryName, 0);
+    }
+
+    /**
+     * Execute the named query with limited results
+     *
+     * @param queryName
+     *            name of {@link NamedQuery}
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return list of objects
+     */
+    public List<?> findByNamedQuery(final String queryName, int maxRowCount) {
         return txTemplate.execute(new TransactionCallback<List<?>>() {
             @Override
             public List<?> doInTransaction(TransactionStatus status) {
-                return getCurrentSession().getNamedQuery(queryName).list();
+                Session session = getCurrentSession();
+                Query query = session.getNamedQuery(queryName);
+                query.setMaxResults(maxRowCount);
+                return query.list();
             }
         });
     }
 
     /**
-     * Execute the named query with the supplied param name and value
+     * Execute the named query with the supplied parameter name and value
      *
      * @param queryName
      *            name of {@link NamedQuery}
@@ -1327,29 +1346,68 @@ public class CoreDao {
      */
     public List<?> findByNamedQueryAndNamedParam(final String queryName,
             final String paramName, final Object paramValue) {
+        return findByNamedQueryAndNamedParam(queryName, paramName, paramValue,
+                0);
+    }
+
+    /**
+     * Execute the named query with the supplied parameter name and value and
+     * limited results
+     *
+     * @param queryName
+     *            name of {@link NamedQuery}
+     * @param paramName
+     *            name of parameter to be replaced by paramValue
+     * @param paramValue
+     *            value of parameter, can be Collection or array
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return list of objects
+     */
+    public List<?> findByNamedQueryAndNamedParam(final String queryName,
+            final String paramName, final Object paramValue, int maxRowCount) {
         return txTemplate.execute(new TransactionCallback<List<?>>() {
             @Override
             public List<?> doInTransaction(TransactionStatus status) {
                 Session session = getCurrentSession();
                 Query query = session.getNamedQuery(queryName);
                 addParamToQuery(query, paramName, paramValue);
+                query.setMaxResults(maxRowCount);
                 return query.list();
             }
         });
     }
 
     /**
-     * Execute the named query with the supplied param names and values
+     * Execute the named query with the supplied parameter names and values
      *
      * @param queryName
      *            name of {@link NamedQuery}
      * @param paramMap
-     *            map of param names to values. Values can be Collections or
+     *            map of parameter names to values. Values can be Collections or
      *            arrays
      * @return list of objects
      */
-    public List<?> findByNamedQueryAndNamedParam(final String queryName,
+    public List<?> findByNamedQueryAndNamedParams(final String queryName,
             final Map<String, Object> paramMap) {
+        return findByNamedQueryAndNamedParams(queryName, paramMap, 0);
+    }
+
+    /**
+     * Execute the named query with the supplied parameter names and values and
+     * limited results
+     *
+     * @param queryName
+     *            name of {@link NamedQuery}
+     * @param paramMap
+     *            map of parameter names to values. Values can be Collections or
+     *            arrays
+     * @param maxRowCount
+     *            Maximum number of rows to return (less than 1 means unlimited)
+     * @return list of objects
+     */
+    public List<?> findByNamedQueryAndNamedParams(final String queryName,
+            final Map<String, Object> paramMap, int maxRowCount) {
         if (paramMap == null) {
             throw new IllegalArgumentException("paramMap must not be null");
 
@@ -1360,6 +1418,7 @@ public class CoreDao {
                 Session session = getCurrentSession();
                 Query query = session.getNamedQuery(queryName);
                 addParamsToQuery(query, paramMap);
+                query.setMaxResults(maxRowCount);
                 return query.list();
             }
         });
