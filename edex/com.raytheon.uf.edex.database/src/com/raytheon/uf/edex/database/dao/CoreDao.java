@@ -29,6 +29,8 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.persistence.NamedQuery;
+
 import org.hibernate.Criteria;
 import org.hibernate.Query;
 import org.hibernate.SQLQuery;
@@ -97,6 +99,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Nov 20, 2015 5140        bsteffen    Update mappedSql to ignore comma in function argument lists.
  * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
  * Jan 31, 2018 6945        tgurney     Add maxResults param to executeHQLQuery
+ * Mar 26, 2018 6711        randerso    Added support for named queries
  *
  * </pre>
  *
@@ -680,7 +683,7 @@ public class CoreDao {
     public List<?> queryCatalog(final List<String> fields,
             final List<Object> values, final List<String> operands,
             final String distinctName) throws DataAccessLayerException {
-        ArrayList<String> distinctProperties = new ArrayList<>();
+        List<String> distinctProperties = new ArrayList<>();
         distinctProperties.add(distinctName);
         return this.queryByCriteria(fields, values, operands, null, null, false,
                 distinctProperties);
@@ -1083,7 +1086,7 @@ public class CoreDao {
     }
 
     public List<?> executeCriteriaQuery(final Criterion criterion) {
-        ArrayList<Criterion> criterionList = new ArrayList<>();
+        List<Criterion> criterionList = new ArrayList<>();
         criterionList.add(criterion);
         return executeCriteriaQuery(criterionList);
     }
@@ -1158,20 +1161,31 @@ public class CoreDao {
      * @param paramName
      * @param paramValue
      */
+    protected static void addParamToQuery(Query query, String paramName,
+            Object paramValue) {
+        if (paramValue instanceof Collection) {
+            query.setParameterList(paramName, (Collection<?>) paramValue);
+        } else if (paramValue instanceof Object[]) {
+            query.setParameterList(paramName, (Object[]) paramValue);
+        } else {
+            query.setParameter(paramName, paramValue);
+        }
+    }
+
+    /**
+     * Adds the specified parameters to the query. Checks for Collection an
+     * Array types for use with in lists.
+     *
+     * @param query
+     * @param paramMap
+     */
     protected static void addParamsToQuery(Query query,
             Map<String, Object> paramMap) {
         if (paramMap != null && !paramMap.isEmpty()) {
             for (Map.Entry<String, Object> entry : paramMap.entrySet()) {
                 String paramName = entry.getKey();
                 Object paramValue = entry.getValue();
-                if (paramValue instanceof Collection) {
-                    query.setParameterList(paramName,
-                            (Collection<?>) paramValue);
-                } else if (paramValue instanceof Object[]) {
-                    query.setParameterList(paramName, (Object[]) paramValue);
-                } else {
-                    query.setParameter(paramName, paramValue);
-                }
+                addParamToQuery(query, paramName, paramValue);
             }
         }
     }
@@ -1287,4 +1301,67 @@ public class CoreDao {
         }
     }
 
+    /**
+     * @param queryName
+     * @return list of objects
+     */
+    public List<?> findByNamedQuery(final String queryName) {
+        return txTemplate.execute(new TransactionCallback<List<?>>() {
+            @Override
+            public List<?> doInTransaction(TransactionStatus status) {
+                return getCurrentSession().getNamedQuery(queryName).list();
+            }
+        });
+    }
+
+    /**
+     * Execute the named query with the supplied param name and value
+     *
+     * @param queryName
+     *            name of {@link NamedQuery}
+     * @param paramName
+     *            name of parameter to be replaced by paramValue
+     * @param paramValue
+     *            value of parameter, can be Collection or array
+     * @return list of objects
+     */
+    public List<?> findByNamedQueryAndNamedParam(final String queryName,
+            final String paramName, final Object paramValue) {
+        return txTemplate.execute(new TransactionCallback<List<?>>() {
+            @Override
+            public List<?> doInTransaction(TransactionStatus status) {
+                Session session = getCurrentSession();
+                Query query = session.getNamedQuery(queryName);
+                addParamToQuery(query, paramName, paramValue);
+                return query.list();
+            }
+        });
+    }
+
+    /**
+     * Execute the named query with the supplied param names and values
+     *
+     * @param queryName
+     *            name of {@link NamedQuery}
+     * @param paramMap
+     *            map of param names to values. Values can be Collections or
+     *            arrays
+     * @return list of objects
+     */
+    public List<?> findByNamedQueryAndNamedParam(final String queryName,
+            final Map<String, Object> paramMap) {
+        if (paramMap == null) {
+            throw new IllegalArgumentException("paramMap must not be null");
+
+        }
+        return txTemplate.execute(new TransactionCallback<List<?>>() {
+            @Override
+            public List<?> doInTransaction(TransactionStatus status) {
+                Session session = getCurrentSession();
+                Query query = session.getNamedQuery(queryName);
+                addParamsToQuery(query, paramMap);
+                return query.list();
+            }
+        });
+    }
 }
