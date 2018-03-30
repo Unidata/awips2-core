@@ -79,7 +79,4 @@
     <Method name="Alias">
         <Field abbreviation="TP12hr" />
     </Method>
-    <Method name="Alias" models="LAPS">
-        <Field abbreviation="PC" />
-    </Method>
 </DerivedParameter>
