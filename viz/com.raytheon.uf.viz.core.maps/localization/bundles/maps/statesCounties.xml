@@ -51,9 +51,7 @@
                             <resourceData xsi:type="dbMapResourceData">
                                 <table>mapdata.world</table>
                                 <mapName>World</mapName>
-                                <constraint>name not in ('CANADA',
-                                    'MEXICO', 'UNITED STATES')
-                                </constraint>
+                                <constraint>upper(name) NOT IN ('CANADA', 'MEXICO', 'UNITED STATES') AND first_coun != 'Y'</constraint>
                             </resourceData>
                         </resource>
                         <resource>

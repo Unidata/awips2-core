@@ -54,7 +54,7 @@
                                 <mapName>World</mapName>
                                 <table>mapdata.world</table>
                                 <geomField>the_geom</geomField>
-                                <constraint>name not in ('CANADA', 'MEXICO', 'UNITED STATES')</constraint>
+                                <constraint>upper(name) NOT IN ('CANADA', 'MEXICO', 'UNITED STATES') AND first_coun != 'Y'</constraint>
                             </resourceData>
                         </resource>
                         <resource>
