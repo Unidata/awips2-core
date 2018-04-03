@@ -101,13 +101,14 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Feb 20, 2018  6908     njensen   Get imaging capability from blended resource
  *                                  if blended
  * Mar 23, 2018  6865     njensen   Improve dialog title
+ * Apr 03, 2018  6626     bsteffen  Set interpolation state on blended images.
  * 
  * </pre>
  * 
  * @author chammack
  */
-public class ImagingDialog extends CaveSWTDialog implements
-        IVizEditorChangedListener, IRenderableDisplayChangedListener,
+public class ImagingDialog extends CaveSWTDialog
+        implements IVizEditorChangedListener, IRenderableDisplayChangedListener,
         AddListener, RemoveListener, IResourceDataChanged, IDisposeListener {
 
     private final IUFStatusHandler statusHandler = UFStatus
@@ -194,15 +195,11 @@ public class ImagingDialog extends CaveSWTDialog implements
 
     private AbstractVizResource<?, ?> rscToEdit = null;
 
-    private AbstractVizResource<?, ?> firstResource = null;
-
     private AbstractVizResource<?, ?> topResource = null;
 
-    private AbstractVizResource<?, ?> bottomResource = null;
-
     private ImagingDialog(Shell parentShell) {
-        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN, CAVE.INDEPENDENT_SHELL
-                | CAVE.DO_NOT_BLOCK);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.MIN,
+                CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
         setText("Imaging");
     }
 
@@ -212,7 +209,8 @@ public class ImagingDialog extends CaveSWTDialog implements
      * @param parentShell
      * @param initialEditor
      */
-    public ImagingDialog(Shell parentShell, IDisplayPaneContainer initialEditor) {
+    public ImagingDialog(Shell parentShell,
+            IDisplayPaneContainer initialEditor) {
         this(parentShell);
 
         this.currentEditor = initialEditor;
@@ -227,7 +225,8 @@ public class ImagingDialog extends CaveSWTDialog implements
      * @param parentShell
      * @param rscToEdit
      */
-    public ImagingDialog(Shell parentShell, AbstractVizResource<?, ?> rscToEdit) {
+    public ImagingDialog(Shell parentShell,
+            AbstractVizResource<?, ?> rscToEdit) {
         this(parentShell);
 
         this.rscToEdit = rscToEdit;
@@ -239,7 +238,7 @@ public class ImagingDialog extends CaveSWTDialog implements
             VizWorkbenchManager.getInstance().removeListener(this);
             setupListeners(currentEditor, null);
             this.currentEditor = null;
-        }else{
+        } else {
             this.rscToEdit.unregisterListener(this);
         }
         this.rscToEdit = rscToEdit;
@@ -274,7 +273,8 @@ public class ImagingDialog extends CaveSWTDialog implements
     protected void initializeComponents(Shell shell) {
         Composite mainComp = new Composite(shell, SWT.NONE);
         mainComp.setLayout(new GridLayout(1, false));
-        mainComp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        mainComp.setLayoutData(
+                new GridData(SWT.FILL, SWT.DEFAULT, true, false));
 
         initializeTopControls(mainComp);
         initializeBlendedAlphaScale(mainComp);
@@ -321,8 +321,8 @@ public class ImagingDialog extends CaveSWTDialog implements
 
                     for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
                         if (rsc.hasCapability(BlendableCapability.class)) {
-                            ResourceList subList = rsc.getCapability(
-                                    BlendableCapability.class)
+                            ResourceList subList = rsc
+                                    .getCapability(BlendableCapability.class)
                                     .getResourceList();
                             if (!subList.isEmpty()) {
                                 rsc = subList.get(0).getResource();
@@ -422,8 +422,8 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         interpolateColorsCheckbox = new Button(checkBoxComp, SWT.CHECK);
         interpolateColorsCheckbox.setText("Interpolate Colors");
-        interpolateColorsCheckbox.setLayoutData(new GridData(SWT.LEFT,
-                SWT.CENTER, true, true));
+        interpolateColorsCheckbox
+                .setLayoutData(new GridData(SWT.LEFT, SWT.CENTER, true, true));
 
         brightnessScale.addSelectionListener(new SelectionAdapter() {
 
@@ -433,7 +433,8 @@ public class ImagingDialog extends CaveSWTDialog implements
                     ImagingCapability imgCap = rsc
                             .getCapability(ImagingCapability.class);
                     fromControl = true;
-                    imgCap.setBrightness(brightnessScale.getSelection() / 100.0f);
+                    imgCap.setBrightness(
+                            brightnessScale.getSelection() / 100.0f);
                     fromControl = false;
                 }
                 brightnessText.setText(brightnessScale.getSelection() + "%");
@@ -463,12 +464,7 @@ public class ImagingDialog extends CaveSWTDialog implements
 
             @Override
             public void widgetSelected(SelectionEvent e) {
-                for (AbstractVizResource<?, ?> rsc : getResourcesToEdit()) {
-                    ImagingCapability imgCap = rsc
-                            .getCapability(ImagingCapability.class);
-                    imgCap.setInterpolationState(interpolateImageCheckbox
-                            .getSelection());
-                }
+                setInterpolatedImage(getResourcesToEdit());
                 refreshEditor();
             }
 
@@ -483,12 +479,32 @@ public class ImagingDialog extends CaveSWTDialog implements
             }
 
         });
-        
+
         addCustomControls(body, checkBoxComp);
     }
-    
-    protected void addCustomControls(Composite bodyComp, Composite checkBoxComp){
+
+    protected void addCustomControls(Composite bodyComp,
+            Composite checkBoxComp) {
         /* Provided so subclasses can easily add custom widgets. */
+    }
+
+    protected void setInterpolatedImage(
+            List<AbstractVizResource<?, ?>> resources) {
+        for (AbstractVizResource<?, ?> rsc : resources) {
+            if (rsc.hasCapability(ImagingCapability.class)) {
+                ImagingCapability imageCap = rsc
+                        .getCapability(ImagingCapability.class);
+                imageCap.setInterpolationState(
+                        interpolateImageCheckbox.getSelection());
+            }
+            if (rsc.hasCapability(BlendableCapability.class)) {
+                ResourceList subList = rsc
+                        .getCapability(BlendableCapability.class)
+                        .getResourceList();
+                setInterpolatedImage(
+                        subList.getResourcesByType(AbstractVizResource.class));
+            }
+        }
     }
 
     protected void setInterpolatedColors(
@@ -498,14 +514,15 @@ public class ImagingDialog extends CaveSWTDialog implements
                     .getCapability(ColorMapCapability.class);
             ColorMapParameters parameters = cmapCap.getColorMapParameters();
             if (parameters != null) {
-                parameters.setInterpolate(interpolateColorsCheckbox
-                        .getSelection());
+                parameters.setInterpolate(
+                        interpolateColorsCheckbox.getSelection());
             }
             if (rsc.hasCapability(BlendableCapability.class)) {
-                ResourceList subList = rsc.getCapability(
-                        BlendableCapability.class).getResourceList();
-                setInterpolatedColors(subList
-                        .getResourcesByType(AbstractVizResource.class));
+                ResourceList subList = rsc
+                        .getCapability(BlendableCapability.class)
+                        .getResourceList();
+                setInterpolatedColors(
+                        subList.getResourcesByType(AbstractVizResource.class));
             }
         }
     }
@@ -529,10 +546,11 @@ public class ImagingDialog extends CaveSWTDialog implements
                     ColorMap glColorMap = new ColorMap(colorMap,
                             (ColorMap) cxml);
 
-                    for (AbstractVizResource<?, ?> rsc : getResourcesToEdit(Type.BOTTOM)) {
+                    for (AbstractVizResource<?, ?> rsc : getResourcesToEdit(
+                            Type.BOTTOM)) {
                         if (rsc.hasCapability(BlendableCapability.class)) {
-                            ResourceList subList = rsc.getCapability(
-                                    BlendableCapability.class)
+                            ResourceList subList = rsc
+                                    .getCapability(BlendableCapability.class)
                                     .getResourceList();
                             if (subList.size() > 1) {
                                 rsc = subList.get(1).getResource();
@@ -641,8 +659,9 @@ public class ImagingDialog extends CaveSWTDialog implements
                     AbstractVizResource<?, ?> rsc = rp.getResource();
                     if ((rsc != null)
                             && rsc.hasCapability(ImagingCapability.class)
-                            && (rsc.hasCapability(ColorMapCapability.class) || rsc
-                                    .hasCapability(BlendableCapability.class))) {
+                            && (rsc.hasCapability(ColorMapCapability.class)
+                                    || rsc.hasCapability(
+                                            BlendableCapability.class))) {
                         switch (type) {
                         case TOP:
                         case ALL: {
@@ -650,9 +669,10 @@ public class ImagingDialog extends CaveSWTDialog implements
                             break;
                         }
                         case BOTTOM: {
-                            if (rsc.hasCapability(BlendableCapability.class)
-                                    && (rsc.getCapability(
-                                            BlendableCapability.class)
+                            if (rsc.hasCapability(
+                                    BlendableCapability.class) && (rsc
+                                            .getCapability(
+                                                    BlendableCapability.class)
                                             .getResourceList().size() > 1)) {
                                 rscsToEdit.add(rsc);
                             }
@@ -711,20 +731,20 @@ public class ImagingDialog extends CaveSWTDialog implements
      * Refresh the components using the latest data
      */
     public void refreshComponents() {
-        firstResource = null;
         topResource = null;
-        bottomResource = null;
 
         blended = false;
 
         // setup the resources
         List<AbstractVizResource<?, ?>> editables = getResourcesToEdit();
-        firstResource = getTopResource();
+        AbstractVizResource<?, ?> firstResource = getTopResource();
+        AbstractVizResource<?, ?> bottomResource = null;
         if (firstResource != null) {
             if (firstResource.hasCapability(BlendableCapability.class)) {
                 blended = true;
-                ResourceList list = firstResource.getCapability(
-                        BlendableCapability.class).getResourceList();
+                ResourceList list = firstResource
+                        .getCapability(BlendableCapability.class)
+                        .getResourceList();
                 if (!list.isEmpty()) {
                     topResource = list.get(0).getResource();
                 }
@@ -784,12 +804,12 @@ public class ImagingDialog extends CaveSWTDialog implements
 
                 interpolateColorsCheckbox.setEnabled(true);
                 if (cmparms != null) {
-                    interpolateColorsCheckbox.setSelection(cmparms
-                            .isInterpolate());
+                    interpolateColorsCheckbox
+                            .setSelection(cmparms.isInterpolate());
                 }
             } else {
-                topColorMapButton.setText(topResourceName
-                        + " is not color mapped.");
+                topColorMapButton
+                        .setText(topResourceName + " is not color mapped.");
                 topColormapComp.getCMapButton().setText("Not Selected");
                 topColorMapButton.setEnabled(false);
                 topColormapComp.getCMapButton().setEnabled(false);
@@ -829,8 +849,8 @@ public class ImagingDialog extends CaveSWTDialog implements
             blendAlphaScale.setEnabled(true);
             blendAlphaScale.setVisible(true);
             ((GridData) blendAlphaScale.getLayoutData()).exclude = false;
-            blendAlphaScale.setSelection(firstResource.getCapability(
-                    BlendableCapability.class).getAlphaStep());
+            blendAlphaScale.setSelection(firstResource
+                    .getCapability(BlendableCapability.class).getAlphaStep());
         } else {
             blendAlphaScale.setEnabled(false);
             blendAlphaScale.setVisible(false);
@@ -839,7 +859,8 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         // Setup bottom controls
         if (blended) {
-            ((GridData) bottomColormapComp.getCMapButton().getLayoutData()).exclude = false;
+            ((GridData) bottomColormapComp.getCMapButton()
+                    .getLayoutData()).exclude = false;
             ((GridData) bottomColorMapButton.getLayoutData()).exclude = false;
             bottomColorMapButton.setVisible(true);
             bottomColormapComp.getCMapButton().setVisible(true);
@@ -850,8 +871,8 @@ public class ImagingDialog extends CaveSWTDialog implements
                     .getCapability(ColorMapCapability.class);
 
             String currentCMap = "Not Selected";
-            if ((bottomCap.getColorMapParameters() != null)
-                    && (bottomCap.getColorMapParameters().getColorMap() != null)) {
+            if ((bottomCap.getColorMapParameters() != null) && (bottomCap
+                    .getColorMapParameters().getColorMap() != null)) {
                 currentCMap = bottomCap.getColorMapParameters().getColorMap()
                         .getName();
                 if (currentCMap == null) {
@@ -873,8 +894,8 @@ public class ImagingDialog extends CaveSWTDialog implements
 
             // Truncate the name for the button if it is too long.
             if (bottomResourceName.length() > 25) {
-                bottomColorMapButton.setToolTipText("Edit "
-                        + bottomResourceName);
+                bottomColorMapButton
+                        .setToolTipText("Edit " + bottomResourceName);
                 bottomResourceName = bottomResourceName.substring(0, 24)
                         + "...";
             } else {
@@ -891,7 +912,8 @@ public class ImagingDialog extends CaveSWTDialog implements
             bottomColormapComp.getCMapButton().setVisible(false);
 
             ((GridData) bottomColorMapButton.getLayoutData()).exclude = true;
-            ((GridData) bottomColormapComp.getCMapButton().getLayoutData()).exclude = true;
+            ((GridData) bottomColormapComp.getCMapButton()
+                    .getLayoutData()).exclude = true;
         }
 
         // setup ABC components
@@ -1081,7 +1103,8 @@ public class ImagingDialog extends CaveSWTDialog implements
     @Override
     public synchronized void resourceChanged(ChangeType type, Object object) {
         if ((type == ChangeType.CAPABILITY)
-                && ((object instanceof ColorMapCapability) || (object instanceof ImagingCapability))) {
+                && ((object instanceof ColorMapCapability)
+                        || (object instanceof ImagingCapability))) {
             if (!fromControl) {
                 refreshComponentsUpdate();
             }
