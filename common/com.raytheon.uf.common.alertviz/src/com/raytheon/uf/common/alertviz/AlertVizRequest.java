@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,19 +29,21 @@ import com.raytheon.uf.common.serialization.comm.IServerRequest;
 
 /**
  * AlertViz Request
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 10/19/2010   5849       cjeanbap    Initial creation
- * 07/27/2015   4654       skorolev    Added filters
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Oct 19, 2010  5849        cjeanbap     Initial creation
+ * Jul 27, 2015  4654        skorolev     Added filters
+ * Apr 03, 2018  6646        randerso     Fixed order of source/category in
+ *                                        toString()
+ *
  * </pre>
- * 
+ *
  * @author cjeanbap
- * @version 1.0
  */
 @DynamicSerialize
 public class AlertVizRequest implements IServerRequest {
@@ -66,7 +68,7 @@ public class AlertVizRequest implements IServerRequest {
 
     // Key = LocalizationLevel, such as SITE, and Value = Name, such as OAX
     @DynamicSerializeElement
-    private Map<String, String> filters = new HashMap<String, String>();
+    private Map<String, String> filters = new HashMap<>();
 
     public AlertVizRequest() {
     }
@@ -151,7 +153,7 @@ public class AlertVizRequest implements IServerRequest {
         StringBuilder sb = new StringBuilder();
 
         sb.append(machine).append(" | ").append(priority).append(" | ")
-                .append(category).append(" | ").append(sourceKey);
+                .append(sourceKey).append(" | ").append(category);
         if (filters != null && !filters.isEmpty()) {
             sb.append(" | ").append(filters);
         }
