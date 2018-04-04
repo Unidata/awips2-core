@@ -75,13 +75,15 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
  * Apr 24, 2013 1638        mschenke    Made topo configurable for source data
  * Aug 06, 2013 2235        bsteffen    Added Caching version of TopoQuery.
  * Aug 05, 2016 4906        randerso    Added no data value to color map parameters
+ * Apr 04, 2018 6889        njensen     Use brightness from ImagePreferences if
+ *                                      present but missing in ImagingCapability
  * 
  * </pre>
  * 
  * @author chammack
  */
-public class TopoResource extends
-        AbstractVizResource<TopoResourceData, IMapDescriptor> {
+public class TopoResource
+        extends AbstractVizResource<TopoResourceData, IMapDescriptor> {
 
     private IResourceDataChanged changeListener = new IResourceDataChanged() {
         @Override
@@ -97,16 +99,11 @@ public class TopoResource extends
     private double noDataValue;
 
     protected TopoResource(TopoResourceData topoData,
-            LoadProperties loadProperties, File dataFile) throws VizException {
+            LoadProperties loadProperties, File dataFile) {
         super(topoData, loadProperties);
         this.dataFile = dataFile;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#dispose()
-     */
     @Override
     protected void disposeInternal() {
         if (topoTileSet != null) {
@@ -116,13 +113,6 @@ public class TopoResource extends
         resourceData.removeChangeListener(changeListener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#init(com.raytheon.uf
-     * .viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         resourceData.addChangeListener(changeListener);
@@ -132,8 +122,8 @@ public class TopoResource extends
         criteria.setParameterName(Arrays.asList(resourceData.getTopoFile()));
         StyleRule styleRule;
         try {
-            styleRule = StyleManager.getInstance().getStyleRule(
-                    StyleType.IMAGERY, criteria);
+            styleRule = StyleManager.getInstance()
+                    .getStyleRule(StyleType.IMAGERY, criteria);
         } catch (StyleException e) {
             throw new VizException(e.getLocalizedMessage(), e);
         }
@@ -161,6 +151,8 @@ public class TopoResource extends
         params.setFormatString("0");
         params.setNoDataValue(Short.MIN_VALUE);
 
+        ImagingCapability imgCap = getCapability(ImagingCapability.class);
+
         if (styleRule != null) {
             // TODO: This basic logic should be extracted somewhere,
             // ColorMapParametersFactory has become overkill of any basic kind
@@ -180,12 +172,12 @@ public class TopoResource extends
                 Double minVal = scale.getMinValue();
                 Double maxVal = scale.getMaxValue();
                 if (minVal != null) {
-                    params.setColorMapMin((float) displayToColorMap
-                            .convert(minVal));
+                    params.setColorMapMin(
+                            (float) displayToColorMap.convert(minVal));
                 }
                 if (maxVal != null) {
-                    params.setColorMapMax((float) displayToColorMap
-                            .convert(maxVal));
+                    params.setColorMapMax(
+                            (float) displayToColorMap.convert(maxVal));
                 }
             }
 
@@ -204,6 +196,14 @@ public class TopoResource extends
             if ((labelPrefs != null) && (labelPrefs.getValues() != null)) {
                 params.setColorBarIntervals(labelPrefs.getValues());
             }
+
+            if (prefs.getBrightness() != null
+                    && imgCap.getBrightness() == null) {
+                imgCap.setBrightness(prefs.getBrightness());
+            }
+        }
+        if (imgCap.getBrightness() == null) {
+            imgCap.setBrightness(ImagingCapability.BRIGHTNESS_DEFAULT);
         }
 
         if (params.getColorMap() == null) {
@@ -234,8 +234,7 @@ public class TopoResource extends
             noDataValue = Double.NaN;
         }
 
-        topoTileSet = new TileSetRenderable(
-                getCapability(ImagingCapability.class), getTopoGeometry(),
+        topoTileSet = new TileSetRenderable(imgCap, getTopoGeometry(),
                 getTopoTileImageCreator(), getNumberOfTopoLevels(), 512);
         topoTileSet.project(descriptor.getGridGeometry());
     }
@@ -263,14 +262,6 @@ public class TopoResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.drawables.IRenderable#paint(com.raytheon.uf.
-     * viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
@@ -279,13 +270,6 @@ public class TopoResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#project(org.opengis.
-     * referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public void project(CoordinateReferenceSystem mapData) throws VizException {
         if (topoTileSet != null) {
@@ -293,18 +277,10 @@ public class TopoResource extends
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#inspect(com.raytheon
-     * .uf.viz.core.geospatial.ReferencedCoordinate)
-     */
     @Override
     public String inspect(ReferencedCoordinate coord) throws VizException {
         double height;
         try {
-            // height = TopoQuery.getInstance().getHeight(coord.asLatLon());
             height = topoTileSet.interrogate(coord.asLatLon(), noDataValue);
         } catch (Exception e) {
             throw new VizException("Error transforming", e);
@@ -315,11 +291,9 @@ public class TopoResource extends
             UnitConverter cvt = parameters.getDataToDisplayConverter();
 
             DecimalFormat df = new DecimalFormat("0.00");
-            return String.format(
-                    "%s %s ",
-                    df.format(cvt.convert(height)),
-                    UnitFormat.getUCUMInstance().format(
-                            parameters.getDisplayUnit()));
+            return String.format("%s %s ", df.format(cvt.convert(height)),
+                    UnitFormat.getUCUMInstance()
+                            .format(parameters.getDisplayUnit()));
         }
         return "NO DATA";
     }

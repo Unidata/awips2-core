@@ -34,15 +34,18 @@ import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension.ImageProvider;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 12, 2009            njensen     Initial creation
+ * Apr 05, 2018 6889       njensen     Changed brightness from float to Float
+ *                                     to distinguish missing brightness
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 @XmlAccessorType(XmlAccessType.NONE)
 public class ImagingCapability extends AbstractCapability {
+
+    public static final float BRIGHTNESS_DEFAULT = 1.0f;
 
     private ImageProvider provider;
 
@@ -50,7 +53,7 @@ public class ImagingCapability extends AbstractCapability {
     private float contrast = 1.0f;
 
     @XmlAttribute
-    private float brightness = 1.0f;
+    private Float brightness = null;
 
     @XmlAttribute
     private boolean interpolationState = false;
@@ -66,8 +69,8 @@ public class ImagingCapability extends AbstractCapability {
     }
 
     /**
-     * @param alpha
-     *            the alpha to set
+     * @param contrast
+     *            the contrast to set
      */
     public void setContrast(float contrast) {
         setContrast(contrast, true);
@@ -85,20 +88,20 @@ public class ImagingCapability extends AbstractCapability {
     /**
      * @return the brightness
      */
-    public float getBrightness() {
+    public Float getBrightness() {
         return brightness;
     }
 
     /**
-     * @param alpha
-     *            the alpha to set
+     * @param brightness
+     *            the brightness to set
      */
-    public void setBrightness(float brightness) {
+    public void setBrightness(Float brightness) {
         setBrightness(brightness, true);
     }
 
-    public void setBrightness(float brightness, boolean notify) {
-        if (this.brightness != brightness) {
+    public void setBrightness(Float brightness, boolean notify) {
+        if (!brightness.equals(this.brightness)) {
             this.brightness = brightness;
             if (notify) {
                 this.capabilityChanged();
