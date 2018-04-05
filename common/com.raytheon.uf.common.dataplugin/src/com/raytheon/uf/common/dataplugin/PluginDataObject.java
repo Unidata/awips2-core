@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -61,30 +61,30 @@ import com.raytheon.uf.common.time.DataTime;
  * <p>
  * For example, for a plugin that handled satellite images, the associated
  * plugin specific data type would be called SatelliteRecord.
- * 
+ *
  * <pre>
  * Hibernate Annotation Requirements for "@Entity" annotated classes that are subclasses
  * of PluginDataObject
- * 
+ *
  * 1) If it is not abstract and not a super class for "@Entity" annotated
  * subclasses, then add a SequenceGenerator annotation:
  * "@SequenceGenerator(initialValue = 1, name = PluginDataObject.ID_GEN, sequenceName = "
  * <tablename>seq")"
- * 
+ *
  * 2) If it is abstract and a super class for @Entity annotated subclasses:
- * 
+ *
  * - if there are "@ManyToOne" or "@OneToMany" relationships to the class, then
  * an "@Entity" annotation has to be used otherwise use a "@MappedSuperClass"
  * annotation
- * 
+ *
  * - Add an "@Inheritance" annotation
  * "@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)"
- * 
+ *
  * - Add an "@Sequence" annotation
  * "@SequenceGenerator(name = PluginDataObject.ID_GEN)"
- * 
- * SOFTWARE HISTORY 
- * 
+ *
+ * SOFTWARE HISTORY
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 24, 2007  353      bphillip  Initial creation
@@ -106,22 +106,23 @@ import com.raytheon.uf.common.time.DataTime;
  * Apr 15, 2014  1869     bsteffen  Remove unused transient record field.
  * Jun 17, 2014  3165     bsteffen  Delete IDecoderGettable
  * Nov 05, 2015  5090     bsteffen  Add constants for datatime component ids.
- * 
+ * Apr 05, 2018  6696     randerso  Added FCSTTIME_ID
+ *
  * </pre>
- * 
+ *
  */
 @MappedSuperclass
 @Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public abstract class PluginDataObject extends PersistableDataObject implements
-        ISerializableObject {
+public abstract class PluginDataObject extends PersistableDataObject
+        implements ISerializableObject {
 
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(PluginDataObject.class);
 
-    public static final class DataTimeURIConverter implements
-            DataURIFieldConverter<DataTime> {
+    public static final class DataTimeURIConverter
+            implements DataURIFieldConverter<DataTime> {
         @Override
         public String toString(DataTime field) {
             if (field == null) {
@@ -144,6 +145,8 @@ public abstract class PluginDataObject extends PersistableDataObject implements
     public static final String DATATIME_ID = "dataTime";
 
     public static final String REFTIME_ID = "dataTime.refTime";
+
+    public static final String FCSTTIME_ID = "dataTime.fcstTime";
 
     public static final String STARTTIME_ID = "dataTime.validPeriod.start";
 
@@ -296,7 +299,7 @@ public abstract class PluginDataObject extends PersistableDataObject implements
         if (this == obj) {
             return true;
         }
-        if (!this.getClass().equals(obj.getClass())) {
+        if (getClass() != obj.getClass()) {
             return false;
         }
         PluginDataObject rhs = (PluginDataObject) obj;
