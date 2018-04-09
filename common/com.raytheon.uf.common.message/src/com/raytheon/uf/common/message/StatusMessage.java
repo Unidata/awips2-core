@@ -44,20 +44,22 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * <pre>
  * SOFTWARE HISTORY
  *
- * Date          Ticket#     Engineer     Description
- * ------------- ----------- ------------ --------------------------
- * Sep 08, 2008  1433        chammack     Initial creation
- * Nov 11,2010   2235        cjeanbap     Added attribute, audioFile.
- * Feb  7,2011   6329        rferrel      Checks to make sure details and
- *                                        message are never null.
- * Apr 10, 2013  1893        bsteffen     Switch machine to be LOCAL instead of
- *                                        using RuntimeMXBean
- * Jun 24, 2013  2135        randerso     Fixed NullPointerException in
- *                                        buildMessageAndDetails
- * Sep 12, 2014  3583        bclement     removed ISerializableObject
- * Jul 27, 2015  4654        skorolev     Added localization level filters.
- *                                        Corrected annotation for filters.
- * Mar 20, 2018  7096        randerso     Ensure eventTime is not set to null
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 08, 2008  1433     chammack  Initial creation
+ * Nov 11,2010   2235     cjeanbap  Added attribute, audioFile.
+ * Feb  7,2011   6329     rferrel   Checks to make sure details and message are
+ *                                  never null.
+ * Apr 10, 2013  1893     bsteffen  Switch machine to be LOCAL instead of using
+ *                                  RuntimeMXBean
+ * Jun 24, 2013  2135     randerso  Fixed NullPointerException in
+ *                                  buildMessageAndDetails
+ * Sep 12, 2014  3583     bclement  removed ISerializableObject
+ * Jul 27, 2015  4654     skorolev  Added localization level filters. Corrected
+ *                                  annotation for filters.
+ * Mar 20, 2018  7096     randerso  Ensure eventTime is not set to null
+ * Apr 09, 2018  6646     randerso  Added line break between message and
+ *                                  stacktrace in message details
  *
  * </pre>
  *
@@ -207,7 +209,7 @@ public class StatusMessage implements IMessage {
 
         String exception = exceptionToString(throwable);
         if (exception != null) {
-            detailsBuilder.append(exception);
+            detailsBuilder.append('\n').append(exception);
         }
 
         String details = detailsBuilder.toString();
