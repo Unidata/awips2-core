@@ -51,6 +51,7 @@ import com.raytheon.uf.common.style.StyleException;
  * Nov 25, 2013  2492     bsteffen  Add colorMapUnits
  * Apr 26, 2017  6247     bsteffen  Implement clone
  * Aug 25, 2017  6403     bsteffen  Use CollapsedStringAdapter
+ * Apr 04, 2018  6889     njensen   Added brightness
  * 
  * </pre>
  * 
@@ -86,6 +87,9 @@ public class ImagePreferences extends AbstractStylePreferences {
     @XmlElement
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     private String colorMapUnits;
+
+    @XmlElement
+    private Float brightness;
 
     public ImagePreferences() {
 
@@ -193,4 +197,13 @@ public class ImagePreferences extends AbstractStylePreferences {
     public ImagePreferences clone() {
         return new ImagePreferences(this);
     }
+
+    public Float getBrightness() {
+        return brightness;
+    }
+
+    public void setBrightness(Float brightness) {
+        this.brightness = brightness;
+    }
+
 }

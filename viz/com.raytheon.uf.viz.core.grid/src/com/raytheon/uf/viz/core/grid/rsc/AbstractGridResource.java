@@ -152,6 +152,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * Feb 15, 2018  6902     njensen   Added interrogate support for Direction To
  * Mar 21, 208   7157     njensen   Improved if statement in createColorMapParameters()
+ * Apr 04, 2018  6889     njensen   Use brightness from ImagePreferences if
+ *                                  present but missing in ImagingCapability
  *
  * </pre>
  *
@@ -398,8 +400,11 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         List<DisplayType> altDisplayTypes = new ArrayList<>();
         switch (displayType) {
         case IMAGE:
+            /*
+             * if this was loaded from a bundle, image capability will already
+             * exist
+             */
             if (!hasCapability(ImagingCapability.class)) {
-                this.getCapability(ImagingCapability.class).setBrightness(0.5f);
                 this.getCapability(ImagingCapability.class)
                         .setInterpolationState(true);
             }
@@ -474,10 +479,26 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (styleRule != null) {
             stylePreferences = styleRule.getPreferences();
             if (stylePreferences instanceof ImagePreferences) {
-                boolean interpolationState = ((ImagePreferences) styleRule
-                        .getPreferences()).isInterpolate();
-                this.getCapability(ImagingCapability.class)
-                        .setInterpolationState(interpolationState);
+                ImagePreferences imgPrefs = (ImagePreferences) stylePreferences;
+                ImagingCapability imgCap = getCapability(
+                        ImagingCapability.class);
+                boolean interpolationState = imgPrefs.isInterpolate();
+                imgCap.setInterpolationState(interpolationState);
+                Float brightness = imgPrefs.getBrightness();
+                if (brightness != null && imgCap.getBrightness() == null) {
+                    imgCap.setBrightness(brightness);
+                }
+            }
+        }
+
+        /*
+         * Handle case where it's grid imagery and image brightness did not come
+         * from style rules or a bundle
+         */
+        if (hasCapability(ImagingCapability.class)) {
+            ImagingCapability imgCap = getCapability(ImagingCapability.class);
+            if (imgCap.getBrightness() == null) {
+                imgCap.setBrightness(0.5f);
             }
         }
     }
