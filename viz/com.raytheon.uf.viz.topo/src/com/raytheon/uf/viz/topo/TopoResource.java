@@ -197,13 +197,9 @@ public class TopoResource
                 params.setColorBarIntervals(labelPrefs.getValues());
             }
 
-            if (prefs.getBrightness() != null
-                    && imgCap.getBrightness() == null) {
+            if (!imgCap.isBrightnessSet() && prefs.getBrightness() != null) {
                 imgCap.setBrightness(prefs.getBrightness());
             }
-        }
-        if (imgCap.getBrightness() == null) {
-            imgCap.setBrightness(ImagingCapability.BRIGHTNESS_DEFAULT);
         }
 
         if (params.getColorMap() == null) {

@@ -45,7 +45,7 @@ import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension.ImageProvider;
 @XmlAccessorType(XmlAccessType.NONE)
 public class ImagingCapability extends AbstractCapability {
 
-    public static final float BRIGHTNESS_DEFAULT = 1.0f;
+    private static final float BRIGHTNESS_DEFAULT = 1.0f;
 
     private ImageProvider provider;
 
@@ -84,11 +84,18 @@ public class ImagingCapability extends AbstractCapability {
             }
         }
     }
+    
+    public boolean isBrightnessSet() {
+        return brightness != null;
+    }
 
     /**
      * @return the brightness
      */
-    public Float getBrightness() {
+    public float getBrightness() {
+        if (brightness == null) {
+            brightness = BRIGHTNESS_DEFAULT;
+        }
         return brightness;
     }
 

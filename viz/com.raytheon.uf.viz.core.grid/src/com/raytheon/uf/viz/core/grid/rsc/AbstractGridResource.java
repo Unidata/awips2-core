@@ -484,9 +484,9 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                         ImagingCapability.class);
                 boolean interpolationState = imgPrefs.isInterpolate();
                 imgCap.setInterpolationState(interpolationState);
-                Float brightness = imgPrefs.getBrightness();
-                if (brightness != null && imgCap.getBrightness() == null) {
-                    imgCap.setBrightness(brightness);
+                if (!imgCap.isBrightnessSet()
+                        && imgPrefs.getBrightness() != null) {
+                    imgCap.setBrightness(imgPrefs.getBrightness());
                 }
             }
         }
@@ -497,7 +497,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
          */
         if (hasCapability(ImagingCapability.class)) {
             ImagingCapability imgCap = getCapability(ImagingCapability.class);
-            if (imgCap.getBrightness() == null) {
+            if (!imgCap.isBrightnessSet()) {
                 imgCap.setBrightness(0.5f);
             }
         }
