@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -68,10 +68,10 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 
 /**
  * Imaging Dialog
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Nov 26, 2006           chammack  Initial Creation.
@@ -102,9 +102,10 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  *                                  if blended
  * Mar 23, 2018  6865     njensen   Improve dialog title
  * Apr 03, 2018  6626     bsteffen  Set interpolation state on blended images.
- * 
+ * Apr 12, 2018  6614     randerso  Fix when opened from blended resource legend
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class ImagingDialog extends CaveSWTDialog
@@ -197,6 +198,8 @@ public class ImagingDialog extends CaveSWTDialog
 
     private AbstractVizResource<?, ?> topResource = null;
 
+    private AbstractVizResource<?, ?> bottomResource = null;
+
     private ImagingDialog(Shell parentShell) {
         super(parentShell, SWT.DIALOG_TRIM | SWT.MIN,
                 CAVE.INDEPENDENT_SHELL | CAVE.DO_NOT_BLOCK);
@@ -205,7 +208,7 @@ public class ImagingDialog extends CaveSWTDialog
 
     /**
      * Constructor
-     * 
+     *
      * @param parentShell
      * @param initialEditor
      */
@@ -577,8 +580,8 @@ public class ImagingDialog extends CaveSWTDialog
 
             @Override
             public void widgetSelected(SelectionEvent e) {
-                ColorEditDialog.openDialog(getShell(), currentEditor, null,
-                        true, true);
+                ColorEditDialog.openDialog(getShell(), currentEditor,
+                        bottomResource, true, true);
             }
 
         });
@@ -619,7 +622,7 @@ public class ImagingDialog extends CaveSWTDialog
 
     /**
      * Get the top most resource to use as the basis for the dialog
-     * 
+     *
      * @return
      */
     private AbstractVizResource<?, ?> getTopResource() {
@@ -647,7 +650,7 @@ public class ImagingDialog extends CaveSWTDialog
 
     /**
      * Get a list of the resources to update when changes are made
-     * 
+     *
      * @return
      */
     private List<AbstractVizResource<?, ?>> getResourcesToEdit(Type type) {
@@ -691,7 +694,7 @@ public class ImagingDialog extends CaveSWTDialog
 
     /**
      * Get the visible display panes to edit
-     * 
+     *
      * @return
      */
     private IDisplayPane[] getDisplayPanesToEdit() {
@@ -738,7 +741,6 @@ public class ImagingDialog extends CaveSWTDialog
         // setup the resources
         List<AbstractVizResource<?, ?>> editables = getResourcesToEdit();
         AbstractVizResource<?, ?> firstResource = getTopResource();
-        AbstractVizResource<?, ?> bottomResource = null;
         if (firstResource != null) {
             if (firstResource.hasCapability(BlendableCapability.class)) {
                 blended = true;
