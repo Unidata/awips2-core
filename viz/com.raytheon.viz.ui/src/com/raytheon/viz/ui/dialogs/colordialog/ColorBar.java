@@ -79,6 +79,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  *                                    color maps
  * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
  * Mar 19, 2018  6738     tgurney     Add getHistory, setHistory
+ * Apr 17, 2018  6972     bsteffen    Correctly label log colormaps.
  *
  * </pre>
  *
@@ -949,19 +950,14 @@ public class ColorBar extends Composite
         double lastVal = Double.NaN;
         double value = Double.NaN;
         if (cmapParams.isLogarithmic()) {
-            // TODO: implement the full inverse of Colormapper.getLogIndex() and
-            // use it here
-            if (max >= 0 && min >= 0) {
-                double i = (float) index / size;
-                double logMin = Math.log(min);
-                double logMax = Math.log(max);
-                value = Math.exp(logMin + i * (logMax - logMin));
-                if (index > 0) {
-                    i = (float) (index - 1) / size;
-                    lastVal = Math.exp(logMin + i * (logMax - logMin));
-                }
+            double idx = index / (size - 1);
+            value = Colormapper.getLogValue(idx, min, max,
+                    cmapParams.isMirror());
+            if (index > 0) {
+                idx = (index - 1) / (size - 1);
+                lastVal = Colormapper.getLogValue(idx, min, max,
+                        cmapParams.isMirror());
             }
-
         } else if (cmapParams.getLogFactor() > 0.0) {
             double idx = index / (size - 1);
             value = Colormapper.getLogFactorValue(idx, min, max,
