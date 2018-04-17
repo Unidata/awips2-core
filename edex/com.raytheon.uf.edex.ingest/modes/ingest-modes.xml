@@ -6,7 +6,6 @@
 	<mode name="ingest">
 		<exclude>.*request.*</exclude>
 		<exclude>edex-security.xml</exclude>
-		<exclude>taf.*</exclude>
-		<exclude>shef.*</exclude>
+		<exclude>.*(taf|shef|nctext).*</exclude>
 	</mode>
 </edexModes>
