@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -28,17 +28,18 @@ import org.slf4j.LoggerFactory;
 /**
  * Base class for Timer based threading. Allows previous thread based paradigms
  * to hook in to a camel context with minimal work.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 19, 2014 2826       rjpeter     Initial creation.
  * Mar 30, 2017 5937       rjpeter     Updated EdexTimerBasedThread to manage its own threads.
+ * Jan 18, 2018 7195       tjensen     Ensure running is set after start
  * </pre>
- * 
+ *
  * @author rjpeter
  */
 public abstract class EdexTimerBasedThread implements IContextStateProcessor {
@@ -47,7 +48,7 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
     /**
      * Current active threads.
      */
-    protected final List<Thread> threads = new LinkedList<Thread>();
+    protected final List<Thread> threads = new LinkedList<>();
 
     protected int threadCount = 1;
 
@@ -63,7 +64,7 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
 
     /**
      * The name to use for the threads.
-     * 
+     *
      * @return
      */
     public abstract String getThreadGroupName();
@@ -71,7 +72,7 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
     /**
      * Method to do the work. Should return when done. Run method handles start
      * up/shutdown mechanism.
-     * 
+     *
      * @throws Exception
      */
     public abstract void process() throws Exception;
@@ -126,6 +127,8 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
 
     @Override
     public void postStart() {
+        running = true;
+
         logger.info("Launching " + threadCount + " " + getThreadGroupName()
                 + " threads");
 
@@ -134,6 +137,7 @@ public abstract class EdexTimerBasedThread implements IContextStateProcessor {
                 String threadName = getThreadGroupName()
                         + (threadCount > 1 ? "-" + i : "");
                 Thread t = new Thread(threadName) {
+                    @Override
                     public void run() {
                         EdexTimerBasedThread.this.run();
                     }
