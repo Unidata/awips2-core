@@ -61,6 +61,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Nov 02, 2016  5957     bsteffen  Fix indexing to include last color more.
  * Feb 07, 2018  6816     randerso  Implemented getLinearValue and
  *                                  getLogFactorValue functions.
+ * Apr 17, 2018  6972     bsteffen  Add getLogValue
  *
  * </pre>
  *
@@ -331,6 +332,93 @@ public class Colormapper {
             }
         }
         return index;
+    }
+
+    /**
+     * This function finds the correct value for a given logarithmic index using
+     * the cmapMin/cmapMax.
+     *
+     * @param index
+     * @param cmapMin
+     * @param cmapMax
+     * @param mirror
+     * @return the index
+     */
+    public static double getLogValue(double index, double cmapMin,
+            double cmapMax, boolean mirror) {
+        boolean inverted = false;
+        double rangeMin = Math.abs(cmapMin);
+        double rangeMax = Math.abs(cmapMax);
+        if (rangeMin > rangeMax) {
+            // Inverted colormapping range (cmapMax is closest to 0)
+            inverted = true;
+            double tmp = rangeMin;
+            rangeMin = rangeMax;
+            rangeMax = tmp;
+        }
+
+        double cmapValue;
+        // Flag if min/max values are on opposite sides of zero
+        boolean minMaxOpposite = (cmapMin < 0 && cmapMax > 0)
+                || (cmapMin > 0 && cmapMax < 0);
+
+        if (mirror || minMaxOpposite) {
+            // Log scaling is happening on both sides of zero, need to compute
+            // our zero index value
+            double zeroVal = rangeMin;
+            if (minMaxOpposite) {
+                // Min/Max are on opposite sides of zero, compute a zero
+                // valuezeroValIndex
+                zeroVal = Math.max(rangeMin, rangeMax) * 0.0001;
+            }
+
+            double negCmapMax = rangeMin;
+            double posCmapMax = rangeMax;
+            if (mirror) {
+                negCmapMax = posCmapMax = rangeMax;
+            }
+
+            // Compute log zero val and log neg/pos max vals
+            double absLogZeroVal = Math.abs(Math.log(zeroVal));
+            double logNegCmapMax = absLogZeroVal + Math.log(negCmapMax);
+            double logPosCmapMax = absLogZeroVal + Math.log(posCmapMax);
+            // Calculate index which zeroVal is at based on neg max and pos max
+            double zeroValIndex = logNegCmapMax
+                    / (logNegCmapMax + logPosCmapMax);
+
+            if (inverted) {
+                index = 1.0 - index;
+            }
+            if (index > zeroValIndex) {
+                index = (index - zeroValIndex) / (1 - zeroValIndex);
+                cmapValue = LogConverter.indexToValue(index, zeroVal,
+                        posCmapMax);
+            } else {
+                index = (zeroValIndex - index) / zeroValIndex;
+
+                cmapValue = -LogConverter.indexToValue(index, zeroVal,
+                        negCmapMax);
+            }
+            if (cmapMax < 0) {
+                // Invert colormapping if negative range was given
+                cmapValue = -cmapValue;
+            }
+        } else {
+            boolean belowZero = (index < 0);
+            if (belowZero) {
+                index = -index;
+            }
+            if (inverted) {
+                index = 1.0 - index;
+            }
+            // Simple case, just use log converter to get index
+            cmapValue = LogConverter.indexToValue(index, rangeMin, rangeMax);
+            if (belowZero) {
+                cmapValue = -cmapValue;
+            }
+
+        }
+        return cmapValue;
     }
 
     /**
