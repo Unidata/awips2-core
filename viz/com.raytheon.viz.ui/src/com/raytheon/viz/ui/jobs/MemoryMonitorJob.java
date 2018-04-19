@@ -47,6 +47,7 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * ------------ ---------- ----------- --------------------------
  * Jan 14, 2014 2594       bclement     Initial creation
  * Feb 7, 2018  19577      anilsonm     change threshold to memory units and compute free memory against it
+ * Feb 27, 2018 19577      anilsonm     need to handle THRESHOLD_PROPERTY. This code is shared by initial load, file uploads and alertviz
  * 
  * </pre>
  * 
@@ -64,6 +65,8 @@ public class MemoryMonitorJob extends Job {
 
     private static final long DEFAULT_THRESHOLD = 10 * SizeUtil.BYTES_PER_MB; // approx 10MB
 
+    private static final String DEFAULT_THRESHOLD_VALUE = "10MiB";
+
     private static final long DEFAULT_PERIOD = 10 * 1000; // ten seconds
 
     private final long threshold;
@@ -77,7 +80,7 @@ public class MemoryMonitorJob extends Job {
     private static long lBytes = 0;
 
     static{
-        String threshold = System.getProperty(THRESHOLD_PROPERTY);
+        String threshold = System.getProperty(THRESHOLD_PROPERTY, DEFAULT_THRESHOLD_VALUE);
 
         try {
             lBytes = new BytesFormat().parse(threshold);
