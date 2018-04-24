@@ -19,6 +19,9 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets.tearoff;
 
+import java.util.HashSet;
+import java.util.Set;
+
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MenuAdapter;
 import org.eclipse.swt.events.MenuEvent;
@@ -29,6 +32,8 @@ import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.editor.AbstractEditor;
 
@@ -39,24 +44,26 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
  * 
  * SOFTWARE HISTORY
  * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Dec 5, 2011            mnash     Initial creation
- * Apr 10, 2013 DR 15185   D. Friedman Do not assume there is an active editor.
+ * Date          Ticket#  Engineer   Description
+ * ------------- -------- ---------- -----------------------------------------
+ * Dec 05, 2011           mnash      Initial creation
+ * Apr 10, 2013  15185    dfriedman  Do not assume there is an active editor.
+ * Apr 24, 2018  6703     bsteffen   Send simulated events more like EventTable.
  * 
  * </pre>
  * 
  * @author mnash
- * @version 1.0
  */
 
 public class PopupMenu {
+    private static final transient IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PopupMenu.class);
 
-    Listener selectionListener = null;
+    private Listener selectionListener = null;
 
-    Listener updateListener = null;
+    private Listener updateListener = null;
 
-    Listener showListener = null;
+    private Listener showListener = null;
 
     public PopupMenu() {
         // default constructor
@@ -142,13 +149,12 @@ public class PopupMenu {
                             // stored off MenuItem, which will populate the Menu
                             // with the items and then we are able to get those
                             // items to populate our submenu
-                            for (Listener list : ((MenuItem) mItem.getData())
-                                    .getMenu().getListeners(SWT.Show)) {
-                                Event event = new Event();
-                                event.widget = (Menu) e.getSource();
-                                event.type = SWT.Show;
-                                list.handleEvent(event);
-                            }
+                            Event event = new Event();
+                            event.widget = ((MenuItem) mItem.getData())
+                                    .getMenu();
+                            event.type = SWT.Show;
+                            sendEvent(event);
+
                             // now that we have the items, we build the menu
                             buildMenu((MenuItem) mItem.getData(), shell,
                                     subMenu);
@@ -165,8 +171,8 @@ public class PopupMenu {
                     public void handleEvent(Event event) {
                         // set it to the actual menu item, so that next time it
                         // pops up it will hold the correct selection
-                        menItem.setSelection(((MenuItem) event.widget)
-                                .getSelection());
+                        menItem.setSelection(
+                                ((MenuItem) event.widget).getSelection());
                     }
                 };
                 mItem.addListener(SWT.Selection, selectionListener);
@@ -184,13 +190,10 @@ public class PopupMenu {
                     // execute the hide listener on the menu so that the
                     // TearOffMenuListener gets removed from the menu and you
                     // don't get duplicate tear off items
-                    for (Listener list : menItem.getParent().getListeners(
-                            SWT.Hide)) {
-                        Event event = new Event();
-                        event.type = SWT.Hide;
-                        event.widget = menItem.getParent();
-                        list.handleEvent(event);
-                    }
+                    Event event = new Event();
+                    event.type = SWT.Hide;
+                    event.widget = menItem.getParent();
+                    sendEvent(event);
                 }
             });
         }
@@ -219,17 +222,48 @@ public class PopupMenu {
     protected void addSubmenus(MenuItem item, Shell shell, int y) {
         // showing the menu in cave (won't actually show), but executes all the
         // listeners to build the menus (since they are built on-demand)
-        for (Listener list : item.getMenu().getListeners(SWT.Show)) {
-            try {
-                Event event = new Event();
-                event.widget = item;
-                event.type = SWT.Show;
-                list.handleEvent(event);
-            } catch (Exception e) {
-                // do nothing
-            }
-        }
+        Event event = new Event();
+        event.widget = item.getMenu();
+        event.type = SWT.Show;
+        sendEvent(event);
 
         addPopupMenu(item, shell, y);
+    }
+
+    /**
+     * Send a simulated event to any listeners.
+     * 
+     * @param event
+     *            the event to send. The widget and type fields of the event
+     *            must be populated to determine where to send the event.
+     */
+    private void sendEvent(Event event) {
+        /*
+         * This attempts to simulate what happens in
+         * org.eclipse.swt.widgets.EventTable. Most importantly, it is possible
+         * to add and remove listeners while an event listener is running, so
+         * this must check the array of listeners after each listener is fired.
+         * This really matters when a SubmenuContributionItem is adding
+         * BundleContributionItems on Show events because the
+         * BundleContributionItems are expecting to see the same Show event.
+         */
+        Set<Listener> firedListeners = new HashSet<>();
+        boolean listenersRemaining = false;
+        while (!listenersRemaining) {
+            listenersRemaining = true;
+            Listener[] listeners = event.widget.getListeners(event.type);
+            for (Listener listener : listeners) {
+                if (firedListeners.add(listener)) {
+                    try {
+                        listener.handleEvent(event);
+                    } catch (Exception e) {
+                        statusHandler.debug(
+                                "Unexpected error simulating menu event.", e);
+                    }
+                    listenersRemaining = false;
+                    break;
+                }
+            }
+        }
     }
 }
