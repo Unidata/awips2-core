@@ -179,8 +179,8 @@
         <Field abbreviation="pressure" />
         <Field abbreviation="sfcPress" />
     </Method>
-    <Method name="P.execute2">
-        <Field abbreviation="levels" />
+    <Method name="VWP.P" models="radarVWP">
+        <Field abbreviation="levels" unit="m"/>
         <Field abbreviation="staElev" />
     </Method>
     <Method levels="MB" name="P.execute3">

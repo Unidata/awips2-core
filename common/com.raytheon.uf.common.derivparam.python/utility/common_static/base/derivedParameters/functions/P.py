@@ -23,25 +23,17 @@
 #
 # Date           Ticket#      Engineer      Description
 # ------------   ----------   -----------   -----------
-#                             ????          Initial creation
 # Aug 05, 2015   4703         njensen       cast scalars to float32
+# Apt 26, 2018   6974         bsteffen      remove execute2.
 #
 
-import meteolib
 from numpy import equal, where, zeros, concatenate, greater, float32
 from unit import pascalToMilliBar
 
 def execute1(pressure, sfcPress):
-    sfcPress = sfcPress.reshape(- 1, 1);
+    sfcPress = sfcPress.reshape(- 1, 1)
     result = concatenate((sfcPress, pressure), 1)
     return pascalToMilliBar(result)
-
-def execute2(levels, staElev):
-    staElev = staElev.reshape(- 1, 1);
-    hft2m = 30.48
-    levelsInMeters = where(equal(levels, - 9999), float32(-9999), levels * 30.48)
-    GH = concatenate((staElev, levelsInMeters), 1)
-    return meteolib.ztopsa(GH)
 
 def execute3(numProfLvlsStation, MB):
     ret = zeros(numProfLvlsStation.shape, float32)
@@ -54,7 +46,7 @@ def execute4(prCloudStation,lowCldStation,midCldStation,hiCldStation):
     isCeiling = where(greater(CCPval, 0.5), CCPval, float32(-9999))
     prCloudMB[isCeiling == -9999] = float32(-9999)
     prCloudMB[prCloudStation == -9999] = float32(-9999)
-    return prCloudMB;
+    return prCloudMB
 
 def execute5(height, elevation):
     # array height is in meters

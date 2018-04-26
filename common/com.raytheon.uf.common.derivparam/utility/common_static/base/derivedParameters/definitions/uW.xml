@@ -100,7 +100,7 @@
     <Method levels="Surface" name="Alias">
         <Field level="Station" abbreviation="uwind"/>
     </Method>
-    <Method name="uW.execute3">
+    <Method name="VWP.uW" models="radarVWP">
         <Field abbreviation="vwpU"/>
     </Method>
     <Method name="Alias">

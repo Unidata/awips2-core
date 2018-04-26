@@ -161,8 +161,8 @@
         <Field level="Station" abbreviation="staElev" />
         <Field abbreviation="FHAG" />
     </Method>
-    <Method name="GH.execute1">
-        <Field abbreviation="levels" />
+    <Method name="VWP.GH" models="radarVWP">
+        <Field abbreviation="levels" unit="m"/>
         <Field abbreviation="staElev" />
     </Method>
     <Method levels="Surface" name="Alias">
