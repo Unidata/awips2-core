@@ -108,7 +108,7 @@
         <ConstantField value="-2.0" />
     </Method>
     <Method models="MSAS" levels="500MB" name="Import">
-        <Field level="500MB" model="RUC" abbreviation="T" />
+        <Field level="500MB" model="RUC236" abbreviation="T" />
     </Method>
     <Method models="MSAS" levels="500MB" name="Import">
         <Field level="500MB" model="ETA207" abbreviation="T" />
@@ -117,10 +117,10 @@
         <Field level="500MB" model="GFS213" abbreviation="T" />
     </Method>
     <Method models="Metar" levels="500MB" name="Import">
-        <Field level="500MB" model="RUC" abbreviation="T" />
+        <Field level="500MB" model="RUC236" abbreviation="T" />
     </Method>
     <Method models="Ldad" levels="500MB" name="Import">
-        <Field level="500MB" model="RUC" abbreviation="T" />
+        <Field level="500MB" model="RUC236" abbreviation="T" />
     </Method>
     <Method levels="S,TILT" name="Slice">
         <Field level="3D" abbreviation="T" />
