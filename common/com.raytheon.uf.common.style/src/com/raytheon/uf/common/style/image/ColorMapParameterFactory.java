@@ -70,11 +70,10 @@ import com.raytheon.uf.common.util.GridUtil;
  *                                    data values.
  * Aug 31, 2015  4709     bsteffen    Fix incremental labeling.
  * Oct 22, 2015  4914     bsteffen    Expose an additional build method.
- * 
+ * Apr 30, 2018  7284     bsteffen    Allow lower log minimums.
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 public class ColorMapParameterFactory {
     private static final transient IUFStatusHandler statusHandler = UFStatus
@@ -92,16 +91,16 @@ public class ColorMapParameterFactory {
         // .getStyleRule(parameter, levels);
         ParamLevelMatchCriteria match = new ParamLevelMatchCriteria();
         match.setLevel(level);
-        ArrayList<String> paramList = new ArrayList<String>();
+        ArrayList<String> paramList = new ArrayList<>();
         paramList.add(parameter);
         match.setParameterName(paramList);
         if (entity != null) {
-            ArrayList<String> entityList = new ArrayList<String>();
+            ArrayList<String> entityList = new ArrayList<>();
             entityList.add(entity);
             match.setCreatingEntityNames(entityList);
         }
-        StyleRule sr = StyleManager.getInstance().getStyleRule(
-                StyleManager.StyleType.IMAGERY, match);
+        StyleRule sr = StyleManager.getInstance()
+                .getStyleRule(StyleManager.StyleType.IMAGERY, match);
 
         return build(sr, data, level, parameterUnits);
     }
@@ -118,8 +117,8 @@ public class ColorMapParameterFactory {
      */
     public static ColorMapParameters build(Object data, Unit<?> parameterUnits,
             ParamLevelMatchCriteria match) throws StyleException {
-        StyleRule sr = StyleManager.getInstance().getStyleRule(
-                StyleManager.StyleType.IMAGERY, match);
+        StyleRule sr = StyleManager.getInstance()
+                .getStyleRule(StyleManager.StyleType.IMAGERY, match);
         SingleLevel level = null;
         if (match.getLevels() != null && !match.getLevels().isEmpty()) {
             Level styleLevel = match.getLevels().get(0);
@@ -183,8 +182,8 @@ public class ColorMapParameterFactory {
             }
         }
 
-        if ((definedMin == null || definedMax == null || preferences
-                .getDataScale().isAdaptive())) {
+        if ((definedMin == null || definedMax == null
+                || preferences.getDataScale().isAdaptive())) {
             float max = 0, min = 0, colormapMin = 0, colormapMax = 0;
             if (data != null) {
                 // Repack the data
@@ -267,10 +266,10 @@ public class ColorMapParameterFactory {
                 params.setDataMin(min);
             }
 
-            float displayMin = dataToDisplay != null ? (float) dataToDisplay
-                    .convert(colormapMin) : colormapMin;
-            float displayMax = dataToDisplay != null ? (float) dataToDisplay
-                    .convert(colormapMax) : colormapMax;
+            float displayMin = dataToDisplay != null
+                    ? (float) dataToDisplay.convert(colormapMin) : colormapMin;
+            float displayMax = dataToDisplay != null
+                    ? (float) dataToDisplay.convert(colormapMax) : colormapMax;
 
             if (preferences.getColorbarLabeling() != null) {
                 extractLabelValues(preferences, displayMax, displayMin, params);
@@ -339,11 +338,10 @@ public class ColorMapParameterFactory {
                     displayMin = t;
                 }
 
-                if (scale.isMirror()
-                        && -displayMin > displayMax) {
+                if (scale.isMirror() && -displayMin > displayMax) {
                     displayMax = -displayMin;
                 }
-                if (displayMin < displayMax / 1e4) {
+                if (displayMin <= 0) {
                     displayMin = displayMax / 1e4;
                 }
             }
@@ -395,7 +393,7 @@ public class ColorMapParameterFactory {
             throw new IllegalArgumentException(
                     "StyleRule must not be null when building ColorMapParameters");
         }
-        if (sr.getPreferences() instanceof ImagePreferences == false) {
+        if (!(sr.getPreferences() instanceof ImagePreferences)) {
             throw new IllegalArgumentException(
                     "ImagePreferences are only supported for building ColorMapParameters");
         }
@@ -460,7 +458,7 @@ public class ColorMapParameterFactory {
             if (params.getDataMapping() != null) {
                 DataMappingPreferences mapping = params.getDataMapping();
                 List<DataMappingEntry> entries = mapping.getEntries();
-                if (entries != null && entries.isEmpty() == false) {
+                if (entries != null && !entries.isEmpty()) {
                     if (displayMin == null) {
                         DataMappingEntry min = entries.get(0);
                         if (min.getPixelValue() != null
@@ -514,8 +512,10 @@ public class ColorMapParameterFactory {
                 params.setColorBarIntervals(labeling.getValues());
             } else if (labeling.getIncrement() != 0) {
                 float increment = labeling.getIncrement();
-                float initialPoint = (float) (Math.ceil(displayMin / increment) * increment);
-                float finalPoint = (float) (Math.floor(displayMax / increment) * increment);
+                float initialPoint = (float) (Math.ceil(displayMin / increment)
+                        * increment);
+                float finalPoint = (float) (Math.floor(displayMax / increment)
+                        * increment);
                 int count = (int) ((finalPoint - initialPoint) / increment) + 1;
                 float[] vals = new float[count];
                 for (int i = 0; i < count; i += 1) {
@@ -663,8 +663,7 @@ public class ColorMapParameterFactory {
 
             float initialPoint = ((int) (min / increment)) * increment;
             int n = ((int) Math.abs(Math.abs(max - min) / increment)) + 1;
-            labellingPositions = new ArrayList<Float>(Math.min(100,
-                    Math.max(0, n)));
+            labellingPositions = new ArrayList<>(Math.min(100, Math.max(0, n)));
             if (min < max) {
                 if (initialPoint <= min) {
                     initialPoint += increment;
@@ -707,7 +706,7 @@ public class ColorMapParameterFactory {
                 value = newDataIntervalFromZoom(max / 2, 1, perDecade);
             }
 
-            List<Float> tempval = new ArrayList<Float>(20);
+            List<Float> tempval = new ArrayList<>(20);
 
             while (value > min) {
                 tempval.add(value);
@@ -715,8 +714,8 @@ public class ColorMapParameterFactory {
                 value = newDataIntervalFromZoom(value, 1, perDecade);
             }
 
-            labellingPositions = new ArrayList<Float>(tempval.size()
-                    + (isMirror ? tempval.size() + 1 : 0));
+            labellingPositions = new ArrayList<>(
+                    tempval.size() + (isMirror ? tempval.size() + 1 : 0));
             if (isMirror) {
                 for (float v : tempval) {
                     labellingPositions.add(-v);
@@ -728,7 +727,7 @@ public class ColorMapParameterFactory {
             }
 
         } else {
-            labellingPositions = new ArrayList<Float>();
+            labellingPositions = new ArrayList<>();
         }
 
         float[] valsArr = ArrayUtils.toPrimitive(labellingPositions
@@ -780,10 +779,11 @@ public class ColorMapParameterFactory {
             } else if (m >= 5.5) {
                 m = m < 7.5 ? (m < 6.5 ? 6 : 7) : (m < 8.5 ? 8 : 9);
             } else if (m >= 2.25) {
-                m = (float) (m < 3.5 ? (m < 2.75 ? 2.5 : 3) : (m < 4.5 ? 4 : 5));
+                m = (float) (m < 3.5 ? (m < 2.75 ? 2.5 : 3)
+                        : (m < 4.5 ? 4 : 5));
             } else {
-                m = (float) (m < 1.35 ? (m < 1.1 ? 1 : 1.2) : (m < 1.75 ? 1.5
-                        : 2));
+                m = (float) (m < 1.35 ? (m < 1.1 ? 1 : 1.2)
+                        : (m < 1.75 ? 1.5 : 2));
             }
         }
         return m * e;
