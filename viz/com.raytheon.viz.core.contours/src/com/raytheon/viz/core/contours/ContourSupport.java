@@ -108,11 +108,11 @@ import com.vividsolutions.jts.geom.Geometry;
  *                                     performance log.
  * Mar 19, 2015  4292     nabowle      Add contour range using A1 configuration
  *                                     rules.
+ * Apr 30, 2018  6697     bsteffen     Support zoomLock.
  *
  * </pre>
  *
  * @author chammack
- * @version 1.0
  */
 public class ContourSupport {
 
@@ -136,8 +136,8 @@ public class ContourSupport {
      * future. If it turns out this is necessary we will likely want to find a
      * more fine grained approach to tuning this.
      */
-    private static boolean copyData = Boolean.getBoolean(ContourSupport.class
-            .getPackage().getName() + ".copyData");
+    private static boolean copyData = Boolean.getBoolean(
+            ContourSupport.class.getPackage().getName() + ".copyData");
 
     private static float smallestContourValue = GridUtil.GRID_FILL_VALUE - 1;
 
@@ -182,9 +182,9 @@ public class ContourSupport {
         public double[][] maxLabelPoints;
 
         public void drawContours(IGraphicsTarget target, RGB color,
-                float lineWidth, LineStyle posLineStyle,
-                LineStyle negLineStyle, IFont contourLabelFont,
-                IFont minMaxLabelFont) throws VizException {
+                float lineWidth, LineStyle posLineStyle, LineStyle negLineStyle,
+                IFont contourLabelFont, IFont minMaxLabelFont)
+                throws VizException {
             target.drawWireframeShape(posValueShape, color, lineWidth,
                     posLineStyle, contourLabelFont);
             target.drawWireframeShape(negValueShape, color, lineWidth,
@@ -208,8 +208,7 @@ public class ContourSupport {
                     markVert = VerticalAlignment.BOTTOM;
                     valVert = VerticalAlignment.TOP;
                 }
-                List<DrawableString> strings = new ArrayList<DrawableString>(
-                        size);
+                List<DrawableString> strings = new ArrayList<>(size);
                 for (int i = 0; i < size; i++) {
                     double point[] = labelPoints[i];
                     if (isMark) {
@@ -254,11 +253,11 @@ public class ContourSupport {
      * @return the ContourGroup
      * @throws VizException
      */
-    public static ContourGroup createContours(DataSource[] sources,
-            float level, IExtent extent, double currentDensity,
-            double currentMagnification, GeneralGridGeometry imageGridGeometry,
-            IGraphicsTarget target, IMapDescriptor descriptor,
-            ContourPreferences prefs, float zoom) throws VizException {
+    public static ContourGroup createContours(DataSource[] sources, float level,
+            IExtent extent, double currentDensity, double currentMagnification,
+            GeneralGridGeometry imageGridGeometry, IGraphicsTarget target,
+            IMapDescriptor descriptor, ContourPreferences prefs, float zoom)
+            throws VizException {
 
         ContourGroup contourGroup = new ContourGroup();
         contourGroup.lastDensity = currentDensity;
@@ -296,22 +295,21 @@ public class ContourSupport {
 
             MathTransform rastGridToCrs = imageGridGeometry
                     .getGridToCRS(PixelInCell.CELL_CENTER);
-            MathTransform mapCrsToGrid = mapGridGeometry.getGridToCRS(
-                    PixelInCell.CELL_CENTER).inverse();
+            MathTransform mapCrsToGrid = mapGridGeometry
+                    .getGridToCRS(PixelInCell.CELL_CENTER).inverse();
 
             MathTransform rastCrsToLatLon = MapUtil
                     .getTransformToLatLon(rastCrs);
 
-            MathTransform crs2crs = CRSCache.getInstance().findMathTransform(
-                    rastCrs, mapCrs);
+            MathTransform crs2crs = CRSCache.getInstance()
+                    .findMathTransform(rastCrs, mapCrs);
 
-            rastPosToWorldGrid = factory
-                    .createConcatenatedTransform(
-                            factory.createConcatenatedTransform(rastGridToCrs,
-                                    crs2crs), mapCrsToGrid);
+            rastPosToWorldGrid = factory.createConcatenatedTransform(
+                    factory.createConcatenatedTransform(rastGridToCrs, crs2crs),
+                    mapCrsToGrid);
 
-            rastPosToLatLon = factory.createConcatenatedTransform(
-                    rastGridToCrs, rastCrsToLatLon);
+            rastPosToLatLon = factory.createConcatenatedTransform(rastGridToCrs,
+                    rastCrsToLatLon);
         } catch (Exception e) {
             throw new VizException("Error building Transforms", e);
         }
@@ -337,10 +335,10 @@ public class ContourSupport {
 
             int minX = (int) Math.floor(Math.max(env.getMinimum(0), 0));
             int minY = (int) Math.floor(Math.max(env.getMinimum(1), 0));
-            int maxX = (int) Math.ceil(Math.min(env.getMaximum(0),
-                    imageRange.getHigh(0)));
-            int maxY = (int) Math.ceil(Math.min(env.getMaximum(1),
-                    imageRange.getHigh(1)));
+            int maxX = (int) Math
+                    .ceil(Math.min(env.getMaximum(0), imageRange.getHigh(0)));
+            int maxY = (int) Math
+                    .ceil(Math.min(env.getMaximum(1), imageRange.getHigh(1)));
             int szX = (maxX - minX) + 1;
             int szY = (maxY - minY) + 1;
             if (szX * szY <= 0) {
@@ -385,17 +383,17 @@ public class ContourSupport {
                 config.labelSpacingLine = 1;
             }
 
-            config.labelSpacingOverall = (int) (szX * 60
-                    * currentMagnification / ((PixelExtent) extent).getWidth() + 0.5);
+            config.labelSpacingOverall = (int) (szX * 60 * currentMagnification
+                    / ((PixelExtent) extent).getWidth() + 0.5);
 
             // If nothing provided, attempt to get approximately 50 contours
             if (prefs == null || prefs.getContourLabeling() == null) {
                 // TODO this is fairly inefficient to do every time.
                 MinMax mm = DataUtilities.getMinMax(subgridSource, szX, szY);
-                float interval = XFormFunctions
-                        .newDataIntervalFromZoom((float) mm.getSpan() / 50,
-                                (float) (contourGroup.lastDensity * zoom),
-                                true, "", 10);
+                float interval = XFormFunctions.newDataIntervalFromZoom(
+                        (float) mm.getSpan() / 50,
+                        (float) (contourGroup.lastDensity * zoom), true, "",
+                        10);
                 config.seed = new float[] { interval };
                 config.mode = -50;
                 contours = FortConBuf.contour(subgridSource, szX, szY, config);
@@ -418,21 +416,24 @@ public class ContourSupport {
                 labelTrimLeft = contourLabeling.getLabelTrimLeft();
                 maxMinTrimLeft = contourLabeling.getMaxMinTrimLeft();
                 config.labelFormat = labelFormat;
-                config.generateMins = minLabel != null
-                        && (!minLabel.equals(".") || (minMaxLabelFormat != null && minLabel
-                                .equals(".")));
+                config.generateMins = minLabel != null && (!".".equals(minLabel)
+                        || (minMaxLabelFormat != null && ".".equals(minLabel)));
                 config.generateMaxes = maxLabel != null
-                        && (!maxLabel.equals(".") || (minMaxLabelFormat != null && maxLabel
-                                .equals(".")));
+                        && (!".".equals(maxLabel) || (minMaxLabelFormat != null
+                                && ".".equals(maxLabel)));
 
-                config.minMaxRadius = (int) (currentMagnification * 3 * szX / 90);
+                config.minMaxRadius = (int) (currentMagnification * 3 * szX
+                        / 90);
                 if (config.minMaxRadius < 1) {
                     config.minMaxRadius = 1;
                 }
                 if (config.minMaxRadius > 7) {
                     config.minMaxRadius = 7;
                 }
-
+                float dataZoom = (float) ((level) * contourGroup.lastDensity);
+                if (prefs.getContourLabeling().isZoomLock()) {
+                    dataZoom = (float) contourGroup.lastDensity;
+                }
                 if (contourLabeling.getValues() == null
                         && prefs.getContourLabeling().getIncrement() > 0.0) {
                     // interval provided
@@ -449,27 +450,24 @@ public class ContourSupport {
                         }
                         if (interval > initialInterval) {
                             initialInterval = interval;
-                            prefs.getContourLabeling().setIncrement(
-                                    initialInterval);
+                            prefs.getContourLabeling()
+                                    .setIncrement(initialInterval);
                         }
 
                         // removed +1 to fix EPTC plan view and T_std
                         interval = XFormFunctions.newDataIntervalFromZoom(
-                                initialInterval,
-                                (float) ((level) * contourGroup.lastDensity),
-                                false, "", 10);
+                                initialInterval, dataZoom, false, "", 10);
                     } else {
                         interval = XFormFunctions.newDataIntervalFromZoom(
-                                initialInterval,
-                                (float) ((level) * contourGroup.lastDensity),
-                                true, "", 10);
+                                initialInterval, dataZoom, true, "", 10);
                     }
 
                     float[] controls = new float[] { interval };
                     config.mode = 0;
                     config.seed = controls;
 
-                    contours = FortConBuf.contour(subgridSource, szX, szY, config);
+                    contours = FortConBuf.contour(subgridSource, szX, szY,
+                            config);
                 } else if (contourLabeling.getValues() != null) {
                     // explicit contouring values provided
                     float[] vals = contourLabeling.getValues();
@@ -492,7 +490,7 @@ public class ContourSupport {
                          * density is 0.67 than 2.98507 is rounded to 3 instead
                          * of 2
                          */
-                        int d = (int) (2 / ((level) * contourGroup.lastDensity) + 0.1);
+                        int d = (int) (2 / dataZoom + 0.1);
                         if (d > 1) {
                             int myCount = (vals.length + d - 1) / d;
                             float[] newVals = new float[myCount];
@@ -502,7 +500,8 @@ public class ContourSupport {
                             }
                             vals = newVals;
                         }
-                        if (prefs.getContourLabeling().isCreateNegativeValues()) {
+                        if (prefs.getContourLabeling()
+                                .isCreateNegativeValues()) {
                             float[] newVals = new float[vals.length * 2];
                             for (int i = 0; i < vals.length; i++) {
                                 newVals[vals.length + i] = vals[i];
@@ -517,7 +516,8 @@ public class ContourSupport {
                     } else {
                         config.mode = vals.length;
                     }
-                    contours = FortConBuf.contour(subgridSource, szX, szY, config);
+                    contours = FortConBuf.contour(subgridSource, szX, szY,
+                            config);
                 }
             }
 
@@ -529,7 +529,7 @@ public class ContourSupport {
             long tTransformAccum = 0;
             long tLabelAccum = 0;
             long tMinMaxAccum = 0;
-            List<double[]> labelPoints = new ArrayList<double[]>(512);
+            List<double[]> labelPoints = new ArrayList<>(512);
 
             try {
                 DecimalFormat dfLabel = null;
@@ -543,8 +543,8 @@ public class ContourSupport {
                 long tZ0 = System.currentTimeMillis();
                 // process min/max
                 processMinMaxLabels(contours, minMaxLabelFormat, minLabel,
-                        maxLabel, rastPosToWorldGrid, contourGroup,
-                        labelPoints, maxMinTrimLeft);
+                        maxLabel, rastPosToWorldGrid, contourGroup, labelPoints,
+                        maxMinTrimLeft);
                 long tZ1 = System.currentTimeMillis();
                 tMinMaxAccum += tZ1 - tZ0;
 
@@ -556,9 +556,11 @@ public class ContourSupport {
                 int totalNegCoords = 0;
                 for (int i = 0; i < size; i++) {
                     if (contours.contourVals.get(i) > 0) {
-                        totalPosCoords += contours.xyContourPoints.get(i).length / 2;
+                        totalPosCoords += contours.xyContourPoints.get(i).length
+                                / 2;
                     } else {
-                        totalNegCoords += contours.xyContourPoints.get(i).length / 2;
+                        totalNegCoords += contours.xyContourPoints.get(i).length
+                                / 2;
                     }
                 }
 
@@ -578,16 +580,18 @@ public class ContourSupport {
                         tTransformAccum += (tZ1 - tZ0);
                         double[][] contourWorldPointsArr = new double[contourPoints][2];
                         int index = 0;
-                        for (int j = 0; j < contourPoints; j++) {
-                            contourWorldPointsArr[j][0] = contourWorldPoints[index++];
-                            contourWorldPointsArr[j][1] = contourWorldPoints[index++];
+                        for (int j = 0; j < contourPoints; j += 1) {
+                            contourWorldPointsArr[j][0] = contourWorldPoints[index];
+                            index += 1;
+                            contourWorldPointsArr[j][1] = contourWorldPoints[index];
+                            index += 1;
                         }
                         contourValue = contours.contourVals.get(i);
                         String label = dfLabel.format(contourValue);
                         label = label.substring(labelTrimLeft);
-                        if (prefs != null
-                                && prefs.getContourLabeling() != null
-                                && prefs.getContourLabeling().getValues() != null
+                        if (prefs != null && prefs.getContourLabeling() != null
+                                && prefs.getContourLabeling()
+                                        .getValues() != null
                                 && labelFormat == null) {
                             // If we have explicit values and no explicit format
                             // use the default String representation of the
@@ -619,11 +623,10 @@ public class ContourSupport {
                         tZ1 = System.currentTimeMillis();
                         tLabelAccum += tZ1 - tZ0;
                     } catch (TransformException e) {
-                        statusHandler
-                                .handle(Priority.PROBLEM,
-                                        "Error transforming points: "
-                                                + Arrays.toString(contourGridPoints),
-                                        e);
+                        statusHandler.handle(Priority.PROBLEM,
+                                "Error transforming points: "
+                                        + Arrays.toString(contourGridPoints),
+                                e);
                     }
                 }
 
@@ -645,9 +648,8 @@ public class ContourSupport {
             int maxY = (int) Math.ceil(Math.min(env.getMaximum(1), sz[1] - 1));
 
             makeStreamLines(sources[0], sources[1], minX, minY, maxX, maxY, sz,
-                    contourGroup,
-                    currentMagnification, zoom, contourGroup.lastDensity,
-                    rastPosToWorldGrid);
+                    contourGroup, currentMagnification, zoom,
+                    contourGroup.lastDensity, rastPosToWorldGrid);
         }
 
         return contourGroup;
@@ -672,9 +674,8 @@ public class ContourSupport {
                     (int) Math.ceil(workingExtent.getHeight()));
             // intersect with mapGeometry so we only have points on the actual
             // display
-            screenGridEnvelope = new GridEnvelope2D(
-                    screenGridEnvelope.intersection(mapGeometry2D
-                            .getGridRange2D()));
+            screenGridEnvelope = new GridEnvelope2D(screenGridEnvelope
+                    .intersection(mapGeometry2D.getGridRange2D()));
             // convert from screen grid space to screen crs space.
             Envelope2D screenCRSEnvelope = mapGeometry2D
                     .gridToWorld(screenGridEnvelope);
@@ -773,7 +774,9 @@ public class ContourSupport {
                     }
                 }
                 if (!tooClose
-                /* || (labeledAtLeastOnce == false && n == valsArr.length - 1) */) {
+                /*
+                 * || (labeledAtLeastOnce == false && n == valsArr.length - 1)
+                 */) {
                     shapeToAddTo.addLabel(label, valsArr[n]);
                     labelPoints.add(valsArr[n]);
                     lastPoint = valsArr[n];
@@ -788,13 +791,16 @@ public class ContourSupport {
             GeneralGridGeometry imageGridGeometry, IGraphicsTarget target,
             ContourPreferences prefs) throws VizException {
 
-        GeneralEnvelope imageEnvelope = new GeneralEnvelope(new double[] {
-                extent.getMinX(), extent.getMinY() }, new double[] {
-                extent.getMaxX(), extent.getMaxY() });
-        GeneralGridEnvelope imageRange = new GeneralGridEnvelope(new int[] { 0,
-                0 }, new int[] { imageGridGeometry.getGridRange().getSpan(0),
-                imageGridGeometry.getGridRange().getSpan(1) }, false);
-        GridGeometry2D imageGeom = new GridGeometry2D(imageRange, imageEnvelope);
+        GeneralEnvelope imageEnvelope = new GeneralEnvelope(
+                new double[] { extent.getMinX(), extent.getMinY() },
+                new double[] { extent.getMaxX(), extent.getMaxY() });
+        GeneralGridEnvelope imageRange = new GeneralGridEnvelope(
+                new int[] { 0, 0 },
+                new int[] { imageGridGeometry.getGridRange().getSpan(0),
+                        imageGridGeometry.getGridRange().getSpan(1) },
+                false);
+        GridGeometry2D imageGeom = new GridGeometry2D(imageRange,
+                imageEnvelope);
         imageGeom = GridGeometry2D.wrap(imageGridGeometry);
         MathTransform gridToPixel = imageGeom
                 .getGridToCRS(PixelInCell.CELL_CENTER);
@@ -803,13 +809,14 @@ public class ContourSupport {
         contourGroup.lastDensity = currentDensity;
         contourGroup.zoomLevel = 1.0 / Math.pow(2.0, level);
 
-        GeneralEnvelope pixelEnvelope = new GeneralEnvelope(new double[] {
-                extent.getMinX(), extent.getMinY() }, new double[] {
-                extent.getMaxX(), extent.getMaxY() });
+        GeneralEnvelope pixelEnvelope = new GeneralEnvelope(
+                new double[] { extent.getMinX(), extent.getMinY() },
+                new double[] { extent.getMaxX(), extent.getMaxY() });
 
-        GeneralGridEnvelope range = new GeneralGridEnvelope(new int[] {
-                (int) extent.getMinX(), (int) extent.getMinY() }, new int[] {
-                (int) (extent.getMaxX()), (int) extent.getMaxY() }, false);
+        GeneralGridEnvelope range = new GeneralGridEnvelope(
+                new int[] { (int) extent.getMinX(), (int) extent.getMinY() },
+                new int[] { (int) (extent.getMaxX()), (int) extent.getMaxY() },
+                false);
         GridGeometry2D pixelGeom = new GridGeometry2D(range, pixelEnvelope);
 
         contourGroup.posValueShape = target.createWireframeShape(false,
@@ -892,15 +899,14 @@ public class ContourSupport {
                 minLabel = contourLabeling.getMinLabel();
                 maxLabel = contourLabeling.getMaxLabel();
                 labelFormat = contourLabeling.getLabelFormat();
-                config.generateMins = minLabel != null
-                        && (!minLabel.equals(".") || (minMaxLabelFormat != null && minLabel
-                                .equals(".")));
+                config.generateMins = minLabel != null && (!".".equals(minLabel)
+                        || (minMaxLabelFormat != null && ".".equals(minLabel)));
                 config.generateMaxes = maxLabel != null
-                        && (!maxLabel.equals(".") || (minMaxLabelFormat != null && maxLabel
-                                .equals(".")));
+                        && (!".".equals(maxLabel) || (minMaxLabelFormat != null
+                                && ".".equals(maxLabel)));
 
-                config.minMaxRadius = (int) (1.0 * 3 * ((PixelExtent) extent)
-                        .getWidth() / 90);
+                config.minMaxRadius = (int) (1.0 * 3
+                        * ((PixelExtent) extent).getWidth() / 90);
                 if (config.minMaxRadius < 1) {
                     config.minMaxRadius = 1;
                 }
@@ -920,9 +926,10 @@ public class ContourSupport {
                         float maxData = -1e37f;
                         for (float[] dataRow : subgriddedData) {
                             for (float dataCell : dataRow) {
-                                if (dataCell < minData && dataCell != -999999) {
+                                if (dataCell < minData
+                                        && dataCell != -999_999) {
                                     minData = dataCell;
-                                } else if (dataCell < 999998
+                                } else if (dataCell < 999_998
                                         && dataCell > maxData) {
                                     maxData = dataCell;
                                 }
@@ -946,17 +953,17 @@ public class ContourSupport {
                             // .setIncrement(initialInterval);
                         }
 
-                        interval = XFormFunctions
-                                .newDataIntervalFromZoom(
-                                        initialInterval,
-                                        (float) ((level + 1) * contourGroup.lastDensity),
-                                        false, "", 10);
+                        interval = XFormFunctions.newDataIntervalFromZoom(
+                                initialInterval,
+                                (float) ((level + 1)
+                                        * contourGroup.lastDensity),
+                                false, "", 10);
                     } else {
-                        interval = XFormFunctions
-                                .newDataIntervalFromZoom(
-                                        initialInterval,
-                                        (float) ((level + 1) * contourGroup.lastDensity),
-                                        true, "", 10);
+                        interval = XFormFunctions.newDataIntervalFromZoom(
+                                initialInterval,
+                                (float) ((level + 1)
+                                        * contourGroup.lastDensity),
+                                true, "", 10);
                     }
 
                     float[] controls = new float[] { interval };
@@ -972,7 +979,8 @@ public class ContourSupport {
                     // the +0.1 makes it so numbers greater than 0.9 are rounded
                     // up
                     // and all other numbers are rounded down.
-                    int d = (int) (2 / ((level + 1) * contourGroup.lastDensity) + 0.1);
+                    int d = (int) (2 / ((level + 1) * contourGroup.lastDensity)
+                            + 0.1);
                     if (d > 1) {
                         int myCount = (vals.length + d - 1) / d;
                         float[] newVals = new float[myCount];
@@ -1009,7 +1017,7 @@ public class ContourSupport {
             long tTransformAccum = 0;
             long tLabelAccum = 0;
             long tMinMaxAccum = 0;
-            List<double[]> labelPoints = new ArrayList<double[]>();
+            List<double[]> labelPoints = new ArrayList<>();
 
             try {
                 int size = contours.xyContourPoints.size();
@@ -1026,7 +1034,8 @@ public class ContourSupport {
                     long tZ0 = System.currentTimeMillis();
                     // process min/max
                     processMinMaxLabels(contours, minMaxLabelFormat, minLabel,
-                            maxLabel, gridToPixel, contourGroup, labelPoints, 0);
+                            maxLabel, gridToPixel, contourGroup, labelPoints,
+                            0);
                     long tZ1 = System.currentTimeMillis();
                     tMinMaxAccum += tZ1 - tZ0;
 
@@ -1044,9 +1053,11 @@ public class ContourSupport {
                             tTransformAccum += (tZ1 - tZ0);
                             double[][] contourWorldPointsArr = new double[contourPoints][2];
                             int index = 0;
-                            for (int j = 0; j < contourPoints; j++) {
-                                contourWorldPointsArr[j][0] = contourWorldPoints[index++];
-                                contourWorldPointsArr[j][1] = contourWorldPoints[index++];
+                            for (int j = 0; j < contourPoints; j += 1) {
+                                contourWorldPointsArr[j][0] = contourWorldPoints[index];
+                                index += 1;
+                                contourWorldPointsArr[j][1] = contourWorldPoints[index];
+                                index += 1;
                             }
                             contourValue = contours.contourVals.get(i);
 
@@ -1063,11 +1074,10 @@ public class ContourSupport {
                             prepareLabel(shapeToAddTo, levelOffset, label,
                                     labelPoints, contourWorldPointsArr);
                         } catch (TransformException e) {
-                            statusHandler
-                                    .handle(Priority.PROBLEM,
-                                            "Error transforming points: "
-                                                    + Arrays.toString(contourGridPoints),
-                                            e);
+                            statusHandler.handle(Priority.PROBLEM,
+                                    "Error transforming points: " + Arrays
+                                            .toString(contourGridPoints),
+                                    e);
                         }
                     }
                 }
@@ -1100,8 +1110,8 @@ public class ContourSupport {
                     (int) sz[1]);
 
             makeStreamLines(uWSource, vWSource, minX, minY, maxX, maxY, sz,
-                    contourGroup,
-                    1, 1, contourGroup.lastDensity * 2, gridToPixel);
+                    contourGroup, 1, 1, contourGroup.lastDensity * 2,
+                    gridToPixel);
 
             return contourGroup;
         } else {
@@ -1135,8 +1145,9 @@ public class ContourSupport {
         try {
             rastPosToWorldGrid.transform(new double[] { x / 2.0, y / 2.0 }, 0,
                     center, 0, 1);
-            rastPosToWorldGrid.transform(new double[] { (x / 2.0) + 1.0,
-                    y / 2.0 }, 0, offCenter, 0, 1);
+            rastPosToWorldGrid.transform(
+                    new double[] { (x / 2.0) + 1.0, y / 2.0 }, 0, offCenter, 0,
+                    1);
         } catch (TransformException e) {
             throw new VizException(
                     "Could not perform center calculations for stream lines.",
@@ -1151,7 +1162,8 @@ public class ContourSupport {
         if (gridPixelSize > gridPixelMax) {
             gridPixelSize = gridPixelSize / 5;
         }
-        float arrowSize = (float) (currentMagnification * 5 / zoom / gridPixelSize);
+        float arrowSize = (float) (currentMagnification * 5 / zoom
+                / gridPixelSize);
 
         double spadiv = zoom * density * gridPixelSize / 25;
 
@@ -1180,8 +1192,8 @@ public class ContourSupport {
 
         StrmPakConfig config = new StrmPakConfig(arrowSize, minspc, maxspc,
                 -1000000f, -999998f);
-        StreamLineContainer container = StrmPak.strmpak(uW, vW,
-                szX, szY, config);
+        StreamLineContainer container = StrmPak.strmpak(uW, vW, szX, szY,
+                config);
 
         long t1 = System.currentTimeMillis();
         perfLog.logDuration("Contouring", t1 - t0);
@@ -1198,8 +1210,8 @@ public class ContourSupport {
                         long tZ0 = System.currentTimeMillis();
                         rastPosToWorldGrid.transform(
                                 new double[] { point.getX() + minX,
-                                        point.getY() + minY }, 0, valsArr[i],
-                                0, 1);
+                                        point.getY() + minY },
+                                0, valsArr[i], 0, 1);
                         long tZ1 = System.currentTimeMillis();
                         tAccum += (tZ1 - tZ0);
                     } catch (TransformException e) {
@@ -1224,7 +1236,7 @@ public class ContourSupport {
             List<double[]> labelPoints, int maxMinTrimLeft)
             throws TransformException {
         if (contours.minLabelPoints != null) {
-            if (minLabel != null && !minLabel.equals(".")) {
+            if (minLabel != null && !".".equals(minLabel)) {
                 contourGroup.minMark = minLabel;
             }
             if (minMaxLabelFormat != null) {
@@ -1254,7 +1266,7 @@ public class ContourSupport {
             }
         }
         if (contours.maxLabelPoints != null) {
-            if (maxLabel != null && !maxLabel.equals(".")) {
+            if (maxLabel != null && !".".equals(maxLabel)) {
                 contourGroup.maxMark = maxLabel;
             }
             if (minMaxLabelFormat != null) {
@@ -1292,8 +1304,10 @@ public class ContourSupport {
         float in[] = new float[size * 2];
         int index = 0;
         for (float[] xy : xyPoints) {
-            in[index++] = xy[0];
-            in[index++] = xy[1];
+            in[index] = xy[0];
+            index += 1;
+            in[index] = xy[1];
+            index += 1;
         }
 
         float out[] = new float[in.length];
@@ -1302,9 +1316,11 @@ public class ContourSupport {
         }
         double[][] rval = new double[size][2];
         index = 0;
-        for (int i = 0; i < rval.length; i++) {
-            rval[i][0] = out[index++];
-            rval[i][1] = out[index++];
+        for (int i = 0; i < rval.length; i += 1) {
+            rval[i][0] = out[index];
+            index += 1;
+            rval[i][1] = out[index];
+            index += 1;
         }
 
         return rval;
@@ -1313,7 +1329,7 @@ public class ContourSupport {
     // determine based on spread of values
     private static DecimalFormat determineLabelFormat(List<Float> vals) {
         // determine format based on the average difference between the contours
-        SortedSet<Float> sortedValues = new TreeSet<Float>(vals);
+        SortedSet<Float> sortedValues = new TreeSet<>(vals);
         Iterator<Float> iter = sortedValues.iterator();
         if (iter.hasNext()) {
             float prevVal = iter.next();
@@ -1377,8 +1393,8 @@ public class ContourSupport {
             return;
         }
 
-        List<float[]> splitLines = new ArrayList<float[]>();
-        List<Float> dupValues = new ArrayList<Float>();
+        List<float[]> splitLines = new ArrayList<>();
+        List<Float> dupValues = new ArrayList<>();
 
         Iterator<float[]> lineIter = contours.xyContourPoints.iterator();
         Iterator<Float> valueIter = contours.contourVals.iterator();
@@ -1407,8 +1423,8 @@ public class ContourSupport {
                 lineIter.remove();
                 valueIter.remove();
                 if (startIndex + 1 < data.length) {
-                    splitLines.add(Arrays.copyOfRange(data, startIndex,
-                            data.length));
+                    splitLines.add(
+                            Arrays.copyOfRange(data, startIndex, data.length));
                     dupValues.add(val);
                 }
             }

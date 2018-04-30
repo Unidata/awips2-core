@@ -38,6 +38,7 @@ import javax.xml.bind.annotation.XmlList;
  * ------------- -------- --------- ------------------
  * Jul 12, 2007           chammack  Initial Creation.
  * Apr 26, 2017  6247     bsteffen  Implement clone
+ * Apr 30, 2018  6697     bsteffen  Add zoomLock
  * 
  * </pre>
  * 
@@ -81,6 +82,9 @@ public class LabelingPreferences {
 
     @XmlAttribute
     private int maxMinTrimLeft = 0;
+
+    @XmlAttribute
+    private boolean zoomLock = false;
 
     public LabelingPreferences() {
 
@@ -133,7 +137,7 @@ public class LabelingPreferences {
     public String getValuesString() {
         String returnString = null;
         if (values != null) {
-            StringBuffer sb = new StringBuffer();
+            StringBuilder sb = new StringBuilder();
             for (Float f : values) {
                 sb.append(f);
                 sb.append(SEPARATOR);
@@ -261,6 +265,28 @@ public class LabelingPreferences {
             return false;
         }
         return true;
+    }
+
+    /**
+     * When zoomLock is true then the provided values or increment should always
+     * be used regardless of the zoom level. When it is false then the provided
+     * values or increment are used as a base and zooming in or out will
+     * increase or decrease the intervals used.
+     * 
+     * @return the zoom lock status.
+     */
+    public boolean isZoomLock() {
+        return zoomLock;
+    }
+
+    /**
+     * @see #isZoomLock()
+     * 
+     * @param zoomLock
+     *            the zoomLock status
+     */
+    public void setZoomLock(boolean zoomLock) {
+        this.zoomLock = zoomLock;
     }
 
 }
