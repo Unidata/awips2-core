@@ -81,6 +81,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  removing a pane.
  * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
  * Feb 14, 2018  6866     njensen   Don't mess with map layers while swapping
+ * May 01, 2018  7064     bsteffen  Grab only visible panes for screenshots.
  * 
  * </pre>
  * 
@@ -357,11 +358,13 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
      */
     public BufferedImage[] screenshots() {
         IDisplayPane[] panes = getDisplayPanes();
-        BufferedImage[] images = new BufferedImage[panes.length];
-        for (int i = 0; i < panes.length; ++i) {
-            images[i] = panes[i].getTarget().screenshot();
+        List<BufferedImage> images = new ArrayList<>();
+        for (IDisplayPane pane : panes) {
+            if (pane.isVisible()) {
+                images.add(pane.getTarget().screenshot());
+            }
         }
-        return images;
+        return images.toArray(new BufferedImage[0]);
     }
 
     public BufferedImage screenshot() {
