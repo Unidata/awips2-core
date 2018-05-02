@@ -22,10 +22,16 @@ package com.raytheon.uf.viz.ui.menus.widgets.tearoff;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.CommandEvent;
+import org.eclipse.core.commands.ExecutionEvent;
+import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.ICommandListener;
+import org.eclipse.core.commands.IExecutionListener;
+import org.eclipse.core.commands.NotHandledException;
+import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
@@ -54,9 +60,10 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.ui.menus.widgets.tearoff.TearOffMenuDialog.MenuPathElement;
 import com.raytheon.viz.core.mode.CAVEMode;
+import com.raytheon.viz.ui.VizWorkbenchManager;
 
 /**
- * Holds the information for all the menu items in the dialog
+ * Represents a single menu item in a top level tear-off menu
  *
  * <pre>
  *
@@ -71,6 +78,7 @@ import com.raytheon.viz.core.mode.CAVEMode;
  * Jev 26, 2014  2842      mpduff    Utilize the command listener.
  * Aug 21, 2014  15664     snaples   Updated dispose method to fix issue when closing perspecitive with tear offs open.
  * May 01, 2018  6708      tgurney   Refill submenus every time they are opened
+ * May 04, 2018  6781      tgurney   Add checkboxes
  *
  * </pre>
  *
@@ -99,6 +107,8 @@ public class MenuItemComposite extends Composite {
     private Listener updateListener = null;
 
     private SelectionListener radioListener = null;
+
+    private IExecutionListener checkboxListener;
 
     private ICommandListener commandListener;
 
@@ -167,6 +177,41 @@ public class MenuItemComposite extends Composite {
                 gd = new GridData(SWT.LEFT, SWT.CENTER, true, true);
                 secondItem.setLayoutData(gd);
                 createRadioListener();
+            } else if (item.getStyle() == SWT.CHECK
+                    && item.getData() instanceof ContributionItem
+                    && !((ContributionItem) item.getData()).isDynamic()) {
+                /*
+                 * Checkbox doesn't work with dynamic menu items (e.g. Toolbar
+                 * toggle, anything in Maps menu) and it's probably impossible
+                 * to make it work without some outrageous hack
+                 */
+                firstItem = new Button(this, SWT.CHECK);
+                ((Button) firstItem).setSelection(item.getSelection());
+                /*
+                 * Since the checkbox state is managed by the checkListener, we
+                 * want a click inside the checkbox widget itself to not change
+                 * its state. Unfortunately we can't stop the click in the
+                 * checkbox from toggling it since that happens in GTK code. So,
+                 * need to toggle it a second time on click to keep the state as
+                 * it was.
+                 */
+                ((Button) firstItem)
+                        .addSelectionListener(new SelectionAdapter() {
+                            @Override
+                            public void widgetSelected(SelectionEvent e) {
+                                ((Button) e.widget).setSelection(
+                                        !((Button) e.widget).getSelection());
+                            }
+                        });
+                GridData gd = new GridData(18, 18);
+                firstItem.setLayoutData(gd);
+                secondItem = new Label(this, labelStyle);
+                ((Label) secondItem).setText(labels[0]);
+                gd = new GridData(SWT.LEFT, SWT.CENTER, true, true);
+                secondItem.setLayoutData(gd);
+                createCheckListener(
+                        ((ContributionItem) item.getData()).getId());
+
             } else if (item.getStyle() == SWT.CASCADE) {
                 firstItem = new Label(this, SWT.PUSH);
                 firstItem.setLayoutData(
@@ -211,11 +256,9 @@ public class MenuItemComposite extends Composite {
         }
 
         addItemListeners();
+
     }
 
-    /**
-     *
-     */
     private void addItemListeners() {
         if (item == null) {
             return;
@@ -227,63 +270,95 @@ public class MenuItemComposite extends Composite {
         if (radioListener != null) {
             item.addSelectionListener(radioListener);
         }
-
+        if (checkboxListener != null) {
+            ICommandService service = VizWorkbenchManager.getInstance()
+                    .getCurrentWindow().getService(ICommandService.class);
+            service.addExecutionListener(checkboxListener);
+        }
         if (item.getData() instanceof CommandContributionItem) {
             final Command c = PlatformUI.getWorkbench()
                     .getService(ICommandService.class)
                     .getCommand(((CommandContributionItem) item.getData())
                             .getCommand().getId());
+            createCommandListener(c);
+            c.addCommandListener(commandListener);
+        }
+    }
 
-            commandListener = new ICommandListener() {
-                @Override
-                public void commandChanged(CommandEvent commandEvent) {
-                    if (item.isDisposed() || firstItem.isDisposed()
-                            || secondItem.isDisposed()) {
-                        return;
-                    }
+    private void createCommandListener(final Command c) {
+        commandListener = new ICommandListener() {
+            @Override
+            public void commandChanged(CommandEvent commandEvent) {
+                if (item.isDisposed() || firstItem.isDisposed()
+                        || secondItem.isDisposed()) {
+                    return;
+                }
 
-                    if (item.getData() instanceof CommandContributionItem) {
-                        CommandContributionItem itm = (CommandContributionItem) item
-                                .getData();
-                        if (itm.getCommand().getId().equals(c.getId())) {
-                            boolean enabled = true;
-                            if (commandEvent.getCommand()
-                                    .getHandler() != null) {
-                                enabled = commandEvent.getCommand().getHandler()
-                                        .isEnabled();
-                            } else {
-                                enabled = commandEvent.getCommand().isEnabled();
-                            }
+                if (item.getData() instanceof CommandContributionItem) {
+                    CommandContributionItem itm = (CommandContributionItem) item
+                            .getData();
+                    if (itm.getCommand().getId().equals(c.getId())) {
+                        boolean enabled = true;
+                        if (commandEvent.getCommand().getHandler() != null) {
+                            enabled = commandEvent.getCommand().getHandler()
+                                    .isEnabled();
+                        } else {
+                            enabled = commandEvent.getCommand().isEnabled();
+                        }
 
-                            firstItem.setEnabled(enabled);
-                            secondItem.setEnabled(enabled);
-                            if (enabled) {
-                                setForeground(enabledColor);
-                            } else {
-                                setForeground(disabledColor);
-                                setBackground(backgroundColor);
+                        firstItem.setEnabled(enabled);
+                        secondItem.setEnabled(enabled);
+                        if (enabled) {
+                            setForeground(enabledColor);
+                        } else {
+                            setForeground(disabledColor);
+                            setBackground(backgroundColor);
 
-                                // changes the arrow image to the unhighlighted
-                                // version
-                                if (secondItem instanceof Label) {
-                                    if (((Label) secondItem)
-                                            .getImage() != null) {
-                                        ((Label) secondItem).setImage(arrow);
-                                    }
+                            // changes the arrow image to the unhighlighted
+                            // version
+                            if (secondItem instanceof Label) {
+                                if (((Label) secondItem).getImage() != null) {
+                                    ((Label) secondItem).setImage(arrow);
                                 }
                             }
                         }
                     }
                 }
-            };
-
-            c.addCommandListener(commandListener);
-        }
+            }
+        };
     }
 
-    /**
-     *
-     */
+    private void createCheckListener(String thisCommandId) {
+        checkboxListener = new IExecutionListener() {
+            @Override
+            public void notHandled(String commandId,
+                    NotHandledException exception) {
+            }
+
+            @Override
+            public void postExecuteFailure(String commandId,
+                    ExecutionException exception) {
+            }
+
+            @Override
+            public void postExecuteSuccess(String commandId,
+                    Object returnValue) {
+                if (Objects.equals(thisCommandId, commandId)) {
+                    item.setSelection(!item.getSelection());
+                    if (firstItem instanceof Button
+                            && (firstItem.getStyle() & SWT.CHECK) != 0) {
+                        ((Button) firstItem).setSelection(
+                                !((Button) firstItem).getSelection());
+                    }
+                }
+            }
+
+            @Override
+            public void preExecute(String commandId, ExecutionEvent event) {
+            }
+        };
+    }
+
     private void createRadioListener() {
         radioListener = new SelectionAdapter() {
             @Override
@@ -576,6 +651,12 @@ public class MenuItemComposite extends Composite {
 
             if (radioListener != null) {
                 item.removeSelectionListener(radioListener);
+            }
+
+            if (checkboxListener != null) {
+                ICommandService service = VizWorkbenchManager.getInstance()
+                        .getCurrentWindow().getService(ICommandService.class);
+                service.removeExecutionListener(checkboxListener);
             }
 
             if (item.getData() instanceof CommandContributionItem) {
