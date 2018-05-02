@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -57,11 +57,11 @@ import com.raytheon.viz.core.mode.CAVEMode;
 
 /**
  * Holds the information for all the menu items in the dialog
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 15, 2011            mnash     Initial creation
@@ -70,11 +70,11 @@ import com.raytheon.viz.core.mode.CAVEMode;
  * Apr 10, 2014    2241    mnash     Fix in practice mode, fixed the new month, Jev
  * Jev 26, 2014  2842      mpduff    Utilize the command listener.
  * Aug 21, 2014  15664     snaples   Updated dispose method to fix issue when closing perspecitive with tear offs open.
- * 
+ * May 01, 2018  6708      tgurney   Refill submenus every time they are opened
+ *
  * </pre>
- * 
+ *
  * @author mnash
- * @version 1.0
  */
 
 public class MenuItemComposite extends Composite {
@@ -101,8 +101,6 @@ public class MenuItemComposite extends Composite {
     private SelectionListener radioListener = null;
 
     private ICommandListener commandListener;
-
-    private List<String> myPath;
 
     /** Enabled color */
     private final Color enabledColor;
@@ -131,7 +129,7 @@ public class MenuItemComposite extends Composite {
             return;
         }
 
-        myPath = new ArrayList<String>();
+        List<String> myPath = new ArrayList<>();
 
         // Build the menu path to the MenuItem from highest menu level
         Menu parent = it.getParent();
@@ -171,8 +169,8 @@ public class MenuItemComposite extends Composite {
                 createRadioListener();
             } else if (item.getStyle() == SWT.CASCADE) {
                 firstItem = new Label(this, SWT.PUSH);
-                firstItem.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT,
-                        true, false));
+                firstItem.setLayoutData(
+                        new GridData(SWT.FILL, SWT.DEFAULT, true, false));
                 ((Label) firstItem).setText(labels[0]);
                 secondItem = new Label(this, labelStyle);
                 createArrow();
@@ -181,8 +179,8 @@ public class MenuItemComposite extends Composite {
             // regular selectable menu items
             else {
                 firstItem = new Label(this, labelStyle);
-                firstItem.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT,
-                        true, false));
+                firstItem.setLayoutData(
+                        new GridData(SWT.FILL, SWT.DEFAULT, true, false));
                 ((Label) firstItem).setText(labels[0]);
 
                 secondItem = new Label(this, labelStyle);
@@ -216,7 +214,7 @@ public class MenuItemComposite extends Composite {
     }
 
     /**
-     * 
+     *
      */
     private void addItemListeners() {
         if (item == null) {
@@ -231,8 +229,8 @@ public class MenuItemComposite extends Composite {
         }
 
         if (item.getData() instanceof CommandContributionItem) {
-            final Command c = ((ICommandService) PlatformUI.getWorkbench()
-                    .getService(ICommandService.class))
+            final Command c = PlatformUI.getWorkbench()
+                    .getService(ICommandService.class)
                     .getCommand(((CommandContributionItem) item.getData())
                             .getCommand().getId());
 
@@ -249,9 +247,10 @@ public class MenuItemComposite extends Composite {
                                 .getData();
                         if (itm.getCommand().getId().equals(c.getId())) {
                             boolean enabled = true;
-                            if (commandEvent.getCommand().getHandler() != null) {
-                                enabled = commandEvent.getCommand()
-                                        .getHandler().isEnabled();
+                            if (commandEvent.getCommand()
+                                    .getHandler() != null) {
+                                enabled = commandEvent.getCommand().getHandler()
+                                        .isEnabled();
                             } else {
                                 enabled = commandEvent.getCommand().isEnabled();
                             }
@@ -267,7 +266,8 @@ public class MenuItemComposite extends Composite {
                                 // changes the arrow image to the unhighlighted
                                 // version
                                 if (secondItem instanceof Label) {
-                                    if (((Label) secondItem).getImage() != null) {
+                                    if (((Label) secondItem)
+                                            .getImage() != null) {
                                         ((Label) secondItem).setImage(arrow);
                                     }
                                 }
@@ -282,7 +282,7 @@ public class MenuItemComposite extends Composite {
     }
 
     /**
-     * 
+     *
      */
     private void createRadioListener() {
         radioListener = new SelectionAdapter() {
@@ -296,9 +296,8 @@ public class MenuItemComposite extends Composite {
                         if (composite.getItem().getText()
                                 .equals(((MenuItem) e.widget).getText())) {
                             if (composite.firstItem instanceof Button) {
-                                ((Button) composite.firstItem)
-                                        .setSelection(composite.getItem()
-                                                .getSelection());
+                                ((Button) composite.firstItem).setSelection(
+                                        composite.getItem().getSelection());
                             }
                         } else {
                             if (composite.firstItem instanceof Button) {
@@ -318,10 +317,10 @@ public class MenuItemComposite extends Composite {
             public void handleEvent(Event event) {
                 if (secondItem != null && !secondItem.isDisposed()) {
                     if (getItem() == event.data) {
-                        if (((MenuItem) event.data).getText().split("\t").length > 1) {
-                            ((Label) secondItem)
-                                    .setText(((MenuItem) event.data).getText()
-                                            .split("\t")[1]);
+                        if (((MenuItem) event.data).getText()
+                                .split("\t").length > 1) {
+                            ((Label) secondItem).setText(((MenuItem) event.data)
+                                    .getText().split("\t")[1]);
                             // don't want to make the times go off the
                             // screen
                             layout();
@@ -379,7 +378,7 @@ public class MenuItemComposite extends Composite {
 
     /**
      * Create the arrow image.
-     * 
+     *
      * @param gc
      *            Graphic context.
      * @param imgWidth
@@ -411,7 +410,7 @@ public class MenuItemComposite extends Composite {
     /**
      * Highlight the areas of the composite so that we get the "look" of the
      * whole thing being highlighted
-     * 
+     *
      * @return
      */
     private MouseTrackAdapter getMouseTrackAdapter() {
@@ -422,10 +421,10 @@ public class MenuItemComposite extends Composite {
                 // and foreground, so we set that here, this is to tell
                 // the whole thing to be highlighted
                 if (item.isEnabled()) {
-                    setBackground(Display.getCurrent().getSystemColor(
-                            SWT.COLOR_LIST_SELECTION));
-                    setForeground(Display.getCurrent().getSystemColor(
-                            SWT.COLOR_LIST_SELECTION_TEXT));
+                    setBackground(Display.getCurrent()
+                            .getSystemColor(SWT.COLOR_LIST_SELECTION));
+                    setForeground(Display.getCurrent()
+                            .getSystemColor(SWT.COLOR_LIST_SELECTION_TEXT));
                     // changes the arrow image to the highlighted version
                     if (secondItem instanceof Label) {
                         if (((Label) secondItem).getImage() != null) {
@@ -444,8 +443,8 @@ public class MenuItemComposite extends Composite {
 
                     setBackground(backgroundColor);
 
-                    setForeground(Display.getCurrent().getSystemColor(
-                            SWT.COLOR_WIDGET_FOREGROUND));
+                    setForeground(Display.getCurrent()
+                            .getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
                     // changes the arrow image to the unhighlighted version
                     if (secondItem instanceof Label) {
                         if (((Label) secondItem).getImage() != null) {
@@ -461,7 +460,7 @@ public class MenuItemComposite extends Composite {
     /**
      * Select on either item being selected, so that we get the same action for
      * both being selected
-     * 
+     *
      * @return
      */
     private MouseAdapter getMouseAdapter() {
@@ -473,8 +472,15 @@ public class MenuItemComposite extends Composite {
                     return;
                 }
                 if (item.getMenu() != null) {
-                    // This is item opens a submenu, get the y offset based on
-                    // the location of the click
+                    /*
+                     * Need to dispose the menu items and refill the menu every
+                     * time it's opened in order for checkboxes to update
+                     * properly
+                     */
+                    for (MenuItem m : item.getMenu().getItems()) {
+                        m.dispose();
+                    }
+                    // Get the y offset based on the location of the click
                     int y = 0;
                     if (e.widget instanceof MenuItemComposite) {
                         y = ((Control) e.widget).getLocation().y;
@@ -507,16 +513,16 @@ public class MenuItemComposite extends Composite {
                 if (firstItem instanceof Button
                         && firstItem.getStyle() == SWT.CHECK) {
                     if (e.widget != firstItem) {
-                        ((Button) firstItem).setSelection(!((Button) firstItem)
-                                .getSelection());
+                        ((Button) firstItem).setSelection(
+                                !((Button) firstItem).getSelection());
                     }
                 }
 
                 // Handle radio selection changing...
                 Control[] siblings = getParent().getChildren();
-                for (int i = 0; i < siblings.length; i++) {
-                    final MenuItemComposite mic = (MenuItemComposite) siblings[i];
-                    if (mic.separator == false
+                for (Control sibling : siblings) {
+                    final MenuItemComposite mic = (MenuItemComposite) sibling;
+                    if (!mic.separator
                             && mic.getItem().getStyle() == SWT.RADIO) {
                         try {
                             MenuItemComposite parent = null;
@@ -529,11 +535,9 @@ public class MenuItemComposite extends Composite {
                                         .getParent();
                             }
                             // check that the radio groups match
-                            if (mic.getData("radioGroup").equals(
-                                    parent.getData("radioGroup"))) {
-                                if (!parent
-                                        .getItem()
-                                        .getText()
+                            if (mic.getData("radioGroup")
+                                    .equals(parent.getData("radioGroup"))) {
+                                if (!parent.getItem().getText()
                                         .replaceAll("&", "")
                                         .equals(mic.getItem().getText()
                                                 .replaceAll("&", ""))) {
@@ -575,16 +579,16 @@ public class MenuItemComposite extends Composite {
             }
 
             if (item.getData() instanceof CommandContributionItem) {
-                ICommandService service = (ICommandService) PlatformUI
-                        .getWorkbench().getService(ICommandService.class);
-                Command c = service.getCommand(((CommandContributionItem) item
-                        .getData()).getCommand().getId());
+                ICommandService service = PlatformUI.getWorkbench()
+                        .getService(ICommandService.class);
+                Command c = service
+                        .getCommand(((CommandContributionItem) item.getData())
+                                .getCommand().getId());
                 c.removeCommandListener(commandListener);
             }
         }
         super.dispose();
     }
-
 
     public void setSelection(boolean selection) {
         if (firstItem instanceof Button) {
