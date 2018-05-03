@@ -20,14 +20,9 @@
 package com.raytheon.viz.ui;
 
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
-import org.eclipse.core.runtime.IStatus;
-import org.eclipse.core.runtime.Status;
-import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.ICoolBarManager;
 import org.eclipse.jface.action.ToolBarContributionItem;
@@ -41,7 +36,6 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PartInitException;
 import org.eclipse.ui.PlatformUI;
-import org.eclipse.ui.internal.WorkbenchPage;
 import org.eclipse.ui.views.IViewDescriptor;
 import org.eclipse.ui.views.IViewRegistry;
 
@@ -52,7 +46,6 @@ import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.datastructure.LoopProperties;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
-import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
 import com.raytheon.viz.ui.editor.AbstractEditor;
 import com.raytheon.viz.ui.editor.EditorInput;
 import com.raytheon.viz.ui.editor.IMultiPaneEditor;
@@ -78,6 +71,7 @@ import com.raytheon.viz.ui.statusline.VizActionBarAdvisor;
  * Mar 31, 2016 5519       bsteffen    Fix coolbar update on eclipse 4.
  * May 03, 2016 3292       bsteffen    Preserve editor order in getActiveDisplayMap.
  * Mar 12, 2018 6757       njensen     Copy active editor's loop properties for new editor
+ * May 03, 2018 6622       bsteffen    Move layout extraction logic to SavePerspectiveHandler.
  * 
  * </pre>
  * 
@@ -89,108 +83,6 @@ public class UiUtil {
 
     protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(UiUtil.class);
-
-    public static class ContainerPart {
-
-        public static class Container {
-            public String layoutId;
-
-            public IRenderableDisplay[] displays;
-        }
-
-        public String id;
-
-        public List<Container> containers;
-
-        private ContainerPart(String id, List<Container> containers) {
-            this.id = id;
-            this.containers = containers;
-        }
-    }
-
-    /**
-     * Get a map of all active CAVE panes, keyed by the editor or view
-     * 
-     * @return the pane map
-     */
-    @SuppressWarnings("restriction")
-    public static List<ContainerPart> getActiveDisplayMap() {
-        List<ContainerPart> parts = new ArrayList<>();
-        Map<String, ContainerPart> partMap = new LinkedHashMap<>();
-
-        IWorkbenchWindow window = VizWorkbenchManager.getInstance()
-                .getCurrentWindow();
-
-        if (window != null) {
-            IWorkbenchPage pages[] = window.getPages();
-            for (IWorkbenchPage page : pages) {
-                IEditorReference[] refs = page.getEditorReferences();
-
-                // Pull out editors
-                for (IEditorReference ref : refs) {
-                    IEditorPart part = ref.getEditor(false);
-                    if (part == null) {
-                        continue;
-                    }
-
-                    if (part instanceof IDisplayPaneContainer) {
-                        IDisplayPaneContainer container = (IDisplayPaneContainer) part;
-                        IRenderableDisplay[] editorDisplays = getDisplaysFromContainer(
-                                container);
-                        if (editorDisplays != null
-                                && editorDisplays.length > 0) {
-                            ContainerPart cp = partMap.get(ref.getId());
-                            if (cp == null) {
-                                List<Container> list = new ArrayList<>();
-                                cp = new ContainerPart(ref.getId(), list);
-                                partMap.put(ref.getId(), cp);
-                            }
-                            Container c = new Container();
-                            c.displays = editorDisplays;
-                            if (page instanceof WorkbenchPage) {
-                                MPart modelPart = ((WorkbenchPage) page)
-                                        .findPart(part);
-                                c.layoutId = modelPart.getParent()
-                                        .getElementId();
-                            }
-                            cp.containers.add(c);
-                        }
-                    }
-                }
-
-                // Pull out views
-                IViewReference[] viewReferences = page.getViewReferences();
-                for (IViewReference ref : viewReferences) {
-                    IViewPart view = ref.getView(false);
-                    if (view == null) {
-                        continue;
-                    }
-
-                    if (view instanceof IDisplayPaneContainer) {
-                        IDisplayPaneContainer container = (IDisplayPaneContainer) view;
-                        IRenderableDisplay[] displays = getDisplaysFromContainer(
-                                container);
-
-                        if (displays != null && displays.length > 0) {
-                            String id = ref.getId() + SECONDARY_ID_SEPARATOR
-                                    + ref.getSecondaryId();
-                            ContainerPart cp = partMap.get(id);
-                            if (cp == null) {
-                                List<Container> list = new ArrayList<>();
-                                cp = new ContainerPart(id, list);
-                                partMap.put(id, cp);
-                            }
-                            Container c = new Container();
-                            c.displays = displays;
-                            cp.containers.add(c);
-                        }
-                    }
-                }
-            }
-        }
-        parts.addAll(partMap.values());
-        return parts;
-    }
 
     /**
      * Return the list of displays from a display container
@@ -255,6 +147,11 @@ public class UiUtil {
                         .getActivePage()
                         .showView(id, secondaryId, IWorkbenchPage.VIEW_VISIBLE);
             } catch (PartInitException e) {
+                /*
+                 * Debug only because user is already presented with an error
+                 * part in the workspace
+                 */
+                statusHandler.debug("Error creating view " + view, e);
                 return null;
             }
         }
@@ -305,6 +202,11 @@ public class UiUtil {
             try {
                 return windowToSearch.getActivePage().showView(id);
             } catch (PartInitException e) {
+                /*
+                 * Debug only because user is already presented with an error
+                 * part in the workspace
+                 */
+                statusHandler.debug("Error creating view " + view, e);
                 return null;
             }
         }
@@ -519,9 +421,8 @@ public class UiUtil {
                         editorName);
             }
         } catch (PartInitException e) {
-            UiPlugin.getDefault().getLog().log(new Status(IStatus.ERROR,
-                    UiPlugin.PLUGIN_ID,
-                    "Error creating and opening editor " + editorName, e));
+            statusHandler.error(
+                    "Error creating and opening editor " + editorName, e);
         }
         return aEditor;
     }

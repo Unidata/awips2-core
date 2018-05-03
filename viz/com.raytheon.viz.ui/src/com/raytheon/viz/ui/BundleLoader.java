@@ -49,6 +49,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Oct 12, 2015 4932       njensen     ensureOneToOne() removes all panes when nPanes < nDisplays
  *                                      getLoadItems() attempts to reuse 4-panel maps across all panes
  * Jan 31, 2018 6737       njensen     Move most of loadBundleToContainer() onto the UI thread
+ * May 03, 2018 6622       bsteffen    Support hidden panes.
  * 
  * </pre>
  * 
@@ -132,7 +133,6 @@ public class BundleLoader extends Job {
 
     @Override
     protected final IStatus run(IProgressMonitor monitor) {
-        long t0 = System.currentTimeMillis();
         try {
             loadBundleToContainer(container, bundle);
             if (bundle.getLoopProperties() != null) {
@@ -161,8 +161,6 @@ public class BundleLoader extends Job {
             return new Status(IStatus.ERROR, UiPlugin.PLUGIN_ID,
                     "Error loading bundle", e);
         }
-        long t2 = System.currentTimeMillis();
-        System.out.println("Total bundle retrieval: " + (t2 - t0));
         return Status.OK_STATUS;
     }
 
@@ -226,6 +224,17 @@ public class BundleLoader extends Job {
                         Thread t = new Thread(new InstantiationTask(items[i]));
                         threads.add(t);
                     }
+                    if (bundle.getHidden() != null
+                            && container instanceof IMultiPaneEditor) {
+                        IMultiPaneEditor multiPaneEditor = (IMultiPaneEditor) container;
+                        IDisplayPane[] panes = multiPaneEditor
+                                .getDisplayPanes();
+                        for (int h : bundle.getHidden()) {
+                            if (h >= 0 && h < panes.length) {
+                                multiPaneEditor.hidePane(panes[h]);
+                            }
+                        }
+                    }
                 }
             }
         });
@@ -244,7 +253,6 @@ public class BundleLoader extends Job {
                         e);
             }
         }
-
         // start the other threads, if any
         for (int i = 1; i < threads.size(); i++) {
             threads.get(i).start();

@@ -31,8 +31,8 @@ import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlElementWrapper;
 import javax.xml.bind.annotation.XmlRootElement;
+import javax.xml.bind.annotation.XmlType;
 
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.util.VariableSubstitutor;
@@ -53,6 +53,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Oct 22, 2013  2491     bsteffen  Switch serialization to ProcedureXmlManager
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * Dec 16, 2016  5976     bsteffen  Support for streams.
+ * May 03, 2018  6622     bsteffen  Support hidden panes.
  * 
  * </pre>
  * 
@@ -64,8 +65,7 @@ public class Bundle {
 
     /** Contains the descriptors */
     @XmlElement
-    @XmlElementWrapper(name = "displayList")
-    protected AbstractRenderableDisplay[] displays;
+    protected DisplayList displayList;
 
     /** Optional: An editor to load the bundle to */
     @XmlAttribute
@@ -191,7 +191,11 @@ public class Bundle {
      * @return the displays
      */
     public AbstractRenderableDisplay[] getDisplays() {
-        return displays;
+        if (displayList == null) {
+            return null;
+        } else {
+            return displayList.getDisplays();
+        }
     }
 
     /**
@@ -199,7 +203,33 @@ public class Bundle {
      *            the displays to set
      */
     public void setDisplays(AbstractRenderableDisplay[] displays) {
-        this.displays = displays;
+        if (displayList == null) {
+            displayList = new DisplayList();
+        }
+        displayList.setDisplays(displays);
+    }
+
+    public int[] getHidden() {
+        if (displayList == null) {
+            return null;
+        } else {
+            return displayList.getHidden();
+        }
+    }
+
+    public void setHidden(int[] hidden) {
+        if (displayList == null) {
+            displayList = new DisplayList();
+        }
+        displayList.setHidden(hidden);
+    }
+
+    public DisplayList getDisplayList() {
+        return displayList;
+    }
+
+    public void setDisplayList(DisplayList displayList) {
+        this.displayList = displayList;
     }
 
     /**
@@ -314,6 +344,33 @@ public class Bundle {
         } catch (Exception e) {
             throw new VizException("Error loading bundle", e);
         }
+    }
+
+    @XmlType
+    @XmlAccessorType(XmlAccessType.NONE)
+    public static class DisplayList {
+        @XmlElement
+        protected AbstractRenderableDisplay[] displays;
+
+        @XmlAttribute
+        protected int[] hidden;
+
+        public AbstractRenderableDisplay[] getDisplays() {
+            return displays;
+        }
+
+        public void setDisplays(AbstractRenderableDisplay[] displays) {
+            this.displays = displays;
+        }
+
+        public int[] getHidden() {
+            return hidden;
+        }
+
+        public void setHidden(int[] hidden) {
+            this.hidden = hidden;
+        }
+
     }
 
 }
