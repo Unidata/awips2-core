@@ -64,22 +64,24 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- ------------------------------------------
- * Apr 08, 2014  2950     bsteffen    Support dynamic color counts and resizing.
- *                                    for color editor's color bar for radar
- *                                    correlation coefficient.
- * Apr 11, 2014  15811    Qinglu Lin  Added decimalPlaceMap and logic to have 4
- *                                    decimal places
- * May 07, 2015  17219    jgerth      Allow user to interpolate alpha only
- * Feb 04, 2016  5301     tgurney     Fix undoColorBar and redoColorBar return
- *                                    values
- * Feb 27, 2017  6116     mapeters    Don't hardcode size of nav buttons
- * Feb 07, 2018  6816     randerso    Fix colorbar labeling for GFE logFactor
- *                                    color maps
- * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
- * Mar 19, 2018  6738     tgurney     Add getHistory, setHistory
- * Apr 17, 2018  6972     bsteffen    Correctly label log colormaps.
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Apr 08, 2014  2950        bsteffen     Support dynamic color counts and
+ *                                        resizing. for color editor's color bar
+ *                                        for radar correlation coefficient.
+ * Apr 11, 2014  15811       Qinglu Lin   Added decimalPlaceMap and logic to
+ *                                        have 4 decimal places
+ * May 07, 2015  17219       jgerth       Allow user to interpolate alpha only
+ * Feb 04, 2016  5301        tgurney      Fix undoColorBar and redoColorBar
+ *                                        return values
+ * Feb 27, 2017  6116        mapeters     Don't hardcode size of nav buttons
+ * Feb 07, 2018  6816        randerso     Fix colorbar labeling for GFE
+ *                                        logFactor color maps
+ * Feb 22, 2018  6668        bsteffen     Move sliders to color edges.
+ * Mar 19, 2018  6738        tgurney      Add getHistory, setHistory
+ * Apr 17, 2018  6972        bsteffen     Correctly label log colormaps.
+ * May 03, 2018  7285        randerso     Added contrastStretch. Changed
+ *                                        setColors to use contrastStretch.
  *
  * </pre>
  *
@@ -159,6 +161,8 @@ public class ColorBar extends Composite
 
     /** The color bar image with mask applied */
     protected Image colorBarWithMask;
+
+    protected Point mouseDragStart = null;
 
     private final Map<String, String> decimalPlaceMap = new HashMap<String, String>() {
         private static final long serialVersionUID = 1L;
@@ -666,37 +670,218 @@ public class ColorBar extends Composite
 
     @Override
     public void mouseDown(MouseEvent e) {
-        /* If the left mouse button was not pressed then return. */
-        if (e.button != 1) {
-            return;
-        }
-
         Rectangle bar = getBarBounds();
 
-        /* Determine action to take based off location. */
-        if (e.y < bar.y) {
-            moveTopSlider = true;
-        } else if (e.y > bar.y + bar.height) {
-            moveBottomSlider = true;
-        } else if (bar.contains(e.x, e.y)) {
-            if (e.y < bar.y + bar.height / 2) {
-                queryTopColorBar = true;
-            } else {
-                queryBottomColorBar = true;
+        if (e.button == 1) {
+            /* MB1 was pressed */
 
+            /* Determine action to take based off location. */
+            if (e.y < bar.y) {
+                moveTopSlider = true;
+            } else if (e.y > bar.y + bar.height) {
+                moveBottomSlider = true;
+            } else if (bar.contains(e.x, e.y)) {
+                if (e.y < bar.y + bar.height / 2) {
+                    queryTopColorBar = true;
+                } else {
+                    queryBottomColorBar = true;
+
+                }
+            }
+
+            /* Use mouse move to perform action, avoid duplicate code. */
+            mouseMove(e);
+        } else if (e.button == 2) {
+            /* MB2 was pressed */
+            if (bar.contains(e.x, e.y)) {
+                mouseDragStart = new Point(e.x, e.y);
             }
         }
-        /* Use mouse move to perform action, avoid duplicate code. */
-        mouseMove(e);
     }
 
     @Override
     public void mouseUp(MouseEvent e) {
-        /* Reset any action flags that might have been set on mouseDown */
-        moveBottomSlider = false;
-        moveTopSlider = false;
-        queryTopColorBar = false;
-        queryBottomColorBar = false;
+        if (e.button == 1) {
+            /* Reset any action flags that might have been set on mouseDown */
+            moveBottomSlider = false;
+            moveTopSlider = false;
+            queryTopColorBar = false;
+            queryBottomColorBar = false;
+
+        } else if (e.button == 2) {
+            Rectangle bar = getBarBounds();
+
+            int dragStartIndex = reIndex(bar.width, getColorCount(),
+                    mouseDragStart.x - bar.x);
+            int dragEndIndex = reIndex(bar.width, getColorCount(), e.x - bar.x);
+
+            List<ColorData> currentColors = getCurrentColors();
+            List<ColorData> newColors = contrastStretch(dragStartIndex,
+                    dragEndIndex, topSliderIndex, bottomSliderIndex,
+                    currentColors);
+
+            if (newColors != null) {
+                setCurrentColors(newColors);
+                callBack.updateColorMap();
+            }
+        }
+    }
+
+    /**
+     * Does a contrast stretch operation between startIndex and endIndex. You
+     * end up with colors sampled on one side of endDrag and filled in by
+     * interpolation on the other side of endDrag. Will not change colors
+     * <=startIndex or >=endIndex. Color at beginDrag ends up being copied to
+     * endDrag. Values of beginDrag or endDrag outside the range of startIndex
+     * to endIndex will be truncated to lie within that range before performing
+     * the operation.
+     *
+     * @param beginDrag
+     *            Initial pivot point for the contrast stretch operation.
+     * @param endDrag
+     *            Final pivot point for the contrast stretch operation.
+     * @param startIndex
+     *            The index of the first color that will be involved in the
+     *            contrast stretch.
+     * @param endIndex
+     *            The index of the last color that will be involved in the
+     *            contrast stretch.
+     * @param currentColors
+     *            the current colors
+     * @return the new colors or null if problem or no change
+     */
+    private List<ColorData> contrastStretch(int beginDrag, int endDrag,
+            int startIndex, int endIndex, List<ColorData> currentColors) {
+        // Do integrity checking on the range limits.
+        if (endIndex < startIndex) {
+            // logBug << "Start index for EditableColorTable::contrastStretch
+            // has "
+            // << "to be greater than the end index." << std::endl;
+            return null;
+        }
+
+        // Get the current colors
+        int cmapSize = currentColors.size();
+
+        // Make sure the range is between 1 and cmapSize-2. We do not want to
+        // set the first or last entry in the color map.
+        if (startIndex < 1) {
+            startIndex = 1;
+        }
+
+        if (endIndex >= cmapSize - 2) {
+            endIndex = cmapSize - 2;
+        }
+
+        // Clip beginDrag and endDrag to be within range startIndex to
+        // endIndex
+        if (beginDrag < startIndex) {
+            beginDrag = startIndex;
+        } else if (beginDrag > endIndex) {
+            beginDrag = endIndex;
+        }
+        if (endDrag < startIndex) {
+            endDrag = startIndex;
+        } else if (endDrag > endIndex) {
+            endDrag = endIndex;
+        }
+        if (beginDrag == endDrag) {
+            return null;
+        }
+
+        // Copy current color table to a work copy
+        List<ColorData> newColors = new ArrayList<>(currentColors);
+
+        // Initialize loop for the sample side.
+        int lastFrom, lastTo;
+        int from, to;
+        if (beginDrag < endDrag) {
+            from = beginDrag;
+            to = endDrag;
+            lastFrom = endIndex;
+            lastTo = endIndex;
+        } else {
+            from = startIndex;
+            to = startIndex;
+            lastFrom = beginDrag;
+            lastTo = endDrag;
+        }
+        int nFrom = lastFrom - from;
+        int nTo = lastTo - to;
+
+        // Do the sampling.
+        int f = nTo / 2;
+        int t;
+        if (nTo > 0) {
+            for (t = to; t <= lastTo; t++) {
+                newColors.set(t, currentColors.get(from + f / nTo));
+                f += nFrom;
+            }
+        }
+
+        // Initialize loop for the interpolate side.
+        if (beginDrag > endDrag) {
+            from = beginDrag;
+            to = endDrag;
+            lastFrom = endIndex;
+            lastTo = endIndex;
+        } else {
+            from = startIndex;
+            to = startIndex;
+            lastFrom = beginDrag;
+            lastTo = endDrag;
+        }
+        nFrom = lastFrom - from;
+        nTo = lastTo - to;
+
+        // Special case of no from range
+        if (nFrom <= 0) {
+            for (t = to; t <= lastTo; t++) {
+                newColors.set(t, currentColors.get(from));
+            }
+        } else {
+
+            // Do the interpolation.
+            int prevTo = to;
+            int newTo;
+            t = nFrom / 2;
+            for (f = from; f < lastFrom; f++) {
+                t += nTo;
+                newTo = to + t / nFrom;
+                double nNew = newTo - prevTo;
+                if (nNew <= 0) {
+                    continue;
+                }
+                newColors.set(prevTo, currentColors.get(f));
+                prevTo++;
+
+                if (nNew == 1) {
+                    continue;
+                }
+
+                int alpha = currentColors.get(f).alphaValue;
+                double red = currentColors.get(f).rgbColor.red;
+                double green = currentColors.get(f).rgbColor.green;
+                double blue = currentColors.get(f).rgbColor.blue;
+                double deltaRed = (currentColors.get(f + 1).rgbColor.red - red)
+                        / nNew;
+                double deltaGreen = (currentColors.get(f + 1).rgbColor.green
+                        - green) / nNew;
+                double deltaBlue = (currentColors.get(f + 1).rgbColor.blue
+                        - blue) / nNew;
+                for (; prevTo < newTo; prevTo++) {
+                    red += deltaRed;
+                    green += deltaGreen;
+                    blue += deltaBlue;
+                    newColors.set(prevTo,
+                            new ColorData(
+                                    new RGB((int) red, (int) green, (int) blue),
+                                    alpha));
+                }
+            }
+        }
+
+        return newColors;
     }
 
     /**
@@ -1123,41 +1308,37 @@ public class ColorBar extends Composite
      * Adjust the number of colors in the current color list. If more colors
      * than the current list then interpolated colors will be added.
      *
-     * @param count
+     * @param newCount
      */
-    public void setColorCount(int count) {
+    public void setColorCount(int newCount) {
         List<ColorData> currentColors = getCurrentColors();
         int oldCount = currentColors.size();
-        if (count == oldCount) {
+        if (newCount == oldCount) {
             return;
         }
-        List<ColorData> newColors = new ArrayList<>(count);
-        for (int i = 0; i < count; i += 1) {
-            double percentage = i / (double) (count - 1);
-            double index = (oldCount - 1) * percentage;
-            int prev = (int) Math.floor(index);
-            int next = (int) Math.ceil(index);
-            if (prev == next) {
-                newColors.add(currentColors.get(prev));
-            } else {
-                double prevWeight = next - index;
-                double nextWeight = index - prev;
-                ColorData prevData = currentColors.get(prev);
-                ColorData nextData = currentColors.get(next);
-                int r = (int) (prevData.rgbColor.red * prevWeight
-                        + nextData.rgbColor.red * nextWeight);
-                int g = (int) (prevData.rgbColor.green * prevWeight
-                        + nextData.rgbColor.green * nextWeight);
-                int b = (int) (prevData.rgbColor.blue * prevWeight
-                        + nextData.rgbColor.blue * nextWeight);
-                int a = (int) (prevData.alphaValue * prevWeight
-                        + nextData.alphaValue * nextWeight);
-                RGB rgb = new RGB(r, g, b);
-                newColors.add(new ColorData(rgb, a));
-            }
 
+        List<ColorData> newColors = null;
+        if (newCount > oldCount) {
+            List<ColorData> tempColors = new ArrayList<>(newCount);
+            tempColors.addAll(currentColors);
+            ColorData lastColor = currentColors.get(oldCount - 1);
+            for (int i = oldCount; i < newCount; i++) {
+                tempColors.add(lastColor);
+            }
+            newColors = contrastStretch(oldCount - 1, newCount - 1, 0,
+                    newCount - 1, tempColors);
+        } else {
+            List<ColorData> tempColors = contrastStretch(oldCount - 1,
+                    newCount - 1, 0, oldCount - 1, currentColors);
+            if (tempColors != null) {
+                newColors = new ArrayList<>(tempColors.subList(0, newCount));
+            }
         }
-        setCurrentColors(newColors);
+
+        if (newColors != null) {
+            setCurrentColors(newColors);
+            callBack.updateColorMap();
+        }
     }
 
     public int getColorCount() {

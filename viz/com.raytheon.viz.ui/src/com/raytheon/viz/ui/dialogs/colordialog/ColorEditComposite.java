@@ -35,33 +35,45 @@ import com.raytheon.uf.common.colormap.ColorMap;
 
 /**
  * Composite for colormap editing
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Nov 18, 2010           mschenke    Initial creation
- * Jan 10, 2013  15648    ryu         Editing GFE discrete colormap: a check button
- *                                    is added and duplicate entries in the colormap
- *                                    are removed when it is selected.
- * Apr 08, 2014  2950     bsteffen    Support dynamic color counts.
- * May 7, 2015   DCS17219 jgerth      Allow user to interpolate alpha only
- * Feb 17, 2016  5331     tgurney     Overload updateColorMap() to allow specifying
- *                                    non-null colormap name.
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Nov 18, 2010              mschenke     Initial creation
+ * Jan 10, 2013  15648       ryu          Editing GFE discrete colormap: a check
+ *                                        button is added and duplicate entries
+ *                                        in the colormap are removed when it is
+ *                                        selected.
+ * Apr 08, 2014  2950        bsteffen     Support dynamic color counts.
+ * May 07, 2015  DCS17219    jgerth       Allow user to interpolate alpha only
+ * Feb 17, 2016  5331        tgurney      Overload updateColorMap() to allow
+ *                                        specifying non-null colormap name.
+ * May 07, 2018  7285        randerso     Moved updateColorMap() down into
+ *                                        setColorCount()
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
-public class ColorEditComposite extends Composite implements IColorWheelAction,
-        IColorBarAction {
+public class ColorEditComposite extends Composite
+        implements IColorWheelAction, IColorBarAction {
 
     private static final int[] COLOR_COUNT_OPTIONS = { 8, 16, 256, 512, 1024,
             2048 };
+
+    /**
+     * Title for the upper color wheel.
+     */
+    private static final String upperWheelTitle = " Upper Color ";
+
+    /**
+     * Title for the lower color wheel.
+     */
+    private static final String lowerWheelTitle = " Lower Color ";
 
     /**
      * Upper color wheel (composite object).
@@ -101,16 +113,6 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      */
     private Button interpolateAlphaOnly;
 
-    /**
-     * Title for the upper color wheel.
-     */
-    private final String upperWheelTitle = " Upper Color ";
-
-    /**
-     * Title for the lower color wheel.
-     */
-    private final String lowerWheelTitle = " Lower Color ";
-
     private ColorMap colorMap;
 
     private IColorEditCompCallback callback;
@@ -139,8 +141,8 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
 
         // Create the upper color wheel for the display.
         upperColorWheel = new ColorWheelComp(parent, this, upperWheelTitle);
-        upperColorWheel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
-                true));
+        upperColorWheel
+                .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         // upperColorWheel.setColor(colorArray.get(0));
         upperColorWheel.setColor(initial);
 
@@ -150,9 +152,8 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
 
         // Create the lower color wheel for the display.
         lowerColorWheel = new ColorWheelComp(parent, this, lowerWheelTitle);
-        lowerColorWheel.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true,
-                true));
-        // lowerColorWheel.setColor(colorArray.get(colorArray.size() - 1));
+        lowerColorWheel
+                .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         lowerColorWheel.setColor(initial);
 
         // Create the GFE discrete check button.
@@ -228,7 +229,6 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
                 String selection = colorCount.getItem(index);
                 int count = Integer.valueOf(selection);
                 colorBar.setColorCount(count);
-                updateColorMap();
             }
 
         });
@@ -276,7 +276,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * HSB.
      */
     private void changeColorWheels() {
-        if (rgbRdo.getSelection() == true) {
+        if (rgbRdo.getSelection()) {
             upperColorWheel.showRgbSliders(true);
             lowerColorWheel.showRgbSliders(true);
         } else {
@@ -288,7 +288,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
     /**
      * Fill the area between the sliders in the color bar using the color data
      * provided.
-     * 
+     *
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
@@ -304,7 +304,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * Set the color where the top or bottom slider is pointing. The color wheel
      * title is used to determine if the color is from the upper color wheel or
      * the lower color wheel.
-     * 
+     *
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
@@ -326,7 +326,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
      * A callback method used by the ColorBar class. This method is called to
      * update the upper or lower color wheel when the mouse is clicked in the
      * color bar and moved around.
-     * 
+     *
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.
@@ -345,13 +345,13 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
 
     /**
      * Updates the color map currently displayed
-     * 
+     *
      * @param newName
      *            New name for the color map (null = no name)
      */
     public void updateColorMap(String newName) {
-        colorMap = ColorUtil
-                .buildColorMap(colorBar.getCurrentColors(), newName);
+        colorMap = ColorUtil.buildColorMap(colorBar.getCurrentColors(),
+                newName);
         if (isGFEDiscrete()) {
             colorMap.removeDuplicates();
         }
@@ -359,6 +359,7 @@ public class ColorEditComposite extends Composite implements IColorWheelAction,
         updateColorCount();
     }
 
+    @Override
     public void updateColorMap() {
         updateColorMap(null);
     }
