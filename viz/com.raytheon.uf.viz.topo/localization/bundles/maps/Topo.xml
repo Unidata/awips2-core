@@ -29,7 +29,11 @@
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
-                    <loadProperties />
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="imagingCapability" />
+                        </capabilities>
+                    </loadProperties>
                     <properties />
                     <resourceData xsi:type="topoResourceData">
                         <mapName>HiRes Topo Image</mapName>

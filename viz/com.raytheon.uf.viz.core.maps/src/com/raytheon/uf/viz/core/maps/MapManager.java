@@ -51,13 +51,12 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 12, 2009            randerso     Initial creation
+ * May 07, 2018  6600      bsteffen     Fix double firing of resource list listeners.
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
-
 public class MapManager {
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(MapManager.class);
@@ -68,7 +67,7 @@ public class MapManager {
             IMapDescriptor mapDescriptor) {
 
         if (instanceMap == null) {
-            instanceMap = new HashMap<IMapDescriptor, MapManager>();
+            instanceMap = new HashMap<>();
         }
 
         MapManager mapMgr = instanceMap.get(mapDescriptor);
@@ -105,8 +104,8 @@ public class MapManager {
         if (mapPath != null) {
             return loadMap(mapPath);
         } else {
-            statusHandler.handle(Priority.PROBLEM, "Map \"" + mapName
-                    + "\" not found.");
+            statusHandler.handle(Priority.PROBLEM,
+                    "Map \"" + mapName + "\" not found.");
             return null;
         }
     }
@@ -125,8 +124,8 @@ public class MapManager {
         if (mapPath != null) {
             return loadMap(mapPath);
         } else {
-            statusHandler.handle(Priority.PROBLEM, "Map bundle \""
-                    + mapBundleName + "\" not found.");
+            statusHandler.handle(Priority.PROBLEM,
+                    "Map bundle \"" + mapBundleName + "\" not found.");
             return null;
         }
     }
@@ -148,7 +147,7 @@ public class MapManager {
 
             // pull out the bundle resources
             // this assumes a map bundle has only a single descriptor
-            rp.instantiateResource(mapDescriptor);
+            rp.instantiateResource(mapDescriptor, false);
             AbstractVizResource<?, ?> rsc = rp.getResource();
 
             // retrieve map style preferences
@@ -297,7 +296,7 @@ public class MapManager {
      * @param name
      */
     public void saveStylePreferences(String mapName, Capabilities prefs) {
-        Activator.getDefault().getStylePreferences()
-                .put(getPerspective(), mapName, prefs);
+        Activator.getDefault().getStylePreferences().put(getPerspective(),
+                mapName, prefs);
     }
 }
