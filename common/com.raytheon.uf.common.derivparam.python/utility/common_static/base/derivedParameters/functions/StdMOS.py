@@ -25,9 +25,10 @@
 # ------------   ----------   -----------   -----------
 #                             ????          Initial creation
 # Aug 05, 2015   4703         njensen       added casts to float32 and int32
+# May 09, 2018   7309         njensen       Actually import int32
 #
 
-from numpy import where, NaN, float32
+from numpy import where, NaN, float32, int32
 
 def execute(arg1, arg2):
     if(arg2.dtype == float32):
