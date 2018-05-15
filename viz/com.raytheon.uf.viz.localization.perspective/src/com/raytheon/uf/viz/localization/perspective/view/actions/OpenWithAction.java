@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,17 +41,18 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileEntryDa
 /**
  * Action to open a localization file in a specified editor, lists available
  * editors in sub menu
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 3, 2010            mschenke     Initial creation
- * 
+ * May 15, 2018 6978      tgurney      Select radio button for the default editor
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
@@ -110,9 +111,6 @@ public class OpenWithAction extends Action implements IMenuCreator {
         return menu;
     }
 
-    /**
-     * 
-     */
     private void fillMenu(Menu menu) {
         LocalizationFile file = this.file.getFile();
         LocalizationEditorInput input = new LocalizationEditorInput(file,
@@ -130,15 +128,15 @@ public class OpenWithAction extends Action implements IMenuCreator {
             defaultEditor = new SystemEditorDescriptor("Default Editor");
         }
         if (descriptors.length == 0) {
-            descriptors = new IEditorDescriptor[] { LocalizationEditorUtils
-                    .getTextEditorDescriptor() };
+            descriptors = new IEditorDescriptor[] {
+                    LocalizationEditorUtils.getTextEditorDescriptor() };
         }
 
         boolean selected = false;
         for (IEditorDescriptor descriptor : descriptors) {
             OpenAction action = new OpenAction(page,
                     new LocalizationFileEntryData[] { this.file }, descriptor);
-            if (!selected) {
+            if (defaultEditor.getId().equals(descriptor.getId())) {
                 action.setChecked(true);
                 selected = true;
             }
@@ -157,7 +155,7 @@ public class OpenWithAction extends Action implements IMenuCreator {
 
         new ActionContributionItem(new OpenAction(page,
                 new LocalizationFileEntryData[] { this.file }, systemEditor))
-                .fill(menu, -1);
+                        .fill(menu, -1);
 
         OpenAction action = new OpenAction(page,
                 new LocalizationFileEntryData[] { this.file }, defaultEditor);
@@ -175,7 +173,7 @@ public class OpenWithAction extends Action implements IMenuCreator {
 
     private static class SystemEditorDescriptor implements IEditorDescriptor {
 
-        String label;
+        private String label;
 
         private SystemEditorDescriptor(String label) {
             this.label = label;
