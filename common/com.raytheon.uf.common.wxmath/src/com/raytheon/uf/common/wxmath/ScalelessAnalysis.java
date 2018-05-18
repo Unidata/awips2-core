@@ -36,11 +36,11 @@ import java.util.Arrays;
  * ------------- -------- ----------- --------------------------
  * Aug 13, 2013  2262     njensen     Initial creation
  * Feb 27, 2014  2791     bsteffen    Move legacy NaN to constants.
+ * May 17, 2018  7294     njensen     Fix a few boolean comparisons
  * 
  * </pre>
  * 
  * @author njensen
- * @version 1.0
  */
 
 public class ScalelessAnalysis {
@@ -664,7 +664,7 @@ public class ScalelessAnalysis {
         if (dt == null) {
             dt = init_distance_tables(nxx, nyy);
             if (dt != null) {
-                previousDistTable = new SoftReference<DistanceTables>(dt);
+                previousDistTable = new SoftReference<>(dt);
             }
         }
         if (dt == null) {
@@ -1152,29 +1152,29 @@ public class ScalelessAnalysis {
             eb1 = eb2 = -1;
             int kk = 0;
             int b = 0;
-            for (bb = 0; !any; b++, iip++, jjp++) {
+            for (bb = 0; any; b++, iip++, jjp++) {
                 if (b == dt.oct0[oo][bb]) {
                     while ((kk = dt.eoct[oo][bb]) == 0) {
                         bb++;
                     }
-                    if ((conflict[oo][ss] | right) == 1) {
+                    if ((conflict[oo][ss] | right) != 0) {
                         b1 = dt.loct[oo][bb];
                     } else {
                         b1 = b;
                     }
-                    if ((conflict[oo][ss] | left) == 1) {
+                    if ((conflict[oo][ss] | left) != 0) {
                         b2 = dt.roct[oo][bb++];
                     } else {
                         b2 = dt.oct0[oo][++bb] - 1;
                     }
-                    if ((kk & edgeyes) == 1) {
+                    if ((kk & edgeyes) != 0) {
                         eb1 = b1;
                         if (oo != ooo) {
                             eb2 = b2;
                         }
                     }
-                    if ((kk & full) > 0) {
-                        any = true;
+                    if ((kk & full) != 0) {
+                        any = false;
                     }
                 }
                 if (b < b1 || b > b2) {
@@ -1249,7 +1249,7 @@ public class ScalelessAnalysis {
                         while (dt.eoct[oo][bb] == 0) {
                             bb++;
                         }
-                        if ((kk & full) == 1) {
+                        if ((kk & full) != 0) {
                             any = false;
                         }
                     }
@@ -1292,20 +1292,20 @@ public class ScalelessAnalysis {
                     while ((kk = dt.eoct[oo][bb]) == 0) {
                         bb++;
                     }
-                    if ((conflict[oo][ss] | right) == 1) {
+                    if ((conflict[oo][ss] | right) != 0) {
                         b1 = dt.loct[oo][bb];
                     } else {
                         b1 = b;
                     }
-                    if ((conflict[oo][ss] | left) == 1) {
+                    if ((conflict[oo][ss] | left) != 0) {
                         b2 = dt.roct[oo][bb++];
                     } else {
                         b2 = dt.oct0[oo][++bb] - 1;
                     }
-                    if ((kk & edgeyes) > 0) {
+                    if ((kk & edgeyes) != 0) {
                         eb2 = b2;
                     }
-                    if ((kk & full) > 0) {
+                    if ((kk & full) != 0) {
                         any = false;
                     }
                 }
@@ -1415,20 +1415,6 @@ public class ScalelessAnalysis {
             }
             // System.err.printf("nbase nsrch %d %d\n", nbase, nsrch);
             // verify_nodes(0);
-            // for (i = 0; i < nnn; i++) {
-            // if (bases[i] != null)
-            // System.err.printf("this=%s, hi=%d, loc=%d, next=%s\n",
-            // bases[i], bases[i].base, bases[i].loc, bases[i].next);
-            // else
-            // System.err.printf("null\n");
-            // }
-            // for (i = 0; i < nnn; i++) {
-            // if (nodes[i] != null)
-            // System.err.printf("this=%s, hi=%d, loc=%d, next=%s\n",
-            // nodes[i], nodes[i].base, nodes[i].loc, nodes[i].next);
-            // else
-            // System.err.printf("null\n");
-            // }
         }
 
         /* main loop that sets the value for the furthest grid point */
@@ -1476,7 +1462,7 @@ public class ScalelessAnalysis {
                     if (dt.eoct[oo][bb] == 0) {
                         continue;
                     }
-                    if ((dt.eoct[oo][bb] & full) > 0) {
+                    if ((dt.eoct[oo][bb] & full) != 0) {
                         ok = false;
                     }
                     for (; b < dt.oct0[oo][oop]; b++) {
