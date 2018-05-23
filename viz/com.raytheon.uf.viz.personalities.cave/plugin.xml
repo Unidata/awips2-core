@@ -108,6 +108,9 @@
                   label="Preferences..."
                   style="push">
             </command>
+            <dynamic
+                  class="com.raytheon.viz.ui.actions.ToggleToolbarContributionItem"
+                  id="com.raytheon.uf.viz.d2d.ui.actions.ToggleToolbarContributionItem"/>
              <separator
                    name="beforeExitGroup"
                    visible="true">
