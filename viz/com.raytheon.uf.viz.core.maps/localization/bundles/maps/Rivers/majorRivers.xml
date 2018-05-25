@@ -40,6 +40,9 @@
                     <resourceData xsi:type="dbMapResourceData">
                         <table>mapdata.majorrivers</table>
                         <mapName>Major Rivers</mapName>
+                        <unloadList>
+                            <unload>All Rivers</unload>
+                        </unloadList>
                     </resourceData>
                 </resource>
             </descriptor>
