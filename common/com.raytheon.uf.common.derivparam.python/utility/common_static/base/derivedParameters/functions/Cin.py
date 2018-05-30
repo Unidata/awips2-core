@@ -18,7 +18,14 @@
 # further licensing information.
 ##
 
+#    SOFTWARE HISTORY
+#
+#    Date            Ticket#       Engineer       Description
+#    ------------    ----------    -----------    --------------------------
+#    --/--/-----                                  Initial creation
+#    May 30, 2018    6884          njensen        Multiply by -1.0
+
 from Cape import __execute
 
 def execute(*args):
-    return __execute(*args)[1]
+    return __execute(*args)[1] * -1.0
