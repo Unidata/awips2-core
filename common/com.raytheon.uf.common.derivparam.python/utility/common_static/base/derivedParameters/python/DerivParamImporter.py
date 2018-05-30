@@ -42,20 +42,20 @@
 #    06/20/16        5439          bsteffen       import directly from localization files.
 #    10/05/16        5891          bsteffen       Treat all directories as modules, even without __init___.py.
 #    06/01/17        5891          bsteffen       Separate files into their own modules to support source code lookup. 
+#    05/30/18        6995          njensen        Move sep from global scope to class scope to avoid reinit issue
 #    
 # 
 #
 
 import sys, imp
 
-from java.util import TreeMap
-from com.raytheon.uf.common.localization import PathManagerFactory
+from com.raytheon.uf.common.derivparam.library import DerivedParameterGenerator
+from com.raytheon.uf.common.derivparam.python import MasterDerivScriptFactory
 from com.raytheon.uf.common.localization import IPathManager
 from com.raytheon.uf.common.localization import LocalizationContext
-from com.raytheon.uf.common.derivparam.library import DerivedParameterGenerator 
-from com.raytheon.uf.common.derivparam.python import MasterDerivScriptFactory
+from com.raytheon.uf.common.localization import PathManagerFactory
+from java.util import TreeMap
 
-sep = IPathManager.SEPARATOR
 
 class DerivParamImporter(object):
     
@@ -63,15 +63,17 @@ class DerivParamImporter(object):
         self.pathManager = PathManagerFactory.getPathManager()
         self.localizationType = LocalizationContext.LocalizationType.COMMON_STATIC
         self.functionsDir = DerivedParameterGenerator.FUNCTIONS_DIR
+        # separator should not be global as it may get cleaned up when re-initializing the Python interpreter
+        self.sep = IPathManager.SEPARATOR
     
     def __getRegularFiles(self, name):
-        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + sep + name + '.py')
+        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + self.sep + name + '.py')
     
     def __getPackageFiles(self, name):
-        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + sep + name + sep + '__init__.py')
+        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + self.sep + name + self.sep + '__init__.py')
 
     def __getDirectoryFiles(self, name):
-        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + sep + name)
+        return self.pathManager.getTieredLocalizationFile(self.localizationType, self.functionsDir + self.sep + name)
     
     def __isDerivParam(self, name):
         files = self.__getRegularFiles(name)
@@ -87,7 +89,7 @@ class DerivParamImporter(object):
             if self.__isDerivParam(fullname):
                 return self
         elif 'DerivParamImporter' in path:
-            if self.__isDerivParam(fullname.replace('.', sep)):
+            if self.__isDerivParam(fullname.replace('.', self.sep)):
                 return self
         return None
     
@@ -96,7 +98,7 @@ class DerivParamImporter(object):
             return sys.modules[fullname]
         combined = imp.new_module(fullname)
         combined.__loader__ = self
-        fullpath = fullname.replace('.', sep)
+        fullpath = fullname.replace('.', self.sep)
         files = self.__getRegularFiles(fullpath)
         if files.isEmpty():
             files = self.__getPackageFiles(fullpath)
@@ -119,6 +121,8 @@ class LocalizedModuleLoader(object):
     
     def __init__(self, file):
         self.file = file
+        # separator should not be global as it may get cleaned up when re-initializing the Python interpreter
+        self.sep = IPathManager.SEPARATOR
 
     def load_module(self, fullname):
         module = imp.new_module(fullname)
@@ -129,9 +133,8 @@ class LocalizedModuleLoader(object):
         return module
         
     def get_code(self, fullname):
-        fullfile = str(self.file.getContext()) + sep + self.file.getPath()
+        fullfile = str(self.file.getContext()) + self.sep + self.file.getPath()
         return compile(self.get_source(fullname), fullfile, 'exec')
 
     def get_source(self, fullname):
         return MasterDerivScriptFactory.readLocalizationFile(self.file)
-        
