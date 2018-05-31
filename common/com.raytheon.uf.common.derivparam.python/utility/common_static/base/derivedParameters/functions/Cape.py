@@ -25,9 +25,13 @@
 #    --/--/-----                                  Initial creation
 #    May 06, 2014    3101          njensen        Cast numpy shape values to int
 #                                                  for cross platform compatibility
+#    May 31, 2018    6884          njensen        Ensure potentialTemperature is
+#                                                  an ndarray
+
+from numpy import zeros
 
 from com.raytheon.uf.common.derivparam.python.function import CapeFuncPythonAdapter as CapeFunc
-from numpy import zeros
+
 
 def execute(*args):
     return __execute(*args)[0]
@@ -95,10 +99,16 @@ def __execute(*args):
         gridLevelValues = pressureValues[pressureLevel]
         gridLevelValues[:] = args[0][1][0][pressureLevel]
     
-    pressureValue = pressure
-    pressure = zeros(temperatureValues.shape, temperatureValues.dtype)
-    pressure[:] = pressureValue
     threeDshape = pressureValues.shape
+
+    pressureVal = pressure
+    pressure = zeros(specificHumidity.shape, specificHumidity.dtype)
+    pressure[:] = pressureVal
+
+    potValue = potentialTemperature
+    potentialTemperature = zeros(specificHumidity.shape, specificHumidity.dtype)
+    potentialTemperature[:] = potValue
+
     if upperTerminationPressure is None:        
         return CapeFunc.capeFunc(useVirtualTemp, pressureValues, temperatureValues, pressure, potentialTemperature, specificHumidity, int(threeDshape[1]), int(threeDshape[2]), int(threeDshape[0]))
     else:        
