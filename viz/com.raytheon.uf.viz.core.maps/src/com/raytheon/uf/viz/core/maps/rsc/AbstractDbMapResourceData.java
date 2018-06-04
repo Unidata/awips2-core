@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,27 +27,27 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
 import com.raytheon.uf.viz.core.rsc.AbstractNameGenerator;
-import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 
 /**
- * TODO Add Description
- * 
+ * Resource data for a map loaded from maps DB
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            randerso     Initial creation
- * 
+ * May 20, 2018 6562       tgurney      extends AbstractMapResourceData
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
-public abstract class AbstractDbMapResourceData extends AbstractResourceData {
+public abstract class AbstractDbMapResourceData
+        extends AbstractMapResourceData {
 
     @XmlAccessorType(XmlAccessType.NONE)
     public static class ColumnDefinition {
@@ -76,11 +76,6 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
             this.expression = expression;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#toString()
-         */
         @Override
         public String toString() {
             String s = name;
@@ -90,11 +85,6 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
             return s;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#hashCode()
-         */
         @Override
         public int hashCode() {
             final int prime = 31;
@@ -105,11 +95,6 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
             return result;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#equals(java.lang.Object)
-         */
         @Override
         public boolean equals(Object obj) {
             if (this == obj) {
@@ -141,10 +126,6 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
 
     }
 
-    /** The human readable name */
-    @XmlElement(required = true)
-    private String mapName = null;
-
     @XmlElement(name = "table", required = true)
     private String table;
 
@@ -169,32 +150,10 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
         };
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractResourceData#update(java.lang.Object
-     * )
-     */
     @Override
     public void update(Object updateData) {
         // TODO Auto-generated method stub
 
-    }
-
-    /**
-     * @return the mapName
-     */
-    public String getMapName() {
-        return mapName;
-    }
-
-    /**
-     * @param mapName
-     *            the mapName to set
-     */
-    public void setMapName(String mapName) {
-        this.mapName = mapName;
     }
 
     /**
@@ -257,21 +216,11 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
         this.geomField = geomField;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
         return this.mapName;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {
@@ -313,5 +262,4 @@ public abstract class AbstractDbMapResourceData extends AbstractResourceData {
         }
         return true;
     }
-
 }

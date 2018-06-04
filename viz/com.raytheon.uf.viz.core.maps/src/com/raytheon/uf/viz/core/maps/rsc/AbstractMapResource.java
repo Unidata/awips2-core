@@ -34,7 +34,6 @@ import com.raytheon.uf.viz.core.PixelExtent;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
-import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.IResourceDataChanged;
 import com.raytheon.uf.viz.core.rsc.LoadProperties;
@@ -55,14 +54,14 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * Aug 21, 2014  #3459     randerso    Restructured Map resource class hierarchy
  * Nov 04, 2015  #5070     randerso    Change map resources to use a preference based font
  *                                     Move management of font magnification into AbstractMapResource
+ * May 31, 2018  6562      tgurney     T extends AbstractMapResourceData
  *
  * </pre>
  *
  * @author randerso
- * @version 1.0
  */
 
-public abstract class AbstractMapResource<T extends AbstractResourceData, D extends IMapDescriptor>
+public abstract class AbstractMapResource<T extends AbstractMapResourceData, D extends IMapDescriptor>
         extends AbstractVizResource<T, D> implements IResourceDataChanged {
 
     protected static final String LABEL_FONT_ID = "com.raytheon.uf.viz.core.mapLabelFont";
@@ -104,15 +103,8 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         lastExtent = null;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#initInternal(com.
-     * raytheon .uf.viz.core.IGraphicsTarget)
-     */
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
-        // do nothing base method
     }
 
     protected IFont determineFont(IGraphicsTarget target) {
@@ -129,14 +121,6 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         return font;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.viz.core.rsc.IResourceDataChanged#resourceChanged(com
-     * .raytheon.uf.viz.core.rsc.IResourceDataChanged.ChangeType,
-     * java.lang.Object)
-     */
     @Override
     public void resourceChanged(ChangeType type, Object object) {
         if (type == ChangeType.CAPABILITY) {
@@ -151,12 +135,6 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         issueRefresh();
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#setDescriptor(com.
-     * raytheon .uf.viz.core.drawables.IDescriptor)
-     */
     @Override
     public void setDescriptor(D descriptor) {
         super.setDescriptor(descriptor);
@@ -167,13 +145,6 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         lastExtent = null;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#project(org.opengis.
-     * referencing.crs.CoordinateReferenceSystem)
-     */
     @Override
     public void project(CoordinateReferenceSystem crs) throws VizException {
         super.project(crs);
@@ -205,11 +176,6 @@ public abstract class AbstractMapResource<T extends AbstractResourceData, D exte
         return clipped;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see java.lang.Object#toString()
-     */
     @Override
     public String toString() {
         return this.resourceData.toString();
