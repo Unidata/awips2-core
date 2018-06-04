@@ -100,6 +100,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  *                                  dialog
  * Feb 20, 2018  6908     njensen   Get imaging capability from blended resource
  *                                  if blended
+ * Jun 04, 2018  6908     njensen   Register/unregister listeners when rscToEdit changes
  * 
  * </pre>
  * 
@@ -230,6 +231,7 @@ public class ImagingDialog extends CaveSWTDialog implements
 
         this.rscToEdit = rscToEdit;
         this.rscToEdit.registerListener(this);
+        this.addListeners(rscToEdit);
     }
 
     public void setResource(AbstractVizResource<?, ?> rscToEdit) {
@@ -239,14 +241,17 @@ public class ImagingDialog extends CaveSWTDialog implements
             this.currentEditor = null;
         }else{
             this.rscToEdit.unregisterListener(this);
+            this.removeListeners(rscToEdit);
         }
         this.rscToEdit = rscToEdit;
         this.rscToEdit.registerListener(this);
+        this.addListeners(this.rscToEdit);
     }
 
     public void setContainer(IDisplayPaneContainer editor) {
         if (this.rscToEdit != null) {
             rscToEdit.unregisterListener(this);
+            this.removeListeners(rscToEdit);
             rscToEdit = null;
             VizWorkbenchManager.getInstance().addListener(this);
         }
@@ -259,6 +264,7 @@ public class ImagingDialog extends CaveSWTDialog implements
         setupListeners(currentEditor, null);
         VizWorkbenchManager.getInstance().removeListener(this);
         if (rscToEdit != null) {
+            this.removeListeners(rscToEdit);
             rscToEdit.unregisterListener(this);
         }
     }
