@@ -57,6 +57,7 @@
         <xs:attribute name="productOffset" type="xs:int"/>
         <xs:attribute name="editorType" type="xs:string"/>
         <xs:attribute name="fullBundleLoad" type="xs:boolean"/>
+        <xs:attribute name="precedingCommandId" type="xs:string"/>
         <xs:attribute name="commandId" type="xs:string"/>
       </xs:extension>
     </xs:complexContent>
