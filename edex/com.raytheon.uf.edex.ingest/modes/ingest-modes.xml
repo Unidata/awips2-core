@@ -12,7 +12,7 @@
 		<includeMode>ingest</includeMode>
 		<includeMode>pluginExclude</includeMode>
 		<includeMode>goesrExclude</includeMode>
-		<exclude>.*(airmet|atcf|aww|convsigmet|grid|hydro|intlsigmet|modis|ncpafm|ncuair|profiler|netcdf-grid|nonconvsigmet|satellite|sgwh|ssha|stats|stormtrack|textlightning_ep|useradmin|wcp).*</exclude>
+		<exclude>.*(airmet|atcf|aww|convsigmet|gfe|grid|hydro|intlsigmet|modis|ncpafm|ncuair|profiler|netcdf-grid|nonconvsigmet|satellite|sgwh|ssha|stats|stormtrack|textlightning_ep|useradmin|wcp).*</exclude>
 	</mode>
 	<mode name="ingestGoesR">
 		<includeMode>ingest</includeMode>
