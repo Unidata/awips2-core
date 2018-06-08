@@ -56,9 +56,6 @@ public class DupElimSrv {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(DupElimSrv.class);
 
-    private final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("DupElim:");
-
     /**
      * Checks the passed pdos against database for existence. If duplicates
      * found returns a new array containing only the new plugin data objects. If
@@ -122,10 +119,7 @@ public class DupElimSrv {
                             e);
         }
         dupCheckTimer.stop();
-
-        perfLog.logDuration(pluginName + ": Eliminated "
-                + (numBefore - pdos.length) + " of " + numBefore
-                + " record(s): Time to process", dupCheckTimer.getElapsedTime());
+        
         return pdos;
     }
 }
