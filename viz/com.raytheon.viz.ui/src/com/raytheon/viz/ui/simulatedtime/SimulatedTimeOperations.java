@@ -59,8 +59,7 @@ public final class SimulatedTimeOperations {
      * SimulatedTime is enabled. For applications like WES, we've created this
      * system property so users can bypass these blocks.
      */
-    private static final String TRANSMISSION_OVERRIDE_PROPERTY = "allow.transmit.in.simulated.time";
-
+    
     private static final String PERSPECTIVE_WARNING_TITLE = "%s Perspective features disabled";
 
     private static final String PERSPECTIVE_MESSAGE = "The CAVE clock is not set to real time.\n\nThe following %s functions are disabled:\n\t%s\n\nPlease ensure \"Use current real time\" is enabled in the CAVE clock to proceed.";
@@ -83,7 +82,7 @@ public final class SimulatedTimeOperations {
      * @return
      */
     public static boolean isTransmitAllowedinSimulatedTime() {
-        return Boolean.getBoolean(TRANSMISSION_OVERRIDE_PROPERTY);
+        return false;
     }
 
     /**
@@ -96,9 +95,7 @@ public final class SimulatedTimeOperations {
      *         transmission.
      */
     public static boolean isTransmitAllowed() {
-        return (CAVEMode.getMode() == CAVEMode.PRACTICE)
-                || (SimulatedTime.getSystemTime().isRealTime())
-                || (isTransmitAllowedinSimulatedTime());
+        return true;
     }
 
     /**
