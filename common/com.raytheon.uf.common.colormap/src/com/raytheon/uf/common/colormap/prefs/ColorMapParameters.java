@@ -36,6 +36,7 @@ import javax.xml.bind.annotation.XmlElement;
 
 import com.raytheon.uf.common.colormap.AbstractColorMap;
 import com.raytheon.uf.common.colormap.Color;
+import com.raytheon.uf.common.colormap.CondensedByteMask;
 import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.image.Colormapper;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingEntry;
@@ -47,24 +48,24 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingE
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
- *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Jul 24, 2007             chammack    Initial Creation.
- *    Feb 14, 2013 1616        bsteffen    Add option for interpolation of
- *                                         colormap parameters, disable colormap
- *                                         interpolation by default.
- *    Jun 14, 2013 DR 16070    jgerth      Utilize data mapping
- *    Aug  2, 2013 2211        mschenke    Backed out 16070 changes, made 
- *                                         dataUnit/imageUnit properly commutative.
- *    Nov  4, 2013 2492        mschenke    Cleaned up variable naming to make purpose
- *                                         clear (image->colormap)
- *    Jul 28, 2014 3451        bclement    made listeners set concurrent
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 24, 2007           chammack  Initial Creation.
+ * Feb 14, 2013  1616     bsteffen  Add option for interpolation of colormap
+ *                                  parameters, disable colormap interpolation
+ *                                  by default.
+ * Jun 14, 2013  16070    jgerth    Utilize data mapping
+ * Aug 02, 2013  2211     mschenke  Backed out 16070 changes, made
+ *                                  dataUnit/imageUnit properly commutative.
+ * Nov 04, 2013  2492     mschenke  Cleaned up variable naming to make purpose
+ *                                  clear (image->colormap)
+ * Jul 28, 2014  3451     bclement  made listeners set concurrent
+ * Jun 11, 2018  7316     bsteffen  Save alphaMask in xml.
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 public class ColorMapParameters {
@@ -80,53 +81,47 @@ public class ColorMapParameters {
         @XmlElement
         protected Float colorMapMax;
 
-        /**
-         * @return the colorMapMin
-         */
+        @XmlElement
+        protected CondensedByteMask alphaMask;
+
         public Float getColorMapMin() {
             return colorMapMin;
         }
 
-        /**
-         * @param colorMapMin
-         *            the colorMapMin to set
-         */
         public void setColorMapMin(Float colorMapMin) {
             this.colorMapMin = colorMapMin;
         }
 
-        /**
-         * @return the colorMapMax
-         */
         public Float getColorMapMax() {
             return colorMapMax;
         }
 
-        /**
-         * @param colorMapMax
-         *            the colorMapMax to set
-         */
         public void setColorMapMax(Float colorMapMax) {
             this.colorMapMax = colorMapMax;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Object#clone()
-         */
+        public CondensedByteMask getAlphaMask() {
+            return alphaMask;
+        }
+
+        public void setAlphaMask(CondensedByteMask alphaMask) {
+            this.alphaMask = alphaMask;
+        }
+
         @Override
         protected PersistedParameters clone() {
             PersistedParameters params = new PersistedParameters();
             params.colorMapMax = colorMapMax;
             params.colorMapMin = colorMapMin;
+            params.alphaMask = alphaMask;
             return params;
         }
 
     }
 
     protected Set<IColorMapParametersListener> listeners = Collections
-            .newSetFromMap(new ConcurrentHashMap<IColorMapParametersListener, Boolean>());
+            .newSetFromMap(
+                    new ConcurrentHashMap<IColorMapParametersListener, Boolean>());
 
     /** Units colormapping should be displayed in */
     protected Unit<?> displayUnit;
@@ -157,7 +152,7 @@ public class ColorMapParameters {
 
     protected boolean logarithmic = false;
 
-    protected ArrayList<LabelEntry> labels = new ArrayList<LabelEntry>();
+    protected ArrayList<LabelEntry> labels = new ArrayList<>();
 
     /** The colormap (ramp of colors) to use */
     protected IColorMap colorMap;
@@ -178,11 +173,15 @@ public class ColorMapParameters {
     @Deprecated
     protected UnitConverter dataToColorMapConverter;
 
-    /** The converter that converts color map unit values to {@link #dataUnit} */
+    /**
+     * The converter that converts color map unit values to {@link #dataUnit}
+     */
     @Deprecated
     protected UnitConverter colorMapToDataConverter;
 
-    /** The converter that converts color map unit values to {@link #displayUnit} */
+    /**
+     * The converter that converts color map unit values to {@link #displayUnit}
+     */
     protected UnitConverter colorMapToDisplayConverter;
 
     /** The converter that converts display values to {@link #colorMapUnit} */
@@ -252,29 +251,30 @@ public class ColorMapParameters {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             LabelEntry other = (LabelEntry) obj;
             if (Float.floatToIntBits(location) != Float
-                    .floatToIntBits(other.location))
+                    .floatToIntBits(other.location)) {
                 return false;
+            }
             if (text == null) {
-                if (other.text != null)
+                if (other.text != null) {
                     return false;
-            } else if (!text.equals(other.text))
+                }
+            } else if (!text.equals(other.text)) {
                 return false;
+            }
             return true;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see java.lang.Comparable#compareTo(java.lang.Object)
-         */
         @Override
         public int compareTo(LabelEntry o) {
             return Double.compare(getLocation(), o.getLocation());
@@ -392,7 +392,7 @@ public class ColorMapParameters {
         if (colorMap != null) {
             this.colorMapName = colorMap.getName();
             if (colorMap.getSize() != alphaMask.length) {
-                alphaMask = Arrays.copyOf(alphaMask, colorMap.getSize());
+                setAlphaMask(Arrays.copyOf(alphaMask, colorMap.getSize()));
             }
         }
         notifyListener();
@@ -698,7 +698,8 @@ public class ColorMapParameters {
     @Deprecated
     public UnitConverter getDataToColorMapConverter() {
         if (dataToColorMapConverter == null) {
-            dataToColorMapConverter = constructConverter(dataUnit, colorMapUnit);
+            dataToColorMapConverter = constructConverter(dataUnit,
+                    colorMapUnit);
             if (dataToColorMapConverter != null) {
                 notifyListener();
             }
@@ -806,7 +807,8 @@ public class ColorMapParameters {
     @Deprecated
     public UnitConverter getColorMapToDataConverter() {
         if (colorMapToDataConverter == null) {
-            colorMapToDataConverter = constructConverter(colorMapUnit, dataUnit);
+            colorMapToDataConverter = constructConverter(colorMapUnit,
+                    dataUnit);
             if (colorMapToDataConverter != null) {
                 notifyListener();
             }
@@ -927,6 +929,20 @@ public class ColorMapParameters {
 
     public void setAlphaMask(byte[] alphaMask) {
         this.alphaMask = alphaMask;
+        if (alphaMask == null) {
+            persisted.setAlphaMask(null);
+        } else {
+            CondensedByteMask mask = new CondensedByteMask(alphaMask);
+            if (mask.isUnmasked()) {
+                /*
+                 * If the mask isn't doing anything then avoid needless bloat in
+                 * the xml.
+                 */
+                persisted.setAlphaMask(null);
+            } else {
+                persisted.setAlphaMask(mask);
+            }
+        }
     }
 
     public byte[] getAlphaMask() {
@@ -943,7 +959,7 @@ public class ColorMapParameters {
 
     @Override
     public int hashCode() {
-        if (listeners.size() > 0) {
+        if (!listeners.isEmpty()) {
             return listeners.hashCode();
         } else if (colorMap != null) {
             return colorMap.hashCode();
@@ -1015,6 +1031,9 @@ public class ColorMapParameters {
         }
         if (params.colorMapMax != null) {
             this.colorMapMax = params.colorMapMax;
+        }
+        if (params.getAlphaMask() != null) {
+            this.alphaMask = params.getAlphaMask().expand();
         }
     }
 
