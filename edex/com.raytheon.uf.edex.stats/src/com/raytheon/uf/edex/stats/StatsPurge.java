@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.TimeZone;
 
 import com.raytheon.uf.common.dataquery.db.QueryParam.QueryOperand;
+import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
@@ -53,6 +54,7 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  * Aug 21, 2012            jsanchez    Initial creation.
  * May 22, 2013 1917       rjpeter     Added purging off offline statistics.
  * Sep 04, 2014 3582       mapeters    Replaced SerializationUtil usage with SingleTypeJAXBManager.
+ * May 11, 2018 19178      ryu         Purging of stats table.
  * </pre>
  * 
  * @author jsanchez
@@ -60,6 +62,12 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  */
 public class StatsPurge {
 
+    /** Property key defined in stats.properties. */
+    private final static String STATIC_RETENTION_HOURS = "stats.retentionHours";
+
+    /** Default value for retention hours when property is not available */
+    private final static int STATIC_RETENTION_DEFAULT = 1;    
+    
     private static final transient IUFStatusHandler statusHandler = UFStatus
             .getHandler(StatsPurge.class);
 
@@ -71,11 +79,17 @@ public class StatsPurge {
 
     private final PurgeRuleSet aggregatePurgeRules;
 
-    private final PurgeRuleSet statsPurgeRules;
+    private final int statsRetentionHours;
 
     public StatsPurge() {
         aggregatePurgeRules = readPurgeRules("aggregatePurgeRules.xml");
-        statsPurgeRules = readPurgeRules("statsPurgeRules.xml");
+        
+        String retention = System.getProperty(STATIC_RETENTION_HOURS);
+        if (retention != null) {
+            statsRetentionHours = Integer.parseInt(retention);
+        } else {
+            statsRetentionHours = STATIC_RETENTION_DEFAULT;
+        }
     }
 
     public void purge() {
@@ -100,7 +114,7 @@ public class StatsPurge {
                         .getTimeZone("GMT"));
                 DatabaseQuery deleteStmt = new DatabaseQuery(
                         AggregateRecord.class);
-                List<PurgeRule> allRules = new ArrayList<PurgeRule>();
+                List<PurgeRule> allRules = new ArrayList<>();
 
                 // check for specific rules, if none, apply defaults
                 if (!aggregatePurgeRules.getRules().isEmpty()) {
@@ -132,25 +146,37 @@ public class StatsPurge {
      * time.
      */
     private void purgeStats() {
-        if (statsPurgeRules != null) {
-            try {
-                Calendar expiration = Calendar.getInstance(TimeZone
-                        .getTimeZone("GMT"));
-                DatabaseQuery deleteStmt = new DatabaseQuery(StatsRecord.class);
-
-                for (PurgeRule rule : statsPurgeRules.getRules()) {
-                    if (rule.isPeriodSpecified()) {
-                        long ms = rule.getPeriodInMillis();
-                        int minutes = new Long(ms / (1000 * 60)).intValue();
-                        expiration.add(Calendar.MINUTE, -minutes);
-                        deleteStmt.addQueryParam("date", expiration,
-                                QueryOperand.LESSTHAN);
-                        statsRecordDao.deleteByCriteria(deleteStmt);
-                    }
-                }
-            } catch (DataAccessLayerException e) {
-                statusHandler.error("Error purging stats aggregates", e);
+        try {
+            Calendar expiration = Calendar.getInstance(TimeZone
+                    .getTimeZone("GMT"));
+            expiration.add(Calendar.HOUR, -statsRetentionHours);
+            
+            Calendar minTime = retrieveMinStatsTime();
+            if (minTime == null) {
+                return;
             }
+            
+            if (expiration.after(minTime)) {
+                statusHandler.warn("Stats table records between date values of "
+                    + minTime.toString() + " and " + expiration.toString()
+                    + " will be purged.");
+            }
+            
+            Calendar threshold = (Calendar) minTime.clone();
+            while (threshold.before(expiration)) {
+                threshold.add(Calendar.MINUTE, 30);
+                if (threshold.after(expiration)) {
+                    threshold = expiration;
+                }
+
+                DatabaseQuery deleteStmt = new DatabaseQuery(StatsRecord.class);
+                deleteStmt.addQueryParam("date", threshold,
+                        QueryOperand.LESSTHAN);
+                statsRecordDao.deleteByCriteria(deleteStmt);
+            }
+
+        } catch (DataAccessLayerException e) {
+            statusHandler.error("Error purging stats table", e);
         }
     }
 
@@ -164,7 +190,7 @@ public class StatsPurge {
                     "purge/" + xml);
             if (file != null) {
                 try {
-                    SingleTypeJAXBManager<PurgeRuleSet> jaxb = new SingleTypeJAXBManager<PurgeRuleSet>(
+                    SingleTypeJAXBManager<PurgeRuleSet> jaxb = new SingleTypeJAXBManager<>(
                             PurgeRuleSet.class);
                     purgeRules = jaxb.unmarshalFromXmlFile(file);
 
@@ -181,5 +207,26 @@ public class StatsPurge {
             statusHandler.error("Error reading purge file " + xml, e);
         }
         return purgeRules;
+    }
+
+    /**
+     * Retrieves the earliest time in the stats table.
+     * 
+     * @param 
+     * @return
+     * @throws DataAccessLayerException
+     */
+    public Calendar retrieveMinStatsTime()
+            throws DataAccessLayerException {
+        String hql = "select min(rec.date) from StatsRecord rec";
+        QueryResult result = statsRecordDao.executeHQLQuery(hql);
+        if ((result != null) && result.getResultCount() > 0) {
+            Object time = result.getRowColumnValue(0, 0);
+            if (time != null) {
+                return (Calendar) time;
+            }
+        }
+
+        return null;
     }
 }
