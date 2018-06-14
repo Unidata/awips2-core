@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="kts" name="LLWSWind" abbreviation="LLWSWind">
+    <Method models="NationalBlend" name="Vector" levels="0-0.61kmAgl">
+        <Field abbreviation="WS" unit="kts" />
+        <Field abbreviation="WD" unit="deg" />
+        <ConstantField value="1.0" />
+    </Method>
+</DerivedParameter>

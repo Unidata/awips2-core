@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined. 
+    -->
+<DerivedParameter unit="kts" name="TransWind" abbreviation="TransWind">
+    <Method Models="NationalBlend" name="Vector">
+        <Field abbreviation="TRWSPD" unit="kts" />
+        <Field abbreviation="TRWDIR" unit="deg" />
+        <ConstantField value="1.0" />
+    </Method>
+</DerivedParameter>
