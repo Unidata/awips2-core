@@ -35,11 +35,11 @@ import com.raytheon.uf.viz.core.rsc.DisplayType;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * Jun 02, 2015  4153     bsteffen  Initial creation
+ * Jun 14, 2018  7026     bsteffen  Add refresh method.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public interface ProductBrowserDataDefinition {
 
@@ -80,5 +80,13 @@ public interface ProductBrowserDataDefinition {
      * method should load a resource on the dispaly.
      */
     public void loadResource(String[] selection, DisplayType displayType);
+
+    /**
+     * Method called when the user requests a refresh, any cached data should be
+     * flushed. By default it does nothing.
+     */
+    public default void refresh() {
+
+    }
 
 }

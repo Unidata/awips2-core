@@ -48,17 +48,18 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * Jun 02, 2015  4153     bsteffen  Access data definition through an interface.
  * Aug 12, 2015  4717     mapeters  Renamed from ProductBrowserInitializeJob, only 
  *                                  add "fake" tree item to items with no children.
- * 
+ * Jun 14, 2018  7026     bsteffen  refresh the definition before updating availability.
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class ProductBrowserUpdateDataTypeJob extends Job implements Runnable {
 
     protected final TreeItem item;
 
     protected final ProductBrowserDataDefinition def;
+
+    protected final boolean refreshDef;
 
     protected boolean available = false;
 
@@ -77,6 +78,7 @@ public class ProductBrowserUpdateDataTypeJob extends Job implements Runnable {
          * off the UI thread.
          */
         this.def = ProductBrowserView.getDataDef(item);
+        this.refreshDef = item.getItemCount() > 0;
     }
 
     /**
@@ -84,6 +86,9 @@ public class ProductBrowserUpdateDataTypeJob extends Job implements Runnable {
      */
     @Override
     protected IStatus run(IProgressMonitor monitor) {
+        if (refreshDef) {
+            def.refresh();
+        }
         available = def.checkAvailability();
         if (!item.isDisposed()) {
             item.getDisplay().syncExec(this);
@@ -114,7 +119,30 @@ public class ProductBrowserUpdateDataTypeJob extends Job implements Runnable {
                  */
                 TreeItem fake = new TreeItem(item, SWT.NONE);
                 fake.setText("Loading...");
+                if (item.getExpanded()) {
+                    ProductBrowserQueryJob.startJob(item);
+                }
+            } else {
+                recursiveRefresh(item);
             }
+        }
+    }
+
+    /**
+     * Recursively refresh the given item (if it is expanded) and its children
+     * 
+     * @param item
+     */
+    private void recursiveRefresh(TreeItem item) {
+        if (item.getExpanded()) {
+            /*
+             * Only care about expanded items, collapsed items' contents will
+             * automatically be updated when they are expanded.
+             */
+            for (TreeItem child : item.getItems()) {
+                recursiveRefresh(child);
+            }
+            ProductBrowserQueryJob.startJob(item);
         }
     }
 }
