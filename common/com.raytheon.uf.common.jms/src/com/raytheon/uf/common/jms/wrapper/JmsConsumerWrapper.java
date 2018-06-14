@@ -40,6 +40,7 @@ import com.raytheon.uf.common.jms.JmsPooledConsumer;
  * Apr 18, 2011            rjpeter     Initial creation.
  * Feb 26, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
  * Feb 07, 2014 2357       rjpeter     Set linked exception in exception handling.
+ * Jun 06, 2018 DR 19393   mfontaine   Added Catch Exception instead of Throwable
  * </pre>
  * 
  * @author rjpeter
@@ -122,7 +123,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             return consumer.getMessageListener();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in getMessageListener");
@@ -145,7 +146,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             return consumer.getMessageSelector();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in getMessageSelector");
@@ -168,7 +169,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             return consumer.receive();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in receive");
@@ -191,7 +192,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             return consumer.receive(timeout);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in receive(timeout)");
@@ -214,7 +215,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             return consumer.receiveNoWait();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in receiveNoWait");
@@ -239,7 +240,7 @@ public class JmsConsumerWrapper implements MessageConsumer {
 
         try {
             consumer.setMessageListener(listener);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled consumer in setMessageLister");
