@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,12 +41,14 @@ import com.raytheon.uf.common.dataquery.db.OrderField.ResultOrder;
 import com.raytheon.uf.common.dataquery.db.QueryParam;
 import com.raytheon.uf.common.dataquery.db.QueryParam.QueryOperand;
 import com.raytheon.uf.common.dataquery.db.ReturnedField;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 
 /**
  * Encapsulates a database query. This object can be used for criteria queries
  * or prepared queries.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -56,11 +58,16 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * 09/19/08     #1531      bphillip    Refactored to include join capability
  * Apr 24, 2014  2060      njensen     Added toString()
  * Jun 30, 2016  5725      tgurney     Add NOT IN
+ * Jun 15, 2018 7310       mapeters    Allow subclasses to contribute
+ *                                     additional constraints
  * </pre>
- * 
+ *
  * @author bphillip
  */
 public class DatabaseQuery {
+
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(DatabaseQuery.class);
 
     /** The maximum number or results returned by this query */
     private Integer maxResults;
@@ -77,7 +84,9 @@ public class DatabaseQuery {
     /** The map of order fields */
     private List<OrderField> orderFields = new ArrayList<>();
 
-    /** A map of the classes that will be joined together to execute this query */
+    /**
+     * A map of the classes that will be joined together to execute this query
+     */
     private Map<String, String> joinedClasses = new HashMap<>();
 
     /** A list of JoinFields which define the columns to join */
@@ -87,9 +96,6 @@ public class DatabaseQuery {
     private String entityName;
 
     private static final Pattern DOT_PATTERN = Pattern.compile("\\.");
-
-    private static final Pattern COMMA_PATTERN = Pattern
-            .compile(QueryUtil.COMMA);
 
     /**
      * Constructs a new DatabaseQuery
@@ -114,7 +120,7 @@ public class DatabaseQuery {
     /**
      * Constructs a new DatabaseQuery with a pre-constructed set of parameters.
      * Maximum results defaults to unlimited
-     * 
+     *
      * @param parameters
      *            The list of query parameters for this query
      */
@@ -128,7 +134,7 @@ public class DatabaseQuery {
     /**
      * Constructs a new DatabaseQuery with a pre-constructed set of parameters
      * and a specified max results
-     * 
+     *
      * @param parameters
      *            The list of query parameters for this query
      * @param maxResults
@@ -144,7 +150,7 @@ public class DatabaseQuery {
 
     /**
      * Constructs a new DatabaseQuery with maxResults set
-     * 
+     *
      * @param maxResults
      *            sets the max result number
      */
@@ -157,7 +163,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a constraint to this query
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -175,7 +181,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a constraint to this query
-     * 
+     *
      * @param param
      *            The query parameter to add
      */
@@ -186,7 +192,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a constraint to this query
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -198,7 +204,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a constraint to this query
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -212,7 +218,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a constraint to this query
-     * 
+     *
      * @param field
      *            The field to query against
      * @param value
@@ -220,14 +226,15 @@ public class DatabaseQuery {
      * @param operand
      *            The logic operand to use
      */
-    public void addQueryParam(String field, Object value, QueryOperand operand) {
-        addQueryParam(field, value,
-                QueryParam.reverseTranslateOperand(operand), entityName);
+    public void addQueryParam(String field, Object value,
+            QueryOperand operand) {
+        addQueryParam(field, value, QueryParam.reverseTranslateOperand(operand),
+                entityName);
     }
 
     /**
      * Adds a distinct parameter to this query
-     * 
+     *
      * @param field
      *            The distinct field name
      * @param className
@@ -258,7 +265,7 @@ public class DatabaseQuery {
 
     /**
      * Check if the query returns distinct results
-     * 
+     *
      * @return
      */
     public boolean isDistinct() {
@@ -267,7 +274,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a distinct parameter to this query
-     * 
+     *
      * @param field
      *            The distinct field name
      */
@@ -277,13 +284,14 @@ public class DatabaseQuery {
 
     /**
      * Adds a collection of distinct fields to this query
-     * 
+     *
      * @param fields
      *            The distinct fields
      * @param className
      *            The class to which these fields belong
      */
-    public void addDistinctParameter(Collection<String> fields, String className) {
+    public void addDistinctParameter(Collection<String> fields,
+            String className) {
         if (fields != null) {
             for (String field : fields) {
                 addDistinctParameter(field, className);
@@ -293,7 +301,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a collection of distinct fields to this query
-     * 
+     *
      * @param fields
      *            The distinct fields
      */
@@ -303,7 +311,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a returned field to this query
-     * 
+     *
      * @param field
      *            The field to return
      * @param className
@@ -318,7 +326,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a returned field to this query
-     * 
+     *
      * @param field
      *            The field to return
      */
@@ -336,7 +344,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a list of returned fields to this query
-     * 
+     *
      * @param fields
      *            The fields to return
      * @param className
@@ -358,7 +366,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a list of return fields to the query
-     * 
+     *
      * @param fields
      *            The fields to return
      */
@@ -369,11 +377,11 @@ public class DatabaseQuery {
     public void addOrder(String field, boolean ascending, String className) {
         if (field != null) {
             if (ascending) {
-                this.orderFields.add(new OrderField(field, className,
-                        ResultOrder.ASC));
+                this.orderFields
+                        .add(new OrderField(field, className, ResultOrder.ASC));
             } else {
-                this.orderFields.add(new OrderField(field, className,
-                        ResultOrder.DESC));
+                this.orderFields.add(
+                        new OrderField(field, className, ResultOrder.DESC));
             }
             this.addJoinedClass(className);
         }
@@ -381,7 +389,7 @@ public class DatabaseQuery {
 
     /**
      * Adds an order field to the query
-     * 
+     *
      * @param field
      *            The field to order by
      * @param order
@@ -393,7 +401,7 @@ public class DatabaseQuery {
 
     /**
      * Adds an order field to the query
-     * 
+     *
      * @param field
      *            The field to order by
      * @param ascending
@@ -405,7 +413,7 @@ public class DatabaseQuery {
 
     /**
      * Adds an order field to the query
-     * 
+     *
      * @param field
      *            The field to order by
      * @param order
@@ -419,14 +427,15 @@ public class DatabaseQuery {
 
     /**
      * Adds order fields to the query
-     * 
+     *
      * @param orders
      *            Map of the fields and their orders
      */
     public void addOrder(Map<String, ResultOrder> orders) {
         if (orders != null) {
             String key = null;
-            for (Iterator<String> it = orders.keySet().iterator(); it.hasNext();) {
+            for (Iterator<String> it = orders.keySet().iterator(); it
+                    .hasNext();) {
                 key = it.next();
                 addOrder(key, orders.get(key).equals(ResultOrder.ASC),
                         entityName);
@@ -436,7 +445,7 @@ public class DatabaseQuery {
 
     /**
      * Adds a join definition to this query
-     * 
+     *
      * @param class1
      *            The first class to be joined
      * @param class2
@@ -456,7 +465,7 @@ public class DatabaseQuery {
     /**
      * Adds a join definition to this query assuming the field name is the same
      * in both joined classes
-     * 
+     *
      * @param class1
      *            The first class to be joined
      * @param class2
@@ -470,22 +479,20 @@ public class DatabaseQuery {
 
     /**
      * Adds a class to the map of classes being queried by this query
-     * 
+     *
      * @param className
      *            The class to add
      */
     private void addJoinedClass(String className) {
         if (className != null && !joinedClasses.containsKey(className)) {
-            joinedClasses.put(
-                    className,
-                    QueryUtil.QUERY_OBJ_NAME
-                            + String.valueOf(joinedClasses.size()));
+            joinedClasses.put(className, QueryUtil.QUERY_OBJ_NAME
+                    + String.valueOf(joinedClasses.size()));
         }
     }
 
     /**
      * Executes a prepared statement. This method is deprecated
-     * 
+     *
      * @deprecated
      * @param query
      * @return
@@ -508,12 +515,11 @@ public class DatabaseQuery {
 
     /**
      * Generates the delete statement based on the provided criteria
-     * 
+     *
      * @return The HQL delete statement
      */
-    @SuppressWarnings("rawtypes")
     public String createHQLDelete() {
-        StringBuffer deleteString = new StringBuffer();
+        StringBuilder deleteString = new StringBuilder();
         deleteString.append(QueryUtil.DELETE_CLAUSE);
 
         /*
@@ -532,78 +538,21 @@ public class DatabaseQuery {
         deleteString.append(" ");
 
         /*
-         * Assemble the WHERE clause of the query.
+         * Assemble the WHERE clause of the query. Joins aren't supported for
+         * bulk HQL queries.
          */
-        if (!parameters.isEmpty()) {
-            deleteString.append(QueryUtil.WHERE_CLAUSE);
-
-            int constraintIndex = 0;
-            for (int i = 0; i < parameters.size(); i++) {
-
-                if (parameters.get(i).getOperand().equalsIgnoreCase("between")) {
-                    addWhereConstraint(deleteString, parameters.get(i), ">=",
-                            constraintIndex++);
-                    deleteString.append(QueryUtil.AND_CLAUSE);
-                    addWhereConstraint(deleteString, parameters.get(i), "<=",
-                            constraintIndex++);
-                } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")
-                        || parameters.get(i).getOperand()
-                                .equalsIgnoreCase("not in")) {
-                    deleteString.append(parameters.get(i).getField());
-                    if (parameters.get(i).getOperand()
-                            .equalsIgnoreCase("not in")) {
-                        deleteString.append(" not");
-                    }
-                    deleteString.append(" in (");
-                    if (parameters.get(i).getValue() instanceof String) {
-                        String[] split = COMMA_PATTERN
-                                .split((String) parameters.get(i).getValue());
-                        for (int j = 0; j < split.length; j++) {
-                            deleteString.append(QueryUtil.COLON);
-                            deleteString.append(QueryUtil.QUERY_CONSTRAINT
-                                    + constraintIndex++);
-                            if (j != split.length - 1) {
-                                deleteString.append(QueryUtil.COMMA);
-                            }
-                        }
-                    } else if (parameters.get(i).getValue() instanceof List) {
-                        for (int j = 0; j < ((List) parameters.get(i)
-                                .getValue()).size(); j++) {
-                            deleteString.append(QueryUtil.COLON);
-                            deleteString.append(QueryUtil.QUERY_CONSTRAINT
-                                    + constraintIndex++);
-                            if (j != ((List) parameters.get(i).getValue())
-                                    .size() - 1) {
-                                deleteString.append(QueryUtil.COMMA);
-                            }
-                        }
-                    }
-                    deleteString.append(") ");
-                } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("greater_than")) {
-                    addWhereConstraint(deleteString, parameters.get(i), ">",
-                            constraintIndex++);
-                } else {
-                    addWhereConstraint(deleteString, parameters.get(i),
-                            constraintIndex++);
-                }
-                if (i != parameters.size() - 1) {
-                    deleteString.append(QueryUtil.AND_CLAUSE);
-                }
-            }
-        }
+        deleteString.append(buildHQLWhereClause(false));
 
         return deleteString.toString();
     }
 
     /**
      * Generates the HQL query from the criteria specified by this class
-     * 
+     *
      * @return
      */
     public String createHQLQuery() {
-        StringBuffer queryString = new StringBuffer();
+        StringBuilder queryString = new StringBuilder();
 
         /*
          * Add the fields to be returned by the query
@@ -620,8 +569,9 @@ public class DatabaseQuery {
                             .append(QueryUtil.OPENPEREN);
                 }
                 queryString
-                        .append(joinedClasses.get(returnedFields.get(i)
-                                .getClassName())).append(QueryUtil.DOT);
+                        .append(joinedClasses
+                                .get(returnedFields.get(i).getClassName()))
+                        .append(QueryUtil.DOT);
                 queryString.append(returnedFields.get(i));
 
                 if (returnedFields.get(i).getFunction() != null) {
@@ -654,90 +604,7 @@ public class DatabaseQuery {
         /*
          * Assemble the WHERE clause of the query.
          */
-        if (!parameters.isEmpty()) {
-            queryString.append(QueryUtil.WHERE_CLAUSE);
-
-            int constraintIndex = 0;
-            for (int i = 0; i < parameters.size(); i++) {
-
-                if (parameters.get(i).getOperand().equalsIgnoreCase("between")) {
-                    addWhereConstraint(queryString, parameters.get(i), ">=",
-                            constraintIndex++);
-                    queryString.append(QueryUtil.AND_CLAUSE);
-                    addWhereConstraint(queryString, parameters.get(i), "<=",
-                            constraintIndex++);
-                } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")
-                        || parameters.get(i).getOperand()
-                                .equalsIgnoreCase("not in")) {
-                    queryString.append(parameters.get(i).getField());
-                    if (parameters.get(i).getOperand()
-                            .equalsIgnoreCase("not in")) {
-                        queryString.append(" not");
-                    }
-                    queryString.append(" in (");
-                    if (parameters.get(i).getValue() instanceof String) {
-                        String[] split = COMMA_PATTERN
-                                .split((String) parameters.get(i).getValue());
-                        for (int j = 0; j < split.length; j++) {
-                            queryString.append(QueryUtil.COLON);
-                            queryString.append(QueryUtil.QUERY_CONSTRAINT
-                                    + constraintIndex++);
-                            if (j != split.length - 1) {
-                                queryString.append(QueryUtil.COMMA);
-                            }
-                        }
-                    } else if (parameters.get(i).getValue() instanceof List) {
-                        for (int j = 0; j < ((List<?>) parameters.get(i)
-                                .getValue()).size(); j++) {
-                            queryString.append(QueryUtil.COLON);
-                            queryString.append(QueryUtil.QUERY_CONSTRAINT
-                                    + constraintIndex++);
-                            if (j != ((List<?>) parameters.get(i).getValue())
-                                    .size() - 1) {
-                                queryString.append(QueryUtil.COMMA);
-                            }
-                        }
-                    }
-                    queryString.append(") ");
-                } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("greater_than")) {
-                    addWhereConstraint(queryString, parameters.get(i), ">",
-                            constraintIndex++);
-                } else {
-                    addWhereConstraint(queryString, parameters.get(i),
-                            constraintIndex++);
-                }
-                if (i != parameters.size() - 1) {
-                    queryString.append(QueryUtil.AND_CLAUSE);
-                }
-            }
-        }
-
-        /*
-         * Adds any join behavior specified
-         */
-        if (!joinFields.isEmpty()) {
-            if (!parameters.isEmpty()) {
-                queryString.append(QueryUtil.AND_CLAUSE);
-            } else {
-                queryString.append(QueryUtil.WHERE_CLAUSE);
-            }
-            for (int i = 0; i < joinFields.size(); i++) {
-                queryString.append(
-                        joinedClasses.get(joinFields.get(i).getJoinClassOne()))
-                        .append(QueryUtil.DOT);
-                queryString.append(joinFields.get(i).getJoinFieldOne()).append(
-                        QueryUtil.EQUALS);
-                queryString.append(
-                        joinedClasses.get(joinFields.get(i).getJoinClassTwo()))
-                        .append(QueryUtil.DOT);
-                queryString.append(joinFields.get(i).getJoinFieldTwo());
-                if (i != joinFields.size() - 1) {
-                    queryString.append(QueryUtil.AND_CLAUSE);
-                }
-            }
-        }
+        queryString.append(buildHQLWhereClause(true));
 
         /*
          * Adds the order by fields
@@ -746,8 +613,9 @@ public class DatabaseQuery {
             queryString.append(QueryUtil.ORDER_BY);
 
             for (int i = 0; i < orderFields.size(); i++) {
-                queryString.append(
-                        joinedClasses.get(orderFields.get(i).getClassName()))
+                queryString
+                        .append(joinedClasses
+                                .get(orderFields.get(i).getClassName()))
                         .append(QueryUtil.DOT);
                 queryString.append(orderFields.get(i).getField()).append(" ")
                         .append(orderFields.get(i).getOrder());
@@ -760,8 +628,111 @@ public class DatabaseQuery {
     }
 
     /**
+     * Build the HQL WHERE clause, including any parameters and join fields, as
+     * well as any additional constraints provided by subclasses.
+     *
+     * @param joinsAllowed
+     *            whether or not joins are allowed for this query
+     * @return the HQL WHERE clause
+     */
+    private String buildHQLWhereClause(boolean joinsAllowed) {
+        StringBuilder whereClause = new StringBuilder();
+        boolean firstConstraint = true;
+        if (!parameters.isEmpty()) {
+            whereClause.append(QueryUtil.WHERE_CLAUSE);
+            firstConstraint = false;
+
+            int constraintIndex = 0;
+            for (int i = 0; i < parameters.size(); i++) {
+                QueryParam param = parameters.get(i);
+                String operand = param.getOperand();
+                if ("between".equalsIgnoreCase(operand)) {
+                    addWhereConstraint(whereClause, param, ">=",
+                            constraintIndex);
+                    ++constraintIndex;
+                    whereClause.append(QueryUtil.AND_CLAUSE);
+                    addWhereConstraint(whereClause, param, "<=",
+                            constraintIndex);
+                    ++constraintIndex;
+                } else if ("in".equalsIgnoreCase(operand)
+                        || "not in".equalsIgnoreCase(operand)) {
+                    whereClause.append(param.getField());
+                    if ("not in".equalsIgnoreCase(operand)) {
+                        whereClause.append(" not");
+                    }
+                    whereClause.append(" in (");
+                    whereClause.append(QueryUtil.COLON)
+                            .append(QueryUtil.QUERY_CONSTRAINT)
+                            .append(constraintIndex);
+                    ++constraintIndex;
+                    whereClause.append(") ");
+                } else if ("greater_than".equalsIgnoreCase(operand)) {
+                    addWhereConstraint(whereClause, param, ">",
+                            constraintIndex);
+                    ++constraintIndex;
+                } else {
+                    addWhereConstraint(whereClause, param, constraintIndex);
+                    ++constraintIndex;
+                }
+                if (i != parameters.size() - 1) {
+                    whereClause.append(QueryUtil.AND_CLAUSE);
+                }
+            }
+        }
+
+        String additionalConstraints = buildAdditionalHQLConstraints();
+        if (additionalConstraints != null && !additionalConstraints.isEmpty()) {
+            if (firstConstraint) {
+                whereClause.append(QueryUtil.WHERE_CLAUSE);
+                firstConstraint = false;
+            } else {
+                whereClause.append(QueryUtil.AND_CLAUSE);
+            }
+            whereClause.append(additionalConstraints);
+        }
+
+        /*
+         * Adds any join behavior specified
+         */
+        if (!joinFields.isEmpty()) {
+            if (joinsAllowed) {
+                if (firstConstraint) {
+                    whereClause.append(QueryUtil.WHERE_CLAUSE);
+                    firstConstraint = false;
+                } else {
+                    whereClause.append(QueryUtil.AND_CLAUSE);
+                }
+                for (int i = 0; i < joinFields.size(); i++) {
+                    JoinField joinField = joinFields.get(i);
+                    whereClause
+                            .append(joinedClasses
+                                    .get(joinField.getJoinClassOne()))
+                            .append(QueryUtil.DOT);
+                    whereClause.append(joinField.getJoinFieldOne())
+                            .append(QueryUtil.EQUALS);
+                    whereClause
+                            .append(joinedClasses
+                                    .get(joinField.getJoinClassTwo()))
+                            .append(QueryUtil.DOT);
+                    whereClause.append(joinField.getJoinFieldTwo());
+                    if (i != joinFields.size() - 1) {
+                        whereClause.append(QueryUtil.AND_CLAUSE);
+                    }
+                }
+            } else {
+                String errorMsg = "Ignoring joins illegally specified in a bulk HQL query of "
+                        + String.join(", ", joinedClasses.keySet());
+                statusHandler.error(errorMsg);
+            }
+        }
+
+        return whereClause.toString();
+
+    }
+
+    /**
      * Convenience method to add a constraint to add the WHERE clause
-     * 
+     *
      * @param queryString
      *            The current query string
      * @param field
@@ -771,37 +742,37 @@ public class DatabaseQuery {
      * @param constraintIndex
      *            The current constraint count
      */
-    private void addWhereConstraint(StringBuffer queryString, QueryParam field,
+    private void addWhereConstraint(StringBuilder queryString, QueryParam field,
             String operand, int constraintIndex) {
 
-        if (operand.equalsIgnoreCase("ilike")) {
+        if ("ilike".equalsIgnoreCase(operand)) {
             queryString.append("upper(");
-            queryString.append(joinedClasses.get(field.getClassName())).append(
-                    QueryUtil.DOT);
+            queryString.append(joinedClasses.get(field.getClassName()))
+                    .append(QueryUtil.DOT);
             queryString.append(field.getField()).append(")");
-            queryString.append(" ").append("=").append(" ");
+            queryString.append(" = ");
         } else {
-            queryString.append(joinedClasses.get(field.getClassName())).append(
-                    QueryUtil.DOT);
+            queryString.append(joinedClasses.get(field.getClassName()))
+                    .append(QueryUtil.DOT);
             queryString.append(field.getField());
-            if (operand.equalsIgnoreCase("isnull")) {
+            if ("isnull".equalsIgnoreCase(operand)) {
                 queryString.append(QueryUtil.ISNULL);
-            } else if (operand.equalsIgnoreCase("isnotnull")) {
+            } else if ("isnotnull".equalsIgnoreCase(operand)) {
                 queryString.append(QueryUtil.ISNOTNULL);
             } else {
                 queryString.append(" ").append(operand).append(" ");
             }
         }
 
-        if (operand.equalsIgnoreCase("ilike")) {
+        if ("ilike".equalsIgnoreCase(operand)) {
             queryString.append("upper(").append(QueryUtil.COLON)
                     .append(QueryUtil.QUERY_CONSTRAINT + constraintIndex)
                     .append(")");
         } else {
-            if (!operand.equalsIgnoreCase("isnull")
-                    && !operand.equalsIgnoreCase("isnotnull")) {
-                queryString.append(QueryUtil.COLON).append(
-                        QueryUtil.QUERY_CONSTRAINT + constraintIndex);
+            if (!"isnull".equalsIgnoreCase(operand)
+                    && !"isnotnull".equalsIgnoreCase(operand)) {
+                queryString.append(QueryUtil.COLON)
+                        .append(QueryUtil.QUERY_CONSTRAINT + constraintIndex);
             }
         }
 
@@ -809,7 +780,7 @@ public class DatabaseQuery {
 
     /**
      * Convenience method to add a constraint to add the WHERE clause
-     * 
+     *
      * @param queryString
      *            The current query string
      * @param field
@@ -817,7 +788,7 @@ public class DatabaseQuery {
      * @param constraintIndex
      *            The current constraint count
      */
-    private void addWhereConstraint(StringBuffer queryString, QueryParam field,
+    private void addWhereConstraint(StringBuilder queryString, QueryParam field,
             int constraintIndex) {
         addWhereConstraint(queryString, field, field.getOperand(),
                 constraintIndex);
@@ -825,7 +796,7 @@ public class DatabaseQuery {
 
     /**
      * Populates the constraint values into the prepared query.
-     * 
+     *
      * @param query
      *            The prepared query
      * @param sessionFactory
@@ -841,32 +812,35 @@ public class DatabaseQuery {
 
         int constraintIndex = 0;
         for (int i = 0; i < parameters.size(); i++) {
-            if (parameters.get(i).getOperand().equalsIgnoreCase("isnull")
-                    || parameters.get(i).getOperand()
-                            .equalsIgnoreCase("isnotnull")) {
+            QueryParam param = parameters.get(i);
+            String operand = param.getOperand();
+            if ("isnull".equalsIgnoreCase(operand)
+                    || "isnotnull".equalsIgnoreCase(operand)) {
                 constraintIndex++;
                 continue;
             }
             try {
-                value = convertParameter(parameters.get(i), sessionFactory);
-                if (parameters.get(i).getOperand().equalsIgnoreCase("between")) {
-                    query.setParameter(QueryUtil.QUERY_CONSTRAINT
-                            + constraintIndex++, ((Object[]) value)[0]);
-                    query.setParameter(QueryUtil.QUERY_CONSTRAINT
-                            + constraintIndex++, ((Object[]) value)[1]);
-                } else if (parameters.get(i).getOperand()
-                        .equalsIgnoreCase("in")
-                        || parameters.get(i).getOperand()
-                                .equalsIgnoreCase("not in")) {
-
-                    for (int j = 0; j < ((List<Object>) value).size(); j++) {
-                        query.setParameter(QueryUtil.QUERY_CONSTRAINT
-                                + constraintIndex++,
-                                ((List<Object>) value).get(j));
-                    }
+                value = convertParameter(param, sessionFactory);
+                if ("between".equalsIgnoreCase(operand)) {
+                    query.setParameter(
+                            QueryUtil.QUERY_CONSTRAINT + constraintIndex,
+                            ((Object[]) value)[0]);
+                    ++constraintIndex;
+                    query.setParameter(
+                            QueryUtil.QUERY_CONSTRAINT + constraintIndex,
+                            ((Object[]) value)[1]);
+                    ++constraintIndex;
+                } else if ("in".equalsIgnoreCase(operand)
+                        || "not in".equalsIgnoreCase(operand)) {
+                    query.setParameterList(
+                            QueryUtil.QUERY_CONSTRAINT + constraintIndex,
+                            (List<Object>) value);
+                    ++constraintIndex;
                 } else {
-                    query.setParameter(QueryUtil.QUERY_CONSTRAINT
-                            + constraintIndex++, value);
+                    query.setParameter(
+                            QueryUtil.QUERY_CONSTRAINT + constraintIndex,
+                            value);
+                    ++constraintIndex;
                 }
             } catch (Exception e) {
                 throw new DataAccessLayerException(
@@ -874,12 +848,14 @@ public class DatabaseQuery {
             }
         }
 
+        populateAdditionalHQLParams(query, sessionFactory);
+
         return query;
     }
 
     /**
      * Converts a parameter value from a string value to the necessary type
-     * 
+     *
      * @param param
      *            The parameter to be converted
      * @param sessionFactory
@@ -893,8 +869,8 @@ public class DatabaseQuery {
     private Object convertParameter(QueryParam param,
             SessionFactory sessionFactory) throws DataAccessLayerException {
 
-        ClassMetadata metadata = sessionFactory.getClassMetadata(param
-                .getClassName());
+        ClassMetadata metadata = sessionFactory
+                .getClassMetadata(param.getClassName());
         String field = param.getField();
         Object value = param.getValue();
 
@@ -904,9 +880,9 @@ public class DatabaseQuery {
 
             try {
                 returnedClass = Class.forName(metadata.getEntityName());
-            } catch (ClassNotFoundException e2) {
-                throw new DataAccessLayerException("Cannot find class: "
-                        + metadata.getEntityName());
+            } catch (ClassNotFoundException e) {
+                throw new DataAccessLayerException(
+                        "Cannot find class: " + metadata.getEntityName(), e);
             }
 
             for (String token : tokens) {
@@ -953,26 +929,25 @@ public class DatabaseQuery {
                 String[] valueList = ((String) value).split(",");
                 value = new ArrayList<>();
                 for (String val : valueList) {
-                    ((ArrayList<Object>) value).add(ConvertUtil.convertObject(
-                            val.trim(), returnedClass));
+                    ((ArrayList<Object>) value).add(ConvertUtil
+                            .convertObject(val.trim(), returnedClass));
                 }
                 break;
             case ISNOTNULL:
             case ISNULL:
                 break;
             default:
-                value = ConvertUtil
-                        .convertObject((String) value, returnedClass);
+                value = ConvertUtil.convertObject((String) value,
+                        returnedClass);
                 break;
             }
 
         } else if (value instanceof List) {
             for (int j = 0; j < ((List<?>) value).size(); j++) {
                 if (((List<?>) value).get(0) instanceof String) {
-                    ((List) value)
-                            .add(ConvertUtil.convertObject(
-                                    (String) ((List<?>) value).remove(0),
-                                    returnedClass));
+                    ((List) value).add(ConvertUtil.convertObject(
+                            (String) ((List<?>) value).remove(0),
+                            returnedClass));
                 }
             }
         }
@@ -982,7 +957,7 @@ public class DatabaseQuery {
 
     /**
      * Returns the distinct parameter
-     * 
+     *
      * @return The distinct parameter
      */
     public ReturnedField getDistinctParameter() {
@@ -991,7 +966,7 @@ public class DatabaseQuery {
 
     /**
      * Gets the constraints to the query
-     * 
+     *
      * @return The constraints
      */
     public List<QueryParam> getParameters() {
@@ -1000,7 +975,7 @@ public class DatabaseQuery {
 
     /**
      * Gets the returned field names
-     * 
+     *
      * @return A list of the returned field names
      */
     public List<String> getReturnedFieldNames() {
@@ -1013,7 +988,7 @@ public class DatabaseQuery {
 
     /**
      * Gets the returned fields
-     * 
+     *
      * @return The returned fields
      */
     public List<ReturnedField> getReturnedFields() {
@@ -1022,7 +997,7 @@ public class DatabaseQuery {
 
     /**
      * Gets the result limit
-     * 
+     *
      * @return The result limit
      */
     public Integer getMaxResults() {
@@ -1031,7 +1006,7 @@ public class DatabaseQuery {
 
     /**
      * Sets the result limit
-     * 
+     *
      * @param maxResults
      *            The result limit
      */
@@ -1041,7 +1016,7 @@ public class DatabaseQuery {
 
     /**
      * Gets the primary entity being queried for
-     * 
+     *
      * @return The primary entity being queried for
      */
     public String getEntityName() {
@@ -1050,7 +1025,7 @@ public class DatabaseQuery {
 
     /**
      * Sets the primary entity being queried for
-     * 
+     *
      * @param entityName
      *            The primary entity being queried for
      */
@@ -1068,4 +1043,33 @@ public class DatabaseQuery {
                 + "]";
     }
 
+    /**
+     * Build additional HQL constraints to be included in the WHERE clause of an
+     * HQL query.
+     *
+     * This method defaults to returning null, as it only exists for subclasses
+     * to hook into to add additional functionality.
+     *
+     * @return the constraints in HQL (may be null)
+     */
+    protected String buildAdditionalHQLConstraints() {
+        return null;
+    }
+
+    /**
+     * Map additional parameter names to their values on the HQL query.
+     *
+     * This method defaults to doing nothing, as it only exists for subclasses
+     * to hook into to add additional functionality.
+     *
+     * @param query
+     *            the prepared HQL query
+     * @param sessionFactory
+     *            The Hibernate session factory used for getting class metadata
+     *            in order to correctly convert object types
+     */
+    protected void populateAdditionalHQLParams(Query query,
+            SessionFactory sessionFactory) {
+        // Do nothing
+    }
 }
