@@ -27,6 +27,8 @@ import java.util.concurrent.RejectedExecutionException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.ShellAdapter;
+import org.eclipse.swt.events.ShellEvent;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
@@ -48,34 +50,41 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Nov 02, 2010           mschenke  Initial creation
- * Sep 12, 2012  1165     lvenable  Update for the initial process of removing
- *                                  the dialog blocking capability.
- * Oct 11, 2012  1229     jkorman   Factored out "mustCreate" method from
- *                                  subclasses.
- * Oct 28, 2015  5054     randerso  Moved fields that were only used by a
- *                                  subclass from this class to the subclass.
- * Jan 12, 2016  5055     randerso  Made independent dialogs preserve location
- *                                  relative to parent when hidden and restored.
- * Jan 18, 2016  5054     randerso  Merged CaveSWTDialog and CaveSWTDialogBase
- *                                  to eliminate confusion Fixed
- *                                  VizPersectiveListener to not NPE when
- *                                  running without a workbench (like when
- *                                  prototyping dialogs).
- * Jan 25, 2016  5054     randerso  CaveSWTDialog no longer extends SWT Dialog.
- *                                  Added constructors with Display as parent
- *                                  for dialogs with no parent shell.
- * Mar 30, 2016  5513     randerso  Allowed hide/restore to work for
- *                                  non-independent dialogs
- * Apr 20, 2016  5541     dgilling  Fix issues with hide/restore and perspective
- *                                  switching.
- * Sep 21, 2016  5901     randerso  Fix dialog centering issue introduced in
- *                                  Eclipse 4
- * Apr 25, 2017  6217     randerso  Added shouldClose method
- * Jun 22, 2017  4818     mapeters  Changed closeCallback to a list,
- *                                  implemented ICloseCallbackDialog
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Nov 02, 2010              mschenke     Initial creation
+ * Sep 12, 2012  1165        lvenable     Update for the initial process of
+ *                                        removing the dialog blocking
+ *                                        capability.
+ * Oct 11, 2012  1229        jkorman      Factored out "mustCreate" method from
+ *                                        subclasses.
+ * Oct 28, 2015  5054        randerso     Moved fields that were only used by a
+ *                                        subclass from this class to the
+ *                                        subclass.
+ * Jan 12, 2016  5055        randerso     Made independent dialogs preserve
+ *                                        location relative to parent when
+ *                                        hidden and restored.
+ * Jan 18, 2016  5054        randerso     Merged CaveSWTDialog and
+ *                                        CaveSWTDialogBase to eliminate
+ *                                        confusion Fixed VizPersectiveListener
+ *                                        to not NPE when running without a
+ *                                        workbench (like when prototyping
+ *                                        dialogs).
+ * Jan 25, 2016  5054        randerso     CaveSWTDialog no longer extends SWT
+ *                                        Dialog. Added constructors with
+ *                                        Display as parent for dialogs with no
+ *                                        parent shell.
+ * Mar 30, 2016  5513        randerso     Allowed hide/restore to work for
+ *                                        non-independent dialogs
+ * Apr 20, 2016  5541        dgilling     Fix issues with hide/restore and
+ *                                        perspective switching.
+ * Sep 21, 2016  5901        randerso     Fix dialog centering issue introduced
+ *                                        in Eclipse 4
+ * Apr 25, 2017  6217        randerso     Added shouldClose method
+ * Jun 22, 2017  4818        mapeters     Changed closeCallback to a list,
+ *                                        implemented ICloseCallbackDialog
+ * Jun 18, 2018  6748        randerso     Fixed shouldClose() to work when
+ *                                        dialog is closed using the x button.
  *
  * </pre>
  *
@@ -308,6 +317,14 @@ public abstract class CaveSWTDialog
         } else {
             shell = new Shell(display, style);
         }
+        shell.addShellListener(new ShellAdapter() {
+            @Override
+            public void shellClosed(ShellEvent e) {
+                if (!shouldClose()) {
+                    e.doit = false;
+                }
+            }
+        });
 
         shell.setText(title);
 
@@ -465,10 +482,8 @@ public abstract class CaveSWTDialog
     @Override
     public final boolean close() {
         if (shell != null && !shell.isDisposed()) {
-            if (shouldClose()) {
-                shell.dispose();
-                return true;
-            }
+            shell.close();
+            return shell.isDisposed();
         }
         return false;
     }

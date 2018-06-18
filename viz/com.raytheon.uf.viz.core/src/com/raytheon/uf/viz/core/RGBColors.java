@@ -42,12 +42,16 @@ import com.raytheon.uf.common.status.UFStatus;
  * <pre>
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Nov 29, 2007  373      lvenable  Initial creation
- * Jul 14, 2008  1223     randerso  reworked for common access from all of CAVE
- * Apr 07, 2009           njensen   Added RGB to string features
- * Jan 29, 2018  7153     randerso  Handle missing colors better.
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Nov 29, 2007  373         lvenable     Initial creation
+ * Jul 14, 2008  1223        randerso     reworked for common access from all of
+ *                                        CAVE
+ * Apr 07, 2009              njensen      Added RGB to string features
+ * Jan 29, 2018  7153        randerso     Handle missing colors better.
+ * Jun 18, 2018  6748        randerso     Trim leading and trailing spaces when
+ *                                        looking up color by name. Added text
+ *                                        to IllegalArgumentException.
  *
  * </pre>
  *
@@ -166,13 +170,12 @@ public class RGBColors {
             return parseHexString(colorName);
         }
 
-        RGBEntry entry = getColorMap().get(colorName.toUpperCase());
+        RGBEntry entry = getColorMap().get(colorName.trim().toUpperCase());
         if (entry == null) {
-            statusHandler.warn(
-                    String.format(
-                            "\"%s\" is not defined in %s, using \"white\"\n",
-                            colorName, rgbFile),
-                    new IllegalArgumentException());
+            String msg = String.format("\"%s\" is not defined in %s", colorName,
+                    rgbFile);
+            statusHandler.warn(msg + ", using \"white\"",
+                    new IllegalArgumentException(msg));
             return new RGB(255, 255, 255);
         }
         return entry.color;
