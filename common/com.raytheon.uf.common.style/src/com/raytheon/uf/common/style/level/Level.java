@@ -39,6 +39,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * Nov 14, 2013  2361     njensen      Remove ISerializableObject
  * May 01, 2014  DCS 027  MPorricelli  Add WBZ level
  * Aug 15, 2016  5821     bsteffen     Add TROP level
+ * May 18, 2018  20395    wkwock       Add CBL and CLG level
  * 
  * </pre>
  * 
@@ -48,7 +49,7 @@ import javax.xml.bind.annotation.XmlAttribute;
 public abstract class Level {
 
     public static enum LevelType {
-        THETA, HEIGHT_AGL, HEIGHT_MSL, PRESSURE, SURFACE, TILT, MB_AGL, MAXW, TW0, TEMP, FRZ, DEFAULT, WBZ, TROP
+        THETA, HEIGHT_AGL, HEIGHT_MSL, PRESSURE, SURFACE, TILT, MB_AGL, MAXW, TW0, TEMP, FRZ, DEFAULT, WBZ, TROP, CBL, CLG
     }
 
     protected LevelType type;
