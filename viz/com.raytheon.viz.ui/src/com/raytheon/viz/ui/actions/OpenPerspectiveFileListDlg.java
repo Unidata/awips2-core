@@ -87,7 +87,7 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
      * @param localizationDirectory
      */
     public OpenPerspectiveFileListDlg(Shell parent, String localizationDirectory) {
-        super("Open Perspective Display", parent, localizationDirectory,
+        super("Open Bundle", parent, localizationDirectory,
                 "perspectives", LocalizationType.COMMON_STATIC);
     }
 

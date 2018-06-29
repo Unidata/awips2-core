@@ -80,6 +80,7 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  *    Jun 10, 2015  4401       bkowal      Extend {@link AbstractVizPerspectiveLocalizationHandler}.
  *    Dec 21, 2015  5191       bsteffen    Updated layout handling for Eclipse 4.
  *    Jun 22, 2017  4818       mapeters    Changed setCloseCallback to addCloseCallback
+ *    Jul 14, 2017  ----       mjames@ucar Remove forward slash characters to avoid creating subdirectories.
  *
  * </pre>
  *
@@ -101,7 +102,7 @@ public class SavePerspectiveHandler
         if (this.saveAsDlg == null || this.saveAsDlg.getShell() == null
                 || this.saveAsDlg.isDisposed()) {
             saveAsDlg = new PerspectiveFileListDlg(
-                    "Save Perspective Display As...", shell,
+                    "Save Bundle", shell,
                     VizLocalizationFileListDlg.Mode.SAVE, PERSPECTIVES_DIR);
             saveAsDlg.addCloseCallback(new ICloseCallback() {
 
@@ -111,6 +112,8 @@ public class SavePerspectiveHandler
                     if (fn == null) {
                         return;
                     }
+
+                    fn = fn.replace("/", "-");
 
                     if (saveAsDlg.getFileSource() == FILE_SOURCE.LOCALIZATION) {
                         savePerspectiveLocalization(fn, event);

@@ -28,7 +28,6 @@ import java.util.List;
 import javax.xml.bind.JAXBException;
 
 import org.eclipse.ui.IWorkbenchWindow;
-
 import com.raytheon.uf.common.localization.AutoUpdatingLocalizationFile;
 import com.raytheon.uf.common.localization.AutoUpdatingLocalizationFile.AutoUpdatingFileChangedListener;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -37,6 +36,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
@@ -71,6 +71,8 @@ import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
  * Mar 24, 2014  2954     mpduff      Log when missing map scale files
  * Jul 15, 2014  2954     njensen     Added fallbacks when missing map scale files
  * Feb 24, 2015  3978     njensen     Use openInputStream() to read bundleXml
+ * May 17, 2015           mjames@ucar Added ability to load visible area defns
+ *                                    as selectable bundles in "scales" menu.
  * Jun 05, 2015 4401      bkowal      Renamed LoadSerializedXml to
  *                                    LoadPerspectiveHandler.
  * Jun 23, 2017 6316      njensen     Improved logging
@@ -85,18 +87,15 @@ public class MapScalesManager {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MapScalesManager.class);
 
-    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
-            .getHandler("MapScalesManager:");
-
     private static final String DEFAULT_SCALES_DIR = "bundles"
             + IPathManager.SEPARATOR + "scales";
 
     private static final String DEFAULT_SCALES_FILE = "scalesInfo.xml";
 
     // TODO would be better to fall back to a worldwide display
-    private static final String LAST_RESORT_NAME = "Northern Hemisphere";
+    private static final String LAST_RESORT_NAME = "CONUS";
 
-    private static final String LAST_RESORT_FILENAME = "NHemisphere.xml";
+    private static final String LAST_RESORT_FILENAME = "CONUS.xml";
 
     /**
      * Manager class for a single {@link MapScale}. Is able to create a Bundle
@@ -112,21 +111,25 @@ public class MapScalesManager {
         };
 
         private final String displayName;
-
+        
+        private final Boolean areaScale;
+                
         private PartId[] partIds;
 
         private final AutoUpdatingLocalizationFile scaleFile;
-
+        
         private String bundleXml;
 
         private final boolean isCustom;
+
 
         private ManagedMapScale(String baseDir, MapScale scale)
                 throws IllegalStateException, SerializationException {
             this.isCustom = false;
             this.partIds = scale.getPartIds();
             this.displayName = scale.getDisplayName();
-
+            this.areaScale = scale.getAreaScale();
+            
             LocalizationFile file = PathManagerFactory.getPathManager()
                     .getStaticLocalizationFile(
                             baseDir + IPathManager.SEPARATOR
@@ -150,13 +153,7 @@ public class MapScalesManager {
 
             // validate the XML is good
             long t0 = System.currentTimeMillis();
-            try {
-                getScaleBundle();
-            } finally {
-                perfLog.logDuration(
-                        "Loading scale " + this.displayName,
-                        (System.currentTimeMillis() - t0));
-            }
+            getScaleBundle();
         }
 
         private ManagedMapScale(String displayName, Bundle scaleBundle)
@@ -165,11 +162,23 @@ public class MapScalesManager {
             this.displayName = displayName;
             this.partIds = new PartId[0];
             this.scaleFile = null;
+            this.areaScale = null;
             this.bundleXml = ProcedureXmlManager.getInstance().marshal(
                     scaleBundle);
         }
 
         private void loadBundleXml() {
+        	//
+        	// 14.4.1
+        	//
+        	
+//        	try {
+//        		this.bundleXml = new String(scaleFile.getFile().read());
+//        	} catch (LocalizationException e) {
+        	
+        	//
+        	// 15.1.1
+        	//
             StringBuilder sb = new StringBuilder();
             char[] buffer = new char[1024];
             try (InputStream is = scaleFile.getFile().openInputStream()) {
@@ -209,6 +218,10 @@ public class MapScalesManager {
         public String getDisplayName() {
             return displayName;
         }
+        
+        public Boolean getAreaScale() {
+            return areaScale;
+        }
 
         public PartId[] getPartIds() {
             return partIds;
@@ -226,7 +239,7 @@ public class MapScalesManager {
 
     }
 
-    private static SingleTypeJAXBManager<MapScales> jaxbManager;
+	private static SingleTypeJAXBManager<MapScales> jaxbManager;
 
     private static MapScalesManager DEFAULT_MANAGER;
 
@@ -453,6 +466,16 @@ public class MapScalesManager {
         // Scale not found
         return null;
     }
+    
+    /**
+     * Gets a {@link ManagedMapScale} by scale name
+     * 
+     * @param name
+     */
+    public void clearCustomScales() {
+        // Search for scales by name, search custom first.
+    	customScales.clear();
+    }
 
     /**
      * Gets the Bundle defined for the partId.
@@ -503,12 +526,17 @@ public class MapScalesManager {
      * @param scaleName
      * @param display
      */
-    public void addCustomScale(String scaleName,
-            MapScaleRenderableDisplay display) {
+    public void addCustomScale(String scaleName, MapScaleRenderableDisplay display) {
+    	
         Bundle bundle = new Bundle();
         bundle.setDisplays(new AbstractRenderableDisplay[] { display });
         bundle.setName(scaleName);
 
+        /*
+         *  this will go into ManagedMapScale to construct the bundleXml string from "bundle",
+         *  so we need the geometry in bundle here...
+         */
+        
         try {
             customScales.add(new ManagedMapScale(scaleName, bundle));
         } catch (SerializationException e) {

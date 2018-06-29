@@ -65,7 +65,7 @@ public class DrawableString extends AbstractDrawableObject {
     public HorizontalAlignment horizontalAlignment = HorizontalAlignment.LEFT;
 
     /** The up/down alignment of the text */
-    public VerticalAlignment verticallAlignment = VerticalAlignment.BOTTOM;
+    public VerticalAlignment verticalAlignment = VerticalAlignment.BOTTOM;
 
     /**
      * Magnification of the text, text will be scaled (zoomed). For smooth
@@ -105,7 +105,7 @@ public class DrawableString extends AbstractDrawableObject {
         this.colors = that.colors;
         this.font = that.font;
         this.horizontalAlignment = that.horizontalAlignment;
-        this.verticallAlignment = that.verticallAlignment;
+        this.verticalAlignment = that.verticalAlignment;
         this.magnification = that.magnification;
         this.rotation = that.rotation;
         this.textStyles = new EnumMap<>(that.textStyles);

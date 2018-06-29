@@ -353,7 +353,7 @@ public class ColormapComp {
                 addFile(file, index);
                 index += 1;
             }
-
+            
             if (menu == cmapPopupMenu) {
                 new MenuItem(menu, SWT.SEPARATOR, index);
                 index += 1;

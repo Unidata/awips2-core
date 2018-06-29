@@ -27,6 +27,7 @@
         <displays xsi:type="mapRenderableDisplay"
             xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
+<<<<<<< HEAD
                 <resource>
                     <loadProperties>
                         <capabilities>
@@ -36,6 +37,16 @@
                                 labelField="name" />
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
+=======
+                 <resource>
+                     <loadProperties>
+                         <capabilities>
+                             <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
+                            <capability xsi:type="labelableCapability" labelField="name" />
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="densityCapability" density="0.4"/>
+>>>>>>> unidata_17.1.1
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

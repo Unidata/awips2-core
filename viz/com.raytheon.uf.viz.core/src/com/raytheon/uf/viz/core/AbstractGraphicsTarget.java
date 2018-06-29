@@ -376,7 +376,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         params.setCoordinates(x, y, z);
         params.addTextStyle(textStyle);
         params.horizontalAlignment = horizontalAlignment;
-        params.verticallAlignment = verticalAlignment;
+        params.verticalAlignment = verticalAlignment;
         params.rotation = rotation != null ? rotation : 0.0;
         drawStrings(params);
     }
@@ -405,7 +405,7 @@ public abstract class AbstractGraphicsTarget implements IGraphicsTarget {
         params.setCoordinates(x, y, z);
         params.addTextStyle(textStyle);
         params.horizontalAlignment = horizontalAlignment;
-        params.verticallAlignment = verticalAlignment;
+        params.verticalAlignment = verticalAlignment;
         drawStrings(params);
     }
 

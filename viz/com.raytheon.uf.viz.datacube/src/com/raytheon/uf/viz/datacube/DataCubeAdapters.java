@@ -37,6 +37,7 @@ import org.slf4j.LoggerFactory;
  * ------------ ---------- ----------- --------------------------
  * Apr 01, 2014            ekladstrup  Initial creation
  * Jun 27, 2017  6316      njensen     Switched from ufstatus to slf4j for logging
+ * Dec 11, 2017            mjames@ucar Less logging
  * 
  * </pre>
  * 
@@ -89,10 +90,6 @@ public class DataCubeAdapters {
                             + adapter.getClass().getCanonicalName());
                 } else {
                     adapters.put(plugin, adapter);
-                    logger.debug("Registered "
-                            + adapter.getClass().getCanonicalName()
-                            + " IDataCubeAdapter for plugin \"" + plugin
-                            + "\"");
                 }
             }
         }

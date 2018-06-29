@@ -41,6 +41,7 @@ import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
  * ------------- -------- ----------- --------------------------
  * Oct 24, 2007           chammack    Initial Creation.
  * Feb 27, 2014  2791     bsteffen    Switch from IDataRecord to DataSource
+ * Dec 20, 2017           mjames@ucar Less logging.
  * 
  * </pre>
  * 
@@ -124,8 +125,6 @@ public class ContourManagerJob extends Job {
                             req.getDescriptor(), req.getPrefs(), req.getZoom());
                     // setContourGroup will check if cg needs to be disposed
                     req.setContourGroup(cg);
-                    System.out.println("Total time taken: "
-                            + (System.currentTimeMillis() - t0));
                 }
             } catch (Throwable e) {
                 return new Status(Status.ERROR, ContourManagerJob.class

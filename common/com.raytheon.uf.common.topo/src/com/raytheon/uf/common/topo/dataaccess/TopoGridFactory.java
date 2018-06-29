@@ -94,8 +94,7 @@ public class TopoGridFactory extends AbstractDataFactory {
      * exist on a different system and no API is provided to list them
      */
     private static final String[] TOPO_FILENAMES = { "defaultTopo",
-            "gmted2010", "gtopo30", "modelStaticTopo", "srtm30", "srtm30_plus",
-            "staticTopo" };
+            "gmted2010", "gtopo30", "modelStaticTopo", "staticTopo" };
 
     /*
      * The below two arrays could be generated dynamically, but since all topo

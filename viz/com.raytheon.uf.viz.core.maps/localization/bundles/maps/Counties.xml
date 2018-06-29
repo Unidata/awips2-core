@@ -30,10 +30,16 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
+<<<<<<< HEAD
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
+=======
+                            <capability xsi:type="outlineCapability" lineStyle="DOTTED" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability" colorAsString="#333333" />
+>>>>>>> unidata_17.1.1
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

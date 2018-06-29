@@ -451,10 +451,10 @@ public class DefineLocalizationPermissionDlg extends CaveSWTDialog {
     @Override
     public boolean shouldClose() {
         if (isDirty()) {
-            MessageDialog dlg = new MessageDialog(shell, "Save Changes?", null,
-                    "Localization permission has not been saved. Save changes?",
-                    MessageDialog.QUESTION_WITH_CANCEL, 2, "No", "Cancel",
-                    "Yes");
+        	String[] labels = {"No", "Cancel", "Yes"};
+            MessageDialog dlg = new MessageDialog(shell, "Save Changes?", null, 
+            		"Role permissions have been modified. Save changes?", 
+            		MessageDialog.QUESTION_WITH_CANCEL, labels, 2);
 
             switch (dlg.open()) {
             case 0:

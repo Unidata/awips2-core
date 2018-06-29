@@ -50,7 +50,8 @@ import org.eclipse.swt.widgets.Text;
  *                                     not set in time before the first filter.
  * Dec 18, 2015 5216       dgilling    Use ModifyListener instead of KeyListener.
  * Nov 21, 2016 6006       njensen     Eclipse 4.6 Replace gif with png
- *
+ * Jul 11, 2017 ----       mjames@ucar Don't both creating images for filetree.
+ * 
  * </pre>
  *
  * @author bkowal

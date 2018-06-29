@@ -932,7 +932,7 @@ public class ResourceList extends CopyOnWriteArrayList<ResourcePair> {
                         successful.add(rp);
                     } else {
                         // null is returned when the user selects cancel on
-                        // a time amtching dialog. Null should be considered
+                        // a time matching dialog. Null should be considered
                         // a normal event. In case of exceptional
                         // circumstances requiring user notification an
                         // exception should be thrown

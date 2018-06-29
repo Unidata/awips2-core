@@ -109,6 +109,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jan 11, 2016 5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
  * Jun 13, 2016 4907       mapeters    Added retrieveToFile()
  * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
+ * Jun 25, 2017            mjames@ucar Always run alertviz.
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  * Jul 18, 2017 6316       njensen     Log setting site localization
  *
@@ -167,8 +168,7 @@ public class LocalizationManager implements IPropertyChangeListener {
     private final LocalizationRestConnector restConnect;
 
     /** Was the alert server launched within cave? */
-    public static final boolean internalAlertServer = ProgramArguments
-            .getInstance().getBoolean("-alertviz");
+    public static boolean internalAlertServer = true;
 
     private static Map<LocalizationLevel, String> contextMap = new HashMap<>();
 

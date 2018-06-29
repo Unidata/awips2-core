@@ -566,14 +566,21 @@ public class AssignRolePermissionsDialog extends CaveSWTDialog {
             permissionDescriptionText.setText(description);
         }
     }
-
+/*
+ * org.eclipse.jface.dialogs.MessageDialog.MessageDialog(Shell parentShell, String dialogTitle, Image 
+ dialogTitleImage, String dialogMessage, int dialogImageType, String[] dialogButtonLabels, int 
+ defaultIndex)
+ 
+ (non-Javadoc)
+ * @see com.raytheon.viz.ui.dialogs.CaveSWTDialog#shouldClose()
+ */
     @Override
     public boolean shouldClose() {
         if (isDirty() && isValid()) {
-            MessageDialog dlg = new MessageDialog(shell, "Save Changes?", null,
-                    "Role permissions have been modified. Save changes?",
-                    MessageDialog.QUESTION_WITH_CANCEL, 2, "No", "Cancel",
-                    "Yes");
+        	String[] labels = {"No", "Cancel", "Yes"};
+            MessageDialog dlg = new MessageDialog(shell, "Save Changes?", null, 
+            		"Role permissions have been modified. Save changes?", 
+            		MessageDialog.QUESTION_WITH_CANCEL, labels, 2);
 
             switch (dlg.open()) {
             case 0:

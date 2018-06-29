@@ -37,6 +37,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.SerializationException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * 
@@ -57,6 +59,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Jun 30, 2014  3165     njensen     Moved to common colormap plugin
  * Dec 10, 2015  4834     njensen     Simplified observing and caching
+ * Jan 24, 2018  ----     mjames@ucar Safe checking for missing/renamed colormaps
  * 
  * </pre>
  * 
@@ -66,7 +69,14 @@ import com.raytheon.uf.common.serialization.SerializationException;
 
 public class ColorMapLoader {
 
+	private static final transient IUFStatusHandler logger = UFStatus
+            .getHandler(ColorMapLoader.class);
+
     public static final String EXTENSION = ".cmap";
+
+    public static final String BASEMAP = "Grid/Gridded Data";
+
+    public static final String TOPO_BASEMAP = "Topography";
 
     public static final String DIR_NAME = "colormaps";
 
@@ -86,6 +96,11 @@ public class ColorMapLoader {
      * @throws ColorMapException
      */
     public static IColorMap loadColorMap(String name) throws ColorMapException {
+
+        if (name.equals("topo")) {
+            name = TOPO_BASEMAP;
+        }
+
         IColorMap cm = null;
 
         synchronized (sharedMutex) {
@@ -137,7 +152,15 @@ public class ColorMapLoader {
                 if (cm != null) {
                     cachedMaps.put(name, cm);
                 } else {
-                    throw new ColorMapException("Can't find colormap " + name);
+                    f = PathManagerFactory.getPathManager()
+                            .getStaticLocalizationFile(
+                                    DIR_NAME + IPathManager.SEPARATOR + BASEMAP
+                                            + EXTENSION);
+                    cm = loadColorMap(BASEMAP, f);
+                    if (cm != null) {
+                        cachedMaps.put(BASEMAP, cm);
+                    }
+                    logger.warn("Can't find colormap " + name + ", using " + BASEMAP);
                 }
             } catch (SerializationException e) {
                 throw new ColorMapException("Exception while loading colormap "
