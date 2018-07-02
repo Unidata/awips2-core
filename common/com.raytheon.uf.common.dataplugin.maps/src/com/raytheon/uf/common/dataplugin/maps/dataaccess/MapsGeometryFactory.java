@@ -52,6 +52,7 @@ import com.vividsolutions.jts.io.WKBReader;
  *                                     location field.
  * Apr 26, 2016 5587       tgurney     Support getIdentifierValues()
  * Feb 19, 2018 7220       mapeters    Improve filtering of available identifier values
+ * Jul 02, 2018 7327       mapeters    Overrode isColumnIdentifier() to include geomField
  *
  * </pre>
  *
@@ -159,5 +160,12 @@ public class MapsGeometryFactory
                 + "where table_name = '%s' " + "and table_schema = '%s'"
                 + "and column_name like 'the_geom%%' " + "order by column_name",
                 tableName, schema);
+    }
+
+    @Override
+    protected boolean isColumnIdentifier(String identifier) {
+        return super.isColumnIdentifier(identifier)
+                && !MapsQueryAssembler.REQUIRED_IDENTIFIERS.IDENTIFIER_GEOM_FIELD
+                        .equals(identifier);
     }
 }
