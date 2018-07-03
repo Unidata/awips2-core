@@ -48,6 +48,7 @@ import com.raytheon.uf.common.jms.JmsPooledConnection;
  * ------------ ---------- ----------- --------------------------
  * Apr 15, 2011            rjpeter     Initial creation
  * Feb 21, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
+ * Jun 06, 2018 DR 19393   mfontaine   Added Catch Exception instead of Throwable
  * </pre>
  * 
  * @author rjpeter
@@ -170,7 +171,7 @@ public class JmsConnectionWrapper implements Connection {
                 throw new IllegalStateException("Underlying session is closed");
             }
             return session;
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled connection");
@@ -210,7 +211,7 @@ public class JmsConnectionWrapper implements Connection {
 
         try {
             return conn.getMetaData();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled connection");
