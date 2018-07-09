@@ -80,14 +80,16 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                   initializing displays.
  * Jun 24, 2016  5708     bsteffen   Notify listeners when dirty status changes.
  * Nov 29, 2016  6014     bsteffen   Update dirty state on UI thread.
+ * Jul 09, 2018  7315     bsteffen   Ensure close confirmation prompt uses a
+ *                                   visible shell.
  * 
  * </pre>
  * 
  * @author chammack
  */
-public abstract class AbstractEditor extends EditorPart implements
-        IDisplayPaneContainer, IBackgroundColorChangedListener, ISaveablePart2,
-        IRenameablePart {
+public abstract class AbstractEditor extends EditorPart
+        implements IDisplayPaneContainer, IBackgroundColorChangedListener,
+        ISaveablePart2, IRenameablePart {
 
     /** The set of those listening for IRenderableDisplay changes */
     private final Set<IRenderableDisplayChangedListener> renderableDisplayListeners;
@@ -110,7 +112,7 @@ public abstract class AbstractEditor extends EditorPart implements
      * Constructor
      */
     public AbstractEditor() {
-        renderableDisplayListeners = new CopyOnWriteArraySet<IRenderableDisplayChangedListener>();
+        renderableDisplayListeners = new CopyOnWriteArraySet<>();
         renderableDisplayListeners.add(new DirtyListener());
     }
 
@@ -118,61 +120,32 @@ public abstract class AbstractEditor extends EditorPart implements
         IRenderableDisplay[] displays = new IRenderableDisplay[getDisplayPanes().length];
         int i = 0;
         for (IDisplayPane pane : getDisplayPanes()) {
-            displays[i++] = pane.getRenderableDisplay();
+            displays[i] = pane.getRenderableDisplay();
+            i += 1;
         }
         return displays;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#getDisplayPanes()
-     */
     @Override
     public IDisplayPane[] getDisplayPanes() {
         return editorInput.getPaneManager().getDisplayPanes();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#refresh()
-     */
     @Override
     public void refresh() {
         editorInput.getPaneManager().refresh();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#getActiveDisplayPane()
-     */
     @Override
     public IDisplayPane getActiveDisplayPane() {
         return editorInput.getPaneManager().getActiveDisplayPane();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#translateClick(double,
-     * double)
-     */
     @Override
     public Coordinate translateClick(double x, double y) {
         return editorInput.getPaneManager().translateClick(x, y);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#translateInverseClick(
-     * com.vividsolutions.jts.geom.Coordinate)
-     */
     @Override
     public double[] translateInverseClick(Coordinate c) {
         return editorInput.getPaneManager().translateInverseClick(c);
@@ -205,11 +178,6 @@ public abstract class AbstractEditor extends EditorPart implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.WorkbenchPart#dispose()
-     */
     @Override
     public void dispose() {
         if (backgroundColor != null) {
@@ -218,12 +186,6 @@ public abstract class AbstractEditor extends EditorPart implements
         super.dispose();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.EditorPart#init(org.eclipse.ui.IEditorSite,
-     * org.eclipse.ui.IEditorInput)
-     */
     @Override
     public void init(IEditorSite site, IEditorInput input)
             throws PartInitException {
@@ -233,8 +195,8 @@ public abstract class AbstractEditor extends EditorPart implements
             }
         }
 
-        backgroundColor = BackgroundColor.getInstance(site.getPage()
-                .getPerspective());
+        backgroundColor = BackgroundColor
+                .getInstance(site.getPage().getPerspective());
         backgroundColor.addListener(BGColorMode.EDITOR, this);
 
         editorInput = (EditorInput) input;
@@ -261,12 +223,13 @@ public abstract class AbstractEditor extends EditorPart implements
             for (IRenderableDisplay display : displaysToLoad) {
                 if (display != null) {
                     timeMatcher = display.getDescriptor().getTimeMatcher();
-                    if (timeMatcher != null)
+                    if (timeMatcher != null) {
                         break;
+                    }
                 }
             }
             if (timeMatcher != null) {
-                displayList = new ArrayList<AbstractRenderableDisplay>(displaysToLoad.length);
+                displayList = new ArrayList<>(displaysToLoad.length);
                 for (IRenderableDisplay display : displaysToLoad) {
                     if (display instanceof AbstractRenderableDisplay) {
                         displayList.add((AbstractRenderableDisplay) display);
@@ -275,9 +238,11 @@ public abstract class AbstractEditor extends EditorPart implements
             }
         }
         if (timeMatcher != null && displayList != null) {
-            List<AbstractRenderableDisplay> orderedDisplays = timeMatcher.getDisplayLoadOrder(displayList);
+            List<AbstractRenderableDisplay> orderedDisplays = timeMatcher
+                    .getDisplayLoadOrder(displayList);
             for (AbstractRenderableDisplay display : orderedDisplays) {
-                display.getDescriptor().synchronizeTimeMatching(orderedDisplays.get(0).getDescriptor());
+                display.getDescriptor().synchronizeTimeMatching(
+                        orderedDisplays.get(0).getDescriptor());
                 initDisplay(display);
             }
         } else {
@@ -289,13 +254,6 @@ public abstract class AbstractEditor extends EditorPart implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.ui.part.WorkbenchPart#createPartControl(org.eclipse.swt.widgets
-     * .Composite)
-     */
     @Override
     public void createPartControl(Composite parent) {
         editorInput.getPaneManager().initializeComponents(this, parent);
@@ -337,7 +295,8 @@ public abstract class AbstractEditor extends EditorPart implements
      * @param display
      */
     protected void initDisplay(IRenderableDisplay display) {
-        display.setBackgroundColor(backgroundColor.getColor(BGColorMode.EDITOR));
+        display.setBackgroundColor(
+                backgroundColor.getColor(BGColorMode.EDITOR));
         display.getDescriptor().getResourceList()
                 .instantiateResources(display.getDescriptor(), true);
     }
@@ -358,11 +317,6 @@ public abstract class AbstractEditor extends EditorPart implements
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.EditorPart#setInput(org.eclipse.ui.IEditorInput)
-     */
     @Override
     protected void setInput(IEditorInput input) {
         super.setInputWithNotify(input);
@@ -374,23 +328,11 @@ public abstract class AbstractEditor extends EditorPart implements
         return editorInput;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#getLoopProperties()
-     */
     @Override
     public LoopProperties getLoopProperties() {
         return editorInput.getLoopProperties();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#setLoopProperties(com.
-     * raytheon.uf.viz.core.datastructure.LoopProperties)
-     */
     @Override
     public void setLoopProperties(LoopProperties loopProperties) {
         editorInput.setLoopProperties(loopProperties);
@@ -412,39 +354,17 @@ public abstract class AbstractEditor extends EditorPart implements
         return editorInput.getPaneManager().getMouseManager();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#registerMouseHandler(com
-     * .raytheon.uf.viz.core.rsc.IInputHandler,
-     * com.raytheon.uf.viz.core.rsc.IInputHandler.InputPriority)
-     */
     @Override
     public void registerMouseHandler(IInputHandler handler,
             InputPriority priority) {
         editorInput.getPaneManager().registerMouseHandler(handler, priority);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#registerMouseHandler(com
-     * .raytheon.uf.viz.core.rsc.IInputHandler)
-     */
     @Override
     public void registerMouseHandler(IInputHandler handler) {
         editorInput.getPaneManager().registerMouseHandler(handler);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.IDisplayPaneContainer#unregisterMouseHandler
-     * (com.raytheon.uf.viz.core.rsc.IInputHandler)
-     */
     @Override
     public void unregisterMouseHandler(IInputHandler handler) {
         editorInput.getPaneManager().unregisterMouseHandler(handler);
@@ -474,14 +394,12 @@ public abstract class AbstractEditor extends EditorPart implements
     }
 
     /**
-     * Prevent users from closing an editor, if the user attempts to close the
-     * editor the reason will be displayed. Use with caution and please
-     * enableClose as soon as possible
+     * Use getSite().getService(MPart.class).setCloseable(false) instead because
+     * that method will remove the close button from the UI.
      * 
-     * @param reason
-     *            the message to display to the user when they attempt to close
-     *            the editor
+     * @deprecated
      */
+    @Deprecated
     public void disableClose(String reason) {
         closeMessage = reason;
         firePropertyChange(ISaveablePart2.PROP_DIRTY);
@@ -498,6 +416,10 @@ public abstract class AbstractEditor extends EditorPart implements
         }
 
         Shell shell = getSite().getShell();
+        if (!shell.isVisible()) {
+            /* When the editor is hidden use the workbench shell. */
+            shell = getSite().getWorkbenchWindow().getShell();
+        }
 
         if (!isCloseable()) {
             // Let the user know why we refuse to close the editor
@@ -536,42 +458,18 @@ public abstract class AbstractEditor extends EditorPart implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * addRenderableDisplayChangedListener
-     * (com.raytheon.uf.viz.core.IRenderableDisplayChangedListener)
-     */
     @Override
     public void addRenderableDisplayChangedListener(
             IRenderableDisplayChangedListener displayChangedListener) {
         renderableDisplayListeners.add(displayChangedListener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * removeRenderableDisplayChangedListener
-     * (com.raytheon.uf.viz.core.IRenderableDisplayChangedListener)
-     */
     @Override
     public void removeRenderableDisplayChangedListener(
             IRenderableDisplayChangedListener displayChangedListener) {
         renderableDisplayListeners.remove(displayChangedListener);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.IDisplayPaneContainer#
-     * notifyRenderableDisplayChangedListeners
-     * (com.raytheon.uf.viz.core.IDisplayPane,
-     * com.raytheon.uf.viz.core.drawables.IRenderableDisplay,
-     * com.raytheon.uf.viz
-     * .core.IRenderableDisplayChangedListener.DisplayChangeType)
-     */
     @Override
     public void notifyRenderableDisplayChangedListeners(IDisplayPane pane,
             IRenderableDisplay display, DisplayChangeType type) {
@@ -584,42 +482,21 @@ public abstract class AbstractEditor extends EditorPart implements
         return backgroundColor;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.EditorPart#doSave(org.eclipse.core.runtime.
-     * IProgressMonitor)
-     */
     @Override
     public void doSave(IProgressMonitor monitor) {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.EditorPart#doSaveAs()
-     */
     @Override
     public void doSaveAs() {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.EditorPart#isSaveAsAllowed()
-     */
     @Override
     public boolean isSaveAsAllowed() {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see org.eclipse.ui.part.WorkbenchPart#setFocus()
-     */
     @Override
     public void setFocus() {
         editorInput.getPaneManager().setFocus();

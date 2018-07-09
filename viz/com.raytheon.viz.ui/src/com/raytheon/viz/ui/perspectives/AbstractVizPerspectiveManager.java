@@ -22,12 +22,11 @@ package com.raytheon.viz.ui.perspectives;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.eclipse.e4.core.services.events.IEventBroker;
+import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
@@ -39,7 +38,7 @@ import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.IPresentationEngine;
 import org.eclipse.e4.ui.workbench.UIEvents;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
-import org.eclipse.e4.ui.workbench.modeling.EPartService;
+import org.eclipse.e4.ui.workbench.modeling.EPlaceholderResolver;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.jface.action.IContributionItem;
 import org.eclipse.jface.action.IMenuManager;
@@ -57,6 +56,7 @@ import org.eclipse.ui.IPartListener;
 import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.IWorkbenchPart;
 import org.eclipse.ui.IWorkbenchWindow;
+import org.eclipse.ui.internal.e4.compatibility.CompatibilityEditor;
 import org.osgi.service.event.Event;
 import org.osgi.service.event.EventHandler;
 
@@ -110,8 +110,12 @@ import com.raytheon.viz.ui.tools.ModalToolManager;
  *                                  perspective when workbench is closing.
  * Oct 25, 2016  5929     bsteffen  Ensure compatibility layer listeners fire
  *                                  when editors swap
- * Nov 23, 2016  6004     bsteffen  Move handling of nonrestorable views out of this class.
- * Mar 02, 2017 6162        bsteffen    activate/deactivate tools when changing perspectives.
+ * Nov 23, 2016  6004     bsteffen  Move handling of nonrestorable views out of
+ *                                  this class.
+ * Mar 02, 2017  6162     bsteffen  activate/deactivate tools when changing
+ *                                  perspectives.
+ * Jul 09, 2018  7315     bsteffen  Keep hidden editors in the model so they can
+ *                                  prompt to save on close.
  * 
  * </pre>
  * 
@@ -242,17 +246,14 @@ public abstract class AbstractVizPerspectiveManager
         }
     }
 
-    public static IPartListener partListener = new PerspectivePartListener();
+    public static final IPartListener partListener = new PerspectivePartListener();
 
-    public static IPageListener pageListener = new PerspectivePageListener();
+    public static final IPageListener pageListener = new PerspectivePageListener();
 
     /** The window the perspective is loaded to */
     protected IWorkbenchWindow perspectiveWindow;
 
     protected IWorkbenchPage page;
-
-    /** Saved editors for the perspective */
-    protected List<MPartSashContainerElement> savedEditorAreaUI = new ArrayList<>();
 
     private IEditorPart activeEditor;
 
@@ -274,30 +275,21 @@ public abstract class AbstractVizPerspectiveManager
     /** List of perspective dialogs */
     protected List<IPerspectiveSpecificDialog> perspectiveDialogs;
 
-    private List<IContributionItem> items = new ArrayList<IContributionItem>();
+    private List<IContributionItem> items = new ArrayList<>();
 
     private BackgroundColor backgroundColor;
 
     private String title;
 
     /**
-     * Clean up savedEditorAreaUI when a perspective is closing. The saved
-     * editor area is not disposed correctly by E4 because the saved elements
-     * have been removed from the model. The saved area must be disposed before
-     * the perspective context is disposed because the perspective context will
-     * dispose of the editor context without disposing of the model elements.
-     * The {@link #close()} method is called after the perspective context is
-     * disposed so it is too late. This handler triggers when the widget is
-     * removed from the perspective which happens before the context is
-     * disposed.
+     * Remove the perspective editor area from a perspective on close. This must
+     * be done here instead of the close() method because close() is not called
+     * when the application is exiting.
      */
     private final EventHandler closeHandler = new EventHandler() {
 
         @Override
         public void handleEvent(Event event) {
-            if (savedEditorAreaUI.isEmpty()) {
-                return;
-            }
             if (event.getProperty(UIEvents.EventTags.NEW_VALUE) != null) {
                 return;
             }
@@ -309,26 +301,28 @@ public abstract class AbstractVizPerspectiveManager
             if (!perspective.getElementId().equals(perspectiveId)) {
                 return;
             }
-            IPresentationEngine presentation = perspectiveWindow
-                    .getService(IPresentationEngine.class);
             EModelService modelService = perspectiveWindow
                     .getService(EModelService.class);
-            for (MUIElement saved : savedEditorAreaUI) {
-                List<MPart> covers = modelService.findElements(saved, "cover",
-                        MPart.class, null);
-                for (MPart cover : covers) {
-                    cover.getParent().getChildren().remove(cover);
+            List<MArea> localEditorAreas = modelService.findElements(
+                    perspective, getPerpectiveEditorAreaId(), MArea.class,
+                    null);
+            if (localEditorAreas != null) {
+                for (MArea localEditorArea : localEditorAreas) {
+                    localEditorArea.setToBeRendered(false);
+                    MElementContainer<MUIElement> parent = localEditorArea
+                            .getParent();
+                    if (parent != null) {
+                        parent.getChildren().remove(localEditorArea);
+                    }
                 }
-                presentation.removeGui(saved);
             }
-            savedEditorAreaUI.clear();
         }
     };
 
     public AbstractVizPerspectiveManager() {
         // new up a tool manager for the perspective
         toolManager = new ModalToolManager();
-        perspectiveDialogs = new CopyOnWriteArrayList<IPerspectiveSpecificDialog>();
+        perspectiveDialogs = new CopyOnWriteArrayList<>();
     }
 
     /**
@@ -341,7 +335,7 @@ public abstract class AbstractVizPerspectiveManager
      * @return
      */
     protected List<ContributionItem> getStatusLineItems() {
-        return new ArrayList<ContributionItem>();
+        return new ArrayList<>();
     }
 
     /**
@@ -377,17 +371,7 @@ public abstract class AbstractVizPerspectiveManager
 
         page = perspectiveWindow.getActivePage();
 
-        if (savedEditorAreaUI.isEmpty()) {
-            savedEditorAreaUI.add(createDefaultEditorStack());
-        }
-        List<MPartSashContainerElement> oldEditors = swapEditorArea(
-                savedEditorAreaUI);
-        IPresentationEngine presentationEngine = perspectiveWindow
-                .getService(IPresentationEngine.class);
-        for (MPartSashContainerElement element : oldEditors) {
-            presentationEngine.removeGui(element);
-        }
-        savedEditorAreaUI.clear();
+        showEditors();
 
         if (!opened) {
             backgroundColor = BackgroundColor
@@ -426,116 +410,183 @@ public abstract class AbstractVizPerspectiveManager
     }
 
     /**
-     * Remove the elements currently in the editor area and replace them with
-     * the provided elements. The old elements are returned and must be either
-     * saved off or removed from the UI by the caller.
+     * Hide editors when a perspective is deactivated. This will move anything
+     * in the shared editor area into a perspective specific area so that it is
+     * not visible in other perspectives but it will still be part of the model.
+     * The shared editor area will be populated with a default empty part stack.
      * 
-     * This method is needed to work around
-     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=374132. This method must
-     * account for many subtle interactions between the model, renderer, addons,
-     * and compatibility layer to ensure that all parts of the system remain
-     * consistent.
-     * 
-     * 
-     * @param newContents
-     *            the contents that should go in the editor area.
-     * @return the elements that were previously in the editor area.
      */
-    private List<MPartSashContainerElement> swapEditorArea(
-            List<? extends MPartSashContainerElement> newContents) {
-
-        MWindow window = perspectiveWindow.getService(MWindow.class);
+    private void hideEditors() {
         EModelService modelService = perspectiveWindow
                 .getService(EModelService.class);
-        EPartService partService = perspectiveWindow
-                .getService(EPartService.class);
-        MPerspective perspective = modelService.getActivePerspective(window);
-        List<MPlaceholder> editorPlaceholders = modelService.findElements(
-                perspective, IPageLayout.ID_EDITOR_AREA, MPlaceholder.class,
-                null);
 
-        if (editorPlaceholders.size() == 1) {
-            MPlaceholder editorPlaceholder = editorPlaceholders.get(0);
-            MUIElement editorElement = editorPlaceholder.getRef();
-            if (editorElement instanceof MArea) {
-                MArea editorArea = (MArea) editorElement;
-                List<MPartSashContainerElement> children = editorArea
-                        .getChildren();
+        MArea localEditorArea = modelService.createModelElement(MArea.class);
+        localEditorArea.setElementId(getPerpectiveEditorAreaId());
 
-                /*
-                 * The compatibility layer, specifically the WorkbenchPage, does
-                 * not send out notifications when the model is changed like
-                 * this. Specifically this causes problems with parts being
-                 * hidden or deactivated because listeners may believe the parts
-                 * we are hiding are still active/visible. To force the
-                 * compatibility layer to send events we create blank MParts and
-                 * make them the selected elements for all MPartStacks. The
-                 * compatibility layer sees that these blank MParts are covering
-                 * the currently visible parts and sends the correct events.
-                 */
-                MPart activePart = partService.getActivePart();
-                List<MPartStack> stacks = modelService.findElements(editorArea,
-                        null, MPartStack.class, null);
-                for (MPartStack stack : stacks) {
-                    if (stack.getChildren().isEmpty()) {
-                        continue;
-                    }
-                    MPart cover = modelService.createModelElement(MPart.class);
-                    cover.setElementId("cover");
-                    cover.setLabel("Cover");
-                    stack.getChildren().add(cover);
-                    stack.setSelectedElement(cover);
-                    if (stack.getChildren().contains(activePart)) {
-                        partService.activate(cover);
-                    }
-                }
+        MPlaceholder editorPlaceholder = findEditorPlaceholder();
 
-                /*
-                 * When the editor area contains no visible children then the
-                 * CleanupAddon sets the visibility to false, if that happens
-                 * there is no way to restore visibility(see
-                 * https://bugs.eclipse.org/bugs/show_bug.cgi?id=365902). Adding
-                 * HIDDEN_EXPLICITLY forces the CleanupAddon to ignore the
-                 * editorArea which avoids that mess.
-                 */
-                List<String> tags = editorArea.getTags();
-                tags.add(IPresentationEngine.HIDDEN_EXPLICITLY);
-                List<MPartSashContainerElement> oldContents = new ArrayList<MPartSashContainerElement>(
-                        children);
-                for (MPartSashContainerElement element : oldContents) {
-                    /*
-                     * If the element is not set invisible then the renderer
-                     * does not seem to notice it is gone and will leave it in
-                     * the layout.
-                     */
-                    element.setVisible(false);
-                    children.remove(element);
-                }
-                for (MPartSashContainerElement element : newContents) {
-                    children.add(element);
-                    element.setVisible(true);
-                }
-                tags.remove(IPresentationEngine.HIDDEN_EXPLICITLY);
+        editorPlaceholder.getParent().getChildren().add(localEditorArea);
 
-                List<MPart> covers = modelService.findElements(editorArea,
-                        "cover", MPart.class, null);
-                for (MPart cover : covers) {
-                    cover.getParent().getChildren().remove(cover);
-                }
+        MArea editorArea = (MArea) editorPlaceholder.getRef();
+        moveAllChildren(editorArea, localEditorArea);
+        editorArea.getChildren().add(createDefaultEditorStack());
 
-                return oldContents;
-            } else {
-                statusHandler.warn(
-                        "Unable to find editor area, cannot swap editor area.");
-            }
-        } else if (editorPlaceholders.isEmpty()) {
-            statusHandler.warn(
-                    "Unable to find editor placeholder, cannot swap editor area.");
-        } else {
-            statusHandler.warn(
-                    "Too many editor placeholders found, cannot swap editor area.");
+        editorPlaceholder.setToBeRendered(false);
+        editorPlaceholder.setRef(null);
+
+        /*
+         * Changing the id hides it from IWorkbenchPage.getEditorReferences().
+         */
+        @SuppressWarnings("restriction")
+        String oldId = CompatibilityEditor.MODEL_ELEMENT_ID;
+        String newId = oldId + ".hidden";
+        List<MPart> parts = modelService.findElements(localEditorArea, oldId,
+                MPart.class, null);
+        parts.forEach((part) -> part.setElementId(newId));
+    }
+
+    /**
+     * Show editors that were previously hidden by {@link #hideEditors()}. This
+     * discards the current contents of the shared editor area, which should be
+     * fine as long as other perspectives are also clearing out the editor area
+     * when deactivating.
+     */
+    private void showEditors() {
+        MPlaceholder editorPlaceholder = findEditorPlaceholder();
+        MArea editorArea = (MArea) editorPlaceholder.getRef();
+        if (editorArea == null) {
+            /*
+             * The placeholder resolver will grab the editor area from the
+             * shared elements in the window and set it in the placeholder
+             * correctly.
+             */
+            MWindow window = perspectiveWindow.getService(MWindow.class);
+            EPlaceholderResolver resolver = perspectiveWindow
+                    .getService(EPlaceholderResolver.class);
+            resolver.resolvePlaceholderRef(editorPlaceholder, window);
+            editorArea = (MArea) editorPlaceholder.getRef();
         }
-        return Collections.emptyList();
+        editorPlaceholder.setToBeRendered(true);
+
+        List<MPartSashContainerElement> editorChildren = editorArea
+                .getChildren();
+        editorChildren.forEach((child) -> child.setToBeRendered(false));
+        editorChildren.clear();
+
+        if (editorArea.getWidget() == null) {
+            /*
+             * Intermittent problems occur if the editorArea doesn't have a GUI
+             * after this, so force it.
+             */
+            perspectiveWindow.getService(IPresentationEngine.class)
+                    .createGui(editorArea);
+        }
+
+        MPerspective perspective = getPerspectiveModel();
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        List<MArea> localEditorAreas = modelService.findElements(perspective,
+                getPerpectiveEditorAreaId(), MArea.class, null);
+        if (localEditorAreas != null && !opened) {
+            /* Remove old local editors for a fresh perspective. */
+            for (MArea area : localEditorAreas) {
+                area.setToBeRendered(false);
+                area.getParent().getChildren().remove(area);
+            }
+            localEditorAreas = null;
+        }
+        if (localEditorAreas == null || localEditorAreas.isEmpty()) {
+            MPartSashContainerElement defaultStack = createDefaultEditorStack();
+            editorChildren.add(defaultStack);
+            /*
+             * Visibility events for new editors are not firing correctly if the
+             * default stack gui isn't created before the new editors.
+             */
+            perspectiveWindow.getService(IPresentationEngine.class)
+                    .createGui(defaultStack);
+            if (defaultStack.getWidget() == null) {
+                perspectiveWindow.getService(IPresentationEngine.class)
+                        .createGui(defaultStack);
+            }
+        } else {
+            MArea localEditorArea = localEditorAreas.get(0);
+            moveAllChildren(localEditorArea, editorArea);
+            localEditorArea.setToBeRendered(false);
+            localEditorArea.getParent().getChildren().remove(localEditorArea);
+            @SuppressWarnings("restriction")
+            String newId = CompatibilityEditor.MODEL_ELEMENT_ID;
+            String oldId = newId + ".hidden";
+            List<MPart> parts = modelService.findElements(localEditorArea,
+                    oldId, MPart.class, null);
+            parts.forEach((part) -> part.setElementId(newId));
+        }
+    }
+
+    /**
+     * @return the unique id to use for the area that holds the editors when a
+     *         perspective is deactivated.
+     * @see #hideEditors()
+     */
+    private String getPerpectiveEditorAreaId() {
+        return perspectiveId + ".editors";
+    }
+
+    /**
+     * @return the editor placeholder within the current perspective.
+     * @throws IllegalStateException
+     *             if there is no editor placeholder
+     */
+    private MPlaceholder findEditorPlaceholder() throws IllegalStateException {
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MPerspective perspective = getPerspectiveModel();
+        List<MPlaceholder> placeholders = modelService.findElements(perspective,
+                IPageLayout.ID_EDITOR_AREA, MPlaceholder.class, null);
+        if (placeholders == null || placeholders.isEmpty()) {
+            throw new IllegalStateException(
+                    "No MPlaceholder for editors found in "
+                            + perspective.getElementId());
+
+        }
+        return placeholders.get(0);
+    }
+
+    /**
+     * @return the perspective model for this perspective.
+     * @throws IllegalStateException
+     *             if the perspective is not found
+     */
+    private MPerspective getPerspectiveModel() throws IllegalStateException {
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        MWindow window = perspectiveWindow.getService(MWindow.class);
+        List<MPerspective> perspectives = modelService.findElements(window,
+                perspectiveId, MPerspective.class, null);
+        if (perspectives == null || perspectives.isEmpty()) {
+            throw new IllegalStateException(
+                    "No MPerspective found for " + perspectiveId);
+        }
+        return perspectives.get(0);
+    }
+
+    /**
+     * Move all the children from one MArea to another.
+     * 
+     * @param source
+     *            one MArea
+     * @param dest
+     *            another MArea
+     */
+    private void moveAllChildren(MArea source, MArea dest) {
+        EModelService modelService = perspectiveWindow
+                .getService(EModelService.class);
+        List<MPartSashContainerElement> sourceChildren = source.getChildren();
+        /*
+         * copy the list to avoid concurrent modification as children are
+         * removed.
+         */
+        sourceChildren = new ArrayList<>(sourceChildren);
+        sourceChildren.forEach((child) -> modelService.move(child, dest));
     }
 
     /**
@@ -575,22 +626,7 @@ public abstract class AbstractVizPerspectiveManager
 
         activeEditor = page.getActiveEditor();
 
-        savedEditorAreaUI.addAll(
-                swapEditorArea(Arrays.asList(createDefaultEditorStack())));
-
-        MWindow window = perspectiveWindow.getService(MWindow.class);
-        EModelService modelService = perspectiveWindow
-                .getService(EModelService.class);
-        MPerspective perspective = (MPerspective) modelService
-                .find(perspectiveId, window);
-        if (perspective.getTags().contains("PerspClosing")) {
-            IPresentationEngine presentation = perspectiveWindow
-                    .getService(IPresentationEngine.class);
-            for (MUIElement saved : savedEditorAreaUI) {
-                presentation.removeGui(saved);
-            }
-            savedEditorAreaUI.clear();
-        }
+        hideEditors();
 
         deactivateDialogs();
         for (AbstractModalTool tool : toolManager.getSelectedModalTools()) {
@@ -651,7 +687,7 @@ public abstract class AbstractVizPerspectiveManager
      * @param dialog
      */
     public void addPerspectiveDialog(IPerspectiveSpecificDialog dialog) {
-        if (perspectiveDialogs.contains(dialog) == false) {
+        if (!perspectiveDialogs.contains(dialog)) {
             perspectiveDialogs.add(dialog);
         }
     }
@@ -678,7 +714,7 @@ public abstract class AbstractVizPerspectiveManager
     }
 
     private void closeDialogs() {
-        List<IPerspectiveSpecificDialog> dialogsToClose = new ArrayList<IPerspectiveSpecificDialog>();
+        List<IPerspectiveSpecificDialog> dialogsToClose = new ArrayList<>();
         dialogsToClose.addAll(perspectiveDialogs);
         perspectiveDialogs.clear();
         for (IPerspectiveSpecificDialog dialog : dialogsToClose) {
@@ -731,7 +767,7 @@ public abstract class AbstractVizPerspectiveManager
      * @return Array of availble editors for the perspective
      */
     public AbstractEditor[] getPerspectiveEditors() {
-        List<AbstractEditor> editors = new ArrayList<AbstractEditor>();
+        List<AbstractEditor> editors = new ArrayList<>();
         if (page != null) {
             for (IEditorReference ref : page.getEditorReferences()) {
                 IEditorPart part = ref.getEditor(false);
