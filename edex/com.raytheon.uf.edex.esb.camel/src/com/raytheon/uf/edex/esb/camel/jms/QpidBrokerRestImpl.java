@@ -229,18 +229,7 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
             }
             HttpClientConfigBuilder config = new HttpClientConfigBuilder();
             config.setMaxConnections(1);
-            if (https) {
-                config.setHttpAuthHandler(new QpidCertificateAuthHandler());
-                try {
-                    client = ApacheHttpClientCreator
-                            .createSslClient(config.build());
-                } catch (GeneralSecurityException e) {
-                    throw new JMSConfigurationException(
-                            "Failed to load ssl configuration.", e);
-                }
-            } else {
-                client = ApacheHttpClientCreator.createClient(config.build());
-            }
+            client = ApacheHttpClientCreator.createClient(config.build());
         }
         return client;
     }

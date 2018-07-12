@@ -27,7 +27,6 @@ import org.apache.qpid.client.AMQConnectionFactory;
 import org.apache.qpid.client.AMQConnectionURL;
 import org.apache.qpid.jms.ConnectionURL;
 
-import com.raytheon.uf.common.jms.JmsSslConfiguration;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
@@ -75,8 +74,6 @@ public class JMSConnection {
         try {
             ConnectionURL url = new AMQConnectionURL(connectionUrl);
             url.setClientName(VizApp.getWsId().toString());
-
-            JmsSslConfiguration.configureURL(url);
 
             this.factory = new AMQConnectionFactory(url);
         } catch (Exception e) {
