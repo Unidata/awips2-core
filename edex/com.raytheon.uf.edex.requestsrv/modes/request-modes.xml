@@ -29,8 +29,6 @@
 		<exclude>taf.*</exclude>
 		<exclude>ldad.*</exclude>
 		<exclude>mosaic.*</exclude>
-		<exclude>shef.*</exclude>
 		<exclude>madis.*</exclude>
-		<exclude>retrieval.*</exclude>
 	</mode>
 </edexModes>
