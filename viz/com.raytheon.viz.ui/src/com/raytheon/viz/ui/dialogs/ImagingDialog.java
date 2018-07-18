@@ -103,7 +103,8 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
  * Mar 23, 2018  6865     njensen   Improve dialog title
  * Apr 03, 2018  6626     bsteffen  Set interpolation state on blended images.
  * Apr 12, 2018  6614     randerso  Fix when opened from blended resource legend
- *
+ * Jun 04, 2018  6908     njensen   Register/unregister listeners when rscToEdit changes
+ * 
  * </pre>
  *
  * @author chammack
@@ -234,6 +235,7 @@ public class ImagingDialog extends CaveSWTDialog
 
         this.rscToEdit = rscToEdit;
         this.rscToEdit.registerListener(this);
+        this.addListeners(rscToEdit);
     }
 
     public void setResource(AbstractVizResource<?, ?> rscToEdit) {
@@ -243,14 +245,17 @@ public class ImagingDialog extends CaveSWTDialog
             this.currentEditor = null;
         } else {
             this.rscToEdit.unregisterListener(this);
+            this.removeListeners(rscToEdit);
         }
         this.rscToEdit = rscToEdit;
         this.rscToEdit.registerListener(this);
+        this.addListeners(this.rscToEdit);
     }
 
     public void setContainer(IDisplayPaneContainer editor) {
         if (this.rscToEdit != null) {
             rscToEdit.unregisterListener(this);
+            this.removeListeners(rscToEdit);
             rscToEdit = null;
             VizWorkbenchManager.getInstance().addListener(this);
         }
@@ -263,6 +268,7 @@ public class ImagingDialog extends CaveSWTDialog
         setupListeners(currentEditor, null);
         VizWorkbenchManager.getInstance().removeListener(this);
         if (rscToEdit != null) {
+            this.removeListeners(rscToEdit);
             rscToEdit.unregisterListener(this);
         }
     }

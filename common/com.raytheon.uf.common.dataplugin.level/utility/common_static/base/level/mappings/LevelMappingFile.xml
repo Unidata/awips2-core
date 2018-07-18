@@ -581,6 +581,12 @@
     <Level displayName="0 m AGL" key="0FHAG" group="S">
         <DatabaseLevel levelName="FHAG" levelOneValue="0" unit="m" />
     </Level>
+    <Level displayName="30 m AGL" key="30mAgl" group="S">
+        <DatabaseLevel levelName="FHAG" levelOneValue="30" unit="m" />
+    </Level>
+    <Level displayName="80 m AGL" key="80mAgl" group="S">
+        <DatabaseLevel levelName="FHAG" levelOneValue="80" unit="m" />
+    </Level>
     <Level displayName="100 m AGL" key="100mAgl" group="S">
         <DatabaseLevel levelName="FHAG" levelOneValue="100" unit="m" />
     </Level>
@@ -755,6 +761,10 @@
         <DatabaseLevel levelName="FHAG" levelOneValue="70000.0"
             unit="ft" />
     </Level>
+    <Level displayName="0-0.61 km AGL" key="0-0.61kmAgl" group="C">
+        <DatabaseLevel levelName="FHAG" levelOneValue="0.0"
+            levelTwoValue="610" unit="m" />
+    </Level>
     <Level displayName="0-0.5 km AGL" key="0-0.5kmAgl" group="C">
         <DatabaseLevel levelName="FHAG" levelOneValue="0.0"
             levelTwoValue="500" unit="m" />
@@ -902,6 +912,10 @@
     <Level displayName="3-12 km Agl" key="3-12kmAgl" group="C">
         <DatabaseLevel levelName="FHAG" levelOneValue="3000"
             levelTwoValue="12000.0" unit="m" />
+    </Level>
+    <Level displayName=".61-40 km Agl" key="0.61-40kmAgl" group="C">
+        <DatabaseLevel levelName="FHAG" levelOneValue="610"
+            levelTwoValue="40000.0" unit="m" />
     </Level>
     <Level displayName="0.5 km MSL" key="0.5km" group="S">
         <DatabaseLevel levelName="FH" levelOneValue="500" unit="m" />
