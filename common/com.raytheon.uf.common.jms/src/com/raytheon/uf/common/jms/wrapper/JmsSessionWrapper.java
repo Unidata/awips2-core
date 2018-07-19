@@ -58,6 +58,7 @@ import com.raytheon.uf.common.jms.JmsPooledSession;
  * ------------ ---------- ----------- --------------------------
  * Nov 30, 2011            rjpeter     Initial creation
  * Feb 26, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
+ * Jun 06, 2018 DR 19393   mfontaine   Added Catch Exception instead of Throwable
  * </pre>
  * 
  * @author rjpeter
@@ -154,7 +155,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             sess.commit();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -174,7 +175,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createBrowser(queue);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -195,7 +196,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createBrowser(queue, messageSelector);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -215,7 +216,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createBytesMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -255,7 +256,7 @@ public class JmsSessionWrapper implements Session {
             }
 
             return consumer;
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -280,7 +281,7 @@ public class JmsSessionWrapper implements Session {
                 // no pooling for now
                 return sess.createConsumer(destination, messageSelector,
                         noLocal);
-            } catch (Throwable e) {
+            } catch (JMSException e) {
                 exceptionOccurred = true;
                 JMSException exc = new JMSException(
                         "Exception occurred on pooled session");
@@ -306,7 +307,7 @@ public class JmsSessionWrapper implements Session {
         try {
             // no pooling for now
             return sess.createDurableSubscriber(topic, name);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -330,7 +331,7 @@ public class JmsSessionWrapper implements Session {
             // no pooling for now
             return sess.createDurableSubscriber(topic, name, messageSelector,
                     noLocal);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -350,7 +351,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createMapMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -370,7 +371,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -390,7 +391,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createObjectMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -411,7 +412,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createObjectMessage(obj);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -438,7 +439,7 @@ public class JmsSessionWrapper implements Session {
             }
 
             return producer;
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -458,7 +459,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createQueue(queueName);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -478,7 +479,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createStreamMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -498,7 +499,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createTemporaryQueue();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -518,7 +519,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createTemporaryTopic();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -538,7 +539,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createTextMessage();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -558,7 +559,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createTextMessage(text);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -578,7 +579,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.createTopic(topicName);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -598,7 +599,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.getAcknowledgeMode();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -618,7 +619,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.getMessageListener();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -638,7 +639,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             return sess.getTransacted();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -658,7 +659,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             sess.recover();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -678,7 +679,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             sess.rollback();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -697,7 +698,7 @@ public class JmsSessionWrapper implements Session {
         try {
             Session sess = getSession();
             sess.run();
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             RuntimeException exc = new RuntimeException(
                     "Exception occurred on pooled session", e);
@@ -717,7 +718,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             sess.setMessageListener(listener);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
@@ -737,7 +738,7 @@ public class JmsSessionWrapper implements Session {
 
         try {
             sess.unsubscribe(name);
-        } catch (Throwable e) {
+        } catch (JMSException e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
