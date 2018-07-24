@@ -214,8 +214,6 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         }
 
         finally {
-            statusHandler.info("Time spent in persist: "
-                    + (System.currentTimeMillis() - t0));
         }
 
     }
