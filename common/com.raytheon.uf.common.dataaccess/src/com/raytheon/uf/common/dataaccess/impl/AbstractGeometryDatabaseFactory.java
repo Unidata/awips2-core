@@ -84,6 +84,8 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jul 27, 2016  2416     tgurney   Stub impl of getNotificationFilter()
  * Oct 06, 2016  5926     dgilling  Add executeGetColumns.
  * Feb 19, 2018  7220     mapeters  Improve filtering of available identifier values
+ * Jul 02, 2018  7327     mapeters  Prevent invalid constraints for non-table column
+ *                                  identifiers when getting identifier values
  *
  * </pre>
  *
@@ -401,7 +403,7 @@ public abstract class AbstractGeometryDatabaseFactory
         for (Map.Entry<String, Object> entry : request.getIdentifiers()
                 .entrySet()) {
             String key = entry.getKey();
-            if (TABLE.equals(key)) {
+            if (!isColumnIdentifier(key)) {
                 continue;
             }
             Object value = entry.getValue();
@@ -419,6 +421,18 @@ public abstract class AbstractGeometryDatabaseFactory
         sql.append(" order by " + columnName + ";");
 
         return sql.toString();
+    }
+
+    /**
+     * Determine if the given identifier is a column in the database table being
+     * queried.
+     *
+     * @param identifier
+     *            the identifier name
+     * @return true if the identifier is a table column, false otherwise
+     */
+    protected boolean isColumnIdentifier(String identifier) {
+        return !TABLE.equals(identifier);
     }
 
     /**
