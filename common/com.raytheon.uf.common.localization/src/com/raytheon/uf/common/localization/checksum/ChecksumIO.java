@@ -48,7 +48,8 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *                                      Refactored getFileChecksum(File)
  * Feb 03, 2016  4754      bsteffen    Fix concurrency issue
  * May 03, 2017  6258      tgurney     Set permissions on checksum file
- * Sep  8, 2017  6255      tgurney     Check ownership before setting permissions
+ * Sep 08, 2017  6255      tgurney     Check ownership before setting permissions
+ * Jun 13, 2018  6289      njensen     Return checksum even if checksum file cannot be written
  *
  * </pre>
  *
@@ -141,6 +142,10 @@ public class ChecksumIO {
         try (BufferedWriter bw = new BufferedWriter(
                 new FileWriter(checksumFile))) {
             bw.write(chksum);
+        } catch (IOException e) {
+            logger.error("Failed to write checksum file for " + file.getPath(),
+                    e);
+            return chksum;
         }
         String owner = Files.getOwner(checksumFile.toPath()).getName();
         try {

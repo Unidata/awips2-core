@@ -70,6 +70,8 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  * May 01, 2017  6217     randerso  Added getters for available and selected
  *                                  lists. Additional code cleanup.
  * Sep 26, 2017  6413     tjensen   Add pre-sorted options for lists
+ * Jul 02, 2018  7329     mapeters  Prevent selected list with up/down arrows
+ *                                  from being sorted
  *
  * </pre>
  *
@@ -497,16 +499,19 @@ public class DualList extends Composite {
             if (s == null) {
                 continue;
             }
-            if (config.getSelectedList().contains(s)) {
-                selectedList.add(s);
-            } else {
+            if (!config.getSelectedList().contains(s)) {
                 availableList.add(s);
             }
+        }
+        for (String s : config.getSelectedList()) {
+            selectedList.add(s);
         }
 
         if (config.isSortList()) {
             sortListItems(availableList);
-            sortListItems(selectedList);
+            if (!config.isShowUpDownBtns()) {
+                sortListItems(selectedList);
+            }
         }
 
         enableDisableLeftRightButtons();
