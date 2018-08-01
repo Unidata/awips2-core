@@ -41,7 +41,6 @@ import com.raytheon.uf.common.jms.JmsPooledProducer;
  * Feb 26, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
  * Jun 07, 2013 DR 16316   rjpeter     Fix memory leak.
  * Feb 07, 2014 2357       rjpeter     Set linked exception in exception handling.
- * Jun 06, 2018 DR 19393   mfontaine   Added Catch Exception instead of Throwable
  * </pre>
  * 
  * @author rjpeter
@@ -119,7 +118,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getDeliveryMode();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -142,7 +141,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getDestination();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -165,7 +164,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getDisableMessageID();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -188,7 +187,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getDisableMessageTimestamp();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -211,7 +210,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getPriority();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -234,7 +233,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             return producer.getTimeToLive();
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -257,7 +256,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.send(message);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -282,7 +281,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.send(destination, message);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -306,7 +305,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.send(message, deliveryMode, priority, timeToLive);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -333,7 +332,7 @@ public class JmsProducerWrapper implements MessageProducer {
         try {
             producer.send(destination, message, deliveryMode, priority,
                     timeToLive);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -356,7 +355,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.setDeliveryMode(deliveryMode);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -379,7 +378,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.setDisableMessageID(value);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -402,7 +401,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.setDisableMessageTimestamp(value);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -425,7 +424,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.setPriority(defaultPriority);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
@@ -448,7 +447,7 @@ public class JmsProducerWrapper implements MessageProducer {
 
         try {
             producer.setTimeToLive(timeToLive);
-        } catch (JMSException e) {
+        } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
                     "Exception occurred on pooled producer");
