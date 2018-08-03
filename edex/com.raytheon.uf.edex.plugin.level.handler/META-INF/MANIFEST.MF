@@ -4,7 +4,7 @@ Bundle-Name: Handler Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.plugin.level.handler
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataplugin.level,
  com.raytheon.uf.edex.plugin.level

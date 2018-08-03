@@ -22,7 +22,7 @@ package com.raytheon.viz.core.gl;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.media.opengl.GL;
+import com.jogamp.opengl.GL2;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -259,7 +259,7 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
             double[][][] worldCoordinates = generateWorldCoords(imageGeometry,
                     imageCRSToLatLon);
             vertexCoords = new GLGeometryObject2D(
-                    new GLGeometryObjectData(geometryType, GL.GL_VERTEX_ARRAY));
+                    new GLGeometryObjectData(geometryType, GL2.GL_VERTEX_ARRAY));
             vertexCoords.allocate(
                     worldCoordinates.length * worldCoordinates[0].length);
             // Check for world wrapping
@@ -348,9 +348,9 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
         }
         if (wwcTextureCoords == null || wwcVertexCoords == null) {
             wwcVertexCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_VERTEX_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_VERTEX_ARRAY));
             wwcTextureCoords = new GLGeometryObject2D(new GLGeometryObjectData(
-                    GL.GL_TRIANGLE_STRIP, GL.GL_TEXTURE_COORD_ARRAY));
+                    GL2.GL_TRIANGLE_STRIP, GL2.GL_TEXTURE_COORD_ARRAY));
         }
         // at this point triangle abc is a triangle in which sides ab and ac
         // are cut by the inverse central meridian. We need to find the two

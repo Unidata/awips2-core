@@ -30,7 +30,7 @@ Require-Bundle: org.python.pydev,
  org.eclipse.e4.ui.workbench,
  com.raytheon.uf.common.protectedfiles;bundle-version="1.17.0"
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: com.raytheon.uf.viz.localization.perspective.adapter,
  com.raytheon.uf.viz.localization.perspective.editor,
  com.raytheon.uf.viz.localization.perspective.service,

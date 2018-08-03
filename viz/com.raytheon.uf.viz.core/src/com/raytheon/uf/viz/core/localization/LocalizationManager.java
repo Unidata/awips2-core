@@ -112,7 +112,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jun 25, 2017            mjames@ucar Always run alertviz.
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  * Jul 18, 2017 6316       njensen     Log setting site localization
- *
+ * 
  * </pre>
  *
  * @author chammack

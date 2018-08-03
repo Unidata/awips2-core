@@ -41,9 +41,13 @@
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="2" />
                             <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
+<<<<<<< HEAD
                             <capability xsi:type="labelableCapability" labelField="route" />
                             <capability xsi:type="densityCapability" density="0.2"/>
 >>>>>>> unidata_17.1.1
+=======
+                            <capability xsi:type="densityCapability" density="0.2"/>
+>>>>>>> unidata_17.1.1-osx
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

@@ -30,6 +30,7 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
+<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
 <<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/marine.xml
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#9b9b9b" />
@@ -38,6 +39,8 @@
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
 =======
+=======
+>>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
                         	<capability xsi:type="pointCapability" pointStyle="BOX"/>
                             <capability xsi:type="colorableCapability" colorAsString="yellow" />
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
@@ -58,7 +61,10 @@
                     <resourceData xsi:type="lpiResourceData">
                         <filename>volcanoes.lpi</filename>
                         <mapName>Volcano Locations</mapName>
+<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
 >>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
+=======
+>>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
                     </resourceData>
                 </resource>
             </descriptor>

@@ -17,8 +17,12 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
+/**
+ * 
+ */
 package com.raytheon.viz.ui.actions;
 
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.IElementUpdater;
@@ -36,15 +40,15 @@ import com.raytheon.uf.viz.core.globals.IGlobalChangedListener;
  * ------------ ---------- ----------- --------------------------
  * Jul 23, 2007            randerso    Initial Creation.
  * Oct 10, 2013       2104 mschenke    Will truncate text if too long
- * Mar 31, 2016 5519       bsteffen    Keep toolbar text constant width.
+ * Mar 10, 2017            mjames@ucar We don't need fixed with with toolbar menu reorg.
  * 
- * </pre>
- * 
- * @author randerso
+ * &#064;author randerso
  * 
  */
 public class ScaleButtonHandler extends AbstractGlobalsButtonHandler implements
         IElementUpdater, IGlobalChangedListener {
+
+    private static final int TEXT_LIMIT = 200;
 
     public ScaleButtonHandler() {
         super(VizConstants.SCALE_ID);
@@ -55,12 +59,23 @@ public class ScaleButtonHandler extends AbstractGlobalsButtonHandler implements
             UIElement element, Object value) {
         String scale = (String) value;
         String tooltip = scale;
-        HandlerTextSizer sizer = new HandlerTextSizer(Display.getCurrent());
-        sizer.setMinCharacters(10);
-        sizer.setMaxCharacters(10);
-        String text = sizer.createAdjustedText(scale);
-        sizer.dispose();
-        element.setText(text);
+
+        GC gc = new GC(Display.getCurrent());
+        if (gc.textExtent(scale).x > TEXT_LIMIT) {
+            String suffix = "...";
+            String text = scale.substring(0, suffix.length()) + suffix;
+            for (int i = suffix.length() + 1; i < scale.length(); ++i) {
+                String test = scale.substring(0, i) + suffix;
+                if (gc.textExtent(test).x < TEXT_LIMIT) {
+                    text = test;
+                } else {
+                    break;
+                }
+            }
+            scale = text;
+        }
+        gc.dispose();
+        element.setText(scale);
         element.setTooltip("Scale: " + tooltip);
     }
 

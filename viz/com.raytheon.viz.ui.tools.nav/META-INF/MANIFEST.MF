@@ -11,5 +11,5 @@ Require-Bundle: org.eclipse.ui,
  com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.time
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ClassPath: com.raytheon.viz.ui.tools.nav.jar

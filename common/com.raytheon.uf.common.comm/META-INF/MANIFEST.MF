@@ -4,7 +4,7 @@ Bundle-Name: Comm Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.comm
 Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.apache.http,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.util;bundle-version="1.15.0",

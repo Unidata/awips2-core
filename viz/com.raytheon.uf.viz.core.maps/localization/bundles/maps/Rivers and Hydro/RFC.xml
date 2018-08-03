@@ -39,7 +39,10 @@
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="2" />
                             <capability xsi:type="colorableCapability" colorAsString="#FFC0CB" />
+<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Rivers and Hydro/RFC.xml
 >>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Rivers and Hydro/RFC.xml
+=======
+>>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Rivers and Hydro/RFC.xml
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

@@ -4,6 +4,6 @@ Bundle-Name: Common Convert
 Bundle-SymbolicName: com.raytheon.uf.common.convert
 Bundle-Version: 1.14.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: org.apache.commons.beanutils;bundle-version="1.8.3"
 Export-Package: com.raytheon.uf.common.convert

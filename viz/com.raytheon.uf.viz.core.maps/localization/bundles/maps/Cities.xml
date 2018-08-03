@@ -46,7 +46,10 @@
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
                             <capability xsi:type="densityCapability" density="0.4"/>
+<<<<<<< HEAD
 >>>>>>> unidata_17.1.1
+=======
+>>>>>>> unidata_17.1.1-osx
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

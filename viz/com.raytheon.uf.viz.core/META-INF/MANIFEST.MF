@@ -80,7 +80,7 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.tile,
  com.raytheon.uf.viz.core.time,
  com.raytheon.viz.core.units
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: com.raytheon.uf.common.inventory.exception,
  com.raytheon.uf.viz.datacube
 Bundle-ClassPath: com.raytheon.uf.viz.core.jar,.

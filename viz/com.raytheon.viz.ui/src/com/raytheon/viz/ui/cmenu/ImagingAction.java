@@ -106,7 +106,7 @@ public class ImagingAction extends AbstractRightClickAction {
      */
     @Override
     public String getText() {
-        return "Imaging...";
+        return "Image Properties";
     }
 
 }

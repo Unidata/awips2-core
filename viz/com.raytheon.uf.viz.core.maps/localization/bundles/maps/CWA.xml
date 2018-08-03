@@ -31,11 +31,14 @@
                     <loadProperties>
                         <capabilities>
 <<<<<<< HEAD
+<<<<<<< HEAD
                             <capability xsi:type="outlineCapability"
                                 lineStyle="SOLID" />
                             <capability xsi:type="colorableCapability"
                                 colorAsString="#ffffff" />
 =======
+=======
+>>>>>>> unidata_17.1.1-osx
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="3"/>
                             <capability xsi:type="colorableCapability" colorAsString="#ffffff"/>
 >>>>>>> unidata_17.1.1

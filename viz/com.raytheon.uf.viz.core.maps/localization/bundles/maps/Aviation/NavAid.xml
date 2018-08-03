@@ -41,7 +41,10 @@
                             <capability xsi:type="labelableCapability" labelField="name"/>
                             <capability xsi:type="densityCapability" density="0.75"/>
                             <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
+<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Aviation/NavAid.xml
 >>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Aviation/NavAid.xml
+=======
+>>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Aviation/NavAid.xml
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />

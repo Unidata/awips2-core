@@ -4,7 +4,7 @@ Bundle-Name: Core
 Bundle-SymbolicName: com.raytheon.uf.edex.core
 Bundle-Version: 1.14.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Export-Package: com.raytheon.uf.edex.core,
  com.raytheon.uf.edex.core.dataplugin,
  com.raytheon.uf.edex.core.exception,

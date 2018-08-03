@@ -19,7 +19,7 @@ Require-Bundle: org.eclipse.core.runtime,
  com.raytheon.uf.viz.ui.menus;bundle-version="1.14.0",
  com.raytheon.uf.common.dataplugin.maps;bundle-version="1.0.0",
  com.raytheon.uf.common.colormap;bundle-version="1.15.1"
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.viz.core.maps,
  com.raytheon.uf.viz.core.maps.actions,
