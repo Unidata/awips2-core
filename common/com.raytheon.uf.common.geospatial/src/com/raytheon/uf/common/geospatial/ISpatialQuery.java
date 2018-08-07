@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,36 +22,49 @@ package com.raytheon.uf.common.geospatial;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
+import com.raytheon.uf.common.geospatial.request.SpatialDbQueryRequest;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
- * 
+ *
  * ISpatialQuery
- * 
+ *
  * Defines an interface for performing client-side spatial queries
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Dec 7, 2007              chammack    Initial Creation.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 07, 2007           chammack  Initial Creation.
+ * Aug 07, 2018  6642     randerso  Added executeRequest(), deprecated
+ *                                  dbRequest(). Code cleanup.
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 public interface ISpatialQuery {
 
+    /** Enum defining the spatial query mode */
     public static enum SearchMode {
-        CONTAINS, INTERSECTS, WITHIN, CLOSEST
+        /** Returned features must be contained in the constraint geometry */
+        CONTAINS,
+
+        /** Returned features must intersect the constraint geometry */
+        INTERSECTS,
+
+        /** Returned features containing the constraint geometry */
+        WITHIN,
+
+        /** Returned feature nearest the constraint geometry */
+        CLOSEST
     };
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param attributes
@@ -68,7 +81,7 @@ public interface ISpatialQuery {
      * @param mode
      *            the search mode used for the geospatial component
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String[] attributes,
             Geometry geometry, Map<String, String> filter, boolean exclusive,
@@ -76,7 +89,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param theGeomField
@@ -96,7 +109,7 @@ public interface ISpatialQuery {
      * @param mode
      *            the search mode used for the geospatial component
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String theGeomField,
             String[] attributes, Geometry geometry, Map<String, String> filter,
@@ -104,7 +117,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param theGeomField
@@ -126,7 +139,7 @@ public interface ISpatialQuery {
      * @param limit
      *            the max number of results to return
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String[] attributes,
             Geometry geometry, Map<String, String> filter, boolean exclusive,
@@ -134,7 +147,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param theGeomField
@@ -156,7 +169,7 @@ public interface ISpatialQuery {
      * @param limit
      *            the max number of results to return
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String theGeomField,
             String[] attributes, Geometry geometry, Map<String, String> filter,
@@ -165,7 +178,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param attributes
@@ -179,7 +192,7 @@ public interface ISpatialQuery {
      * @param mode
      *            the search mode used for the geospatial component
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String[] attributes,
             Geometry geometry, Map<String, RequestConstraint> filter,
@@ -187,7 +200,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param theGeomField
@@ -204,7 +217,7 @@ public interface ISpatialQuery {
      * @param mode
      *            the search mode used for the geospatial component
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String theGeomField,
             String[] attributes, Geometry geometry,
@@ -213,7 +226,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param attributes
@@ -226,10 +239,10 @@ public interface ISpatialQuery {
      *            the non-geospatial elements to use in narrowing
      * @param mode
      *            the search mode used for the geospatial component
-     * @param mode
+     * @param limit
      *            the max number of results to return
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String[] attributes,
             Geometry geometry, Map<String, RequestConstraint> filter,
@@ -237,7 +250,7 @@ public interface ISpatialQuery {
 
     /**
      * Perform a GIS style query
-     * 
+     *
      * @param dataSet
      *            the dataset to search
      * @param theGeomField
@@ -253,10 +266,10 @@ public interface ISpatialQuery {
      *            the non-geospatial elements to use in narrowing
      * @param mode
      *            the search mode used for the geospatial component
-     * @param mode
+     * @param limit
      *            the max number of results to return
      * @return a set of features
-     * @throws VizException
+     * @throws SpatialException
      */
     public SpatialQueryResult[] query(String dataSet, String theGeomField,
             String[] attributes, Geometry geometry,
@@ -265,11 +278,25 @@ public interface ISpatialQuery {
 
     /**
      * A direct Db call
-     * 
+     *
      * @param sql
-     * @return
+     * @param dbname
+     *            the name of the database being queried
+     * @return an object array containing the results
+     * @throws SpatialException
+     * @deprecated use {@link #executeRequest(SpatialDbQueryRequest)}
+     */
+    @Deprecated
+    public Object[] dbRequest(String sql, String dbname)
+            throws SpatialException;
+
+    /**
+     * Execute a SpatialDbQueryRequest
+     *
+     * @param request
+     * @return a set of features
      * @throws SpatialException
      */
-    public Object[] dbRequest(String sql, String dbname)
+    public SpatialQueryResult[] executeRequest(SpatialDbQueryRequest request)
             throws SpatialException;
 }
