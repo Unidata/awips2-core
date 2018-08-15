@@ -1,29 +1,41 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.edex.database.health;
 
+import java.text.DateFormat;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.ListIterator;
+import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
+import java.util.SortedMap;
+import java.util.TreeMap;
+import java.util.concurrent.BlockingQueue;
+import java.util.concurrent.DelayQueue;
+import java.util.concurrent.Delayed;
+import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -35,37 +47,43 @@ import org.hibernate.type.StringType;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
 
 /**
  * Postgres implemetation of Database Bloat checking.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 10, 2016 4630       rjpeter     Initial creation
  * Jun 20, 2016 5679       rjpeter     Add admin database account
  * Sep 08, 2017 DR 20135   D. Friedman Rebuild constraint-backing indexes concurrently
- * 
+ * Jun 29, 2018 20505      ryu         Attempt to obtain access exclusive locks before altering tables.
+ * Aug 06, 2018 20505      edebebe     Re-factored the 'reindex()' method to speed up the table re-indexing
+ *                                     logic and added three inner classes: 'ReindexJob', 'Action', 'WorkerThread'.
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 
 public class PostgresBloatDao extends CoreDao implements BloatDao {
+
     /**
      * Pulled from github. Modified to only retrieve schema, table, real size,
      * bloat size, and bloat percent, and to exclude system tables / indexes.
-     * 
+     *
      * https://github.com/ioguix/pgsql-bloat-estimation
-     * 
+     *
      * This query is compatible with PostgreSQL 9.0 and more
-     * 
+     *
      * <pre>
      * SELECT schemaname, tblname, bs*tblpages AS real_size, (tblpages-est_tblpages_ff)*bs AS bloat_size,
      *   CASE WHEN tblpages - est_tblpages_ff > 0
@@ -106,13 +124,13 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
      *         LEFT JOIN pg_class AS toast ON tbl.reltoastrelid = toast.oid
      *       WHERE att.attnum > 0 AND NOT att.attisdropped
      *         AND tbl.relkind = 'r'
-     *         AND ns.nspname NOT IN ('pg_catalog', 'information_schema') 
+     *         AND ns.nspname NOT IN ('pg_catalog', 'information_schema')
      *       GROUP BY 1,2,3,4,5,6,7,8,9,10, tbl.relhasoids
      *       ORDER BY 2,3
      *     ) AS s
      *   ) AS s2
      * ) AS s3
-     * WHERE NOT is_na 
+     * WHERE NOT is_na
      * order by 1, 2;
      * </pre>
      */
@@ -148,11 +166,11 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
      * Pulled from github. Modified to only retrieve schema, table, index, real
      * size, bloat size, and bloat percent, and to exclude system tables /
      * indexes.
-     * 
+     *
      * https://github.com/ioguix/pgsql-bloat-estimation
-     * 
+     *
      * This query is compatible with PostgreSQL 9.0 and more
-     * 
+     *
      * <pre>
      * SELECT nspname AS schemaname, tblname, idxname, bs*(relpages)::bigint AS real_size,
      *   bs*(relpages-est_pages_ff) AS bloat_size,
@@ -257,7 +275,8 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
             + "am.amname = 'btree') AS sub WHERE NOT is_na  ORDER BY 1, 2, 3;";
 
     /**
-     * For a given name (table/constraint/index) in a schema, grab the oid and index definition.
+     * For a given name (table/constraint/index) in a schema, grab the oid and
+     * index definition.
      */
     private static final String SELECT_INDEX_INFO = "select tbl.oid, pg_get_indexdef(tbl.oid) as indexdef "
             + "from pg_class tbl join pg_namespace ns "
@@ -271,7 +290,8 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
             + "on ns.oid = con.connamespace where con.conname = :name and ns.nspname = :schema";
 
     /**
-     * Fetch foreign constraints that use the same index as the given constraint.
+     * Fetch foreign constraints that use the same index as the given
+     * constraint.
      */
     private static final String SELECT_INDEX_FCONS = "select "
             + "fcon.conname as fconname, fconrel.relname as fconrelname, fconns.nspname as fconns, "
@@ -287,9 +307,23 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
 
     protected final String database;
 
+    private static final String REINDEXING_DELAY_PROPERTY = "database.health.reindex.delay";
+
+    private final long delay;
+
+    private final ReindexThread workerThread;
+
     public PostgresBloatDao(String database) {
         super(DaoConfig.forDatabase(database, true));
         this.database = database;
+
+        this.delay = Long.getLong(REINDEXING_DELAY_PROPERTY, 60000);
+
+        workerThread = ReindexThread.getInstance();
+        if (!workerThread.isAlive()) {
+            workerThread.setDaemon(true);
+            workerThread.start();
+        }
     }
 
     @Override
@@ -353,12 +387,17 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
 
     @Override
     public void reindex(final IndexBloat info) {
+        PostgresBloatDao myDao = this;
         txTemplate.execute(new TransactionCallback<Integer>() {
             @Override
             public Integer doInTransaction(TransactionStatus status) {
                 String schema = info.getSchema();
                 String indexName = info.getIndexName();
-                String fqnIndexName = "\"" + schema + "\"" + ".\"" + indexName
+
+                List<Action> actionListForReindexJob = new ArrayList<>();
+                String fqnTableName = "\"" + schema + "\".\""
+                        + info.getTableName() + "\"";
+                String fqnIndexName = "\"" + schema + "\".\"" + indexName
                         + "\"";
                 Map<String, Object> paramMap = new HashMap<>(2, 1);
                 paramMap.put("name", indexName);
@@ -378,33 +417,35 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                     indexDef = queryResult.getString(1);
                 }
                 if (indexId == null || indexDef == null) {
-                    logger.warn("Could not look up OID and definition for index: " + fqnIndexName);
+                    logger.warn(
+                            "Could not look up OID and definition for index: "
+                                    + fqnIndexName);
                     return 0;
                 }
 
                 logger.info("Index definition: " + indexDef);
+                Matcher matcher = INDEX_REGEX.matcher(indexDef);
+                if (!matcher.matches()) {
+                    logger.warn(
+                            "Could not parse index definition.  Manual reindex required. Definition ["
+                                    + indexDef + "]");
+                    return 0;
+                }
 
                 /* update index name to a tmp name */
-                String tmpName = "tmp_" + indexName;
+                String tmpName = TMP_INDEX_PREFIX + indexName;
                 if (tmpName.length() > 64) {
                     tmpName.substring(0, 64);
                 }
-                String fqnTmpName = "\"" + schema + "\"" + ".\"" + tmpName
-                        + "\"";
+                String fqnTmpName = "\"" + schema + "\".\"" + tmpName + "\"";
 
-                /*
-                 * check for previously created bad index and delete it if it
-                 * exists
-                 */
-                sess.createSQLQuery("DROP INDEX IF EXISTS " + fqnTmpName)
-                        .executeUpdate();
-
-                Matcher matcher = INDEX_REGEX.matcher(indexDef);
-                if (!matcher.matches()) {
-                    logger.warn("Could not parse index definition.  Manual reindex required. Definition ["
-                            + indexDef + "]");
-                    return 0;
-                }
+                // Drop the temp index if it exists
+                Action actionDropIndexIfExistsTmp = new Action();
+                actionDropIndexIfExistsTmp.addLock(LockLevel.ACCESS_EXCLUSIVE,
+                        fqnTableName);
+                actionDropIndexIfExistsTmp
+                        .addStatement("DROP INDEX IF EXISTS " + fqnTmpName);
+                actionListForReindexJob.add(actionDropIndexIfExistsTmp);
 
                 /*
                  * The index may be backing a primary key or unique constraint.
@@ -425,7 +466,8 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                     } else if ("u".equals(constraintType)) {
                         indexTypeForConstraint = "UNIQUE";
                     } else {
-                        logger.warn(String.format("Can not recreate index %s for constraint type '%s'",
+                        logger.warn(String.format(
+                                "Can not recreate index %s for constraint type '%s'",
                                 indexName, constraintType));
                         return 0;
                     }
@@ -441,6 +483,7 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                         .addScalar("fconns", StringType.INSTANCE)
                         .addScalar("fcontype", StringType.INSTANCE)
                         .addScalar("fcondef", StringType.INSTANCE);
+
                 paramMap.clear();
                 paramMap.put("conindid", indexId);
                 if (isConstraint) {
@@ -450,17 +493,41 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                 addParamsToQuery(query, paramMap);
                 queryResult = query.scroll();
 
-                StringBuilder fkconDrops = new StringBuilder();
-                StringBuilder fkconAdds = new StringBuilder();
-                StringBuilder fkconValidates = new StringBuilder();
+                Action fkAlterAction = new Action();
+                List<Action> fkValidActions = new ArrayList<>();
+
+                /*
+                 * Use temporary lists to track adds and drops so they can be
+                 * performed in the correct order.
+                 */
+                List<String> dropStatements = new ArrayList<>();
+                List<String> addStatements = new ArrayList<>();
                 while (queryResult.next()) {
                     String fconType = queryResult.getString(3);
                     String fkConName = queryResult.getString(0);
                     if ("f".equals(fconType)) {
-                        String fqnFkTable = String.format("\"%s\".\"%s\"", queryResult.getString(2), queryResult.getString(1));
-                        fkconDrops.append(String.format("ALTER TABLE %s DROP CONSTRAINT %s;\n", fqnFkTable, fkConName));
-                        fkconAdds.append(String.format("ALTER TABLE %s ADD CONSTRAINT %s %s NOT VALID;\n", fqnFkTable, fkConName, queryResult.getString(4)));
-                        fkconValidates.append(String.format("ALTER TABLE %s VALIDATE CONSTRAINT %s;\n", fqnFkTable, fkConName));
+                        String fqnFkTable = String.format("\"%s\".\"%s\"",
+                                queryResult.getString(2),
+                                queryResult.getString(1));
+                        fkAlterAction.addLock(LockLevel.ACCESS_EXCLUSIVE,
+                                fqnFkTable);
+                        dropStatements.add(String.format(
+                                "ALTER TABLE %s DROP CONSTRAINT %s;",
+                                fqnFkTable, fkConName));
+                        addStatements.add(String.format(
+                                "ALTER TABLE %s ADD CONSTRAINT %s %s NOT VALID;",
+                                fqnFkTable, fkConName,
+                                queryResult.getString(4)));
+
+                        Action fkValidAction = new Action();
+                        fkValidAction.addLock(LockLevel.SHARE_UPDATE_EXCLUSIVE,
+                                fqnFkTable);
+                        fkValidAction.addLock(LockLevel.ROW_SHARE,
+                                fqnTableName);
+                        fkValidAction.addStatement(String.format(
+                                "ALTER TABLE %s VALIDATE CONSTRAINT %s;",
+                                fqnFkTable, fkConName));
+                        fkValidActions.add(fkValidAction);
                     } else {
                         logger.warn(String.format(
                                 "Constraint %s appears to depend on %s, but do not know how to handle it. "
@@ -471,42 +538,425 @@ public class PostgresBloatDao extends CoreDao implements BloatDao {
                 }
 
                 /*
-                 * Create temp index concurrently, cannot happen in a
-                 * transaction block
+                 * Drop all the foreign keys before reindexing
                  */
-                String cmd = "COMMIT; " + matcher.group(1)
-                        + " INDEX CONCURRENTLY \"" + tmpName + "\" "
-                        + matcher.group(2);
-                logger.info("Creating new index concurrently. Running cmd: "
-                        + cmd);
-                sess.createSQLQuery(cmd).executeUpdate();
-
+                for (String drop : dropStatements) {
+                    fkAlterAction.addStatement(drop);
+                }
                 /*
                  * Recreate the index either by recreating the constraint(s) or
                  * by renaming the temporary index.
                  */
-                StringBuilder recreateCmd = new StringBuilder();
-                recreateCmd.append("BEGIN;\n")
-                    .append(fkconDrops);
+                fkAlterAction.addLock(LockLevel.ACCESS_EXCLUSIVE, fqnTableName);
                 if (isConstraint) {
-                    recreateCmd.append("ALTER TABLE \"" + schema + "\".\"" + info.getTableName() + "\" "
-                            + "DROP CONSTRAINT " + "\"" + indexName + "\", "
-                            + "ADD CONSTRAINT \"" + indexName + "\" " + indexTypeForConstraint
-                            + " USING INDEX \"" + tmpName + "\"");
+                    fkAlterAction.addStatement("ALTER TABLE " + fqnTableName
+                            + " DROP CONSTRAINT \"" + indexName
+                            + "\", ADD CONSTRAINT \"" + indexName + "\" "
+                            + indexTypeForConstraint + " USING INDEX \""
+                            + tmpName + "\";");
                 } else {
-                    recreateCmd.append("DROP INDEX IF EXISTS " + fqnIndexName
-                            + ";\nALTER INDEX " + fqnTmpName + " RENAME TO \"" + indexName + "\"");
+                    fkAlterAction.addStatement(
+                            "DROP INDEX IF EXISTS " + fqnIndexName + ";");
+                    fkAlterAction.addStatement("ALTER INDEX " + fqnTmpName
+                            + " RENAME TO \"" + indexName + "\";");
                 }
-                recreateCmd.append(";\n")
-                    .append(fkconAdds)
-                    .append("COMMIT;\nBEGIN;\n")
-                    .append(fkconValidates)
-                    .append("COMMIT;\n");
-                cmd = recreateCmd.toString();
-                logger.info("Recreate/rename index: " + cmd);
-                return sess.createSQLQuery(cmd).executeUpdate();
+                /*
+                 * Add all the foreign keys back
+                 */
+                for (String add : addStatements) {
+                    fkAlterAction.addStatement(add);
+                }
+                /*
+                 * Create temp index concurrently, cannot happen in a
+                 * transaction block
+                 */
+                Action actionCreateTempIndex = new Action();
+                actionCreateTempIndex.addStatement(
+                        "COMMIT; " + matcher.group(1) + " INDEX CONCURRENTLY \""
+                                + tmpName + "\" " + matcher.group(2));
+                actionListForReindexJob.add(actionCreateTempIndex);
+
+                actionListForReindexJob.add(fkAlterAction);
+                for (Action validateAction : fkValidActions) {
+                    actionListForReindexJob.add(validateAction);
+                }
+
+                /*
+                 * Create the ReindexJob object and insert it into the
+                 * DelayQueue
+                 */
+                try {
+                    ReindexJob reindexJob = new ReindexJob(indexName, delay,
+                            actionListForReindexJob, myDao);
+                    workerThread.queueJob(reindexJob);
+                } catch (Exception e) {
+                    logger.error(
+                            "Error when adding ReindexJob object to DelayQueue: ",
+                            e);
+                }
+
+                return null;
             }
         });
+    }
 
+    /*
+     * Represents a single Reindexing job that is saved to a DelayQueue
+     */
+    private class ReindexJob implements Delayed {
+
+        protected final IUFStatusHandler logger = UFStatus
+                .getHandler(getClass());
+
+        private final String indexName;
+
+        private List<Action> actionList = new ArrayList<>();
+
+        private final long startTime;
+
+        private long expireTime;
+
+        private final long delay;
+
+        private final PostgresBloatDao myDao;
+
+        public ReindexJob(String indexName, long delay, List<Action> actionList,
+                PostgresBloatDao myDao) {
+            this.indexName = indexName;
+            this.delay = delay;
+            this.startTime = System.currentTimeMillis();
+            this.expireTime = this.startTime;
+            this.actionList = actionList;
+            this.myDao = myDao;
+        }
+
+        /*
+         * Executes list of actions
+         */
+        public int executeActions() {
+
+            int status = 0;
+            ListIterator<Action> itr = actionList.listIterator();
+            Action nextAction = null;
+
+            int actionLength = actionList.size();
+            int actionCount = 0;
+            long start = System.currentTimeMillis();
+            logger.info("Processing actions for reindexing of " + indexName
+                    + "...");
+            // Iterate through the List of Actions
+            while (itr.hasNext() && status == 0) {
+                actionCount++;
+
+                // Execute the Action
+                nextAction = itr.next();
+                logger.info("Processing action " + actionCount + " of "
+                        + actionLength + "...");
+                status = processAction(nextAction);
+
+                /*
+                 * Remove the Action from the List if it was executed
+                 * successfully
+                 */
+                if (status == 0) {
+                    itr.remove();
+                }
+            }
+            long finish = System.currentTimeMillis();
+            logger.info("Processed " + actionCount + " actions from for "
+                    + indexName + "in " + (finish - start) + "ms.");
+            return status;
+        }
+
+        /*
+         * Processes each Action object
+         */
+        public int processAction(Action action) {
+
+            int status = 0;
+            final ActionStatus actionStatus = new ActionStatus();
+
+            try {
+                myDao.txTemplate.execute(new TransactionCallback<Integer>() {
+
+                    @Override
+                    public Integer doInTransaction(TransactionStatus status) {
+
+                        Session sess = getCurrentSession();
+
+                        // Obtain table locks
+                        SortedMap<LockLevel, Set<String>> tableLocks = action
+                                .getLocks();
+                        if (!tableLocks.isEmpty()) {
+                            actionStatus.setLockFailure(true);
+                            for (LockLevel lockLevel : tableLocks.keySet()) {
+                                for (String table : tableLocks.get(lockLevel)) {
+                                    String lockStatement = "LOCK TABLE " + table
+                                            + " IN " + lockLevel.level
+                                            + " MODE NOWAIT;";
+                                    actionStatus.setLastTask(lockStatement);
+
+                                    logger.info("Executing statement: "
+                                            + lockStatement);
+                                    SQLQuery queryLockTables = sess
+                                            .createSQLQuery(lockStatement);
+                                    queryLockTables.executeUpdate();
+                                }
+                            }
+                        }
+
+                        // Execute all the statements
+                        actionStatus.setLockFailure(false);
+                        for (String statement : action.getStatementList()) {
+                            actionStatus.setLastTask(statement);
+
+                            logger.info("Executing statement: " + statement);
+                            SQLQuery queryStatement = sess
+                                    .createSQLQuery(statement);
+                            queryStatement.executeUpdate();
+                        }
+
+                        return 0;
+                    }
+                });
+            } catch (Exception e) {
+
+                if (actionStatus.isLockFailure()) {
+                    status = 1;
+                    logger.info("Failed to execute action during command '"
+                            + actionStatus.getLastTask() + "'. ReindexJob for "
+                            + indexName + " will be delayed and reattempted.");
+                } else {
+                    status = 2;
+                    logger.error("Failed to execute action during command '"
+                            + actionStatus.getLastTask() + "'.", e);
+                }
+            }
+            return status;
+        }
+
+        @Override
+        public long getDelay(TimeUnit unit) {
+
+            long diff = expireTime - System.currentTimeMillis();
+            return unit.convert(diff, TimeUnit.MILLISECONDS);
+        }
+
+        @Override
+        public int compareTo(Delayed o) {
+
+            if (this.getDelay(TimeUnit.MILLISECONDS) < o
+                    .getDelay(TimeUnit.MILLISECONDS)) {
+                return -1;
+            }
+            if (this.getDelay(TimeUnit.MILLISECONDS) > o
+                    .getDelay(TimeUnit.MILLISECONDS)) {
+                return 1;
+            }
+            return 0;
+        }
+
+        @Override
+        public String toString() {
+
+            String formatedExpireTime = formatDate(expireTime);
+
+            return "ReindexJob [indexName=" + indexName + ", expireTime="
+                    + formatedExpireTime + ", actionList=" + actionList + "]";
+        }
+
+        /*
+         * Utility method for formatting date and time
+         */
+        String formatDate(long dateInMillis) {
+            Date date = new Date(dateInMillis);
+            return DateFormat.getDateTimeInstance(DateFormat.LONG,
+                    DateFormat.LONG, Locale.getDefault()).format(date);
+        }
+
+        /*
+         * Getter and Setter methods
+         */
+        public String getIndexName() {
+            return indexName;
+        }
+
+        public void updateExpireTime() {
+            /*
+             * expireTime is currentTime+delay, so if delay of 60 seconds is
+             * required expiration from queue will happen after currenttime + 60
+             * seconds
+             */
+            this.expireTime = System.currentTimeMillis() + delay;
+        }
+    }
+
+    public enum LockLevel {
+        ACCESS_EXCLUSIVE("ACCESS EXCLUSIVE"),
+        EXCLUSIVE("EXCLUSIVE"),
+        SHARE_ROW_EXCLUSIVE("SHARE ROW EXCLUSIVE"),
+        SHARE("SHARE"),
+        SHARE_UPDATE_EXCLUSIVE("SHARE UPDATE EXCLUSIVE"),
+        ROW_EXCLUSIVE("ROW EXCLUSIVE"),
+        ROW_SHARE("ROW SHARE"),
+        ACCESS_SHARE("ACCESS SHARE");
+
+        private final String level;
+
+        LockLevel(String level) {
+            this.level = level;
+        }
+    }
+
+    /*
+     * Wrapper for string containing the last command executed in an action.
+     * Used to track why reindex jobs get delayed.
+     */
+    private class ActionStatus {
+        private String lastTask;
+
+        private boolean lockFailure;
+
+        public String getLastTask() {
+            return lastTask;
+        }
+
+        public void setLastTask(String lastTask) {
+            this.lastTask = lastTask;
+        }
+
+        public boolean isLockFailure() {
+            return lockFailure;
+        }
+
+        public void setLockFailure(boolean lockFailure) {
+            this.lockFailure = lockFailure;
+        }
+    }
+
+    /*
+     * Contains the SQL Query to be executed, the List of tables to be locked
+     * for each Action, the table lock mode and a unique ActionId to identify
+     * each Action object
+     */
+    private class Action {
+
+        private final SortedMap<LockLevel, Set<String>> locks = new TreeMap<>();
+
+        private final List<String> statementList = new ArrayList<>();
+
+        // private final String actionId; // Used for logging only
+
+        public Action() {
+        }
+
+        public void addLock(LockLevel lock, String table) {
+            Set<String> tableList = locks.get(lock);
+            if (tableList == null) {
+                tableList = new HashSet<>();
+                locks.put(lock, tableList);
+            }
+            tableList.add(table);
+        }
+
+        public void addStatement(String statement) {
+            statementList.add(statement);
+        }
+
+        public SortedMap<LockLevel, Set<String>> getLocks() {
+            return locks;
+        }
+
+        public List<String> getStatementList() {
+            return statementList;
+        }
+    }
+
+    /*
+     * This class represents a single worker thread which waits to process each
+     * ReindexJob object placed on the DelayQueue
+     */
+    private static class ReindexThread extends Thread {
+
+        /** Singleton instance of this class */
+        private static ReindexThread instance = null;
+
+        private final BlockingQueue<ReindexJob> delayQueue;
+
+        private final Set<String> queuedJobs;
+
+        protected final IUFStatusHandler loggerForWorker = UFStatus
+                .getHandler(getClass());
+
+        private ReindexThread() {
+            setName("ReindexThread");
+            this.delayQueue = new DelayQueue<>();
+            queuedJobs = Collections.synchronizedSet(new HashSet<>());
+        }
+
+        public static ReindexThread getInstance() {
+            if (instance == null) {
+                instance = new ReindexThread();
+            }
+            return instance;
+        }
+
+        public void queueJob(ReindexJob reindexJob)
+                throws InterruptedException {
+            if (!queuedJobs.contains(reindexJob.getIndexName())) {
+                delayQueue.put(reindexJob);
+                queuedJobs.add(reindexJob.getIndexName());
+            }
+        }
+
+        @Override
+        public void run() {
+
+            ReindexJob reindexJob = null;
+            int status = 0;
+
+            while (!EDEXUtil.isShuttingDown()) {
+                try {
+                    /*
+                     * Wait and then process a job from the DelayQueue once a
+                     * job has been placed in the queue
+                     */
+                    loggerForWorker.info(
+                            "Waiting to retrieve a job from DelayQueue...");
+                    reindexJob = delayQueue.take();
+                    status = reindexJob.executeActions();
+                    String indexName = reindexJob.getIndexName();
+
+                    /*
+                     * Status of executing actions could be success (0), lock
+                     * failure (1), or non-lock failure (2). On a lock-failure,
+                     * put the job back in the queue to be retried later. If it
+                     * fails for any reason other than unable to retrain a lock,
+                     * then log an error and remove the job from the queue.
+                     */
+                    if (status == 1) {
+                        reindexJob.updateExpireTime();
+                        delayQueue.put(reindexJob);
+                    } else if (status == 2) {
+                        queuedJobs.remove(indexName);
+                        loggerForWorker
+                                .error("Error occured in processing ReindexJob: "
+                                        + reindexJob);
+                    } else {
+                        queuedJobs.remove(indexName);
+                        loggerForWorker
+                                .info("Reindex of " + indexName + " completed "
+                                        + (System.currentTimeMillis()
+                                                - reindexJob.startTime)
+                                        + "ms after job queued.");
+                    }
+                } catch (Exception e) {
+                    loggerForWorker.handle(Priority.INFO,
+                            "Error occured in processing ReindexJob: "
+                                    + reindexJob,
+                            e);
+                }
+            }
+        }
     }
 }
