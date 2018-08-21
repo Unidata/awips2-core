@@ -116,10 +116,10 @@
     <Method models="MSAS" levels="500MB" name="Import">
         <Field level="500MB" model="GFS213" abbreviation="T" />
     </Method>
-    <Method models="Metar" levels="500MB" name="Import">
+    <Method models="obs" levels="500MB" name="ImportGrid">
         <Field level="500MB" model="RUC236" abbreviation="T" />
     </Method>
-    <Method models="Ldad" levels="500MB" name="Import">
+    <Method models="ldadmesonet" levels="500MB" name="ImportGrid">
         <Field level="500MB" model="RUC236" abbreviation="T" />
     </Method>
     <Method levels="S,TILT" name="Slice">
