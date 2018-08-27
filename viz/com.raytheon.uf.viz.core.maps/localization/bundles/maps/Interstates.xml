@@ -18,37 +18,27 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties>
                         <capabilities>
-<<<<<<< HEAD
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="labelableCapability"
-                                labelField="route" />
-=======
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="2" />
                             <capability xsi:type="colorableCapability" colorAsString="#cc5000" />
                             <capability xsi:type="labelableCapability" labelField="route" />
                             <capability xsi:type="densityCapability" density="0.2"/>
->>>>>>> unidata_17.1.1
                         </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isMapLayer="true" />
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.interstate</table>
+                    	<table>mapdata.interstate</table>
                         <mapName>Interstates</mapName>
                     </resourceData>
                 </resource>

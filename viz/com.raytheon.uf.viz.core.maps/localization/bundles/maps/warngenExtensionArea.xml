@@ -18,10 +18,6 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
     <displayList>
         <displays xsi:type="mapRenderableDisplay"
@@ -30,23 +26,11 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/iscAll.xml
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-=======
                             <capability xsi:type="colorableCapability" colorAsString="#f08080" />
                             <capability xsi:type="shadeableCapability" opacity="0.4"/>
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/warngenExtensionArea.xml
                         </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/iscAll.xml
-                    <properties isMapLayer="true" />
-                    <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.isc</table>
-                        <mapName>ISC All</mapName>
-=======
                     <properties isSystemResource="false" isBlinking="false"
                         isMapLayer="true" isHoverOn="false" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
@@ -54,7 +38,6 @@
                     <resourceData xsi:type="genericToolsResourceData">
                         <name>WarnGen Extension Area</name>
                         <classT>com.raytheon.viz.warngen.gui.WarngenExtensionAreaLayer</classT>
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/warngenExtensionArea.xml
                     </resourceData>
                 </resource>
             </descriptor>

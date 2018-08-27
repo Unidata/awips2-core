@@ -18,33 +18,25 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties>
                         <capabilities>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Lakes.xml
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#0000ff" />
-=======
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
                             <capability xsi:type="colorableCapability" colorAsString="#1E90FF" />
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Rivers and Hydro/Lakes.xml
                         </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-                    <properties isMapLayer="true" />
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
                     <resourceData xsi:type="dbMapResourceData">
-                        <table>mapdata.lake</table>
+						<table>mapdata.lake</table>
                         <mapName>Lakes</mapName>
                     </resourceData>
                 </resource>
