@@ -13,5 +13,5 @@ Require-Bundle: com.raytheon.edex.common,
  org.slf4j;bundle-version="1.7.5",
  com.raytheon.uf.common.status;bundle-version="1.14.1"
 Export-Package: com.raytheon.uf.edex.plugin.level.dao
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: com.raytheon.uf.common.comm

@@ -4,7 +4,7 @@ Bundle-Name: Geospatial Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.geospatial
 Bundle-Version: 1.15.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Eclipse-RegisterBuddy: org.geotools
 Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
  org.apache.commons.collections;bundle-version="3.2.0",

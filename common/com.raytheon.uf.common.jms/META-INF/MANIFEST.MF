@@ -11,4 +11,4 @@ Require-Bundle: javax.jms,
  com.raytheon.uf.common.util;bundle-version="1.14.0"
 Export-Package: com.raytheon.uf.common.jms,
  com.raytheon.uf.common.jms.notification
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8

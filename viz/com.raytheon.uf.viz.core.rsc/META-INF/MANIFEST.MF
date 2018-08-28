@@ -4,7 +4,7 @@ Bundle-Name: Core Resource
 Bundle-SymbolicName: com.raytheon.uf.viz.core.rsc;singleton:=true
 Bundle-Version: 1.16.2.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: registered
 Require-Bundle: com.raytheon.viz.ui;bundle-version="1.14.0",

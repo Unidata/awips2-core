@@ -10,7 +10,7 @@ Require-Bundle: com.raytheon.edex.common,
  org.slf4j;bundle-version="1.7.5",
  org.apache.camel
 Export-Package: com.raytheon.uf.edex.ingest
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Import-Package: com.raytheon.uf.edex.core,
  com.raytheon.uf.common.status,
  com.raytheon.uf.edex.database.plugin
