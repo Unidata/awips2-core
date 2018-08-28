@@ -18,42 +18,20 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
                 <resource>
                     <loadProperties>
                         <capabilities>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/marine.xml
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="labelableCapability"
-                                labelField="name" />
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-=======
-=======
->>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
                         	<capability xsi:type="pointCapability" pointStyle="BOX"/>
                             <capability xsi:type="colorableCapability" colorAsString="yellow" />
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
                         </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/marine.xml
-                    <properties isMapLayer="true" />
-                    <resourceData xsi:type="dbPointMapResourceData">
-                        <table>mapdata.marinesites</table>
-                        <mapName>Marine Locations</mapName>
-=======
                     <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
                         opacity="1.0" isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
@@ -61,10 +39,6 @@
                     <resourceData xsi:type="lpiResourceData">
                         <filename>volcanoes.lpi</filename>
                         <mapName>Volcano Locations</mapName>
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
-=======
->>>>>>> unidata_17.1.1-osx:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/volcanoes.xml
                     </resourceData>
                 </resource>
             </descriptor>

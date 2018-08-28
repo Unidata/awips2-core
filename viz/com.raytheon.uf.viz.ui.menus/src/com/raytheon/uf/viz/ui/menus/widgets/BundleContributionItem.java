@@ -490,6 +490,9 @@ public class BundleContributionItem extends ContributionItem {
             ILocalizationFile file = PathManagerFactory.getPathManager()
                     .getStaticLocalizationFile(
                             this.menuContribution.xml.bundleFile);
+            if (file == null){
+            	statusHandler.error(this.menuContribution.xml.bundleFile + " not found");
+            }
             Bundle b;
             try (InputStream stream = file.openInputStream()) {
                 b = Bundle.unmarshalBundle(stream, substitutions);

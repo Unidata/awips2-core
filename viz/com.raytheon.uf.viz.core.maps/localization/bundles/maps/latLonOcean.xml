@@ -18,62 +18,7 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
-<<<<<<< HEAD
-    <displayList>
-        <displays xsi:type="mapRenderableDisplay"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
-            <descriptor xsi:type="mapDescriptor">
-                <resource>
-                    <loadProperties>
-                        <capabilities>
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
-                        </capabilities>
-                    </loadProperties>
-                    <properties isMapLayer="true"/>
-                    <resourceData xsi:type="mapResourceGroupData">
-                        <resource>
-                            <loadProperties>
-                                <capabilities>
-                                    <capability xsi:type="outlineCapability"
-                                        lineStyle="SOLID" />
-                                    <capability xsi:type="colorableCapability"
-                                        colorAsString="#9b9b9b" />
-                                </capabilities>
-                            </loadProperties>
-                            <properties isMapLayer="true" />
-                            <resourceData xsi:type="dbMapResourceData">
-                                <table>mapdata.latlon10</table>
-                                <mapName>Lat/Lon 10 over Ocean</mapName>
-                            </resourceData>
-                        </resource>
-                        <resource>
-                            <loadProperties>
-                                <capabilities>
-                                    <capability xsi:type="colorableCapability"
-                                        colorAsString="#9b9b9b" />
-                                </capabilities>
-                            </loadProperties>
-                            <properties isMapLayer="true" />
-                            <resourceData xsi:type="lpiResourceData">
-                                <filename>latlon10.lpi</filename>
-                            </resourceData>
-                        </resource>
-                        <mapName>Lat/Lon 10 over Ocean</mapName>
-                    </resourceData>
-                </resource>
-            </descriptor>
-        </displays>
-    </displayList>
-</bundle>
-=======
 	<displayList>
 		<displays xsi:type="mapRenderableDisplay"
 			xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
@@ -139,4 +84,3 @@
 		</displays>
 	</displayList>
 </bundle>
->>>>>>> unidata_17.1.1

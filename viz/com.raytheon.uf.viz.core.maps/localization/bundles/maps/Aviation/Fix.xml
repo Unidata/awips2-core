@@ -18,32 +18,10 @@
         See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
         further_licensing_information.
     -->
-    <!-- 
-        This is an absolute override file, indicating that a higher priority version
-        of the file will completely replace a lower priority version of the file. 
-    -->
 <bundle>
     <displayList>
-        <displays xsi:type="mapRenderableDisplay"
-            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+        <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
-<<<<<<< HEAD:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/FAA/Fix.xml
-                <resource>
-                    <loadProperties>
-                        <capabilities>
-                            <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
-                            <capability xsi:type="labelableCapability"
-                                labelField="name" />
-                        </capabilities>
-                    </loadProperties>
-                    <properties isMapLayer="true" />
-                    <resourceData xsi:type="lpiResourceData">
-                        <filename>fix.lpi</filename>
-                        <mapName>Fixes/Intersections</mapName>
-                    </resourceData>
-                </resource>
-=======
                         <resource>
                             <loadProperties>
                                 <capabilities>
@@ -62,7 +40,6 @@
                                 <mapName>Fixes/Intersections</mapName>
                             </resourceData>
                         </resource>
->>>>>>> unidata_17.1.1:viz/com.raytheon.uf.viz.core.maps/localization/bundles/maps/Aviation/Fix.xml
             </descriptor>
         </displays>
     </displayList>
