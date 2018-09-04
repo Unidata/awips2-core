@@ -42,6 +42,7 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Sep 20, 2012     #1190  dgilling    Create method getHostName().
  * Mar 20, 2014      2726  rjpeter     Moved hostNameCache to SystemUtil.
  * Sep 12, 2014 3583       bclement    removed ISerializableObject
+ * Sep 04, 2018            mjames@ucar Corrected byte array length to ? 16 : 4
  * </pre>
  * 
  * @author randerso
@@ -88,7 +89,7 @@ public class WsId implements Serializable {
 
         try {
             long addr = Long.parseLong(token[0]);
-            byte[] bytes = new byte[addr > 0xFFFFFFFFL ? 6 : 4];
+            byte[] bytes = new byte[addr > 0xFFFFFFFFL ? 16 : 4];
 
             for (int i = 0; i < bytes.length; i++) {
                 bytes[i] = (byte) (addr & 0xff);
