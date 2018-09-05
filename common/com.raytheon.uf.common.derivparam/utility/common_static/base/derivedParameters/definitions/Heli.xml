@@ -38,4 +38,7 @@
         <Field abbreviation="vWStk"/>
         <Field abbreviation="RM5" level="Layer"/>
     </Method>
+    <Method name="Alias" levels="BL" models="ETA">
+        <Field abbreviation="Heli" level="0-300kmAgl"/>
+    </Method>
 </DerivedParameter>
