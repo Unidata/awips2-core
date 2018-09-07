@@ -36,7 +36,6 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import javax.measure.converter.ConversionException;
 
 import org.apache.commons.configuration.ConfigurationException;
-import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
 import org.eclipse.core.runtime.Plugin;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
@@ -183,8 +182,6 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
 
     private final Map<LocalizationLevel, LocalizationConfiguration> configMap = new HashMap<>();
 
-    private MapConfiguration defaults;
-
     private final Set<IPropertyChangeListener> propertyChangeListeners = new CopyOnWriteArraySet<>();
 
     /**
@@ -235,16 +232,11 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
         this.defaultPersistLevel = defaultLevel;
     }
 
-    private synchronized MapConfiguration getDefaultConfig() {
-        if (defaults == null) {
-            defaults = new MapConfiguration(new HashMap<>());
-            // Populate defaults with base first, setDefault* method will
-            // override what was in BASE
-            LocalizationConfiguration baseConfig = new LocalizationConfiguration(
-                    LocalizationLevel.BASE, configFilePath);
-            defaults.append(baseConfig.accessConfiguration());
-        }
-        return defaults;
+    private XMLConfiguration getDefaultConfig() {
+
+        LocalizationConfiguration baseConfig = new LocalizationConfiguration(
+                LocalizationLevel.BASE, configFilePath);
+        return baseConfig.accessConfiguration();
     }
 
     /**

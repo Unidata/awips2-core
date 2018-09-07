@@ -182,7 +182,12 @@ public abstract class PythonInterpreter implements AutoCloseable {
      */
     public void dispose() {
         cleanupGlobals();
-        jep.close();
+        try {
+			jep.close();
+		} catch (JepException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 
     public void cleanupGlobals() {

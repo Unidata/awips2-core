@@ -479,7 +479,8 @@ public class ConnectivityPreferenceDialog {
                     .openError(
                             shell,
                             "Connectivity Error",
-                            "Unable to validate localization preferences, please enter valid options or quit the application");
+                            "Unable to validate localization preferences, "
+                            + "please enter valid options or quit the application");
             shell.setVisible(true);
         }
         return valid;

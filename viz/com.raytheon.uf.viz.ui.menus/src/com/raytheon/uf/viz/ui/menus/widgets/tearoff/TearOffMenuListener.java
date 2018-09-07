@@ -89,7 +89,7 @@ public class TearOffMenuListener implements IMenuListener2 {
     static {
         final IPreferenceStore store = com.raytheon.uf.viz.core.Activator
                 .getDefault().getPreferenceStore();
-        enabled = store.getBoolean(TEAROFF_PREFERENCE_ID);
+        enabled = true;
         enabledPerspectives = new ArrayList<String>();
 
         IExtensionRegistry registry = Platform.getExtensionRegistry();
