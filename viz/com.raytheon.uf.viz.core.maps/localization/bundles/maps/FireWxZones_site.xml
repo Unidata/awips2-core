@@ -30,10 +30,10 @@
                 <resource>
                     <loadProperties>
                         <capabilities>
-                            <capability xsi:type="outlineCapability"
-                                lineStyle="SOLID" />
+                            <capability xsi:type="outlineCapability" 
+                        		outlineWidth="2" outlineOn="true" lineStyle="SOLID"/>
                             <capability xsi:type="colorableCapability"
-                                colorAsString="#9b9b9b" />
+                                colorAsString="coral" />
                         </capabilities>
                     </loadProperties>
                     <properties isMapLayer="true" />
