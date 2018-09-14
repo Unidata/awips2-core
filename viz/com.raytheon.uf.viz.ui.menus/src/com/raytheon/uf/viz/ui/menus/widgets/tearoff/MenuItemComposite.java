@@ -79,6 +79,7 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Aug 21, 2014  15664     snaples   Updated dispose method to fix issue when closing perspecitive with tear offs open.
  * May 01, 2018  6708      tgurney   Refill submenus every time they are opened
  * May 04, 2018  6781      tgurney   Add checkboxes
+ * Sep 17, 2018  7466      tgurney   Add disposed check in mouse event handlers
  *
  * </pre>
  *
@@ -495,7 +496,7 @@ public class MenuItemComposite extends Composite {
                 // we want all the colors to be the same for background
                 // and foreground, so we set that here, this is to tell
                 // the whole thing to be highlighted
-                if (item.isEnabled()) {
+                if (!item.isDisposed() && item.isEnabled()) {
                     setBackground(Display.getCurrent()
                             .getSystemColor(SWT.COLOR_LIST_SELECTION));
                     setForeground(Display.getCurrent()
@@ -514,7 +515,7 @@ public class MenuItemComposite extends Composite {
                 // we want all the colors to be the same for background
                 // and foreground, so we set that here, this is to
                 // unhighlight the whole thing
-                if (item.isEnabled()) {
+                if (!item.isDisposed() && item.isEnabled()) {
 
                     setBackground(backgroundColor);
 
@@ -624,7 +625,7 @@ public class MenuItemComposite extends Composite {
                                     ((Button) mic.firstItem).setSelection(true);
                                 }
                             }
-                        } catch (NullPointerException e1) {
+                        } catch (Exception e1) {
                             statusHandler.error("Error executing menu action.",
                                     e1);
                         }
