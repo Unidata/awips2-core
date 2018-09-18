@@ -1,19 +1,19 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
-# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
-# U.S. EXPORT CONTROLLED TECHNICAL DATA
+# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+# 
+# U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
 # 
-# Contractor Name:        Raytheon Company
-# Contractor Address:     6825 Pine Street, Suite 340
-#                         Mail Stop B8
-#                         Omaha, NE 68106
-#                         402.291.0100
-# 
+# Contractor Name:        Raytheon Company
+# Contractor Address:     6825 Pine Street, Suite 340
+#                         Mail Stop B8
+#                         Omaha, NE 68106
+#                         402.291.0100
+# 
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ##
@@ -61,7 +61,7 @@ def execute(prMan, htMan, tpMan, tdMan, wdMan, wsMan, prSigT, tpSigT, tdSigT, ht
             levels.append(Level(prMan[c][i], htMan[c][i], tpMan[c][i], tdMan[c][i], wdMan[c][i], wsMan[c][i]))
         for i in range(0, numSigT[c]):
             levels.append(Level(prSigT[c][i], NaN, tpSigT[c][i], tdSigT[c][i], NaN, NaN))
-    for levels in levelsMap.values():
+    for levels in list(levelsMap.values()):
         levels.sort(key=Level.getPr)
         for i in range(1,len(levels)):
             level = levels[i]
@@ -80,7 +80,7 @@ def execute(prMan, htMan, tpMan, tdMan, wdMan, wsMan, prSigT, tpSigT, tdSigT, ht
         levelsMap[key] = levels
         for i in range(0, numSigW[c]):
             levels.append(Level(NaN, htSigW[c][i], NaN, NaN, wdSigW[c][i], wsSigW[c][i]))
-    for levels in levelsMap.values():
+    for levels in list(levelsMap.values()):
         levels.sort(key=Level.getPr)
         levelsCopy = levels[:]
         # Remove Pressure levels

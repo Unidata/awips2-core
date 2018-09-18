@@ -50,6 +50,7 @@ import com.raytheon.uf.common.util.FileUtil;
  *                                     configurable.
  * Dec 14, 2015 4816       dgilling    Support refactored PythonJobCoordinator API.
  * Jun 17, 2016 5439       bsteffen    use pathManager within DerivParamImporter
+ * Sep 17, 2018            mjames@ucar Python 3 compliance.
  * 
  * </pre>
  * 
@@ -78,8 +79,12 @@ public class MasterDerivScriptFactory implements
              * commands so work around it by execing an eval of a multiline
              * string.
              */
-            script = "exec \"\"\"" + script + "\"\"\"";
-            preEvals.add(script);
+            StringBuilder execStr = new StringBuilder();
+            execStr.append("exec(");
+            execStr.append("\"\"\"");
+            execStr.append(script); 
+            execStr.append("\"\"\")");
+            preEvals.add(execStr.toString());
             preEvals.add("sys.meta_path.append(DerivParamImporter())");
         } catch (IOException | LocalizationException e) {
             throw new JepException("Error setting up python environment.", e);

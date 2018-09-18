@@ -1,26 +1,26 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
-# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
-# U.S. EXPORT CONTROLLED TECHNICAL DATA
+# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+# 
+# U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
 # 
-# Contractor Name:        Raytheon Company
-# Contractor Address:     6825 Pine Street, Suite 340
-#                         Mail Stop B8
-#                         Omaha, NE 68106
-#                         402.291.0100
-# 
+# Contractor Name:        Raytheon Company
+# Contractor Address:     6825 Pine Street, Suite 340
+#                         Mail Stop B8
+#                         Omaha, NE 68106
+#                         402.291.0100
+# 
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ###
 
 
 import numpy as np
-import AdiabaticTemp
+from . import AdiabaticTemp
 
 # create an array of base pressures
 pBases = np.array([200,350,500,600,700,850,1000], dtype=np.float32)
@@ -125,7 +125,7 @@ def execute(T,P):
     
     # Iterate to find result to nearest .01 degree K
     TMask[:] = True # all cells still to calculate
-    for loopcount in xrange(10):
+    for loopcount in range(10):
         if np.any(TMask):
             # see which estimates are high and low
             t1Mask[TMask] = diff[TMask] < -0.01

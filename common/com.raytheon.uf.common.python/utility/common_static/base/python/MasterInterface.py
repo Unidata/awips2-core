@@ -1,19 +1,19 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
-# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
-# U.S. EXPORT CONTROLLED TECHNICAL DATA
+# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
+# 
+# U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
 # 
-# Contractor Name:        Raytheon Company
-# Contractor Address:     6825 Pine Street, Suite 340
-#                         Mail Stop B8
-#                         Omaha, NE 68106
-#                         402.291.0100
-# 
+# Contractor Name:        Raytheon Company
+# Contractor Address:     6825 Pine Street, Suite 340
+#                         Mail Stop B8
+#                         Omaha, NE 68106
+#                         402.291.0100
+# 
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ##
@@ -56,6 +56,7 @@
 
 import os, string
 import sys, inspect, traceback
+import imp
 
 class MasterInterface(object):
     
@@ -74,7 +75,7 @@ class MasterInterface(object):
                     if len(split) == 2 and len(split[0]) > 0 and split[1] == "py" and not filename.endswith("Interface.py"):
                         try:
                             MasterInterface.addModule(self, split[0])
-                        except Exception, e:
+                        except Exception as e:
                             msg = split[0] + "\n" + traceback.format_exc()
                             self.__importErrors.append(msg)
             else:
@@ -85,8 +86,8 @@ class MasterInterface(object):
         result = []
         for x,y in members:
             if x == methodName:
-                count = y.func_code.co_argcount
-                args = y.func_code.co_varnames
+                count = y.__code__.co_argcount
+                args = y.__code__.co_varnames
                 i = 0
                 for a in args:
                     if i < count:
@@ -108,7 +109,7 @@ class MasterInterface(object):
     def hasMethod(self, moduleName, className, methodName):
         md = sys.modules[moduleName]    
         classObj = md.__dict__.get(className)
-        return classObj.__dict__.has_key(methodName)
+        return methodName in classObj.__dict__
     
     def __getClassMethods(self, moduleName, className):
         md = sys.modules[moduleName]    
@@ -116,10 +117,10 @@ class MasterInterface(object):
         return inspect.getmembers(classObj, inspect.ismethod)
     
     def isInstantiated(self, moduleName):
-        return self.__instanceMap.has_key(moduleName)
+        return moduleName in self.__instanceMap
     
     def instantiate(self, moduleName, className, **kwargs):
-        if sys.modules[moduleName].__dict__.has_key(className):
+        if className in sys.modules[moduleName].__dict__:
             instance = sys.modules[moduleName].__dict__.get(className)(**kwargs)
             self.__instanceMap[moduleName] = instance
         else:
@@ -139,7 +140,7 @@ class MasterInterface(object):
     def removeModule(self, moduleName):
         if self.isInstantiated(moduleName):
             self.__instanceMap.__delitem__(moduleName)
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             self.clearModuleAttributes(moduleName)
             sys.modules.pop(moduleName)
         if moduleName in self.scripts:
@@ -164,7 +165,7 @@ class MasterInterface(object):
         self.__importErrors.append(error)
     
     def reloadModule(self, moduleName):
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             # From the python documentation:
             # "When a module is reloaded, its dictionary (containing the module's
             # global variables) is retained. Redefinitions of names will override the
@@ -179,10 +180,10 @@ class MasterInterface(object):
             # but built-ins to ensure everything gets re-initialized when
             # reload() is called.
             self.clearModuleAttributes(moduleName)                                        
-            reload(sys.modules[moduleName])
+            imp.reload(sys.modules[moduleName])
         
     def clearModuleAttributes(self, moduleName):
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             mod = sys.modules[moduleName]
             modGlobalsToRemove = [k for k in mod.__dict__ if not k.startswith('_')]
             for k in modGlobalsToRemove:                
