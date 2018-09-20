@@ -47,11 +47,11 @@ import com.vividsolutions.jts.geom.Envelope;
 /**
  * An abstract factory for getting grid data from plugins that use
  * PluginDataObject.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Jan 17, 2013           bsteffen    Initial creation
@@ -65,17 +65,18 @@ import com.vividsolutions.jts.geom.Envelope;
  * Jan 28, 2015  2866     nabowle     Estimate response sizes and throw an
  *                                    exception if too large.
  * Feb 23, 2015  2866     nabowle     Add response sizes to exception.
- * 
+ * Jul 31, 2018  6389     mapeters    Extracted getDataRecord() from
+ *                                    getDataSource()
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 
-public abstract class AbstractGridDataPluginFactory extends
-        AbstractDataPluginFactory {
+public abstract class AbstractGridDataPluginFactory
+        extends AbstractDataPluginFactory {
     /** Number of bytes. Based on {@link GridResponseData} using floats. */
-    public static int SIZE_OF_POINT = 4;
+    public static final int SIZE_OF_POINT = 4;
 
     /**
      * Executes the provided DbQueryRequest and returns an array of IGridData
@@ -86,6 +87,7 @@ public abstract class AbstractGridDataPluginFactory extends
      *            the db query request to execute
      * @return an array of IGridData
      */
+    @Override
     protected IGridData[] getGridData(IDataRequest request,
             DbQueryResponse dbQueryResponse) {
         Envelope envelope = request.getEnvelope();
@@ -94,7 +96,7 @@ public abstract class AbstractGridDataPluginFactory extends
 
         checkResponseSize(collectedGrids);
 
-        List<IGridData> gridData = new ArrayList<IGridData>();
+        List<IGridData> gridData = new ArrayList<>();
         GridGeometry2D gridGeometry;
         DataSource dataSource;
         for (CollectedGridGeometry grid : collectedGrids) {
@@ -103,7 +105,8 @@ public abstract class AbstractGridDataPluginFactory extends
 
             if (envelope != null) {
                 if (grid.getSubgrid() == null || !grid.getSubgrid().isEmpty()) {
-                    dataSource = getDataSource(grid.getPdo(), grid.getSubgrid());
+                    dataSource = getDataSource(grid.getPdo(),
+                            grid.getSubgrid());
                     if (grid.getSubgrid() != null) {
                         gridGeometry = grid.getSubgrid()
                                 .getZeroedSubGridGeometry();
@@ -115,8 +118,7 @@ public abstract class AbstractGridDataPluginFactory extends
 
             if (dataSource != null) {
                 gridData.add(this.constructGridDataResponse(request,
-                        grid.getPdo(),
-                        gridGeometry, dataSource));
+                        grid.getPdo(), gridGeometry, dataSource));
             }
         }
 
@@ -131,12 +133,11 @@ public abstract class AbstractGridDataPluginFactory extends
      * @param results
      *            The request results.
      * @param envelope
-     *       collectGridGeometriesenvelope.
+     *            collectGridGeometriesenvelope.
      * @return The pdo, grid geometry, and subgrid geometry for a result.
      */
     private List<CollectedGridGeometry> collectGridGeometries(
-            List<Map<String, Object>> results,
-            Envelope envelope) {
+            List<Map<String, Object>> results, Envelope envelope) {
         ReferencedEnvelope requestEnv = envelope == null ? null
                 : new ReferencedEnvelope(envelope, DefaultGeographicCRS.WGS84);
         List<CollectedGridGeometry> grids = new ArrayList<>();
@@ -144,11 +145,11 @@ public abstract class AbstractGridDataPluginFactory extends
         GridGeometry2D gridGeometry;
         for (Map<String, Object> resultMap : results) {
 
-            if (resultMap.containsKey(null) == false) {
+            if (!resultMap.containsKey(null)) {
                 throw new DataRetrievalException(
                         "The results of the DbQueryRequest do not consist of PluginDataObject objects as expected.");
             }
-            if ((resultMap.get(null) instanceof PluginDataObject) == false) {
+            if (!((resultMap.get(null) instanceof PluginDataObject))) {
                 throw new DataRetrievalException(
                         "The objects returned by the DbQueryRequest are not of type PluginDataObject as expected.");
             }
@@ -161,8 +162,8 @@ public abstract class AbstractGridDataPluginFactory extends
             }
 
             if (requestEnv != null) {
-                grids.add(new CollectedGridGeometry(pdo, gridGeometry, calculateSubGrid(
-                        requestEnv, gridGeometry)));
+                grids.add(new CollectedGridGeometry(pdo, gridGeometry,
+                        calculateSubGrid(requestEnv, gridGeometry)));
             } else {
                 grids.add(new CollectedGridGeometry(pdo, gridGeometry, null));
             }
@@ -252,6 +253,16 @@ public abstract class AbstractGridDataPluginFactory extends
      */
     protected DataSource getDataSource(PluginDataObject pdo,
             SubGridGeometryCalculator subGrid) {
+        IDataRecord dataRecord = getDataRecord(pdo, subGrid);
+        if (dataRecord == null) {
+            return null;
+        }
+        return DataWrapperUtil.constructArrayWrapper(dataRecord, false);
+
+    }
+
+    protected IDataRecord getDataRecord(PluginDataObject pdo,
+            SubGridGeometryCalculator subGrid) {
         try {
             IDataRecord dataRecord = null;
             if (subGrid == null || subGrid.isFull()) {
@@ -261,14 +272,13 @@ public abstract class AbstractGridDataPluginFactory extends
                         subGrid.getGridRangeLow(true),
                         subGrid.getGridRangeHigh(false));
                 dataRecord = PDOUtil.getDataRecord(pdo, "Data", dataStoreReq);
-            } else {
-                return null;
             }
-            return DataWrapperUtil.constructArrayWrapper(dataRecord, false);
+            return dataRecord;
         } catch (Exception e) {
             throw new DataRetrievalException(
                     "Failed to retrieve the IDataRecord for PluginDataObject: "
-                            + pdo.toString(), e);
+                            + pdo.toString(),
+                    e);
         }
     }
 
@@ -289,8 +299,8 @@ public abstract class AbstractGridDataPluginFactory extends
      *            the raw data
      * @return the IGridData that was constructed
      */
-    protected abstract IGridData constructGridDataResponse(
-            IDataRequest request, PluginDataObject pdo,
-            GridGeometry2D gridGeometry, DataSource dataSource);
+    protected abstract IGridData constructGridDataResponse(IDataRequest request,
+            PluginDataObject pdo, GridGeometry2D gridGeometry,
+            DataSource dataSource);
 
 }
