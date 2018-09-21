@@ -31,6 +31,7 @@ import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.ICommandListener;
 import org.eclipse.core.commands.IExecutionListener;
 import org.eclipse.core.commands.NotHandledException;
+import org.eclipse.e4.ui.workbench.renderers.swt.HandledContributionItem;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseAdapter;
@@ -80,12 +81,14 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * May 01, 2018  6708      tgurney   Refill submenus every time they are opened
  * May 04, 2018  6781      tgurney   Add checkboxes
  * Sep 17, 2018  7466      tgurney   Add disposed check in mouse event handlers
+ * Sep 21, 2018  7477      tgurney   Add command listener to HandledContributionItems
  *
  * </pre>
  *
  * @author mnash
  */
 
+@SuppressWarnings("restriction")
 public class MenuItemComposite extends Composite {
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MenuItemComposite.class);
@@ -283,6 +286,12 @@ public class MenuItemComposite extends Composite {
                             .getCommand().getId());
             createCommandListener(c);
             c.addCommandListener(commandListener);
+        } else if (item.getData() instanceof HandledContributionItem) {
+            final Command c = PlatformUI.getWorkbench()
+                    .getService(ICommandService.class).getCommand(
+                            ((HandledContributionItem) item.getData()).getId());
+            createCommandListener(c);
+            c.addCommandListener(commandListener);
         }
     }
 
@@ -294,36 +303,44 @@ public class MenuItemComposite extends Composite {
                         || secondItem.isDisposed()) {
                     return;
                 }
+                String commandId = null;
 
                 if (item.getData() instanceof CommandContributionItem) {
                     CommandContributionItem itm = (CommandContributionItem) item
                             .getData();
-                    if (itm.getCommand().getId().equals(c.getId())) {
-                        boolean enabled = true;
-                        if (commandEvent.getCommand().getHandler() != null) {
-                            enabled = commandEvent.getCommand().getHandler()
-                                    .isEnabled();
-                        } else {
-                            enabled = commandEvent.getCommand().isEnabled();
-                        }
+                    commandId = itm.getCommand().getId();
+                } else if (item.getData() instanceof HandledContributionItem) {
+                    HandledContributionItem itm = (HandledContributionItem) item
+                            .getData();
+                    commandId = itm.getId();
+                }
 
-                        firstItem.setEnabled(enabled);
-                        secondItem.setEnabled(enabled);
-                        if (enabled) {
-                            setForeground(enabledColor);
-                        } else {
-                            setForeground(disabledColor);
-                            setBackground(backgroundColor);
+                if (commandId != null && commandId.equals(c.getId())) {
+                    boolean enabled = true;
+                    if (commandEvent.getCommand().getHandler() != null) {
+                        enabled = commandEvent.getCommand().getHandler()
+                                .isEnabled();
+                    } else {
+                        enabled = commandEvent.getCommand().isEnabled();
+                    }
 
-                            // changes the arrow image to the unhighlighted
-                            // version
-                            if (secondItem instanceof Label) {
-                                if (((Label) secondItem).getImage() != null) {
-                                    ((Label) secondItem).setImage(arrow);
-                                }
+                    firstItem.setEnabled(enabled);
+                    secondItem.setEnabled(enabled);
+                    if (enabled) {
+                        setForeground(enabledColor);
+                    } else {
+                        setForeground(disabledColor);
+                        setBackground(backgroundColor);
+
+                        // changes the arrow image to the unhighlighted
+                        // version
+                        if (secondItem instanceof Label) {
+                            if (((Label) secondItem).getImage() != null) {
+                                ((Label) secondItem).setImage(arrow);
                             }
                         }
                     }
+
                 }
             }
         };
@@ -666,6 +683,12 @@ public class MenuItemComposite extends Composite {
                 Command c = service
                         .getCommand(((CommandContributionItem) item.getData())
                                 .getCommand().getId());
+                c.removeCommandListener(commandListener);
+            } else if (item.getData() instanceof HandledContributionItem) {
+                ICommandService service = PlatformUI.getWorkbench()
+                        .getService(ICommandService.class);
+                Command c = service.getCommand(
+                        ((HandledContributionItem) item.getData()).getId());
                 c.removeCommandListener(commandListener);
             }
         }
