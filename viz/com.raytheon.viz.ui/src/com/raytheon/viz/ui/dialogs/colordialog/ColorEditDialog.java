@@ -92,6 +92,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Jun 22, 2017  4818     mapeters    Changed setCloseCallback to addCloseCallback
  * Mar 14, 2018  6690     tgurney     Fix delete of colormaps in subdirs
  * Mar 19, 2018  6738     tgurney     Keep color bar history even when opening/closing dialog
+ * Jul 24, 2018  7376     bsteffen    UI improvements to prevent delete of unsaved colormap.
  *
  * </pre>
  *
@@ -367,19 +368,23 @@ public class ColorEditDialog extends CaveSWTDialog
 
         colorEditComp.setEnabled(enabled);
         interpolateBtn.setEnabled(enabled);
-        undoBtn.setEnabled(enabled);
-        redoBtn.setEnabled(enabled);
         revertBtn.setEnabled(enabled);
-        saveBtn.setEnabled(enabled);
         saveAsBtn.setEnabled(enabled);
         officeSaveAsBtn.setEnabled(enabled);
-        deleteBtn.setEnabled(enabled);
-
         if (enabled) {
-            undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
-            redoBtn.setEnabled(colorEditComp.getColorBar().canRedo());
+            ColorBar colorBar = colorEditComp.getColorBar();
+            undoBtn.setEnabled(colorBar.canUndo());
+            redoBtn.setEnabled(colorBar.canRedo());
             saveBtn.setEnabled(currentColormapName != null);
+            deleteBtn.setEnabled(
+                    currentColormapName != null && !colorBar.canUndo());
             colorEditComp.enableAlphaOnly();
+        } else {
+            undoBtn.setEnabled(enabled);
+            redoBtn.setEnabled(enabled);
+            saveBtn.setEnabled(enabled);
+            deleteBtn.setEnabled(enabled);
+
         }
         updateTitleText();
     }
@@ -548,7 +553,7 @@ public class ColorEditDialog extends CaveSWTDialog
             colorEditComp.getColorBar().interpolate(upperColorData,
                     lowerColorData, colorEditComp.getRgbRdo().getSelection());
         }
-        undoBtn.setEnabled(true);
+        undoBtn.setEnabled(colorEditComp.getColorBar().canUndo());
         colorEditComp.updateColorMap();
     }
 
@@ -858,11 +863,15 @@ public class ColorEditDialog extends CaveSWTDialog
                                 LocalizationLevel.USER);
                     }
                     deleteBtn.setEnabled(false);
+                    currentColormapName = null;
                 } catch (LocalizationException e) {
                     String err = "Error performing delete of colormap";
                     statusHandler.handle(Priority.PROBLEM, err, e);
                 }
             }
+        } else {
+            MessageDialog.openWarning(shell, "Unsaved changes",
+                    "The current color table has unsaved changes that must be saved or reverted before it can be deleted.");
         }
     }
 

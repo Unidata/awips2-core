@@ -809,6 +809,10 @@
         <DatabaseLevel levelName="FHAG" levelOneValue="0"
             levelTwoValue="10000.0" unit="m" />
     </Level>
+    <Level displayName="0-300 km AGL" key="0-300kmAgl" group="C">
+        <DatabaseLevel levelName="FHAG" levelOneValue="0"
+            levelTwoValue="300000.0" unit="m" />
+    </Level>
     <Level displayName="0.5-1 km AGL" key="0.5-1kmAgl" group="C">
         <DatabaseLevel levelName="FHAG" levelOneValue="500"
             levelTwoValue="1000.0" unit="m" />

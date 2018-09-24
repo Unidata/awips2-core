@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -37,20 +37,21 @@ import com.raytheon.uf.viz.core.catalog.DirectDbQuery;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
- * TODO Add Description
- * 
+ * Viz spatial database query
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 18, 2009            randerso     Initial creation
- * Sep 02, 2014  3356      njensen      Moved to uf.viz.core
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------
+ * Feb 18, 2009           randerso  Initial creation
+ * Sep 02, 2014  3356     njensen   Moved to uf.viz.core
+ * Aug 07, 2018  6642     randerso  Code cleanup
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class SpatialDbQuery extends AbstractSpatialDbQuery {
@@ -87,22 +88,12 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
                 }
             }
 
-        } catch (Exception ed2) {
-            ed2.printStackTrace();
+        } catch (Exception e) {
+            throw new SpatialException(e.getLocalizedMessage(), e);
         }
         return list;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.geospatial.AbstractSpatialDbQuery#query(java.lang
-     * .String, java.lang.String, java.lang.String[],
-     * com.vividsolutions.jts.geom.Geometry, java.util.Map,
-     * com.raytheon.uf.common.geospatial.ISpatialQuery.SearchMode,
-     * java.lang.Integer)
-     */
     @Override
     public SpatialQueryResult[] query(String dataSet, String theGeomField,
             String[] attributes, Geometry areaGeometry,
@@ -115,7 +106,7 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
                     filter, mode, limit);
         }
         SpatialDbQueryRequest request = new SpatialDbQueryRequest();
-        Set<String> attrs = new HashSet<String>();
+        Set<String> attrs = new HashSet<>();
         if (attributes != null) {
             attrs.addAll(Arrays.asList(attributes));
         }
@@ -136,8 +127,8 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
 
         SpatialQueryResult[] rslts = executeRequest(request);
         if (rslts != null) {
-            List<String> gidsToSearch = new ArrayList<String>();
-            Map<String, SpatialQueryResult> toAddMap = new HashMap<String, SpatialQueryResult>();
+            List<String> gidsToSearch = new ArrayList<>();
+            Map<String, SpatialQueryResult> toAddMap = new HashMap<>();
             // Look up geometries in cache
             for (SpatialQueryResult rslt : rslts) {
                 String gid = String.valueOf(rslt.attributes.get(GID));
@@ -151,12 +142,12 @@ public class SpatialDbQuery extends AbstractSpatialDbQuery {
                 }
             }
 
-            if (gidsToSearch.size() > 0) {
-                Map<String, RequestConstraint> gidConstraints = new HashMap<String, RequestConstraint>();
+            if (!gidsToSearch.isEmpty()) {
+                Map<String, RequestConstraint> gidConstraints = new HashMap<>();
                 RequestConstraint rc = new RequestConstraint();
                 rc.setConstraintType(ConstraintType.IN);
-                rc.setConstraintValueList(gidsToSearch
-                        .toArray(new String[gidsToSearch.size()]));
+                rc.setConstraintValueList(
+                        gidsToSearch.toArray(new String[gidsToSearch.size()]));
                 gidConstraints.put(GID, rc);
                 SpatialQueryResult[] geomRslts = super.query(dataSet,
                         theGeomField, new String[] { GID }, null,
