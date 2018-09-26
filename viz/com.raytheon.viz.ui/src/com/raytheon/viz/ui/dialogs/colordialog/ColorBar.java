@@ -82,6 +82,7 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * Apr 17, 2018  6972        bsteffen     Correctly label log colormaps.
  * May 03, 2018  7285        randerso     Added contrastStretch. Changed
  *                                        setColors to use contrastStretch.
+ * Jul 31, 2018  6668        bsteffen     Fix slider labels.
  *
  * </pre>
  *
@@ -487,7 +488,7 @@ public class ColorBar extends Composite
             /* Draw text that is displayed next to the top slider arrow. */
             gc.setForeground(white);
             gc.setFont(font);
-            String text = getSliderText(topSliderIndex - 0.5);
+            String text = getSliderText(topSliderIndex);
             int x = topSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (topSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -520,7 +521,7 @@ public class ColorBar extends Composite
 
             /* Draw text that is displayed next to the bottom slider arrow. */
             gc.setForeground(white);
-            text = getSliderText(bottomSliderIndex + 0.5);
+            text = getSliderText(bottomSliderIndex + 1);
             x = bottomSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (bottomSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -1144,20 +1145,20 @@ public class ColorBar extends Composite
                         cmapParams.isMirror());
             }
         } else if (cmapParams.getLogFactor() > 0.0) {
-            double idx = index / (size - 1);
+            double idx = index / size;
             value = Colormapper.getLogFactorValue(idx, min, max,
                     cmapParams.getLogFactor());
             if (index > 0) {
-                idx = (index - 1) / (size - 1);
+                idx = (index - 1) / size;
                 lastVal = Colormapper.getLogFactorValue(idx, min, max,
                         cmapParams.getLogFactor());
             }
         } else {
             // linear color mapping
-            double idx = index / (size - 1);
+            double idx = index / size;
             value = Colormapper.getLinearValue(idx, min, max);
             if (index > 0) {
-                idx = (index - 1) / (size - 1);
+                idx = (index - 1) / size;
                 lastVal = Colormapper.getLinearValue(idx, min, max);
             }
         }
