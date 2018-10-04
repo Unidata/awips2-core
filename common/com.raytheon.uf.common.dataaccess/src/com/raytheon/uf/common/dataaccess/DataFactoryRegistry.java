@@ -88,7 +88,6 @@ public class DataFactoryRegistry {
      *            type
      */
     public IDataFactory register(String datatype, IDataFactory factory) {
-        datatype = datatype;
         datatypeMap.put(datatype, factory);
         return factory;
     }
@@ -125,7 +124,6 @@ public class DataFactoryRegistry {
      * @throws DataFactoryNotFoundException
      */
     public IDataFactory getFactory(String datatype) {
-        datatype = datatype;
         IDataFactory factory = datatypeMap.get(datatype);
         if (factory != null) {
             return factory;
