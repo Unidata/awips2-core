@@ -1,27 +1,29 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.logback.appender;
 
+import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
 
 import org.apache.commons.io.output.TeeOutputStream;
 
@@ -32,21 +34,25 @@ import ch.qos.logback.core.util.OptionHelper;
  * Appender that modifies System.out and System.err PrintStreams to print to
  * their normal streams while also outputting to a file. The file is specified
  * by the setFile method.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 10, 2014 3675       njensen     Initial creation
- * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
- * Jun 22, 2015 4148       rferrel     Refactored from EnvConfigSysStreamFileAppender.
- * 
+ *
+ * Date          Ticket#     Engineer     Description
+ * ------------- ----------- ------------ --------------------------
+ * Oct 10, 2014  3675        njensen      Initial creation
+ * Jun 09, 2015  4473        njensen      Moved from status to logback plugin
+ * Jun 22, 2015  4148        rferrel      Refactored from
+ *                                        EnvConfigSysStreamFileAppender.
+ * Oct 09, 2018  7484        randerso     Changed configureStream to create the
+ *                                        parent directories if they don't exist
+ *                                        so the log works in a development
+ *                                        environment.
+ *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
  */
 
 public class ConsoleFileAppender<E> extends OutputStreamAppender<E> {
@@ -58,7 +64,7 @@ public class ConsoleFileAppender<E> extends OutputStreamAppender<E> {
 
     /**
      * Create an output stream base on the file name.
-     * 
+     *
      * @param filename
      */
     public void setFile(String filename) {
@@ -69,11 +75,13 @@ public class ConsoleFileAppender<E> extends OutputStreamAppender<E> {
 
     private void configureStream(String filename) {
         try {
+            Files.createDirectories(
+                    new File(filename).getParentFile().toPath());
             fileStream = new FileOutputStream(filename);
-            System.setOut(new PrintStream(new TeeOutputStream(originalOut,
-                    fileStream)));
-            System.setErr(new PrintStream(new TeeOutputStream(originalErr,
-                    fileStream)));
+            System.setOut(new PrintStream(
+                    new TeeOutputStream(originalOut, fileStream)));
+            System.setErr(new PrintStream(
+                    new TeeOutputStream(originalErr, fileStream)));
             super.setOutputStream(fileStream);
         } catch (Throwable t) {
             reset();

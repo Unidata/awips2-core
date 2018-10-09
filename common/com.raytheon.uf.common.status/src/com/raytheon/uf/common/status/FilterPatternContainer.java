@@ -40,16 +40,17 @@ import javax.xml.bind.annotation.XmlRootElement;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 22, 2010            njensen     Initial creation
- * Apr 12, 2011            bgonzale    Refactored from EdexModeContainer
- * Jul 18, 2017 6217       randerso    Replace nwsauth reference with auth
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Apr 22, 2010           njensen   Initial creation
+ * Apr 12, 2011           bgonzale  Refactored from EdexModeContainer
+ * Jul 18, 2017  6217     randerso  Replace nwsauth reference with auth
+ * Oct 04, 2018  7484     randerso  Changed to use AV_ADMIN for internal errors
  *
  * </pre>
  *
  * @author njensen
- * @version 1.0
  */
 
 @XmlRootElement(name = "filterPatterns")
@@ -180,7 +181,7 @@ public class FilterPatternContainer {
         fp = new FilterPattern("SMARTINIT");
         fp.addInclude(".*\\.smartinit.*");
         obj.filterPatterns.add(fp);
-        fp = new FilterPattern("GDN_ADMIN");
+        fp = new FilterPattern("AV_ADMIN");
         fp.addInclude(".*\\.alertviz.*");
         obj.filterPatterns.add(fp);
         fp = new FilterPattern("RPGEnvData");
