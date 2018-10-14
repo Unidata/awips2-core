@@ -45,7 +45,7 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * 
  * <pre>
  * 
- *    SOFTWARE HISTORY
+	 *    SOFTWARE HISTORY
  * 
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
@@ -312,7 +312,7 @@ public class Bundle {
 
             return b;
         } catch (Exception e) {
-            throw new VizException("Error loading bundle", e);
+            throw new VizException("Error loading bundle " + bundleStr, e);
         }
     }
 
