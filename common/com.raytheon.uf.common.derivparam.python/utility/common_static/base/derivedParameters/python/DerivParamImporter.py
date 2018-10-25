@@ -1,23 +1,3 @@
-##
-# This software was developed and / or modified by Raytheon Company,
-# pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
-# U.S. EXPORT CONTROLLED TECHNICAL DATA
-# This software product contains export-restricted data whose
-# export/transfer/disclosure is restricted by U.S. law. Dissemination
-# to non-U.S. persons whether in the United States or abroad requires
-# an export license or other authorization.
-# 
-# Contractor Name:        Raytheon Company
-# Contractor Address:     6825 Pine Street, Suite 340
-#                         Mail Stop B8
-#                         Omaha, NE 68106
-#                         402.291.0100
-# 
-# See the AWIPS II Master Rights File ("Master Rights File.pdf") for
-# further licensing information.
-##
-
 #
 # Python import hook (PEP 302) for providing inheritance to derived parameters.
  #
@@ -42,6 +22,7 @@
 #    06/20/16        5439          bsteffen       import directly from localization files.
 #    10/05/16        5891          bsteffen       Treat all directories as modules, even without __init___.py.
 #    06/01/17        5891          bsteffen       Separate files into their own modules to support source code lookup. 
+#    09/18/18                      mjames@ucar    2to3
 #    
 # 
 #
@@ -92,7 +73,7 @@ class DerivParamImporter(object):
         return None
     
     def load_module(self, fullname):
-        if sys.modules.has_key(fullname):
+        if fullname in sys.modules:
             return sys.modules[fullname]
         combined = imp.new_module(fullname)
         combined.__loader__ = self
@@ -102,7 +83,7 @@ class DerivParamImporter(object):
             files = self.__getPackageFiles(fullpath)
             combined.__path__ = ['DerivParamImporter']
         files = TreeMap(files)
-        for file in files.values():
+        for file in list(files.values()):
             loader = LocalizedModuleLoader(file)
             localname = str(file.getContext().getLocalizationLevel()) + '-' + fullname
             localmod = loader.load_module(localname)
@@ -122,7 +103,7 @@ class LocalizedModuleLoader(object):
 
     def load_module(self, fullname):
         module = imp.new_module(fullname)
-        exec self.get_code(fullname) in module.__dict__
+        exec(self.get_code(fullname), module.__dict__)
         module.__loader__ = self
         # Must put the module in sys.module or source lookup doesn't work.
         sys.modules[fullname] = module
@@ -134,4 +115,4 @@ class LocalizedModuleLoader(object):
 
     def get_source(self, fullname):
         return MasterDerivScriptFactory.readLocalizationFile(self.file)
-        
+
