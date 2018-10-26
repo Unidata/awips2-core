@@ -79,13 +79,13 @@
         <Field level="2FHAG" abbreviation="P" />
     </Method>
     <Method
-        models="HPCGuide GWW233 SeaIce RTGSST RTGSSTHR NICICE AK-NICICE
+        models="HPCGuide WaveWatch SeaIce RTGSST RTGSSTHR NICICE AK-NICICE
                     HPCGuide GFSGuide LAMPTstorm TPCWindProb TPCWindProb_Prelim 
                     OPCWave180 OPCWave181 OPCWave182 RTMA WNAWAVE238 
                     AKWAVE239 HPCqpfNDFD"
         name="NoDerivation" />
-    <Method models="mesoEta212" levels="2FHAG" name="Import">
-        <Field level="Surface" model="mesoEta215" abbreviation="P" />
+    <Method models="NAM40" levels="2FHAG" name="Import">
+        <Field level="Surface" model="NAM20" abbreviation="P" />
     </Method>
     <Method levels="Surface" name="Or">
         <Field abbreviation="Psfc" />
@@ -115,22 +115,22 @@
         <ConstantField value="-1.0" />
     </Method>
     <Method models="radar" levels="S,TEMP" name="Import">
-        <Field model="ETA218" abbreviation="P" />
+        <Field model="NAM12" abbreviation="P" />
     </Method>
     <Method models="radar" levels="S,TEMP" name="Import">
-        <Field model="ETA207" abbreviation="P" />
+        <Field model="AK-NAM95" abbreviation="P" />
     </Method>
     <Method models="radar" levels="S,TEMP" name="Import">
-        <Field model="GFS213" abbreviation="P" />
+        <Field model="GFS95" abbreviation="P" />
     </Method>
     <Method models="radar" levels="WetBulb0" name="Import">
-        <Field model="ETA218" abbreviation="P" />
+        <Field model="NAM12" abbreviation="P" />
     </Method>
     <Method models="radar" levels="WetBulb0" name="Import">
-        <Field model="ETA207" abbreviation="P" />
+        <Field model="AK-NAM95" abbreviation="P" />
     </Method>
     <Method models="radar" levels="WetBulb0" name="Import">
-        <Field model="GFS213" abbreviation="P" />
+        <Field model="GFS95" abbreviation="P" />
     </Method>
     <Method levels="TROP" name="Slice">
         <Field level="3D" abbreviation="pV" />
