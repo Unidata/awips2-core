@@ -126,8 +126,8 @@
     <Method levels="EchoTop" name="Alias">
         <Field level="Surface" abbreviation="MRET" />
     </Method>
-    <Method models="ETA218" levels="500MB" name="Import">
-        <Field level="500MB" model="GFS212" abbreviation="GH" />
+    <Method models="NAM12" levels="500MB" name="Import">
+        <Field level="500MB" model="GFS40" abbreviation="GH" />
     </Method>
     <Method models="bufrua" levels="S,TILT" name="HeightOf">
         <Field level="Station" abbreviation="latitude" />

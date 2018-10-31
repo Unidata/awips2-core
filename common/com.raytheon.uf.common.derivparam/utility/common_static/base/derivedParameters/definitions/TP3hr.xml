@@ -26,8 +26,8 @@
     <Method models="SREF212" name="Alias">
         <Field abbreviation="TP3mean" />
     </Method>
-    <Method models="mesoEta216" name="Import">
-        <Field abbreviation="TP3hr" model="mesoEta217" />
+    <Method models="AK-NAM45" name="Import">
+        <Field abbreviation="TP3hr" model="AK-NAM22" />
     </Method>
     <Method name="Alias">
         <Field abbreviation="QPE03" />

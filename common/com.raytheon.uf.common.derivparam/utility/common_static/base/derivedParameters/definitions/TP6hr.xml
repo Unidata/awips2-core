@@ -35,7 +35,7 @@
     <Method name="Alias">
         <Field abbreviation="QPE06" />
     </Method>
-    <Method models="ETA GFS212" name="Supplement">
+    <Method models="ETA GFS40" name="Supplement">
         <Field abbreviation="TPx12x6" />
     </Method>
     <Method name="Add">
