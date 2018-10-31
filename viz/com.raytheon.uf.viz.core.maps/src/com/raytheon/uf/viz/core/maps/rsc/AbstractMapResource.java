@@ -110,6 +110,8 @@ public abstract class AbstractMapResource<T extends AbstractMapResourceData, D e
     }
 
     protected IFont determineFont(IGraphicsTarget target) {
+        double magnification = getCapability(MagnificationCapability.class)
+                .getMagnification();
         if (font == null) {
             IFont font = target.initializeFont(LABEL_FONT_ID);
             font.setScaleFont(false);
@@ -117,8 +119,6 @@ public abstract class AbstractMapResource<T extends AbstractMapResourceData, D e
 
             this.font = font;
         }
-        double magnification = getCapability(MagnificationCapability.class)
-                .getMagnification();
         font.setMagnification((float) magnification);
         return font;
     }
