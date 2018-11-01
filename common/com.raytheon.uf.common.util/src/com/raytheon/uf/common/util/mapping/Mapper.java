@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -33,23 +33,23 @@ import javax.xml.bind.Unmarshaller;
 
 /**
  * This class can be used to map names between different naming conventions.
- * 
+ *
  * Names are grouped into namespaces which allows mapping from any namespace
  * into the "base" namespace. The "base" namespace does not actually exist but
  * it is a theoretical namespace that other things map into, often defined by
  * the contents of a file or database table depending on the implementation.
- * 
+ *
  * The "deprecated" namespace is handled specially. This namespace will contain
  * any names that were previously base names but have since changed. When any
  * mapping is performed, if the base name is deprecated it will map correctly to
  * the new base. Over time it is expected that all mappings and code will be
  * updated and any deprecated entries can be removed.
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 22, 2012            bsteffen     Initial creation
@@ -58,9 +58,11 @@ import javax.xml.bind.Unmarshaller;
  *                                      and in lookupAliasOrNull()
  * Dec 15, 2015 18139      pwang        Merge alias when NameSpace is same
  * Jul 06, 2016 5728       mapeters     Fix potential NPE in lookupAliases()
- * 
+ * Nov 01, 2018 #7536      dgilling     Add addAliasNamespace method to better
+ *                                      enable overrides.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  */
 public abstract class Mapper {
@@ -110,6 +112,10 @@ public abstract class Mapper {
         Mapper.unmarshaller = unmarshaller;
     }
 
+    protected void addAliasNamespace(String namespace, AliasNamespace alias) {
+        namespaceMap.put(namespace, alias);
+    }
+
     /**
      * @param alias
      * @param namespace
@@ -154,7 +160,7 @@ public abstract class Mapper {
     /**
      * Lookup all the baseNames associated with the given alias in a namespace.
      * If no baseNames are defined the alias is returned.
-     * 
+     *
      * @param namespace
      *            - the defined alias namespace to look for the name
      * @param alias
@@ -169,7 +175,7 @@ public abstract class Mapper {
     /**
      * Lookup all the baseNames associated with the given alias in a namespace.
      * If no baseNames are defined an empty set is returned.
-     * 
+     *
      * @param namespace
      *            - the defined alias namespace to look for the name
      * @param alias
@@ -231,7 +237,7 @@ public abstract class Mapper {
     /**
      * Lookup an alias name within a given namespace for a base name. If no
      * alias is defined then the baseName is returned
-     * 
+     *
      * @param base
      *            - The base name to find an alias for
      * @param namespace
@@ -245,7 +251,7 @@ public abstract class Mapper {
     /**
      * Lookup an alias name within a given namespace for a base name. If no
      * alias is defined then an empty set is returned
-     * 
+     *
      * @param base
      *            - The base name to find an alias for
      * @param namespace
@@ -259,7 +265,7 @@ public abstract class Mapper {
     /**
      * Provides same functionality as lookupBaseNames but is more convenient
      * when only one base name is expected.
-     * 
+     *
      * @param alias
      * @param namespace
      * @return the base name or the alias if the namespace or alias is undefined
@@ -281,7 +287,7 @@ public abstract class Mapper {
     /**
      * Provides same functionality as lookupAliases but is more convenient when
      * only one alias is expected.
-     * 
+     *
      * @param base
      * @param namespace
      * @return the alias abbreviation or the base name if none is found.
@@ -302,7 +308,7 @@ public abstract class Mapper {
     /**
      * Provides same functionality as lookupBaseNamesOrEmpty but is more
      * convenient when only alias is expected.
-     * 
+     *
      * @param alias
      * @param namespace
      * @return null if no mapping from alias to base name is found
@@ -325,7 +331,7 @@ public abstract class Mapper {
     /**
      * Provides same functionality as lookupAliasesOrEmpty but is more
      * convenient when only one base name is expected.
-     * 
+     *
      * @param base
      * @param namespace
      * @return null if no mapping from base to alias is found
