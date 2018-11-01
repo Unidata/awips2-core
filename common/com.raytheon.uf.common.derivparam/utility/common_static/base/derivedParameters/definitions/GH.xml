@@ -187,4 +187,8 @@
         <ConstantField value="-2" />
         <ConstantField value="1" />
     </Method>
+    <Method name="Add" models="obs" level="CloudCeiling">
+        <Field abbreviation="zAGL" unit="m"/>
+        <Field abbreviation="elevation" level="Station" unit="m"/>
+    </Method>
 </DerivedParameter>
