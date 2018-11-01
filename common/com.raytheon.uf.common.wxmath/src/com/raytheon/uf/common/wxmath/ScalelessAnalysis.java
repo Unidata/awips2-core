@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.wxmath;
 
+import java.io.PrintStream;
 import java.lang.ref.SoftReference;
 import java.util.Arrays;
 
@@ -37,6 +38,7 @@ import java.util.Arrays;
  * Aug 13, 2013  2262     njensen     Initial creation
  * Feb 27, 2014  2791     bsteffen    Move legacy NaN to constants.
  * May 17, 2018  7294     njensen     Fix a few boolean comparisons
+ * Nov 01, 2018  7314     bsteffen    Fix an error occuring for sparse data.
  * 
  * </pre>
  * 
@@ -52,6 +54,8 @@ public class ScalelessAnalysis {
      */
     private static final boolean DEBUG = false;
 
+    private static final PrintStream DEBUG_STREAM = System.err;
+
     private static final int right = 1;
 
     private static final int left = 2;
@@ -65,8 +69,8 @@ public class ScalelessAnalysis {
     private static final int allcon = -1;
 
     // don't need the first 8 values because the original code never used them
-    private static final int[] octwrap = { // 0, 1, 2, 3, 4, 5, 6, 7,
-    0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3, 4, 5, 6, 7 };
+    private static final int[] octwrap = { 0, 1, 2, 3, 4, 5, 6, 7, 0, 1, 2, 3,
+            4, 5, 6, 7 };
 
     private static final int octmagd[] = { 0, 1, 2, 3, 4, 3, 2, 1, 0, 1, 2, 3,
             4, 3, 2, 1, 0, 1, 2, 3, 4, 3, 2, 1 };
@@ -81,13 +85,13 @@ public class ScalelessAnalysis {
      * Node struct
      */
     private static class Node {
-        Node prev;
+        public Node prev;
 
-        Node next;
+        public Node next;
 
-        int base;
+        public int base;
 
-        int loc;
+        public int loc;
     }
 
     /**
@@ -95,35 +99,35 @@ public class ScalelessAnalysis {
      */
     private static class DistanceTables {
 
-        int nx;
+        public int nx;
 
-        int ny;
+        public int ny;
 
-        int m_swath = 0;
+        public int m_swath = 0;
 
         /** i coord list for octants **/
-        short[][] ioct = new short[ScalelessAnalysis.EIGHT][];
+        public short[][] ioct = new short[ScalelessAnalysis.EIGHT][];
 
         /** j coord list for octants **/
-        short[][] joct = new short[ScalelessAnalysis.EIGHT][];
+        public short[][] joct = new short[ScalelessAnalysis.EIGHT][];
 
         /** distance for each coord in octant **/
-        float[][] doct = new float[ScalelessAnalysis.EIGHT][];
+        public float[][] doct = new float[ScalelessAnalysis.EIGHT][];
 
         /** start point of each octant **/
-        int[][] oct0 = new int[ScalelessAnalysis.EIGHT][];
+        public int[][] oct0 = new int[ScalelessAnalysis.EIGHT][];
 
         /** last right side point of each octant **/
-        int[][] roct = new int[ScalelessAnalysis.EIGHT][];
+        public int[][] roct = new int[ScalelessAnalysis.EIGHT][];
 
         /** mid point of each octant **/
-        int[][] moct = new int[ScalelessAnalysis.EIGHT][];
+        public int[][] moct = new int[ScalelessAnalysis.EIGHT][];
 
         /** first left point of each octant **/
-        int[][] loct = new int[ScalelessAnalysis.EIGHT][];
+        public int[][] loct = new int[ScalelessAnalysis.EIGHT][];
 
         /** flag for whether edge points exist **/
-        byte[][] eoct = new byte[ScalelessAnalysis.EIGHT][];
+        public byte[][] eoct = new byte[ScalelessAnalysis.EIGHT][];
     }
 
     private static SoftReference<DistanceTables> previousDistTable;
@@ -338,28 +342,28 @@ public class ScalelessAnalysis {
         }
 
         if (DEBUG) {
-            System.err.printf("mswath0 %d\n", mswath0);
+            DEBUG_STREAM.printf("mswath0 %d\n", mswath0);
             for (int bb = 0; bb <= mswath0; bb++) {
-                System.err.printf("%d ", eswath0[bb]);
+                DEBUG_STREAM.printf("%d ", eswath0[bb]);
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
             for (int oo = 0, bb = 0; bb < n_swath; bb++) {
                 for (int ii = 0; ii < sxy; ii++, oo++) {
-                    System.err.printf("%d ", kswath0[oo]);
+                    DEBUG_STREAM.printf("%d ", kswath0[oo]);
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("mswath1 %d\n", mswath1);
+            DEBUG_STREAM.printf("mswath1 %d\n", mswath1);
             for (int bb = 0; bb <= mswath1; bb++) {
-                System.err.printf("%d ", eswath1[bb]);
+                DEBUG_STREAM.printf("%d ", eswath1[bb]);
             }
-            System.err.printf("\n");
-            // System.err.printf("kswath1\n");
+            DEBUG_STREAM.printf("\n");
+            // DEBUG_STREAM.printf("kswath1\n");
             for (int oo = 0, bb = 0; bb < n_swath; bb++) {
                 for (int ii = 0; ii < sxy; ii++, oo++) {
-                    System.err.printf("%d ", kswath1[oo]);
+                    DEBUG_STREAM.printf("%d ", kswath1[oo]);
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
         }
 
@@ -374,7 +378,8 @@ public class ScalelessAnalysis {
             }
             int oo0 = bb * sxy;
 
-            // System.err.printf("bb,ss,oo0,eswath0 %d %d %d %d\n", bb, ss, oo0,
+            // DEBUG_STREAM.printf("bb,ss,oo0,eswath0 %d %d %d %d\n", bb, ss,
+            // oo0,
             // eswath0[bb]);
 
             for (int oo = eswath0[bb]; oo >= oo0; oo--) {
@@ -385,7 +390,7 @@ public class ScalelessAnalysis {
                 jj = -kk / sxy;
                 int ii = kk + jj * sxy;
 
-                // System.err.printf("oo,kk, ii,jj, ss  %d %d  %d %d  %d\n", oo,
+                // DEBUG_STREAM.printf("oo,kk, ii,jj, ss %d %d %d %d %d\n", oo,
                 // kk, ii, jj, ss);
 
                 dt.doct[0][ss] = dlookup[kk];
@@ -415,7 +420,7 @@ public class ScalelessAnalysis {
                 jj = kk / sxy;
                 int ii = kk - jj * sxy;
 
-                // System.err.printf("oo,kk, ii,jj, ss  %d %d  %d %d  %d\n", oo,
+                // DEBUG_STREAM.printf("oo,kk, ii,jj, ss %d %d %d %d %d\n", oo,
                 // kk, ii, jj, ss);
 
                 if (dt.loct[0][bb] < 0) {
@@ -516,30 +521,30 @@ public class ScalelessAnalysis {
         if (DEBUG) {
             kswath0 = new int[n_pts];
             for (int oo = 0; oo < EIGHT; oo++) {
-                System.err.printf("dump octant %d", oo);
+                DEBUG_STREAM.printf("dump octant %d", oo);
                 for (int kk = bb = 0; kk < n_swath;) {
-                    System.err.printf("\n%d %d   %d   %d %d %d>> ", kk,
+                    DEBUG_STREAM.printf("\n%d %d   %d   %d %d %d>> ", kk,
                             dt.eoct[oo][kk], dt.oct0[oo][kk], dt.roct[oo][kk],
                             dt.moct[oo][kk], dt.loct[oo][kk]);
                     kk++;
                     for (; bb < dt.oct0[oo][kk]; bb++) {
                         int ii = dt.ioct[oo][bb];
                         jj = dt.joct[oo][bb];
-                        System.err.printf("%d:%d ", ii, jj);
+                        DEBUG_STREAM.printf("%d:%d ", ii, jj);
                         if (ii >= 0 && jj >= 0) {
                             kswath0[ii + sxy * jj] = 1;
                         }
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.println("kswath0");
+            DEBUG_STREAM.println("kswath0");
             for (jj = sxy - 1; jj >= 0; jj--) {
                 int ii = 0;
                 for (int kk = jj * sxy; ii < sxy; ii++, kk++) {
-                    System.err.printf("%d ", (kswath0[kk]));
+                    DEBUG_STREAM.printf("%d ", (kswath0[kk]));
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
         }
 
@@ -565,7 +570,7 @@ public class ScalelessAnalysis {
      */
     public static float[] scaleless_analysis(float[] xind, float[] yind,
             float[] values, int nv, int nx, int ny) {
-        // System.err.printf("in scaleless_analysis\n");
+        // DEBUG_STREAM.printf("in scaleless_analysis\n");
 
         /* Verify input counts. */
         int nvv = nv;
@@ -573,7 +578,7 @@ public class ScalelessAnalysis {
         int nyy = ny;
         if (nvv <= 0 || nxx <= 0 || nyy <= 0 || nxx >= 1000 || nyy >= 1000) {
             return null;
-            // System.err.printf("nvv %d   nxx %d nyy %d\n", nvv, nxx, nyy);
+            // DEBUG_STREAM.printf("nvv %d nxx %d nyy %d\n", nvv, nxx, nyy);
         }
 
         int nx1 = nxx - 1;
@@ -583,14 +588,14 @@ public class ScalelessAnalysis {
         int imax = nx1 - imin;
         int jmin = -nyy / 2;
         int jmax = ny1 - jmin;
-        // System.err.printf("imin,imax,jmin,jmax %d %d %d %d\n", imin, imax,
+        // DEBUG_STREAM.printf("imin,imax,jmin,jmax %d %d %d %d\n", imin, imax,
         // jmin, jmax);
 
         /* Compute range of grid indicies over which we will scan for data. */
-        float xmin = 999999;
-        float ymin = 999999;
-        float xmax = -999999;
-        float ymax = -999999;
+        float xmin = 999_999;
+        float ymin = 999_999;
+        float xmax = -999_999;
+        float ymax = -999_999;
         // original code had different pointers for each array, since we
         // know the length and just use an index to access it, we can reuse
         // the same variables
@@ -615,7 +620,7 @@ public class ScalelessAnalysis {
             return null;
         }
 
-        // System.err.printf("xmin,xmax,ymin,ymax %f %f %f %f\n", xmin, xmax,
+        // DEBUG_STREAM.printf("xmin,xmax,ymin,ymax %f %f %f %f\n", xmin, xmax,
         // ymin, ymax);
 
         if (xmin > -1) {
@@ -639,7 +644,7 @@ public class ScalelessAnalysis {
             jmax = (int) (0.5 + ymax);
         }
 
-        // System.err.printf("imin,imax,jmin,jmax %d %d %d %d\n", imin, imax,
+        // DEBUG_STREAM.printf("imin,imax,jmin,jmax %d %d %d %d\n", imin, imax,
         // jmin, jmax);
 
         int nxd = 1 + imax - imin;
@@ -648,7 +653,7 @@ public class ScalelessAnalysis {
         int ddd = jmin * nxd + imin;
         int ddx = nxd - nxx;
 
-        // System.err.printf("nxd %d nyd %d %d %d %d %d \n", nxd, nyd, imin,
+        // DEBUG_STREAM.printf("nxd %d nyd %d %d %d %d %d \n", nxd, nyd, imin,
         // imax,
         // jmin, jmax);
 
@@ -661,6 +666,7 @@ public class ScalelessAnalysis {
                 }
             }
         }
+
         if (dt == null) {
             dt = init_distance_tables(nxx, nyy);
             if (dt != null) {
@@ -671,7 +677,7 @@ public class ScalelessAnalysis {
             return null;
         }
 
-        // System.err.printf("have distance tables\n");
+        // DEBUG_STREAM.printf("have distance tables\n");
 
         /* Allocate and initialize all of our work grids. */
         float[] grid = new float[nx * ny];
@@ -740,7 +746,7 @@ public class ScalelessAnalysis {
             }
         }
 
-        // System.err.printf("raw, counts set from obs\n");
+        // DEBUG_STREAM.printf("raw, counts set from obs\n");
 
         /* work arrays with info about each grid resolved observation */
         float[] dists = new float[nnd];
@@ -773,9 +779,11 @@ public class ScalelessAnalysis {
             Arrays.fill(tempR, fillShort);
             rightcon[oo] = tempR;
         }
-        // System.err.printf("have our memory initialized\n");
+        // DEBUG_STREAM.printf("have our memory initialized\n");
 
-        /* finalize superobing of multiple points that resolve to one grid point */
+        /*
+         * finalize superobing of multiple points that resolve to one grid point
+         */
         int nsrch = 0;
         // original code had variable nund here, it was removed since
         // it doesn't do anything
@@ -794,7 +802,7 @@ public class ScalelessAnalysis {
                 obsi[nsrch] = (short) ii;
                 obsj[nsrch] = (short) jj;
 
-                // System.err.printf("%d  %d %d %d  %d %f\n", nsrch, ii, jj, kk,
+                // DEBUG_STREAM.printf("%d %d %d %d %d %f\n", nsrch, ii, jj, kk,
                 // counts[ip], raw[rp0]);
 
                 if (ii < 0) {
@@ -831,19 +839,19 @@ public class ScalelessAnalysis {
         }
 
         if (DEBUG) {
-            System.err.printf("nsrch,nvs %d %d\n", nsrch, nvs);
+            DEBUG_STREAM.printf("nsrch,nvs %d %d\n", nsrch, nvs);
             for (int ss = 0; ss < nvs; ss++) {
                 ii = obsi[ss];
                 int jj = obsj[ss];
-                System.err.printf("%d %d %d   ", ii, jj, srchlist[ss]);
+                DEBUG_STREAM.printf("%d %d %d   ", ii, jj, srchlist[ss]);
                 for (int oo = 0; oo < EIGHT; oo++) {
-                    System.err.printf(" %d", (int) (obsrch[oo][ss]));
+                    DEBUG_STREAM.printf(" %d", (int) (obsrch[oo][ss]));
                 }
-                System.err.printf("  ");
+                DEBUG_STREAM.printf("  ");
                 for (int oo = 0; oo < EIGHT; oo++) {
-                    System.err.printf(" %d", (int) (conflict[oo][ss]));
+                    DEBUG_STREAM.printf(" %d", (int) (conflict[oo][ss]));
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
         }
 
@@ -875,33 +883,33 @@ public class ScalelessAnalysis {
         }
 
         if (DEBUG) {
-            System.err.printf("raw\n");
+            DEBUG_STREAM.printf("raw\n");
             for (jj = nyd - 1; jj >= 0; jj--) {
                 int kk = jj * nxd;
                 for (int i = 0; i < nxd; i++, kk++) {
                     if (raw[kk] > 1e36) {
-                        System.err.printf("*** ");
+                        DEBUG_STREAM.printf("*** ");
                     } else {
-                        System.err.printf("%.1f ", raw[kk]);
+                        DEBUG_STREAM.printf("%.1f ", raw[kk]);
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
 
-            System.err.printf("dists\n");
+            DEBUG_STREAM.printf("dists\n");
             for (jj = nyd - 1; jj >= 0; jj--) {
                 int kk = jj * nxd;
                 for (int i = 0; i < nxd; i++, kk++) {
                     if (dists[kk] > 1e36) {
-                        System.err.printf("*** ");
+                        DEBUG_STREAM.printf("*** ");
                     } else {
-                        System.err.printf("%.1f ", dists[kk]);
+                        DEBUG_STREAM.printf("%.1f ", dists[kk]);
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
         }
 
         /* main loop that establishes initially how far from the nearest ob */
@@ -909,18 +917,18 @@ public class ScalelessAnalysis {
         int bb = 0;
         while (nsrch > 0) {
             int nsw = 0;
-            // System.err.printf("nsrch %d\n", nsrch);
+            // DEBUG_STREAM.printf("nsrch %d\n", nsrch);
             for (int ss = 0; ss < nsrch; ss++) {
-                // System.err.printf("ss %d\n", ss);
+                // DEBUG_STREAM.printf("ss %d\n", ss);
                 int sss = srchlist[ss];
-                // System.err.printf("sss %d\n", sss);
+                // DEBUG_STREAM.printf("sss %d\n", sss);
                 ii = obsi[sss];
                 jj = obsj[sss];
-                // System.err.printf("ii,jj %d %d\n", ii, jj);
+                // DEBUG_STREAM.printf("ii,jj %d %d\n", ii, jj);
                 boolean any = false;
                 for (int oo = 0; oo < EIGHT; oo++) {
                     int osv = obsrch[oo][sss];
-                    // System.err.printf("oo,bb,osv %d %d %d\n", oo, bb, osv);
+                    // DEBUG_STREAM.printf("oo,bb,osv %d %d %d\n", oo, bb, osv);
                     if (osv < 0) {
                         continue;
                     }
@@ -989,7 +997,8 @@ public class ScalelessAnalysis {
                                     conflict[cco][cc] |= left;
                                     leftcon[cco][cc] = (short) sss;
                                 }
-                            } else if (dists[dists0 + k0] > dt.doct[oo][iijjddp]) {
+                            } else if (dists[dists0
+                                    + k0] > dt.doct[oo][iijjddp]) {
                                 conflict[cco][cc] = allcon;
                                 if (cross > 0) {
                                     conflict[oo][sss] |= left;
@@ -1035,9 +1044,11 @@ public class ScalelessAnalysis {
                         obsrch[oo][sss] = left;
                     }
 
-                    /* we want to be sure that if we are starting outside, we */
-                    /* get a chance to get inside before we end because we had */
-                    /* all points outside */
+                    /*
+                     * we want to be sure that if we are starting outside, we
+                     * get a chance to get inside before we end because we had
+                     * all points outside
+                     */
                     int ooo = octwrap[oo + 4];
                     if (nin == 0) {
                         if (obsrch[ooo][sss] == -2) {
@@ -1054,7 +1065,8 @@ public class ScalelessAnalysis {
                 }
 
                 if (any) {
-                    srchlist[nsw++] = sss;
+                    srchlist[nsw] = sss;
+                    nsw += 1;
                 }
 
             }
@@ -1063,30 +1075,30 @@ public class ScalelessAnalysis {
         }
 
         if (DEBUG) {
-            System.err.printf("nsrch,nvs %d %d\n", nsrch, nvs);
+            DEBUG_STREAM.printf("nsrch,nvs %d %d\n", nsrch, nvs);
             for (int ss = 0; ss < nvs; ss++) {
                 ii = obsi[ss];
                 jj = obsj[ss];
-                System.err.printf("%d %d    ", ii, jj);
+                DEBUG_STREAM.printf("%d %d    ", ii, jj);
                 for (int oo = 0; oo < EIGHT; oo++) {
-                    System.err.printf(" %d", conflict[oo][ss]);
+                    DEBUG_STREAM.printf(" %d", conflict[oo][ss]);
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
 
-            System.err.printf("dists\n");
+            DEBUG_STREAM.printf("dists\n");
             for (jj = nyd - 1; jj >= 0; jj--) {
                 int kk = jj * nxd;
                 for (int i = 0; i < nxd; i++, kk++) {
                     if (dists[kk] > 1e36) {
-                        System.err.printf("*** ");
+                        DEBUG_STREAM.printf("*** ");
                     } else {
-                        System.err.printf("%.1f ", dists[kk]);
+                        DEBUG_STREAM.printf("%.1f ", dists[kk]);
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
         }
 
         /* Here is where we copy the original observation out to the boundary */
@@ -1122,7 +1134,7 @@ public class ScalelessAnalysis {
             int kk0 = ii + jj * nxd;
             float val = raw[raw0 + kk0];
 
-            // System.err.printf("fill %d  %d %d    %d %d %f\n", ss, oo, ooo,
+            // DEBUG_STREAM.printf("fill %d %d %d %d %d %f\n", ss, oo, ooo,
             // ii,
             // jj, val);
 
@@ -1139,7 +1151,7 @@ public class ScalelessAnalysis {
             int dj = dt.joct[nxto][0];
             double ddis = ((oo % 2) == 1) ? Math.sqrt(2.0) : 1;
 
-            // System.err.printf("filling first %d %d\n", oo,
+            // DEBUG_STREAM.printf("filling first %d %d\n", oo,
             // (int) (conflict[oo)[ss]));
 
             /* swath points range, which should be defined immed */
@@ -1163,9 +1175,11 @@ public class ScalelessAnalysis {
                         b1 = b;
                     }
                     if ((conflict[oo][ss] | left) != 0) {
-                        b2 = dt.roct[oo][bb++];
+                        b2 = dt.roct[oo][bb];
+                        bb += 1;
                     } else {
-                        b2 = dt.oct0[oo][++bb] - 1;
+                        bb += 1;
+                        b2 = dt.oct0[oo][bb] - 1;
                     }
                     if ((kk & edgeyes) != 0) {
                         eb1 = b1;
@@ -1183,7 +1197,7 @@ public class ScalelessAnalysis {
                 int i = ii + iip;
                 int j = jj + jjp;
 
-                // System.err.printf("%d %d  %d %d  %d %d\n", ii, jj,
+                // DEBUG_STREAM.printf("%d %d %d %d %d %d\n", ii, jj,
                 // (int) ioct[oo)[iip], (int) joct[oo)[jjp], i, j);
 
                 if (iout[iout0 + i] != jout[jout0 + j]) {
@@ -1242,7 +1256,7 @@ public class ScalelessAnalysis {
                 // an index associated with those arrays
                 iip = 0;
                 jjp = 0;
-                // System.err.printf("filling mid %d\n", oo);
+                // DEBUG_STREAM.printf("filling mid %d\n", oo);
                 for (b = bb = 0; any; b++, iip++, jjp++) {
                     if (b == dt.oct0[oo][bb]) {
                         bb++;
@@ -1256,7 +1270,8 @@ public class ScalelessAnalysis {
                     int i = ii + iip;
                     int j = jj + jjp;
 
-                    // System.err.printf("%d %d  %d %d  %d %d\n",ii,jj,(int)ioct[oo)[iip],(int
+                    // DEBUG_STREAM.printf("%d %d %d %d %d
+                    // %d\n",ii,jj,(int)ioct[oo)[iip],(int
                     // )joct[oo)[jjp],i,j);
 
                     if (iout[iout0 + i] != jout[jout0 + j]) {
@@ -1284,9 +1299,13 @@ public class ScalelessAnalysis {
             dj = dt.joct[nxto][0];
             ddis = ((oo % 2) == 1) ? Math.sqrt(2.0) : 1;
             /*
-             * fprintf(stderr,"filling last %d %d\n",oo,(int)(conflict[oo][ss]));
+             * fprintf(stderr,"filling last %d %d\n",oo,(int)(conflict[oo][ss]))
+             * ;
              */
-            eb2 = -1; /* left edge point, which can be undefined for part swath */
+            /*
+             * left edge point, which can be undefined for part swath
+             */
+            eb2 = -1;
             for (b = bb = 0; any; b++, iip++, jjp++) {
                 if (b == dt.oct0[oo][bb]) {
                     while ((kk = dt.eoct[oo][bb]) == 0) {
@@ -1298,9 +1317,11 @@ public class ScalelessAnalysis {
                         b1 = b;
                     }
                     if ((conflict[oo][ss] | left) != 0) {
-                        b2 = dt.roct[oo][bb++];
+                        b2 = dt.roct[oo][bb];
+                        bb += 1;
                     } else {
-                        b2 = dt.oct0[oo][++bb] - 1;
+                        bb += 1;
+                        b2 = dt.oct0[oo][bb] - 1;
                     }
                     if ((kk & edgeyes) != 0) {
                         eb2 = b2;
@@ -1315,8 +1336,8 @@ public class ScalelessAnalysis {
                 int i = ii + iip;
                 int j = jj + jjp;
                 /*
-                 * fprintf(stderr,"%d %d  %d %d  %d %d\n",ii,jj,(int)*iip,(int)*jjp
-                 * ,i,j);
+                 * fprintf(stderr,"%d %d  %d %d  %d %d\n",ii,jj,(int)*iip,(int)*
+                 * jjp ,i,j);
                  */
                 if (iout[iout0 + i] != jout[jout0 + j]) {
                     continue;
@@ -1351,33 +1372,33 @@ public class ScalelessAnalysis {
         }
 
         if (DEBUG) {
-            System.err.printf("raw\n");
+            DEBUG_STREAM.printf("raw\n");
             for (jj = nyd - 1; jj >= 0; jj--) {
                 int k = jj * nxd;
                 for (int i = 0; i < nxd; i++, k++) {
                     if (raw[k] > 1e36) {
-                        System.err.printf("*** ");
+                        DEBUG_STREAM.printf("*** ");
                     } else {
-                        System.err.printf("%.1f ", raw[k]);
+                        DEBUG_STREAM.printf("%.1f ", raw[k]);
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
 
-            System.err.printf("dists\n");
+            DEBUG_STREAM.printf("dists\n");
             for (jj = nyd - 1; jj >= 0; jj--) {
                 int k = jj * nxd;
                 for (int i = 0; i < nxd; i++, k++) {
                     if (dists[k] > 1e36) {
-                        System.err.printf("*** ");
+                        DEBUG_STREAM.printf("*** ");
                     } else {
-                        System.err.printf("%.1f ", dists[k]);
+                        DEBUG_STREAM.printf("%.1f ", dists[k]);
                     }
                 }
-                System.err.printf("\n");
+                DEBUG_STREAM.printf("\n");
             }
-            System.err.printf("\n");
+            DEBUG_STREAM.printf("\n");
         }
 
         int nbase = nsrch = 0;
@@ -1397,10 +1418,11 @@ public class ScalelessAnalysis {
                     onenode = new Node();
                     nodes[kg] = onenode;
                 }
-                int hi = (int) (dists[dists0 + k0] * 10);
-                if (hi <= 0) {
+                float hf = dists[dists0 + k0];
+                if (hf <= 0 || hf == Constants.LEGACY_NAN) {
                     continue;
                 }
+                int hi = (int) (hf * 10);
                 nsrch++;
                 if (hi > nbase) {
                     nbase = hi;
@@ -1413,7 +1435,7 @@ public class ScalelessAnalysis {
                 }
                 bases[hi] = onenode;
             }
-            // System.err.printf("nbase nsrch %d %d\n", nbase, nsrch);
+            // DEBUG_STREAM.printf("nbase nsrch %d %d\n", nbase, nsrch);
             // verify_nodes(0);
         }
 
@@ -1425,9 +1447,9 @@ public class ScalelessAnalysis {
             while (bases[nbase] == null && nbase > 0) {
                 nbase--;
             }
-            // System.err.printf("nbase nsrch %d %d\n", nbase, nsrch);
+            // DEBUG_STREAM.printf("nbase nsrch %d %d\n", nbase, nsrch);
             if (nbase == 0) {
-                System.err.printf("prematurely exhausted nodes\n");
+                DEBUG_STREAM.printf("prematurely exhausted nodes\n");
                 break;
             }
             Node onenode = bases[nbase];
@@ -1436,16 +1458,16 @@ public class ScalelessAnalysis {
             }
             bases[nbase] = onenode.next;
             int kg = onenode.loc;
-            // System.err.printf("kg=%d, nbase=%d\n", kg, nbase);
+            // DEBUG_STREAM.printf("kg=%d, nbase=%d\n", kg, nbase);
             onenode.prev = onenode.next = null;
             jj = kg / nxx;
             ii = kg - jj * nxx;
             int k0 = ii + jj * nxd;
-            // System.err.printf("<%d %d> %f\n", ii, jj, dists[dists0 + k0]);
+            // DEBUG_STREAM.printf("<%d %d> %f\n", ii, jj, dists[dists0 + k0]);
             dists[dists0 + k0] = 0;
 
             for (oo = 0; oo < EIGHT; oo++) {
-                // System.err.printf("octant %d\n", oo);
+                // DEBUG_STREAM.printf("octant %d\n", oo);
                 qdis[oo] = qval[oo] = 0;
                 float wtot = 0;
                 int b = 0;
@@ -1455,8 +1477,10 @@ public class ScalelessAnalysis {
                 // off the start of the array, we just keep the index
                 // into the array and start at 0. iip, jjp, and b are
                 // all the same so we just use bb.
-                int oop = 0;// oop = oct0[oo];
-                int ddp = 0;// ddp = doct[oo];
+                // oop = oct0[oo];
+                int oop = 0;
+                // ddp = doct[oo];
+                int ddp = 0;
                 for (bb = 0; bb < dt.m_swath && nb == 0 && ok; bb++) {
                     oop++;
                     if (dt.eoct[oo][bb] == 0) {
@@ -1472,8 +1496,8 @@ public class ScalelessAnalysis {
                             continue;
                         }
                         // if (ok == 0)
-                        // System.err.printf("** ");
-                        // System.err.printf("|%d %d %d %d %d %d %d %d ", ii,
+                        // DEBUG_STREAM.printf("** ");
+                        // DEBUG_STREAM.printf("|%d %d %d %d %d %d %d %d ", ii,
                         // jj,
                         // iip, jjp, ioct[oo)[iip], joct[oo)[jjp],
                         // i, j);
@@ -1489,7 +1513,7 @@ public class ScalelessAnalysis {
                             int kkg = j * nxx + i;
                             onenode = nodes[kkg];
                             if (onenode.loc != kkg) {
-                                System.err.printf(
+                                DEBUG_STREAM.printf(
                                         "node location mismatch %d %d\n",
                                         onenode.loc, kkg);
                                 continue;
@@ -1499,7 +1523,7 @@ public class ScalelessAnalysis {
                                 continue;
                             }
 
-                            // System.err.printf("  >>> %f %d  %f %d\n",
+                            // DEBUG_STREAM.printf(" >>> %f %d %f %d\n",
                             // dists[dists0 + kk0], onenode.base,
                             // doct[oo)[ddp + b], hi);
 
@@ -1524,8 +1548,8 @@ public class ScalelessAnalysis {
                             continue;
                         }
 
-                        // System.err.printf(
-                        // "%d  %d %d  %d %d  %d %d  %d %d  %f %f\n",
+                        // DEBUG_STREAM.printf(
+                        // "%d %d %d %d %d %d %d %d %d %f %f\n",
                         //
                         // oo, ii, jj, iip, jjp, ioct[oo)[iip],
                         // joct[oo)[jjp], i, j, doct[oo)[ddp + b],
@@ -1534,8 +1558,8 @@ public class ScalelessAnalysis {
                         if (nb == 0) {
                             qdis[oo] = dt.doct[oo][ddp + b];
                             qval[oo] = raw[raw0 + kk0];
-                            wtot = 1 / (dt.doct[oo][ddp + b] * dt.doct[oo][ddp
-                                    + b]);
+                            wtot = 1 / (dt.doct[oo][ddp + b]
+                                    * dt.doct[oo][ddp + b]);
                         } else {
                             float wgt = 1 / dt.doct[oo][ddp + b]
                                     * dt.doct[oo][ddp + b];
@@ -1550,11 +1574,11 @@ public class ScalelessAnalysis {
                     }
                 }
                 // if (nb <= 1)
-                // System.err.printf("\n");
-                // System.err.printf("  %f %f\n", qdis[oo], qval[oo]);
+                // DEBUG_STREAM.printf("\n");
+                // DEBUG_STREAM.printf(" %f %f\n", qdis[oo], qval[oo]);
             }
 
-            // System.err.printf("finish\n");
+            // DEBUG_STREAM.printf("finish\n");
             for (oo = 0; oo < EIGHT; oo++) {
                 if (qdis[oo] == 0) {
                     continue;
@@ -1571,7 +1595,7 @@ public class ScalelessAnalysis {
                 if (qdis[oo] == 0) {
                     continue;
                 }
-                // System.err.printf("  %f %f\n", qdis[oo], qval[oo]);
+                // DEBUG_STREAM.printf(" %f %f\n", qdis[oo], qval[oo]);
                 float wgt = qdis[oo];
                 wgt = 1 / (wgt * wgt);
                 if (ss) {
@@ -1581,11 +1605,11 @@ public class ScalelessAnalysis {
                 val += wgt * qval[oo];
             }
             raw[raw0 + k0] = grid[kg] = val / wtot;
-            // System.err.printf("== %f %f %f\n", wtot, val, grid[kg]);
+            // DEBUG_STREAM.printf("== %f %f %f\n", wtot, val, grid[kg]);
 
         }
 
-        // System.err.printf("nbase,bases[nbase] %d %d\n\n", nbase,
+        // DEBUG_STREAM.printf("nbase,bases[nbase] %d %d\n\n", nbase,
         // (int) (bases[nbase].loc));
 
         return grid;
