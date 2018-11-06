@@ -316,7 +316,7 @@
          id="org.jep"
          download-size="0"
          install-size="0"
-         version="3.6.3"/>
+         version="3.7.1"/>
 
    <plugin
          id="org.slf4j"
