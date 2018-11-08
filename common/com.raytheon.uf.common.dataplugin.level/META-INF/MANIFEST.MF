@@ -2,10 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Level Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.level
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
@@ -14,7 +14,8 @@ Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.util,
  org.apache.commons.lang3;bundle-version="3.4.0",
  javax.measure,
- com.raytheon.uf.common.dataquery;bundle-version="1.14.0"
+ com.raytheon.uf.common.dataquery;bundle-version="1.14.0",
+ javax.xml.bind
 Export-Package: com.raytheon.uf.common.dataplugin.level,
  com.raytheon.uf.common.dataplugin.level.mapping,
  com.raytheon.uf.common.dataplugin.level.request,

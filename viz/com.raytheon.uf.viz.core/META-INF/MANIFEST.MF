@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Core Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.core;singleton:=true
-Bundle-Version: 1.16.1.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Activator: com.raytheon.uf.viz.core.Activator
 Bundle-Vendor: Raytheon
 Require-Bundle: org.eclipse.ui,
@@ -39,7 +39,8 @@ Require-Bundle: org.eclipse.ui,
  org.reflections;bundle-version="0.9.9",
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
  com.raytheon.uf.common.jms;bundle-version="1.14.0";visibility:=reexport,
- org.slf4j;bundle-version="1.7.5"
+ org.slf4j;bundle-version="1.7.5",
+ javax.xml.bind
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, ch.qos.logback
 Export-Package: com.raytheon.uf.viz.core,
@@ -80,7 +81,7 @@ Export-Package: com.raytheon.uf.viz.core,
  com.raytheon.uf.viz.core.tile,
  com.raytheon.uf.viz.core.time,
  com.raytheon.viz.core.units
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Import-Package: com.raytheon.uf.common.inventory.exception,
  com.raytheon.uf.viz.datacube
 Bundle-ClassPath: com.raytheon.uf.viz.core.jar,.

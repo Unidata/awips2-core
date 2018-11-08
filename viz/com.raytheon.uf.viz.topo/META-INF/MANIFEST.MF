@@ -2,10 +2,10 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Viz Topo Displays
 Bundle-SymbolicName: com.raytheon.uf.viz.topo;singleton:=true
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.topo;bundle-version="1.14.0",
  com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
@@ -13,6 +13,7 @@ Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
  com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.style,
  com.raytheon.uf.common.time,
- javax.measure
+ javax.measure,
+ javax.xml.bind
 Export-Package: com.raytheon.uf.viz.topo
 Bundle-ClassPath: com.raytheon.uf.viz.topo.jar

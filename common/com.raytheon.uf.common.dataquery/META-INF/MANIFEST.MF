@@ -2,15 +2,16 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Dataquery
 Bundle-SymbolicName: com.raytheon.uf.common.dataquery
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.common.dataquery,
  com.raytheon.uf.common.dataquery.db,
  com.raytheon.uf.common.dataquery.requests,
  com.raytheon.uf.common.dataquery.responses
 Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.14.0",
  com.raytheon.uf.common.serialization.comm,
- com.raytheon.uf.common.dataplugin;bundle-version="1.14.0"
+ com.raytheon.uf.common.dataplugin;bundle-version="1.14.0",
+ javax.xml.bind
 Import-Package: com.raytheon.uf.common.time,
  com.raytheon.uf.common.time.util

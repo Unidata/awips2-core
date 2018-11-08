@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Stats
 Bundle-SymbolicName: com.raytheon.uf.common.stats
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.6
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.common.stats,
  com.raytheon.uf.common.stats.data,
  com.raytheon.uf.common.stats.util,
@@ -21,4 +21,5 @@ Require-Bundle: com.raytheon.uf.common.time;bundle-version="1.12.1174",
  javax.measure;bundle-version="1.0.0",
  com.raytheon.uf.common.units;bundle-version="1.0.0",
  org.apache.commons.lang3;bundle-version="3.4.0",
- org.hibernate
+ org.hibernate,
+ javax.xml.bind
