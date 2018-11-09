@@ -21,6 +21,7 @@
 ## @file Gradient.py
 from numpy import empty, shape, NaN
 import Vector
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the X and Y gradient arrays of a 2+D array of scalars.
@@ -30,6 +31,7 @@ import Vector
 # @param dy: Spacing between data points in Y direction.
 # @return: gradient of scalar
 # @rtype: tuple(u, v)
+@HandleWorldWrapX
 def execute(scalar, dx, dy):
     "Calculate the 2D gradient arrays of a 2+D scalar array."       
     result_u = empty(shape(scalar), dtype=scalar.dtype)

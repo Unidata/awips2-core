@@ -19,6 +19,7 @@
 ###
 
 from numpy import empty, shape, NaN
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the vorticity of Vector.
@@ -29,6 +30,7 @@ from numpy import empty, shape, NaN
 # @param dy: physical distance between data points in Y direction
 # @return: 2D vorticity array   
 #
+@HandleWorldWrapX
 def execute(vec_U, vec_V, Q, dx, dy):
     """Calculate vorticity of Vector."""
     
@@ -84,25 +86,12 @@ def execute(vec_U, vec_V, Q, dx, dy):
     if lqs == 0 or sum(Qshape)==lqs:
         ans = (dvdx + dudy)/2 + Q
     else:
-        ans = ( dvdx + dudy )/2 + Q[1:-1,1:-1];
+        ans = ( dvdx + dudy )/2 + Q[1:-1,1:-1]
 
     rslt[1:-1,1:-1] = ans
 
     return rslt
 
-#Calls Vorticity but instead of blanking the edges, wraps the x parameter around to the other side, useful for worldwide grids.
+# Deprecated, kept only in case local overrides are using it, now just pass True for the final argument of execute.
 def executeWrapX(vec_U, vec_V, Q, dx, dy):
-    return execute(wrapX(vec_U), wrapX(vec_V), wrapX(Q), wrapX(dx), wrapX(dy))[:,1:-1]
-
-#Utility function
-def wrapX(v):
-    vshape = shape(v)
-    lvs = len(vshape)
-    if lvs == 0 or sum(vshape)==lvs:
-        return v
-    else:
-        newV = empty((vshape[0], vshape[1]+2), v.dtype)
-        newV[:,1:-1] = v
-        newV[:,0] = v[:,-1]
-        newV[:,-1] = v[:,0]
-        return newV
+    return execute(vec_U, vec_V, Q, dx, dy, True)

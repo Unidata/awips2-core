@@ -22,6 +22,7 @@
 
 from numpy import isscalar
 from numpy import NaN
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate d/dx and d/dy of Qty.
@@ -43,6 +44,7 @@ from numpy import NaN
 # @type dy: scalar or 2D numpy array
 # @return: d/dx and d/dy of Qty.
 # @rtype: tuple(dq/dx,dq/dy) of masked 2D numpy arrays.
+@HandleWorldWrapX
 def calculate(Qty, dx, dy):
     "Calculate d/dx and d/dy of Qty."
     
@@ -78,11 +80,11 @@ def calculate(Qty, dx, dy):
 # @type dy: scalar or 2D numpy array
 # @return: d/dx and d/dy of Qty.
 # @rtype: tuple(dq/dx,dq/dy) of 2D numpy arrays.
-def execute(Qty, dx, dy):
+def execute(Qty, dx, dy, worldWrapX = False):
     ""
     
     # assume dx and dy are never zero or near-inifinite
     
-    dqdx, dqdy = calculate(Qty, dx, dy)
+    dqdx, dqdy = calculate(Qty, dx, dy, worldWrapX)
 
     return (dqdx, dqdy)
