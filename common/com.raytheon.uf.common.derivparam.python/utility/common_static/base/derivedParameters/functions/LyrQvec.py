@@ -43,9 +43,9 @@ import Vector
 # @type coriolis: 2D numpy array
 # @return: Q vectors 
 # @rtype: tuple(U,V) of 2D numpy arrays
-def execute(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
+def execute(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis, worldWrapX=False):
     
-    qx, qy, dtdx, dtdy = calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis)
+    qx, qy, dtdx, dtdy = calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis, worldWrapX)
     # unmask the arrays we're interested in
     return Vector.componentsTo(qx, qy)
 
@@ -77,7 +77,7 @@ def execute(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
 # @type coriolis: 2D numpy array
 # @return: Q vectors 
 # @rtype: tuple(U,V) of 2D numpy arrays
-def calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
+def calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis, worldWrapX=False):
     "Find Q vectors from upper and lower height and pressure."
     # assume dx, dy, and coriolis don't need masked
     # Acceleration due to gravity (m/s**2)
@@ -94,7 +94,7 @@ def calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
     #******* Code to smooth height omitted *******
     
     # calculate components of geostrophic wind
-    dugdx, dugdy, dvgdx, dvgdy = DgeoComps.execute(height_mid, dx, dy, coriolis) 
+    dugdx, dugdy, dvgdx, dvgdy = DgeoComps.execute(height_mid, dx, dy, coriolis, worldWrapX) 
 
     # get mean pressure
     # copied from Fortran; wouldn't sqrt(p_up * p_lo) be better?
@@ -114,7 +114,7 @@ def calculate(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
     
     temp = cnvFac * (height_up - height_lo)
     
-    dtdx, dtdy = Partial.execute(temp, dx, dy)
+    dtdx, dtdy = Partial.execute(temp, dx, dy, worldWrapX)
     
     qx = -dugdx * dtdx
     qx -= dvgdx * dtdy

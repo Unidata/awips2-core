@@ -18,8 +18,6 @@
 # further licensing information.
 ###
 
-from numpy import log, exp
-
 import PartialDerivative as Partial
 import DgeoComps
 import Vector
@@ -40,8 +38,8 @@ import Vector
 # @type coriolis: 2D numpy array
 # @return: Q vectors and dtemp/dx and dtemp/dy 
 # @rtype: tuple(U,V, dtdx, dtdy) of 2D masked numpy arrays
-def execute(GHxSM, TxSM, P, dx, dy, coriolis):
-    result_u, result_v, dtdx, dtdy = calculate(GHxSM, TxSM, P, dx, dy, coriolis)
+def execute(GHxSM, TxSM, P, dx, dy, coriolis, worldWrapX=False):
+    result_u, result_v, dtdx, dtdy = calculate(GHxSM, TxSM, P, dx, dy, coriolis, worldWrapX)
     # convert the results we want to unmasked arrays
     return Vector.componentsTo(result_u, result_v)
   
@@ -75,7 +73,7 @@ def execute(GHxSM, TxSM, P, dx, dy, coriolis):
 # @type coriolis: 2D numpy array
 # @return: Q vectors and dtemp/dx and dtemp/dy 
 # @rtype: tuple(U,V, dtdx, dtdy) of 2D masked numpy arrays
-def calculate(height, temp, pressure, dx, dy, coriolis):
+def calculate(height, temp, pressure, dx, dy, coriolis, worldWrapX=False):
     "Find Q vectors from height, temp, and pressure."
     # assume dx, dy, and coriolis don't need masked
     
@@ -85,12 +83,12 @@ def calculate(height, temp, pressure, dx, dy, coriolis):
     #******* Code to smooth height omitted *******
     
     # Compute the geostrophic wind components for this level.
-    dugdx, dugdy, dvgdx, dvgdy = DgeoComps.execute(height, dx, dy, coriolis )
+    dugdx, dugdy, dvgdx, dvgdy = DgeoComps.execute(height, dx, dy, coriolis, worldWrapX )
     
     #******* Code to smooth temp omitted *******
     
     # Compute the derivative of temp with respect to X and Y
-    dtdx, dtdy = Partial.calculate(temp, dx, dy)
+    dtdx, dtdy = Partial.calculate(temp, dx, dy, worldWrapX)
     
     # Calculate the X and Y components of Q.
     result_x = dugdx * dtdx

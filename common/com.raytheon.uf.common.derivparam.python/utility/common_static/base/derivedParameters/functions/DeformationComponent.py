@@ -21,10 +21,10 @@
 from numpy import sqrt
 from numpy import shape
 from numpy import empty
-from numpy import hypot
 from numpy import where
 from numpy import NaN
 import Vector as Vector
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the deformation components of Vector.
@@ -34,6 +34,7 @@ import Vector as Vector
 # @param dx: The spacing between data points in the X direction (array or scalar)
 # @param dy: The spacing between data points in the Y direction (array or scalar)
 # @return: The deformation array of Vector.
+@HandleWorldWrapX
 def execute(U, V, dx, dy):
     
         # create an empty array the same dimensions as U

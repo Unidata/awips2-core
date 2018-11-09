@@ -21,6 +21,7 @@
 ## @file VorticityAdv.py
 
 from numpy import empty, shape, NaN
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate vorticity advection.
@@ -38,7 +39,8 @@ from numpy import empty, shape, NaN
 #            with the same dimensions as U or a scalar.
 # @return: The vorticity advection array.
 # @rtype: An array of at least rank 2 with a shape of 3 or more in the first two dimensions.
-#         The outer edges of the returned cannot be calculated and are set to NaN. 
+#         The outer edges of the returned cannot be calculated and are set to NaN.
+@HandleWorldWrapX 
 def execute(U, V, dx, dy, coriolis):
     """Calculate vorticity advection.
 Parameters:

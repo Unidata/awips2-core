@@ -23,6 +23,8 @@
 from numpy import empty
 from numpy import shape
 from numpy import NaN
+from WorldWrapUtil import HandleWorldWrapX
+
 
 ##
 # Function to calculate the Laplacian of qan.
@@ -31,6 +33,7 @@ from numpy import NaN
 #             cells in the first two dimensions.
 # @param dx: The spacing between data points in the X direction.
 # @param dy: The spacing between data points in the Y direction.
+@HandleWorldWrapX
 def execute(qan, dx, dy):
 
     result = empty(shape(qan), dtype=qan.dtype)

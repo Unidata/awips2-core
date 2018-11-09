@@ -21,8 +21,8 @@
 #import sys
 #sys.path.append("..")
 
+from WorldWrapUtil import HandleWorldWrapX
 from numpy import ndarray,NaN, float32
-from Multiply import execute as Multiply
 import Vector
 
 ##
@@ -35,6 +35,7 @@ import Vector
 # @param dx: Grid spacing in the x-direction (m)
 # @param dy: Grid spacing in the y-direction (m)
 # @return: A vector representing the non-advective local change
+@HandleWorldWrapX
 def execute(u, v, a, dx, dy):
 
         u = -u
@@ -53,7 +54,7 @@ def execute(u, v, a, dx, dy):
         dadxdt = ndarray(u.shape, float32)
         dadydt = ndarray(u.shape, float32)
         
-        # First output array:
+        # First output array:Mult
         # mark the output array edges as invalid
         dadxdt[0,:] = NaN
         dadxdt[-1,:] = NaN
