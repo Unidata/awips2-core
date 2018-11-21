@@ -20,7 +20,7 @@
 
 
 from numpy import empty, shape, NaN
-
+from WorldWrapUtil import HandleWorldWrapX
 ##
 # Calculate the advection of quantity by Vector.
 #
@@ -36,6 +36,7 @@ from numpy import empty, shape, NaN
 # @rtype: An array of at least rank 2 with a shape of 3 or more in the first two dimensions.
 #         The outer edges of the returned cannot be calculated and are set to NaN. 
 
+@HandleWorldWrapX
 def execute(U, V, quantity, dx, dy):
     """Calculate the advection of Vector.
 Parameters:

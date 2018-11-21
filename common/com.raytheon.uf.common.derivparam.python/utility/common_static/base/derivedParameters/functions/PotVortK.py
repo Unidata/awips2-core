@@ -47,7 +47,7 @@ import Vorticity
 # @param coriolis: Coriolis parameters (/s)
 # @return: isentropic potential vorticity array
 # 
-def execute(p_up, p_lo, o_up, o_lo, vector_up, vector_lo, dx, dy, coriolis):
+def execute(p_up, p_lo, o_up, o_lo, vector_up, vector_lo, dx, dy, coriolis, worldWrapX):
     "Calculate the isentropic potential vorticity through a layer."
     
     u_up, v_up = vector_up
@@ -55,8 +55,8 @@ def execute(p_up, p_lo, o_up, o_lo, vector_up, vector_lo, dx, dy, coriolis):
     
     
     # Calculate the absolute vorticity at each isentropic surface.
-    avort1 = Vorticity.execute(u_up, v_up, coriolis, dx, dy)
-    avort2 = Vorticity.execute(u_lo, v_lo, coriolis, dx, dy)
+    avort1 = Vorticity.execute(u_up, v_up, coriolis, dx, dy, worldWrapX)
+    avort2 = Vorticity.execute(u_lo, v_lo, coriolis, dx, dy, worldWrapX)
 
     # Calculate the isentropic stability through the layer.
     pvort = IsenStability.execute(p_up, p_lo, o_up, o_lo)

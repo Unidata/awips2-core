@@ -25,6 +25,7 @@ from numpy import copy as Copy
 from numpy import NaN
 from numpy import ones
 from numpy import shape
+from WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Compute the components of geostrophic wind for this level.
@@ -43,6 +44,7 @@ from numpy import shape
 #          d/dx of v component of geostrophic wind
 #          d/dy of v component of geostrophic wind
 # @rtype: tuple(dugdx, dugdy, dvgdx, dvgdy)
+@HandleWorldWrapX
 def execute(height, dx, dy, coriolis):
     "Compute the components of geostrophic wind for this level."
     # Generate output arrays as arrays of NaN,
