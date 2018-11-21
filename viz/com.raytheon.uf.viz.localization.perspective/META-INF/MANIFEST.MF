@@ -37,3 +37,4 @@ Export-Package: com.raytheon.uf.viz.localization.perspective.adapter,
  com.raytheon.uf.viz.localization.perspective.service,
  com.raytheon.uf.viz.localization.perspective.view
 Bundle-ClassPath: com.raytheon.uf.viz.localization.perspective.jar
+Import-Package: org.python.pydev.ast.runners
