@@ -33,7 +33,7 @@
 
 import U
 import V
-from numpy import hypot
+from numpy import hypot, NaN
 
 def execute(windSpeed, windDir, accum_windSpeed24, accum_windDir24):
     U0 = U.execute(windSpeed, windDir)
