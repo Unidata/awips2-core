@@ -11,18 +11,18 @@
    <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />
    
    <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-      <directory>${user.home}/${LOGDIR}</directory>
-      <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_logs.log</name>
+      <directory>${user.home}/caveData/logs</directory>
+      <name>${PROGRAM_NAME}_${startTime}_pid_%PID%.log</name>
    </define>
 
    <define name="consoleLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${user.home}/${LOGDIR}</directory>
-       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_console.log</name>
+       <directory>${user.home}/caveData/logs</directory>
+       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%.log</name>
    </define>
 
    <define name="performanceLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${user.home}/${LOGDIR}</directory>
-       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%_perf.log</name>
+       <directory>${user.home}/caveData/logs</directory>
+       <name>${PROGRAM_NAME}_${startTime}_pid_%PID%.log</name>
    </define>
 
   <!-- this appender will log the messages to a file -->

@@ -19,30 +19,12 @@
    <timestamp key="startTime" datePattern="yyyyMMdd_HHmmss" />            
 
    <define name="caveLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-      <directory>${user.home}/${LOGDIR}</directory>
-      <name>cave_${startTime}_pid_%PID%_logs.log</name>
+      <directory>${user.home}/Library/caveData/logs</directory>
+      <name>cave_${startTime}_pid_%PID%.log</name>
    </define>
 
-   <define name="consoleLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${user.home}/${LOGDIR}</directory>
-       <name>cave_${startTime}_pid_%PID%_console.log</name>
-   </define>
-
-   <define name="producteditorLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${user.home}/${LOGDIR}</directory>
-       <name>cave_${startTime}_pid_%PID%_producteditor.log</name>
-   </define>
-
-   <define name="performanceLogFile" class="com.raytheon.uf.common.logback.LogFilePropertyDefiner" >
-       <directory>${user.home}/${LOGDIR}</directory>
-       <name>cave_${startTime}_pid_%PID%_perf.log</name>
-   </define>
-
-   <!--  TODO should somehow be contributed from alertview plugin -->
-   <!-- this appender will send messages to alertview -->
    <appender name="AlertViewAppender" class="com.raytheon.uf.viz.alertview.logback.AlertViewAppender" />   
 
-   <!-- this appender will log the messages to a file -->
    <appender name="CaveLogAppender" class="ch.qos.logback.core.FileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
       <file>${caveLogFile}</file>
@@ -52,18 +34,7 @@
          file while also allowing them through to System.out and System.err -->
    <appender name="consoleLog" class="com.raytheon.uf.common.logback.appender.ConsoleFileAppender">
       <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-      <file>${consoleLogFile}</file> 
-   </appender>
-
-   <appender name="PerformanceLogAppender" class="ch.qos.logback.core.FileAppender">
-      <file>${performanceLogFile}</file>
-      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
-   </appender>
-
-   <!-- TODO should somehow be contributed from viz.gfe plugin -->
-   <appender name="ProductEditorLogAppender" class="ch.qos.logback.core.FileAppender">
-      <file>${producteditorLogFile}</file>
-      <encoder class="com.raytheon.uf.common.logback.encoder.UFStdEncoder"/> 
+      <file>${caveLogFile}</file> 
    </appender>
 
    <appender name="AsyncCaveLogAppender" class="ch.qos.logback.classic.AsyncAppender">
@@ -76,27 +47,9 @@
       <appender-ref ref="AlertViewAppender"/>
    </appender> 
 
-   <appender name="AsyncPerfLogAppender" class="ch.qos.logback.classic.AsyncAppender">
-      <queueSize>500</queueSize>
-      <appender-ref ref="PerformanceLogAppender"/>
-   </appender> 
-
-   <appender name="AsyncProductEditorLogAppender" class="ch.qos.logback.classic.AsyncAppender">
-      <queueSize>500</queueSize>
-      <appender-ref ref="ProductEditorLogAppender"/>
-   </appender> 
-
    <logger name="CaveLogger" level="all" additivity="false">
       <appender-ref ref="AsyncCaveLogAppender"/>
       <appender-ref ref="AsyncAlertViewAppender"/>
-   </logger>
-
-   <logger name="PerformanceLogger" level="all" additivity="false">
-      <appender-ref ref="AsyncPerfLogAppender"/>
-   </logger>
-
-   <logger name="ProductEditorLogger" level="all" additivity="false">
-      <appender-ref ref="AsyncProductEditorLogAppender"/>
    </logger>
 
    <logger name="com.raytheon" level="info" />
