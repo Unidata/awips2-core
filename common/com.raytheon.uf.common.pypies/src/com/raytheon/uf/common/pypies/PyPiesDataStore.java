@@ -21,12 +21,15 @@ package com.raytheon.uf.common.pypies;
 
 import java.io.File;
 import java.io.FileNotFoundException;
+import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.zip.DataFormatException;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +44,9 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.pypies.records.CompressedChunk;
+import com.raytheon.uf.common.pypies.records.CompressedChunkedDataRecord;
+import com.raytheon.uf.common.pypies.records.CompressedChunkedDataRecordUtil;
 import com.raytheon.uf.common.pypies.records.CompressedDataRecord;
 import com.raytheon.uf.common.pypies.request.AbstractRequest;
 import com.raytheon.uf.common.pypies.request.CopyRequest;
@@ -62,15 +68,16 @@ import com.raytheon.uf.common.serialization.DynamicSerializationManager;
 import com.raytheon.uf.common.serialization.DynamicSerializationManager.SerializationType;
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
+import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.FileUtil;
+import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.raytheon.uf.common.util.format.BytesFormat;
 
 /**
  * Data Store implementation that communicates with a PyPIES server over http.
- * The requests and responses are all DynamicSerialized.
+ * The requests and responses are all DynamicSerialized...
  *
  * <pre>
- *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -86,6 +93,7 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  * Feb 29, 2016  5420      tgurney     Remove timestampCheck arg from copy()
  * Nov 15, 2016  5992      bsteffen    Compress large records
  * Oct 19, 2017  6367      tgurney     Use logger instead of stdout
+ * Sep 19, 2018  7435      ksunil      Eliminate compression/decompression on HDF5
  *
  * </pre>
  *
@@ -101,6 +109,9 @@ public class PyPiesDataStore implements IDataStore {
     private static final long COMPRESSION_LIMIT = BytesFormat
             .parseSystemProperty("pypies.limits.compression", "5MiB");
 
+    private static final boolean USE_CHUNKED_COMPRESSION = Boolean.parseBoolean(
+            System.getProperty("USE_CHUNKED_COMPRESSION", "false"));
+
     protected static String address = null;
 
     protected List<IDataRecord> records = new ArrayList<>();
@@ -109,7 +120,12 @@ public class PyPiesDataStore implements IDataStore {
 
     protected PypiesProperties props;
 
-    private final Logger logger = LoggerFactory.getLogger(getClass());
+    private static final Logger logger = LoggerFactory
+            .getLogger(PyPiesDataStore.class);
+
+    static {
+        logger.info("Chunked Compression = " + USE_CHUNKED_COMPRESSION);
+    }
 
     public PyPiesDataStore(final File file, final boolean useLocking,
             final PypiesProperties props) {
@@ -121,11 +137,9 @@ public class PyPiesDataStore implements IDataStore {
     public void addDataRecord(IDataRecord dataset, StorageProperties properties)
             throws StorageException {
         if (dataset.validateDataSet()) {
-            if (dataset.getSizeInBytes() > COMPRESSION_LIMIT) {
-                dataset = CompressedDataRecord.convert(dataset);
-            }
             dataset.setProperties(properties);
             records.add(dataset);
+
         } else {
             throw new StorageException(
                     "Invalid dataset " + dataset.getName() + " :" + dataset,
@@ -178,19 +192,18 @@ public class PyPiesDataStore implements IDataStore {
         RetrieveRequest req = new RetrieveRequest();
         req.setGroup(group);
         RetrieveResponse resp = (RetrieveResponse) cachedRequest(req);
-        return resp.getRecords();
+        return scanForCompressedRecords(resp.getRecords(), null);
     }
 
     @Override
     public IDataRecord retrieve(final String group, final String dataset,
-            final Request request)
-            throws StorageException, FileNotFoundException {
+            final Request request) throws StorageException {
         RetrieveRequest req = new RetrieveRequest();
         req.setGroup(group);
         req.setDataset(dataset);
         req.setRequest(request);
         RetrieveResponse resp = (RetrieveResponse) cachedRequest(req);
-        return resp.getRecords()[0];
+        return scanForCompressedRecords(resp.getRecords(), request)[0];
     }
 
     @Override
@@ -201,7 +214,7 @@ public class PyPiesDataStore implements IDataStore {
         req.setDatasetGroupPath(datasetGroupPath);
         req.setRequest(request);
         RetrieveResponse result = (RetrieveResponse) cachedRequest(req);
-        return result.getRecords();
+        return scanForCompressedRecords(result.getRecords(), request);
     }
 
     @Override
@@ -213,7 +226,55 @@ public class PyPiesDataStore implements IDataStore {
         req.setRequest(request);
 
         RetrieveResponse resp = (RetrieveResponse) cachedRequest(req);
-        return resp.getRecords();
+        return scanForCompressedRecords(resp.getRecords(), request);
+    }
+
+    /*
+     * If any record is a compressed record, convert that to its uncompressed
+     * type record (Int/Float etc). From Pypies/HDF5 side, the records are sent
+     * back as a CompressedChunkedDataRecord (CCDR) only if we used chunked
+     * compression (USE_CHUNKED_COMPRESSION = true). If it is false, normal
+     * DataRecords (Int/Float etc) are sent back from HDF5 side. If record is a
+     * CCDR, the decompression and SLAB size math are applied on the client java
+     * side. we don't want to create a new bytestream for each and every chunk
+     * within a record. Let us keep a global one and call a reset at the right
+     * place
+     *
+     */
+    private IDataRecord[] scanForCompressedRecords(IDataRecord[] in,
+            Request request) throws StorageException {
+        IDataRecord[] out = new IDataRecord[in.length];
+        IDataRecord rec = null;
+        try (PooledByteArrayOutputStream byteStream = ByteArrayOutputStreamPool
+                .getInstance().getStream()) {
+            long t0 = System.currentTimeMillis();
+            for (int i = 0; i < in.length; i++) {
+                rec = in[i];
+                ByteArrayOutputStreamPool.getInstance().getStream();
+                if (rec instanceof CompressedChunkedDataRecord) {
+
+                    out[i] = CompressedChunkedDataRecordUtil
+                            .convertCompressedRecToTypeRec(
+                                    (CompressedChunkedDataRecord) rec, request,
+                                    byteStream);
+
+                } else {
+                    out[i] = rec;
+                }
+
+            }
+            long time = System.currentTimeMillis() - t0;
+
+            if (time >= SIMPLE_LOG_TIME) {
+                logger.info("Took " + time + " ms to convert records");
+            } else if (logger.isDebugEnabled()) {
+                logger.debug("Took " + time + " ms to convert records");
+            }
+        } catch (IOException | DataFormatException e) {
+            throw new StorageException("error converting compressed data", rec,
+                    e);
+        }
+        return out;
     }
 
     @Override
@@ -225,8 +286,7 @@ public class PyPiesDataStore implements IDataStore {
     public StorageStatus store(final StoreOp storeOp) throws StorageException {
         StoreRequest req = new StoreRequest();
         req.setOp(storeOp);
-        req.setRecords(records);
-
+        req.setRecords(convertToCompressedDataRecord(records, storeOp));
         boolean huge = false;
         long totalSize = 0;
         for (IDataRecord rec : records) {
@@ -388,7 +448,7 @@ public class PyPiesDataStore implements IDataStore {
         }
     }
 
-    protected void initializeProperties() {
+    protected synchronized void initializeProperties() {
         if (address == null) {
             address = props.getAddress();
         }
@@ -488,6 +548,84 @@ public class PyPiesDataStore implements IDataStore {
             }
             throw new StorageException(sb.toString(), null);
         }
+    }
+
+    private List<IDataRecord> convertToCompressedDataRecord(
+            List<IDataRecord> records, StoreOp storeOp)
+            throws StorageException {
+
+        List<IDataRecord> returnedRecords = new ArrayList<>(records.size());
+        long timeStart = System.currentTimeMillis();
+        for (IDataRecord dataset : records) {
+
+            if (supportsChunkedCompression(dataset, storeOp)) {
+                long oldSize = dataset.getSizeInBytes();
+
+                dataset = CompressedChunkedDataRecord.convert(dataset);
+                returnedRecords.add(dataset);
+
+                if (logger.isDebugEnabled()) {
+                    logger.debug("Old size: " + oldSize);
+                    logger.debug("added compressed record, "
+                            + dataset.getClass().getName() + ", dimension: "
+                            + dataset.getDimension() + ", sizes: "
+                            + Arrays.toString(dataset.getSizes())
+                            + ", max sizes: "
+                            + Arrays.toString(dataset.getMaxSizes())
+                            + ", original type:"
+                            + ((CompressedChunkedDataRecord) dataset).getType()
+                            + ", total compressed size of all blocks: "
+                            + ((CompressedChunkedDataRecord) dataset)
+                                    .getSizeInBytes());
+                    int len = ((CompressedChunkedDataRecord) dataset)
+                            .getCompressedChunks().size();
+                    logger.debug("SLAB Info, number of slabs: " + len);
+                    StringBuilder sizes = new StringBuilder("");
+                    for (CompressedChunk compressedBlock : ((CompressedChunkedDataRecord) dataset)
+                            .getCompressedChunks()) {
+                        sizes.append(compressedBlock.getData().length)
+                                .append(", ");
+                    }
+                    logger.debug("SLAB sizes: " + sizes);
+                }
+            } else {
+                if (dataset.getSizeInBytes() > COMPRESSION_LIMIT) {
+                    dataset = CompressedDataRecord.convert(dataset);
+                    returnedRecords.add(dataset);
+
+                } else {
+                    returnedRecords.add(dataset);
+                }
+            }
+        }
+        long timeStop = System.currentTimeMillis();
+        long millis = timeStop - timeStart;
+
+        if (millis >= SIMPLE_LOG_TIME) {
+            logger.info("Generated compressed chunked records in " + millis
+                    + " ms. ");
+        } else if (logger.isDebugEnabled()) {
+            logger.debug("Generated compressed chunked records in " + millis
+                    + " ms. ");
+        }
+
+        return returnedRecords;
+
+    }
+
+    private boolean supportsChunkedCompression(IDataRecord record,
+            StoreOp storeOp) {
+        /*
+         * We will use chunked compression if (the USE_CHUNKED_COMPRESSION flag
+         * is set), and (the store operation is not APPEND) and (the record is
+         * not trying to REPLACE a partial chunk inside an existing record).
+         */
+        if (USE_CHUNKED_COMPRESSION && storeOp != StoreOp.APPEND
+                && (record.getMinIndex() == null
+                        || record.getMinIndex().length == 0))
+            return true;
+        else
+            return false;
     }
 
 }
