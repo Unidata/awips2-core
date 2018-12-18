@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -31,17 +31,18 @@ import java.util.Objects;
  * as a number of bytes. The String format is a number followed by a suffix. The
  * suffix used is determined by a standard or convention as defined in
  * {@link Standard}.
- * 
+ *
  * BytesFormat objects are not thread safe.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- ------------------------------------
  * Dec 02, 2016  5992     bsteffen  Initial creation
- * 
+ * Dec 18, 2018  7677     randerso  Fixed formatting of negative values
+ *
  * </pre>
  *
  * @author bsteffen
@@ -104,9 +105,9 @@ public class BytesFormat {
          */
         LOWER_SHORT_CUSTOMARY(1024, "k", "m", "g", "t", "p", "e", "z", "y");
 
-        public final int multiplier;
+        private final int multiplier;
 
-        public final String[] suffixes;
+        private final String[] suffixes;
 
         private Standard(int multiplier, String... suffixes) {
             this.multiplier = multiplier;
@@ -138,7 +139,7 @@ public class BytesFormat {
      * formatting values only the first standard is used. For parsing all
      * standards are considered and if there is a conflict the first matching
      * standard is used.
-     * 
+     *
      * @param standards
      */
     public BytesFormat(Standard... standards) {
@@ -195,7 +196,7 @@ public class BytesFormat {
      * Convenience method to set the default multiplier using the specified
      * suffix. The suffix is compared against all the standards used in this
      * format and a ParseException is thrown if it is not valid.
-     * 
+     *
      * @see #setDefaultMultiplier(long)
      */
     public BytesFormat setDefaultSuffix(String suffix) throws ParseException {
@@ -212,7 +213,7 @@ public class BytesFormat {
      * larger than 8PiB may not be represented exactly. If it is necessary to
      * perfectly represent values larger than 8PiB then
      * {@link #parseBig(String)} should be used instead.
-     * 
+     *
      * @param input
      *            the string to parse. This must only contain a number,
      *            optionally followed by a suffix.
@@ -247,7 +248,7 @@ public class BytesFormat {
     /**
      * Parse a size from a string. This method should be used if support is
      * needed for exact values larger than 8PiB.
-     * 
+     *
      * @param input
      *            the string to parse. This must only contain a number,
      *            optionally followed by a suffix.
@@ -282,7 +283,7 @@ public class BytesFormat {
 
     /**
      * Format the provided number of bytes as a String.
-     * 
+     *
      * @param numberOfBytes
      *            the numberOfBytes to format
      * @return a string representing the number of Bytes.
@@ -290,27 +291,27 @@ public class BytesFormat {
     public String format(long numberOfBytes) {
         DecimalFormat format = getFormat();
         Standard standard = standards[0];
-        double n = numberOfBytes;
+        double adjustedSize = numberOfBytes;
         int reps = -1;
-        while ((n >= standard.multiplier)
+        while ((Math.abs(adjustedSize) >= standard.multiplier)
                 && (reps < (standard.suffixes.length - 1))) {
             reps += 1;
-            n /= standard.multiplier;
+            adjustedSize /= standard.multiplier;
         }
         String suffix = bytesSuffix;
         if (reps > -1) {
             suffix = standard.suffixes[reps];
         }
         if (suffix.isEmpty()) {
-            return format.format(n);
+            return format.format(adjustedSize);
         } else {
-            return format.format(n) + separator + suffix;
+            return format.format(adjustedSize) + separator + suffix;
         }
     }
 
     /**
      * Format the provided number of bytes as a String.
-     * 
+     *
      * @param numberOfBytes
      *            the numberOfBytes to format
      * @return a string representing the number of Bytes.
@@ -322,7 +323,7 @@ public class BytesFormat {
         BigDecimal multiplier = new BigDecimal(standard.multiplier);
 
         int reps = -1;
-        while ((adjustedSize.compareTo(multiplier) >= 0)
+        while ((adjustedSize.abs().compareTo(multiplier) >= 0)
                 && (reps < (standard.suffixes.length - 1))) {
             reps += 1;
             adjustedSize = adjustedSize.divide(multiplier);
@@ -371,14 +372,14 @@ public class BytesFormat {
      * property is set but will not parse then a warning is printed to standard
      * error. If more specific logging or error handling is needed then a
      * BytesFormat should be used directly so ParseExceptions can be caught.
-     * 
+     *
      * @param propertyName
      *            The name of the system property
      * @param defaultValue
      *            The default value, expressed as a parseable bytes quantity for
      *            readability.
      * @return The number of bytes from the property or from the default value.
-     * 
+     *
      * @see System#getProperty(String)
      */
     public static long parseSystemProperty(String propertyName,
