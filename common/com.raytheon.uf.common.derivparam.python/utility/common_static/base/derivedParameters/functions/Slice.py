@@ -18,7 +18,7 @@
 # further licensing information.
 ##
 
-import gridslice
+from . import gridslice
 from numpy import ndarray, NaN
 
 gridslice_maskval = 1e37
