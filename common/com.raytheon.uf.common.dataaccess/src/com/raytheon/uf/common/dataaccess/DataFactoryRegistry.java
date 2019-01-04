@@ -41,6 +41,7 @@ import com.raytheon.uf.common.dataaccess.exception.DataFactoryNotFoundException;
  * Feb 14, 2013 1614       bsteffen    Refactor data access framework to use
  *                                     single request.
  * Jul 14, 2014 3184       njensen     Added getRegisteredDatatypes()
+ * Oct 04, 2018            mjames@ucar Remove datatype names toLowerCase.
  * 
  * </pre>
  * 
@@ -87,7 +88,6 @@ public class DataFactoryRegistry {
      *            type
      */
     public IDataFactory register(String datatype, IDataFactory factory) {
-        datatype = datatype.toLowerCase();
         datatypeMap.put(datatype, factory);
         return factory;
     }
@@ -124,7 +124,6 @@ public class DataFactoryRegistry {
      * @throws DataFactoryNotFoundException
      */
     public IDataFactory getFactory(String datatype) {
-        datatype = datatype.toLowerCase();
         IDataFactory factory = datatypeMap.get(datatype);
         if (factory != null) {
             return factory;

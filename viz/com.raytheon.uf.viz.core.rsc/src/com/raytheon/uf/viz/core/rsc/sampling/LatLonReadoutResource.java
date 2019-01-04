@@ -41,10 +41,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * SOFTWARE HISTORY
  * 
  * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
+ * ------------ ---------- ----------- --------------------------s
  * Dec 22, 2010            mschenke     Initial creation
  * Jan 6, 2016  5202       tgurney      Add "enabled" property to turn output
  *                                      on/off
+ * Oct 1, 2018             mjames@ucar  Format to three decimals. 
  * 
  * </pre>
  * 
@@ -82,8 +83,8 @@ public class LatLonReadoutResource extends
     @Override
     protected void initInternal(IGraphicsTarget target) throws VizException {
         formatter = DecimalFormat.getInstance();
-        formatter.setMinimumFractionDigits(2);
-        formatter.setMaximumFractionDigits(2);
+        formatter.setMinimumFractionDigits(3);
+        formatter.setMaximumFractionDigits(3);
     }
 
     @Override

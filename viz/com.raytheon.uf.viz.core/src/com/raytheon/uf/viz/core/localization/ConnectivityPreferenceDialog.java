@@ -169,8 +169,8 @@ public class ConnectivityPreferenceDialog {
 
     protected String details;
 
-    public ConnectivityPreferenceDialog(boolean checkAlertViz, String title) {
-        this.title = title;
+    public ConnectivityPreferenceDialog(boolean checkAlertViz) {
+        this.title = "Unidata AWIPS";
         localization = LocalizationManager.getInstance()
                 .getLocalizationServer();
         site = LocalizationManager.getInstance().getSite();

@@ -60,11 +60,11 @@ import com.vividsolutions.jts.geom.Envelope;
 
 /**
  * Grid data access factory for Topographic data.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 14, 2015 4608       nabowle     Initial creation
@@ -74,9 +74,10 @@ import com.vividsolutions.jts.geom.Envelope;
  * Jul 05, 2016 5728       mapeters    Improved handling of invalid identifier
  *                                     values
  * Jul 27, 2016 2416       tgurney     Stub impl of getNotificationFilter()
- * 
+ * Feb 19, 2018 7220       mapeters    Improve filtering of available identifier values
+ *
  * </pre>
- * 
+ *
  * @author nabowle
  */
 
@@ -93,18 +94,22 @@ public class TopoGridFactory extends AbstractDataFactory {
      * possible to dynamically list all available topo hdf5 files; they may
      * exist on a different system and no API is provided to list them
      */
-    private static final String[] TOPO_FILENAMES = { "defaultTopo",
-            "gmted2010", "gtopo30", "modelStaticTopo", "staticTopo" };
+    private static final String[] TOPO_FILENAMES = { "defaultTopo", "gmted2010",
+            "gtopo30", "modelStaticTopo", "srtm30", "srtm30_plus",
+            "staticTopo" };
 
     /*
-     * The below two arrays could be generated dynamically, but since all topo
-     * files have the same groups and datasets it is not strictly necessary
+     * The below groups and datasets could be generated dynamically, but since
+     * all topo files have the same groups and datasets it is not strictly
+     * necessary
      */
-    private static final String[] GROUP_NAMES = { "/", "/interpolated" };
-
-    private static final String[] DATASET_NAMES = { "/full", "/interpolated/1",
-            "/interpolated/2", "/interpolated/3", "/interpolated/4",
-            "/interpolated/5" };
+    private static final Map<String, String[]> groupsToDatasets;
+    static {
+        groupsToDatasets = new HashMap<>();
+        groupsToDatasets.put("/", new String[] { "full" });
+        groupsToDatasets.put("/interpolated",
+                new String[] { "1", "2", "3", "4", "5" });
+    }
 
     /**
      * Constructor.
@@ -147,7 +152,7 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     /**
      * Executes the provided DbQueryRequest and returns an array of IGridData
-     * 
+     *
      * @param request
      *            the original grid request
      * @return an array of IGridData
@@ -175,8 +180,8 @@ public class TopoGridFactory extends AbstractDataFactory {
             MathTransform llToTopoCRS = CRSCache.getInstance()
                     .findMathTransform(DefaultGeographicCRS.WGS84,
                             gridGeom.getCoordinateReferenceSystem());
-            MathTransform topoCRSToGrid = gridGeom.getGridToCRS(
-                    PixelInCell.CELL_CORNER).inverse();
+            MathTransform topoCRSToGrid = gridGeom
+                    .getGridToCRS(PixelInCell.CELL_CORNER).inverse();
 
             double[] latLon = new double[] { requestEnv.getMinX(),
                     requestEnv.getMinY(), requestEnv.getMaxX(),
@@ -204,18 +209,19 @@ public class TopoGridFactory extends AbstractDataFactory {
             rec = ds.retrieve(group, dataset, req);
 
             attributes = createRecordAttributes(width, height, minX, minY);
-            recGeom = createRecordGeometry(gridGeom, topoCrs, minX, minY,
-                    width, height);
+            recGeom = createRecordGeometry(gridGeom, topoCrs, minX, minY, width,
+                    height);
 
         } catch (FileNotFoundException | StorageException | TransformException
                 | FactoryException e) {
             throw new DataRetrievalException(
-                    "Could not retrieve the requested topo data for "
-                            + topofile + ". ", e);
+                    "Could not retrieve the requested topo data for " + topofile
+                            + ". ",
+                    e);
         }
 
-        DataSource dataSource = DataWrapperUtil
-                .constructArrayWrapper(rec, true);
+        DataSource dataSource = DataWrapperUtil.constructArrayWrapper(rec,
+                true);
 
         DefaultGridData retData = new DefaultGridData(dataSource, recGeom);
         retData.setAttributes(attributes);
@@ -226,7 +232,7 @@ public class TopoGridFactory extends AbstractDataFactory {
      * Checks the response size. If the estimated response size is too large, a
      * {@link ResponseTooLargeException} is thrown. If it's not too large,
      * nothing happens.
-     * 
+     *
      * @param width
      *            The width of the grid envelope requested.
      * @param height
@@ -254,7 +260,7 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     /**
      * Creates the GridGeometry2D for the returned record.
-     * 
+     *
      * @param gridGeom
      *            The grid geometry from the req
      * @param topoCrs
@@ -276,7 +282,7 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     /**
      * Get the topo file. If no topo file is specified, use defaultTopo.h5
-     * 
+     *
      * @param identifiers
      *            The request identifiers.
      * @return The topo file to use.
@@ -294,7 +300,7 @@ public class TopoGridFactory extends AbstractDataFactory {
     /**
      * Get the value of an identifier that must be provided as a String (or may
      * not be provided at all)
-     * 
+     *
      * @param identifiers
      * @param key
      * @return the trimmed string identifier value
@@ -308,7 +314,8 @@ public class TopoGridFactory extends AbstractDataFactory {
             return ((String) value).trim();
         } else {
             throw new IncompatibleRequestException(
-                    "Only string identifier values are valid for '" + key + "'");
+                    "Only string identifier values are valid for '" + key
+                            + "'");
         }
     }
 
@@ -319,13 +326,34 @@ public class TopoGridFactory extends AbstractDataFactory {
         if (identifierKey.equals(TOPO_FILE)) {
             idValuesResult = TOPO_FILENAMES;
         } else if (identifierKey.equals(GROUP)) {
-            idValuesResult = GROUP_NAMES;
+            String dataset = getStringIdentifierValue(request.getIdentifiers(),
+                    DATASET);
+            if (dataset != null) {
+                // List groups that contain the specified dataset
+                idValuesResult = groupsToDatasets.entrySet().stream().filter(
+                        e -> Arrays.asList(e.getValue()).contains(dataset))
+                        .map(e -> e.getKey()).toArray(String[]::new);
+            } else {
+                idValuesResult = groupsToDatasets.keySet()
+                        .toArray(new String[0]);
+            }
         } else if (identifierKey.equals(DATASET)) {
-            idValuesResult = DATASET_NAMES;
+            String group = getStringIdentifierValue(request.getIdentifiers(),
+                    GROUP);
+            if (group != null) {
+                String[] datasets = groupsToDatasets.get(group);
+                idValuesResult = datasets != null ? datasets : new String[0];
+            } else {
+                // Merge datasets for all groups
+                idValuesResult = groupsToDatasets.values().stream()
+                        .flatMap(Arrays::stream).distinct()
+                        .toArray(String[]::new);
+            }
         } else {
             throw new InvalidIdentifiersException(request.getDatatype(), null,
-                    Arrays.asList(new String[] { identifierKey }));
+                    Arrays.asList(identifierKey));
         }
+        Arrays.sort(idValuesResult);
         return idValuesResult;
     }
 
@@ -347,9 +375,8 @@ public class TopoGridFactory extends AbstractDataFactory {
 
     @Override
     public String[] getAvailableLocationNames(IDataRequest request) {
-        throw new IncompatibleRequestException(
-                request.getDatatype()
-                        + " data requests do not support getting available location names.");
+        throw new IncompatibleRequestException(request.getDatatype()
+                + " data requests do not support getting available location names.");
     }
 
     @Override

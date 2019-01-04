@@ -99,8 +99,8 @@
     <Method levels="Surface" name="Alias">
         <Field level="2FHAG" abbreviation="T" />
     </Method>
-    <Method models="mesoEta212" levels="2FHAG" name="Import">
-        <Field level="2FHAG" model="mesoEta215" abbreviation="T" />
+    <Method models="NAM40" levels="2FHAG" name="Import">
+        <Field level="2FHAG" model="NAM20" abbreviation="T" />
     </Method>
     <Method levels="S,K,Ke,TROP" name="Slice">
         <Field level="3D" abbreviation="T" />
@@ -111,10 +111,10 @@
         <Field level="500MB" model="RUC" abbreviation="T" />
     </Method>
     <Method models="MSAS" levels="500MB" name="Import">
-        <Field level="500MB" model="ETA207" abbreviation="T" />
+        <Field level="500MB" model="AK-NAM95" abbreviation="T" />
     </Method>
     <Method models="MSAS" levels="500MB" name="Import">
-        <Field level="500MB" model="GFS213" abbreviation="T" />
+        <Field level="500MB" model="GFS95" abbreviation="T" />
     </Method>
     <Method models="Metar" levels="500MB" name="Import">
         <Field level="500MB" model="RUC" abbreviation="T" />

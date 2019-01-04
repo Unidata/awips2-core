@@ -38,7 +38,9 @@
 	</mapScale>
 	<mapScale displayName="World - Mollweide" fileName="WorldMollweide.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES East Full Disk" fileName="Geostationary.xml" areaScale="false">
+	<mapScale displayName="GOES East Full Disk" fileName="GOESEastFullDisk.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="GOES West Full Disk" fileName="GOESWestFullDisk.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="Regional - Africa" fileName="Africa.xml" areaScale="false">
 	</mapScale>
