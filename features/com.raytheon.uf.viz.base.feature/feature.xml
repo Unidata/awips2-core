@@ -41,12 +41,6 @@
          version="5.14.2"/>
 
    <plugin
-         id="org.w3c.xml.ext"
-         download-size="0"
-         install-size="0"
-         version="1.3.4"/>
-
-   <plugin
          id="org.apache.xmlgraphics"
          download-size="0"
          install-size="0"
@@ -179,15 +173,6 @@
          version="1.1.1"/>
 
    <plugin
-         id="javax.media.opengl.linux64"
-         os="linux"
-         arch="x86_64"
-         download-size="0"
-         install-size="0"
-         version="1.1.1"
-         fragment="true"/>
-
-   <plugin
          id="javax.media.opengl.win32"
          os="win32"
          arch="x86"
@@ -279,6 +264,19 @@
 
    <plugin
          id="com.raytheon.uf.viz.auth"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.w3c.xml.ext"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
+         id="org.w3c.dom.svg"
          download-size="0"
          install-size="0"
          version="0.0.0"
