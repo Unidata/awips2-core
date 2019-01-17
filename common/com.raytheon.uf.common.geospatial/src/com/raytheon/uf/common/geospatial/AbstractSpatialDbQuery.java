@@ -97,9 +97,6 @@ public abstract class AbstractSpatialDbQuery extends AbstractSpatialQuery {
         request.setSearchMode(mode);
         SpatialQueryResult[] sqrs = executeRequest(request);
 
-        statusHandler.handle(Priority.INFO,
-                "SpatialQuery took: " + (System.currentTimeMillis() - t0)
-                        + "ms");
         return sqrs;
     }
 
