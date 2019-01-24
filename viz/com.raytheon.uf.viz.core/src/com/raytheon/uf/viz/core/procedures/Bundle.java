@@ -304,13 +304,18 @@ public class Bundle {
             Map<String, String> variables) throws VizException {
 
         try {
+        	Bundle b;
             String substStr = VariableSubstitutor.processVariables(bundleStr,
                     variables);
-
-            Bundle b = ProcedureXmlManager.getInstance().unmarshal(Bundle.class,
-                    substStr);
-
+            if (substStr.contains("procedure")) {
+                Bundle[] bs = Procedure.loadProcedure(substStr).getBundles();
+                b = bs[0];
+            } else {
+            	b = ProcedureXmlManager.getInstance().unmarshal(Bundle.class,
+                        substStr);
+            }
             return b;
+            
         } catch (Exception e) {
             throw new VizException("Error loading bundle " + bundleStr, e);
         }

@@ -214,7 +214,7 @@ public class LoadPerspectiveHandler
 
         try {
             if (obj instanceof Procedure) {
-                loadProcedureAsBundles((Procedure) obj, false, source);
+                loadProcedureToScreen((Procedure) obj, false);
             } else if (obj instanceof Bundle) {
                 loadBundle((Bundle) obj);
             }
