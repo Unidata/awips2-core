@@ -25,7 +25,7 @@ import javax.xml.bind.Marshaller;
 import javax.xml.bind.Unmarshaller;
 import javax.xml.bind.Validator;
 
-import com.sun.xml.internal.bind.v2.runtime.JAXBContextImpl;
+import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
 
 /**
  * Custom JAXBContext, used to create CustomJAXBUnmarshaller (which creates

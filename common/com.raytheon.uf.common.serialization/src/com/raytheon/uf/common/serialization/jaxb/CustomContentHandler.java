@@ -26,7 +26,7 @@ import org.xml.sax.ContentHandler;
 import org.xml.sax.Locator;
 import org.xml.sax.SAXException;
 
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.SAXConnector;
+import com.sun.xml.bind.v2.runtime.unmarshaller.SAXConnector;
 
 /**
  * JAXB Content handler, delegates work to SAXConnector. Ignores exceptions in
