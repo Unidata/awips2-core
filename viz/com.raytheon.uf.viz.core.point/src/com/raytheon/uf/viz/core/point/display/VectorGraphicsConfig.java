@@ -60,6 +60,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * ------------- -------- ----------- --------------------------
  * Sep 23, 2013  2363     bsteffen    Initial creation
  * May 14, 2015  4079     bsteffen    Move to core.point
+ * Nov 14, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
  * 
  * </pre>
  * 
@@ -132,21 +133,174 @@ public class VectorGraphicsConfig {
 
     protected IArrowScaler arrowScaler;
 
+    // Get the config object
+    private static WindBarbPluginManager windBarbPluginManager = new WindBarbPluginManager();
+
     /**
-     * Creates a new config with <em>reasonable</em> defalt values
+     * Creates a new config with <em>reasonable</em> default values
      */
+
     public VectorGraphicsConfig() {
-        setBaseSize(32.0);
-        setOffsetRatio(0.0);
-        setMinimumMagnitude(2.5);
-        setBarbRotationDegrees(75);
-        setBarbLengthRatio(0.3);
-        setBarbSpacingRatio(0.105);
-        setBarbFillFiftyTriangle(false);
-        setCalmCircleMaximumMagnitude(2.5);
-        setCalmCircleSizeRatio(0.075);
-        setArrowHeadSizeRatio(0.1875);
-        setLinearArrowScaleFactor(1.0);
+
+        WindBarbPlugin defaultWindBarbPlugin = null;
+
+        //Check if the default Wind Barb Config file exists
+        if (windBarbPluginManager.defaultConfigFileExists()) {
+
+            defaultWindBarbPlugin = windBarbPluginManager.getDefaultWindBarbPlugin();
+
+            // Check if each element exists in the default Wind Barb Config file
+            if (defaultWindBarbPlugin.getBaseSize() != null) {
+                setBaseSize(defaultWindBarbPlugin.getBaseSize());
+            }
+            else {
+                setBaseSize(32.0);
+            }
+
+            if (defaultWindBarbPlugin.getOffsetRatio() != null) {
+                setOffsetRatio(defaultWindBarbPlugin.getOffsetRatio());
+            }
+            else {
+                setOffsetRatio(0.0);
+            }
+
+            if (defaultWindBarbPlugin.getMinimumMagnitude() != null) {
+                setMinimumMagnitude(defaultWindBarbPlugin.getMinimumMagnitude());
+            }
+            else {
+                setMinimumMagnitude(0.0);
+            }
+
+            if (defaultWindBarbPlugin.getBarbRotationDegrees() != null) {
+                setBarbRotationDegrees(defaultWindBarbPlugin.getBarbRotationDegrees());
+            }
+            else {
+                setBarbRotationDegrees(75);
+            }
+
+            if (defaultWindBarbPlugin.getBarbLengthRatio() != null) {
+                setBarbLengthRatio(defaultWindBarbPlugin.getBarbLengthRatio());
+            }
+            else {
+                setBarbLengthRatio(0.3);
+            }
+
+            if (defaultWindBarbPlugin.getBarbSpacingRatio() != null) {
+                setBarbSpacingRatio(defaultWindBarbPlugin.getBarbSpacingRatio());
+            }
+            else {
+                setBarbSpacingRatio(0.105);
+            }
+
+            if (defaultWindBarbPlugin.getBarbFillFiftyTriangle() != null) {
+                setBarbFillFiftyTriangle(defaultWindBarbPlugin.getBarbFillFiftyTriangle());
+            }
+            else {
+                setBarbFillFiftyTriangle(false);
+            }
+
+            if (defaultWindBarbPlugin.getCalmCircleMaximumMagnitude() != null) {
+                setCalmCircleMaximumMagnitude(defaultWindBarbPlugin.getCalmCircleMaximumMagnitude());
+            }
+            else {
+                setCalmCircleMaximumMagnitude(2.5);
+            }
+
+            if (defaultWindBarbPlugin.getCalmCircleSizeRatio() != null) {
+                setCalmCircleSizeRatio(defaultWindBarbPlugin.getCalmCircleSizeRatio());
+            }
+            else {
+                setCalmCircleSizeRatio(0.075);
+            }
+
+            if (defaultWindBarbPlugin.getArrowHeadSizeRatio() != null) {
+                setArrowHeadSizeRatio(defaultWindBarbPlugin.getArrowHeadSizeRatio());
+            }
+            else {
+                setArrowHeadSizeRatio(0.1875);
+            }
+
+            if (defaultWindBarbPlugin.getLinearArrowScaleFactor() != null) {
+                setLinearArrowScaleFactor(defaultWindBarbPlugin.getLinearArrowScaleFactor());
+            }
+            else {
+                setLinearArrowScaleFactor(1.0);
+            }
+        }
+        else {
+
+            //Set default values if the default Wind Barb Config file is missing
+            setBaseSize(32.0);
+            setOffsetRatio(0.0);
+            setMinimumMagnitude(0.0);
+            setBarbRotationDegrees(75);
+            setBarbLengthRatio(0.3);
+            setBarbSpacingRatio(0.105);
+            setBarbFillFiftyTriangle(false);
+            setCalmCircleMaximumMagnitude(2.5);
+            setCalmCircleSizeRatio(0.075);
+            setArrowHeadSizeRatio(0.1875);
+            setLinearArrowScaleFactor(1.0);
+        }
+    }
+
+    /**
+     * Construct a new instance with fields specific to the calling Plugin and class
+     *
+     * @param pluginName
+     *            name of Plugin
+     * @param className
+     *            name of Class name
+     */
+
+    public VectorGraphicsConfig(String pluginName, String className) {
+
+        //Call the default constructor to set the default values for each field
+        this();
+
+        //Check if a Plugin specific Wind Barb Config file exists
+        if (windBarbPluginManager.pluginConfigFileExists(pluginName)) {
+
+            WindBarbPlugin windBarbPlugin = windBarbPluginManager.getWindBarbPlugin(pluginName, className);
+
+            //Override default properties
+            if (windBarbPlugin != null) {
+
+                if (windBarbPlugin.getBaseSize() != null) {
+                    setBaseSize(windBarbPlugin.getBaseSize());
+                }
+                if (windBarbPlugin.getOffsetRatio() != null) {
+                    setOffsetRatio(windBarbPlugin.getOffsetRatio());
+                }
+                if (windBarbPlugin.getMinimumMagnitude() != null) {
+                    setMinimumMagnitude(windBarbPlugin.getMinimumMagnitude());
+                }
+                if (windBarbPlugin.getBarbRotationDegrees() != null) {
+                    setBarbRotationDegrees(windBarbPlugin.getBarbRotationDegrees());
+                }
+                if (windBarbPlugin.getBarbLengthRatio() != null) {
+                    setBarbLengthRatio(windBarbPlugin.getBarbLengthRatio());
+                }
+                if (windBarbPlugin.getBarbSpacingRatio() != null) {
+                    setBarbSpacingRatio(windBarbPlugin.getBarbSpacingRatio());
+                }
+                if (windBarbPlugin.getBarbFillFiftyTriangle() != null) {
+                    setBarbFillFiftyTriangle(windBarbPlugin.getBarbFillFiftyTriangle());
+                }
+                if (windBarbPlugin.getCalmCircleMaximumMagnitude() != null) {
+                    setCalmCircleMaximumMagnitude(windBarbPlugin.getCalmCircleMaximumMagnitude());
+                }
+                if (windBarbPlugin.getCalmCircleSizeRatio() != null) {
+                    setCalmCircleSizeRatio(windBarbPlugin.getCalmCircleSizeRatio());
+                }
+                if (windBarbPlugin.getArrowHeadSizeRatio() != null) {
+                    setArrowHeadSizeRatio(windBarbPlugin.getArrowHeadSizeRatio());
+                }
+                if (windBarbPlugin.getLinearArrowScaleFactor() != null) {
+                    setLinearArrowScaleFactor(windBarbPlugin.getLinearArrowScaleFactor());
+                }
+            }
+        }
     }
 
     /**

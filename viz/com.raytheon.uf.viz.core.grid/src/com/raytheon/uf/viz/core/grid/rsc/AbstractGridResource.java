@@ -151,6 +151,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
  * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * Feb 15, 2018  6902     njensen   Added interrogate support for Direction To
+ * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
  *
  * </pre>
  *
@@ -163,6 +164,10 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
+
+    //Parameters used to construct 'VectorGraphicsConfig'
+    private static final String PLUGIN_NAME = "GeolocatedGridDataDisplays";
+    private static final String CLASS_NAME = "AbstractGridResource";
 
     /* Unknown source, provides acceptable vector size. */
     private static final double VECTOR_SIZE = 25.6;
@@ -564,7 +569,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         case ARROW:
         case DUALARROW:
             convertData(data);
-            VectorGraphicsConfig config = new VectorGraphicsConfig();
+            VectorGraphicsConfig config = new VectorGraphicsConfig(PLUGIN_NAME, CLASS_NAME);
             config.setBaseSize(VECTOR_SIZE);
             if (displayType != DisplayType.BARB) {
                 config.setArrowHeadSizeRatio(0.15625);
