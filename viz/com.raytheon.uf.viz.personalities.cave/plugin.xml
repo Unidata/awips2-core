@@ -27,6 +27,11 @@
          <menu
                id="CAVE"
                label="CAVE">
+            <command
+                  commandId="com.raytheon.viz.ui.newPage"
+                  label="New Window"
+                  style="push">
+            </command>
             <menu
                   id="perspectives"
                   label="Perspective">

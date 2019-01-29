@@ -40,6 +40,9 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.ui.IPerspectiveRegistry;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
@@ -57,6 +60,7 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.ISimulatedTimeChangeListener;
 import com.raytheon.uf.common.time.SimulatedTime;
 import com.raytheon.uf.common.util.VariableSubstitutor;
+import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.jobs.JobPool;
@@ -67,6 +71,8 @@ import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.uf.viz.core.rsc.URICatalog;
 import com.raytheon.uf.viz.core.rsc.URICatalog.IURIRefreshCallback;
 import com.raytheon.uf.viz.ui.menus.xml.BundleMenuContribution;
+import com.raytheon.viz.ui.EditorUtil;
+import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.actions.LoadBundleHandler;
 import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 
@@ -450,28 +456,47 @@ public class BundleContributionItem extends ContributionItem {
             widget.removeListener(SWT.Dispose, getItemListener());
             widget = null;
         }
-    }
+    }	
 
     private void loadBundle() {
+    	
         try {
+        	
             boolean fullBundleLoad = false;
+            
             if (this.menuContribution.xml.fullBundleLoad != null) {
                 fullBundleLoad = this.menuContribution.xml.fullBundleLoad;
             }
-            String sid = this.getId();
-            if (getId().equalsIgnoreCase("procedure")) {
+            
+            if (this.getId().equalsIgnoreCase("procedure")) {
+            	/* 
+            	 * Load as Procedure (list of Bundles)
+            	 */
             	LocalizationFile file = PathManagerFactory.getPathManager()
                         .getStaticLocalizationFile(
                                 this.menuContribution.xml.bundleFile);
-                Procedure p = (Procedure) LoadPerspectiveHandler
+            	Procedure p = (Procedure) LoadPerspectiveHandler
                 		.deserialize(file.getFile());
-            	try {
-					LoadPerspectiveHandler.loadProcedureToScreen(p, false);
+
+                try {
+                	String procStr = p.toXML();
+	                String substStr = VariableSubstitutor.processVariables(procStr,
+								substitutions);
+	                Procedure pr = Procedure.loadProcedure(substStr);
+	                
+	                LoadPerspectiveHandler.loadProcedureToScreen(pr, true);
+	                
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
 				} catch (VizException e) {
 					// TODO Auto-generated catch block
 					e.printStackTrace();
 				}
             } else {
+            	/*
+            	 * Load as Bundle
+            	 */
 	            new LoadBundleHandler(this.menuContribution.xml.bundleFile,
 	                    substitutions, this.menuContribution.xml.editorType,
 	                    fullBundleLoad).execute(null);

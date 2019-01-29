@@ -270,11 +270,12 @@ public class LoadPerspectiveHandler
             page = windowToLoadTo.getActivePage();
         }
 
-        loadProcedureToScreen(procedure, page.getWorkbenchWindow());
+        loadProcedureToScreen(procedure, windowToLoadTo);
     }
 
     public static void loadProcedureToScreen(Procedure procedure,
             IWorkbenchWindow window) throws VizException {
+
         IWorkbenchPage page = window.getActivePage();
 
         // close existing containers
@@ -291,8 +292,6 @@ public class LoadPerspectiveHandler
 
         Bundle[] bundles = procedure.getBundles();
         for (Bundle b : bundles) {
-            // If an editor is specified, or no view part is specified,
-            // assume an editor part
             if (b.getView() == null) {
                 String editorName = b.getEditor();
                 AbstractEditor openedEditor = UiUtil.createEditor(editorName,
