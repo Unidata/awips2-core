@@ -65,6 +65,7 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
  * Sep 23, 2013  2363     bsteffen    Add more configuration options.
  * Jan 13, 2015  3966     bsteffen    Limit the number of flags on barbs.
  * May 14, 2015  4079     bsteffen    Move to core.point
+ * Nov 15, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
  * 
  * </pre>
  * 
@@ -90,14 +91,19 @@ public class VectorGraphicsRenderable {
 
     protected VectorGraphicsConfig config;
 
+    //Parameters used to construct 'VectorGraphicsConfig'
+    private static final String PLUGIN_NAME = "GeolocatedPointDisplays";
+    private static final String CLASS_NAME = "VectorGraphicsRenderable";
+
     public VectorGraphicsRenderable(IDescriptor descriptor,
             IGraphicsTarget target) throws VizException {
-        this(descriptor, target, new VectorGraphicsConfig());
+        this(descriptor, target, new VectorGraphicsConfig(PLUGIN_NAME, CLASS_NAME));
     }
 
     public VectorGraphicsRenderable(IDescriptor descriptor,
             IGraphicsTarget target, VectorGraphicsConfig config)
             throws VizException {
+
         this.lineShape = target.createWireframeShape(true, descriptor);
         this.filledShape = target.getExtension(
                 IColormapShadedShapeExtension.class).createColormapShadedShape(
@@ -480,7 +486,7 @@ public class VectorGraphicsRenderable {
         }
         target.drawWireframeShape(lineShape, color, lineWidth, lineStyle);
         if (filledShape.isDrawable()) {
-            Map<Object, RGB> colorMap = new HashMap<Object, RGB>();
+            Map<Object, RGB> colorMap = new HashMap<>();
             colorMap.put(this, color);
             target.getExtension(IColormapShadedShapeExtension.class)
                     .drawColormapShadedShape(filledShape, colorMap, 1.0f, 1.0f);
