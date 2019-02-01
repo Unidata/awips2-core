@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,8 +25,11 @@ import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.commands.ICommandService;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.drawables.IDescriptor;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -37,19 +40,23 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
  * Describes a tool that is a "selected" operation (e.g. pan/zoom) where only
  * one operation may be selected and stays selected until another modal tool is
  * chosen
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date       	Ticket#		Engineer	Description
- * ------------	----------	-----------	--------------------------
+ * Date         Ticket#     Engineer    Description
+ * ------------ ----------  ----------- --------------------------
  * 7/1/06                   chammack    Initial Creation.
- * 
+ * Feb 1, 2019  7570        tgurney     Call refreshElements on the tool command
+ *                                      after setting enabled/disabled
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 public abstract class AbstractModalTool extends AbstractTool {
+
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
 
     private AbstractModalTool restore = null;
 
@@ -57,7 +64,7 @@ public abstract class AbstractModalTool extends AbstractTool {
 
     /**
      * Constructor
-     * 
+     *
      */
     public AbstractModalTool() {
         super();
@@ -67,7 +74,7 @@ public abstract class AbstractModalTool extends AbstractTool {
 
     /**
      * Check if the modal tool is selected
-     * 
+     *
      * @return
      */
     public boolean isSelected() {
@@ -76,7 +83,7 @@ public abstract class AbstractModalTool extends AbstractTool {
 
     /**
      * Get the active display pane's descriptor
-     * 
+     *
      * @return
      */
     protected IDescriptor getActiveDescriptor() {
@@ -90,13 +97,6 @@ public abstract class AbstractModalTool extends AbstractTool {
         return editor;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.ui.tools.AbstractTool#execute(org.eclipse.core.commands
-     * .ExecutionEvent)
-     */
     @Override
     public final Object execute(ExecutionEvent arg0) throws ExecutionException {
         this.event = arg0;
@@ -123,8 +123,8 @@ public abstract class AbstractModalTool extends AbstractTool {
 
             if (selected) {
                 if (attemptRestore) {
-                    restore = mgr.getToolManager().getSelectedModalTool(
-                            categoryId);
+                    restore = mgr.getToolManager()
+                            .getSelectedModalTool(categoryId);
                 }
                 mgr.getToolManager().selectModalTool(this);
             } else {
@@ -164,9 +164,12 @@ public abstract class AbstractModalTool extends AbstractTool {
     public void setEnabled(boolean isEnabled) {
         super.setEnabled(isEnabled);
 
-        ICommandService service = (ICommandService) VizWorkbenchManager
-                .getInstance().getCurrentWindow()
-                .getService(ICommandService.class);
+        IWorkbenchWindow currentWindow = VizWorkbenchManager.getInstance()
+                .getCurrentWindow();
+        ICommandService service = null;
+        if (currentWindow != null) {
+            service = currentWindow.getService(ICommandService.class);
+        }
 
         if (service != null) {
             Command[] commands = service.getDefinedCommands();
@@ -175,12 +178,19 @@ public abstract class AbstractModalTool extends AbstractTool {
                 try {
                     if (!c.getCategory().getId().equals(categoryId)
                             || !c.isHandled() || !c.isDefined()
-                            || !c.isEnabled())
+                            || !c.isEnabled()) {
                         continue;
+                    }
                     service.refreshElements(c.getId(), null);
                 } catch (Exception e) {
-                    // who cares
+                    statusHandler.debug("Failed to refresh tool: " + c.getId(),
+                            e);
                 }
+            }
+            try {
+                service.refreshElements(commandId, null);
+            } catch (Exception e) {
+                statusHandler.debug("Failed to refresh tool: " + commandId, e);
             }
         }
     }
