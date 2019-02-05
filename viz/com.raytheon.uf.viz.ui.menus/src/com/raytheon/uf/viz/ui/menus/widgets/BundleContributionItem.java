@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.viz.ui.menus.widgets;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
@@ -39,10 +40,14 @@ import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
+import org.eclipse.ui.IPerspectiveRegistry;
+import org.eclipse.ui.IWorkbenchPage;
+import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
 import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.menus.xml.CommonBundleMenuContribution;
@@ -55,16 +60,21 @@ import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.ISimulatedTimeChangeListener;
 import com.raytheon.uf.common.time.SimulatedTime;
 import com.raytheon.uf.common.util.VariableSubstitutor;
+import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.jobs.JobPool;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.BundleUtil;
 import com.raytheon.uf.viz.core.procedures.BundleUtil.BundleDataItem;
+import com.raytheon.uf.viz.core.procedures.Procedure;
 import com.raytheon.uf.viz.core.rsc.URICatalog;
 import com.raytheon.uf.viz.core.rsc.URICatalog.IURIRefreshCallback;
 import com.raytheon.uf.viz.ui.menus.xml.BundleMenuContribution;
+import com.raytheon.viz.ui.EditorUtil;
+import com.raytheon.viz.ui.UiUtil;
 import com.raytheon.viz.ui.actions.LoadBundleHandler;
+import com.raytheon.viz.ui.actions.LoadPerspectiveHandler;
 
 /**
  * Provides an Eclipse menu contribution that loads a bundle, and is decorated
@@ -446,17 +456,52 @@ public class BundleContributionItem extends ContributionItem {
             widget.removeListener(SWT.Dispose, getItemListener());
             widget = null;
         }
-    }
+    }	
 
     private void loadBundle() {
+    	
         try {
+        	
             boolean fullBundleLoad = false;
+            
             if (this.menuContribution.xml.fullBundleLoad != null) {
                 fullBundleLoad = this.menuContribution.xml.fullBundleLoad;
             }
-            new LoadBundleHandler(this.menuContribution.xml.bundleFile,
-                    substitutions, this.menuContribution.xml.editorType,
-                    fullBundleLoad).execute(null);
+            
+            if (this.getId().equalsIgnoreCase("procedure")) {
+            	/* 
+            	 * Load as Procedure (list of Bundles)
+            	 */
+            	LocalizationFile file = PathManagerFactory.getPathManager()
+                        .getStaticLocalizationFile(
+                                this.menuContribution.xml.bundleFile);
+            	Procedure p = (Procedure) LoadPerspectiveHandler
+                		.deserialize(file.getFile());
+
+                try {
+                	String procStr = p.toXML();
+	                String substStr = VariableSubstitutor.processVariables(procStr,
+								substitutions);
+	                Procedure pr = Procedure.loadProcedure(substStr);
+	                
+	                LoadPerspectiveHandler.loadProcedureToScreen(pr, true);
+	                
+				} catch (ParseException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				} catch (VizException e) {
+					// TODO Auto-generated catch block
+					e.printStackTrace();
+				}
+            } else {
+            	/*
+            	 * Load as Bundle
+            	 */
+	            new LoadBundleHandler(this.menuContribution.xml.bundleFile,
+	                    substitutions, this.menuContribution.xml.editorType,
+	                    fullBundleLoad).execute(null);
+            }
+            
             if (this.menuContribution.xml.command != null) {
                 ICommandService service = (ICommandService) PlatformUI
                         .getWorkbench().getService(ICommandService.class);
@@ -487,17 +532,33 @@ public class BundleContributionItem extends ContributionItem {
 
     private Set<BundleDataItem> loadBundleFromXml() {
         try {
-            ILocalizationFile file = PathManagerFactory.getPathManager()
+            LocalizationFile file = PathManagerFactory.getPathManager()
                     .getStaticLocalizationFile(
                             this.menuContribution.xml.bundleFile);
             if (file == null){
             	statusHandler.error(this.menuContribution.xml.bundleFile + " not found");
             }
+            
             Bundle b;
+            
+            /*
+             * Account for procedure files loaded as a bundleContribution type,
+             * can contain views & bundles. One bundle should be queried for metadata
+             * TODO: query all and show latest? I think this is just for the menu item 
+             * to fill out.
+             */
+            if (this.getId().equalsIgnoreCase("procedure")) {
+                Procedure p = (Procedure) LoadPerspectiveHandler
+                		.deserialize(file.getFile());
+                Bundle[] bs = p.getBundles();
+                b = bs[0];
+            } 
+
             try (InputStream stream = file.openInputStream()) {
                 b = Bundle.unmarshalBundle(stream, substitutions);
             }
             return BundleUtil.extractMetadata(b);
+            
         } catch (VizException | LocalizationException | IOException e) {
             statusHandler.error(e.getLocalizedMessage(), e);
             return new HashSet<>();

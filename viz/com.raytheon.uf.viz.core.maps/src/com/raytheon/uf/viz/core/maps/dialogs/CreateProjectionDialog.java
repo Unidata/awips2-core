@@ -585,7 +585,7 @@ public class CreateProjectionDialog extends CaveJFACEDialog {
 
     }
     
-private void generateRadarExtents() {
+    private void generateRadarExtents() {
     	
     	try{
             BufferedReader buf = new BufferedReader(

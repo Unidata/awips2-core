@@ -249,7 +249,7 @@ public abstract class AbstractVizPerspectiveManager
     /** The window the perspective is loaded to */
     protected IWorkbenchWindow perspectiveWindow;
 
-    protected IWorkbenchPage page;
+    protected static IWorkbenchPage page;
 
     /** Saved editors for the perspective */
     protected List<MPartSashContainerElement> savedEditorAreaUI = new ArrayList<>();
@@ -686,7 +686,7 @@ public abstract class AbstractVizPerspectiveManager
         }
     }
 
-    protected static void loadDefaultBundle(String filePath) {
+    protected void loadDefaultBundle(String filePath) {
         LocalizationFile defaultBundle = PathManagerFactory.getPathManager()
                 .getStaticLocalizationFile(filePath);
         try (InputStream is = defaultBundle.openInputStream()) {
@@ -728,9 +728,9 @@ public abstract class AbstractVizPerspectiveManager
      * Get an array of the editors in the perspective. Note: These editors may
      * not be visible and this perspective may not be the active perspective.
      * 
-     * @return Array of availble editors for the perspective
+     * @return Array of available editors for the perspective
      */
-    public AbstractEditor[] getPerspectiveEditors() {
+    public static AbstractEditor[] getPerspectiveEditors() {
         List<AbstractEditor> editors = new ArrayList<AbstractEditor>();
         if (page != null) {
             for (IEditorReference ref : page.getEditorReferences()) {

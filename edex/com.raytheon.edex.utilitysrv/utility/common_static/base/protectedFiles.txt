@@ -5,9 +5,6 @@
 # A simple example would be 
 # BASE:common_static/textdb/textCategoryClass.txt
 
-#SCAN_COMMON files
-SITE:common_static/scan/SCANRunSiteConfig.xml
-
 #AvnFPS files
 SITE:common_static/aviation/avnwatch/aviationForecasterConfig.xml
 
@@ -29,7 +26,6 @@ SITE:common_static/gfe/config/siteConfig.py
 SITE:common_static/gfe/config/localConfig.py
 SITE:common_static/gfe/config/localMaps.py
 SITE:common_static/gfe/config/localWxConfig.py
-SITE:common_static/gfe/config/svcbu.properties
 
 BASE:common_static/gfe/textproducts/templates/product/AFD.py
 BASE:common_static/gfe/textproducts/templates/product/PFM.py
@@ -126,18 +122,9 @@ BASE:cave_static/gfe/userPython/smartTools/Assign_Value.py
 BASE:cave_static/gfe/userPython/smartTools/Smooth.py
 
 # smartInits
-BASE:common_static/gfe/smartinit/AKNAM40.py
-BASE:common_static/gfe/smartinit/AKWAVE.py
 BASE:common_static/gfe/smartinit/NAM12.py
 BASE:common_static/gfe/smartinit/NAM40.py
-BASE:common_static/gfe/smartinit/NAM80.py
-BASE:common_static/gfe/smartinit/NAM95.py
-BASE:common_static/gfe/smartinit/GFS190.py
-BASE:common_static/gfe/smartinit/GFS80.py
-BASE:common_static/gfe/smartinit/GFS40.py
-BASE:common_static/gfe/smartinit/GFS75.py
-BASE:common_static/gfe/smartinit/gfsLR.py
-BASE:common_static/gfe/smartinit/GLERL.py
+BASE:common_static/gfe/smartinit/GFS20.py
 BASE:common_static/gfe/smartinit/GWW.py
 BASE:common_static/gfe/smartinit/HPCGuide.py
 BASE:common_static/gfe/smartinit/HPCQPF.py
@@ -145,33 +132,15 @@ BASE:common_static/gfe/smartinit/RFCQPF.py
 BASE:common_static/gfe/smartinit/Init.py
 BASE:common_static/gfe/smartinit/LAPS.py
 BASE:common_static/gfe/smartinit/MOSGuide.py
-BASE:common_static/gfe/smartinit/AKMOSGuide.py
-BASE:common_static/gfe/smartinit/OPCTAFBE.py
-BASE:common_static/gfe/smartinit/OPCTAFBNW.py
-BASE:common_static/gfe/smartinit/OPCTAFBSW.py
 BASE:common_static/gfe/smartinit/MSAS.py
-BASE:common_static/gfe/smartinit/NGM80.py
-BASE:common_static/gfe/smartinit/NGM95.py
-BASE:common_static/gfe/smartinit/RUC80.py
+BASE:common_static/gfe/smartinit/RAP13.py
 BASE:common_static/gfe/smartinit/SAT.py
 BASE:common_static/gfe/smartinit/TPCtcm.py
-BASE:common_static/gfe/smartinit/DGEX.py
-BASE:common_static/gfe/smartinit/WNAWAVE.py
 BASE:common_static/gfe/smartinit/WW3.py
-BASE:common_static/gfe/smartinit/AKwave10.py
-BASE:common_static/gfe/smartinit/AKwave4.py
-BASE:common_static/gfe/smartinit/EPwave10.py
 BASE:common_static/gfe/smartinit/GlobalWave.py
 BASE:common_static/gfe/smartinit/GLWM.py
-BASE:common_static/gfe/smartinit/HIRESWarw.py
-BASE:common_static/gfe/smartinit/HIRESWnmm.py
-BASE:common_static/gfe/smartinit/SREF.py
-BASE:common_static/gfe/smartinit/WCwave4.py
-BASE:common_static/gfe/smartinit/WCwave10.py
-BASE:common_static/gfe/smartinit/WNAwave4.py
-BASE:common_static/gfe/smartinit/WNAwave10.py                       
 BASE:common_static/gfe/smartinit/RTMA.py
-BASE:common_static/gfe/smartinit/NamDNG5.py
+BASE:common_static/gfe/smartinit/NamDNG.py
 
 #gfeConfig files
 BASE:cave_static/gfe/userPython/gfeConfig/gfeConfig.py
