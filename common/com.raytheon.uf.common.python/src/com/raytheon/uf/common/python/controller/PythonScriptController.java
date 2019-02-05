@@ -65,6 +65,9 @@ import jep.JepException;
  *                                  at another LocalizationLevel. Called
  *                                  reloadModules() after all file updates have
  *                                  been completed.
+ * Dec 12, 2018  6906     randerso  Ensure added/updated files get downloaded
+ *                                  and pyo and pyc files get deleted when the
+ *                                  py is deleted.
  *
  * </pre>
  *
@@ -78,6 +81,9 @@ public abstract class PythonScriptController extends PythonScript
             .getHandler(PythonScriptController.class);
 
     protected static final String INTERFACE = "interface";
+
+    protected static final String[] ADDITIONAL_EXTENSIONS = new String[] {
+            ".pyo", ".pyc" };
 
     protected final String pythonClassName;
 
@@ -202,34 +208,57 @@ public abstract class PythonScriptController extends PythonScript
         LocalizationFile lf = pm.getLocalizationFile(message.getContext(),
                 message.getFileName());
 
-        // remove the local file if it still exists
-        // TODO: is this really necessary
-        if (changeType == FileChangeType.DELETED) {
-            if (lf != null) {
-                File toDelete = lf.getFile();
-                toDelete.delete();
-            }
-        }
+        statusHandler.debug("Processing file update: " + changeType + " " + lf);
+
+        // remove module to unload old version
         pendingRemoves.add(name);
 
-        // check for modules at other levels
-        Map<LocalizationLevel, LocalizationFile> otherLevels = pm
-                .getTieredLocalizationFile(
-                        message.getContext().getLocalizationType(),
-                        message.getFileName());
-        if (otherLevels.isEmpty()) {
-            // remove from adds in case of deleting from multiple levels at once
-            pendingAdds.remove(name);
-        } else {
-            /*
-             * this is necessary when deleting multiple levels at once because
-             * getTieredLocalizationFile seems to be behind at the time the
-             * update notification is received
-             */
-            for (LocalizationFile otherLf : otherLevels.values()) {
-                if (otherLf.exists()) {
-                    pendingAdds.add(name);
-                    break;
+        if (lf != null) {
+            switch (changeType) {
+            case ADDED:
+                // intentional fall through
+            case UPDATED:
+                // retrieve the udpdated/added file
+                lf.getFile();
+
+                // add module to be loaded
+                pendingAdds.add(name);
+                break;
+
+            case DELETED:
+                // remove the local file if it still exists
+                File toDelete = lf.getFile();
+                toDelete.delete();
+
+                // remove pyo and pyc files
+                for (String extension : ADDITIONAL_EXTENSIONS) {
+                    File f = new File(toDelete.getAbsolutePath()
+                            .replaceAll("\\.py$", extension));
+                    f.delete();
+                }
+                break;
+            }
+
+            // check for modules at other levels
+            Map<LocalizationLevel, LocalizationFile> otherLevels = pm
+                    .getTieredLocalizationFile(
+                            message.getContext().getLocalizationType(),
+                            message.getFileName());
+            if (otherLevels.isEmpty()) {
+                // remove from adds in case of deleting from multiple levels
+                // at once
+                pendingAdds.remove(name);
+            } else {
+                /*
+                 * this is necessary when deleting multiple levels at once
+                 * because getTieredLocalizationFile seems to be behind at the
+                 * time the update notification is received
+                 */
+                for (LocalizationFile otherLf : otherLevels.values()) {
+                    if (otherLf.exists()) {
+                        pendingAdds.add(name);
+                        break;
+                    }
                 }
             }
         }
@@ -299,7 +328,20 @@ public abstract class PythonScriptController extends PythonScript
     protected void addModule(String name) throws JepException {
         Map<String, Object> argMap = Collections
                 .singletonMap(PyConstants.MODULE_NAME, name);
-        execute("addModule", INTERFACE, argMap);
+        try {
+            execute("addModule", INTERFACE, argMap);
+        } catch (JepException e) {
+            if (e.getMessage().contains("No module named " + name)) {
+                /*
+                 * This can result due to a race condition when deleting
+                 * multiple files, just log as debug
+                 */
+                statusHandler.debug("Attempting to load non-existent module",
+                        e);
+            } else {
+                throw e;
+            }
+        }
     }
 
     /**
