@@ -191,7 +191,7 @@
       <contextualMenu
             actionClass="com.raytheon.viz.ui.cmenu.InterpolateAction"
             name="Interpolate"
-			capabilityClass="com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability"
+            capabilityClass="com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability"
             sortID="997"/>
       <contextualMenu
             actionClass="com.raytheon.viz.ui.cmenu.EnableDisableAction"
@@ -463,6 +463,30 @@
    </handler>
 </extension>
 <extension
+      point="org.eclipse.ui.menus">
+   <menuContribution
+         locationURI="menu:import">
+      <command
+             commandId="com.raytheon.viz.ui.loadSerialized"
+             label="Displays..."
+             style="push">
+       </command>
+   </menuContribution>
+   <menuContribution
+         locationURI="menu:export">
+      <command
+             commandId="com.raytheon.viz.ui.saveBundle"
+             label="Editor Display..."
+             style="push">
+       </command>
+       <command
+             commandId="com.raytheon.viz.ui.saveProcedure"
+             label="Perspective Displays..."
+             style="push">
+       </command>
+   </menuContribution>
+</extension>
+<extension
       point="org.eclipse.ui.contexts">
    <context
          description="The Map Context"
@@ -581,7 +605,7 @@
    <extension
        point="com.raytheon.uf.viz.localization.perspective.localizationpath">
        <path
-          application="D2D"
+          application="CAVE"
           localizationType="COMMON_STATIC"
           name="Color Maps"
           value="colormaps" 
