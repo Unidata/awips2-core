@@ -45,6 +45,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Dec 02, 2013  2537     bsteffen    Ensure streams are closed.
  * Jan 10, 2018  6713     dgilling    Cleanup file I/O error handling in
  *                                    vaStationsFile.
+ * Feb 12, 2019 DCS20569 MPorricelli  Tweaked output for ldad spi files
  *
  * </pre>
  *
@@ -232,9 +233,15 @@ public class VA_Driver {
             for (int i = 0; i < ns; ++i) {
                 fos.write(String.format("%5d ", nums[i]));
                 fos.write(String.format(nameFormat, nams[i]));
-                fos.write(String.format(" %8.4f %9.4f %5d %9.3f",
-                        latLonInput[i].y, latLonInput[i].x, elevs[i],
-                        distInput[i]));
+                if (output.getName().contains("ldad")) {
+                    fos.write(String.format(" %8.4f %9.4f %5d %9.3f %s",
+                            latLonInput[i].y, latLonInput[i].x, elevs[i],
+                            distInput[i], ids[i]));
+                } else {
+                    fos.write(String.format(" %8.4f %9.4f %5d %9.3f",
+                            latLonInput[i].y, latLonInput[i].x, elevs[i],
+                            distInput[i]));
+                }
                 fos.newLine();
             }
         } catch (IOException e) {
