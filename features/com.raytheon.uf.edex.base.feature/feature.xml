@@ -156,7 +156,7 @@
          id="org.apache.camel"
          download-size="0"
          install-size="0"
-         version="2.20.1"/>
+         version="2.22.1"/>
 
    <plugin
          id="org.apache.commons.management"
@@ -168,13 +168,13 @@
          id="org.dom4j"
          download-size="0"
          install-size="0"
-         version="1.6.1"/>
+         version="2.1.1"/>
 
    <plugin
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="9.3.22.v20171030"/>
+         version="9.4.11.v20180605"/>
 
    <plugin
          id="com.raytheon.uf.common.json"
@@ -187,7 +187,7 @@
          id="com.fasterxml.jackson"
          download-size="0"
          install-size="0"
-         version="2.8.10"/>
+         version="2.9.8"/>
 
    <plugin
          id="javax.servlet"
