@@ -54,11 +54,14 @@
 # Feb 13, 2018  6906     randerso  Moved reloadModules and getStartupErrors
 #                                  into MasterInterface and eliminated
 #                                  RollbackMasterInterface.
+# Dec 12, 2018  6906     randerso  Catch attempt to reload deleted module and log
+#                                  at debug level
 #
 #
 
 import os, string
 import sys, inspect, traceback
+import LogStream
 
 class MasterInterface(object):
 
@@ -182,6 +185,7 @@ class MasterInterface(object):
             # reload() is called.
             self.clearModuleAttributes(moduleName)
             reload(sys.modules[moduleName])
+                
 
     def clearModuleAttributes(self, moduleName):
         if sys.modules.has_key(moduleName):
@@ -191,8 +195,19 @@ class MasterInterface(object):
                 mod.__dict__.pop(k)
 
     def reloadModules(self):
-        for script in self.scripts:
-            self.reloadModule(script)
+        # make a copy of self.scripts so we can remove from it in the loop
+        s = self.scripts.copy()
+        for script in s:
+            try:
+                self.reloadModule(script)
+            except ImportError as e:
+                if "No module named " + script in e.message():
+                    # This can result due to a race condition when deleting
+                    # multiple files, just log as debug
+                    LogStream.logDebug("Attempting to reload non-existent module", script, LogStream.exc())
+                    self.removeModule(script)
+                else:
+                    raise
 
     def getStartupErrors(self):
         from java.util import ArrayList
