@@ -37,10 +37,16 @@
              sub-directories. -->
 
         <endpoint id="localizationHttpEndpoint"
-            uri="jetty:http://0.0.0.0:${HTTP_PORT}${edex.localization.http.path}?${edex.localization.http.properties}&amp;httpMethodRestrict=HEAD,GET,PUT,DELETE" />
+            uri="jetty:http://0.0.0.0:${HTTP_PORT}${edex.localization.http.path}?${edex.localization.http.properties}&amp;httpMethodRestrict=HEAD,GET,PUT,DELETE&amp;mapHttpMessageBody=false" />
 
         <route id="localizationHttpRoute" streamCache="false">
             <from uri="localizationHttpEndpoint" />
+            <!-- Set the body to prevent camel from accessing the input stream from 
+                the request. The unblemished request needs to be passed on so that expect/continue 
+                can properly report errors before a continue is sent. -->
+            <setBody>
+              <simple>${in.header.CamelHttpServletRequest}</simple>
+            </setBody>
             <bean ref="localizationHttpSrv" method="handle(${in.header.CamelHttpServletRequest}, ${in.header.CamelHttpServletResponse})" />
         </route>
 

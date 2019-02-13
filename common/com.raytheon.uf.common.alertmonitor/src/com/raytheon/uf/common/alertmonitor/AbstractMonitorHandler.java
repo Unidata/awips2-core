@@ -31,13 +31,12 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#     Engineer     Description
- * ------------- ----------- ------------ --------------------------
- * ???           ???         ???          Initial creation
- * Jun 14, 2017  6316        njensen      Removed inherited interface default
- *                                        methods
- * Mar 20, 2018  7096        randerso     Remove call to
- *                                        StatusMessage.setEventTime()
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * ???           ???      ???       Initial creation
+ * Jun 14, 2017  6316     njensen   Removed inherited interface default methods
+ * Mar 20, 2018  7096     randerso  Remove call to StatusMessage.setEventTime()
+ * Oct 04, 2018  7484     randerso  Changed to use AV_ADMIN for internal errors
  *
  * </pre>
  *
@@ -45,7 +44,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
 public abstract class AbstractMonitorHandler implements IUFStatusHandler {
 
     private static final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(AbstractMonitorHandler.class, "GDN_ADMIN", "GDN_ADMIN");
+            .getHandler(AbstractMonitorHandler.class, "AV_ADMIN", "AV_ADMIN");
 
     public static final String MONITOR = "MONITOR";
 

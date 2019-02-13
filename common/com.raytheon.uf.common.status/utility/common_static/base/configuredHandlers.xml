@@ -105,7 +105,7 @@
     <filterPattern name="SMARTINIT">
         <include>.*\.smartinit.*</include>
     </filterPattern>
-    <filterPattern name="GDN_ADMIN">
+    <filterPattern name="AV_ADMIN">
         <include>.*\.alertviz.*</include>
     </filterPattern>
     <filterPattern name="RPGEnvData">

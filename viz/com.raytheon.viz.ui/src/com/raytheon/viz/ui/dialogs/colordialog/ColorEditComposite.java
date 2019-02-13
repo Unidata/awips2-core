@@ -22,7 +22,6 @@ package com.raytheon.viz.ui.dialogs.colordialog;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.layout.RowLayout;
@@ -39,21 +38,22 @@ import com.raytheon.uf.common.colormap.ColorMap;
  * <pre>
  *
  * SOFTWARE HISTORY
- *
- * Date          Ticket#     Engineer     Description
- * ------------- ----------- ------------ --------------------------
- * Nov 18, 2010              mschenke     Initial creation
- * Jan 10, 2013  15648       ryu          Editing GFE discrete colormap: a check
- *                                        button is added and duplicate entries
- *                                        in the colormap are removed when it is
- *                                        selected.
- * Apr 08, 2014  2950        bsteffen     Support dynamic color counts.
- * May 07, 2015  DCS17219    jgerth       Allow user to interpolate alpha only
- * Feb 17, 2016  5331        tgurney      Overload updateColorMap() to allow
- *                                        specifying non-null colormap name.
- * May 07, 2018  7285        randerso     Moved updateColorMap() down into
- *                                        setColorCount()
- *
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 18, 2010           mschenke  Initial creation
+ * Jan 10, 2013  15648    ryu       Editing GFE discrete colormap: a check
+ *                                  button is added and duplicate entries in the
+ *                                  colormap are removed when it is selected.
+ * Apr 08, 2014  2950     bsteffen  Support dynamic color counts.
+ * May 07, 2015  17219    jgerth    Allow user to interpolate alpha only
+ * Feb 17, 2016  5331     tgurney   Overload updateColorMap() to allow
+ *                                  specifying non-null colormap name.
+ * May 07, 2018  7285     randerso  Moved updateColorMap() down into
+ *                                  setColorCount()
+ * Jul 24, 2018  7376     bsteffen  Initialize wheels with colors from the
+ *                                  colormap.
+ * 
  * </pre>
  *
  * @author mschenke
@@ -137,14 +137,11 @@ public class ColorEditComposite extends Composite
                 .setLayoutData(new GridData(SWT.FILL, SWT.TOP, true, false));
         createRgbHsbButtons(topComposite);
         createSizeCombo(topComposite);
-        ColorData initial = new ColorData(new RGB(255, 255, 255), 255);
 
         // Create the upper color wheel for the display.
         upperColorWheel = new ColorWheelComp(parent, this, upperWheelTitle);
         upperColorWheel
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        // upperColorWheel.setColor(colorArray.get(0));
-        upperColorWheel.setColor(initial);
 
         // Create the color bar object that is displayed
         // in the middle of the dialog.
@@ -154,12 +151,14 @@ public class ColorEditComposite extends Composite
         lowerColorWheel = new ColorWheelComp(parent, this, lowerWheelTitle);
         lowerColorWheel
                 .setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
-        lowerColorWheel.setColor(initial);
 
         // Create the GFE discrete check button.
         createGFEDiscreteButton();
 
         updateColorCount();
+
+        upperColorWheel.setColor(colorBar.getTopColor());
+        lowerColorWheel.setColor(colorBar.getBottomColor());
     }
 
     /**
@@ -288,7 +287,7 @@ public class ColorEditComposite extends Composite
     /**
      * Fill the area between the sliders in the color bar using the color data
      * provided.
-     *
+     * 
      * @param colorData
      *            The color data object containing the RGB color and the alpha
      *            value.

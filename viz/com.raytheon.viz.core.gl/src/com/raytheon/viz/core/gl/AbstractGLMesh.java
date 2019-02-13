@@ -35,6 +35,7 @@ import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
+import com.raytheon.uf.common.geospatial.util.GridGeometryWrapChecker;
 import com.raytheon.uf.common.geospatial.util.WorldWrapChecker;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.IExtent;
@@ -78,6 +79,7 @@ import com.raytheon.viz.core.gl.SharedCoordMap.SharedCoordinates;
  * Apr 05, 2016  5400     bsteffen  implement IGridMesh, javadoc.
  * Oct 25, 2017  6387     bsteffen  implement IGLMesh
  * Feb 05, 2018  7209     bsteffen  Remove unreasonably large triangles.
+ * Aug 30, 2018  7440     bsteffen  Add texture wrapping for worldwide grids.
  * 
  * </pre>
  * 
@@ -139,6 +141,8 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
 
     protected int refCount;
 
+    protected boolean wrapTexture = false;
+
     protected AbstractGLMesh(int geometryType) {
         this.geometryType = geometryType;
         this.refCount = 1;
@@ -155,6 +159,8 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
                 throw new VizException(
                         "Error construcing image to lat/lon transform", t);
             }
+            wrapTexture = GridGeometryWrapChecker.checkForWrapping(
+                    imageGeometry) == imageGeometry.getGridRange2D().width;
         }
         this.targetGeometry = targetGeometry;
 
@@ -200,6 +206,13 @@ public abstract class AbstractGLMesh implements IGLMesh, IGridMesh {
             }
 
             if (internalState == State.COMPILED) {
+                if (wrapTexture) {
+                    GL gl = glTarget.getGl();
+                    gl.glActiveTexture(GL.GL_TEXTURE0);
+                    gl.glTexParameteri(GL.GL_TEXTURE_2D, GL.GL_TEXTURE_WRAP_S,
+                            GL.GL_REPEAT);
+                }
+
                 GLGeometryPainter.paintGeometries(glTarget.getGl(),
                         vertexCoords, sharedTextureCoords.getTextureCoords());
                 if (wwcTextureCoords != null && wwcVertexCoords != null) {

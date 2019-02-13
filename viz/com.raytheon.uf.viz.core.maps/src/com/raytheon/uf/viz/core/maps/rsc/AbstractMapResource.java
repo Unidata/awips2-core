@@ -55,6 +55,8 @@ import com.vividsolutions.jts.geom.impl.PackedCoordinateSequenceFactory;
  * Nov 04, 2015  #5070     randerso    Change map resources to use a preference based font
  *                                     Move management of font magnification into AbstractMapResource
  * May 31, 2018  6562      tgurney     T extends AbstractMapResourceData
+ * Aug 20, 2018  6891      tgurney     Set the font magnification every time
+ *                                     determineFont is called
  *
  * </pre>
  *
@@ -108,16 +110,16 @@ public abstract class AbstractMapResource<T extends AbstractMapResourceData, D e
     }
 
     protected IFont determineFont(IGraphicsTarget target) {
+        double magnification = getCapability(MagnificationCapability.class)
+                .getMagnification();
         if (font == null) {
             IFont font = target.initializeFont(LABEL_FONT_ID);
-            double magnification = getCapability(MagnificationCapability.class)
-                    .getMagnification();
-            font.setMagnification((float) magnification);
             font.setScaleFont(false);
             font.setSmoothing(false);
 
             this.font = font;
         }
+        font.setMagnification((float) magnification);
         return font;
     }
 

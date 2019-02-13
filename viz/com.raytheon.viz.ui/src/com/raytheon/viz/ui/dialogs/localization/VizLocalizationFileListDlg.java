@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -56,45 +56,52 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 import com.raytheon.viz.ui.widgets.FilterDelegate;
 
 /**
- * 
+ *
  * A dialog which displays a list of localization files for opening, saving, or
  * deleting. This class was formerly
  * com.raytheon.uf.viz.d2d.ui.dialogs.procedures.ProcedureListDlg and it was
  * relocated and abstracted so that it could be used for more than just
  * procedure localization files.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
+ *
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
  * ???                                 Initial creation
- * 07/31/2012   DR 15036   D. Friedman Ensure current user's procedures
- *                                     are visible.
- * 10/16/2012   1229       rferrel     Made dialog non-blocking.
- * 11 Dec 2013  #2583      lvenable    Added show mine, show all users, and show
- *                                     all radio buttons, fixed a widget disposed
- *                                     error, cleaned up code to prevent buttons
- *                                     from magically appearing, removed dead code,
- *                                     and other code clean up.
- * 03 Jul 2014 #3348       rferrel     Handle Enter event.
- * 03 Dec 2014  3549       njensen     Fix spacing/sizing of buttonComp
- * 02 Jun 2015  4401       bkowal      Re-factored for reuse.
- * 10 Jun 2015  4401       bkowal      Prevent NPE when double-clicking with nothing
- *                                     selected.
- * 16 Jun 2015  4401       bkowal      Allow a user to filter files in open mode.
- * 22 Jun 2015  4401       bkowal      Do not access {@link #localizationTF} when opening
- *                                     a localization file.
- * 30 Jun 2015  4401       bkowal      Perspectives are now stored in common_static.
- * 02 Nov 2015  5025       bkowal      Check for files at the specified localization location
- *                                     instead of defaulting to cave_static.
- * 13 Jan 2016  5242       kbisanz     Replaced calls to deprecated LocalizationFile methods
- * 
+ * Jul 31, 2012  15036    D. Friedman  Ensure current user's procedures are
+ *                                     visible.
+ * Oct 16, 2012  1229     rferrel      Made dialog non-blocking.
+ * Dec 11, 2013  2583     lvenable     Added show mine, show all users, and show
+ *                                     all radio buttons, fixed a widget
+ *                                     disposed error, cleaned up code to
+ *                                     prevent buttons from magically appearing,
+ *                                     removed dead code, and other code clean
+ *                                     up.
+ * Jul 03, 2014  3348     rferrel      Handle Enter event.
+ * Dec 03, 2014  3549     njensen      Fix spacing/sizing of buttonComp
+ * Jun 02, 2015  4401     bkowal       Re-factored for reuse.
+ * Jun 10, 2015  4401     bkowal       Prevent NPE when double-clicking with
+ *                                     nothing selected.
+ * Jun 16, 2015  4401     bkowal       Allow a user to filter files in open
+ *                                     mode.
+ * Jun 22, 2015  4401     bkowal       Do not access {@link #localizationTF}
+ *                                     when opening a localization file.
+ * Jun 30, 2015  4401     bkowal       Perspectives are now stored in
+ *                                     common_static.
+ * Nov 02, 2015  5025     bkowal       Check for files at the specified
+ *                                     localization location instead of
+ *                                     defaulting to cave_static.
+ * Jan 13, 2016  5242     kbisanz      Replaced calls to deprecated
+ *                                     LocalizationFile methods
+ * Jul 25, 2018  6748     randerso     Improved grammar in file overwrite
+ *                                     message. Change to use ViewerComparator
+ *                                     to eliminate deprecation warning.
+ *
  * </pre>
- * 
+ *
  * @author unknown
- * @version 1.0
  */
 public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
@@ -116,26 +123,14 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     /** Tree that holds the localization data. */
     protected TreeViewer treeViewer;
 
-    /** OK button. */
-    private Button okBtn;
-
-    /** Cancel button. */
-    private Button cancelBtn;
-
     /** Selected filename. */
     protected String fileName;
 
-    private VizLocalizationFileTree fileTree = new VizLocalizationFileTree(
-            null, null);
+    private VizLocalizationFileTree fileTree = new VizLocalizationFileTree(null,
+            null);
 
     /** Flag indicating if all users should be displayed. */
     private boolean showAllUsersFlag = false;
-
-    /** Expand button. */
-    private Button expandButton;
-
-    /** Collapse button. */
-    private Button collapseButton;
 
     /** Show current user localization files. */
     private Button showMineRdo = null;
@@ -147,7 +142,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     private Button showAllLocalizationRdo = null;
 
     /** List of buttons that will be enabled or disabled. */
-    protected List<Button> enableBtnArray = new ArrayList<Button>();
+    protected List<Button> enableBtnArray = new ArrayList<>();
 
     /**
      * Dialog mode. This determines what functionality the dialog will be able
@@ -177,7 +172,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Constructor.
-     * 
+     *
      * @param title
      *            Dialog title.
      * @param parent
@@ -187,8 +182,9 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      * @param localizationDirectory
      *            the directory to scan for localization files to display.
      * @param fileTypeDesc
-     *            identifies the type of localization file the user will be
-     *            interacting with
+     *            identifies the type of file the user will be interacting with
+     * @param localizationType
+     *            the LocalizationType for the file
      */
     public VizLocalizationFileListDlg(String title, Shell parent, Mode mode,
             String localizationDirectory, String fileTypeDesc,
@@ -223,7 +219,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Create a composite with the Expand and Collapse buttons.
-     * 
+     *
      * @param parent
      *            Parent composite.
      */
@@ -236,7 +232,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         expandComp.setLayoutData(gd);
 
         RowData rd = new RowData();
-        expandButton = new Button(expandComp, SWT.PUSH);
+        Button expandButton = new Button(expandComp, SWT.PUSH);
         expandButton.setText("Expand All");
         expandButton.setLayoutData(rd);
         enableBtnArray.add(expandButton);
@@ -248,7 +244,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         });
 
         rd = new RowData();
-        collapseButton = new Button(expandComp, SWT.PUSH);
+        Button collapseButton = new Button(expandComp, SWT.PUSH);
         collapseButton.setText("Collapse All");
         collapseButton.setLayoutData(rd);
         enableBtnArray.add(collapseButton);
@@ -262,7 +258,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Create the text and tree viewer controls.
-     * 
+     *
      * @param mainComp
      *            Parent composite.
      */
@@ -382,8 +378,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
         if (!treeViewer.getTree().isDisposed()
                 && treeViewer.getTree().getSelection().length > 0) {
             if (localizationTF != null && !localizationTF.isDisposed()) {
-                localizationTF.setText(treeViewer.getTree().getSelection()[0]
-                        .getText());
+                localizationTF.setText(
+                        treeViewer.getTree().getSelection()[0].getText());
             }
         }
     }
@@ -429,13 +425,14 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                             return;
                         }
 
-                        treeViewer
-                                .setContentProvider(new VizLocalizationFileTreeContentProvider(
+                        treeViewer.setContentProvider(
+                                new VizLocalizationFileTreeContentProvider(
                                         fileTree));
-                        treeViewer
-                                .setLabelProvider(new VizLocalizationFileTreeLabelProvider());
-                        treeViewer
-                                .setSorter(new VizLocalizationFileTreeSorter());
+                        treeViewer.setLabelProvider(
+                                new VizLocalizationFileTreeLabelProvider());
+
+                        treeViewer.setComparator(
+                                new VizLocalizationFileTreeComparator());
 
                         // it didn't seem to start with null, the string doesn't
                         // actually mean anything in this case
@@ -443,8 +440,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
                         openUserInTreeViewer();
 
-                        // Set the cursor to a normal cursor. Also, reenable the
-                        // main composite to be editable.
+                        // Set the cursor to a normal cursor. Also, re-enable
+                        // the main composite to be editable.
                         enableControls(true);
                         getShell().setCursor(null);
                     }
@@ -457,7 +454,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Enable or disable controls based on the flag passed in.
-     * 
+     *
      * @param enableFlag
      *            True to enable controls, false to disable.
      */
@@ -478,7 +475,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
             String user = "USER - " + ctx.getContextName();
 
             // find in the tree
-            if (treeViewer.getContentProvider() instanceof VizLocalizationFileTreeContentProvider) {
+            if (treeViewer
+                    .getContentProvider() instanceof VizLocalizationFileTreeContentProvider) {
                 VizLocalizationFileTreeContentProvider content = (VizLocalizationFileTreeContentProvider) treeViewer
                         .getContentProvider();
                 final Object find = content.findItem(user);
@@ -488,9 +486,10 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                         @Override
                         public void run() {
                             TreeItem[] items = treeViewer.getTree().getItems();
-                            if (items != null && items.length > 0)
-                                treeViewer.getTree().showItem(
-                                        items[items.length - 1]);
+                            if (items != null && items.length > 0) {
+                                treeViewer.getTree()
+                                        .showItem(items[items.length - 1]);
+                            }
                             treeViewer.reveal(find);
                         }
                     });
@@ -503,7 +502,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
      * populate the data list
      */
     protected VizLocalizationFileTree populateDataList() {
-        VizLocalizationFileTree root = new VizLocalizationFileTree("root", null);
+        VizLocalizationFileTree root = new VizLocalizationFileTree("root",
+                null);
         IPathManager mgr = PathManagerFactory.getPathManager();
         LocalizationContext ctx = mgr.getContext(this.localizationType,
                 LocalizationLevel.USER);
@@ -520,7 +520,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Create the OK and Cancel buttons.
-     * 
+     *
      * @param mainComp
      *            Parent composite.
      */
@@ -537,7 +537,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     protected void createOkButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
-        okBtn = new Button(buttonComp, SWT.PUSH);
+        Button okBtn = new Button(buttonComp, SWT.PUSH);
         okBtn.setText(IDialogConstants.OK_LABEL);
         okBtn.setLayoutData(rd);
         enableBtnArray.add(okBtn);
@@ -551,7 +551,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     protected void createCancelButton(Composite buttonComp) {
         GridData rd = new GridData(80, SWT.DEFAULT);
-        cancelBtn = new Button(buttonComp, SWT.PUSH);
+        Button cancelBtn = new Button(buttonComp, SWT.PUSH);
         cancelBtn.setText(IDialogConstants.CANCEL_LABEL);
         cancelBtn.setLayoutData(rd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
@@ -572,10 +572,10 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     /**
      * returns true if the item was toggled, toggles (expands/collapses ) if the
      * item has children
-     * 
+     *
      * basically this method check to see if the node in the tree has children.
      * if the node has children it will expand the tree to show the children.
-     * 
+     *
      * @param vizLocalizationFileTree
      *            The localization file tree.
      * @return True if there are children of the selection.
@@ -600,7 +600,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     /**
      * Get the localization file tree object from the selected item in the tree
      * viewer.
-     * 
+     *
      * @return The localization file tree.
      */
     protected VizLocalizationFileTree getSelectedTreeItem() {
@@ -619,7 +619,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
     /**
      * Determines whether or not the user will be allowed to overwrite an
      * existing file. Only exists due to the existing dialog implementation.
-     * 
+     *
      * @return true, if overwrite is allowed; false, otherwise
      */
     protected boolean overwriteAllowed() {
@@ -646,24 +646,21 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                 if (this.overwriteAllowed()) {
                     // Pop up a warning
                     boolean result = MessageDialog.openQuestion(shell,
-                            "Confirm Overwrite", "The " + this.fileTypeDesc
-                                    + " " + localizationTF.getText()
-                                    + " already exists.  Overwrite anyways?");
-                    if (result == true) {
+                            "Confirm Overwrite",
+                            "The " + this.fileTypeDesc + " "
+                                    + localizationTF.getText()
+                                    + " already exists.  Do you wish to overwrite?");
+                    if (result) {
                         fileName = localizationTF.getText();
                         close();
                     }
                 } else {
                     // User cannot save if dialog is open.
-                    MessageDialog
-                            .openError(
-                                    shell,
-                                    "Cannot Save " + this.fileTypeDesc,
-                                    "The "
-                                            + this.fileTypeDesc
-                                            + " "
-                                            + localizationTF.getText()
-                                            + " is currently open. It cannot be overwritten until it is closed or saved under another name.");
+                    MessageDialog.openError(shell,
+                            "Cannot Save " + this.fileTypeDesc,
+                            "The " + this.fileTypeDesc + " "
+                                    + localizationTF.getText()
+                                    + " is currently open. It cannot be overwritten until it is closed or saved under another name.");
                 }
             } else {
                 fileName = localizationTF.getText();
@@ -691,13 +688,12 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
             TreeItem[] selection = treeViewer.getTree().getSelection();
             if (selection.length > 0) {
-                boolean result = MessageDialog.openQuestion(
-                        shell,
+                boolean result = MessageDialog.openQuestion(shell,
                         "Confirm Deletion",
                         "Are you sure you want to delete the "
                                 + this.fileTypeDesc + " \""
                                 + selection[0].getText() + "\"");
-                if (result == true) {
+                if (result) {
                     fileName = selection[0].getText();
                     VizLocalizationFileTree tmp = getSelectedTreeItem();
                     if (tmp != null) {
@@ -710,7 +706,8 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
                     close();
                 }
             } else {
-                MessageBox mb = new MessageBox(shell, SWT.ICON_WARNING | SWT.OK);
+                MessageBox mb = new MessageBox(shell,
+                        SWT.ICON_WARNING | SWT.OK);
                 mb.setText("Selection Error");
                 mb.setMessage("You must select an item to delete it.");
                 mb.open();
@@ -731,7 +728,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Determine if the data list contains the specified filename.
-     * 
+     *
      * @param fileName
      *            Filename.
      * @return True if the data list contains the filename, false otherwise.
@@ -748,7 +745,7 @@ public class VizLocalizationFileListDlg extends CaveSWTDialog {
 
     /**
      * Method call to determine if all users should be shown.
-     * 
+     *
      * @return True if all users should be shown, false otherwise.
      */
     protected boolean showAllUsers() {

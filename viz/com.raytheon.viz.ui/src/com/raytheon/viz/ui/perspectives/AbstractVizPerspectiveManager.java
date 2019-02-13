@@ -516,8 +516,8 @@ public abstract class AbstractVizPerspectiveManager
             @SuppressWarnings("restriction")
             String newId = CompatibilityEditor.MODEL_ELEMENT_ID;
             String oldId = newId + ".hidden";
-            List<MPart> parts = modelService.findElements(localEditorArea,
-                    oldId, MPart.class, null);
+            List<MPart> parts = modelService.findElements(editorArea, oldId,
+                    MPart.class, null);
             parts.forEach((part) -> part.setElementId(newId));
         }
     }
