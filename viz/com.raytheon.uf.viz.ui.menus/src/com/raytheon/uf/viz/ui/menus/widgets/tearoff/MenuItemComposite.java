@@ -82,6 +82,7 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * May 04, 2018  6781      tgurney   Add checkboxes
  * Sep 17, 2018  7466      tgurney   Add disposed check in mouse event handlers
  * Sep 21, 2018  7477      tgurney   Add command listener to HandledContributionItems
+ * Feb 21, 2019  7477      tgurney   Update the backing menu item in command listener
  *
  * </pre>
  *
@@ -323,9 +324,9 @@ public class MenuItemComposite extends Composite {
                     } else {
                         enabled = commandEvent.getCommand().isEnabled();
                     }
-
                     firstItem.setEnabled(enabled);
                     secondItem.setEnabled(enabled);
+                    item.setEnabled(enabled);
                     if (enabled) {
                         setForeground(enabledColor);
                     } else {
@@ -344,6 +345,7 @@ public class MenuItemComposite extends Composite {
                 }
             }
         };
+
     }
 
     private void createCheckListener(String thisCommandId) {
