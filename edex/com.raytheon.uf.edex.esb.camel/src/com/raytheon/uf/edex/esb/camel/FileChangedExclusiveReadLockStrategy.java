@@ -20,8 +20,6 @@
 package com.raytheon.uf.edex.esb.camel;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.apache.camel.Exchange;
 import org.apache.camel.LoggingLevel;
@@ -29,6 +27,8 @@ import org.apache.camel.component.file.GenericFile;
 import org.apache.camel.component.file.GenericFileEndpoint;
 import org.apache.camel.component.file.GenericFileExclusiveReadLockStrategy;
 import org.apache.camel.component.file.GenericFileOperations;
+
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Two step file scan strategy to ensure files aren't accepted for processing
@@ -38,60 +38,61 @@ import org.apache.camel.component.file.GenericFileOperations;
  * modified recently the time is recorded and the file is not processed at this
  * time. In, general this requires a file to be checked twice making its minimum
  * latency at least 1 full scan period before being processed.
- * 
+ *
  * This class is not thread safe. A separate instance of this strategy should be
  * created for each directory.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 2, 2010             rjpeter     Initial creation
- * May 9, 2013  1989       njensen     Camel 2.11 compatibility
- * May 6, 2014  3115       bclement    Camel 2.12.3 compatibility
- * Jan 5, 2015  3800       bclement    Camel 2.14.1 compatibility
- * Oct 22, 2015 4999       nabowle     Camel 2.16.0 compatibility
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------------
+ * Sep 02, 2010           rjpeter   Initial creation
+ * May 09, 2013  1989     njensen   Camel 2.11 compatibility
+ * May 06, 2014  3115     bclement  Camel 2.12.3 compatibility
+ * Jan 05, 2015  3800     bclement  Camel 2.14.1 compatibility
+ * Oct 22, 2015  4999     nabowle   Camel 2.16.0 compatibility
+ * Mar 06, 2019  7582     randerso  Made minFileAge a configurable parameter
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 
-public class FileChangedExclusiveReadLockStrategy implements
-        GenericFileExclusiveReadLockStrategy<File> {
-    private Map<String, Long> modifyTimeMap = new HashMap<String, Long>();
+public class FileChangedExclusiveReadLockStrategy
+        implements GenericFileExclusiveReadLockStrategy<File> {
+
+    private long minFileAge;
+
+    /**
+     * Nullary constructor
+     *
+     * defaults minFileAge to 1 minute
+     */
+    public FileChangedExclusiveReadLockStrategy() {
+        this(TimeUtil.MILLIS_PER_MINUTE);
+    }
+
+    /**
+     * Constructor
+     *
+     * @param minFileAge
+     *            minimum age for a file to be accepted
+     */
+    public FileChangedExclusiveReadLockStrategy(long minFileAge) {
+        this.minFileAge = minFileAge;
+    }
 
     @Override
     public boolean acquireExclusiveReadLock(
             GenericFileOperations<File> operations, GenericFile<File> file,
             Exchange exchange) throws Exception {
-        boolean rval = false;
-        String key = file.getAbsoluteFilePath();
+
+        // accept file if it hasn't been modified for at list MIN_FILE_AGE,
         long modifyTime = file.getLastModified();
-
-        if (modifyTimeMap.containsKey(key)) {
-            if (modifyTime == modifyTimeMap.get(key).longValue()) {
-                rval = true;
-            } else {
-                modifyTimeMap.put(key, modifyTime);
-            }
-        } else {
-            long curTime = System.currentTimeMillis();
-            if (curTime - modifyTime > 60000) {
-                // hasn't been modified in the last minute, just accept file
-                rval = true;
-            } else {
-                modifyTimeMap.put(key, modifyTime);
-            }
-        }
-
-        if (rval) {
-            modifyTimeMap.remove(file.getAbsoluteFilePath());
-        }
-
-        return rval;
+        long curTime = System.currentTimeMillis();
+        return curTime - modifyTime > minFileAge;
     }
 
     @Override
