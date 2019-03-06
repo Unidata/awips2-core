@@ -19,17 +19,17 @@ A. The complete XML structure of a 'Wind Barb' configuration file is shown below
 <windBarbPluginConfig>
     <windBarbPluginList>
         <windBarbPlugin className="RadarXYResource">
-            <baseSize></baseSize>
-            <offsetRatio></offsetRatio>
-            <minimumMagnitude></minimumMagnitude>
-            <barbRotationDegrees></barbRotationDegrees>
-            <barbLengthRatio></barbLengthRatio>
-            <barbSpacingRatio></barbSpacingRatio>
-            <barbFillFiftyTriangle></barbFillFiftyTriangle>
-            <calmCircleMaximumMagnitude></calmCircleMaximumMagnitude>
-            <calmCircleSizeRatio></calmCircleSizeRatio>
-            <arrowHeadSizeRatio></arrowHeadSizeRatio>
-            <linearArrowScaleFactor></linearArrowScaleFactor>
+            <baseSize></baseSize>   <!-- Controls the overall size of the barb -->
+            <offsetRatio></offsetRatio>   <!-- Controls how far way the barb generates from true point (0 to 1)-->
+            <minimumMagnitude></minimumMagnitude>   <!-- Controls lowest value that gets displayed-->
+            <barbRotationDegrees></barbRotationDegrees>   <!-- Controls angle of the barbs on the staff-->
+            <barbLengthRatio></barbLengthRatio>   <!-- Controls length of the barbs (0 to 1)-->
+            <barbSpacingRatio></barbSpacingRatio>   <!-- Controls space between the feathers (0 to 1)-->
+            <barbFillFiftyTriangle></barbFillFiftyTriangle>   <!-- Controls if 50 knots flag is filled-->
+            <calmCircleMaximumMagnitude></calmCircleMaximumMagnitude>   <!-- Controls max magnitude to display calm circle (knots)-->
+            <calmCircleSizeRatio></calmCircleSizeRatio>   <!-- Controls size of call circle (0 to 1)-->
+            <arrowHeadSizeRatio></arrowHeadSizeRatio>   <!-- Controls size of arrow head in wind arrows (not barbs)-->
+            <linearArrowScaleFactor></linearArrowScaleFactor>   <!- Controls length of arrow tail in wind arrows (not barbs)- -->
         </windBarbPlugin>
     </windBarbPluginList>
 </windBarbPluginConfig>
@@ -361,7 +361,7 @@ d. 'Wind Barbs' with the assigned magnitude/direction should be displayed in the
 =======================================================
 H. Template Name: 'Plan View'
 
-a. Configuration File Name: 'GeolocatedGridDataDisplaysBarbConfig.xml'
+a. Configuration File Name: 'GeolocatedGridDataDisplaysWindBarbConfig.xml'
 
 b. Configuration File Template:
 
