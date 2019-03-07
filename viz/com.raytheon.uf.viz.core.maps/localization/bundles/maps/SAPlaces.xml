@@ -3,12 +3,14 @@
     <displayList>
         <displays xsi:type="mapRenderableDisplay" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
             <descriptor xsi:type="mapDescriptor">
-                <resource>
-                    <loadProperties>
-                        <capabilities>
+                 <resource>
+                     <loadProperties>
+                         <capabilities>
+                             <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
+                            <capability xsi:type="labelableCapability" labelField="name" />
                             <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
                                 outlineWidth="1" />
-                            <capability xsi:type="colorableCapability" colorAsString="#9b9b9b" />
+                            <capability xsi:type="densityCapability" density="0.4"/>
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
                     </loadProperties>
@@ -16,13 +18,13 @@
                         isVisible="true">
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
-                    <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.highway</table>
-                        <mapName>Interstates and US Highways</mapName>
-                        <constraint>hwy_type in ('I','U')</constraint>
+                    <resourceData xsi:type="dbPointMapResourceData">
+                         <table>mapdata.sa_places</table>
+                         <mapName>SA Places</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
         </displays>
     </displayList>
 </bundle>
+

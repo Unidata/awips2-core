@@ -17,9 +17,8 @@
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
                     <resourceData xsi:type="dbMapResourceData">
-						<table>mapdata.highway</table>
-                        <mapName>Interstates and US Highways</mapName>
-                        <constraint>hwy_type in ('I','U')</constraint>
+						<table>mapdata.saudi_arabia_highway</table>
+                        <mapName>Saudi Roads</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
