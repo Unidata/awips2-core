@@ -26,7 +26,7 @@
 # JVMs.
 ##
 
-export MAX_MEM=1536 # in Meg
+export MAX_MEM=2560 # in Meg
 
 if [ $HIGH_MEM == "on" ]; then
     export MAX_MEM=$((MAX_MEM*2))
