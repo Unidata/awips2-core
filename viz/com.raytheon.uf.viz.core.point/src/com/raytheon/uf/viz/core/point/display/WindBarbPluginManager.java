@@ -45,12 +45,13 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Nov 14, 2018 #57905     edebebe     Initial creation
+ * Mar 14, 2019 7713       tjensen     Force default config to be reread to get updates
  *
  * </pre>
+ *
+ * @author edebebe
  */
 public class WindBarbPluginManager {
-
-    private WindBarbPluginConfig defaultConfig = null;
 
     /**
      * The localization path of the default GlobalWindBarbConfig.xml file.
@@ -60,15 +61,6 @@ public class WindBarbPluginManager {
 
     public WindBarbPluginManager() {
 
-        // Get WindBarbPlugin with default values
-        ILocalizationFile defaultConfigFile = PathManagerFactory
-                .getPathManager().getStaticLocalizationFile(
-                        WindBarbPluginManager.DEFAULT_CONFIG_PATH);
-
-        // Check if the default config file exists
-        if (defaultConfigFile != null) {
-            this.defaultConfig = readConfig(defaultConfigFile);
-        }
     }
 
     /**
@@ -78,8 +70,7 @@ public class WindBarbPluginManager {
      */
     private WindBarbPluginConfig readConfig(ILocalizationFile configFile) {
 
-        IUFStatusHandler statusHandler = UFStatus
-                .getHandler(getClass());
+        IUFStatusHandler statusHandler = UFStatus.getHandler(getClass());
 
         WindBarbPluginConfig config = null;
         try (InputStream is = configFile.openInputStream()) {
@@ -142,13 +133,27 @@ public class WindBarbPluginManager {
      * @return the default config object
      */
     public WindBarbPlugin getDefaultWindBarbPlugin() {
+        WindBarbPlugin windBarbPlugin = null;
 
-        List<WindBarbPlugin> windBarbPluginList = defaultConfig
-                .getWindBarbPluginList();
+        // Get WindBarbPlugin with default values
+        ILocalizationFile defaultConfigFile = PathManagerFactory
+                .getPathManager().getStaticLocalizationFile(
+                        WindBarbPluginManager.DEFAULT_CONFIG_PATH);
 
-        // Get first and only entry from default config file
-        WindBarbPlugin windBarbPlugin = windBarbPluginList.get(0);
+        WindBarbPluginConfig defaultConfig = null;
 
+        // Check if the default config file exists
+        if (defaultConfigFile != null) {
+            defaultConfig = readConfig(defaultConfigFile);
+        }
+
+        if (defaultConfig != null) {
+            List<WindBarbPlugin> windBarbPluginList = defaultConfig
+                    .getWindBarbPluginList();
+
+            // Get first and only entry from default config file
+            windBarbPlugin = windBarbPluginList.get(0);
+        }
         return windBarbPlugin;
     }
 
@@ -159,9 +164,7 @@ public class WindBarbPluginManager {
      *            name of Plugin.
      * @return a boolean value indicating whether or not the config file exists.
      */
-    public boolean pluginConfigFileExists(String pluginName) {
-
-        boolean configFileExists = false;
+    public static boolean pluginConfigFileExists(String pluginName) {
 
         String pluginConfigPath = getPluginConfigPath(pluginName);
 
@@ -169,30 +172,7 @@ public class WindBarbPluginManager {
         ILocalizationFile pluginConfigFile = PathManagerFactory.getPathManager()
                 .getStaticLocalizationFile(pluginConfigPath);
 
-        if (pluginConfigFile != null) {
-            // The config file exists
-            configFileExists = true;
-        }
-
-        return configFileExists;
-    }
-
-    /**
-     * Checks if the default Wind Barb config file exists
-     *
-     * @return a boolean value indicating whether or not the default config file
-     *         exists.
-     */
-    public boolean defaultConfigFileExists() {
-
-        boolean defaultConfigExists = false;
-
-        if (defaultConfig != null) {
-            // The default config file exists
-            defaultConfigExists = true;
-        }
-
-        return defaultConfigExists;
+        return (pluginConfigFile != null);
     }
 
     /**
@@ -202,7 +182,7 @@ public class WindBarbPluginManager {
      *            name of Plugin.
      * @return a String representation of the config file path.
      */
-    public String getPluginConfigPath(String pluginName) {
+    public static String getPluginConfigPath(String pluginName) {
 
         String pluginConfigPath = "windBarb" + IPathManager.SEPARATOR
                 + pluginName + "WindBarbConfig.xml";

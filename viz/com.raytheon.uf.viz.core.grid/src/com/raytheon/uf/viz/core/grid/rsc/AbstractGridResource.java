@@ -571,7 +571,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             VectorGraphicsConfig config = new VectorGraphicsConfig(PLUGIN_NAME,
                     CLASS_NAME);
             if (displayType != DisplayType.BARB) {
-                config.setArrowHeadSizeRatio(0.15625);
                 config.setMinimumMagnitude(
                         config.getBaseSize() * config.getArrowHeadSizeRatio());
                 config.disableCalmCircle();
@@ -590,8 +589,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     if (!Double.isNaN(minMagnitude)) {
                         config.setMinimumMagnitude(minMagnitude);
                     }
-                } else {
-                    config.setLinearArrowScaleFactor(1.0);
                 }
             }
             GriddedVectorDisplay vectorDisplay = new GriddedVectorDisplay(

@@ -34,6 +34,7 @@
     <windBarbPluginList>
         <windBarbPlugin className="AbstractGridResource">
             <baseSize>25.6</baseSize>
+            <arrowHeadSizeRatio>0.15625</arrowHeadSizeRatio>
         </windBarbPlugin>
     </windBarbPluginList>
 </windBarbPluginConfig>
