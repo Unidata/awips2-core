@@ -82,6 +82,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Feb 17, 2016  5281     tjensen     Fix Dialog centering
  * Apr 07, 2016  5281     tjensen     Clear details if status is good.
  * Sep 12, 2016           mjames@ucar Clean formatted server name.
+ * Mar 25. 2019           mjameS@ucar Cleaner formatted server name.
  * </pre>
  * 
  * @author mschenke
@@ -145,6 +146,10 @@ public class ConnectivityPreferenceDialog {
     private boolean siteGood = true;
 
     private String site = LocalizationConstants.DEFAULT_LOCALIZATION_SITE;
+    
+    private String prefix = LocalizationConstants.LOCALIZATION_SERVER_PREFIX;
+    
+    private String suffix = LocalizationConstants.LOCALIZATION_SERVER_SUFFIX;
 
     protected Text siteText;
 
@@ -321,8 +326,7 @@ public class ConnectivityPreferenceDialog {
         String[] pastOptions =  {
         		"localhost",
         		"edex",
-        		"edex-cloud.unidata.ucar.edu",
-        		"edex.unidata.ucar.edu"
+        		"edex-cloud.unidata.ucar.edu"
         		};
         String[] serverOptions = getServerOptions();
 
@@ -330,6 +334,7 @@ public class ConnectivityPreferenceDialog {
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
+        localization = shortServerName(localization);
         localizationSrv.setText(localization == null ? "" : localization);
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
@@ -763,8 +768,14 @@ public class ConnectivityPreferenceDialog {
         }
     }
 
-    protected String fullServerName(String localization) {
-    	return "http://" + localization + ":9581/services";
+    protected String fullServerName(String server) {
+    	return prefix + server + suffix;
+    }
+    
+    protected String shortServerName(String server) {
+    	server = server.startsWith(prefix) ? server.substring(prefix.length()) : server;
+    	server = server.endsWith(suffix) ? server.split(suffix)[0] : server;
+    	return server;
     }
 
     /**
