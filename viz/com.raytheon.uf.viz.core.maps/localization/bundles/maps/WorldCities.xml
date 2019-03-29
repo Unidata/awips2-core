@@ -8,8 +8,7 @@
                          <capabilities>
                              <capability xsi:type="colorableCapability" colorAsString="#ffffff" />
                             <capability xsi:type="labelableCapability" labelField="name" />
-                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
-                                outlineWidth="1" />
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1" />
                             <capability xsi:type="densityCapability" density="0.4"/>
                         </capabilities>
                         <resourceType>PLAN_VIEW</resourceType>
@@ -19,8 +18,11 @@
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
                     <resourceData xsi:type="dbPointMapResourceData">
-                         <table>mapdata.sa_places4</table>
-                         <mapName>SA Places4</mapName>
+                    	<column name="name" expression="city_name" />
+                        <table>mapdata.world_cities</table>
+                        <mapName>World Cities</mapName>
+                        <constraint>cntry_name not in ('Saudi Arabia')</constraint>
+                        <constraint>pop_class in ('500,000 to 999,999', '1,000,000 to 4,999,999', '5,000,000 and greater')</constraint>
                     </resourceData>
                 </resource>
             </descriptor>

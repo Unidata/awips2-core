@@ -3,7 +3,7 @@
 	<mapScale displayName="Arabia" fileName="Arabia.xml" areaScale="false">
 		<partId view="false" id="com.raytheon.viz.ui.glmap.GLMapEditor"/>
 	</mapScale>
-	<mapScale displayName="Riyadh" fileName="Riyadh" areaScale="false">
+	<mapScale displayName="Jeddah" fileName="Jeddah.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
 	</mapScale>
 	<mapScale displayName="Asia" fileName="ArabiaRegional.xml" areaScale="false">

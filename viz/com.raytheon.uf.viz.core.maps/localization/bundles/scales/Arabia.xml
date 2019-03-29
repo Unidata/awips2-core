@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <bundle>
     <displayList>
-        <displays xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" scale="Mercator 2SP" mapCenter="45.001798578563516 23.97949721496353 0.0" zoomLevel="1.0">
+        <displays xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:type="d2DMapRenderableDisplay" magnification="1.0" density="1.0" 
+        	scale="Equidistant Cylindrical (Spherical)" mapCenter="38.99883092393372 21.502787796773443 0.0" zoomLevel="1.0">
 			<descriptor xsi:type="mapDescriptor">
 				<resource>
 					<loadProperties>
@@ -13,7 +14,8 @@
 					</loadProperties>
 					<properties isSystemResource="false" isBlinking="false"
 						isMapLayer="true" isHoverOn="false" opacity="1.0" isVisible="true" />
-					<resourceData xsi:type="mapResourceGroupData"><resource>
+					<resourceData xsi:type="mapResourceGroupData">
+						<resource>
 							<loadProperties>
 								<capabilities>
 									<capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1" />
@@ -27,27 +29,86 @@
 							<resourceData xsi:type="dbMapResourceData">
 								<table>mapdata.world</table>
 								<mapName>World</mapName>
+								<geomField>the_geom</geomField>
+                                <constraint>name not in ('SAUDI ARABIA', 'YEMEN', 'OMAN', 'IRAQ', 'UNITED ARAB EMIRATES, THE')</constraint>
 							</resourceData>
 						</resource>
 						<resource>
-                    		<loadProperties>
-                        		<capabilities>
-                            		<capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true" outlineWidth="1" />
-                            		<capability xsi:type="colorableCapability" colorAsString="#4d4d4d" />
-                        		</capabilities>
-                        		<resourceType>PLAN_VIEW</resourceType>
-                    		</loadProperties>
-	                    	<properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
-	                        	isVisible="true">
-	                    	</properties>
-	                    	<resourceData xsi:type="dbMapResourceData">
-								<table>mapdata.sau_admin1</table>
-	                        	<mapName>Administrative Districts</mapName>
-	                    	</resourceData>
-                		</resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability" colorAsString="#4d4d4d" />
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.yemen</table>
+                        <mapName>Yemen</mapName>
+                    </resourceData>
+                </resource>
+                <resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability" colorAsString="#4d4d4d" />
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.oman_0</table>
+                        <mapName>Oman</mapName>
+                    </resourceData>
+                </resource>
+                <resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability" colorAsString="#4d4d4d" />
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.uae_coastline</table>
+                        <mapName>UAE Coastline</mapName>
+                    </resourceData>
+                </resource>
+                <resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability" lineStyle="SOLID" outlineOn="true"
+                                outlineWidth="1" />
+                            <capability xsi:type="colorableCapability" colorAsString="#4d4d4d" />
+                        </capabilities>
+                        <resourceType>PLAN_VIEW</resourceType>
+                    </loadProperties>
+                    <properties isSystemResource="false" isBlinking="false" isMapLayer="true" isHoverOn="false"
+                        isVisible="true">
+                        <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
+                    </properties>
+                    <resourceData xsi:type="dbMapResourceData">
+						<table>mapdata.sau_admin1</table>
+                        <mapName>SAU Admin</mapName>
+                    </resourceData>
+                </resource>
 						<mapName>World Boundaries</mapName>
 					</resourceData>
 				</resource>
+				
                 <resource>
                   	<loadProperties>
                       	<capabilities>
@@ -129,9 +190,31 @@
 						<mapName>Water</mapName>
 					</resourceData>
 				</resource>
+				<resource>
+                            <loadProperties loadWithoutData="false">
+                                <resourceType>PLAN_VIEW</resourceType>
+                                <capabilities>
+                                    <capability xsi:type="colorableCapability" colorAsString="green"/>
+                                    <capability xsi:type="colorMapCapability">
+                                        <colorMapParameters colorMapName="Topography">
+                                            <persisted/>
+                                        </colorMapParameters>
+                                    </capability>
+                                    <capability xsi:type="outlineCapability" outlineWidth="1" outlineOn="true" lineStyle="SOLID"/>
+                                    <capability xsi:type="imagingCapability" contrast="1.0" brightness="1.0" interpolationState="true" alpha="0.3"/>
+                                </capabilities>
+                            </loadProperties>
+                            <properties isVisible="true" isMapLayer="false" isBlinking="false" isSystemResource="false" renderingOrderId="MAP_IMAGE">
+                                <pdProps minDisplayWidth="0" maxDisplayWidth="100000000"/>
+                            </properties>
+                            <resourceData xsi:type="topoResourceData">
+                                <topoFile>defaultTopo.h5</topoFile>
+                                <mapName>Topography</mapName>
+                            </resourceData>
+                        </resource>
                 <limitedNumberOfFrames>2147483647</limitedNumberOfFrames>
-                <gridGeometry rangeX="0 13749" rangeY="0 9999" envelopeMinX="2253951.555184561" envelopeMaxX="7753951.555184561" envelopeMinY="750425.962192615" envelopeMaxY="4750425.9621926155">
-                            <CRS>PROJCS["Mercator_2SP", 
+                <gridGeometry rangeX="0 12499" rangeY="0 9999" envelopeMinX="1586408.0144932866" envelopeMaxX="7086408.014493287" envelopeMinY="191306.8541437355" envelopeMaxY="4591306.854143735">
+                            <CRS>PROJCS["Equidistant Cylindrical (Spherical)", 
   GEOGCS["WGS84(DD)", 
     DATUM["WGS84", 
       SPHEROID["WGS84", 6378137.0, 298.257223563]], 
@@ -139,12 +222,12 @@
     UNIT["degree", 0.017453292519943295], 
     AXIS["Geodetic longitude", EAST], 
     AXIS["Geodetic latitude", NORTH]], 
-  PROJECTION["Mercator_2SP"], 
+  PROJECTION["Equidistant Cylindrical (Spherical)"], 
   PARAMETER["semi_major", 6371229.0], 
   PARAMETER["semi_minor", 6371229.0], 
-  PARAMETER["standard_parallel_1", 0.0], 
-  PARAMETER["latitude_of_origin", 0.0], 
   PARAMETER["central_meridian", 0.0], 
+  PARAMETER["latitude_of_origin", 0.0], 
+  PARAMETER["standard_parallel_1", 0.0], 
   PARAMETER["false_easting", 0.0], 
   PARAMETER["false_northing", 0.0], 
   UNIT["m", 1.0], 

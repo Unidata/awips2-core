@@ -19,8 +19,8 @@
                         <pdProps maxDisplayWidth="100000000" minDisplayWidth="0" />
                     </properties>
                     <resourceData xsi:type="dbPointMapResourceData">
-                         <table>mapdata.saudi_arabia_location</table>
-                         <mapName>Saudi Locations</mapName>
+                         <table>mapdata.sau_places_utf</table>
+                         <mapName>Saudi Places UTF</mapName>
                     </resourceData>
                 </resource>
             </descriptor>
