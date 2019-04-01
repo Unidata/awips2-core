@@ -20,14 +20,17 @@
 package com.raytheon.uf.edex.esb.camel.cluster.quartz;
 
 import java.net.URI;
+
+
 import java.util.Date;
 import java.util.Map;
 
 import org.apache.camel.component.quartz.QuartzComponent;
 import org.apache.camel.util.IntrospectionSupport;
 import org.apache.camel.util.ObjectHelper;
-import org.quartz.SimpleTrigger;
+import org.quartz.CronScheduleBuilder;
 import org.quartz.Trigger;
+import org.quartz.TriggerBuilder;
 
 /**
  * TODO Add Description
@@ -38,6 +41,7 @@ import org.quartz.Trigger;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 22, 2010            njensen     Initial creation
+ * Apr  8, 2019            skabasele   updated org.quartz.Trigger to version 2.3.0
  * 
  * </pre>
  * 
@@ -79,24 +83,30 @@ public class ClusteredQuartzComponent extends QuartzComponent {
 
         // create the trigger either cron or simple
         Trigger trigger;
+        TriggerBuilder<Trigger> triggerBuilder = TriggerBuilder.newTrigger()
+                .withIdentity(name, group);
+
         if (ObjectHelper.isNotEmpty(cron)) {
-            trigger = createCronTrigger(cron);
+
+            trigger = triggerBuilder
+                    .withSchedule(CronScheduleBuilder.cronSchedule(cron))
+                    .build();
+
         } else {
-            trigger = new SimpleTrigger();
+
             if (fireNow) {
                 String intervalString = (String) triggerParameters
                         .get("repeatInterval");
                 if (intervalString != null) {
                     long interval = Long.valueOf(intervalString);
-                    trigger.setStartTime(new Date(System.currentTimeMillis()
-                            - interval));
+                    triggerBuilder.startAt(
+                            new Date(System.currentTimeMillis() - interval));
+
                 }
             }
+            trigger = triggerBuilder.build();
         }
         answer.setTrigger(trigger);
-
-        trigger.setName(name);
-        trigger.setGroup(group);
 
         setProperties(trigger, triggerParameters);
         setProperties(answer.getJobDetail(), jobParameters);

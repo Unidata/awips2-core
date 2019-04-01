@@ -31,8 +31,8 @@ import org.hibernate.cfg.Configuration;
 import org.hibernate.dialect.Dialect;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import org.springframework.orm.hibernate4.LocalSessionFactoryBean;
-import org.springframework.orm.hibernate4.LocalSessionFactoryBuilder;
+import org.springframework.orm.hibernate5.LocalSessionFactoryBean;
+import org.springframework.orm.hibernate5.LocalSessionFactoryBuilder;
 
 import com.raytheon.uf.edex.database.type.CommutativeTimestampType;
 
@@ -90,8 +90,8 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     public String[] getCreateSql(Set<Class<?>> classes)
             throws org.hibernate.AnnotationException {
         Configuration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateSchemaCreationScript(Dialect
-                .getDialect(getConfiguration().getProperties()));
+        return tmp.generateSchemaCreationScript(
+                Dialect.getDialect(getConfiguration().getProperties()));
     }
 
     /**
@@ -108,11 +108,12 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     public String[] getDropSql(Collection<Class<?>> classes)
             throws org.hibernate.AnnotationException {
         Configuration tmp = loadNewConfigForClasses(classes);
-        return tmp.generateDropSchemaScript(Dialect
-                .getDialect(getConfiguration().getProperties()));
+        return tmp.generateDropSchemaScript(
+                Dialect.getDialect(getConfiguration().getProperties()));
     }
 
-    private Configuration loadNewConfigForClasses(Collection<Class<?>> classes) {
+    private Configuration loadNewConfigForClasses(
+            Collection<Class<?>> classes) {
         Configuration aConfig = new Configuration();
 
         for (Class<?> c : classes) {
@@ -125,7 +126,7 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     public void setDatabaseSessionConfiguration(
             DatabaseSessionConfiguration databaseSessionConfiguration) {
         // make own copy so can modify it
-        List<Class<?>> annotatedClasses = new LinkedList<Class<?>>(
+        List<Class<?>> annotatedClasses = new LinkedList<>(
                 databaseSessionConfiguration.getAnnotatedClasses());
 
         if (databaseSessionConfiguration != null) {
@@ -161,10 +162,11 @@ public class DatabaseSessionFactoryBean extends LocalSessionFactoryBean {
     }
 
     @Override
-    protected SessionFactory buildSessionFactory(LocalSessionFactoryBuilder sfb) {
+    protected SessionFactory buildSessionFactory(
+            LocalSessionFactoryBuilder sfb) {
         try {
-        sfb.registerTypeOverride(new CommutativeTimestampType(),
-                CommutativeTimestampType.getRegistryKeys());
+            sfb.registerTypeOverride(new CommutativeTimestampType(),
+                    CommutativeTimestampType.getRegistryKeys());
             return super.buildSessionFactory(sfb);
         } catch (Throwable e) {
             logger.error("Failed to build database session factory", e);
