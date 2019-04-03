@@ -6,7 +6,7 @@
 	<mapScale displayName="Jeddah" fileName="Jeddah.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
 	</mapScale>
-	<mapScale displayName="Asia" fileName="ArabiaRegional.xml" areaScale="false">
+	<mapScale displayName="Red Sea" fileName="RedSea.xml" areaScale="false">
 		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
 	</mapScale>
 	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false">
