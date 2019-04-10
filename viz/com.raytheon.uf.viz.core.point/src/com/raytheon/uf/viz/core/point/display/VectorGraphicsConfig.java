@@ -62,6 +62,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 14, 2015  4079     bsteffen    Move to core.point
  * Nov 14, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
  * Mar 14, 2019  7713     tjensen     Refactor setting of default values
+ * Apr 10, 2019  7804     tjensen     Fix arrowHeadStaffRatio check
  *
  * </pre>
  *
@@ -566,7 +567,7 @@ public class VectorGraphicsConfig {
      * @see #setArrowHeadSizeRatio(double)
      */
     public void setArrowHeadStaffRatio(double arrowHeadStaffRatio) {
-        if (arrowHeadSizeRatio <= 0 || arrowHeadSizeRatio >= 1) {
+        if (arrowHeadStaffRatio <= 0 || arrowHeadStaffRatio >= 1) {
             throw new IllegalArgumentException(
                     "Arrow Head Staff Ratio must be between 0 and 1");
         }
