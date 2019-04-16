@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -51,14 +51,14 @@ import com.raytheon.uf.common.numeric.source.OffsetDataSource;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *
  * A class which holds data for a grid. Includes FloatBuffers for holding scalar
  * or vector data as well as the dataUnits.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Mar 09, 2011           bsteffen    Initial creation
@@ -76,15 +76,15 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Feb 28, 2013  2791     bsteffen    Use DataSource instead of FloatBuffers
  *                                    for data access
  * May 14, 2015  4079     bsteffen    Move to core.grid
- * 
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  * @version 1.0
  */
 public class GeneralGridData {
 
-    private GridGeometry2D gridGeometry;
+    private final GridGeometry2D gridGeometry;
 
     private GeographicDataSource scalarData;
 
@@ -96,7 +96,7 @@ public class GeneralGridData {
 
     /**
      * Create a scalar grid data object from float data.
-     * 
+     *
      * @param scalarData
      * @param dataUnit
      * @return
@@ -111,7 +111,7 @@ public class GeneralGridData {
 
     /**
      * Create a scalar grid data object from any data source
-     * 
+     *
      * @param scalarData
      * @param dataUnit
      * @return
@@ -125,7 +125,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the magnitude and direction of
      * the vector as floats.
-     * 
+     *
      * @param magnitude
      * @param direction
      * @param dataUnit
@@ -139,7 +139,7 @@ public class GeneralGridData {
         FloatBuffer vComponent = FloatBuffer.allocate(magnitude.capacity());
         FloatBuffer uComponent = FloatBuffer.allocate(magnitude.capacity());
         while (magnitude.hasRemaining()) {
-            double angle = Math.toRadians(direction.get());
+            double angle = Math.toRadians(direction.get() + 180f);
             double mag = magnitude.get();
             vComponent.put((float) (Math.cos(angle) * mag));
             uComponent.put((float) (Math.sin(angle) * mag));
@@ -151,7 +151,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the u and v components of the
      * vector as floats.
-     * 
+     *
      * @param uComponent
      * @param vComponent
      * @param dataUnit
@@ -168,7 +168,7 @@ public class GeneralGridData {
     /**
      * Create gridData for a vector by providing the u and v components of the
      * vector as any data source.
-     * 
+     *
      * @param uComponent
      * @param vComponent
      * @param dataUnit
@@ -202,7 +202,7 @@ public class GeneralGridData {
     /**
      * Attempt to convert this data to the new unit. If this is successful then
      * the dataUnit and data will be changed.
-     * 
+     *
      * @param unit
      * @return true if units are compatible, false if data is unchanged.
      */
@@ -238,7 +238,7 @@ public class GeneralGridData {
 
     /**
      * Create a new GeneralGridData that is a reprojected version of this data.
-     * 
+     *
      * @param newGridGeometry
      * @param interpolation
      * @return
@@ -246,20 +246,22 @@ public class GeneralGridData {
      * @throws TransformException
      */
     public GeneralGridData reproject(GeneralGridGeometry newGridGeometry,
-            Interpolation interpolation) throws FactoryException,
-            TransformException {
+            Interpolation interpolation)
+            throws FactoryException, TransformException {
         GridGeometry2D newGeom = GridGeometry2D.wrap(newGridGeometry);
-        GridReprojection reproj = PrecomputedGridReprojection.getReprojection(
-                gridGeometry, newGeom);
+        GridReprojection reproj = PrecomputedGridReprojection
+                .getReprojection(gridGeometry, newGeom);
         GridSampler sampler = new GridSampler(interpolation);
         if (isVector()) {
             sampler.setSource(getUComponent());
-            float[] udata = reproj.reprojectedGrid(sampler,
-                    new FloatBufferWrapper(newGeom.getGridRange2D()))
+            float[] udata = reproj
+                    .reprojectedGrid(sampler,
+                            new FloatBufferWrapper(newGeom.getGridRange2D()))
                     .getArray();
             sampler.setSource(getVComponent());
-            float[] vdata = reproj.reprojectedGrid(sampler,
-                    new FloatBufferWrapper(newGeom.getGridRange2D()))
+            float[] vdata = reproj
+                    .reprojectedGrid(sampler,
+                            new FloatBufferWrapper(newGeom.getGridRange2D()))
                     .getArray();
             // When reprojecting it is necessary to recalculate the
             // direction of vectors based off the change in the "up"
@@ -267,8 +269,8 @@ public class GeneralGridData {
             GridEnvelope2D targetRange = newGeom.getGridRange2D();
 
             MathTransform grid2crs = newGeom.getGridToCRS();
-            MathTransform crs2ll = MapUtil.getTransformToLatLon(newGeom
-                    .getCoordinateReferenceSystem());
+            MathTransform crs2ll = MapUtil.getTransformToLatLon(
+                    newGeom.getCoordinateReferenceSystem());
 
             for (int i = 0; i < targetRange.width; i++) {
                 for (int j = 0; j < targetRange.height; j++) {
@@ -339,7 +341,8 @@ public class GeneralGridData {
      * @see #getDirectionFrom()
      */
     public GeographicDataSource getDirectionTo() {
-        DataSource rawSource = new DirectionToDataSource(uComponent, vComponent);
+        DataSource rawSource = new DirectionToDataSource(uComponent,
+                vComponent);
         return new GeographicDataSource(rawSource, this.gridGeometry);
     }
 
@@ -361,8 +364,8 @@ public class GeneralGridData {
      * have the same CRS and grid spacing. This function will create a larger
      * grid geometry which incorporates the data from both sources and fills in
      * NaN for any areas which are not covered by either source.
-     * 
-     * 
+     *
+     *
      * @param data1
      * @param data2
      * @return merged data or null if they are not compatible
@@ -423,16 +426,17 @@ public class GeneralGridData {
         range2.x = (int) Math.round((envelope2.x - envelope.x) / dx);
         // y axis is swapped, our grids start at upper left and y increases down
         // and y axis increases up.
-        range1.y = (int) Math.round((envelope.getMaxY() - envelope1.getMaxY())
-                / dy);
-        range2.y = (int) Math.round((envelope.getMaxY() - envelope2.getMaxY())
-                / dy);
+        range1.y = (int) Math
+                .round((envelope.getMaxY() - envelope1.getMaxY()) / dy);
+        range2.y = (int) Math
+                .round((envelope.getMaxY() - envelope2.getMaxY()) / dy);
         if (data1.isVector() && data2.isVector()) {
             DataSource newU = mergeData(data1.getUComponent(), range1,
                     data2.getUComponent(), range2);
             DataSource newV = mergeData(data1.getVComponent(), range1,
                     data2.getVComponent(), range2);
-            return createVectorDataUV(geometry, newU, newV, data1.getDataUnit());
+            return createVectorDataUV(geometry, newU, newV,
+                    data1.getDataUnit());
         } else {
             DataSource newData = mergeData(data1.getScalarData(), range1,
                     data2.getScalarData(), range2);
@@ -466,7 +470,8 @@ public class GeneralGridData {
 
     private static final class MagnitudeDataSource extends VectorDataSource {
 
-        public MagnitudeDataSource(DataSource uComponent, DataSource vComponent) {
+        public MagnitudeDataSource(DataSource uComponent,
+                DataSource vComponent) {
             super(uComponent, vComponent);
         }
 
@@ -477,7 +482,8 @@ public class GeneralGridData {
         }
     }
 
-    private static final class DirectionFromDataSource extends VectorDataSource {
+    private static final class DirectionFromDataSource
+            extends VectorDataSource {
 
         public DirectionFromDataSource(DataSource uComponent,
                 DataSource vComponent) {
