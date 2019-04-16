@@ -40,31 +40,32 @@ import com.raytheon.uf.common.style.level.SingleLevel;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 12, 2007            chammack    Initial Creation.	
+ * Jul 12, 2007            chammack    Initial Creation.
  * Sep 21, 2007            njensen     Renamed to ImageMatchCriteria.
  * Mar 26, 2009      2086  jsanchez    Added creatingEntityNames.
  *                                      Updated the matches method.
+ * Jan 04, 2019      7696  bsteffen    Matches with a creating entity will
+ *                                     score higher than those without.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlRootElement(name = "paramLevelMatches")
 public class ParamLevelMatchCriteria extends MatchCriteria {
 
     @XmlElement(name = "parameter")
-    private List<String> parameterNames = new ArrayList<String>();
+    private List<String> parameterNames = new ArrayList<>();
 
     @XmlElementRef
-    private List<Level> levels = new ArrayList<Level>();
+    private List<Level> levels = new ArrayList<>();
 
     @XmlElement
     private boolean isLogarithmic;
 
     @XmlElement(name = "creatingEntity")
-    private List<String> creatingEntityNames = new ArrayList<String>();
+    private List<String> creatingEntityNames = new ArrayList<>();
 
     /**
      * @return the parameterNames
@@ -161,27 +162,21 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
                     && !imgCriteria.creatingEntityNames.isEmpty()) {
                 // If we both specifiy an entity and it doesn't match then this
                 // rule doesn't match
-                List<String> matchingEntities = new ArrayList<String>(
+                List<String> matchingEntities = new ArrayList<>(
                         imgCriteria.creatingEntityNames);
                 matchingEntities.retainAll(this.creatingEntityNames);
                 entityMatches = !matchingEntities.isEmpty();
             }
             if (entityMatches && paramMatches) {
-                if (imgCriteria.getLevels().size() == 0) {
+                if (imgCriteria.getLevels().isEmpty()) {
                     // if criteria has no level information, then it is
                     // default for that parameter if no stronger matches are
                     // found
                     returnValue = 1;
 
-                    if (this.creatingEntityNames != null
-                            && this.creatingEntityNames.size() > 0
-                            && imgCriteria.getCreatingEntityNames().contains(
-                                    this.creatingEntityNames.get(0))) {
-                        returnValue++;
-                    }
                 } else if (level instanceof SingleLevel) {
                     for (Level imgLevel : imgCriteria.getLevels()) {
-                        if (imgLevel instanceof RangeLevel) {
+                        if (imgLevel instanceof RangeLevel) {   
                             // if criteria is a range and the level falls within
                             // it
                             if (level.getType().equals(imgLevel.getType())) {
@@ -214,6 +209,14 @@ public class ParamLevelMatchCriteria extends MatchCriteria {
                             }
                         }
 
+                    }
+                }
+                if (returnValue > 0){
+                    if (this.creatingEntityNames != null
+                            && !this.creatingEntityNames.isEmpty()
+                            && imgCriteria.getCreatingEntityNames().contains(
+                                    this.creatingEntityNames.get(0))) {
+                        returnValue *= 2;
                     }
                 }
             }

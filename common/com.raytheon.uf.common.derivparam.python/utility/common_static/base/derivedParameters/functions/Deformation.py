@@ -18,7 +18,7 @@
 # further licensing information.
 ###
 
-
+from WorldWrapUtil import HandleWorldWrapX
 from numpy import shape, empty, hypot, NaN
 
 ##
@@ -36,6 +36,7 @@ from numpy import shape, empty, hypot, NaN
 # @param dx: The spacing between data points in the X direction (array or scalar)
 # @param dy: The spacing between data points in the Y direction (array or scalar)
 # @return: The deformation array of Vector.
+@HandleWorldWrapX
 def execute(U, V, dx, dy):
     
         # create an empty array the same dimensions as U

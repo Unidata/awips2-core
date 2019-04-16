@@ -22,6 +22,7 @@
 
 from numpy import isscalar,NaN
 import Vector
+from WorldWrapUtil import HandleWorldWrapX
 
 g = 9.806 # Gravitational acceleration (m/s^2)
 
@@ -38,6 +39,7 @@ g = 9.806 # Gravitational acceleration (m/s^2)
 # @type coriolis: numpy array or scalar
 # @return: geological wind
 # @rtype: tuple(mag,dir,U,V) of numpy arrays of float
+@HandleWorldWrapX
 def execute(Height, dx, dy, coriolis):
     ""
     # assume dx, dy, and coriolis are OK
@@ -71,12 +73,6 @@ def execute(Height, dx, dy, coriolis):
     # Paste the cropped arrays into the valid portion of the answer arrays.
     result_U[1:-1, 1:-1] = ans_U
     result_V[1:-1, 1:-1] = ans_V
-    
-    # Any masked cells become NaN
-    # This includes the outer edges and any cells that used a masked
-    # value from Height.
-    result_U = result_U
-    result_V = result_V
     
     result = Vector.componentsTo(result_U, result_V)
     return result

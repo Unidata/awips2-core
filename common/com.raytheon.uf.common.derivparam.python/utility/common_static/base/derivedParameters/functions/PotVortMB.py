@@ -25,9 +25,9 @@
 #                                                off by a factor of this amount 
 #                                                in comparison to A1.  
 #                                                A1 calc in pvpres.f.
+# 2018/11/09   7531        bsteffen              Handle world wrapping data. 
 ###
 
-from numpy import zeros
 import Gradient
 import Vorticity
 
@@ -57,19 +57,19 @@ import Vorticity
 # @param coriolis: Coriolis parameters (/s)
 # @return: Isobaric potential vorticity
 # @rtype: numpy array
-def execute(t_up, t_lo, p_up, p_lo, vector_up, vector_lo, dx, dy, coriolis):
+def execute(t_up, t_lo, p_up, p_lo, vector_up, vector_lo, dx, dy, coriolis, worldWrapX = False):
     ""
 
     u_up, v_up = vector_up
     u_lo, v_lo = vector_lo
     
     # Calculate the absolute vorticity at each isobaric surface.
-    avort1 = Vorticity.execute(u_up, v_up, coriolis, dx, dy)
-    avort2 = Vorticity.execute(u_lo, v_lo, coriolis, dx, dy)
+    avort1 = Vorticity.execute(u_up, v_up, coriolis, dx, dy, worldWrapX)
+    avort2 = Vorticity.execute(u_lo, v_lo, coriolis, dx, dy, worldWrapX)
     
     # Calculate the temperature gradient on each surface.
-    grad_lo = Gradient.execute(t_lo, dx, dy)
-    grad_up = Gradient.execute(t_up, dx, dy)
+    grad_lo = Gradient.execute(t_lo, dx, dy, worldWrapX)
+    grad_up = Gradient.execute(t_up, dx, dy, worldWrapX)
     dtdx1, dtdy1 = grad_lo
     dtdx2, dtdy2 = grad_up
     # Calculate difference arrays.

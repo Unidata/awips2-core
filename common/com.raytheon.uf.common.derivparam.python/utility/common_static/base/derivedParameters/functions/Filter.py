@@ -25,6 +25,7 @@
 #    --/--/-----                                  Initial creation
 #    May 06, 2014    3101          njensen        Cast numpy shape values to int
 #                                                  for cross platform compatibility
+#    Nov 09, 2018    7531          bsteffen       Handle world wrapping data.
 
 from numpy import ndarray, float32, NaN
 from numpy import sin, isnan, invert
@@ -39,33 +40,45 @@ MAX_WAVE_NUMBER = 15
 # @param distance: the distance over which to filter
 # @param dx: Grid spacing in the x-direction (m)
 # @param dy: Grid spacing in the y-direction (m)
-# @param times: Number of times to filter
 # @return: A filtered grid
-def execute(input, dist, dx, dy, times=1):
-    if (dist<0):
-        npts = -dist;
+def execute(grid, dist, dx, dy, worldWrapX=False):
+    if dist < 0:
+        npts = -dist
     else:
-        npts = dist * (1000/dx[input.shape[0]/2,input.shape[1]/2]);
+        npts = dist * (1000/dx[grid.shape[0]/2,grid.shape[1]/2])
 
-    return executeJava(input, npts, times)
-    #return executePython(input, npts, times)
+    if worldWrapX:
+            shape = grid.shape
+            shape = (shape[0], shape[1]+2*npts)
+            r = ndarray(shape, grid.dtype)
+            r[:,1*npts:-1*npts] = grid
+            r[:,0:npts] = grid[:,-npts:]
+            r[:,-npts:] = grid[:,0:npts]
+            grid = r
+    
+    result = executeJava(grid, npts, 1)
+    
+    if worldWrapX:
+        result = result[:,1*npts:-1*npts]
+    
+    return result
 
-def executeJava(input, npts, times):
+def executeJava(grid, npts, times):
     # FIXME we shouldn't have to reverse shape[0] and shape[1]!
-    output = DistFilter.filter(input, npts, int(input.shape[1]), int(input.shape[0]), times)
+    output = DistFilter.filter(grid, npts, int(grid.shape[1]), int(grid.shape[0]), times)
     output[output==1e37] = NaN
     return output
     
 
-def executePython(input, npts, times=1):
+def executePython(grid, npts, times=1):
     n = int(npts + 0.99)
-    if (n<2):
-        n = 2;
+    if n < 2:
+        n = 2
     elif (n>MAX_WAVE_NUMBER):
         n = MAX_WAVE_NUMBER
-    d = (n+1)/2;
-    dd = d+d;
-    m = dd+1;
+    d = (n+1)/2
+    dd = d+d
+    m = dd+1
     #Calculate wave table
     waveno = 3.14159265/npts
     jweights = ndarray([m,m], float32)
@@ -80,12 +93,12 @@ def executePython(input, npts, times=1):
             jweights[:,c+d] = 1
     weights = iweights*jweights
     weights = weights/weights.sum()
-    output = input;
+    output = grid
     for i in range(times):
-        input = output;
-        output = ndarray(input.shape, float32)
-        for i in range(input.shape[0]):
-            for j in range(input.shape[1]):
+        grid = output
+        output = ndarray(grid.shape, float32)
+        for i in range(grid.shape[0]):
+            for j in range(grid.shape[1]):
                 wi1 = 0
                 wi2 = m
                 wj1 = 0
@@ -97,19 +110,19 @@ def executePython(input, npts, times=1):
                 if (i1 < 0):
                     wi1 = -i1
                     i1 = 0
-                if (i2 > input.shape[0]):
-                    wi2 = - (i2 - input.shape[0])
-                    i2 = input.shape[0]
+                if (i2 > grid.shape[0]):
+                    wi2 = - (i2 - grid.shape[0])
+                    i2 = grid.shape[0]
                 if (j1 < 0):
                     wj1 = -j1
                     j1 = 0
-                if (j2 > input.shape[1]):
-                    wj2 =  - (j2 - input.shape[1])
-                    j2 = input.shape[1]
-                notnanmask = invert(isnan(input[i1:i2,j1:j2]))
+                if (j2 > grid.shape[1]):
+                    wj2 =  - (j2 - grid.shape[1])
+                    j2 = grid.shape[1]
+                notnanmask = invert(isnan(grid[i1:i2,j1:j2]))
                 tot = weights[wi1:wi2,wj1:wj2][notnanmask].sum()
                 if tot >= 0.95:
-                    output[i,j] = (input[i1:i2,j1:j2][notnanmask]*weights[wi1:wi2,wj1:wj2][notnanmask]).sum()/tot
+                    output[i,j] = (grid[i1:i2,j1:j2][notnanmask]*weights[wi1:wi2,wj1:wj2][notnanmask]).sum()/tot
                 else:
                     output[i,j] = NaN
     return output

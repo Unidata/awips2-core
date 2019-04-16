@@ -18,7 +18,13 @@
 # further licensing information.
 ###
 
-from numpy import empty, isscalar, shape, NaN
+from WorldWrapUtil import HandleWorldWrapX
+from numpy import empty, shape, NaN
+
+# This just rearranges the args because quan is more optional than worldWrapX
+# but HandleWorldWrapX requires worldWrapX to be last.
+def execute(vec, dx, dy, worldWrapX=False, quan=1.0):
+    return calculate(vec,dx,dy,quan,worldWrapX)
 
 ##
 # Calculate the divergence of Vector.
@@ -32,7 +38,8 @@ from numpy import empty, isscalar, shape, NaN
 # @param dy: 2D array of spacing between grid points
 # @param quan: Quantity parameter (optional; defaults to constant 1)
 # @return: divergence 
-def execute(vec, dx, dy, quan=1.0):
+@HandleWorldWrapX
+def calculate(vec, dx, dy, quan=1.0):
     """Calculate the divergence of Vector from dx and dy.\n\
     for each output cell,              \n
         u = Vector[0]                  \n

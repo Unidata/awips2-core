@@ -29,14 +29,13 @@
 # ------------   ----------   -----------   -----------
 #                             ????          Initial creation
 # Oct 27, 2015   4703         bsteffen      correct use of U,V
-#
+# Nov 01, 2018   6802         bsteffen      Filter out low wind speed. 
 
 import U
 import V
-from numpy import hypot
+from numpy import hypot, NaN
 
 def execute(windSpeed, windDir, accum_windSpeed24, accum_windDir24):
-    
     U0 = U.execute(windSpeed, windDir)
     V0 = V.execute(windSpeed, windDir)        
     
@@ -47,5 +46,8 @@ def execute(windSpeed, windDir, accum_windSpeed24, accum_windDir24):
     DV = V0 - V24
     
     wSp = hypot(DU,DV)
-    
+
+    # No arrow if minor change.
+    wSp[wSp < 2.5] = NaN
+        
     return wSp

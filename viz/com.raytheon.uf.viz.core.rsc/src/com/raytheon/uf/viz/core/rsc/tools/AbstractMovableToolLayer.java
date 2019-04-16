@@ -80,6 +80,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * 07-21-2010              bkowal      We will now display the standard SWT &quot;hand&quot;
  * Mar 21, 2013       1638 mschenke    Changed to use generic tool data
  * Sep 18, 2013 #2360      njensen     Ignore mouse actions if layer is invisible
+ * Dec 13, 2018 #7675      reblum      Allow subclasses to specify timeAgnostic via
+ *                                     new constructor.
  * 
  * </pre>
  * 
@@ -87,9 +89,9 @@ import com.vividsolutions.jts.geom.Coordinate;
  * @version 1.0
  * @param <T>
  */
-public abstract class AbstractMovableToolLayer<T> extends
-        AbstractVizResource<AbstractResourceData, MapDescriptor> implements
-        IInputHandler, IResourceDataChanged {
+public abstract class AbstractMovableToolLayer<T>
+        extends AbstractVizResource<AbstractResourceData, MapDescriptor>
+        implements IInputHandler, IResourceDataChanged {
 
     protected enum SelectionStatus {
         NORMAL, SELECTED, LIVE
@@ -138,7 +140,14 @@ public abstract class AbstractMovableToolLayer<T> extends
     protected AbstractMovableToolLayer(
             GenericToolsResourceData<? extends AbstractMovableToolLayer<T>> resourceData,
             LoadProperties loadProperties, boolean editable) {
-        super(resourceData, loadProperties);
+        this(resourceData, loadProperties, editable, true);
+    }
+
+    protected AbstractMovableToolLayer(
+            GenericToolsResourceData<? extends AbstractMovableToolLayer<T>> resourceData,
+            LoadProperties loadProperties, boolean editable,
+            boolean timeAgnostic) {
+        super(resourceData, loadProperties, timeAgnostic);
         getCapability(EditableCapability.class).setEditable(editable);
         this.rightClickMovesToCoord = false;
         this.endpointClicked = false;
@@ -293,8 +302,10 @@ public abstract class AbstractMovableToolLayer<T> extends
         return getCapability(EditableCapability.class).isEditable();
     }
 
+    @Override
     public boolean handleMouseDown(int x, int y, int mouseButton) {
-        if ((liveObject == null) && isEditable() && getProperties().isVisible()) {
+        if ((liveObject == null) && isEditable()
+                && getProperties().isVisible()) {
             IDisplayPaneContainer container = getResourceContainer();
             lastMouseLoc = container.translateClick(x, y);
 
@@ -320,7 +331,8 @@ public abstract class AbstractMovableToolLayer<T> extends
      */
     public boolean selectObjectAtMouse(int x, int y, int mouseButton) {
         for (T object : objects) {
-            if (isClicked(getResourceContainer(), new Coordinate(x, y), object)) {
+            if (isClicked(getResourceContainer(), new Coordinate(x, y),
+                    object)) {
                 selectedObject = object;
                 if (mouseButton == 1) {
                     makeSelectedLive();
@@ -337,10 +349,12 @@ public abstract class AbstractMovableToolLayer<T> extends
         return random.nextInt(size);
     }
 
+    @Override
     public boolean handleMouseDownMove(int x, int y, int button) {
         return handleMouseMove(x, y);
     }
 
+    @Override
     public boolean handleMouseMove(int x, int y) {
         IDisplayPaneContainer container = getResourceContainer();
         if (liveObject != null) {
@@ -394,6 +408,7 @@ public abstract class AbstractMovableToolLayer<T> extends
         return false;
     }
 
+    @Override
     @SuppressWarnings("unchecked")
     public boolean handleMouseUp(int x, int y, int mouseButton) {
         if (!isEditable() || !getProperties().isVisible()) {
@@ -402,7 +417,8 @@ public abstract class AbstractMovableToolLayer<T> extends
 
         if (this.rightClickMovesToCoord && (mouseButton == 3)) {
             Object[] selectionArray = objects.toArray();
-            selectedObject = (T) selectionArray[getRandomIndex(selectionArray.length)];
+            selectedObject = (T) selectionArray[getRandomIndex(
+                    selectionArray.length)];
             liveObject = move(lastMouseLoc, null, selectedObject);
         }
 
