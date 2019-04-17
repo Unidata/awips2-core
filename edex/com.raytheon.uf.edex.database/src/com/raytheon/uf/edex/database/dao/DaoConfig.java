@@ -21,7 +21,7 @@
 package com.raytheon.uf.edex.database.dao;
 
 import org.hibernate.SessionFactory;
-import org.springframework.orm.hibernate4.HibernateTransactionManager;
+import org.springframework.orm.hibernate5.HibernateTransactionManager;
 
 import com.raytheon.uf.edex.core.EDEXUtil;
 
@@ -60,8 +60,7 @@ public abstract class DaoConfig {
     /** The transaction manager suffix */
     private static final String TX_MANAGER = "TxManager";
 
-    // @VisibleForTesting
-    static SpringBeanLocator DEFAULT_LOCATOR = new SpringBeanLocator() {
+    private static SpringBeanLocator DEFAULT_LOCATOR = new SpringBeanLocator() {
         @Override
         public <T> T lookupBean(Class<T> resultClass, String beanName) {
             return resultClass.cast(EDEXUtil.getESBComponent(beanName));
@@ -72,8 +71,8 @@ public abstract class DaoConfig {
      * Used to locate Spring beans. By default, uses EDEXUtil to look them up.
      * Package-level access for testing purposes.
      */
-    // @VisibleForTesting
-    static SpringBeanLocator locator = DEFAULT_LOCATOR;
+
+    private static SpringBeanLocator locator = DEFAULT_LOCATOR;
 
     /**
      * The default data access object configuration. This configuration
@@ -145,8 +144,8 @@ public abstract class DaoConfig {
      */
     public static DaoConfig forClass(String className)
             throws ClassNotFoundException {
-        return new SpringLookupDaoConfig(DaoConfig.class.getClassLoader()
-                .loadClass((className).trim()));
+        return new SpringLookupDaoConfig(
+                DaoConfig.class.getClassLoader().loadClass((className).trim()));
     }
 
     /**
@@ -194,8 +193,8 @@ public abstract class DaoConfig {
      */
     public static DaoConfig forClass(String dbName, String className)
             throws ClassNotFoundException {
-        return new SpringLookupDaoConfig(dbName, DaoConfig.class
-                .getClassLoader().loadClass((className).trim()));
+        return new SpringLookupDaoConfig(dbName,
+                DaoConfig.class.getClassLoader().loadClass((className).trim()));
     }
 
     /**
@@ -225,7 +224,9 @@ public abstract class DaoConfig {
 
     private static class SpringLookupDaoConfig extends DaoConfig {
 
-        /** The class for which the desired data access object is to be used for */
+        /**
+         * The class for which the desired data access object is to be used for
+         */
         private final Class<?> daoClass;
 
         /** The name of the Hibernate session factory to use */
