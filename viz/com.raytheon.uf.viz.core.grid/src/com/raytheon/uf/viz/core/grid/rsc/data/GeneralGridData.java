@@ -86,7 +86,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  */
 public class GeneralGridData {
 
-    private GridGeometry2D gridGeometry;
+    private final GridGeometry2D gridGeometry;
 
     private GeographicDataSource scalarData;
 
@@ -252,20 +252,22 @@ public class GeneralGridData {
      * @throws TransformException
      */
     public GeneralGridData reproject(GeneralGridGeometry newGridGeometry,
-            Interpolation interpolation) throws FactoryException,
-            TransformException {
+            Interpolation interpolation)
+            throws FactoryException, TransformException {
         GridGeometry2D newGeom = GridGeometry2D.wrap(newGridGeometry);
-        GridReprojection reproj = PrecomputedGridReprojection.getReprojection(
-                gridGeometry, newGeom);
+        GridReprojection reproj = PrecomputedGridReprojection
+                .getReprojection(gridGeometry, newGeom);
         GridSampler sampler = new GridSampler(interpolation);
         if (isVector()) {
             sampler.setSource(getUComponent());
-            float[] udata = reproj.reprojectedGrid(sampler,
-                    new FloatBufferWrapper(newGeom.getGridRange2D()))
+            float[] udata = reproj
+                    .reprojectedGrid(sampler,
+                            new FloatBufferWrapper(newGeom.getGridRange2D()))
                     .getArray();
             sampler.setSource(getVComponent());
-            float[] vdata = reproj.reprojectedGrid(sampler,
-                    new FloatBufferWrapper(newGeom.getGridRange2D()))
+            float[] vdata = reproj
+                    .reprojectedGrid(sampler,
+                            new FloatBufferWrapper(newGeom.getGridRange2D()))
                     .getArray();
             // When reprojecting it is necessary to recalculate the
             // direction of vectors based off the change in the "up"
@@ -273,8 +275,8 @@ public class GeneralGridData {
             GridEnvelope2D targetRange = newGeom.getGridRange2D();
 
             MathTransform grid2crs = newGeom.getGridToCRS();
-            MathTransform crs2ll = MapUtil.getTransformToLatLon(newGeom
-                    .getCoordinateReferenceSystem());
+            MathTransform crs2ll = MapUtil.getTransformToLatLon(
+                    newGeom.getCoordinateReferenceSystem());
 
             for (int i = 0; i < targetRange.width; i++) {
                 for (int j = 0; j < targetRange.height; j++) {
@@ -345,7 +347,8 @@ public class GeneralGridData {
      * @see #getDirectionFrom()
      */
     public GeographicDataSource getDirectionTo() {
-        DataSource rawSource = new DirectionToDataSource(uComponent, vComponent);
+        DataSource rawSource = new DirectionToDataSource(uComponent,
+                vComponent);
         return new GeographicDataSource(rawSource, this.gridGeometry);
     }
 
@@ -429,16 +432,17 @@ public class GeneralGridData {
         range2.x = (int) Math.round((envelope2.x - envelope.x) / dx);
         // y axis is swapped, our grids start at upper left and y increases down
         // and y axis increases up.
-        range1.y = (int) Math.round((envelope.getMaxY() - envelope1.getMaxY())
-                / dy);
-        range2.y = (int) Math.round((envelope.getMaxY() - envelope2.getMaxY())
-                / dy);
+        range1.y = (int) Math
+                .round((envelope.getMaxY() - envelope1.getMaxY()) / dy);
+        range2.y = (int) Math
+                .round((envelope.getMaxY() - envelope2.getMaxY()) / dy);
         if (data1.isVector() && data2.isVector()) {
             DataSource newU = mergeData(data1.getUComponent(), range1,
                     data2.getUComponent(), range2);
             DataSource newV = mergeData(data1.getVComponent(), range1,
                     data2.getVComponent(), range2);
-            return createVectorDataUV(geometry, newU, newV, data1.getDataUnit());
+            return createVectorDataUV(geometry, newU, newV,
+                    data1.getDataUnit());
         } else {
             DataSource newData = mergeData(data1.getScalarData(), range1,
                     data2.getScalarData(), range2);
@@ -472,7 +476,8 @@ public class GeneralGridData {
 
     private static final class MagnitudeDataSource extends VectorDataSource {
 
-        public MagnitudeDataSource(DataSource uComponent, DataSource vComponent) {
+        public MagnitudeDataSource(DataSource uComponent,
+                DataSource vComponent) {
             super(uComponent, vComponent);
         }
 
@@ -483,7 +488,8 @@ public class GeneralGridData {
         }
     }
 
-    private static final class DirectionFromDataSource extends VectorDataSource {
+    private static final class DirectionFromDataSource
+            extends VectorDataSource {
 
         public DirectionFromDataSource(DataSource uComponent,
                 DataSource vComponent) {

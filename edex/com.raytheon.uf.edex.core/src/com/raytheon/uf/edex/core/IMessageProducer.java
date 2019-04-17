@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.edex.core;
 
+import java.util.Map;
+
 import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
@@ -31,6 +33,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * 10/08/14     #3684      randerso    Added sendAsyncThriftUri
+ * 01/24/19     #7714      mrichardson Add overloaded sendAsyncUri
  * 
  * </pre>
  * 
@@ -73,6 +76,18 @@ public interface IMessageProducer {
      *            the message to send
      */
     public void sendAsyncUri(String uri, Object message) throws EdexException;
+
+    /**
+     * Sends a message asynchronously
+     * 
+     * @param uri
+     *            the uri to send the body to
+     * @param body
+     *            the body to send
+     * @param headers
+     *            optional headers to go with the body
+     */
+    public void sendAsyncUri(String uri, Object body, Map<String, Object> headers) throws EdexException;
 
     /**
      * Sends a message asynchronously using Thrift serialization.
