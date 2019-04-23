@@ -9,7 +9,7 @@
             <bean class="com.raytheon.uf.common.units.UnitConverter" />
         </constructor-arg>
         <constructor-arg>
-            <value>javax.measure.unit.Unit</value>
+            <value>javax.measure.Unit</value>
         </constructor-arg>
     </bean>
 
@@ -24,7 +24,7 @@
         class="com.raytheon.uf.common.serialization.DynamicSerializationManager"
         factory-method="registerAdapter">
         <constructor-arg>
-            <value>javax.measure.unit.Unit</value>
+            <value>javax.measure.Unit</value>
         </constructor-arg>
         <constructor-arg>
             <bean

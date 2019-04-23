@@ -19,13 +19,17 @@
  **/
 package com.raytheon.uf.common.wxmath;
 
-import javax.measure.Measure;
+import javax.measure.Quantity;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Pressure;
 import javax.measure.quantity.Temperature;
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import si.uom.NonSI;
+import si.uom.SI;
+import tec.uom.se.quantity.Quantities;
+import tec.uom.se.unit.MetricPrefix;
+import tec.uom.se.unit.Units;
+
+import javax.measure.Unit;
 
 /**
  * Contains calculations for calculating relative humidity from pressure,
@@ -47,24 +51,24 @@ import javax.measure.unit.Unit;
 
 public class RelativeHumidity {
 
-    public static final Unit<Pressure> PRESSURE_UNIT = SI.HECTO(SI.PASCAL);
+    public static final Unit<Pressure> PRESSURE_UNIT = MetricPrefix.HECTO(SI.PASCAL);
 
     public static final Unit<Temperature> TEMPERATURE_UNIT = SI.KELVIN;
 
     public static final Unit<Dimensionless> SPECIFIC_HUMIDITY_UNIT = SI.GRAM
             .divide(SI.KILOGRAM).asType(Dimensionless.class);
 
-    public static final Unit<Dimensionless> RELATIVE_HUMIDITY_UNIT = NonSI.PERCENT;
+    public static final Unit<Dimensionless> RELATIVE_HUMIDITY_UNIT = Units.PERCENT;
 
-    public static Measure<?, Dimensionless> calculate(
-            Measure<?, Pressure> pressure, Measure<?, Temperature> temperature,
-            Measure<?, Dimensionless> specificHumidity) {
-        double pressureVal = pressure.doubleValue(PRESSURE_UNIT);
-        double tempVal = temperature.doubleValue(TEMPERATURE_UNIT);
-        double specHumVal = specificHumidity
-                .doubleValue(SPECIFIC_HUMIDITY_UNIT);
+    public static Quantity<Dimensionless> calculate(
+            Quantity<Pressure> pressure, Quantity<Temperature> temperature,
+            Quantity<Dimensionless> specificHumidity) {
+        double pressureVal = pressure.to(PRESSURE_UNIT).getValue().doubleValue();
+        double tempVal = temperature.to(TEMPERATURE_UNIT).getValue().doubleValue();
+        double specHumVal = specificHumidity.to(SPECIFIC_HUMIDITY_UNIT).getValue()
+                .doubleValue();
         double relHumVal = calculate(pressureVal, tempVal, specHumVal);
-        return Measure.valueOf(relHumVal, RELATIVE_HUMIDITY_UNIT);
+        return Quantities.getQuantity(relHumVal, RELATIVE_HUMIDITY_UNIT);
     }
 
     public static double calculate(double pressure, double temperature,

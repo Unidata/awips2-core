@@ -20,17 +20,18 @@
 package com.raytheon.uf.common.dataplugin.level;
 
 import java.io.File;
-import java.text.ParseException;
+import java.text.ParsePosition;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.measure.converter.ConversionException;
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+import javax.measure.format.ParserException;
 import javax.xml.bind.JAXB;
 
 import com.raytheon.uf.common.dataplugin.level.request.GetLevelByIdRequest;
@@ -46,6 +47,8 @@ import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Singleton Level Factory for getting Level objects
@@ -172,10 +175,11 @@ public class LevelFactory {
                         && ((levelOneValue != INVALID_LEVEL) || (levelTwoValue != INVALID_LEVEL))) {
                     Unit<?> masterUnit = masterLevel.getUnit();
                     if (masterUnit != null) {
-                        Unit<?> incomingUnit = (Unit<?>) UnitFormat
-                                .getUCUMInstance().parseObject(unit);
+                        Unit<?> incomingUnit = SimpleUnitFormat
+                                .getInstance(SimpleUnitFormat.Flavor.ASCII)
+                                .parseObject(unit, new ParsePosition(0));
                         UnitConverter converter = incomingUnit
-                                .getConverterTo(masterUnit);
+                                .getConverterToAny(masterUnit);
                         if (levelOneValue != INVALID_LEVEL) {
                             levelOneValue = converter.convert(levelOneValue);
                         }
@@ -189,12 +193,9 @@ public class LevelFactory {
                 requestedLevel.setLeveltwovalue(levelTwoValue);
 
                 rval = loadLevel(requestedLevel);
-            } catch (ParseException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
-            } catch (ConversionException e) {
-                statusHandler.handle(Priority.PROBLEM, e.getLocalizedMessage(),
-                        e);
+            } catch (ParserException | IncommensurableException
+                    | UnconvertibleException e) {
+                statusHandler.warn("Unit conversion failed", e);
             }
         } else {
             statusHandler.warn("Requested level name [" + name

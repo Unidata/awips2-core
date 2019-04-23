@@ -19,10 +19,11 @@
  **/
 package com.raytheon.uf.common.units;
 
+import java.text.ParsePosition;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.localization.IPathManager;
@@ -32,6 +33,8 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.mapping.Mapper;
 import com.raytheon.uf.common.util.mapping.MultipleMappingException;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Provide mapping of textual unit representations. The base set is defined by
@@ -141,7 +144,7 @@ public class UnitMapper extends Mapper {
      */
     public Unit<?> getBaseUnit(String baseName) throws UnitLookupException {
         try {
-            return Unit.valueOf(baseName);
+            return SimpleUnitFormat.getInstance().parseProductUnit(baseName, new ParsePosition(0));
         } catch (Exception e) {
             throw new UnitLookupException("Unable to convert to base units: "
                     + baseName, e);

@@ -23,7 +23,7 @@ import java.io.Serializable;
 
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Interface for data objects that contain spatial metadata

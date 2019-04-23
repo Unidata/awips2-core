@@ -22,7 +22,7 @@ package com.raytheon.uf.common.inventory.data;
 import java.util.Collections;
 import java.util.List;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.geospatial.IGridGeometryProvider;

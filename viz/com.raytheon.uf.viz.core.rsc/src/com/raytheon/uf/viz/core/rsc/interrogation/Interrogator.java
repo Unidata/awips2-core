@@ -1,10 +1,11 @@
 package com.raytheon.uf.viz.core.rsc.interrogation;
 
-import javax.measure.Measure;
+import javax.measure.Quantity;
+
+import org.locationtech.jts.geom.Geometry;
 
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.common.time.DataTime;
-import com.vividsolutions.jts.geom.Geometry;
 
 /**
  *
@@ -20,6 +21,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * ------------- -------- ----------- --------------------------
  * May 19, 2014  2820     bsteffen    Initial creation
  * Sep 21, 2016  3239     nabowle     Add getTypedMeasureClass()
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363.
  *
  * </pre>
  *
@@ -40,8 +42,8 @@ public class Interrogator {
      * {@link Interrogatable} representing multiple values should not use this
      * key but should somehow provide a unique key for each value.
      */
-    public static final InterrogationKey<Measure<? extends Number, ?>> VALUE = new ClassInterrogationKey<>(
-            getTypedMeasureClass());
+    public static final InterrogationKey<Quantity<?>> VALUE = new ClassInterrogationKey<>(
+            getTypedQuantityClass());
 
     /**
      * Retrieve a single value for a specific {@link InterrogationKey}. If
@@ -87,10 +89,10 @@ public class Interrogator {
     }
 
     /**
-     * Get the typed Measure class.
+     * Get the typed Quantity class.
      */
     @SuppressWarnings("unchecked")
-    public static <M extends Measure<?, ?>> Class<M> getTypedMeasureClass() {
-        return (Class<M>) Measure.class;
+    public static <Q extends Quantity<?>> Class<Q> getTypedQuantityClass() {
+        return (Class<Q>) Quantity.class;
     }
 }

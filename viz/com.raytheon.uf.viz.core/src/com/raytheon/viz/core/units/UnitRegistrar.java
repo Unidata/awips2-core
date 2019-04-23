@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.units;
 
-import javax.measure.unit.UnitFormat;
+import javax.measure.format.UnitFormat;
 
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IConfigurationElement;
@@ -29,6 +29,8 @@ import org.eclipse.core.runtime.IExtensionRegistry;
 import org.eclipse.core.runtime.Platform;
 
 import com.raytheon.uf.viz.core.exception.VizException;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * TODO Add Description
@@ -72,6 +74,6 @@ public class UnitRegistrar {
                 }
             }
         }
-        return UnitFormat.getUCUMInstance();
+        return SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII);
     }
 }

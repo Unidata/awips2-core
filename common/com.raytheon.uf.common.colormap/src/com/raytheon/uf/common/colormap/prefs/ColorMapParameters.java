@@ -27,8 +27,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -293,7 +295,11 @@ public class ColorMapParameters {
         UnitConverter converter = null;
 
         if ((from != null) && (to != null) && (to.isCompatible(from))) {
-            converter = from.getConverterTo(to);
+            try {
+                converter = from.getConverterToAny(to);
+            } catch (UnconvertibleException | IncommensurableException e) {
+                return null;
+            }
         }
 
         return converter;

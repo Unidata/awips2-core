@@ -22,8 +22,8 @@ package com.raytheon.uf.common.geospatial.util;
 
 import org.apache.commons.beanutils.Converter;
 
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKTReader;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKTReader;
 
 /**
  * Custom converter implementation for converting JTS Geometry objects from

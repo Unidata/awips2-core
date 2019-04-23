@@ -38,7 +38,7 @@ import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.point.display.PointIconFactory;
 import com.raytheon.uf.viz.core.point.drawables.ext.IPointImageExtension;
 import com.raytheon.uf.viz.core.point.drawables.ext.IPointImageExtension.PointImage;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * A renderable that can be used to display grids where every cell represents a
@@ -152,7 +152,7 @@ public class GriddedIconDisplay extends AbstractGriddedDisplay<IImage> {
      * 
      * @see
      * com.raytheon.viz.core.contours.rsc.displays.AbstractGriddedImageDisplay
-     * #getImage(com.vividsolutions.jts.geom.Coordinate)
+     * #getImage(org.locationtech.jts.geom.Coordinate)
      */
     @Override
     protected IImage getResource(Coordinate coord) {

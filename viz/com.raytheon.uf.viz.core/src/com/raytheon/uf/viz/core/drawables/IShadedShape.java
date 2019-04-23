@@ -22,7 +22,7 @@ package com.raytheon.uf.viz.core.drawables;
 
 import org.eclipse.swt.graphics.RGB;
 
-import com.vividsolutions.jts.geom.LineString;
+import org.locationtech.jts.geom.LineString;
 
 /**
  * Represents a shaded shape

@@ -22,14 +22,15 @@ package com.raytheon.uf.viz.core.grid.rsc.data;
 import java.awt.geom.Rectangle2D;
 import java.nio.FloatBuffer;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.Envelope2D;
+import org.locationtech.jts.geom.Coordinate;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.geometry.Envelope;
 import org.opengis.referencing.FactoryException;
@@ -48,7 +49,7 @@ import com.raytheon.uf.common.geospatial.interpolation.PrecomputedGridReprojecti
 import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
 import com.raytheon.uf.common.numeric.source.DataSource;
 import com.raytheon.uf.common.numeric.source.OffsetDataSource;
-import com.vividsolutions.jts.geom.Coordinate;
+import com.raytheon.uf.common.units.UnitConv;
 
 /**
  *
@@ -221,8 +222,9 @@ public class GeneralGridData {
         if (!dataUnit.isCompatible(unit)) {
             return false;
         }
-        UnitConverter converter = dataUnit.getConverterTo(unit);
-        if (converter.equals(UnitConverter.IDENTITY)) {
+        UnitConverter converter;
+        converter = UnitConv.getConverterToUnchecked(dataUnit, unit);
+        if (converter.isIdentity()) {
             // no need to actually convert if they are the same.
             return true;
         }

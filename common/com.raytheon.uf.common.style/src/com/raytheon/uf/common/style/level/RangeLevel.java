@@ -20,11 +20,13 @@
 
 package com.raytheon.uf.common.style.level;
 
-import javax.measure.Measure;
+import javax.measure.Quantity;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import tec.uom.se.quantity.Quantities;
 
 
 /**
@@ -44,9 +46,9 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "rangeLevel")
 public class RangeLevel extends Level {
 
-    protected Measure<Double, ?> lowerMeasure;
+    protected Quantity<?> lowerMeasure;
 
-    protected Measure<Double, ?> upperMeasure;
+    protected Quantity<?> upperMeasure;
 
     public RangeLevel() {
         super();
@@ -80,7 +82,7 @@ public class RangeLevel extends Level {
      */
     @XmlElement(name = "lower")
     public void setLowerValue(double value) {
-        this.lowerMeasure = Measure.valueOf(value, units);
+        this.lowerMeasure = Quantities.getQuantity(value, units);
     }
 
     /**
@@ -89,7 +91,7 @@ public class RangeLevel extends Level {
      * @return the lower value of the level
      */
     public double getLowerValue() {
-        return this.lowerMeasure.getValue();
+        return this.lowerMeasure.getValue().doubleValue();
     }
 
     /**
@@ -97,7 +99,7 @@ public class RangeLevel extends Level {
      * 
      * @return the measure
      */
-    public Measure<?, ?> getLowerMeasure() {
+    public Quantity<?> getLowerMeasure() {
         return this.lowerMeasure;
     }
 
@@ -109,7 +111,7 @@ public class RangeLevel extends Level {
      */
     @XmlElement(name = "upper")
     public void setUpperValue(double value) {
-        this.upperMeasure = Measure.valueOf(value, units);
+        this.upperMeasure = Quantities.getQuantity(value, units);
     }
 
     /**
@@ -118,7 +120,7 @@ public class RangeLevel extends Level {
      * @return the upper value of the level
      */
     public double getUpperValue() {
-        return this.upperMeasure.getValue();
+        return this.upperMeasure.getValue().doubleValue();
     }
 
     /**
@@ -126,7 +128,7 @@ public class RangeLevel extends Level {
      * 
      * @return the measure
      */
-    public Measure<?, ?> getUpperMeasure() {
+    public Quantity<?> getUpperMeasure() {
         return this.upperMeasure;
     }
 

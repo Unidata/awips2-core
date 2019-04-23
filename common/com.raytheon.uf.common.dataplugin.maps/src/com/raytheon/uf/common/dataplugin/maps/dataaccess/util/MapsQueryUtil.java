@@ -22,8 +22,8 @@ package com.raytheon.uf.common.dataplugin.maps.dataaccess.util;
 import java.util.Iterator;
 import java.util.List;
 
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * A utility to construct a query that will be used to retrieve information from

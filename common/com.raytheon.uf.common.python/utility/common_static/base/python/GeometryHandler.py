@@ -19,8 +19,8 @@
 # #
 
 
-from com.vividsolutions.jts.io import WKTReader
-from com.vividsolutions.jts.geom import Geometry
+from org.locationtech.jts.io import WKTReader
+from org.locationtech.jts.geom import Geometry
 from shapely.geometry.base import BaseGeometry
 from shapely import wkt
 

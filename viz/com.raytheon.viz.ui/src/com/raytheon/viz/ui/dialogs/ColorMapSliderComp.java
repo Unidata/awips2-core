@@ -21,8 +21,7 @@ package com.raytheon.viz.ui.dialogs;
 
 import java.text.DecimalFormat;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.UnitConverter;
 
 import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.swt.SWT;
@@ -42,6 +41,8 @@ import com.raytheon.uf.common.colormap.image.Colormapper;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingEntry;
 
+import tec.uom.se.AbstractConverter;
+
 /**
  * Composite for Max/Min slider bars and their corresponding Text widgets for
  * ColorMapParameters.
@@ -57,6 +58,7 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingE
  *                                     units different from data units
  * Aug 04, 2014 3394       rferrel     Added okAction and verify listener on Text widgets.
  * May 07, 2018 7176       bsteffen    Improve handling of edge cases using '>'
+ * Apr 15, 2019  7596      lsingh      Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -114,10 +116,10 @@ public class ColorMapSliderComp extends Composite {
         this.displayToColorMap = cmap.getDisplayToColorMapConverter();
         this.colorMapToDisplay = cmap.getColorMapToDisplayConverter();
         if (displayToColorMap == null) {
-            displayToColorMap = Unit.ONE.getConverterTo(Unit.ONE);
+            displayToColorMap = AbstractConverter.IDENTITY;
         }
         if (colorMapToDisplay == null) {
-            colorMapToDisplay = Unit.ONE.getConverterTo(Unit.ONE);
+            colorMapToDisplay = AbstractConverter.IDENTITY;
         }
 
         updateAbsolutes(cmapAbsoluteMin, cmapAbsoluteMax);

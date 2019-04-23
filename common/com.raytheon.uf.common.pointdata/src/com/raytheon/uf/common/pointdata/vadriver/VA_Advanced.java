@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.pointdata.vadriver;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Port of AWIPS I va_advanced driver.

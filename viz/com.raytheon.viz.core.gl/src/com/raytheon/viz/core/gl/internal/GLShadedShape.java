@@ -27,7 +27,7 @@ import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 
 import com.raytheon.uf.viz.core.drawables.IShadedShape;
-import com.vividsolutions.jts.geom.LineString;
+import org.locationtech.jts.geom.LineString;
 
 /**
  * 

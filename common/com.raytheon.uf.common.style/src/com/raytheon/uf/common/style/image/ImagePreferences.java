@@ -20,11 +20,10 @@
 
 package com.raytheon.uf.common.style.image;
 
-import java.text.ParseException;
 import java.text.ParsePosition;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -36,6 +35,8 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.style.AbstractStylePreferences;
 import com.raytheon.uf.common.style.LabelingPreferences;
 import com.raytheon.uf.common.style.StyleException;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * 
@@ -184,9 +185,9 @@ public class ImagePreferences extends AbstractStylePreferences {
     public Unit<?> getColorMapUnitsObject() throws StyleException {
         if (colorMapUnits != null && !colorMapUnits.isEmpty()) {
             try {
-                return UnitFormat.getUCUMInstance()
+                return SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
                         .parseProductUnit(colorMapUnits, new ParsePosition(0));
-            } catch (ParseException e) {
+            } catch (ParserException e) {
                 throw new StyleException("Unable to parse colorMap Units.");
             }
         }

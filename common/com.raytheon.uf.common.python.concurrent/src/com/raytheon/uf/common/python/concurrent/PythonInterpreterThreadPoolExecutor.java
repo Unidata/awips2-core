@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.raytheon.uf.common.python.PythonInterpreter;
 
 /**
@@ -51,6 +52,8 @@ import com.raytheon.uf.common.python.PythonInterpreter;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 10, 2015  #4816     dgilling     Initial creation
+ * May 29, 2019  7596      lsingh       Updated to support Guava 27.1 
+ *                                      (a Geotools dependency)
  * 
  * </pre>
  * 
@@ -183,7 +186,7 @@ class PythonInterpreterThreadPoolExecutor<P extends PythonInterpreter> extends
                     .create(getCallable(executor));
             if (listener != null) {
                 FutureCallback<R> callback = getCallback(listener);
-                Futures.addCallback(this.futureDelegate, callback);
+                Futures.addCallback(this.futureDelegate, callback, MoreExecutors.directExecutor());
             }
             this.threadPython = null;
         }

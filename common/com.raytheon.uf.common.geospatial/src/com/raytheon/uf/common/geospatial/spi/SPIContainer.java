@@ -34,7 +34,7 @@ import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * SPI files contain location information used by goes, poes and model sounding
@@ -194,7 +194,7 @@ public class SPIContainer implements SPI_InfoProvider {
      *            catalog points.
      * @return The closest catalog entry to the given latlon coordinate that is
      *         also closer that maxDist kilometers to the point.
-     * @see com.raytheon.uf.common.geospatial.spi.SPI_InfoProvider#nearest(com.vividsolutions.jts.geom.Coordinate,
+     * @see com.raytheon.uf.common.geospatial.spi.SPI_InfoProvider#nearest(org.locationtech.jts.geom.Coordinate,
      *      float)
      */
     @Override
@@ -249,7 +249,7 @@ public class SPIContainer implements SPI_InfoProvider {
 
     /**
      * @param latlon
-     * @see com.raytheon.uf.common.geospatial.spi.SPI_InfoProvider#nearest(com.vividsolutions.jts.geom.Coordinate)
+     * @see com.raytheon.uf.common.geospatial.spi.SPI_InfoProvider#nearest(org.locationtech.jts.geom.Coordinate)
      */
     @Override
     public SPIEntry nearest(Coordinate latlon) {

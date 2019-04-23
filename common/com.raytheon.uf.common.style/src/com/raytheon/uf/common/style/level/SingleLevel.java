@@ -20,11 +20,13 @@
 
 package com.raytheon.uf.common.style.level;
 
-import javax.measure.Measure;
+import javax.measure.Quantity;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
+
+import tec.uom.se.quantity.Quantities;
 
 
 /**
@@ -45,7 +47,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 @XmlRootElement(name = "singleLevel")
 public class SingleLevel extends Level implements Comparable<SingleLevel> {
 
-    protected Measure<Double, ?> measure;
+    protected Quantity<?> measure;
 
     public SingleLevel() {
         super();
@@ -83,7 +85,7 @@ public class SingleLevel extends Level implements Comparable<SingleLevel> {
      */
     @XmlElement
     public void setValue(double value) {
-        this.measure = Measure.valueOf(value, units);
+        this.measure = Quantities.getQuantity(value, units);
     }
 
     /**
@@ -92,7 +94,7 @@ public class SingleLevel extends Level implements Comparable<SingleLevel> {
      * @return the value of the level
      */
     public double getValue() {
-        return this.measure.getValue();
+        return this.measure.getValue().doubleValue();
     }
 
     /**
@@ -100,7 +102,7 @@ public class SingleLevel extends Level implements Comparable<SingleLevel> {
      * 
      * @return the measure
      */
-    public Measure<?, ?> getMeasure() {
+    public Quantity<?> getMeasure() {
         return this.measure;
     }
 

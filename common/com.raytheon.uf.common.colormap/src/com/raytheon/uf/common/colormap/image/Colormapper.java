@@ -31,13 +31,14 @@ import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 import java.util.List;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.LogConverter;
 import com.raytheon.uf.common.colormap.image.ColorMapData.ColorMapDataType;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
+import com.raytheon.uf.common.units.UnitConv;
 
 /**
  * Colormapper class, written to mimic colormapRaster.glsl in java. Any changes
@@ -105,7 +106,8 @@ public class Colormapper {
                 && parameters.getDataMapping() == null
                 && !dataUnit.equals(colorMapUnit)
                 && dataUnit.isCompatible(colorMapUnit)) {
-            converter = dataUnit.getConverterTo(colorMapUnit);
+            converter = UnitConv.getConverterToUnchecked(dataUnit,
+                    colorMapUnit);
         }
 
         int numColors = parameters.getColorMap().getSize();

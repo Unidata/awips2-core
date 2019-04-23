@@ -19,13 +19,16 @@
  **/
 package com.raytheon.uf.common.wxmath;
 
-import javax.measure.Measure;
+import javax.measure.Quantity;
+import javax.measure.Unit;
 import javax.measure.quantity.Dimensionless;
 import javax.measure.quantity.Pressure;
 import javax.measure.quantity.Temperature;
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+
+import si.uom.SI;
+import tec.uom.se.quantity.Quantities;
+import tec.uom.se.unit.MetricPrefix;
+import tec.uom.se.unit.Units;
 
 /**
  * Contains calculations for calculating dewpoint.
@@ -47,14 +50,14 @@ import javax.measure.unit.Unit;
 
 public class Dewpoint {
 
-    public static final Unit<Pressure> PRESSURE_UNIT = SI.HECTO(SI.PASCAL);
+    public static final Unit<Pressure> PRESSURE_UNIT = MetricPrefix.HECTO(SI.PASCAL);
 
     public static final Unit<Dimensionless> SPECIFIC_HUMIDITY_UNIT = SI.GRAM
             .divide(SI.KILOGRAM).asType(Dimensionless.class);
 
     public static final Unit<Temperature> TEMPERATURE_UNIT = SI.KELVIN;
 
-    public static final Unit<Dimensionless> RELATIVE_HUMIDITY_UNIT = NonSI.PERCENT;
+    public static final Unit<Dimensionless> RELATIVE_HUMIDITY_UNIT = Units.PERCENT;
 
     public static final Unit<Temperature> DEWPOINT_UNIT = SI.KELVIN;
 
@@ -62,8 +65,8 @@ public class Dewpoint {
      * @depreacted Use {@link #calculateFromPandSH(Measure, Measure)}
      */
     @Deprecated
-    public static Measure<?, Temperature> calculate(Measure<?, Pressure> pressure,
-            Measure<?, Dimensionless> specificHumidity) {
+    public static Quantity<Temperature> calculate(Quantity<Pressure> pressure,
+            Quantity<Dimensionless> specificHumidity) {
         return calculateFromPandSH(pressure, specificHumidity);
     }
 
@@ -75,14 +78,14 @@ public class Dewpoint {
         return calculateFromPandSH(pressure, specificHumidity);
     }
 
-    public static Measure<?, Temperature> calculateFromPandSH(
-            Measure<?, Pressure> pressure,
-            Measure<?, Dimensionless> specificHumidity) {
-        double pressureVal = pressure.doubleValue(PRESSURE_UNIT);
-        double specHumVal = specificHumidity
-                .doubleValue(SPECIFIC_HUMIDITY_UNIT);
+    public static Quantity<Temperature> calculateFromPandSH(
+            Quantity<Pressure> pressure,
+            Quantity<Dimensionless> specificHumidity) {
+        double pressureVal = pressure.to(PRESSURE_UNIT).getValue().doubleValue();
+        double specHumVal = specificHumidity.to(SPECIFIC_HUMIDITY_UNIT)
+                .getValue().doubleValue();
         double dewpointVal = calculateFromPandSH(pressureVal, specHumVal);
-        return Measure.valueOf(dewpointVal,
+        return Quantities.getQuantity(dewpointVal,
                 DEWPOINT_UNIT);
     }
 
@@ -95,13 +98,13 @@ public class Dewpoint {
         return ((b - Math.sqrt(b * b - 223.1986)) / 0.0182758048);
     }
 
-    public static Measure<?, Temperature> calculateFromTandRH(
-            Measure<?, Temperature> temperature,
-            Measure<?, Dimensionless> relativeHumidity) {
-        double temperatureVal = temperature.doubleValue(TEMPERATURE_UNIT);
-        double relHumVal = relativeHumidity.doubleValue(RELATIVE_HUMIDITY_UNIT);
+    public static Quantity<Temperature> calculateFromTandRH(
+            Quantity<Temperature> temperature,
+            Quantity<Dimensionless> relativeHumidity) {
+        double temperatureVal = temperature.to(TEMPERATURE_UNIT).getValue().doubleValue();
+        double relHumVal = relativeHumidity.to(RELATIVE_HUMIDITY_UNIT).getValue().doubleValue();
         double dewpointVal = calculateFromTandRH(temperatureVal, relHumVal);
-        return Measure.valueOf(dewpointVal, DEWPOINT_UNIT);
+        return Quantities.getQuantity(dewpointVal, DEWPOINT_UNIT);
     }
 
     /* Math originally from the AWIPS 1 meteoLib calctd.f */

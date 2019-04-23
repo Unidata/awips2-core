@@ -21,7 +21,7 @@ package com.raytheon.uf.viz.core.maps.jobs;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.maps.rsc.AbstractMapResource;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Base map query job request

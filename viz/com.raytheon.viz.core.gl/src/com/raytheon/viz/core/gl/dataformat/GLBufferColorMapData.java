@@ -21,7 +21,7 @@ package com.raytheon.viz.core.gl.dataformat;
 
 import java.nio.Buffer;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 

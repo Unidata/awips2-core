@@ -67,7 +67,7 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.raytheon.uf.viz.core.rsc.hdf5.ImageTile;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Describes an Abstract HDF5 Tileset

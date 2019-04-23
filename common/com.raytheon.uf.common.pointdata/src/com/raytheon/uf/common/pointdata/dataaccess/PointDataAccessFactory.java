@@ -28,8 +28,13 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+import javax.measure.quantity.Dimensionless;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import com.raytheon.uf.common.dataaccess.DataAccessLayer;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
@@ -53,9 +58,8 @@ import com.raytheon.uf.common.pointdata.PointDataView;
 import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.GeometryFactory;
+
+import tec.uom.se.AbstractConverter;
 
 /**
  * Data Access Factory for retrieving point data as a geometry.
@@ -427,18 +431,18 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
         List<IGeometryData> result = new ArrayList<>(count);
 
-        Unit<?> levelUnit;
+        Unit<Dimensionless> levelUnit;
         Number[] levelValues;
         if (p2d.levelParameter == null) {
             levelUnit = null;
             levelValues = new Number[0];
         } else {
-            levelUnit = pdv.getUnit(p2d.levelParameter);
+            levelUnit = pdv.getUnit(p2d.levelParameter).asType(Dimensionless.class);
             levelValues = pdv.getNumberAllLevels(p2d.levelParameter);
         }
         MasterLevel masterLevel = lf.getMasterLevel(p2d.levelType);
-        Unit<?> masterUnit = masterLevel.getUnit();
-        UnitConverter levelUnitConverter = UnitConverter.IDENTITY;
+        Unit<Dimensionless> masterUnit = masterLevel.getUnit().asType(Dimensionless.class);
+        UnitConverter levelUnitConverter = AbstractConverter.IDENTITY;
         if (levelUnit != null && masterUnit != null) {
             levelUnitConverter = levelUnit.getConverterTo(masterUnit);
         }

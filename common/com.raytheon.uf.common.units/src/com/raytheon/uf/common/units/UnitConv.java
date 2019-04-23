@@ -19,10 +19,16 @@
  **/
 package com.raytheon.uf.common.units;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
+import java.util.Objects;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
+
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * 
@@ -35,6 +41,8 @@ import javax.measure.unit.UnitFormat;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 15, 2013 1638       mschenke    Moved from edex.common util package
+ * Apr 15, 2019  7596      lsingh      Updated units framework to JSR-363. Added
+ *                                     method to handle conversion exceptions
  *
  * </pre>
  *
@@ -43,25 +51,91 @@ import javax.measure.unit.UnitFormat;
  */
 public class UnitConv {
 
-	public static Unit<?> deserializer(String unit) throws ParseException {
-		Unit<?> retVal = Unit.ONE;
+    public static Unit<?> deserializer(String unit) throws ParserException {
+        if (!"".equals(unit)) {
+            return SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                    .parseObject(unit, new ParsePosition(0));
+        }
+        return AbstractUnit.ONE;
+    }
 
-		if (unit != null) {
-			if (!unit.equals("")) {
-				retVal = (Unit<?>) UnitFormat.getUCUMInstance().parseObject(
-						unit);
-			}
-		}
-		return retVal;
+    public static String serializer(Unit<?> unit) {
+        return unit == null ? "" : unit.toString();
+    }
 
-	}
-
-	public static String serializer(Unit<?> unit) {
-		if (unit == null) {
-			return "";
-		} else {
-			return unit.toString();
-		}
-	}
+    /**
+     * This method is intended to handle unit conversions between two unknown
+     * Quantity types.
+     * 
+     * @deprecated: During the foss upgrade of javax.measure to JSR-363
+     *              standards, the Unit.getConverterTo() method was changed to
+     *              be type-safe so that both units in the equation need to have
+     *              explicitly matching Quantity types (eg, Length, Speed).
+     *              Since there were many instances in the code where a Unit was
+     *              instantiated, and the Quantity type was assumed, but not
+     *              explicitly assigned (ex. Unit<?> ), so after the
+     *              javax.measure upgrade, the method getConverterTo() could not
+     *              be used anymore. <br/>
+     *              <br/>
+     * 
+     *              As a result, most usages of getConverterTo() in the code had
+     *              to be changed to getConverterToAny(), which throws a checked
+     *              exception. This is unnecessary because in many cases we DO
+     *              know the Quantity type of a Unit, but since it was never
+     *              explicitly stated, and the quantity type wasn't obvious to
+     *              those refactoring the code, many instances of
+     *              getConverterTo() had to be replaced with
+     *              getConverterToAny(). Hence, this method was created to
+     *              discourage the behavior going forward. <br/>
+     *              <br/>
+     * 
+     *              What does this all mean? It means you should avoid using
+     *              this method, and the method {@link Unit.getConverterToAny()}
+     *              as much as possible, and instead define Units with explicit
+     *              Quantity types. <br/>
+     *              <br/>
+     * 
+     *              So, if you know the Quantity type of a Unit, AVOID this:
+     *              <br/>
+     *              <br/>
+     * 
+     *              <code>
+     *              Unit<?> unit1 = SI.METRE; 
+     *              Unit<?> unit2 = MetricPrefix.KILO(SI.METRE);
+     *              try{
+     *                  unit1.getConverterToAny(unit2); 
+     *              } catch (IncommensurableException e) { .... }
+     *              </code> <br/>
+     *              <br/>
+     * 
+     *              DO this instead: <br/>
+     *              <br/>
+     * 
+     *              <code>
+     *              Unit<Length> unit1 = SI.METRE; 
+     *              Unit<Length> unit2 = MetrixPrefix.KILO(SI.METRE); 
+     *              unit1.getConverterTo(unit2);
+     *              </code> <br/>
+     *              <br/>
+     * 
+     *              It will save you from handling an unnecessary exception.
+     * 
+     * @param fromUnit
+     * @param toUnit
+     * @return a converter for two units of unknown quantity types.
+     * @throws UnconvertibleException
+     */
+    @Deprecated
+    public static javax.measure.UnitConverter getConverterToUnchecked(
+            Unit<?> fromUnit, Unit<?> toUnit) throws UnconvertibleException {
+        try {
+            return fromUnit.getConverterToAny(toUnit);
+        } catch (IncommensurableException e) {
+            throw new UnconvertibleException(
+                    "Failed to convert " + Objects.toString(fromUnit) + " to "
+                            + Objects.toString(toUnit),
+                    e);
+        }
+    }
 
 }

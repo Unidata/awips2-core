@@ -30,7 +30,7 @@ import com.raytheon.uf.common.dataaccess.IDataRequest;
 import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataplugin.maps.dataaccess.util.MapsQueryUtil;
 import com.raytheon.uf.common.dataquery.requests.RequestConstraint;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * Constructs a query to retrieve information from the maps database based on

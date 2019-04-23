@@ -37,7 +37,7 @@ import com.raytheon.uf.common.util.cache.ICacheObject;
 import com.raytheon.uf.common.util.cache.LRUCache;
 import com.raytheon.uf.viz.core.spatial.GeometryCache.GeometryCachable;
 import com.raytheon.uf.viz.core.spatial.GeometryCache.GeometryCacheKey;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Fixed memory LRU caching of geometries. Capable of storing/restoring data

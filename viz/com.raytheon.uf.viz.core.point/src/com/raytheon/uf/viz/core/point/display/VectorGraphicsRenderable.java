@@ -23,6 +23,11 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.swt.graphics.RGB;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LineString;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
 
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.LineStyle;
@@ -32,11 +37,6 @@ import com.raytheon.uf.viz.core.drawables.IWireframeShape;
 import com.raytheon.uf.viz.core.drawables.ext.colormap.IColormapShadedShapeExtension;
 import com.raytheon.uf.viz.core.drawables.ext.colormap.IColormapShadedShapeExtension.IColormapShadedShape;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LineString;
-import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
 
 /**
  * 
@@ -305,7 +305,7 @@ public class VectorGraphicsRenderable {
             if (config.isBarbFillFiftyTriangle()) {
                 double[] triangleRaw = { ix1, jy1, ix2, jy2, ix3, jy3, ix1, jy1 };
                 CoordinateSequence triangleSeq = new PackedCoordinateSequence.Double(
-                        triangleRaw, 2);
+                        triangleRaw, 2, 0);
                 LineString triangleLS = new GeometryFactory()
                         .createLineString(triangleSeq);
                 filledShape.addPolygonPixelSpace(

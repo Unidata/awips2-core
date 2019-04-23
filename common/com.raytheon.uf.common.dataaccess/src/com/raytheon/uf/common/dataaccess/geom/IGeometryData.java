@@ -21,11 +21,12 @@ package com.raytheon.uf.common.dataaccess.geom;
 
 import java.util.Set;
 
-import javax.measure.converter.ConversionException;
-import javax.measure.unit.Unit;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+
+import org.locationtech.jts.geom.Geometry;
 
 import com.raytheon.uf.common.dataaccess.IData;
-import com.vividsolutions.jts.geom.Geometry;
 
 /**
  * An IGeometryData represents data of potentially multiple parameters
@@ -89,18 +90,18 @@ public interface IGeometryData extends IData {
 
     /**
      * Gets the number value of a particular parameter converted to the
-     * specified unit. Will throw ConversionException if the units are
-     * incompatible or the data has no unit.
+     * specified unit.
      * 
      * @param param
      *            the parameter to get the value of
      * @param unit
      *            the unit to get the value as
      * @return the number value of a parameter, converted to the specified unit
-     * @throws ConversionException
+     * @throws UnconvertibleException
+     *             if the units are incompatible or the data has no unit.
      */
     public Number getNumber(String param, Unit<?> unit)
-            throws ConversionException;
+            throws UnconvertibleException;
 
     /**
      * Gets the unit associated with a particular parameter. May be null.

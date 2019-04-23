@@ -39,7 +39,7 @@ import com.raytheon.uf.viz.core.localization.HierarchicalPreferenceStore;
 import com.raytheon.viz.ui.UiPlugin;
 import com.raytheon.viz.ui.input.preferences.MouseEvent;
 import com.raytheon.viz.ui.input.preferences.MousePreferenceManager;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * 
