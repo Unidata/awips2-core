@@ -10,8 +10,4 @@ Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.edex.plugin.level
 Import-Package: com.raytheon.edex.db.dao,
  com.raytheon.uf.common.serialization.comm,
- com.raytheon.uf.edex.database.plugin,
- org.springframework.orm.hibernate5.support
-
-
-
+ com.raytheon.uf.edex.database.plugin

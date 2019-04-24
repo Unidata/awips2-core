@@ -27,8 +27,6 @@ import javax.persistence.Embedded;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.Inheritance;
-import javax.persistence.InheritanceType;
 import javax.persistence.MappedSuperclass;
 import javax.persistence.Transient;
 import javax.xml.bind.JAXBException;
@@ -77,8 +75,7 @@ import com.raytheon.uf.common.time.DataTime;
  * an "@Entity" annotation has to be used otherwise use a "@MappedSuperClass"
  * annotation
  *
- * - Add an "@Inheritance" annotation
- * "@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)"
+ * - Add a @MappedSuperclass annotation
  *
  * - Add an "@Sequence" annotation
  * "@SequenceGenerator(name = PluginDataObject.ID_GEN)"
@@ -107,12 +104,13 @@ import com.raytheon.uf.common.time.DataTime;
  * Jun 17, 2014  3165     bsteffen  Delete IDecoderGettable
  * Nov 05, 2015  5090     bsteffen  Add constants for datatime component ids.
  * Apr 05, 2018  6696     randerso  Added FCSTTIME_ID
+ * Apr 24, 2019  6140     tgurney   Remove Inheritance annotation
+ *                                  (Hibernate 5.4 fix)
  *
  * </pre>
  *
  */
 @MappedSuperclass
-@Inheritance(strategy = InheritanceType.TABLE_PER_CLASS)
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
 public abstract class PluginDataObject extends PersistableDataObject
@@ -127,9 +125,8 @@ public abstract class PluginDataObject extends PersistableDataObject
         public String toString(DataTime field) {
             if (field == null) {
                 return null;
-            } else {
-                return field.getURIString();
             }
+            return field.getURIString();
         }
 
         @Override
@@ -167,7 +164,9 @@ public abstract class PluginDataObject extends PersistableDataObject
     @DataURI(position = 0, converter = DataTimeURIConverter.class)
     protected DataTime dataTime;
 
-    /** The timestamp denoting when this record was inserted into the database */
+    /**
+     * The timestamp denoting when this record was inserted into the database
+     */
     @Column(columnDefinition = "timestamp without time zone")
     @Index(name = "%TABLE%_insertTimeIndex")
     @XmlAttribute
@@ -348,17 +347,15 @@ public abstract class PluginDataObject extends PersistableDataObject
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result)
-                + ((dataTime == null) ? 0 : dataTime.hashCode());
+        result = prime * result + (dataTime == null ? 0 : dataTime.hashCode());
         String dataUri = getDataURI();
-        result = (prime * result)
-                + ((dataUri == null) ? 0 : dataURI.hashCode());
-        result = (prime * result) + id;
-        result = (prime * result)
-                + ((insertTime == null) ? 0 : insertTime.hashCode());
+        result = prime * result + (dataUri == null ? 0 : dataURI.hashCode());
+        result = prime * result + id;
+        result = prime * result
+                + (insertTime == null ? 0 : insertTime.hashCode());
         String pluginName = getPluginName();
-        result = (prime * result)
-                + ((pluginName == null) ? 0 : pluginName.hashCode());
+        result = prime * result
+                + (pluginName == null ? 0 : pluginName.hashCode());
         return result;
     }
 

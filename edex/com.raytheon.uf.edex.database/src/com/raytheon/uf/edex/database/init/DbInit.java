@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,31 +24,35 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
+import java.util.Collection;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.hibernate.HibernateException;
-import org.hibernate.cfg.Configuration;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
 import org.hibernate.dialect.Dialect;
 import org.hibernate.jdbc.Work;
+import org.hibernate.service.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.raytheon.uf.edex.database.DataAccessLayerException;
+import com.raytheon.uf.edex.database.DropCreateSqlUtil;
 import com.raytheon.uf.edex.database.dao.SessionManagedDao;
 
 /**
  * The DbInit class is responsible for ensuring that the appropriate tables are
  * present in the database implementation for the session factory.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Apr 30, 2013  1960     djohnson  Extracted and generalized from the registry
@@ -65,9 +69,10 @@ import com.raytheon.uf.edex.database.dao.SessionManagedDao;
  *                                  tables
  * Feb 13, 2017  5899     rjpeter   Don't allow regeneration of tables by
  *                                  default.
- * 
+ * Feb 26, 2019  6140     tgurney   Hibernate 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 public abstract class DbInit {
@@ -120,7 +125,7 @@ public abstract class DbInit {
 
     /**
      * Constructor.
-     * 
+     *
      * @param application
      *            the application component the database is used in support of
      */
@@ -134,17 +139,13 @@ public abstract class DbInit {
      * If the existing tables in the database do not match the tables Hibernate
      * is expecting, the tables are regenerated. During the regeneration
      * process, the minimum database objects are reloaded into the database.
-     * 
+     *
      * @throws Exception
      *             on error initializing the database
      */
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void initDb() throws Exception {
-        /*
-         * Create a new configuration object which holds all the classes that
-         * this Hibernate SessionFactory is aware of
-         */
-        Configuration aConfig = getConfiguration();
+        Collection<Class<?>> classes = getDbClasses();
 
         /*
          * Check to see if the database is valid.
@@ -152,55 +153,61 @@ public abstract class DbInit {
         logger.info("Verifying the database for application [" + application
                 + "] against entity classes...");
 
-        Set<String> definedTables = getDefinedTables(aConfig);
-        Set<String> existingTables = getExistingTables();
-        Set<String> missingTables = new HashSet<>(definedTables);
-        missingTables.removeAll(existingTables);
-        Set<String> unexpectedTables = new HashSet<>(existingTables);
-        unexpectedTables.removeAll(definedTables);
+        StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
+        builder.applySetting("hibernate.dialect", dao.getDialect());
+        try (ServiceRegistry serviceRegistry = builder.build()) {
 
-        if (missingTables.isEmpty() && unexpectedTables.isEmpty()) {
-            // Database is valid.
-            logger.info("Database for application [" + application
-                    + "] is up to date!");
-        } else if (existingTables.isEmpty() && !definedTables.isEmpty()) {
-            logger.info("Database for application [" + application
-                    + "] has no tables.  Generating default database tables...");
-            createTablesForApplication(aConfig);
-        } else if (DEBUG_ALLOW_TABLE_REGENERATION) {
-            /*
-             * Database is not valid. Drop and regenerate the tables defined by
-             * Hibernate
-             */
-            logger.warn("Database for application [" + application
-                    + "] is out of sync with defined java classes. DbInit.allowTableRegeneration property true, regenerating default database tables...");
-            logger.info("Dropping tables...");
-            dropTables(aConfig);
-            createTablesForApplication(aConfig);
-        } else {
-            StringBuilder msg = new StringBuilder(1000);
-            msg.append("Database for application [").append(application).append(
-                    "] is out of sync with defined java classes. Upgrade script required to synchronize database tables. Missing tables [");
-            msg.append(String.join(", ", missingTables));
-            msg.append("], Unexpected tables [");
-            msg.append(String.join(", ", unexpectedTables));
-            msg.append(']');
-            throw new DataAccessLayerException(msg.toString());
+            Set<String> definedTables = getDefinedTables(classes,
+                    serviceRegistry);
+            Set<String> existingTables = getExistingTables();
+            Set<String> missingTables = new HashSet<>(definedTables);
+            missingTables.removeAll(existingTables);
+            Set<String> unexpectedTables = new HashSet<>(existingTables);
+            unexpectedTables.removeAll(definedTables);
+
+            if (missingTables.isEmpty() && unexpectedTables.isEmpty()) {
+                // Database is valid.
+                logger.info("Database for application [" + application
+                        + "] is up to date!");
+            } else if (existingTables.isEmpty() && !definedTables.isEmpty()) {
+                logger.info("Database for application [" + application
+                        + "] has no tables.  Generating default database tables...");
+                createTablesForApplication(classes, serviceRegistry);
+            } else if (DEBUG_ALLOW_TABLE_REGENERATION) {
+                /*
+                 * Database is not valid. Drop and regenerate the tables defined
+                 * by Hibernate
+                 */
+                logger.warn("Database for application [" + application
+                        + "] is out of sync with defined java classes. DbInit.allowTableRegeneration property true, regenerating default database tables...");
+                logger.info("Dropping tables...");
+                dropTables(classes, serviceRegistry);
+                createTablesForApplication(classes, serviceRegistry);
+            } else {
+                StringBuilder msg = new StringBuilder(1000);
+                msg.append("Database for application [").append(application)
+                        .append("] is out of sync with defined java classes. Upgrade script required to synchronize database tables. Missing tables [");
+                msg.append(String.join(", ", missingTables));
+                msg.append("], Unexpected tables [");
+                msg.append(String.join(", ", unexpectedTables));
+                msg.append(']');
+                throw new DataAccessLayerException(msg.toString());
+            }
         }
     }
 
     /**
      * Creates all tables and runs any additional sql for the application.
-     * 
-     * @param aConfig
-     *            The Hibernate annotation configuration holding the metadata
-     *            for all Hibernate-aware classes
+     *
+     * @param classes
+     *            Metadata for all Hibernate-aware classes
+     * @param serviceRegistry
      * @throws Exception
      */
-    protected void createTablesForApplication(Configuration aConfig)
-            throws Exception {
+    protected void createTablesForApplication(Collection<Class<?>> classes,
+            ServiceRegistry serviceRegistry) throws Exception {
         logger.info("Creating tables...");
-        createTables(aConfig);
+        createTables(classes, serviceRegistry);
 
         logger.info("Executing additional SQL...");
         executeAdditionalSql();
@@ -211,7 +218,7 @@ public abstract class DbInit {
 
     /**
      * Hook method to execute any additional setup required.
-     * 
+     *
      * @throws Exception
      *             any exceptions may be thrown
      */
@@ -221,18 +228,16 @@ public abstract class DbInit {
     /**
      * Creates the database tables based on the Class metadata that Hibernate is
      * aware of
-     * 
-     * @param aConfig
-     *            The Hibernate annotation configuration holding the metadata
-     *            for all Hibernate-aware classes
-     * @throws SQLException
-     *             If the drop sql strings cannot be executed
+     *
+     * @param classes
+     *            Metadata for all Hibernate-aware classes
+     * @param serviceRegistry
      * @throws EbxmlRegistryException
      */
-    protected void createTables(final Configuration aConfig)
-            throws SQLException {
-        final String[] createSqls = aConfig
-                .generateSchemaCreationScript(getDialect());
+    protected void createTables(final Collection<Class<?>> classes,
+            ServiceRegistry serviceRegistry) {
+        final List<String> createSqls = DropCreateSqlUtil.getCreateSql(classes,
+                serviceRegistry);
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
@@ -249,13 +254,10 @@ public abstract class DbInit {
     }
 
     /**
-     * Returns the tables that currently exist in the database based on results
-     * of getTableCheckQuery.
-     *
-     * @return
-     * @throws SQLException
+     * @return the tables that currently exist in the database based on results
+     *         of getTableCheckQuery.
      */
-    protected Set<String> getExistingTables() throws SQLException {
+    protected Set<String> getExistingTables() {
         final Set<String> existingTables = new HashSet<>();
         final Work work = new Work() {
             @Override
@@ -275,20 +277,18 @@ public abstract class DbInit {
     }
 
     /**
-     * Returns the tables that are defined in the Hibernate configuration.
-     * 
-     * @param aConfig
-     *            The Hibernate annotation configuration holding the metadata
-     *            for all Hibernate-aware classes
-     * @return
+     * @param classes
+     *            Metadata for all Hibernate-aware classes
+     * @param serviceRegistry
+     * @return the tables that are defined in the Hibernate configuration.
      * @throws HibernateException
      */
-    protected Set<String> getDefinedTables(Configuration aConfig)
-            throws HibernateException {
+    protected Set<String> getDefinedTables(Collection<Class<?>> classes,
+            ServiceRegistry serviceRegistry) throws HibernateException {
         final Set<String> definedTables = new HashSet<>();
 
-        final String[] dropSqls = aConfig
-                .generateDropSchemaScript(getDialect());
+        final List<String> dropSqls = DropCreateSqlUtil.getDropSql(classes,
+                serviceRegistry);
         for (String sql : dropSqls) {
             Matcher matcher = DROP_TABLE_PATTERN.matcher(sql);
             if (matcher.find()) {
@@ -320,21 +320,20 @@ public abstract class DbInit {
     /**
      * Drops the union set of tables defined by Hibernate and exist in the
      * database.
-     * 
-     * @param aConfig
-     *            The Hibernate annotation configuration holding the metadata
-     *            for all Hibernate-aware classes
-     * @throws SQLException
-     *             If the drop sql strings cannot be executed
+     *
+     * @param classes
+     *            Metadata for all Hibernate-aware classes
+     * @param serviceRegistry
      * @throws EbxmlRegistryException
      */
-    protected void dropTables(final Configuration aConfig) throws SQLException {
+    protected void dropTables(final Collection<Class<?>> classes,
+            ServiceRegistry serviceRegistry) {
 
         final Work work = new Work() {
             @Override
             public void execute(Connection connection) throws SQLException {
-                final String[] dropSqls = aConfig
-                        .generateDropSchemaScript(getDialect());
+                final List<String> dropSqls = DropCreateSqlUtil
+                        .getDropSql(classes, serviceRegistry);
                 try (Statement stmt = connection.createStatement()) {
                     for (String sql : dropSqls) {
                         Matcher dropTableMatcher = DROP_TABLE_PATTERN
@@ -361,7 +360,7 @@ public abstract class DbInit {
 
     /**
      * Convenience method to execute drop sql with parameters.
-     * 
+     *
      * @param sql
      * @param dropTextMatcher
      * @param replacementText
@@ -388,7 +387,7 @@ public abstract class DbInit {
 
     /**
      * Execute the work.
-     * 
+     *
      * @param work
      *            the work
      */
@@ -398,7 +397,7 @@ public abstract class DbInit {
 
     /**
      * Get the dialect.
-     * 
+     *
      * @return
      */
     protected Dialect getDialect() {
@@ -413,15 +412,14 @@ public abstract class DbInit {
      * Get the query that will return the list of current table names used for
      * this db init. Query should return table names in format of
      * schemaname.tablename
-     * 
+     *
      * @return the query
      */
     protected abstract String getTableCheckQuery();
 
     /**
-     * Get the {@link Configuration} to use.
-     * 
-     * @return
+     *
+     * @return get the Metadata for all Hibernate-aware classes
      */
-    protected abstract Configuration getConfiguration();
+    protected abstract Collection<Class<?>> getDbClasses();
 }

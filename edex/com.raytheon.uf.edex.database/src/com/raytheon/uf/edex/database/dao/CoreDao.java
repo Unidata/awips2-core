@@ -100,6 +100,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
  * Jan 31, 2018 6945        tgurney     Add maxResults param to executeHQLQuery
  * Mar 26, 2018 6711        randerso    Added support for named queries
+ * Feb 26, 2019 6140        tgurney     Hibernate 5 upgrade
  *
  * </pre>
  *

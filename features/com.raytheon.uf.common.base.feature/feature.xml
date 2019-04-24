@@ -297,13 +297,13 @@
          id="org.javassist"
          download-size="0"
          install-size="0"
-         version="3.18.1.GA"/>
+         version="3.24.0.GA"/>
 
    <plugin
          id="org.hibernate"
          download-size="0"
          install-size="0"
-         version="4.2.15"/>
+         version="5.4.1"/>
 
    <plugin
          id="org.jep"
@@ -437,7 +437,7 @@
          id="javax.persistence"
          download-size="0"
          install-size="0"
-         version="2.0.0"/>
+         version="2.1.0"/>
 
    <plugin
          id="com.raytheon.uf.common.logback"

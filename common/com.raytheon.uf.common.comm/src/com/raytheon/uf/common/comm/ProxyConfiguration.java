@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,22 +23,22 @@ import com.raytheon.uf.common.util.StringUtil;
 
 /**
  * Structure to hold proxy settings
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 3, 2013    1786     mpduff      Initial creation
  * 8/28/2013    1538       bphillip    Added nonProxyHosts field
  * 6/18/2014    3255       bphillip    Added complete set of Java Proxy properties
  * 6/18/2014    1712        bphillip    Updated Proxy configuration
- * 
+ * Feb 25, 2019 6140       tgurney     Remove SOCKS config (Postgis JDBC fix)
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
 public class ProxyConfiguration {
@@ -67,29 +67,11 @@ public class ProxyConfiguration {
     /** FTP hosts that bypass the proxy */
     private static final String FTP_NON_PROXY_HOSTS = "ftp.nonProxyHosts";
 
-    /** SOCKS proxy host environment variable name */
-    private static final String SOCKS_PROXY_HOST = "socksProxyHost";
-
-    /** SOCKS proxy port environment variable name */
-    private static final String SOCKS_PROXY_PORT = "socksProxyPort";
-
-    /** SOCKS version environment variable name */
-    private static final String SOCKS_PROXY_VERSION = "socksProxyVersion";
-
-    /** SOCKS username environment variable name */
-    private static final String JAVA_NET_SOCKS_USERNAME = "java.net.socks.username";
-
-    /** SOCKS password environment variable name */
-    private static final String JAVA_NET_SOCKS_PASSWORD = "java.net.socks.password";
-
     /** Default HTTP (and FTP) proxy port */
     private static final String HTTP_PROXY_DEFAULT_PORT = "80";
 
     /** Default HTTPS proxy port */
     private static final String HTTPS_PROXY_DEFAULT_PORT = "443";
-
-    /** Default SOCKS proxy port */
-    private static final String SOCKS_PROXY_DEFAULT_PORT = "1080";
 
     /** Flag set if http proxy information is defined */
     public static final boolean HTTP_PROXY_DEFINED;
@@ -100,9 +82,6 @@ public class ProxyConfiguration {
     /** Flag set if ftp proxy information is defined; */
     public static final boolean FTP_PROXY_DEFINED;
 
-    /** Flag set if socks proxy information is defined */
-    public static final boolean SOCKS_PROXY_DEFINED;
-
     static {
         HTTP_PROXY_DEFINED = !StringUtil.isEmptyString(getHttpProxyHost())
                 && !StringUtil.isEmptyString(getHttpProxyPortString());
@@ -110,8 +89,6 @@ public class ProxyConfiguration {
                 && !StringUtil.isEmptyString(getHttpsProxyPortString());
         FTP_PROXY_DEFINED = !StringUtil.isEmptyString(getFtpProxyHost())
                 && !StringUtil.isEmptyString(getFtpProxyPortString());
-        SOCKS_PROXY_DEFINED = !StringUtil.isEmptyString(getSocksProxyHost())
-                && !StringUtil.isEmptyString(getSocksProxyPortString());
     }
 
     /**
@@ -205,47 +182,4 @@ public class ProxyConfiguration {
     public static String getFtpNonProxyHosts() {
         return System.getProperty(FTP_NON_PROXY_HOSTS);
     }
-
-    /**
-     * @return the socksProxyHost
-     */
-    public static String getSocksProxyHost() {
-        return System.getProperty(SOCKS_PROXY_HOST);
-    }
-
-    /**
-     * @return the socksProxyPort
-     */
-    public static int getSocksProxyPort() {
-        return Integer.parseInt(getSocksProxyPortString());
-    }
-
-    /**
-     * @return the socksProxyPort as a String
-     */
-    public static String getSocksProxyPortString() {
-        return System.getProperty(SOCKS_PROXY_PORT, SOCKS_PROXY_DEFAULT_PORT);
-    }
-
-    /**
-     * @return the socksProxyVersion
-     */
-    public static int getSocksProxyVersion() {
-        return Integer.parseInt(System.getProperty(SOCKS_PROXY_VERSION));
-    }
-
-    /**
-     * @return the socksUserName
-     */
-    public static String getSocksUserName() {
-        return System.getProperty(JAVA_NET_SOCKS_USERNAME);
-    }
-
-    /**
-     * @return the socksPassword
-     */
-    public static String getSocksPassword() {
-        return System.getProperty(JAVA_NET_SOCKS_PASSWORD);
-    }
-
 }

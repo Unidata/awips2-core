@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,6 +21,7 @@
 package com.raytheon.uf.edex.database.plugin;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -29,16 +30,21 @@ import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import org.apache.commons.collections.CollectionUtils;
 import org.hibernate.AnnotationException;
+import org.hibernate.boot.registry.StandardServiceRegistryBuilder;
+import org.hibernate.service.ServiceRegistry;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.dataplugin.PluginException;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.common.util.StringUtil;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.database.DatabasePluginProperties;
 import com.raytheon.uf.edex.database.DatabasePluginRegistry;
 import com.raytheon.uf.edex.database.DatabaseSessionFactoryBean;
+import com.raytheon.uf.edex.database.DropCreateSqlUtil;
 import com.raytheon.uf.edex.database.IDatabasePluginRegistryChanged;
 import com.raytheon.uf.edex.database.cluster.ClusterLockUtils.LockState;
 import com.raytheon.uf.edex.database.cluster.ClusterLocker;
@@ -48,10 +54,10 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
 
 /**
  * Manages the ddl statements used to generate the database tables
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer     Description
  * ------------- -------- ------------ -----------------------------------------
  * Oct 08, 2008  1532     bphillip     Initial checkin
@@ -73,9 +79,10 @@ import com.raytheon.uf.edex.database.dao.DaoConfig;
  * Dec 17, 2015  5166     kbisanz      Update logging to use SLF4J
  * Jun 20, 2016  5679     rjpeter      Add admin database account.
  * Dec 08, 2016  3440     njensen      Cleanup error message
- * 
+ * Feb 26, 2019  6140     tgurney      Hibernate 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author bphillip
  */
 public class SchemaManager implements IDatabasePluginRegistryChanged {
@@ -89,7 +96,9 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     /**
      * Plugin lock time out override, 2 minutes
      */
-    private static final long pluginLockTimeOutMillis = 120000;
+
+    private static final long pluginLockTimeOutMillis = 2
+            * TimeUtil.MILLIS_PER_MINUTE;
 
     private static final String TABLE = "%table%";
 
@@ -102,15 +111,17 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
 
     private final Map<String, ArrayList<String>> pluginDropSql = new HashMap<>();
 
-    private final Pattern createResourceNamePattern = Pattern
-            .compile("^create (?:table |index |sequence )(?:[A-Za-z_0-9]*\\.)?(.+?)(?: .*)?$");
+    private final Pattern createResourceNamePattern = Pattern.compile(
+            "^create (?:table |index |sequence )(?:[A-Za-z_0-9]*\\.)?(.+?)(?: .*)?$");
 
     private final Pattern createIndexTableNamePattern = Pattern
             .compile("^create index %table%.+? on (.+?) .*$");
 
+    private volatile ServiceRegistry schemaGenServiceRegistry = null;
+
     /**
      * Gets the singleton instance
-     * 
+     *
      * @return The singleton instance
      */
     public static synchronized SchemaManager getInstance() {
@@ -118,6 +129,22 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             instance = new SchemaManager();
         }
         return instance;
+    }
+
+    private ServiceRegistry getSchemaGenServiceRegistry(
+            DatabaseSessionFactoryBean sessionFactory) {
+        if (schemaGenServiceRegistry == null) {
+            synchronized (this) {
+                if (schemaGenServiceRegistry == null) {
+                    StandardServiceRegistryBuilder builder = new StandardServiceRegistryBuilder();
+                    String dialect = sessionFactory.getConfiguration()
+                            .getProperty("dialect");
+                    builder.applySetting("hibernate.dialect", dialect);
+                    schemaGenServiceRegistry = builder.build();
+                }
+            }
+        }
+        return schemaGenServiceRegistry;
     }
 
     /**
@@ -166,7 +193,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                         if (failedCount > 5) {
                             logger.error(
                                     "Unable to grab cluster lock for plugin versioning plugin: "
-                                    + pluginName);
+                                            + pluginName);
                             return;
                         }
                         break;
@@ -186,21 +213,22 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
 
                 haveLock = true;
 
-                Boolean initialized = pvd.isPluginInitialized(props
-                        .getPluginName());
+                Boolean initialized = pvd
+                        .isPluginInitialized(props.getPluginName());
 
                 if (initialized == null) {
-                    logger.info("Exporting DDL for " + pluginName
-                            + " plugin...");
+                    logger.info(
+                            "Exporting DDL for " + pluginName + " plugin...");
                     exportSchema(props, sessFactory, false);
                     pvd.runPluginScripts(props);
                     PluginVersion pv = new PluginVersion(props.getPluginName(),
                             true, props.getTableName());
                     pvd.saveOrUpdate(pv);
-                    logger.info(pluginName + " plugin initialization complete!");
-                } else if (initialized == false) {
-                    logger.info("Exporting DDL for " + pluginName
-                            + " plugin...");
+                    logger.info(
+                            pluginName + " plugin initialization complete!");
+                } else if (!initialized) {
+                    logger.info(
+                            "Exporting DDL for " + pluginName + " plugin...");
                     dropSchema(props, sessFactory);
                     exportSchema(props, sessFactory, false);
                     pvd.runPluginScripts(props);
@@ -208,7 +236,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                     pv.setInitialized(true);
                     pv.setTableName(props.getTableName());
                     pvd.saveOrUpdate(pv);
-                    logger.info(pluginName + " plugin initialization complete!");
+                    logger.info(
+                            pluginName + " plugin initialization complete!");
                 }
             }
         } catch (Exception e) {
@@ -223,7 +252,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     }
 
     /**
-     * 
+     *
      * @param props
      * @param sessFactory
      * @param hibernatables
@@ -235,11 +264,14 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
         ArrayList<String> createSql = pluginCreateSql.get(fqn);
         if (createSql == null) {
             // need the full dependency tree to generate the sql
-            String[] sqlArray = sessFactory
-                    .getCreateSql(getTablesAndDependencies(props,
-                            sessFactory.getAnnotatedClasses()));
-            createSql = new ArrayList<>(sqlArray.length);
-            for (String sql : sqlArray) {
+            Collection<Class<?>> dbClasses = getTablesAndDependencies(props,
+                    sessFactory.getAnnotatedClasses());
+            ServiceRegistry serviceRegistry = getSchemaGenServiceRegistry(
+                    sessFactory);
+            List<String> sqlList = DropCreateSqlUtil.getCreateSql(dbClasses,
+                    serviceRegistry);
+            createSql = new ArrayList<>(sqlList.size());
+            for (String sql : sqlList) {
                 createSql.add(sql.toLowerCase());
             }
 
@@ -268,7 +300,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     }
 
     /**
-     * 
+     *
      * @param props
      * @param sessFactory
      * @param hibernatables
@@ -280,11 +312,14 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
         ArrayList<String> dropSql = pluginDropSql.get(fqn);
         if (dropSql == null) {
             // need the full dependency tree to generate the sql
-            String[] sqlArray = sessFactory
-                    .getDropSql(getTablesAndDependencies(props,
-                            sessFactory.getAnnotatedClasses()));
-            dropSql = new ArrayList<>(sqlArray.length);
-            for (String sql : sqlArray) {
+            Collection<Class<?>> dbClasses = getTablesAndDependencies(props,
+                    sessFactory.getAnnotatedClasses());
+            ServiceRegistry serviceRegistry = getSchemaGenServiceRegistry(
+                    sessFactory);
+            List<String> sqlList = DropCreateSqlUtil.getDropSql(dbClasses,
+                    serviceRegistry);
+            dropSql = new ArrayList<>(sqlList.size());
+            for (String sql : sqlList) {
                 dropSql.add(sql);
             }
 
@@ -302,7 +337,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
      * Searches the classes from the session factory to see if they match the
      * plugin FQN. Recursively searches for the classes associated wtih
      * dependent plugins.
-     * 
+     *
      * @param props
      *            the plugin to find DB classes and dependencies for
      * @param allPossibleClasses
@@ -323,7 +358,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             }
         }
         List<String> fqns = props.getDependencyFQNs();
-        if ((fqns != null) && (fqns.size() > 0)) {
+        if (CollectionUtils.isNotEmpty(fqns)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -341,7 +376,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void removeAllDependentCreateSql(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory, List<String> createSql) {
         List<String> fqns = props.getDependencyFQNs();
-        if ((fqns != null) && (fqns.size() > 0)) {
+        if (CollectionUtils.isNotEmpty(fqns)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -355,7 +390,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void removeAllDependentDropSql(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory, List<String> dropSql) {
         List<String> fqns = props.getDependencyFQNs();
-        if ((fqns != null) && (fqns.size() > 0)) {
+        if (CollectionUtils.isNotEmpty(fqns)) {
             for (String fqn : fqns) {
                 DatabasePluginProperties dProps = dbPluginRegistry
                         .getRegisteredObject(fqn);
@@ -370,8 +405,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             DatabaseSessionFactoryBean sessFactory, boolean forceResourceCheck)
             throws PluginException {
         List<String> ddls = getRawCreateSql(props, sessFactory);
-        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase(),
-                true));
+        CoreDao dao = new CoreDao(
+                DaoConfig.forDatabase(props.getDatabase(), true));
         int rows = 0;
 
         for (String sql : ddls) {
@@ -380,7 +415,7 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
             if (forceResourceCheck || sql.startsWith("create sequence ")) {
                 valid = false;
                 Matcher matcher = createResourceNamePattern.matcher(sql);
-                if (matcher.matches() && (matcher.groupCount() >= 1)) {
+                if (matcher.matches() && matcher.groupCount() >= 1) {
                     String resourceName = matcher.group(1).toLowerCase();
                     StringBuilder tmp = new StringBuilder(resourceSelect);
                     tmp.append(resourceName);
@@ -406,7 +441,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
                 } catch (RuntimeException e) {
                     throw new PluginException(
                             "Error occurred exporting schema, sql [" + sql
-                                    + "]", e);
+                                    + "]",
+                            e);
                 }
             }
         }
@@ -417,8 +453,8 @@ public class SchemaManager implements IDatabasePluginRegistryChanged {
     protected void dropSchema(DatabasePluginProperties props,
             DatabaseSessionFactoryBean sessFactory) throws PluginException {
         List<String> ddls = getRawDropSql(props, sessFactory);
-        CoreDao dao = new CoreDao(DaoConfig.forDatabase(props.getDatabase(),
-                true));
+        CoreDao dao = new CoreDao(
+                DaoConfig.forDatabase(props.getDatabase(), true));
 
         for (String sql : ddls) {
             boolean valid = true;

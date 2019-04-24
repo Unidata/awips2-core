@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,11 +29,11 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Configuration settings for a data access object.<br>
  * This object contains the required information to correctly instantiate a
  * valid data access object.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Dec 11, 0007  600      bphillip  Initial Check in
@@ -41,9 +41,10 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  *                                  lookups.
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
  * Jun 20, 2016  5679     rjpeter   Add admin database account.
- * 
+ * Feb 26, 2019  6140     tgurney   Hibernate 5 upgrade
+ *
  * </pre>
- * 
+ *
  * @author bphillip
  */
 public abstract class DaoConfig {
@@ -69,9 +70,7 @@ public abstract class DaoConfig {
 
     /**
      * Used to locate Spring beans. By default, uses EDEXUtil to look them up.
-     * Package-level access for testing purposes.
      */
-
     private static SpringBeanLocator locator = DEFAULT_LOCATOR;
 
     /**
@@ -83,21 +82,21 @@ public abstract class DaoConfig {
 
     /**
      * Retrieve the transaction manager.
-     * 
+     *
      * @return the transaction manager
      */
     public abstract HibernateTransactionManager getTxManager();
 
     /**
      * Retrieve the session factory.
-     * 
+     *
      * @return the session factory
      */
     public abstract SessionFactory getSessionFactory();
 
     /**
      * Retrieve the class type this DAO manages.
-     * 
+     *
      * @return the class type
      */
     public abstract Class<?> getDaoClass();
@@ -105,7 +104,7 @@ public abstract class DaoConfig {
     /**
      * Gets a DaoConfig object for the specified class using the default session
      * factory and default transaction manager.
-     * 
+     *
      * @param className
      *            The class for which to create the DaoConfig object
      * @return A DaoConfig instance using the specified class, default session
@@ -119,7 +118,7 @@ public abstract class DaoConfig {
      * Gets a DaoConfig object for the specified class using the default session
      * factory and default transaction manager. If admin, will login as a super
      * user, otherwise a normal user login.
-     * 
+     *
      * @param className
      *            The class for which to create the DaoConfig object
      * @param admin
@@ -134,7 +133,7 @@ public abstract class DaoConfig {
     /**
      * Gets a DaoConfig object for the specified class using the default session
      * factory and default transaction manager.
-     * 
+     *
      * @param className
      *            The class for which to create the DaoConfig object
      * @return A DaoConfig instance using the specified class, default session
@@ -145,12 +144,12 @@ public abstract class DaoConfig {
     public static DaoConfig forClass(String className)
             throws ClassNotFoundException {
         return new SpringLookupDaoConfig(
-                DaoConfig.class.getClassLoader().loadClass((className).trim()));
+                DaoConfig.class.getClassLoader().loadClass(className.trim()));
     }
 
     /**
      * Gets a DaoConfig object for the specified class and database
-     * 
+     *
      * @param dbName
      *            The database name
      * @param className
@@ -164,7 +163,7 @@ public abstract class DaoConfig {
 
     /**
      * Gets a DaoConfig object for the specified class and database
-     * 
+     *
      * @param dbName
      *            The database name
      * @param className
@@ -181,7 +180,7 @@ public abstract class DaoConfig {
 
     /**
      * Gets a DaoConfig object for the specified class and database
-     * 
+     *
      * @param dbName
      *            The database name
      * @param className
@@ -194,12 +193,12 @@ public abstract class DaoConfig {
     public static DaoConfig forClass(String dbName, String className)
             throws ClassNotFoundException {
         return new SpringLookupDaoConfig(dbName,
-                DaoConfig.class.getClassLoader().loadClass((className).trim()));
+                DaoConfig.class.getClassLoader().loadClass(className.trim()));
     }
 
     /**
      * Gets a DaoConfig object for the specified database
-     * 
+     *
      * @param dbName
      *            The database name
      * @return
@@ -211,7 +210,7 @@ public abstract class DaoConfig {
     /**
      * Gets a DaoConfig object for the specified database. If admin will login
      * as a super user, otherwise will use a normal user login.
-     * 
+     *
      * @param dbName
      *            The database name
      * @param admin
@@ -246,7 +245,7 @@ public abstract class DaoConfig {
          * Constructs a DaoConfig object using the specified class name, default
          * session factory, and the default transaction manager. Database login
          * will not be as a super user.
-         * 
+         *
          * @param className
          *            The class object
          */
@@ -259,7 +258,7 @@ public abstract class DaoConfig {
          * session factory, and the default transaction manager. If admin, the
          * database login will be as a super user, otherwise a normal user login
          * will be used.
-         * 
+         *
          * @param className
          *            The class object
          * @param admin
@@ -271,7 +270,7 @@ public abstract class DaoConfig {
 
         /**
          * Constructs a DaoConfig object for the specified database.
-         * 
+         *
          * @param dbName
          *            The database name
          */
@@ -283,7 +282,7 @@ public abstract class DaoConfig {
          * Constructs a DaoConfig object for the specified database. If admin,
          * the database login will be as a super user, otherwise a normal user
          * login will be used.
-         * 
+         *
          * @param dbName
          *            The database name
          * @param admin
@@ -297,7 +296,7 @@ public abstract class DaoConfig {
          * Constructs a DaoConfig object for the specified database using the
          * specified class name. The appropriate session factory and transaction
          * manager will be determined from the database name.
-         * 
+         *
          * @param dbName
          *            The database name
          * @param daoClass
@@ -313,7 +312,7 @@ public abstract class DaoConfig {
          * manager will be determined from the database name. If admin, the
          * database login will be as a super user, otherwise a normal user login
          * will be used.
-         * 
+         *
          * @param dbName
          *            The database name
          * @param daoClass
