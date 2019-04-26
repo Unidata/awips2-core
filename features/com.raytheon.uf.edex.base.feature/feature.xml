@@ -22,12 +22,6 @@
    </requires>
 
    <plugin
-         id="com.mchange"
-         download-size="0"
-         install-size="0"
-         version="0.9.5.3"/>
-
-   <plugin
          id="com.raytheon.edex.common"
          download-size="0"
          install-size="0"

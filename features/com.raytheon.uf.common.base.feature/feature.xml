@@ -18,6 +18,12 @@
    </license>
 
    <plugin
+         id="com.mchange"
+         download-size="0"
+         install-size="0"
+         version="0.9.5.3"/>
+
+   <plugin
          id="org.apache.thrift"
          download-size="0"
          install-size="0"
@@ -303,7 +309,7 @@
          id="org.hibernate"
          download-size="0"
          install-size="0"
-         version="5.4.1"/>
+         version="5.4.2"/>
 
    <plugin
          id="org.jep"
