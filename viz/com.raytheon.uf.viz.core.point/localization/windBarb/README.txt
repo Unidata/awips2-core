@@ -327,6 +327,15 @@ a. 'Wind Barbs' should be populated in the 'Map' tab of the CAVE GUI
 =======================================================
 G. Template Name: 'GFE'
 
+NOTE on GFE Wind Barbs: 
+Some of the properties of GFE wind barbs as not configurable by these WindBarbConfig files due to fixed properties
+for GFE displays or other GFE specific configuration options. These properties are:
+- baseSize: Controlled by WindArrowDefaultSize in loadConfig.py
+- minimumMagnitude: GFE always includes vectors, so minimumMagnitude is always 0.
+- calmCircleMaximumMagnitude: GFE always includes calm circles, so calmCircleMaximumMagnitude is always set to positive infinity.
+- arrowHeadSizeRatio: GFE uses arrowHeadStaffRatio for determining ratio, so arrowHeadSizeRatio is not used.
+- linearArrowScaleFactor: GFE uses LogArrowScalar instead of linear scale factor. Controlled by loadConfig.py.
+
 a. Configuration File Name: 'GFEPluginWindBarbConfig.xml'
 
 b. Configuration File Template:
