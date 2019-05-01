@@ -18,13 +18,9 @@
 # further licensing information.
 ##
 
-from numpy import arctan2
-from numpy import hypot
 from numpy import cos
 from numpy import sin
-from numpy import degrees
 from numpy import radians
-from numpy import abs
 from numpy import isscalar, empty, float32
 from numpy import NaN
 
@@ -56,16 +52,16 @@ def execute(u, v, magDir=None):
         tmp.fill(v)
         v = tmp
     
-    if magDir == None:
+    if magDir is None:
         return componentsTo(u, v)
     elif magDir == 1:
-        return magDirDegreesFrom(u, v);
+        return magDirDegreesFrom(u, v)
     elif magDir == -1:
-        return magDirDegreesTo(u, v);
+        return magDirDegreesTo(u, v)
     elif magDir >= 0:
-        return magDirRadiansFrom(u, v);
+        return magDirRadiansFrom(u, v)
     else:
-        return magDirRadiansTo(u, v);
+        return magDirRadiansTo(u, v)
 
 def componentsTo(u,v):
     return (u, v)
