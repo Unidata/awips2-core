@@ -99,7 +99,7 @@ BASE:cave_static/gfe/userPython/textUtilities/MarinePhrases.py
 BASE:cave_static/gfe/userPython/textUtilities/ModuleAccessor.py
 BASE:cave_static/gfe/userPython/textUtilities/PhraseBuilder.py
 BASE:cave_static/gfe/userPython/textUtilities/SAF_Overrides.py
-BASE:cave_static/gfe/userPython/textUtilities/FWS_Overrides.py
+# BASE:cave_static/gfe/userPython/textUtilities/FWS_Overrides.py
 BASE:cave_static/gfe/userPython/textUtilities/SampleAnalysis.py
 BASE:cave_static/gfe/userPython/textUtilities/ScalarPhrases.py
 BASE:cave_static/gfe/userPython/textUtilities/SimpleTableUtils.py
