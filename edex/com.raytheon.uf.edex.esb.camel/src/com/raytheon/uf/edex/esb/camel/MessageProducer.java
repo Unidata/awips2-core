@@ -61,13 +61,14 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * <pre>
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Nov 14, 2008           njensen   Initial creation.
- * Mar 27, 2014  2726     rjpeter   Modified for graceful shutdown changes,
- *                                  added tracking of endpoints by context.
- * Oct 08, 2014  3684     randerso  Added sendAsyncThriftUri
- * Jul 28, 2017  5570     rjpeter   Fix dependency generation on shutdown
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ---------   --------------------------------------------
+ * Nov 14, 2008           njensen     Initial creation.
+ * Mar 27, 2014  2726     rjpeter     Modified for graceful shutdown changes,
+ *                                    added tracking of endpoints by context.
+ * Oct 08, 2014  3684     randerso    Added sendAsyncThriftUri
+ * Jul 28, 2017  5570     rjpeter     Fix dependency generation on shutdown
+ * Jan 24, 2019  7714     mrichardson Added overloaded sendAsyncUri
  *
  * </pre>
  *
@@ -169,6 +170,30 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
         } catch (Exception e) {
             throw new EdexException("Error sending asynchronous message: "
                     + message + " to uri: " + uri, e);
+        }
+    }
+    
+    @Override
+    public void sendAsyncUri(String uri, Object body, Map<String, Object> headers) throws EdexException {
+        if (!started && queueWaitingMessage(WaitingType.URI, uri, body)) {
+            return;
+        }
+
+        try {
+            Pair<ProducerTemplate, Endpoint> ctxAndTemplate = getProducerTemplateAndEndpointForUri(
+                    uri);
+            ProducerTemplate template = ctxAndTemplate.getFirst();
+            Endpoint ep = ctxAndTemplate.getSecond();
+
+            if (headers != null) {
+                template.sendBodyAndHeaders(ep, ExchangePattern.InOnly, body,
+                        headers);
+            } else {
+                template.sendBody(ep, ExchangePattern.InOnly, body);
+            }
+        } catch (Exception e) {
+            throw new EdexException("Error sending asynchronous message: "
+                    + body + " to uri: " + uri, e);
         }
     }
 
