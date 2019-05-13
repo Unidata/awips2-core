@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined.
+    -->
+<DerivedParameter abbreviation="CPOP1" name="Categorical POP 1hr">
+    <Method levels="Surface" name="CPOP1" models="bufrmosLAMP">
+        <Field level="Station" abbreviation="POP1hr_bestCat" />
+    </Method>
+</DerivedParameter>
