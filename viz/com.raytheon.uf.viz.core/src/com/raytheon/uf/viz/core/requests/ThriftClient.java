@@ -1,6 +1,8 @@
 package com.raytheon.uf.viz.core.requests;
 
 import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -21,6 +23,8 @@ import com.raytheon.uf.common.serialization.comm.RemoteServiceRequest;
 import com.raytheon.uf.common.serialization.comm.RequestWrapper;
 import com.raytheon.uf.common.serialization.comm.ServiceException;
 import com.raytheon.uf.common.serialization.comm.response.ServerErrorResponse;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.auth.UserController;
 import com.raytheon.uf.viz.core.exception.VizCommunicationException;
@@ -63,6 +67,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Jan 24, 2013  1526      njensen     Switch from using postBinary() to postDynamicSerialize()
  * Jan 27, 2016  5170      tjensen     Added logging of stats to sendRequest
  * Oct 19, 2017  6316      njensen     Get uniqueId from RequestWrapper
+ * May 09, 2019  7766      kbisanz     Log long request messages instead of printing to STDOUT
  * 
  * </pre>
  * 
@@ -118,12 +123,17 @@ public class ThriftClient {
         }
     };
 
-    private static final long SIMPLE_LOG_TIME = 1000;
+    private static final long SIMPLE_LOG_TIME = Integer
+            .getInteger("thriftclient.log.simple.ms", 1000);
 
-    private static final long BAD_LOG_TIME = 5000;
+    private static final long BAD_LOG_TIME = Integer
+            .getInteger("thriftclient.log.bad.ms", 5000);
 
     private static INotAuthHandler defaultHandler = UserController
             .getNotAuthHandler();
+    
+    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler("ThriftClient:");
 
     /**
      * Construct a thrift web service object that sends method calls to the http
@@ -295,8 +305,9 @@ public class ThriftClient {
             long time = System.currentTimeMillis() - t0;
 
             if (time >= SIMPLE_LOG_TIME) {
-                System.out.println("Took " + time + "ms to run request id["
-                        + wrapper.getUniqueId() + "] " + request.toString());
+                String msg = "Took " + time + "ms to run request id["
+                        + wrapper.getUniqueId() + "] " + request.toString();
+                perfLog.log(msg);
             }
             /**
              * Log that we have a message. Size information in NOT logged here.
@@ -306,15 +317,19 @@ public class ThriftClient {
                     .log(request.getClass().getSimpleName(), 1, 0);
 
             if (time >= BAD_LOG_TIME) {
-                new Exception() {
-                    private static final long serialVersionUID = 1L;
+                try (StringWriter sw = new StringWriter();
+                        PrintWriter pw = new PrintWriter(sw)) {
+                    new Exception() {
+                        private static final long serialVersionUID = 1L;
 
-                    @Override
-                    public String toString() {
-                        return "(NOT AN ERROR) ThriftClient Diagnostic Stack For Long Requests:";
-                    }
+                        @Override
+                        public String toString() {
+                            return "(NOT AN ERROR) ThriftClient Diagnostic Stack For Long Requests:";
+                        }
 
-                }.printStackTrace(System.out);
+                    }.printStackTrace(pw);
+                    perfLog.log(sw.toString());
+                }
             }
         } catch (IOException | CommunicationException e) {
             throw new VizCommunicationException(
