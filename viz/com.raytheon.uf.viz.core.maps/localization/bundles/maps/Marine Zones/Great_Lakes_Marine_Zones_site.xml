@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+    <!--
+        This is an absolute override file, indicating that a higher priority version
+        of the file will completely replace a lower priority version of the file.
+    -->
+<bundle>
+    <displayList>
+        <displays xsi:type="mapRenderableDisplay"
+            xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+            <descriptor xsi:type="mapDescriptor">
+                <resource>
+                    <loadProperties>
+                        <capabilities>
+                            <capability xsi:type="outlineCapability"
+                                lineStyle="SOLID" />
+                            <capability xsi:type="colorableCapability"
+                                colorAsString="#9b9b9b" />
+                            <capability xsi:type="labelableCapability"
+                                labelField="id" />
+                        </capabilities>
+                    </loadProperties>
+                    <properties isMapLayer="true" />
+                    <resourceData xsi:type="dbMapResourceData">
+                        <table>mapdata.marinezones</table>
+                        <constraint>position('${site}' in gl_wfo)
+                        in (select * from generate_series(1,char_length(gl_wfo),3))</constraint>
+                        <column name="gl_wfo" />
+                        <column name="EDITAREA" expression="id" />
+                        <mapName>Great Lakes Marine Zones ${site}</mapName>
+                    </resourceData>
+                </resource>
+            </descriptor>
+        </displays>
+    </displayList>
+</bundle>
