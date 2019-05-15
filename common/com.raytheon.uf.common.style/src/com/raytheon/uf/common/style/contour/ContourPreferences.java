@@ -26,7 +26,7 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.style.AbstractStylePreferences;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ContourLabelingPreferences;
 
 /**
  * 
@@ -50,7 +50,7 @@ import com.raytheon.uf.common.style.LabelingPreferences;
 public class ContourPreferences extends AbstractStylePreferences {
 
     @XmlElement
-    private LabelingPreferences contourLabeling;
+    private ContourLabelingPreferences contourLabeling;
 
     @XmlElement
     private String positiveLinePattern;
@@ -78,11 +78,11 @@ public class ContourPreferences extends AbstractStylePreferences {
         return new ContourPreferences(this);
     }
 
-    public LabelingPreferences getContourLabeling() {
+    public ContourLabelingPreferences getContourLabeling() {
         return contourLabeling;
     }
 
-    public void setContourLabeling(LabelingPreferences contourLabeling) {
+    public void setContourLabeling(ContourLabelingPreferences contourLabeling) {
         this.contourLabeling = contourLabeling;
     }
 

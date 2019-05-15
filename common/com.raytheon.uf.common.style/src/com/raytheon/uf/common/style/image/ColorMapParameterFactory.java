@@ -33,7 +33,7 @@ import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingE
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.ParamLevelMatchCriteria;
 import com.raytheon.uf.common.style.StyleException;
 import com.raytheon.uf.common.style.StyleManager;
@@ -506,7 +506,7 @@ public class ColorMapParameterFactory {
         params.setColorMapMin(colorMapMin);
         params.setColorMapMax(colorMapMax);
 
-        LabelingPreferences labeling = preferences.getColorbarLabeling();
+        ImageryLabelingPreferences labeling = preferences.getColorbarLabeling();
         if (labeling != null) {
             if (labeling.getValues() != null) {
                 params.setColorBarIntervals(labeling.getValues());
@@ -623,7 +623,7 @@ public class ColorMapParameterFactory {
         float increment = 0.1f;
         Type dataScaleType = Type.LINEAR;
         boolean isMirror = false;
-        LabelingPreferences prefs = preferences.getColorbarLabeling();
+        ImageryLabelingPreferences prefs = preferences.getColorbarLabeling();
         if (prefs != null) {
             increment = prefs.getIncrement();
             haveIncrement = true;

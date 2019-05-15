@@ -34,7 +34,7 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.style.AbstractStylePreferences;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.StyleException;
 
 /**
@@ -79,7 +79,7 @@ public class ImagePreferences extends AbstractStylePreferences {
     private DataMappingPreferences dataMapping;
 
     @XmlElement
-    private LabelingPreferences colorbarLabeling;
+    private ImageryLabelingPreferences colorbarLabeling;
 
     @XmlElement
     private boolean interpolate = true;
@@ -131,11 +131,12 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.dataScale = dataScale;
     }
 
-    public LabelingPreferences getColorbarLabeling() {
+    public ImageryLabelingPreferences getColorbarLabeling() {
         return colorbarLabeling;
     }
 
-    public void setColorbarLabeling(LabelingPreferences colorbarLabeling) {
+    public void setColorbarLabeling(
+            ImageryLabelingPreferences colorbarLabeling) {
         this.colorbarLabeling = colorbarLabeling;
     }
 
