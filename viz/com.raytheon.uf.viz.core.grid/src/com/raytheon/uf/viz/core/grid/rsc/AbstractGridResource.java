@@ -154,6 +154,8 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Mar 21, 208   7157     njensen   Improved if statement in createColorMapParameters()
  * Apr 04, 2018  6889     njensen   Use brightness from ImagePreferences if
  *                                  present but missing in ImagingCapability
+ * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
+ * Feb 28, 2019  7713     tjensen   Fix wind barb config
  *
  * </pre>
  *
@@ -167,8 +169,10 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(AbstractGridResource.class);
 
-    /* Unknown source, provides acceptable vector size. */
-    private static final double VECTOR_SIZE = 25.6;
+    // Parameters used to construct 'VectorGraphicsConfig'
+    private static final String PLUGIN_NAME = "GeolocatedGridDataDisplays";
+
+    private static final String CLASS_NAME = "AbstractGridResource";
 
     /* Unknown source, provides acceptable density. */
     private static final double VECTOR_DENSITY_FACTOR = 1.875;
@@ -212,14 +216,14 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
     private final GridDataRequestRunner requestRunner;
 
-    private Map<DataTime, List<PluginDataObject>> pdoMap = new ConcurrentHashMap<>();
+    private final Map<DataTime, List<PluginDataObject>> pdoMap = new ConcurrentHashMap<>();
 
-    private Map<DataTime, List<IRenderable>> renderableMap = new ConcurrentHashMap<>();
+    private final Map<DataTime, List<IRenderable>> renderableMap = new ConcurrentHashMap<>();
 
     /**
      * This is a local cache of data that is used when sampling or reprojected.
      */
-    private Map<DataTime, List<GeneralGridData>> dataMap = new ConcurrentHashMap<>();
+    private final Map<DataTime, List<GeneralGridData>> dataMap = new ConcurrentHashMap<>();
 
     /**
      * StylePreferences from the styleManager appropriate for the display type
@@ -586,12 +590,11 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         case ARROW:
         case DUALARROW:
             convertData(data);
-            VectorGraphicsConfig config = new VectorGraphicsConfig();
-            config.setBaseSize(VECTOR_SIZE);
+            VectorGraphicsConfig config = new VectorGraphicsConfig(PLUGIN_NAME,
+                    CLASS_NAME);
             if (displayType != DisplayType.BARB) {
-                config.setArrowHeadSizeRatio(0.15625);
                 config.setMinimumMagnitude(
-                        VECTOR_SIZE * config.getArrowHeadSizeRatio());
+                        config.getBaseSize() * config.getArrowHeadSizeRatio());
                 config.disableCalmCircle();
                 if (stylePreferences != null
                         && stylePreferences instanceof ArrowPreferences) {
@@ -608,8 +611,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     if (!Double.isNaN(minMagnitude)) {
                         config.setMinimumMagnitude(minMagnitude);
                     }
-                } else {
-                    config.setLinearArrowScaleFactor(1.0);
                 }
             }
             GriddedVectorDisplay vectorDisplay = new GriddedVectorDisplay(
