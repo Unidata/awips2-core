@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.Objects;
 
 import org.eclipse.core.commands.Command;
-import org.eclipse.core.commands.CommandEvent;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.core.commands.ICommandListener;
@@ -59,6 +58,7 @@ import org.eclipse.ui.menus.CommandContributionItem;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.viz.ui.menus.widgets.BundleContributionItem;
 import com.raytheon.uf.viz.ui.menus.widgets.tearoff.TearOffMenuDialog.MenuPathElement;
 import com.raytheon.viz.core.mode.CAVEMode;
 import com.raytheon.viz.ui.VizWorkbenchManager;
@@ -83,6 +83,8 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  * Sep 17, 2018  7466      tgurney   Add disposed check in mouse event handlers
  * Sep 21, 2018  7477      tgurney   Add command listener to HandledContributionItems
  * Feb 21, 2019  7477      tgurney   Update the backing menu item in command listener
+ * May 15, 2019  7850      tgurney   Split on BundleContributionItem.TIME_SEPARATOR
+ *                                   instead of tab character
  *
  * </pre>
  *
@@ -161,7 +163,8 @@ public class MenuItemComposite extends Composite {
 
         itemPath = new MenuPathElement(it);
 
-        String[] labels = item.getText().split("\t");
+        String[] labels = item.getText()
+                .split(BundleContributionItem.TIME_SEPARATOR, 2);
         // handle for a separator menu item
         if (item.getStyle() == SWT.SEPARATOR) {
             separator = true;
@@ -297,52 +300,49 @@ public class MenuItemComposite extends Composite {
     }
 
     private void createCommandListener(final Command c) {
-        commandListener = new ICommandListener() {
-            @Override
-            public void commandChanged(CommandEvent commandEvent) {
-                if (item.isDisposed() || firstItem.isDisposed()
-                        || secondItem.isDisposed()) {
-                    return;
+        commandListener = commandEvent -> {
+            if (item.isDisposed() || firstItem.isDisposed()
+                    || secondItem.isDisposed()) {
+                return;
+            }
+            String commandId = null;
+
+            if (item.getData() instanceof CommandContributionItem) {
+                CommandContributionItem itm1 = (CommandContributionItem) item
+                        .getData();
+                commandId = itm1.getCommand().getId();
+            } else if (item.getData() instanceof HandledContributionItem) {
+                HandledContributionItem itm2 = (HandledContributionItem) item
+                        .getData();
+                commandId = itm2.getId();
+            }
+
+            if (commandId != null && commandId.equals(c.getId())) {
+                boolean enabled = true;
+                if (commandEvent.getCommand().getHandler() != null) {
+                    enabled = commandEvent.getCommand().getHandler()
+                            .isEnabled();
+                } else {
+                    enabled = commandEvent.getCommand().isEnabled();
                 }
-                String commandId = null;
+                firstItem.setEnabled(enabled);
+                secondItem.setEnabled(enabled);
+                item.setEnabled(enabled);
+                if (enabled) {
+                    setForeground(enabledColor);
+                } else {
+                    setForeground(disabledColor);
+                    setBackground(backgroundColor);
 
-                if (item.getData() instanceof CommandContributionItem) {
-                    CommandContributionItem itm = (CommandContributionItem) item
-                            .getData();
-                    commandId = itm.getCommand().getId();
-                } else if (item.getData() instanceof HandledContributionItem) {
-                    HandledContributionItem itm = (HandledContributionItem) item
-                            .getData();
-                    commandId = itm.getId();
-                }
-
-                if (commandId != null && commandId.equals(c.getId())) {
-                    boolean enabled = true;
-                    if (commandEvent.getCommand().getHandler() != null) {
-                        enabled = commandEvent.getCommand().getHandler()
-                                .isEnabled();
-                    } else {
-                        enabled = commandEvent.getCommand().isEnabled();
-                    }
-                    firstItem.setEnabled(enabled);
-                    secondItem.setEnabled(enabled);
-                    item.setEnabled(enabled);
-                    if (enabled) {
-                        setForeground(enabledColor);
-                    } else {
-                        setForeground(disabledColor);
-                        setBackground(backgroundColor);
-
-                        // changes the arrow image to the unhighlighted
-                        // version
-                        if (secondItem instanceof Label) {
-                            if (((Label) secondItem).getImage() != null) {
-                                ((Label) secondItem).setImage(arrow);
-                            }
+                    // changes the arrow image to the unhighlighted
+                    // version
+                    if (secondItem instanceof Label) {
+                        if (((Label) secondItem).getImage() != null) {
+                            ((Label) secondItem).setImage(arrow);
                         }
                     }
-
                 }
+
             }
         };
 
@@ -407,20 +407,16 @@ public class MenuItemComposite extends Composite {
     }
 
     protected void createUpdateListener() {
-        updateListener = new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                if (secondItem != null && !secondItem.isDisposed()) {
-                    if (getItem() == event.data) {
-                        if (((MenuItem) event.data).getText()
-                                .split("\t").length > 1) {
-                            ((Label) secondItem).setText(((MenuItem) event.data)
-                                    .getText().split("\t")[1]);
-                            // don't want to make the times go off the
-                            // screen
-                            layout();
-                        }
-                    }
+        updateListener = event -> {
+            if (secondItem != null && !secondItem.isDisposed()
+                    && getItem() == event.data) {
+                String itemText = ((MenuItem) event.data).getText();
+                String[] itemParts = itemText
+                        .split(BundleContributionItem.TIME_SEPARATOR, 2);
+                if (itemParts.length > 1) {
+                    ((Label) secondItem).setText(itemParts[1]);
+                    // don't want to make the times go off the screen
+                    layout();
                 }
             }
         };
@@ -509,7 +505,7 @@ public class MenuItemComposite extends Composite {
      * @return
      */
     private MouseTrackAdapter getMouseTrackAdapter() {
-        MouseTrackAdapter trackAdapter = new MouseTrackAdapter() {
+        return new MouseTrackAdapter() {
             @Override
             public void mouseEnter(MouseEvent e) {
                 // we want all the colors to be the same for background
@@ -549,7 +545,6 @@ public class MenuItemComposite extends Composite {
                 }
             }
         };
-        return trackAdapter;
     }
 
     /**
@@ -559,7 +554,7 @@ public class MenuItemComposite extends Composite {
      * @return
      */
     private MouseAdapter getMouseAdapter() {
-        MouseAdapter mouseAdapter = new MouseAdapter() {
+        return new MouseAdapter() {
             @Override
             public void mouseDown(MouseEvent e) {
                 final MenuItem item = getItem();
@@ -652,7 +647,6 @@ public class MenuItemComposite extends Composite {
                 }
             }
         };
-        return mouseAdapter;
     }
 
     @Override
@@ -725,9 +719,8 @@ public class MenuItemComposite extends Composite {
         Menu menu = getTargetMenu();
         if (menu != null) {
             return TearOffMenuDialog.findItem(menu, itemPath);
-        } else {
-            return null;
         }
+        return null;
     }
 
     private Menu getTargetMenu() {
