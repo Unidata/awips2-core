@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Stats
 Bundle-SymbolicName: com.raytheon.uf.edex.stats
-Bundle-Version: 1.18.0.qualifier
+Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
@@ -16,7 +16,7 @@ Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  com.raytheon.uf.common.serialization.comm;bundle-version="1.12.1174",
  com.raytheon.uf.common.stats;bundle-version="1.0.0",
  com.raytheon.uf.common.util,
- org.springframework;bundle-version="2.5.6",
+ org.springframework,
  com.raytheon.uf.edex.core;bundle-version="1.12.1174",
  com.raytheon.uf.common.status;bundle-version="1.12.1174",
  javax.measure,
@@ -24,3 +24,5 @@ Require-Bundle: com.raytheon.uf.common.serialization;bundle-version="1.12.1174",
  javax.xml.bind
 Import-Package: com.raytheon.uf.common.units,
  javax.measure.unit
+
+

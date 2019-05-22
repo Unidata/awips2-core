@@ -18,7 +18,8 @@
 
     <bean id="component" factory-bean="args" factory-method="getString">
        <constructor-arg value="-component"/>
-    </bean>
+       <constructor-arg value="viz"/>
+  </bean>
 
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
         <constructor-arg ref="productName"/>
@@ -27,7 +28,7 @@
             version will override the version defined at the time CAVE was built.
         -->
         <constructor-arg value="#{systemProperties['vizVersion'] == null ? version : systemProperties['vizVersion']}"/>
-        <constructor-arg value="#{component != null ? component : 'viz'}"/>
+        <constructor-arg value="#{component}"/>
     </bean>
 
     <bean id="caveCredentialHandler" class="com.raytheon.uf.viz.core.comm.CaveHttpCredentialsHandler" />
