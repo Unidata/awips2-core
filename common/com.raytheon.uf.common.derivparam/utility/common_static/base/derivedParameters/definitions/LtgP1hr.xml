@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+
+    <!-- 
+        This is an incremental override file, indicating that the files
+        at different localization levels will be combined.
+    -->
+<DerivedParameter abbreviation="LtgP1hr" name="1hr Lightning probability" unit="%">
+    <Method name="Alias" levels="Surface" models="bufrmosLAMP">
+        <Field abbreviation="ltg1hr" level="Station" />
+    </Method>
+</DerivedParameter>
