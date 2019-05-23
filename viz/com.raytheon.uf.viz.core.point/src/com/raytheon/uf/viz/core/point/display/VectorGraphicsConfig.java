@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,7 +22,7 @@ package com.raytheon.uf.viz.core.point.display;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
- * 
+ *
  * Configuration options to control how vectors are rendered when using
  * {@link VectorGraphicsRenderable}. These config options are applied
  * immediately when you call
@@ -33,7 +33,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * the same renderable. For example the following snippet will render two barbs,
  * one with clockwise barbs and one with counterclockwise barbs using the same
  * renderable.
- * 
+ *
  * <pre>
  * {
  *     &#064;code
@@ -46,25 +46,27 @@ import com.vividsolutions.jts.geom.Coordinate;
  *     renderable.paint(target);
  * }
  * </pre>
- * 
+ *
  * This class contains configuration for wind barbs, arrows, and calm circles.
  * The barb options apply only when paintBarb is used. The arrow options apply
  * to both paintArrow and paintDualArrow. The calm circles options apply to both
  * paintBarb and paintArrow.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Sep 23, 2013  2363     bsteffen    Initial creation
  * May 14, 2015  4079     bsteffen    Move to core.point
- * 
+ * Nov 14, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
+ * Mar 14, 2019  7713     tjensen     Refactor setting of default values
+ * Apr 10, 2019  7804     tjensen     Fix arrowHeadStaffRatio check
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  * @See {@link VectorGraphicsRenderable}
  */
 public class VectorGraphicsConfig {
@@ -79,7 +81,7 @@ public class VectorGraphicsConfig {
         /**
          * This method should calculate the length of an arrow(in pixels) for a
          * single vector.
-         * 
+         *
          * @param magnitude
          *            the magnitude of a single vector.
          * @return the length of the arrow(in pixels).
@@ -106,52 +108,172 @@ public class VectorGraphicsConfig {
 
     }
 
-    protected double baseSize;
+    protected double baseSize = 32.0;
 
     protected double sizeScaler;
 
-    protected double offsetRatio;
+    protected double offsetRatio = 0.0;
 
-    protected double minimumMagnitude;
+    protected double minimumMagnitude = 0.0;
 
-    protected double barbRotationRadians;
+    protected double barbRotationRadians = 75.0;
 
-    protected double barbLengthRatio;
+    protected double barbLengthRatio = 0.3;
 
-    protected double barbSpacingRatio;
+    protected double barbSpacingRatio = 0.105;
 
-    protected boolean barbFillFiftyTriangle;
+    protected boolean barbFillFiftyTriangle = false;
 
-    protected double calmCircleMaximumMagnitude;
+    protected double calmCircleMaximumMagnitude = 2.5;
 
-    protected double calmCircleSizeRatio;
+    protected double calmCircleSizeRatio = 0.075;
 
-    protected double arrowHeadSizeRatio;
+    protected double arrowHeadSizeRatio = 0.1875;
 
     protected double arrowHeadStaffRatio;
 
-    protected IArrowScaler arrowScaler;
+    protected IArrowScaler arrowScaler = new LinearArrowScaler(1.0);
+
+    // Get the config object
+    private static WindBarbPluginManager windBarbPluginManager = new WindBarbPluginManager();
 
     /**
-     * Creates a new config with <em>reasonable</em> defalt values
+     * Creates a new config with <em>reasonable</em> default values
      */
+
     public VectorGraphicsConfig() {
-        setBaseSize(32.0);
-        setOffsetRatio(0.0);
-        setMinimumMagnitude(2.5);
-        setBarbRotationDegrees(75);
-        setBarbLengthRatio(0.3);
-        setBarbSpacingRatio(0.105);
-        setBarbFillFiftyTriangle(false);
-        setCalmCircleMaximumMagnitude(2.5);
-        setCalmCircleSizeRatio(0.075);
-        setArrowHeadSizeRatio(0.1875);
-        setLinearArrowScaleFactor(1.0);
+
+        WindBarbPlugin defaultWindBarbPlugin = windBarbPluginManager
+                .getDefaultWindBarbPlugin();
+
+        // Check if the default Wind Barb Config file exists
+        if (defaultWindBarbPlugin != null) {
+
+            // Check if each element exists in the default Wind Barb Config file
+            if (defaultWindBarbPlugin.getBaseSize() != null) {
+                setBaseSize(defaultWindBarbPlugin.getBaseSize());
+            }
+
+            if (defaultWindBarbPlugin.getOffsetRatio() != null) {
+                setOffsetRatio(defaultWindBarbPlugin.getOffsetRatio());
+            }
+
+            if (defaultWindBarbPlugin.getMinimumMagnitude() != null) {
+                setMinimumMagnitude(
+                        defaultWindBarbPlugin.getMinimumMagnitude());
+            }
+
+            if (defaultWindBarbPlugin.getBarbRotationDegrees() != null) {
+                setBarbRotationDegrees(
+                        defaultWindBarbPlugin.getBarbRotationDegrees());
+            }
+
+            if (defaultWindBarbPlugin.getBarbLengthRatio() != null) {
+                setBarbLengthRatio(defaultWindBarbPlugin.getBarbLengthRatio());
+            }
+
+            if (defaultWindBarbPlugin.getBarbSpacingRatio() != null) {
+                setBarbSpacingRatio(
+                        defaultWindBarbPlugin.getBarbSpacingRatio());
+            }
+
+            if (defaultWindBarbPlugin.getBarbFillFiftyTriangle() != null) {
+                setBarbFillFiftyTriangle(
+                        defaultWindBarbPlugin.getBarbFillFiftyTriangle());
+            }
+
+            if (defaultWindBarbPlugin.getCalmCircleMaximumMagnitude() != null) {
+                setCalmCircleMaximumMagnitude(
+                        defaultWindBarbPlugin.getCalmCircleMaximumMagnitude());
+            }
+
+            if (defaultWindBarbPlugin.getCalmCircleSizeRatio() != null) {
+                setCalmCircleSizeRatio(
+                        defaultWindBarbPlugin.getCalmCircleSizeRatio());
+            }
+
+            if (defaultWindBarbPlugin.getArrowHeadSizeRatio() != null) {
+                setArrowHeadSizeRatio(
+                        defaultWindBarbPlugin.getArrowHeadSizeRatio());
+            }
+
+            if (defaultWindBarbPlugin.getLinearArrowScaleFactor() != null) {
+                setLinearArrowScaleFactor(
+                        defaultWindBarbPlugin.getLinearArrowScaleFactor());
+            }
+        }
+    }
+
+    /**
+     * Construct a new instance with fields specific to the calling Plugin and
+     * class
+     *
+     * @param pluginName
+     *            name of Plugin
+     * @param className
+     *            name of Class name
+     */
+
+    public VectorGraphicsConfig(String pluginName, String className) {
+
+        // Call the default constructor to set the default values for each field
+        this();
+
+        // Check if a Plugin specific Wind Barb Config file exists
+        if (windBarbPluginManager.pluginConfigFileExists(pluginName)) {
+
+            WindBarbPlugin windBarbPlugin = windBarbPluginManager
+                    .getWindBarbPlugin(pluginName, className);
+
+            // Override default properties
+            if (windBarbPlugin != null) {
+
+                if (windBarbPlugin.getBaseSize() != null) {
+                    setBaseSize(windBarbPlugin.getBaseSize());
+                }
+                if (windBarbPlugin.getOffsetRatio() != null) {
+                    setOffsetRatio(windBarbPlugin.getOffsetRatio());
+                }
+                if (windBarbPlugin.getMinimumMagnitude() != null) {
+                    setMinimumMagnitude(windBarbPlugin.getMinimumMagnitude());
+                }
+                if (windBarbPlugin.getBarbRotationDegrees() != null) {
+                    setBarbRotationDegrees(
+                            windBarbPlugin.getBarbRotationDegrees());
+                }
+                if (windBarbPlugin.getBarbLengthRatio() != null) {
+                    setBarbLengthRatio(windBarbPlugin.getBarbLengthRatio());
+                }
+                if (windBarbPlugin.getBarbSpacingRatio() != null) {
+                    setBarbSpacingRatio(windBarbPlugin.getBarbSpacingRatio());
+                }
+                if (windBarbPlugin.getBarbFillFiftyTriangle() != null) {
+                    setBarbFillFiftyTriangle(
+                            windBarbPlugin.getBarbFillFiftyTriangle());
+                }
+                if (windBarbPlugin.getCalmCircleMaximumMagnitude() != null) {
+                    setCalmCircleMaximumMagnitude(
+                            windBarbPlugin.getCalmCircleMaximumMagnitude());
+                }
+                if (windBarbPlugin.getCalmCircleSizeRatio() != null) {
+                    setCalmCircleSizeRatio(
+                            windBarbPlugin.getCalmCircleSizeRatio());
+                }
+                if (windBarbPlugin.getArrowHeadSizeRatio() != null) {
+                    setArrowHeadSizeRatio(
+                            windBarbPlugin.getArrowHeadSizeRatio());
+                }
+                if (windBarbPlugin.getLinearArrowScaleFactor() != null) {
+                    setLinearArrowScaleFactor(
+                            windBarbPlugin.getLinearArrowScaleFactor());
+                }
+            }
+        }
     }
 
     /**
      * Construct a new instance with all fields copied from the other object.
-     * 
+     *
      * @param other
      *            an existing config to copy.
      */
@@ -175,7 +297,7 @@ public class VectorGraphicsConfig {
      * Set the base size. Base size combined with size scaler is used for barb
      * length and as the base measurement for all ratios when rendering wind
      * barbs or arrows.
-     * 
+     *
      * @param size
      *            the base size of the barb in descriptor grid pixels
      * @see #setSizeScaler(double)
@@ -195,7 +317,7 @@ public class VectorGraphicsConfig {
      * manipulating base size directly, using the size scaler provides a
      * convenient way to have a fixed base size that needs to be frequently
      * modified by a changing scale factor.
-     * 
+     *
      * @param sizeScaler
      *            a factor to scale baseSize.
      * @see #setBaseSize(double)
@@ -215,7 +337,7 @@ public class VectorGraphicsConfig {
      * cause the barb to be very far away from the plot location and is not
      * advised. This offset can be used to leave space for other symbols that
      * are being rendered at plot location.
-     * 
+     *
      * @param offsetRatio
      *            distance from plot location to start rendering.
      * @see #getScaledSize()
@@ -229,7 +351,7 @@ public class VectorGraphicsConfig {
      * {@link VectorGraphicsRenderable} that paint a vector with magnitude less
      * than this value will not be rendered. A calm circle will still be
      * rendered if the value is less than the calm circle maximum magnitude.
-     * 
+     *
      * @param minimumMagnitude
      *            the minimum magnitude that will be rendered.
      * @see #setCalmCircleMaximumMagnitude(double)
@@ -250,7 +372,7 @@ public class VectorGraphicsConfig {
 
     /**
      * Set the rotation in radians of the barbs from the shaft.
-     * 
+     *
      * @param barbRotationRadians
      *            rotation in radians.
      */
@@ -262,7 +384,7 @@ public class VectorGraphicsConfig {
      * Set the rotation in degrees of the barbs from the shaft. Internally it
      * will be converted to radians. This is equivalent to
      * <code>setBarbRotationRadians(Math.toRadians(barbRotationDegrees))</code>
-     * 
+     *
      * @param barbRotationDegrees
      *            rotation in degrees.
      * @see #setBarbRotationRadians(double)
@@ -276,7 +398,7 @@ public class VectorGraphicsConfig {
      * clockwise. Since any positive angle will be clockwise this simply sets
      * the rotation to the absolute value of its current value. The same result
      * can be achieved by using #setBarbRotationRadians(double) directly.
-     * 
+     *
      * @see #setBarbRotationRadians(double)
      */
     public void setBarbRotationClockwise() {
@@ -289,7 +411,7 @@ public class VectorGraphicsConfig {
      * sets the rotation to the negative absolute value of its current value.
      * The same result can be achieved by using #setBarbRotationRadians(double)
      * directly.
-     * 
+     *
      * @see #setBarbRotationRadians(double)
      */
     public void setBarbRotationCounterClockwise() {
@@ -303,7 +425,7 @@ public class VectorGraphicsConfig {
      * always be half of this distance. Values too close to 0 will be difficult
      * to see and values too close to 1 will make it hard to distinguish the
      * barb from the shaft.
-     * 
+     *
      * @param barbLengthRatio
      *            length of the barbs
      * @see #getScaledSize()
@@ -322,7 +444,7 @@ public class VectorGraphicsConfig {
      * will be multiplied by the scaled size do determine the actual barb
      * spacing. In practice this value should be much smaller than 1 so that
      * high wind speeds will fit.
-     * 
+     *
      * @param barbSpacingRatio
      *            distance between barbs along the shaft
      * @see #getScaledSize()
@@ -338,7 +460,7 @@ public class VectorGraphicsConfig {
     /**
      * Boolean value to indicate if winds over fifty should use a filled
      * triangle or just an outline.
-     * 
+     *
      * @param barbFillFiftyTriangle
      *            true to render a filled triangle, false to render an outline
      *            only.
@@ -356,7 +478,7 @@ public class VectorGraphicsConfig {
      * than minimum magnitude then some or all vectors will contain both an
      * arrow/barb and a calm circle and if it is smaller than minimum magnitude
      * than some vectors might not be drawn at all.
-     * 
+     *
      * @param calmCircleMaximumMagnitude
      *            the maximum vector magnitude for which calm circles should be
      *            rendered.
@@ -364,14 +486,15 @@ public class VectorGraphicsConfig {
      * @see #disableCalmCircle()
      * @see #alwaysIncludeCalmCircle()
      */
-    public void setCalmCircleMaximumMagnitude(double calmCircleMaximumMagnitude) {
+    public void setCalmCircleMaximumMagnitude(
+            double calmCircleMaximumMagnitude) {
         this.calmCircleMaximumMagnitude = calmCircleMaximumMagnitude;
     }
 
     /**
      * Shortcut method to disable drawing calm circles. This is equivalent to
      * <code>setCalmCircleMaximumMagnitude(0.0)</code>
-     * 
+     *
      * @see #setCalmCircleMaximumMagnitude(double)
      */
     public void disableCalmCircle() {
@@ -383,7 +506,7 @@ public class VectorGraphicsConfig {
      * change the size of all elements of the vector by draw calm circles
      * regardless of the magnitude. This is equivalent to
      * <code>setCalmCircleMaximumMagnitude(Double.POSITIVE_INFINITY)</code>
-     * 
+     *
      * @see #setCalmCircleMaximumMagnitude(double)
      */
     public void alwaysIncludeCalmCircle() {
@@ -396,7 +519,7 @@ public class VectorGraphicsConfig {
      * size do determine the actual calm circle size. Usually the calm circle is
      * significantly smaller than the wind barb so the value should be
      * significantly less than 1.
-     * 
+     *
      * @param calmCircleSizeRatio
      *            size of the calm circle.
      * @see #getScaledSize()
@@ -415,7 +538,7 @@ public class VectorGraphicsConfig {
      * scaled size do determine the actual arrow head size. This can be used for
      * constant size arrow heads, if the arrow head should change size when
      * magnitude changes #setArrowHeadStaffRatio(double) should be used instead.
-     * 
+     *
      * @param arrowHeadSizeRatio
      *            size of the arrow head.
      * @see #getScaledSize()
@@ -437,14 +560,14 @@ public class VectorGraphicsConfig {
      * head size. This can be used to render arrow heads with a size dependent
      * on the magnitude, if the arrow head should be constant size then
      * #setArrowHeadSizeRatio(double) should be used instead.
-     * 
+     *
      * @param arrowHeadSizeRatio
      *            size of the arrow head.
      * @see #getScaledSize()
      * @see #setArrowHeadSizeRatio(double)
      */
     public void setArrowHeadStaffRatio(double arrowHeadStaffRatio) {
-        if (arrowHeadSizeRatio <= 0 || arrowHeadSizeRatio >= 1) {
+        if (arrowHeadStaffRatio <= 0 || arrowHeadStaffRatio >= 1) {
             throw new IllegalArgumentException(
                     "Arrow Head Staff Ratio must be between 0 and 1");
         }
@@ -456,7 +579,7 @@ public class VectorGraphicsConfig {
      * Set a custom arrow scaling algorithm for rendering arrows. After custom
      * scaling is applied the size scaler will also be used to further scale the
      * arrow.
-     * 
+     *
      * @param arrowScaler
      *            custom scaling algorithm
      * @see IArrowScaler
@@ -470,7 +593,7 @@ public class VectorGraphicsConfig {
      * Shortcut method to set the arrow scaler to a {@link LinearArrowScaler}.
      * This is equivalent to
      * <code>setArrowScaler(new LinearArrowScaler(scaleFactor))</code>
-     * 
+     *
      * @param scaleFactor
      *            linear scale factor for arrow sizing.
      */
@@ -500,7 +623,7 @@ public class VectorGraphicsConfig {
      * When a barb is painted this will be the length of the shaft. All size
      * ratios are multiplied by this value to get the actual size of the
      * rendered lines in descriptor pixels.
-     * 
+     *
      * @return the scaled size.
      * @see #setBaseSize(double)
      * @see #setSizeScaler(double)
