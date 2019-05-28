@@ -58,12 +58,15 @@ import com.raytheon.uf.edex.pointdata.PointDataPluginDao.LevelRequest;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 15, 2009            chammack    Initial creation
- * May 09, 2013 1869       bsteffen    Modified D2D time series of point data to
- *                                     work without dataURI.
- * Nov 16, 2017 6367       tgurney     Send timing information to log file
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Apr 15, 2009           chammack  Initial creation
+ * May 09, 2013  1869     bsteffen  Modified D2D time series of point data to
+ *                                  work without dataURI.
+ * Nov 16, 2017  6367     tgurney   Send timing information to log file
+ * May 28, 2019  7689     randerso  Make query accessible so additional
+ *                                  constraints can be added.
  *
  * </pre>
  *
@@ -378,5 +381,12 @@ public class PointDataQuery {
         }
 
         return masterPDC;
+    }
+
+    /**
+     * @return the query
+     */
+    public DatabaseQuery getQuery() {
+        return query;
     }
 }
