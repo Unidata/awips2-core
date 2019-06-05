@@ -479,12 +479,6 @@
          version="0.0.0"/>
 
    <plugin
-         id="com.sun.xml.bind"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
          id="javax.xml.ws"
          download-size="0"
          install-size="0"
