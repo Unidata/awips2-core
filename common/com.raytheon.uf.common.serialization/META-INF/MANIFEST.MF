@@ -5,6 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.common.serialization
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Eclipse-BuddyPolicy: global, dependent
+Eclipse-RegisterBuddy: javax.xml.bind
 Comment: dependent policy is only here until SerializableManager is no longer used, as it ensures the ISerializableObject files can be detected
 Require-Bundle: org.apache.thrift,
  net.sf.cglib;visibility:=reexport,
