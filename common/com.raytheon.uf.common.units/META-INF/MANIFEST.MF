@@ -11,7 +11,6 @@ Require-Bundle: javax.measure;visibility:=reexport,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.convert,
- com.raytheon.uf.common.serialization
+ com.raytheon.uf.common.serialization,
+ javax.measure
 Export-Package: com.raytheon.uf.common.units
-Import-Package: tec.uom.se,
- ucar.units
