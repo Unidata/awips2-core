@@ -53,6 +53,8 @@ import jep.JepException;
  * Apr 26, 2015 4259       njensen     Updated for new JEP API
  * Jan 04, 2017 5959       njensen     Use JepConfig in constructor
  * Jun 03, 2019 7852       dgilling    Update code for jep 3.8.
+ * Jun 17, 2019 7835       dgilling    Disable changes to sys.meta_path as temporary
+ *                                     workaround to make PyTables 3.5 work.
  *
  * </pre>
  *
@@ -169,7 +171,13 @@ public class PythonProcess extends PythonInterpreter {
          * to import java classes. Resetting sys.meta_path to empty to bypass
          * this issue in the new python process.
          */
-        jep.eval("sys.meta_path=[]");
+        /*
+         * FIXME: temporarily disabling the change to sys.meta_path as it causes
+         * import issues with some combination of numpy 1.16, h5py 2.9 and
+         * PyTables 3.5. Will re-evaluate when AWIPS2 is running on Python 3.6
+         * and Jep 3.8.
+         */
+        // jep.eval("sys.meta_path=[]");
         jep.eval("timeout = " + timeout);
         // adding a timer to the function to determine if it needs killed
         jep.eval("default_time = time.time()");
