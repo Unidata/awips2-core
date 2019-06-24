@@ -32,7 +32,7 @@ import org.opengis.feature.simple.SimpleFeatureType;
 import com.raytheon.uf.common.json.BasicJsonService;
 import com.raytheon.uf.common.json.JsonException;
 import com.raytheon.uf.common.json.JsonService;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Simple implementation of {@code IGeoJsonService}. Uses {@code Map}s as

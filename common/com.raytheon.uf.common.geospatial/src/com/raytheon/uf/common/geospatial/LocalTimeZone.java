@@ -22,8 +22,8 @@ package com.raytheon.uf.common.geospatial;
 import java.util.TimeZone;
 
 import com.raytheon.uf.common.geospatial.ISpatialQuery.SearchMode;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
 
 /**
  * Utility to retrieve local time zone given a lat/lon

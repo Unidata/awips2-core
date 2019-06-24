@@ -33,8 +33,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import javax.measure.converter.ConversionException;
-
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.MapConfiguration;
 import org.apache.commons.configuration.XMLConfiguration;
@@ -442,19 +440,16 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public boolean getBoolean(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getBoolean(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getBoolean(name);
             }
-            return getDefaultBoolean(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.BOOLEAN_DEFAULT_DEFAULT;
         }
+        return getDefaultBoolean(name);
+        
     }
 
     @Override
@@ -472,19 +467,15 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public double getDouble(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getDouble(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getDouble(name);
             }
-            return getDefaultDouble(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.DOUBLE_DEFAULT_DEFAULT;
         }
+        return getDefaultDouble(name);
     }
 
     @Override
@@ -502,19 +493,15 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public float getFloat(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getFloat(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getFloat(name);
             }
-            return getDefaultFloat(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.FLOAT_DEFAULT_DEFAULT;
         }
+        return getDefaultFloat(name);
     }
 
     @Override
@@ -551,19 +538,15 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public int getInt(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getInt(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getInt(name);
             }
-            return getDefaultInt(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.INT_DEFAULT_DEFAULT;
         }
+        return getDefaultInt(name);
     }
 
     @Override
@@ -581,19 +564,15 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public long getLong(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getLong(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getLong(name);
             }
-            return getDefaultLong(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.LONG_DEFAULT_DEFAULT;
         }
+        return getDefaultLong(name);
     }
 
     @Override
@@ -611,19 +590,15 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public String getString(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getString(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getString(name);
             }
-            return getDefaultString(name);
-        } catch (ConversionException e) {
-            return IPreferenceStore.STRING_DEFAULT_DEFAULT;
         }
+        return getDefaultString(name);
     }
 
     public String[] getStringArray(String name) {
@@ -640,20 +615,16 @@ public class HierarchicalPreferenceStore implements IPersistentPreferenceStore {
      * @return the value
      */
     public String[] getStringArray(LocalizationLevel level, String name) {
-        try {
-            LocalizationConfiguration config = getConfigurationForLevel(level,
-                    name);
-            if (config != null) {
-                XMLConfiguration xmlConfig = config.accessConfiguration();
-                if (xmlConfig.containsKey(name)) {
-                    return xmlConfig.getStringArray(name);
-                }
+        LocalizationConfiguration config = getConfigurationForLevel(level,
+                name);
+        if (config != null) {
+            XMLConfiguration xmlConfig = config.accessConfiguration();
+            if (xmlConfig.containsKey(name)) {
+                return xmlConfig.getStringArray(name);
             }
-            return getDefaultConfig().getStringArray(name);
-        } catch (ConversionException e) {
-            return new String[0];
         }
-    }
+        return getDefaultConfig().getStringArray(name);
+}
 
     @Override
     public String getString(String name) {

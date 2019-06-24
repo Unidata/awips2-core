@@ -23,7 +23,7 @@ import java.util.List;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.viz.core.exception.VizException;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Factory class to retrieve appropriate DbMapQuery implementation

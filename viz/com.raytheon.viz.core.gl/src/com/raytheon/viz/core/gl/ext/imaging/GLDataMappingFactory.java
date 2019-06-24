@@ -24,11 +24,12 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 import javax.media.opengl.GL;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
+import com.raytheon.uf.common.units.UnitConv;
 import com.raytheon.viz.core.gl.dataformat.GLBufferColorMapData;
 import com.raytheon.viz.core.gl.dataformat.GLFloatDataFormat;
 import com.raytheon.viz.core.gl.images.GLBufferCMTextureData;
@@ -238,8 +239,8 @@ public class GLDataMappingFactory {
                 double[] dataMapping = new double[colorMapping.length];
                 Arrays.fill(dataMapping, Float.NaN);
 
-                UnitConverter colorMapToData = colorMapUnit
-                        .getConverterTo(dataUnit);
+                UnitConverter colorMapToData = UnitConv
+                        .getConverterToUnchecked(colorMapUnit, dataUnit);
                 double dataMin = colorMapToData.convert(colorMapMin);
                 double dataMax = colorMapToData.convert(colorMapMax);
                 colorMapping[0] = colorMapMin;

@@ -29,7 +29,7 @@ import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
 
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Calculates a portion of a grid geometry that overlaps an envelope in a
@@ -107,7 +107,7 @@ public class SubGridGeometryCalculator {
         GridEnvelope2D subRange = new GridEnvelope2D();
         if (!geom.isEmpty()) {
             /* Convert from jts envelope to geotools envelope. */
-            com.vividsolutions.jts.geom.Envelope env = geom
+            org.locationtech.jts.geom.Envelope env = geom
                     .getEnvelopeInternal();
             Envelope2D subEnv = new Envelope2D(gridCRS, env.getMinX(),
                     env.getMinY(), env.getWidth(), env.getHeight());

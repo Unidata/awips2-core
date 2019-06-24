@@ -22,7 +22,7 @@ package com.raytheon.uf.common.dataaccess;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * A generic request for geospatial data to the Data Access Framework. All

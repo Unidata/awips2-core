@@ -24,10 +24,8 @@ import java.io.File;
 import java.text.DecimalFormat;
 import java.util.Arrays;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -62,6 +60,9 @@ import com.raytheon.uf.viz.core.rsc.capabilities.ColorMapCapability;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
+
+import si.uom.SI;
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Provides an SRTM hdf5-backed topographic map
@@ -141,9 +142,9 @@ public class TopoResource
         }
 
         // Set data unit, specify in resource data? Look up in data record?
-        params.setDataUnit(SI.METER);
-        params.setDisplayUnit(SI.METER);
-        params.setColorMapUnit(SI.METER);
+        params.setDataUnit(SI.METRE);
+        params.setDisplayUnit(SI.METRE);
+        params.setColorMapUnit(SI.METRE);
         params.setColorMapMin(-19);
         params.setColorMapMax(5000);
         params.setDataMin(Short.MIN_VALUE);
@@ -173,11 +174,11 @@ public class TopoResource
                 Double maxVal = scale.getMaxValue();
                 if (minVal != null) {
                     params.setColorMapMin(
-                            (float) displayToColorMap.convert(minVal));
+                            displayToColorMap.convert(minVal).floatValue());
                 }
                 if (maxVal != null) {
                     params.setColorMapMax(
-                            (float) displayToColorMap.convert(maxVal));
+                            displayToColorMap.convert(maxVal).floatValue());
                 }
             }
 
@@ -288,7 +289,7 @@ public class TopoResource
 
             DecimalFormat df = new DecimalFormat("0.00");
             return String.format("%s %s ", df.format(cvt.convert(height)),
-                    UnitFormat.getUCUMInstance()
+                    SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
                             .format(parameters.getDisplayUnit()));
         }
         return "NO DATA";

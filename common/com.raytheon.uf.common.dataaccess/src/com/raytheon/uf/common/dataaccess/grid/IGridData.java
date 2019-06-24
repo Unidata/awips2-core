@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.dataaccess.grid;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import org.geotools.coverage.grid.GridGeometry2D;
 

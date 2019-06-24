@@ -34,7 +34,7 @@ import com.raytheon.uf.common.geospatial.adapter.JTSEnvelopeAdapter;
 import com.raytheon.uf.common.serialization.XmlGenericMapAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * 

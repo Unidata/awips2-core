@@ -61,12 +61,12 @@ import org.opengis.referencing.operation.TransformException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.LinearRing;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.geom.Polygon;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.LinearRing;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.Polygon;
 
 /**
  * MapUtil provides a convenience wrapper for some common map interactions such
@@ -389,7 +389,7 @@ public class MapUtil {
                 LATLON_PROJECTION, false);
         ReferencedEnvelope newTargetREnv = targetREnv.transform(
                 LATLON_PROJECTION, false);
-        com.vividsolutions.jts.geom.Envelope intersection = newTargetREnv
+        org.locationtech.jts.geom.Envelope intersection = newTargetREnv
                 .intersection(newSourceEnv);
         // Its possible to get two envelopes that don't intersect in a common
         // space, for example one could have longitude from -200 to -160 and
@@ -415,7 +415,7 @@ public class MapUtil {
         // Calculate nx and ny, start with the number of original grid
         // points in the intersection and then adjust to the new aspect
         // ratio
-        com.vividsolutions.jts.geom.Envelope intersectingEnv = JTS.transform(
+        org.locationtech.jts.geom.Envelope intersectingEnv = JTS.transform(
                 newEnv.transform(sourceCRS, false), sourceGeometry
                         .getGridToCRS().inverse());
         double aspectRatio = newEnv.getHeight() / newEnv.getWidth();
@@ -1215,7 +1215,7 @@ public class MapUtil {
     }
 
     public static Polygon createGeometry(
-            com.vividsolutions.jts.geom.Envelope env) {
+            org.locationtech.jts.geom.Envelope env) {
 
         return createGeometry(env.getMinY(), env.getMinX(), env.getMaxY(),
                 env.getMaxX());

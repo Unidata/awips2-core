@@ -22,8 +22,8 @@ package com.raytheon.uf.common.pointdata;
 import java.util.Calendar;
 import java.util.Date;
 
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.quantity.Time;
 import javax.persistence.Column;
 import javax.persistence.Embeddable;
 import javax.persistence.Transient;
@@ -38,6 +38,9 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.util.TimeUtil;
+
+import si.uom.SI;
+import tec.uom.se.unit.MetricPrefix;
 
 /**
  * Convenience class that provides a view of the data for a single observation
@@ -105,9 +108,9 @@ public class PointDataView {
         // get original duration
         long time = getNumber(parameter).longValue();
         // get unit of parameter.
-        Unit<?> sourceUnit = getUnit(parameter);
+        Unit<Time> sourceUnit = getUnit(parameter).asType(Time.class);
         if (sourceUnit != null) {
-            time = (long) sourceUnit.getConverterTo(SI.MILLI(SI.SECOND))
+            time = (long) sourceUnit.getConverterTo(MetricPrefix.MILLI(SI.SECOND))
                     .convert(time);
         }
         return new Date(time);
@@ -401,10 +404,10 @@ public class PointDataView {
     public DataTime getDataTime(boolean refTimeOnly) {
         long refTime = getNumber(PointDataConstants.DATASET_REFTIME)
                 .longValue();
-        Unit<?> refUnit = getUnit(PointDataConstants.DATASET_REFTIME);
-        if (refUnit != null && !refUnit.equals(SI.MILLI(SI.SECOND))
+        Unit<Time> refUnit = getUnit(PointDataConstants.DATASET_REFTIME).asType(Time.class);
+        if (refUnit != null && !refUnit.equals(MetricPrefix.MILLI(SI.SECOND))
                 && refUnit.isCompatible(SI.SECOND)) {
-            refTime = (long) refUnit.getConverterTo(SI.MILLI(SI.SECOND))
+            refTime = (long) refUnit.getConverterTo(MetricPrefix.MILLI(SI.SECOND))
                     .convert(refTime);
         }
         if (refTimeOnly) {
@@ -413,7 +416,7 @@ public class PointDataView {
 
         int forecastTime = getNumber(PointDataConstants.DATASET_FORECASTHR)
                 .intValue();
-        Unit<?> forecastUnit = getUnit(PointDataConstants.DATASET_FORECASTHR);
+        Unit<Time> forecastUnit = getUnit(PointDataConstants.DATASET_FORECASTHR).asType(Time.class);
         if (forecastUnit != null && !forecastUnit.equals(SI.SECOND)
                 && forecastUnit.isCompatible(SI.SECOND)) {
             forecastTime = (int) forecastUnit.getConverterTo(SI.SECOND)

@@ -21,7 +21,7 @@ package com.raytheon.viz.core.gl.ext.imaging;
 
 import java.nio.ByteBuffer;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.media.opengl.GL;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;

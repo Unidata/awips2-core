@@ -46,6 +46,7 @@ import jep.NamingConventionClassEnquirer;
  * Mar 16, 2017   5959     njensen     Add _strptime as shared module
  * Sep 25, 2017   6457     randerso    Add scipy.constants as shared module
  * Dec 19, 2017   7149     njensen     Get shared modules from config file
+ * Jun 03, 2019   7852     dgilling    Update code for jep 3.8.
  *
  * </pre>
  *
@@ -179,8 +180,10 @@ public abstract class PythonInterpreter implements AutoCloseable {
     /**
      * Disposes of the jep instance. Should be called whenever the system no
      * longer needs this PythonScript instance to free memory.
+     *
+     * @throws JepException
      */
-    public void dispose() {
+    public void dispose() throws JepException {
         cleanupGlobals();
         jep.close();
     }
@@ -200,7 +203,7 @@ public abstract class PythonInterpreter implements AutoCloseable {
     }
 
     @Override
-    public void close() {
+    public void close() throws JepException {
         this.dispose();
     }
 

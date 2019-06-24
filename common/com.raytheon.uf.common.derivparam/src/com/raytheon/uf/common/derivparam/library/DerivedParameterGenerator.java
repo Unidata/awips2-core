@@ -33,7 +33,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
@@ -50,6 +50,8 @@ import com.raytheon.uf.common.serialization.SingleTypeJAXBManager;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+
+import tec.uom.se.AbstractUnit;
 
 /**
  * Primary public interface for derived parameters. Introspection on the derived
@@ -83,6 +85,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 24, 2016  5439     bsteffen    Do not throw exceptions after logging
  *                                    error that adapter is not registered
  * Oct 05, 2016  5891     bsteffen    Allow functions in subdirectories
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -267,7 +270,7 @@ public class DerivedParameterGenerator implements ILocalizationPathObserver {
                             DerivParamField field = (DerivParamField) ifield;
                             DerivParamDesc fDesc = derParLibrary.get(field
                                     .getParam());
-                            if (fDesc != null && field.getUnit() == Unit.ONE) {
+                            if (fDesc != null && field.getUnit() == AbstractUnit.ONE) {
                                 field.setUnit(fDesc.getUnit());
                             }
                         }

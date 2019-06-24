@@ -20,9 +20,12 @@
 
 package com.raytheon.uf.common.style.level;
 
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import si.uom.NonSI;
+import si.uom.SI;
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.unit.MetricPrefix;
+
+import javax.measure.Unit;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -40,6 +43,7 @@ import javax.xml.bind.annotation.XmlAttribute;
  * May 01, 2014  DCS 027  MPorricelli  Add WBZ level
  * Aug 15, 2016  5821     bsteffen     Add TROP level
  * May 18, 2018  20395    wkwock       Add CBL and CLG level
+ * Apr 15, 2019  7596     lsingh       Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -81,17 +85,17 @@ public abstract class Level {
             break;
         case PRESSURE:
         case MB_AGL:
-            this.units = SI.MILLI(NonSI.BAR);
+            this.units = MetricPrefix.MILLI(NonSI.BAR);
             break;
         case DEFAULT:
         case SURFACE:
-            this.units = Unit.ONE;
+            this.units = AbstractUnit.ONE;
             break;
         case TILT:
             this.units = NonSI.DEGREE_ANGLE;
             break;
         default:
-            this.units = Unit.ONE;
+            this.units = AbstractUnit.ONE;
         }
     }
 

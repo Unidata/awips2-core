@@ -22,7 +22,7 @@ package com.raytheon.uf.common.derivparam.library;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -34,6 +34,8 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.units.UnitAdapter;
+
+import tec.uom.se.AbstractUnit;
 
 /**
  * Meta data about a derived parameter script.
@@ -47,6 +49,7 @@ import com.raytheon.uf.common.units.UnitAdapter;
  * ------------- -------- ----------- --------------------------
  * Nov 21, 2009  3576     rjpeter     Initial version
  * Jan 14, 2014  2661     bsteffen    Remove ISerializableObject
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -67,7 +70,7 @@ public class DerivParamDesc {
 
     @XmlAttribute
     @XmlJavaTypeAdapter(value = UnitAdapter.class)
-    private Unit<?> unit = Unit.ONE;
+    private Unit<?> unit = AbstractUnit.ONE;
 
     @XmlElement(name = "Method")
     private List<DerivParamMethod> methods;
@@ -102,10 +105,10 @@ public class DerivParamDesc {
                                 + this.name + ", " + that.name);
             }
         }
-        if (this.unit == Unit.ONE) {
+        if (this.unit == AbstractUnit.ONE) {
             this.unit = that.unit;
         } else if (!this.unit.equals(that.unit)) {
-            if (that.unit != Unit.ONE) {
+            if (that.unit != AbstractUnit.ONE) {
                 statusHandler.handle(Priority.PROBLEM,
                         "Warning conflicting unit in merge: "
                                 + this.abbreviation + ": " + this.unit + ", "

@@ -22,7 +22,7 @@ package com.raytheon.uf.common.colormap.prefs;
 import java.util.ArrayList;
 import java.util.Collections;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;

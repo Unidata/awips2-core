@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,6 +24,8 @@ import java.util.Map;
 import java.util.Set;
 
 import com.raytheon.uf.common.python.PythonInterpreter;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 
 import jep.JepConfig;
 import jep.JepException;
@@ -34,15 +36,15 @@ import jep.JepException;
  * code in your python and use PythonScript instead. If you want the results
  * from the separate process sent back to Java as soon as they're processed, use
  * this class.
- * 
+ *
  * This class executes a python method in a separate process with a few
  * assumptions. The separate method must have an argument "queue" that will be
  * the queue that result objects are put on. The result objects will be sent
  * back to the original process and transformed into Java objects for the
  * PyProcessListener.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -50,13 +52,19 @@ import jep.JepException;
  * Mar 29, 2011 8774       rferrel     Clean up process when execute halted.
  * Apr 26, 2015 4259       njensen     Updated for new JEP API
  * Jan 04, 2017 5959       njensen     Use JepConfig in constructor
- * 
+ * Jun 03, 2019 7852       dgilling    Update code for jep 3.8.
+ * Jun 17, 2019 7835       dgilling    Disable changes to sys.meta_path as temporary
+ *                                     workaround to make PyTables 3.5 work.
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 
 public class PythonProcess extends PythonInterpreter {
+
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PythonProcess.class);
 
     // The current python the p.terminate() doesn't properly shutdown the p
     // thread; the os.kill does. In either case p.is_alive() is True.
@@ -87,13 +95,13 @@ public class PythonProcess extends PythonInterpreter {
             + "    listener.objReceived(JUtil.pyValToJavaObj(val))\n"
             + "except Empty: pass\n";
 
-    final ProcessState processState = new ProcessState();
+    private final ProcessState processState = new ProcessState();
 
-    final ErrorMessage errorMessage = new ErrorMessage();
+    private final ErrorMessage errorMessage = new ErrorMessage();
 
     /**
      * Constructor
-     * 
+     *
      * @param config
      *            the jep config to use with the interpreter
      * @param filePath
@@ -112,9 +120,9 @@ public class PythonProcess extends PythonInterpreter {
 
     /**
      * Constructor
-     * 
+     *
      * @deprecated use PythonProcess(JepConfig, String) instead
-     * 
+     *
      * @param filePath
      * @param includePath
      * @param classLoader
@@ -129,7 +137,7 @@ public class PythonProcess extends PythonInterpreter {
 
     protected void internalExecute(String methodName, Map<String, Object> args,
             PyProcessListener listener, int timeout) throws JepException {
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         jep.eval("q = Queue()");
         jep.set("listener", listener);
         jep.set("processState", processState);
@@ -145,7 +153,7 @@ public class PythonProcess extends PythonInterpreter {
             Iterator<String> itr = keys.iterator();
             while (itr.hasNext()) {
                 String key = itr.next();
-                if (!key.equals("self")) {
+                if (!"self".equals(key)) {
                     evaluateArgument(key, args.get(key));
                     sb.append("'");
                     sb.append(key);
@@ -163,7 +171,13 @@ public class PythonProcess extends PythonInterpreter {
          * to import java classes. Resetting sys.meta_path to empty to bypass
          * this issue in the new python process.
          */
-        jep.eval("sys.meta_path=[]");
+        /*
+         * FIXME: temporarily disabling the change to sys.meta_path as it causes
+         * import issues with some combination of numpy 1.16, h5py 2.9 and
+         * PyTables 3.5. Will re-evaluate when AWIPS2 is running on Python 3.6
+         * and Jep 3.8.
+         */
+        // jep.eval("sys.meta_path=[]");
         jep.eval("timeout = " + timeout);
         // adding a timer to the function to determine if it needs killed
         jep.eval("default_time = time.time()");
@@ -174,14 +188,14 @@ public class PythonProcess extends PythonInterpreter {
             if (errorMessage.getMessage().startsWith("Error")) {
                 throw new JepException(errorMessage.getMessage());
             }
-            System.out.println(errorMessage.getMessage());
+            statusHandler.warn(errorMessage.getMessage());
         }
     }
 
     /**
      * Executes the specified method name in a different process using the
      * multiprocessing module
-     * 
+     *
      * @param methodName
      *            the name of the method to execute
      * @param args
@@ -206,20 +220,24 @@ public class PythonProcess extends PythonInterpreter {
     @Override
     public void dispose() {
         killProcess();
-        super.dispose();
+        try {
+            super.dispose();
+        } catch (JepException e) {
+            statusHandler.debug("Failed to dispose script instance.", e);
+        }
     }
 
     /**
      * This class allows python to check and clean up when the execute thread is
      * halted.
      */
-    private final class ProcessState {
+    private static final class ProcessState {
         boolean active = true;
 
         /**
          * Flag to indicate if process should remain active. Used by the python
          * code.
-         * 
+         *
          * @return active
          */
         @SuppressWarnings("unused")
@@ -232,7 +250,7 @@ public class PythonProcess extends PythonInterpreter {
         }
     }
 
-    private final class ErrorMessage {
+    private static final class ErrorMessage {
         String message = null;
 
         public String getMessage() {

@@ -28,7 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Map.Entry;
 
-import javax.measure.converter.UnitConverter;
+import javax.measure.UnitConverter;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MouseEvent;

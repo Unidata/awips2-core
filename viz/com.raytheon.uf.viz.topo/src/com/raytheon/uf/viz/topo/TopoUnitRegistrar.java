@@ -19,11 +19,11 @@
  **/
 package com.raytheon.uf.viz.topo;
 
-import javax.measure.unit.NonSI;
-import javax.measure.unit.SI;
-import javax.measure.unit.UnitFormat;
-
 import com.raytheon.viz.core.units.IUnitRegistrar;
+
+import systems.uom.common.USCustomary;
+import tec.uom.se.format.SimpleUnitFormat;
+import tec.uom.se.unit.MetricPrefix;
 
 /**
  * Registers units for topo
@@ -51,7 +51,7 @@ public class TopoUnitRegistrar implements IUnitRegistrar {
      */
     @Override
     public void register() {
-        UnitFormat.getUCUMInstance().label(SI.KILO(NonSI.FOOT), "kft");
+        SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).label(MetricPrefix.KILO(USCustomary.FOOT), "kft");
     }
 
 }

@@ -60,7 +60,7 @@ import com.raytheon.viz.ui.editor.IMultiPaneEditor;
 import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
 import com.raytheon.viz.ui.input.InputAdapter;
 import com.raytheon.viz.ui.input.InputManager;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Manages panes. If virtual cursor is not desired, override InputAdapter

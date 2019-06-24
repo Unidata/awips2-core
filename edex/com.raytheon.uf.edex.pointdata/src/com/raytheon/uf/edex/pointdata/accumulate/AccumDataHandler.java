@@ -27,8 +27,8 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.quantity.Time;
 
 import com.raytheon.uf.common.dataplugin.PluginException;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
@@ -49,6 +49,9 @@ import com.raytheon.uf.edex.pointdata.DbParameterDescription;
 import com.raytheon.uf.edex.pointdata.PointDataDbDescription;
 import com.raytheon.uf.edex.pointdata.PointDataPluginDao;
 import com.raytheon.uf.edex.pointdata.PointDataQuery;
+
+import si.uom.SI;
+import tec.uom.se.unit.MetricPrefix;
 
 /**
  * Handler that calculates the accumulation of a parameter at multiple stations
@@ -85,7 +88,7 @@ public class AccumDataHandler implements
 
     private static final String NO_DATA = "No Data Available";
 
-    private static final Unit<?> MS = SI.MILLI(SI.SECOND);
+    private static final Unit<Time> MS = MetricPrefix.MILLI(SI.SECOND);
 
     @Override
     public IDataRecord handleRequest(AccumDataRequestMessage request)
@@ -318,7 +321,7 @@ public class AccumDataHandler implements
                         Unit<?> timeUnit = pdv.getUnit(request
                                 .getTimeParameter());
                         if (MS.isCompatible(timeUnit)) {
-                            time = (long) timeUnit.getConverterTo(MS).convert(
+                            time = (long) timeUnit.asType(Time.class).getConverterTo(MS).convert(
                                     time);
 
                         }

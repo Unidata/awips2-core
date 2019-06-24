@@ -40,7 +40,7 @@ import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.point.display.VectorGraphicsConfig;
 import com.raytheon.uf.viz.core.point.display.VectorGraphicsRenderable;
 import com.raytheon.uf.viz.core.rsc.DisplayType;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * 

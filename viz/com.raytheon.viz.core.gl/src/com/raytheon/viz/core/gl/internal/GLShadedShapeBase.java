@@ -42,8 +42,8 @@ import com.raytheon.uf.common.geospatial.TransformFactory;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.core.drawables.IShape;
 import com.raytheon.viz.core.gl.Activator;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.LineString;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.LineString;
 
 /**
  * 

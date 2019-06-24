@@ -30,7 +30,7 @@ import com.raytheon.uf.common.pointdata.spatial.ObStation;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * The dao implementation associated with the ObsStation class used for all

@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.stats.xml;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -30,6 +30,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.units.UnitAdapter;
 
+import tec.uom.se.AbstractUnit;
+
 /**
  *
  *
@@ -39,6 +41,7 @@ import com.raytheon.uf.common.units.UnitAdapter;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 21, 2012            jsanchez     Made serializable.
+ * Apr 15, 2019  7596     lsingh       Updated units framework to JSR-363.
  *
  * </pre>
  *
@@ -56,7 +59,7 @@ public class Aggregate {
     @XmlAttribute
     @XmlJavaTypeAdapter(value = UnitAdapter.class)
     @DynamicSerializeElement
-    private Unit<?> unit = Unit.ONE;
+    private Unit<?> unit = AbstractUnit.ONE;
 
     @XmlAttribute
     @DynamicSerializeElement

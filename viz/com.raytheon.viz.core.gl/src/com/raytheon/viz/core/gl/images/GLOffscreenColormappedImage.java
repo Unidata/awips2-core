@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.images;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.viz.core.drawables.ext.IImagingExtension;

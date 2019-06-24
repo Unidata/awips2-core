@@ -19,18 +19,22 @@
  **/
 package com.raytheon.uf.edex.pointdata;
 
-import java.text.ParseException;
 import java.text.ParsePosition;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
 
 import com.raytheon.uf.common.pointdata.PointDataDescription.Type;
 import com.raytheon.uf.common.serialization.ISerializableObject;
+
+import tec.uom.se.AbstractConverter;
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * 
@@ -172,17 +176,17 @@ public class DbParameterDescription implements ISerializableObject {
     public UnitConverter getUnitConverter() {
         if (fromDbConverter == null) {
             if (unit == null || dbunit == null || unit.equals(dbunit)) {
-                fromDbConverter = UnitConverter.IDENTITY;
+                fromDbConverter = AbstractConverter.IDENTITY;
             } else {
                 try {
-                    Unit<?> dbunit = UnitFormat
-                            .getUCUMInstance()
+                    Unit<?> dbunit = SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
                             .parseProductUnit(this.dbunit, new ParsePosition(0));
-                    Unit<?> unit = UnitFormat.getUCUMInstance()
+                    Unit<?> unit = SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
                             .parseProductUnit(this.unit, new ParsePosition(0));
-                    fromDbConverter = dbunit.getConverterTo(unit);
-                } catch (ParseException e) {
-                    fromDbConverter = UnitConverter.IDENTITY;
+                    fromDbConverter = dbunit.getConverterToAny(unit);
+                } catch (ParserException | IncommensurableException
+                        | UnconvertibleException e) {
+                    fromDbConverter = AbstractConverter.IDENTITY;
                 }
             }
         }

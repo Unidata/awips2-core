@@ -20,11 +20,16 @@
 package com.raytheon.uf.common.units;
 
 import java.util.Arrays;
+import java.util.Map;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.quantity.Quantity;
-import javax.measure.unit.DerivedUnit;
-import javax.measure.unit.Unit;
+import javax.measure.Dimension;
+import javax.measure.Quantity;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.quantity.QuantityDimension;
+
 
 /**
  * TODO Add Description
@@ -33,15 +38,16 @@ import javax.measure.unit.Unit;
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * 
+ * Apr 15, 2019  7596       lsingh      Updated the javax.measure framework to JSR-363.
+ *                                      DerivedUnit has been replaced with AbstractUnit.
+ *                                      Updated method names and implemented additional methods.
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
 
-public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
+public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
 
     private final Unit<Q> stdUnit;
 
@@ -49,7 +55,6 @@ public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
 
     private final double[] stdValues;
 
-    @SuppressWarnings("unchecked")
     public PiecewisePixel(Unit<Q> dispUnit, double[] pixelValues,
             double[] dispValues) {
         super();
@@ -59,10 +64,10 @@ public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
         }
         this.pixelValues = pixelValues;
 
-        if (!dispUnit.toStandardUnit().isLinear()) {
+        if (dispUnit instanceof AbstractUnit && !((AbstractUnit<Q>)dispUnit).getSystemConverter().isLinear()) {
             stdUnit = dispUnit;
         } else {
-            this.stdUnit = (Unit<Q>) dispUnit.getStandardUnit();
+            this.stdUnit = (Unit<Q>) dispUnit.getSystemUnit();
         }
 
         UnitConverter toStd = dispUnit.getConverterTo(stdUnit);
@@ -74,37 +79,23 @@ public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
 
     private static final long serialVersionUID = 1L;
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.unit.Unit#getStandardUnit()
-     */
     @SuppressWarnings("unchecked")
     @Override
-    public Unit<Q> getStandardUnit() {
-        return (Unit<Q>) stdUnit.getStandardUnit();
+    protected Unit<Q> toSystemUnit() {
+        return (Unit<Q>) stdUnit.getSystemUnit();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.unit.Unit#toStandardUnit()
-     */
     @Override
-    public UnitConverter toStandardUnit() {
-        if (!stdUnit.toStandardUnit().isLinear()) {
-            return stdUnit.toStandardUnit().concatenate(
+    public UnitConverter getSystemConverter() {
+        if (stdUnit instanceof AbstractUnit
+                && !((AbstractUnit<Q>) stdUnit).getSystemConverter().isLinear()) {
+            return ((AbstractUnit<Q>) stdUnit).getSystemConverter().concatenate(
                     new PiecewiseLinearConverter(pixelValues, stdValues));
         } else {
             return new PiecewiseLinearConverter(pixelValues, stdValues);
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
@@ -115,11 +106,6 @@ public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @SuppressWarnings("unchecked")
     @Override
     public boolean equals(Object obj) {
@@ -140,6 +126,17 @@ public class PiecewisePixel<Q extends Quantity> extends DerivedUnit<Q> {
         if (!Arrays.equals(stdValues, other.stdValues))
             return false;
         return true;
+    }
+
+
+    @Override
+    public Map<? extends Unit<?>, Integer> getBaseUnits() {
+        return stdUnit.getBaseUnits();
+    }
+
+    @Override
+    public Dimension getDimension() {
+        return QuantityDimension.NONE;
     }
 
 }

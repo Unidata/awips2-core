@@ -24,13 +24,15 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
 
-import javax.measure.converter.ConversionException;
-import javax.measure.unit.Unit;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+
+import org.locationtech.jts.geom.Geometry;
 
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.time.DataTime;
-import com.vividsolutions.jts.geom.Geometry;
+import com.raytheon.uf.common.units.UnitConv;
 
 /**
  * A default geometry data object if factory developers do not wish to create
@@ -172,15 +174,16 @@ public class DefaultGeometryData implements IGeometryData {
             if (data.unit != null) {
                 if (data.unit.isCompatible(unit)) {
                     Number orig = getNumber(param);
-                    result = data.unit.getConverterTo(unit).convert(
-                            orig.doubleValue());
+                    result = UnitConv.getConverterToUnchecked(data.unit, unit)
+                            .convert(
+                                orig.doubleValue());
                 } else {
-                    throw new ConversionException("Requested unit " + unit
+                    throw new UnconvertibleException("Requested unit " + unit
                             + " is incompatible with " + param
                             + " data's unit " + data.unit);
                 }
             } else {
-                throw new ConversionException(
+                throw new UnconvertibleException(
                         "Unable to convert data due to no unit associated with "
                                 + param);
             }

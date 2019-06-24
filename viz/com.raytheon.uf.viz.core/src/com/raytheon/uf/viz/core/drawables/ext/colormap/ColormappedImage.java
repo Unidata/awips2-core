@@ -21,7 +21,7 @@ package com.raytheon.uf.viz.core.drawables.ext.colormap;
 
 import java.awt.image.RenderedImage;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.colormap.image.ColorMapData;
 import com.raytheon.uf.common.colormap.image.Colormapper;

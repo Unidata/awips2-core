@@ -34,7 +34,7 @@ import com.raytheon.uf.common.geospatial.SpatialException;
 import com.raytheon.uf.common.geospatial.SpatialQueryResult;
 import com.raytheon.uf.common.geospatial.request.SpatialDbQueryRequest;
 import com.raytheon.uf.viz.core.catalog.DirectDbQuery;
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * Viz spatial database query

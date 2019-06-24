@@ -29,7 +29,7 @@ import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.geometry.Envelope;
 
 import com.raytheon.uf.viz.core.PixelCoverage;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * ImageTile is an object that represents an image (or part of an image)

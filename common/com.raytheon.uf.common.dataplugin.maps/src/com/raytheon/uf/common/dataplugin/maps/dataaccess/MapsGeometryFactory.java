@@ -27,9 +27,9 @@ import com.raytheon.uf.common.dataaccess.exception.IncompatibleRequestException;
 import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.dataaccess.impl.AbstractGeometryTimeAgnosticDatabaseFactory;
 import com.raytheon.uf.common.dataplugin.maps.dataaccess.MapsQueryAssembler.IDENTIFIERS;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.ParseException;
-import com.vividsolutions.jts.io.WKBReader;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.ParseException;
+import org.locationtech.jts.io.WKBReader;
 
 /**
  * A data factory for retrieving data from the maps database. Currently, the

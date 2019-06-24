@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.edex.database.query;
 
-import com.vividsolutions.jts.geom.Geometry;
+import org.locationtech.jts.geom.Geometry;
 
 /**
  * This class represents a spatial (geometry-based) constraint for database

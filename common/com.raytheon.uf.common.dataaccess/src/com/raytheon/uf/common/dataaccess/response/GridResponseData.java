@@ -19,8 +19,10 @@
  **/
 package com.raytheon.uf.common.dataaccess.response;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import com.raytheon.uf.common.dataaccess.grid.IGridData;
 import com.raytheon.uf.common.geospatial.data.UnitConvertingDataFilter;
@@ -28,6 +30,8 @@ import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
 import com.raytheon.uf.common.numeric.dest.DataDestination;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * IGridData wrapper used as part of <code>GetGridDataResponse</code>.
@@ -76,23 +80,21 @@ public class GridResponseData extends AbstractResponseData {
         DataDestination dataDest = dataGrid;
         if (data.getUnit() != null) {
             try {
-                this.unit = UnitFormat.getUCUMInstance().format(data.getUnit());
+                this.unit = SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(data.getUnit());
             } catch (IllegalArgumentException e1) {
                 /*
                  * Not all units are representable as strings, convert to the
                  * standard unit so that the units can be preserved in string
                  * form.
                  */
-                Unit<?> stdUnit = dataUnit.getStandardUnit();
+                Unit<?> stdUnit = dataUnit.getSystemUnit();
                 try {
-                    this.unit = UnitFormat.getUCUMInstance().format(stdUnit);
+                    this.unit = SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(stdUnit);
+                    UnitConverter unitConverter = dataUnit.getConverterToAny(stdUnit);
                     dataDest = UnitConvertingDataFilter.apply(dataDest,
-                            dataUnit.toStandardUnit());
-                } catch (IllegalArgumentException e2) {
-                    /*
-                     * The standard unit is also unstringable so treat the data
-                     * as unitless.
-                     */
+                            unitConverter);
+                } catch (IllegalArgumentException | IncommensurableException
+                        | UnconvertibleException e2) {
                     this.unit = null;
                 }
             }

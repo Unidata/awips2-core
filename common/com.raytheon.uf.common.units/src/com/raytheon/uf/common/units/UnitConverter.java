@@ -20,11 +20,13 @@
 
 package com.raytheon.uf.common.units;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 
-import javax.measure.unit.UnitFormat;
+import javax.measure.format.ParserException;
 
 import org.apache.commons.beanutils.Converter;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Custom converter implementation for converting Unit objects from Strings
@@ -46,8 +48,8 @@ public class UnitConverter implements Converter {
     public Object convert(Class clazz, Object value) {
         if (value instanceof String) {
             try {
-                return UnitFormat.getUCUMInstance().parseObject((String) value);
-            } catch (ParseException e) {
+                return SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).parseObject((String) value, new ParsePosition(0));
+            } catch (ParserException e) {
                 e.printStackTrace();
             }
         }

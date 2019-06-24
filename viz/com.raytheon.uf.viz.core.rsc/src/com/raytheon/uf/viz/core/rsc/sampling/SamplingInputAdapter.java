@@ -25,7 +25,7 @@ import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.rsc.IContainerAwareInputHandler;
 import com.raytheon.viz.ui.input.InputAdapter;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Default input handler for sampling

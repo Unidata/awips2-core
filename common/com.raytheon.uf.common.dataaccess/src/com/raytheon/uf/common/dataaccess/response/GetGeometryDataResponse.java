@@ -30,7 +30,7 @@ import com.raytheon.uf.common.dataaccess.geom.IGeometryData;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeTypeAdapter;
-import com.vividsolutions.jts.io.WKBWriter;
+import org.locationtech.jts.io.WKBWriter;
 
 /**
  * Response for <code>GetGeometryDataRequest</code>.

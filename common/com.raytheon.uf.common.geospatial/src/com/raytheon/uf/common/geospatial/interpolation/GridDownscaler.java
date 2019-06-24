@@ -23,7 +23,7 @@ import java.awt.Rectangle;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.measure.unit.SI;
+import si.uom.SI;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
@@ -76,8 +76,8 @@ public class GridDownscaler {
                 .getCoordinateSystem();
         double minGridSize = MIN_GRID_SIZE;
         boolean checkSpacing = true;
-        if (SI.METER.equals(cs.getAxis(0).getUnit()) == false
-                || SI.METER.equals(cs.getAxis(1).getUnit()) == false) {
+        if (SI.METRE.equals(cs.getAxis(0).getUnit()) == false
+                || SI.METRE.equals(cs.getAxis(1).getUnit()) == false) {
             // One of the axes is not in meter spacing, default to 512
             // minGridSize and ignore spacing like pre-spatial-aware downscaling
             // code

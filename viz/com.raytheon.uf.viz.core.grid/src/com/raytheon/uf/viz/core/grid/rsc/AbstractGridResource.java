@@ -32,12 +32,13 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.measure.Measure;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Quantity;
+import javax.measure.Unit;
+import javax.measure.quantity.Dimensionless;
 
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
+import org.locationtech.jts.geom.Coordinate;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
@@ -116,7 +117,10 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
 import com.raytheon.viz.core.contours.ContourRenderable;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedContourDisplay;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedStreamlineDisplay;
-import com.vividsolutions.jts.geom.Coordinate;
+
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.format.SimpleUnitFormat;
+import tec.uom.se.quantity.Quantities;
 
 /**
  *
@@ -155,6 +159,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Apr 04, 2018  6889     njensen   Use brightness from ImagePreferences if
  *                                  present but missing in ImagingCapability
  * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
+ * Apr 15, 2019  7596     lsingh    Updated units framework to JSR-363
  * Feb 28, 2019  7713     tjensen   Fix wind barb config
  *
  * </pre>
@@ -908,7 +913,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (map == null || map.isEmpty()) {
             return "NO DATA";
         }
-        Measure<? extends Number, ?> value = map.get(Interrogator.VALUE);
+        Quantity<?> value = map.get(Interrogator.VALUE);
         if (value == null) {
             return "NO DATA";
         }
@@ -975,20 +980,22 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                         Unit<?> styleUnit = stylePreferences.getDisplayUnits();
                         if (unit != null && styleUnit != null
                                 && unit.isCompatible(styleUnit)) {
-                            value = (float) unit.getConverterTo(styleUnit)
+                            value = (float) unit.asType(Dimensionless.class)
+                                    .getConverterTo(styleUnit
+                                            .asType(Dimensionless.class))
                                     .convert(value);
                             unit = styleUnit;
                             unitString = stylePreferences.getDisplayUnitLabel();
                         }
                     }
                     result.put(Interrogator.VALUE,
-                            Measure.valueOf(value, unit));
+                            Quantities.getQuantity(value, unit));
                     if (keySet.contains(UNIT_STRING_INTERROGATE_KEY)) {
                         if (unitString != null) {
                             result.put(UNIT_STRING_INTERROGATE_KEY, unitString);
-                        } else if (unit != null && !unit.equals(Unit.ONE)) {
+                        } else if (unit != null && !unit.equals(AbstractUnit.ONE)) {
                             result.put(UNIT_STRING_INTERROGATE_KEY,
-                                    UnitFormat.getUCUMInstance().format(unit));
+                                    SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
                         } else {
                             result.put(UNIT_STRING_INTERROGATE_KEY, "");
                         }
@@ -1056,7 +1063,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (map == null || map.isEmpty()) {
             return null;
         }
-        Measure<? extends Number, ?> value = map.get(Interrogator.VALUE);
+        Quantity<?> value = map.get(Interrogator.VALUE);
         String unitString = map.get(UNIT_STRING_INTERROGATE_KEY);
         Number direction = map.get(DIRECTION_FROM_INTERROGATE_KEY);
 
