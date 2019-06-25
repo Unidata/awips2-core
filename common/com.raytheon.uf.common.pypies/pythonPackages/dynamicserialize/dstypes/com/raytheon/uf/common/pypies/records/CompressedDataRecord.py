@@ -30,6 +30,8 @@
 #    ------------    ----------    -----------    --------------------------
 #    12/02/16        5992          bsteffen       Initial Creation.
 #    06/26/17        6341          rjpeter        Optimize decompress
+#    Jun 25, 2019    7821          tgurney        Replace numpy.getbuffer with
+#                                                 memoryview
 #
 
 import numpy
@@ -145,7 +147,7 @@ class CompressedDataRecord(object):
     # for each chunk
     def decompress(self):
         datatype = numpy.dtype(self.determineStorageType()).newbyteorder('>')
-        compressedBuffer = numpy.getbuffer(self.compressedData)
+        compressedBuffer = memoryview(self.compressedData)
         self.compressedData = None
         uncompressedSize = datatype.itemsize
         for s in self.sizes:
