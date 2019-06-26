@@ -63,7 +63,7 @@ class com_raytheon_uf_common_dataplugin_message_DataURINotificationMessage:
         if ftype == TType.LIST:
           self.dataURIs = []
           (_etype3, _size0) = iprot.readListBegin()
-          for _i4 in xrange(_size0):
+          for _i4 in range(_size0):
             _elem5 = iprot.readString();
             self.dataURIs.append(_elem5)
           iprot.readListEnd()
@@ -73,7 +73,7 @@ class com_raytheon_uf_common_dataplugin_message_DataURINotificationMessage:
         if ftype == TType.LIST:
           self.ids = []
           (_etype9, _size6) = iprot.readListBegin()
-          for _i10 in xrange(_size6):
+          for _i10 in range(_size6):
             _elem11 = iprot.readI32();
             self.ids.append(_elem11)
           iprot.readListEnd()
@@ -108,7 +108,7 @@ class com_raytheon_uf_common_dataplugin_message_DataURINotificationMessage:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):

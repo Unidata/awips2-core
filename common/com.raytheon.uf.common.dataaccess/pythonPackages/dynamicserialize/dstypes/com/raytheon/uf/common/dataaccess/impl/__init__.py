@@ -25,5 +25,5 @@ __all__ = [
             'DefaultNotificationFilter'
           ]
 
-from DefaultDataRequest import DefaultDataRequest
-from DefaultNotificationFilter import DefaultNotificationFilter
+from .DefaultDataRequest import DefaultDataRequest
+from .DefaultNotificationFilter import DefaultNotificationFilter

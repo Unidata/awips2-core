@@ -29,8 +29,8 @@ import SelfDescribingBinaryProtocol
 f = open("/tmp/testSerialization")
 trans = thrift.transport.TTransport.TFileObjectTransport(f)
 proto = SelfDescribingBinaryProtocol.SelfDescribingBinaryProtocol(trans)
-print proto.readMessageBegin()
+print(proto.readMessageBegin())
 s = NotificationMessage.ttypes.com_raytheon_uf_common_dataplugin_message_DataURINotificationMessage()
 s.read(proto)
-print s
+print(s)
 

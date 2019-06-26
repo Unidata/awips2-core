@@ -37,6 +37,6 @@
 __all__ = [
             'CompressedDataRecord', 'CompressedChunk', 'CompressedChunkedDataRecord'
           ]
-from CompressedDataRecord import CompressedDataRecord
-from CompressedChunk import CompressedChunk
-from CompressedChunkedDataRecord import CompressedChunkedDataRecord
+from .CompressedDataRecord import CompressedDataRecord
+from .CompressedChunk import CompressedChunk
+from .CompressedChunkedDataRecord import CompressedChunkedDataRecord

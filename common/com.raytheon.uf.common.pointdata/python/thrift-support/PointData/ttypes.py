@@ -154,7 +154,7 @@ class com_raytheon_uf_common_pointdata_ParameterDescription:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -207,7 +207,7 @@ class com_raytheon_uf_common_pointdata_elements_StringPointDataObject:
         if ftype == TType.LIST:
           self.stringData = []
           (_etype3, _size0) = iprot.readListBegin()
-          for _i4 in xrange(_size0):
+          for _i4 in range(_size0):
             _elem5 = iprot.readString();
             self.stringData.append(_elem5)
           iprot.readListEnd()
@@ -243,7 +243,7 @@ class com_raytheon_uf_common_pointdata_elements_StringPointDataObject:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -296,7 +296,7 @@ class com_raytheon_uf_common_pointdata_elements_FloatPointDataObject:
         if ftype == TType.LIST:
           self.floatData = []
           (_etype10, _size7) = iprot.readListBegin()
-          for _i11 in xrange(_size7):
+          for _i11 in range(_size7):
             d = iprot.readI32()
             dAsBytes = struct.pack('i', d)
             _elem12 = struct.unpack('f', dAsBytes);
@@ -334,7 +334,7 @@ class com_raytheon_uf_common_pointdata_elements_FloatPointDataObject:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -387,7 +387,7 @@ class com_raytheon_uf_common_pointdata_elements_IntPointDataObject:
         if ftype == TType.LIST:
           self.intData = []
           (_etype17, _size14) = iprot.readListBegin()
-          for _i18 in xrange(_size14):
+          for _i18 in range(_size14):
             _elem19 = iprot.readI32();
             self.intData.append(_elem19)
           iprot.readListEnd()
@@ -423,7 +423,7 @@ class com_raytheon_uf_common_pointdata_elements_IntPointDataObject:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -476,7 +476,7 @@ class com_raytheon_uf_common_pointdata_elements_LongPointDataObject:
         if ftype == TType.LIST:
           self.longData = []
           (_etype24, _size21) = iprot.readListBegin()
-          for _i25 in xrange(_size21):
+          for _i25 in range(_size21):
             _elem26 = iprot.readI64();
             self.longData.append(_elem26)
           iprot.readListEnd()
@@ -512,7 +512,7 @@ class com_raytheon_uf_common_pointdata_elements_LongPointDataObject:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -554,14 +554,14 @@ class com_raytheon_uf_common_pointdata_PointDataThriftContainer:
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
-      print fname
+      print(fname)
       if ftype == TType.STOP:
         break
       if fid == 1:
         if ftype == TType.LIST:
           self.floatData = []
           (_etype31, _size28) = iprot.readListBegin()
-          for _i32 in xrange(_size28):
+          for _i32 in range(_size28):
             _elem33 = com_raytheon_uf_common_pointdata_elements_FloatPointDataObject()
             _elem33.read(iprot)
             self.floatData.append(_elem33)
@@ -572,7 +572,7 @@ class com_raytheon_uf_common_pointdata_PointDataThriftContainer:
         if ftype == TType.LIST:
           self.intData = []
           (_etype37, _size34) = iprot.readListBegin()
-          for _i38 in xrange(_size34):
+          for _i38 in range(_size34):
             _elem39 = com_raytheon_uf_common_pointdata_elements_IntPointDataObject()
             _elem39.read(iprot)
             self.intData.append(_elem39)
@@ -583,7 +583,7 @@ class com_raytheon_uf_common_pointdata_PointDataThriftContainer:
         if ftype == TType.LIST:
           self.longData = []
           (_etype43, _size40) = iprot.readListBegin()
-          for _i44 in xrange(_size40):
+          for _i44 in range(_size40):
             _elem45 = com_raytheon_uf_common_pointdata_elements_LongPointDataObject()
             _elem45.read(iprot)
             self.longData.append(_elem45)
@@ -599,7 +599,7 @@ class com_raytheon_uf_common_pointdata_PointDataThriftContainer:
         if ftype == TType.LIST:
           self.stringData = []
           (_etype49, _size46) = iprot.readListBegin()
-          for _i50 in xrange(_size46):
+          for _i50 in range(_size46):
             _elem51 = com_raytheon_uf_common_pointdata_elements_StringPointDataObject()
             _elem51.read(iprot)
             self.stringData.append(_elem51)
@@ -653,7 +653,7 @@ class com_raytheon_uf_common_pointdata_PointDataThriftContainer:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -733,7 +733,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessageConstraint:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):
@@ -778,7 +778,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessage:
     iprot.readStructBegin()
     while True:
       (fname, ftype, fid) = iprot.readFieldBegin()
-      print fname
+      print(fname)
       if ftype == TType.STOP:
         break
       if fid == 1:
@@ -790,7 +790,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessage:
         if ftype == TType.LIST:
           self.constraints = []
           (_etype59, _size56) = iprot.readListBegin()
-          for _i60 in xrange(_size56):
+          for _i60 in range(_size56):
             _elem61 = com_raytheon_uf_common_pointdata_PointDataRequestMessageConstraint()
             _elem61.read(iprot)
             self.constraints.append(_elem61)
@@ -806,7 +806,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessage:
         if ftype == TType.LIST:
           self.levelValue = []
           (_etype71, _size68) = iprot.readListBegin()
-          for _i72 in xrange(_size68):
+          for _i72 in range(_size68):
             _elem73 = iprot.readDouble();
             self.levelValue.append(_elem73)
           iprot.readListEnd()
@@ -816,7 +816,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessage:
         if ftype == TType.LIST:
           self.parameters = []
           (_etype77, _size74) = iprot.readListBegin()
-          for _i78 in xrange(_size74):
+          for _i78 in range(_size74):
             _elem79 = iprot.readString();
             self.parameters.append(_elem79)
           iprot.readListEnd()
@@ -875,7 +875,7 @@ class com_raytheon_uf_common_pointdata_PointDataRequestMessage:
 
   def __repr__(self):
     L = ['%s=%r' % (key, value)
-      for key, value in self.__dict__.iteritems()]
+      for key, value in self.__dict__.items()]
     return '%s(%s)' % (self.__class__.__name__, ', '.join(L))
 
   def __eq__(self, other):

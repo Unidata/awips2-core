@@ -27,5 +27,5 @@ __all__ = [
             'response'
           ]
 
-from PointTest import PointTest
+from .PointTest import PointTest
 

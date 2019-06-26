@@ -34,11 +34,6 @@
 from ufpy.dataaccess import INotificationFilter
 import sys
 
-if sys.version_info.major == 2:
-    from itertools import izip
-    # shadowing built-in zip
-    zip = izip
-
 class DefaultNotificationFilter(INotificationFilter):
 
     def __init__(self):
