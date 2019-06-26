@@ -165,4 +165,4 @@ def test():
     if not(all(execute(array([1., 2., 3., 4.]), 1., 1., 3., 2.) == array([2., 2., 2., 4.]))):
         raise Exception
     
-    print "Test Test Complete"
+    print("Test Test Complete")

@@ -18,8 +18,8 @@
 # further licensing information.
 ###
 
-import IsenStability
-import Vorticity
+from . import IsenStability
+from . import Vorticity
 
 ##
 # Calculate the isentropic potential vorticity through a layer.

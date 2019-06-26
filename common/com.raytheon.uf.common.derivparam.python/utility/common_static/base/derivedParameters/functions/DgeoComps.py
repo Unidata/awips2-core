@@ -25,7 +25,7 @@ from numpy import copy as Copy
 from numpy import NaN
 from numpy import ones
 from numpy import shape
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Compute the components of geostrophic wind for this level.

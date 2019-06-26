@@ -25,7 +25,7 @@
 import numpy
 from numpy import concatenate
 from numpy import isnan
-from unit import celciusToKelvin 
+from .unit import celciusToKelvin 
 
 # build an array that contains the higher resolution tempFromTenths where possible, otherwise use the lower resolution temperature
 def combineTemps(temperature,tempFromTenths):

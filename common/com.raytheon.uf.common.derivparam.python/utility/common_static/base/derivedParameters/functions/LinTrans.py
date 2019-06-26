@@ -18,8 +18,8 @@
 # further licensing information.
 ##
 
-from Add import execute as Add
-from Multiply import execute as Multiply
+from .Add import execute as Add
+from .Multiply import execute as Multiply
 from numpy import zeros_like, ndarray
  
 def execute(*args):

@@ -29,7 +29,7 @@
 #
 
 from numpy import power
-from LvlQvec import calculate as lvlQvec
+from .LvlQvec import calculate as lvlQvec
 
 def execute(GHxSM, TxSM, P, dx, dy, coriolis):
     slqx, slqy, dtdx, dtdy  = lvlQvec(GHxSM, TxSM, P, dx, dy, coriolis)

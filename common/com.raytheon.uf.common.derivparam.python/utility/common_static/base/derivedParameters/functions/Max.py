@@ -64,4 +64,4 @@ def test():
     if not(all(result == correctResult)):
         raise Exception
     
-    print "Max Test Complete"
+    print("Max Test Complete")

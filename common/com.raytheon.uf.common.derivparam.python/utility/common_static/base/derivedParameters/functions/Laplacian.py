@@ -23,7 +23,7 @@
 from numpy import empty
 from numpy import shape
 from numpy import NaN
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 
 
 ##

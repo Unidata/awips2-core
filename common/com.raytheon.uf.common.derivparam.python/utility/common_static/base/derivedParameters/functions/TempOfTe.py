@@ -20,7 +20,7 @@
 
 
 import numpy as np
-import AdiabaticTemp
+from . import AdiabaticTemp
 
 # create an array of base pressures
 pBases = np.array([200,350,500,600,700,850,1000], dtype=np.float32)
@@ -125,7 +125,7 @@ def execute(T,P):
     
     # Iterate to find result to nearest .01 degree K
     TMask[:] = True # all cells still to calculate
-    for loopcount in xrange(10):
+    for loopcount in range(10):
         if np.any(TMask):
             # see which estimates are high and low
             t1Mask[TMask] = diff[TMask] < -0.01

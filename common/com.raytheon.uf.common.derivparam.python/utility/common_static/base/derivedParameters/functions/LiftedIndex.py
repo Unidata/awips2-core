@@ -29,8 +29,8 @@ from numpy import shape
 from numpy import sqrt
 from numpy import NaN
 from numpy import ndarray
-import AdiabaticTemp
-import TempOfTe
+from . import AdiabaticTemp
+from . import TempOfTe
 
 lowKTemp = 193
 

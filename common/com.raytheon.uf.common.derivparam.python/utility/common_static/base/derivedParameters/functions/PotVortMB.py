@@ -28,8 +28,8 @@
 # 2018/11/09   7531        bsteffen              Handle world wrapping data. 
 ###
 
-import Gradient
-import Vorticity
+from . import Gradient
+from . import Vorticity
 
 ##
 # Calculate the isobaric potential vorticity through a layer.

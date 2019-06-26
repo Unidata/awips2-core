@@ -21,8 +21,8 @@
 ## @file Geowind.py
 
 from numpy import isscalar,NaN
-import Vector
-from WorldWrapUtil import HandleWorldWrapX
+from . import Vector
+from .WorldWrapUtil import HandleWorldWrapX
 
 g = 9.806 # Gravitational acceleration (m/s^2)
 

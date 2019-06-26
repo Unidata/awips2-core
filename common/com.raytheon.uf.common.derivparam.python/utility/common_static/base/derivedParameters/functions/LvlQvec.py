@@ -18,9 +18,9 @@
 # further licensing information.
 ###
 
-import PartialDerivative as Partial
-import DgeoComps
-import Vector
+from . import PartialDerivative as Partial
+from . import DgeoComps
+from . import Vector
 ##
 # Find Q vectors from height, temp, and pressure.
 #

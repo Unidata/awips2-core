@@ -19,7 +19,7 @@
 ###
 
 from numpy import empty, shape, NaN
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the vorticity of Vector.
@@ -37,13 +37,13 @@ def execute(vec_U, vec_V, Q, dx, dy):
     vshape = shape(vec_U)
     
     if len(vshape) < 2:
-        raise TypeError, "Vector must be at least 2-D."
+        raise TypeError("Vector must be at least 2-D.")
     
     if vshape[0] < 3:
-        raise ValueError, "Vector's first dimension must be at least 3."
+        raise ValueError("Vector's first dimension must be at least 3.")
     
     if vshape[1] < 3:
-        raise ValueError, "Vector's second dimension must be at least 3."
+        raise ValueError("Vector's second dimension must be at least 3.")
     
     # create an empty array to hold the result
     rslt = empty(vshape, dtype=vec_U.dtype)
@@ -68,7 +68,7 @@ def execute(vec_U, vec_V, Q, dx, dy):
     elif dxshape==vshape:
         dvdx = diff_v / dx[1:-1,1:-1]
     else:
-        raise TypeError, "dx must be a scalar or the same shape as Vector[1]." 
+        raise TypeError("dx must be a scalar or the same shape as Vector[1].") 
 
     # allow dy to be a constant, one-element array, or have same shape as vec_U
     dyshape = shape(dy)
@@ -78,7 +78,7 @@ def execute(vec_U, vec_V, Q, dx, dy):
     elif dyshape==vshape:
         dudy = diff_u / dy[1:-1,1:-1]
     else:
-        raise TypeError, "dy must be a scalar or the same shape as Vector[0]." 
+        raise TypeError("dy must be a scalar or the same shape as Vector[0].") 
 
     # get final result; handle Q as a scalar or one-element array
     Qshape = shape(Q)

@@ -1,3 +1,4 @@
+import imp
 ##
 # This software was developed and / or modified by Raytheon Company,
 # pursuant to Contract DG133W-05-CQ-1067 with the US Government.
@@ -23,53 +24,53 @@ def execute(*args):
     
     """
     
-    import Vector
-    reload(Vector)
+    from . import Vector
+    imp.reload(Vector)
     Vector.test()
     
-    import Add
-    reload(Add)
+    from . import Add
+    imp.reload(Add)
     Add.test()
     
-    import Multiply
-    reload(Multiply)
+    from . import Multiply
+    imp.reload(Multiply)
     Multiply.test()
     
-    import Divide
-    reload(Divide)
+    from . import Divide
+    imp.reload(Divide)
     Divide.test()
     
-    import Difference
-    reload(Difference)
+    from . import Difference
+    imp.reload(Difference)
     Difference.test()
     
-    import Poly
-    reload(Poly)
+    from . import Poly
+    imp.reload(Poly)
     Poly.test()
     
-    import Average
-    reload(Average)
+    from . import Average
+    imp.reload(Average)
     Average.test()
     
-    import LinTrans
-    reload(LinTrans)
+    from . import LinTrans
+    imp.reload(LinTrans)
     LinTrans.test()
     
-    import Test
-    reload(Test)
+    from . import Test
+    imp.reload(Test)
     Test.test()
     
-    import Rotate
-    reload(Rotate)
+    from . import Rotate
+    imp.reload(Rotate)
     Rotate.test()
     
-    import Magnitude
-    reload(Magnitude)
+    from . import Magnitude
+    imp.reload(Magnitude)
     Magnitude.test()
     
-    import Cape
-    reload(Cape)
+    from . import Cape
+    imp.reload(Cape)
     Cape.test()
     
-    print "-"*60
-    print "Function Test Complete"
+    print("-"*60)
+    print("Function Test Complete")

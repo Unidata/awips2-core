@@ -19,7 +19,7 @@
 ###
 
 ## @file Negate.py
-import Vector
+from . import Vector
 
 ##
 # Negates input

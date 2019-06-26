@@ -27,9 +27,9 @@
 # Apt 26, 2018   6974         bsteffen      remove execute1.
 # 
 
-import meteolib
+from . import meteolib
 
-import P
+from . import P
 
 def execute2(pres):
     return meteolib.ptozsa(pres)*4

@@ -30,7 +30,7 @@ from numpy import zeros
 from numpy import where
 from numpy import equal
 from numpy import isnan, NaN
-from unit import celciusToKelvin
+from .unit import celciusToKelvin
 
 # build an array that contains the higher resolution dpFromTenths where possible, otherwise use the lower resolution dewpoint
 def combineTemps(dewpoint,dpFromTenths):

@@ -21,9 +21,9 @@
 #import sys
 #sys.path.append("..")
 
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 from numpy import ndarray,NaN, float32
-import Vector
+from . import Vector
 
 ##
 #  This routine computes the non-advective local change of an arbitrary

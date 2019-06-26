@@ -31,8 +31,8 @@
 # Oct 27, 2015   4703         bsteffen      correct use of U,V
 # Nov 01, 2018   6802         bsteffen      Filter out low wind speed. 
 
-import U
-import V
+from . import U
+from . import V
 from numpy import hypot, NaN
 
 def execute(windSpeed, windDir, accum_windSpeed24, accum_windDir24):

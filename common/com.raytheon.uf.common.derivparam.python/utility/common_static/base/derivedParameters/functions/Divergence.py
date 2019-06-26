@@ -18,7 +18,7 @@
 # further licensing information.
 ###
 
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 from numpy import empty, shape, NaN
 
 # This just rearranges the args because quan is more optional than worldWrapX
@@ -55,13 +55,13 @@ def calculate(vec, dx, dy, quan=1.0):
     vshape = shape(vec_U)
     
     if len(vshape) < 2:
-        raise TypeError, "Divergence: Vector must be at least 2-D."
+        raise TypeError("Divergence: Vector must be at least 2-D.")
     
     if vshape[0] < 3:
-        raise ValueError, "Divergence: Vector's first dimension must be at least 3."
+        raise ValueError("Divergence: Vector's first dimension must be at least 3.")
     
     if vshape[1] < 3:
-        raise ValueError, "Divergence: Vector's second dimension must be at least 3."
+        raise ValueError("Divergence: Vector's second dimension must be at least 3.")
     
     rslt = empty(vshape, dtype=vec_U.dtype)
     
@@ -91,7 +91,7 @@ def calculate(vec, dx, dy, quan=1.0):
     elif dxshape==vshape:
         dudx = diff_U/dx[1:-1,1:-1]
     else:
-        raise TypeError, "Divergence: dx must be a scalar or the same shape as Vector."
+        raise TypeError("Divergence: dx must be a scalar or the same shape as Vector.")
 
     # if dy is a constant or one-element array, just divide by it.
     # otherwise, divide each cell in diff_V by the corresponding cell in dy.
@@ -102,7 +102,7 @@ def calculate(vec, dx, dy, quan=1.0):
     elif dyshape==vshape:
         dvdy = diff_V/dy[1:-1,1:-1]
     else:
-        raise TypeError, "Divergence: dy must be a scalar or the same shape as Vector."
+        raise TypeError("Divergence: dy must be a scalar or the same shape as Vector.")
         
     rslt[1:-1,1:-1] = (dudx + dvdy)/2
     

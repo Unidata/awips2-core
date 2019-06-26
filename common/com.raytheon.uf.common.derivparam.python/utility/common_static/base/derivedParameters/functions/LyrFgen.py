@@ -18,7 +18,7 @@
 # further licensing information.
 ##
 
-from LyrQvec import calculate as lyrQvec
+from .LyrQvec import calculate as lyrQvec
 
 def execute(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis):
     qx, qy, dtdx, dtdy  = lyrQvec(height_up, height_lo, pressure_up, pressure_lo, dx, dy, coriolis)

@@ -19,7 +19,8 @@
 ##
 
 from numpy import multiply
-import Vector
+from . import Vector
+from functools import reduce
 
 def execute(*args):
     """ Perform multiplication of any number of scalars or of a vector and a scalar.

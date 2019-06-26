@@ -18,7 +18,7 @@
 # further licensing information.
 ###
 
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 from numpy import shape, empty, hypot, NaN
 
 ##

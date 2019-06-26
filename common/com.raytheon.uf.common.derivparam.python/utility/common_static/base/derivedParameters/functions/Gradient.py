@@ -20,8 +20,8 @@
 
 ## @file Gradient.py
 from numpy import empty, shape, NaN
-import Vector
-from WorldWrapUtil import HandleWorldWrapX
+from . import Vector
+from .WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the X and Y gradient arrays of a 2+D array of scalars.

@@ -22,7 +22,7 @@
 
 from numpy import isscalar
 from numpy import NaN
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate d/dx and d/dy of Qty.

@@ -57,4 +57,4 @@ def test():
     if not(all(execute(array([1., 2.]), array([3., 4.]), array([5., 6.])) == array([243., 8192.]))):
         raise Exception
 
-    print "Poly Test Complete"
+    print("Poly Test Complete")

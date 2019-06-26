@@ -20,9 +20,9 @@
 
 from numpy import log, exp
 
-import PartialDerivative as Partial
-import DgeoComps as DgeoComps
-import Vector
+from . import PartialDerivative as Partial
+from . import DgeoComps as DgeoComps
+from . import Vector
 
 ##
 # Find Q vectors from upper and lower height and pressure.

@@ -23,8 +23,8 @@ from numpy import shape
 from numpy import empty
 from numpy import where
 from numpy import NaN
-import Vector as Vector
-from WorldWrapUtil import HandleWorldWrapX
+from . import Vector as Vector
+from .WorldWrapUtil import HandleWorldWrapX
 
 ##
 # Calculate the deformation components of Vector.

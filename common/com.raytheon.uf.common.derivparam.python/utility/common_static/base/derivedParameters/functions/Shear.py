@@ -21,7 +21,7 @@
 from numpy import add
 from numpy import array
 from numpy import zeros
-from Magnitude import execute as Magnitude
+from .Magnitude import execute as Magnitude
 
 def execute(uStk, vStk):
     res = zeros(uStk[0].shape, 'float32')

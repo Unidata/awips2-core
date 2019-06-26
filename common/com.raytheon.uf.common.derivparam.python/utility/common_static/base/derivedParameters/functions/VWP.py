@@ -26,7 +26,7 @@
 # Apt 26, 2018   6974         bsteffen      Consolidated VWP related functions here.
 # 
 
-from meteolib import ztopsa
+from .meteolib import ztopsa
 from numpy import concatenate, float32, isnan, zeros
 
 def samplePlot(wSp, WD, wW, rms):

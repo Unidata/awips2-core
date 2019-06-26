@@ -20,7 +20,7 @@
 
 ## @file CompBy.py
 from numpy import cos, sin, sqrt
-import Vector
+from . import Vector
 
 ##
 # This function is based on the comp_by.f Fortran function by J. Ramer, Jul 1 2003.

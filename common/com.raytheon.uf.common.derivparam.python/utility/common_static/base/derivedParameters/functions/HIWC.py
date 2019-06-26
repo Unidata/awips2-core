@@ -32,12 +32,12 @@
 # Aug 05, 2015   4703         njensen       Optimized
 #
 
-import T
-import DpT
-import HeatIndex
-import WindChill
-from unit import knotToMetersPS
-from unit import celciusToKelvin
+from . import T
+from . import DpT
+from . import HeatIndex
+from . import WindChill
+from .unit import knotToMetersPS
+from .unit import celciusToKelvin
 
 # @param temperature: Temperature in degrees C
 # @param tempFromTenths: tempFromTenths in degrees C

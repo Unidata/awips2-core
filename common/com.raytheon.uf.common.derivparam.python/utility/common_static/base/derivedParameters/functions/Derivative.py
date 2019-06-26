@@ -23,7 +23,7 @@
 from numpy.ma.core import masked_greater
 from numpy.ma.core import masked_values
 from numpy.ma.core import filled
-import Vector
+from . import Vector
 
 ##
 # Calculate the derivative of A with respect to B.

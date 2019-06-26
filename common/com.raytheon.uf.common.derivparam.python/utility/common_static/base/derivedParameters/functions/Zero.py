@@ -28,7 +28,7 @@
 #
 
 from numpy import where, float32
-from unit import inchToMillimeter
+from .unit import inchToMillimeter
 
 # zero out all negative precip values
 def execute(values, min):

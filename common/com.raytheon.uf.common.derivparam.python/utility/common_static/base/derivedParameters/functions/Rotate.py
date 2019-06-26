@@ -18,10 +18,10 @@
 # further licensing information.
 ##
 
-from Add import execute as Add
+from .Add import execute as Add
 from math import radians,cos,sin
 from numpy import array,dot
-import Vector
+from . import Vector
 
 def execute(*args):
     """Rotate a vector

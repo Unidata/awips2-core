@@ -32,8 +32,8 @@
 # Oct 27, 2015   4703         bsteffen      correct use of U,V
 #
 
-import U
-import V
+from . import U
+from . import V
 from numpy import arctan2
 
 def execute(windSpeed, windDir, accum_windSpeed24, accum_windDir24):

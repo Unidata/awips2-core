@@ -18,8 +18,8 @@
 # further licensing information.
 ##
 
-from Add import execute as Add
-from Divide import execute as Divide
+from .Add import execute as Add
+from .Divide import execute as Divide
 
 
 def execute(*args):
@@ -37,7 +37,7 @@ def test():
     if not( all(execute(array([1.,2.]),array([3.,4.])) == array([2,3]))):
         raise Exception
     
-    from Vector import execute as Vector
+    from .Vector import execute as Vector
     
     Vector1 = Vector(array([1.,2.]),array([0.,270.]),True)
     Vector2 = Vector(array([3.,4.]),array([180.,90.]),True)
@@ -45,4 +45,4 @@ def test():
     if not( all(mag == array([1., 1.])) and all(dir.round(0) == array([180., 90.]))):
         raise Exception
     
-    print "Average Test Complete"
+    print("Average Test Complete")

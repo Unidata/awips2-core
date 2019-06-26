@@ -20,7 +20,7 @@
 
 
 from numpy import empty, shape, NaN
-from WorldWrapUtil import HandleWorldWrapX
+from .WorldWrapUtil import HandleWorldWrapX
 ##
 # Calculate the advection of quantity by Vector.
 #
