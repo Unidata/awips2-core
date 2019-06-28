@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -44,8 +44,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.xml.datatype.Duration;
 import javax.xml.namespace.QName;
 
-import net.sf.cglib.beans.BeanMap;
-
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.CalendarSerializer;
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.DateSerializer;
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.TimestampSerializer;
@@ -62,10 +60,12 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl;
 
+import net.sf.cglib.beans.BeanMap;
+
 /**
  * Dynamic Serialization Manager provides a serialization capability that runs
  * purely at runtime based on annotations.
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#     Engineer    Description
@@ -85,14 +85,14 @@ import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl
  * Aug 27, 2014 3503        bclement    improved error message in registerAdapter()
  * Jun 16, 2015 4561        njensen     Deprecated EnclosureType
  * Oct 30, 2015 4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
- * 
+ * Jul  1, 2019 7888        tgurney     deserialize(ctx) changed method signature
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 public class DynamicSerializationManager {
-    private static Map<SerializationType, DynamicSerializationManager> instanceMap = new HashMap<SerializationType, DynamicSerializationManager>();
+    private static Map<SerializationType, DynamicSerializationManager> instanceMap = new HashMap<>();
 
     private ISerializationContextBuilder builder;
 
@@ -107,7 +107,7 @@ public class DynamicSerializationManager {
 
     }
 
-    private static Map<String, SerializationMetadata> serializedAttributes = new ConcurrentHashMap<String, SerializationMetadata>();
+    private static Map<String, SerializationMetadata> serializedAttributes = new ConcurrentHashMap<>();
 
     private static final SerializationMetadata NO_METADATA = new SerializationMetadata();
 
@@ -125,7 +125,8 @@ public class DynamicSerializationManager {
         registerAdapter(BigInteger.class,
                 new BuiltInTypeSupport.BigIntegerSerializer());
         registerAdapter(EnumSet.class, new EnumSetAdapter());
-        registerAdapter(StackTraceElement.class, new StackTraceElementAdapter());
+        registerAdapter(StackTraceElement.class,
+                new StackTraceElementAdapter());
         registerAdapter(Duration.class,
                 new BuiltInTypeSupport.DurationSerializer());
         registerAdapter(QName.class, new BuiltInTypeSupport.QNameSerializer());
@@ -142,13 +143,13 @@ public class DynamicSerializationManager {
         FIELD, COLLECTION
     }
 
-    public static enum SerializationType {
+    public enum SerializationType {
         Thrift
     }
 
     /**
      * Serialize an object to a byte array
-     * 
+     *
      * @param obj
      *            the object
      * @return a byte array with a serialized version of the object
@@ -160,8 +161,8 @@ public class DynamicSerializationManager {
                 .getInstance().getStream();
 
         try {
-            ISerializationContext ctx = this.builder.buildSerializationContext(
-                    baos, this);
+            ISerializationContext ctx = this.builder
+                    .buildSerializationContext(baos, this);
             ctx.writeMessageStart("dynamicSerialize");
             serialize(ctx, obj);
             ctx.writeMessageEnd();
@@ -180,7 +181,7 @@ public class DynamicSerializationManager {
 
     /**
      * Serialize an object to a byte array
-     * 
+     *
      * @param obj
      *            the object
      * @param os
@@ -200,9 +201,9 @@ public class DynamicSerializationManager {
 
     /**
      * Serialize an object using a context
-     * 
+     *
      * This method is not intended to be used by end users.
-     * 
+     *
      * @param ctx
      *            the serialization context
      * @param obj
@@ -233,54 +234,64 @@ public class DynamicSerializationManager {
 
     /**
      * Deserialize an object from a stream
-     * 
+     *
      * @param istream
      * @return
      * @throws SerializationException
      */
     public Object deserialize(InputStream istream)
             throws SerializationException {
-        IDeserializationContext ctx = this.builder.buildDeserializationContext(
-                istream, this);
+        IDeserializationContext ctx = this.builder
+                .buildDeserializationContext(istream, this);
         ctx.readMessageStart();
-        Object obj = deserialize(ctx);
+        Object obj;
+        try {
+            obj = deserialize(ctx);
+        } catch (CriticalSerializationException e) {
+            throw new SerializationException(e);
+        }
         ctx.readMessageEnd();
         return obj;
     }
 
     /**
      * Deserialize from a context
-     * 
+     *
      * Not intended to be used by end users
-     * 
+     *
      * @param ctx
      * @return
      * @throws SerializationException
      */
     public Object deserialize(IDeserializationContext ctx)
-            throws SerializationException {
+            throws SerializationException, CriticalSerializationException {
         return ((ThriftSerializationContext) ctx).deserializeMessage();
     }
 
     /**
      * Deserialize an object from a byte[]
-     * 
+     *
      * @param data
      * @return
      * @throws SerializationException
      */
     public Object deserialize(byte[] data) throws SerializationException {
-        IDeserializationContext ctx = this.builder.buildDeserializationContext(
-                data, this);
+        IDeserializationContext ctx = this.builder
+                .buildDeserializationContext(data, this);
         ctx.readMessageStart();
-        Object obj = deserialize(ctx);
+        Object obj;
+        try {
+            obj = deserialize(ctx);
+        } catch (CriticalSerializationException e) {
+            throw new SerializationException(e);
+        }
         ctx.readMessageEnd();
         return obj;
     }
 
     /**
      * Register a new dynamic serialize adapter
-     * 
+     *
      * @param clazz
      * @param adapter
      * @return the adapter argument (needed for spring configuration)
@@ -312,7 +323,7 @@ public class DynamicSerializationManager {
 
     /**
      * Get the serialization metadata. Build it if not found
-     * 
+     *
      * @param name
      * @return
      */
@@ -348,11 +359,11 @@ public class DynamicSerializationManager {
 
     /**
      * Inspect a class and return the metadata for the object
-     * 
+     *
      * If the class has not been annotated, this will return null
-     * 
+     *
      * The metadata is cached for performance
-     * 
+     *
      * @param c
      *            the class
      * @return the metadata
@@ -367,22 +378,22 @@ public class DynamicSerializationManager {
         }
 
         attribs = new SerializationMetadata();
-        attribs.attributeNames = new ArrayList<String>();
-        attribs.attributesWithFactories = new HashMap<String, ISerializationTypeAdapter<?>>();
+        attribs.attributeNames = new ArrayList<>();
+        attribs.attributesWithFactories = new HashMap<>();
 
         DynamicSerializeTypeAdapter serializeAdapterTag = c
                 .getAnnotation(DynamicSerializeTypeAdapter.class);
 
         // Check to see if there is an adapter
         if (serializeAdapterTag != null) {
-            Class<?> factoryTag = (serializeAdapterTag).factory();
+            Class<?> factoryTag = serializeAdapterTag.factory();
             try {
                 attribs.serializationFactory = (ISerializationTypeAdapter<?>) factoryTag
                         .newInstance();
                 attribs.adapterStructName = c.getName();
             } catch (Exception e) {
-                throw new RuntimeException("Factory could not be constructed: "
-                        + factoryTag, e);
+                throw new RuntimeException(
+                        "Factory could not be constructed: " + factoryTag, e);
             }
         }
 
@@ -390,7 +401,8 @@ public class DynamicSerializationManager {
         if (attribs.serializationFactory == null) {
             Class<?> superClazz = c.getSuperclass();
             while (superClazz != null && attribs.serializationFactory == null) {
-                SerializationMetadata superMd = getSerializationMetadata(superClazz);
+                SerializationMetadata superMd = getSerializationMetadata(
+                        superClazz);
                 if (superMd != null && superMd.serializationFactory != null) {
                     attribs.serializationFactory = superMd.serializationFactory;
                     attribs.adapterStructName = superMd.adapterStructName;
@@ -409,8 +421,8 @@ public class DynamicSerializationManager {
         if (attribs.serializationFactory == null) {
             // Go through the class and find the fields with annotations
             Class<?> clazz = c;
-            Set<String> getters = new HashSet<String>();
-            Set<String> setters = new HashSet<String>();
+            Set<String> getters = new HashSet<>();
+            Set<String> setters = new HashSet<>();
             while (clazz != null && clazz != Object.class) {
 
                 // Make sure a getter and setter has been defined, and throw an
@@ -448,9 +460,8 @@ public class DynamicSerializationManager {
 
                         attribs.attributeNames.add(field.getName());
                         if (serializeAdapterTag == null) {
-                            serializeAdapterTag = field.getType()
-                                    .getAnnotation(
-                                            DynamicSerializeTypeAdapter.class);
+                            serializeAdapterTag = field.getType().getAnnotation(
+                                    DynamicSerializeTypeAdapter.class);
                         }
                         if (serializeAdapterTag != null) {
                             try {
