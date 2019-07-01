@@ -38,8 +38,10 @@ import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
+import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.jts.JTS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
@@ -49,11 +51,15 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.MapUtil;
+import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
 import com.raytheon.uf.common.geospatial.util.GridGeometryWrapChecker;
 import com.raytheon.uf.common.geospatial.util.WorldWrapChecker;
 import com.raytheon.uf.common.numeric.DataUtilities;
 import com.raytheon.uf.common.numeric.DataUtilities.MinMax;
 import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
+import com.raytheon.uf.common.numeric.dest.DataDestination;
+import com.raytheon.uf.common.numeric.filter.FillValueFilter;
+import com.raytheon.uf.common.numeric.filter.InverseFillValueFilter;
 import com.raytheon.uf.common.numeric.source.DataSource;
 import com.raytheon.uf.common.numeric.source.OffsetDataSource;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
@@ -67,6 +73,8 @@ import com.raytheon.uf.common.style.IncrementLabelingPreferences;
 import com.raytheon.uf.common.style.ValuesLabelingPreferences;
 import com.raytheon.uf.common.style.contour.ContourPreferences;
 import com.raytheon.uf.common.util.GridUtil;
+import com.raytheon.uf.common.wxmath.Constants;
+import com.raytheon.uf.common.wxmath.DistFilter;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -88,6 +96,7 @@ import com.raytheon.viz.core.contours.util.StreamLineContainer.StreamLinePoint;
 import com.raytheon.viz.core.contours.util.StrmPak;
 import com.raytheon.viz.core.contours.util.StrmPakConfig;
 import com.raytheon.viz.core.interval.XFormFunctions;
+import com.vividsolutions.jts.geom.Coordinate;
 import com.vividsolutions.jts.geom.Geometry;
 
 /**
@@ -118,7 +127,8 @@ import com.vividsolutions.jts.geom.Geometry;
  * Mar 19, 2015  4292     nabowle      Add contour range using A1 configuration
  *                                     rules.
  * Apr 30, 2018  6697     bsteffen     Support zoomLock.
- * May 07, 2019  64008    ksunil       multiple changes to support customized contour support
+ * May 07, 2019  65510    ksunil       multiple changes to support customized contour support
+ * Jun 27, 2019  65510    ksunil       refactor smoothData
  *
  * </pre>
  *
@@ -1759,4 +1769,52 @@ public class ContourSupport {
         return finalContour;
 
     }
+
+    public static GeographicDataSource[] smoothData(DataSource[] dataRecord,
+            GeneralGridGeometry gridGeometry, double smoothingDistance)
+            throws VizException {
+        // Calculate the Diagonal Distance of the Grid In Meters.
+        DirectPosition2D upperCorner = new DirectPosition2D(
+                gridGeometry.getEnvelope().getUpperCorner());
+        DirectPosition2D lowerCorner = new DirectPosition2D(
+                gridGeometry.getEnvelope().getLowerCorner());
+        double distanceInM;
+        try {
+            MathTransform crs2ll = MapUtil.getTransformToLatLon(
+                    gridGeometry.getCoordinateReferenceSystem());
+            crs2ll.transform(upperCorner, upperCorner);
+            crs2ll.transform(lowerCorner, lowerCorner);
+            upperCorner.x = MapUtil.correctLon(upperCorner.x);
+            lowerCorner.x = MapUtil.correctLon(lowerCorner.x);
+            distanceInM = JTS.orthodromicDistance(
+                    new Coordinate(lowerCorner.x, lowerCorner.y),
+                    new Coordinate(upperCorner.x, upperCorner.y),
+                    MapUtil.getLatLonProjection());
+        } catch (Exception e) {
+            throw new VizException(e);
+        }
+        // Calculate the Diagonal Distance in Points
+        GridEnvelope range = gridGeometry.getGridRange();
+        int nx = range.getSpan(0);
+        int ny = range.getSpan(1);
+        double distanceInPoints = Math.sqrt(nx * nx + ny * ny);
+        // Determine the number of points to smooth, assume
+        // smoothingDistance is in km
+        float npts = (float) (distanceInPoints * smoothingDistance
+                / (distanceInM / 1000));
+        FloatBufferWrapper data = new FloatBufferWrapper(nx, ny);
+        DataDestination dest = InverseFillValueFilter
+                .apply((DataDestination) data, Constants.LEGACY_NAN);
+        DataUtilities.copy(dataRecord[0], dest, nx, ny);
+        float[] dataArray = data.getArray();
+        dataArray = DistFilter.filter(dataArray, npts, nx, ny, 1);
+        data = new FloatBufferWrapper(dataArray, nx, ny);
+        DataSource source = FillValueFilter.apply((DataSource) data,
+                Constants.LEGACY_NAN);
+        GeographicDataSource gdSource = new GeographicDataSource(source,
+                gridGeometry);
+        return new GeographicDataSource[] { gdSource };
+
+    }
+
 }

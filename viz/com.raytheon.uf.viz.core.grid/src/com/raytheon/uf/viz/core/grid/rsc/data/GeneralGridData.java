@@ -78,6 +78,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * May 14, 2015  4079     bsteffen    Move to core.grid
  * Mar 21, 2018  6936     dgilling    Apply 180 degree correction to
  *                                    createVectorData.
+ * Jun 27, 2019  65510    ksunil      support fill colors through XML
  *
  * </pre>
  *
@@ -326,6 +327,10 @@ public class GeneralGridData {
         } else {
             return scalarData;
         }
+    }
+
+    public void setScalarData(GeographicDataSource scalarData) {
+        this.scalarData = scalarData;
     }
 
     /**
