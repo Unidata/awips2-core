@@ -114,6 +114,7 @@ import com.raytheon.uf.viz.core.tile.DataSourceTileImageCreator;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
 import com.raytheon.viz.core.contours.ContourRenderable;
+import com.raytheon.viz.core.contours.ContourSupport;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedContourDisplay;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedStreamlineDisplay;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -156,6 +157,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  present but missing in ImagingCapability
  * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
  * Feb 28, 2019  7713     tjensen   Fix wind barb config
+ * Jun 27, 2019  65510    ksunil    Support color fill through XML entries, support smoothData
  *
  * </pre>
  *
@@ -553,6 +555,26 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
         switch (displayType) {
         case IMAGE:
+            try {
+                StyleRule sr = StyleManager.getInstance().getStyleRule(
+                        StyleManager.StyleType.IMAGERY, getMatchCriteria());
+                if (sr != null) {
+                    ImagePreferences preferences = (ImagePreferences) sr
+                            .getPreferences();
+                    if (gridGeometry != null && preferences != null
+                            && preferences.getSmoothingDistance() != null) {
+                        data.setScalarData(ContourSupport.smoothData(
+                                new DataSource[] { data.getScalarData() },
+                                gridGeometry,
+                                preferences.getSmoothingDistance())[0]);
+                    }
+                }
+            } catch (Exception e1) {
+                statusHandler.handle(Priority.WARN,
+                        "Unable to honor the specified smoothing request. ",
+                        e1);
+            }
+
             ColorMapCapability colorMapCap = getCapability(
                     ColorMapCapability.class);
             ImagingCapability imagingCap = getCapability(
@@ -1236,5 +1258,4 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             renderableMap.clear();
         }
     }
-
 }

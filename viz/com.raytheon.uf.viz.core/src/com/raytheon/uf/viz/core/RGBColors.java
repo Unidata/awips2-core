@@ -20,20 +20,14 @@
 
 package com.raytheon.uf.viz.core;
 
-import java.io.BufferedReader;
-import java.io.IOException;
-import java.io.InputStreamReader;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.swt.graphics.RGB;
 
-import com.raytheon.uf.common.localization.LocalizationFile;
-import com.raytheon.uf.common.localization.LocalizationUtil;
-import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.style.RGBUtil;
 
 /**
  * This class reads in the rgb.txt file and creates a map of color names and the
@@ -52,111 +46,28 @@ import com.raytheon.uf.common.status.UFStatus;
  * Jun 18, 2018  6748        randerso     Trim leading and trailing spaces when
  *                                        looking up color by name. Added text
  *                                        to IllegalArgumentException.
- *
+ * Jun 27, 2019  65510       ksunil       Made to extend RGBUtils and some refactoring around it.
  * </pre>
  *
  * @author lvenable
  *
  */
-public class RGBColors {
+public class RGBColors extends RGBUtil {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RGBColors.class);
 
-    /**
-     * rgb.txt file.
-     */
-    private static final String RGB_FILE_NAME = LocalizationUtil
-            .join("colorfile", "rgb.txt");
-
-    private static LocalizationFile rgbFile;
-
-    private static class RGBEntry {
-        public RGB color;
-
-        public String name;
+    private RGBColors() {
     }
 
     /**
      * Map of color names (key) and RGB color (value).
      */
-    private static Map<String, RGBEntry> colorMap;
+    private static Map<String, RGB> rgbObjectcolorMap;
 
     /**
      * Maps of RGB colors to color names
      */
-    private static Map<RGB, String> reverseMap;
-
-    /**
-     * Constructor.
-     */
-    private RGBColors() {
-    }
-
-    private static synchronized void init() {
-        colorMap = new HashMap<>();
-        reverseMap = new HashMap<>();
-        rgbFile = PathManagerFactory.getPathManager()
-                .getStaticLocalizationFile(RGB_FILE_NAME);
-
-        parseFile();
-    }
-
-    /**
-     * Parse the RGB file. Put the color names and the RGB values in a map.
-     */
-    private static void parseFile() {
-        String fileLine;
-
-        try (BufferedReader reader = new BufferedReader(
-                new InputStreamReader(rgbFile.openInputStream()))) {
-
-            int lineNumber = 0;
-            while ((fileLine = reader.readLine()) != null) {
-                lineNumber++;
-                try {
-                    RGBEntry entry = new RGBEntry();
-                    String[] strArray = fileLine.trim().split("\\s+", 4);
-                    entry.name = strArray[3].trim();
-                    entry.color = new RGB(Integer.valueOf(strArray[0]),
-                            Integer.valueOf(strArray[1]),
-                            Integer.valueOf(strArray[2]));
-                    colorMap.put(entry.name.toUpperCase(), entry);
-
-                    /*
-                     * Check if the RGB key exists the text file contains
-                     * several colors that have the same RGB value (for example:
-                     * black & grey0 are the same RGB).
-                     */
-                    if (!reverseMap.containsKey(entry.color)) {
-                        reverseMap.put(entry.color, entry.name);
-                    }
-                } catch (IndexOutOfBoundsException
-                        | IllegalArgumentException e) {
-                    statusHandler.error(String.format(
-                            "Invalid syntax at line %d of %s.\n" + "%s\n"
-                                    + "Expected rrr, ggg, bbb, name, where rrr, ggg, bbb are integers between 0 and 255\n",
-                            lineNumber, rgbFile, fileLine), e);
-                }
-
-            }
-        } catch (LocalizationException | IOException e) {
-            statusHandler.error("Error reading " + rgbFile, e);
-        }
-    }
-
-    private static synchronized Map<String, RGBEntry> getColorMap() {
-        if (colorMap == null) {
-            init();
-        }
-        return colorMap;
-    }
-
-    private static synchronized Map<RGB, String> getReverseMap() {
-        if (reverseMap == null) {
-            init();
-        }
-        return reverseMap;
-    }
+    private static Map<RGB, String> rgbObjectReverseColorMap;
 
     /**
      * Get the RGB value of the color name passed in.
@@ -167,18 +78,55 @@ public class RGBColors {
      */
     public static RGB getRGBColor(String colorName) {
         if (colorName.startsWith("#")) {
-            return parseHexString(colorName);
+            int[] rgb = parseHexString(colorName);
+            return new RGB(rgb[0], rgb[1], rgb[2]);
         }
 
-        RGBEntry entry = getColorMap().get(colorName.trim().toUpperCase());
-        if (entry == null) {
+        RGB rgbColor = getRGBColorMap().get(colorName.trim().toUpperCase());
+        if (rgbColor == null) {
             String msg = String.format("\"%s\" is not defined in %s", colorName,
                     rgbFile);
             statusHandler.warn(msg + ", using \"white\"",
                     new IllegalArgumentException(msg));
             return new RGB(255, 255, 255);
         }
-        return entry.color;
+        return rgbColor;
+    }
+
+    private static Map<String, RGB> getRGBColorMap() {
+        if (rgbObjectcolorMap == null) {
+            initRGBObjectMaps();
+        }
+        return rgbObjectcolorMap;
+    }
+
+    private static Map<RGB, String> getRGBReverseColorMap() {
+        if (rgbObjectReverseColorMap == null) {
+            initRGBObjectMaps();
+        }
+        return rgbObjectReverseColorMap;
+    }
+
+    private static synchronized void initRGBObjectMaps() {
+        // get the underlying map in the int[] form. And convert to a map in
+        // RGB. This conversion is done only once.
+
+        Map<String, RGB> rgbObjectcolorMapTmp = new HashMap<>();
+        Map<RGB, String> rgbObjectReverseColorMapTmp = new HashMap<>();
+
+        Map<String, RGBIntEntry> entryMap = getColorMap();
+        for (Map.Entry<String, RGBIntEntry> rgbNameVals : entryMap.entrySet()) {
+            RGBIntEntry entry = rgbNameVals.getValue();
+            RGB col = new RGB(entry.colorValues[0], entry.colorValues[1],
+                    entry.colorValues[2]);
+            rgbObjectcolorMapTmp.put(entry.colorName.toUpperCase(), col);
+
+            if (!rgbObjectReverseColorMapTmp.containsKey(col)) {
+                rgbObjectReverseColorMapTmp.put(col, entry.colorName);
+            }
+        }
+        rgbObjectcolorMap = rgbObjectcolorMapTmp;
+        rgbObjectReverseColorMap = rgbObjectReverseColorMapTmp;
     }
 
     /**
@@ -191,7 +139,7 @@ public class RGBColors {
      */
     public static String getColorName(RGB color) {
 
-        String name = getReverseMap().get(color);
+        String name = getRGBReverseColorMap().get(color);
         if (name == null) {
             name = getHexString(color);
         }
@@ -208,9 +156,10 @@ public class RGBColors {
      */
     public static String getColorName(String hexColor) {
 
-        RGB rgb = parseHexString(hexColor);
+        int[] rgb = parseHexString(hexColor);
 
-        String name = getReverseMap().get(rgb);
+        String name = getRGBReverseColorMap()
+                .get(new RGB(rgb[0], rgb[1], rgb[2]));
         if (name != null) {
             return name;
         }
@@ -229,21 +178,5 @@ public class RGBColors {
     public static String getHexString(RGB color) {
         return String.format("#%02x%02x%02x", color.red, color.green,
                 color.blue);
-    }
-
-    private static RGB parseHexString(String s) {
-        if (s.startsWith("#") && (s.length() == 7)) {
-            try {
-                int red = Integer.parseInt(s.substring(1, 3), 16);
-                int green = Integer.parseInt(s.substring(3, 5), 16);
-                int blue = Integer.parseInt(s.substring(5, 7), 16);
-                return new RGB(red, green, blue);
-            } catch (NumberFormatException e) {
-                // fall through to throw
-            }
-        }
-
-        throw new IllegalArgumentException("\"" + s
-                + "\" is not a valid hexadecimal color string of the form (#rrggbb))");
     }
 }
