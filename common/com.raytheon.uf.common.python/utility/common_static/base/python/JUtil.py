@@ -114,7 +114,7 @@ def pylistToJavaStringList(pylist):
     '''
     Going forward should use pyValToJavaObj instead.
     '''
-    jlist = ArrayList();
+    jlist = ArrayList()
     for i in pylist:
         jlist.add(String(i))
     return jlist
@@ -131,7 +131,7 @@ def javaMapToPyDict(javaMap, customConverter=None):
     else:
         pyDict = {}
     while itr.hasNext():
-        key = itr.next()
+        key = next(itr)
         obj = javaMap.get(key)
         pyDict[javaObjToPyVal(key)] = javaObjToPyVal(obj, customConverter)
     return pyDict
@@ -154,7 +154,7 @@ def pyDictToJavaMap(pyDict):
 
 class JavaWrapperClass(object):
     def toJavaObj(self):
-        raise NotImplementedError, "Subclasses must override this method."
+        raise NotImplementedError("Subclasses must override this method.")
 
 # this initializes the basic handlers for Java->Python conversion and Python->Java conversion
 
