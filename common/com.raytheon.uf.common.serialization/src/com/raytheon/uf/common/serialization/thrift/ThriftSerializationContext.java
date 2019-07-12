@@ -106,6 +106,8 @@ import net.sf.cglib.reflect.FastClass;
  * Oct 19, 2017  6316     njensen     Improved serialization error message
  * Jun 28, 2019  7888     tgurney     Check deserialized integers for
  *                                    overflow/underflow
+ * Jul 12, 2019  7888     tgurney     Do not check integer for truncation if it
+ *                                    would assigned to a Number or Object field
  *
  * </pre>
  *
@@ -1154,8 +1156,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
     private void checkForTruncation(Class<?> clazz, String fieldName,
             Long value) throws NumberTruncatedException {
         Class<?> fieldClass = findFieldClass(clazz, fieldName);
-        if (fieldClass != null && castNumber(value, fieldClass)
-                .longValue() != value.longValue()) {
+        if (value == null || fieldClass == null
+                || fieldClass.isAssignableFrom(value.getClass())) {
+            return;
+        }
+        if (castNumber(value, fieldClass).longValue() != value.longValue()) {
             String msg = "Deserialized value for " + fieldClass.getSimpleName()
                     + " field " + clazz.getSimpleName() + "." + fieldName
                     + " is out of range (value: " + value + ")";
