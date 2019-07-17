@@ -19,11 +19,16 @@
  **/
 package com.raytheon.edex.services;
 
+import java.net.URISyntaxException;
 import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
+import org.apache.http.client.utils.URIBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
@@ -49,6 +54,7 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  * Dec 17, 2015 5166      kbisanz      Update logging to use SLF4J
  * Feb 02, 2017 6085      bsteffen     Enable ssl in the JMS connection.
  * Feb 09, 2017 6111      njensen      Overrode register to not return this
+ * Jul 17, 2019 7724      mrichardson  Upgrade Qpid to Qpid Proton.
  * 
  * </pre>
  * 
@@ -56,7 +62,7 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  */
 public class GetServersHandler extends GenericRegistry<String, String>
         implements IRequestHandler<GetServersRequest> {
-
+    
     private static final Logger logger = LoggerFactory
             .getLogger(GetServersHandler.class);
 
@@ -65,18 +71,23 @@ public class GetServersHandler extends GenericRegistry<String, String>
             throws Exception {
         GetServersResponse response = new GetServersResponse();
         String httpServer = System.getenv("HTTP_SERVER");
-        String jmsServer = System.getenv("JMS_SERVER");
         String jmsVirtualHost = System.getenv("JMS_VIRTUALHOST");
         String pypiesServer = System.getenv("PYPIES_SERVER");
-        String jmsConnectionString = this
-                .constructJMSConnectionString(jmsServer, jmsVirtualHost);
+        String brokerHost = System.getenv("BROKER_HOST");
+        String brokerPort = System.getenv("BROKER_PORT");
+        String jmsConnectionString = 
+                constructJMSConnectionString(brokerHost, brokerPort, jmsVirtualHost);
+        Map<String, String> connectionInfo = 
+                jmsConnectionInfo(brokerHost, brokerPort, jmsVirtualHost);
 
         logger.info("http.server=" + httpServer);
-        logger.info("jms.server=" + jmsServer);
+        logger.info("broker host=" + brokerHost);
+        logger.info("broker port" + brokerPort);
         logger.info("jms.virtualhost=" + jmsVirtualHost);
         logger.info("pypies.server=" + pypiesServer);
         logger.info("server locations=" + registry);
 
+        response.setConnectionInfo(connectionInfo);
         response.setHttpServer(httpServer);
         response.setJmsConnectionString(jmsConnectionString);
         response.setPypiesServer(pypiesServer);
@@ -85,26 +96,49 @@ public class GetServersHandler extends GenericRegistry<String, String>
         return response;
     }
 
+    private static Map<String, String> jmsConnectionInfo(String hostname,
+            String port, String vhost) {
+        Map<String, String> connectionInfo = new HashMap<>();
+        String connTimeout = System.getProperty("utility.server.connectTimeout", "5000");
+        String forceSyncSend = System.getProperty("utility.server.forceSyncSend", "true");
+
+        connectionInfo.put("hostname", hostname);
+        connectionInfo.put("port", port);
+        connectionInfo.put("vhost", vhost);
+        connectionInfo.put("jms.username", "guest");
+        connectionInfo.put("jms.prefetchPolicy.all", "0");
+        connectionInfo.put("jms.clientID", "__WSID__");
+        connectionInfo.put("jms.connectTimeout", connTimeout);
+        connectionInfo.put("jms.forceSyncSend", forceSyncSend);
+        return connectionInfo;
+    }
+
     // do not enable retry/connectdelay connection and factory will
     // silently reconnect and user will never be notified qpid is down
     // and cave/text workstation will just act like they are hung
     // up to each individual component that opens a connection to handle
     // reconnect
-    private static String constructJMSConnectionString(String jmsServer,
-            String jmsVirtualHost) {
-        /* build the connection String that CAVE will use. */
-        StringBuilder stringBuilder = new StringBuilder(
-                "amqp://guest:guest@__WSID__/");
-        stringBuilder.append(jmsVirtualHost);
-        stringBuilder.append("?brokerlist='");
-        stringBuilder.append(jmsServer);
-        stringBuilder.append(
-                "?connecttimeout='5000'&heartbeat='0''&maxprefetch='10'&sync_publish='all'&failover='nofailover'&sync_ack='true'");
-        if (Boolean.parseBoolean(System.getenv("JMS_SSL_ENABLED"))) {
-            stringBuilder.append("&ssl='true'");
-        }
+    private static String constructJMSConnectionString(String brokerHost,
+            String brokerPort, String jmsVirtualHost) throws URISyntaxException {
+        String connTimeout = System.getProperty("utility.server.connectTimeout", "5000");
+        String forceSyncSend = System.getProperty("utility.server.forceSyncSend", "true");
+        
+        // build the connection String that CAVE will use
+        URIBuilder uriBuilder = new URIBuilder();
+        uriBuilder.setScheme("amqps");
+        uriBuilder.setHost(brokerHost);
+        uriBuilder.setPort(Integer.parseInt(brokerPort));
+        uriBuilder.addParameter("amqp.vhost", jmsVirtualHost);
+        uriBuilder.addParameter("jms.username", "guest");
+        uriBuilder.addParameter("jms.prefetchPolicy.all", "0");
+        uriBuilder.addParameter("jms.clientID", "__WSID__");
+        uriBuilder.addParameter("jms.connectTimeout",
+                connTimeout);
+        uriBuilder.addParameter("jms.forceSyncSend",
+                forceSyncSend);
+        uriBuilder = JMSConnectionInfo.getInstance().configureSSL(uriBuilder);
 
-        return stringBuilder.toString();
+        return uriBuilder.toString();
     }
 
     @Override

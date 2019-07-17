@@ -25,8 +25,8 @@ import java.util.List;
 import javax.jms.JMSException;
 import javax.jms.MessageProducer;
 
-import org.apache.qpid.client.AMQDestination;
-import org.apache.qpid.client.BasicMessageProducer;
+import org.apache.qpid.jms.JmsDestination;
+import org.apache.qpid.jms.JmsMessageProducer;
 
 import com.raytheon.uf.common.jms.wrapper.JmsProducerWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -53,6 +53,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 08, 2012 194        njensen     Improved logging.
  * Feb 26, 2013 1642       rjpeter     Removed lazy initialization.
  * Feb 07, 2014 2357       rjpeter     Updated logging.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * </pre>
  * 
  * @author rjpeter
@@ -88,11 +89,11 @@ public class JmsPooledProducer {
         this.sess = sess;
         this.destKey = destKey;
         this.producer = producer;
-        if (producer instanceof BasicMessageProducer) {
+        if (producer instanceof JmsMessageProducer) {
             try {
                 statusHandler.info("Creating AMQ producer "
-                        + ((AMQDestination) ((BasicMessageProducer) producer)
-                                .getDestination()).getQueueName());
+                        + ((JmsDestination) ((JmsMessageProducer) producer)
+                                .getDestination()).getAddress());
             } catch (Exception e) {
                 statusHandler
                         .error("Could not get producer destination for key "
@@ -178,11 +179,11 @@ public class JmsPooledProducer {
 
         if (close) {
             try {
-                if (producer instanceof BasicMessageProducer) {
+                if (producer instanceof JmsMessageProducer) {
                     statusHandler
                             .info("Closing AMQ producer "
-                                    + ((AMQDestination) ((BasicMessageProducer) producer)
-                                            .getDestination()).getQueueName()); // njensen
+                                    + ((JmsDestination) ((JmsMessageProducer) producer)
+                                            .getDestination()).getAddress()); // njensen
                 } else {
                     statusHandler.info("Closing producer " + destKey); // njensen
                 }

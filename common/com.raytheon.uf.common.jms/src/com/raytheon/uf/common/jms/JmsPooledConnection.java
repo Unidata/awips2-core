@@ -28,11 +28,13 @@ import javax.jms.ExceptionListener;
 import javax.jms.JMSException;
 import javax.jms.Session;
 
+import com.raytheon.uf.common.jms.qpid.IBrokerRestProvider;
 import com.raytheon.uf.common.jms.wrapper.JmsConnectionWrapper;
 import com.raytheon.uf.common.jms.wrapper.JmsSessionWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Jms Pooled Connection. Tracks references to the connection to know when the
@@ -59,13 +61,14 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Feb 07, 2014 2357       rjpeter     Track by Thread, close session is it has no
  *                                     producers/consumers.
  * Aug 05, 2015 4486       rjpeter     Fix NPE.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * </pre>
  * 
  * @author rjpeter
  * @version 1.0
  */
 public class JmsPooledConnection implements ExceptionListener {
-    private static final long ERROR_BROADCAST_INTERVAL = 30000;
+    private static final long ERROR_BROADCAST_INTERVAL = 30 * TimeUtil.MILLIS_PER_SECOND;
 
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(JmsPooledConnection.class);
@@ -76,7 +79,7 @@ public class JmsPooledConnection implements ExceptionListener {
 
     // keeps track of number of creates vs. closes to know when it can be
     // returned to the pool
-    private final List<JmsConnectionWrapper> references = new ArrayList<JmsConnectionWrapper>(
+    private final List<JmsConnectionWrapper> references = new ArrayList<>(
             1);
 
     private final Object stateLock = new Object();
@@ -94,15 +97,18 @@ public class JmsPooledConnection implements ExceptionListener {
 
     private final String clientId;
 
+    private final IBrokerRestProvider jmsAdmin;
+
     private volatile long connectionStartTime = 0;
 
     private volatile boolean exceptionOccurred = false;
 
     public JmsPooledConnection(JmsPooledConnectionFactory connFactory,
-            Thread thread) {
+            Thread thread, IBrokerRestProvider jmsAdmin) {
         this.connFactory = connFactory;
         this.thread = thread;
         this.clientId = null;
+        this.jmsAdmin = jmsAdmin;
         getConnection();
     }
 
@@ -142,7 +148,7 @@ public class JmsPooledConnection implements ExceptionListener {
 
             if (session == null) {
                 session = new JmsPooledSession(this, conn.createSession(
-                        transacted, acknowledgeMode));
+                        transacted, acknowledgeMode), jmsAdmin);
             }
         }
 
@@ -180,6 +186,10 @@ public class JmsPooledConnection implements ExceptionListener {
                 + connFactory.getProvider()
                 + " connection.  Closing connection", jmsExc);
         close();
+    }
+
+    public JmsPooledConnectionFactory getConnFactory() {
+        return connFactory;
     }
 
     public void close() {
@@ -379,7 +389,7 @@ public class JmsPooledConnection implements ExceptionListener {
                             .warn("Pooled session already existed for this connection, closing previous session");
                     availableSession.getPooledObject().close();
                 }
-                availableSession = new AvailableJmsPooledObject<JmsPooledSession>(
+                availableSession = new AvailableJmsPooledObject<>(
                         session);
                 session = null;
             }

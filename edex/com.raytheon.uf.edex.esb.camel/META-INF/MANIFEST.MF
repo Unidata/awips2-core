@@ -28,7 +28,7 @@ Import-Package: com.raytheon.uf.common.event,
  com.raytheon.uf.edex.event,
  javax.persistence,
  javax.servlet,
- javax.servlet.http
-
-
+ javax.servlet.http,
+ org.apache.qpid.jms,
+ org.apache.qpid.jms.jndi
 

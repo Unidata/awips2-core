@@ -32,6 +32,7 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import com.raytheon.uf.common.jms.qpid.IBrokerRestProvider;
 import com.raytheon.uf.common.jms.wrapper.JmsConsumerWrapper;
 import com.raytheon.uf.common.jms.wrapper.JmsProducerWrapper;
 import com.raytheon.uf.common.jms.wrapper.JmsSessionWrapper;
@@ -84,6 +85,8 @@ public class JmsPooledSession {
     // session that is being reserved for a given thread.
     private final Thread thread;
 
+    private final IBrokerRestProvider jmsAdmin;
+
     private volatile boolean exceptionOccurred = false;
 
     private final Object stateLock = new Object();
@@ -96,21 +99,21 @@ public class JmsPooledSession {
 
     // keeps track of number of creates vs. closes to know when it can be
     // returned to the pool
-    private final List<JmsSessionWrapper> references = new ArrayList<JmsSessionWrapper>(
-            1);
+    private final List<JmsSessionWrapper> references = new ArrayList<>(1);
 
-    private final Map<String, AvailableJmsPooledObject<JmsPooledConsumer>> availableConsumers = new HashMap<String, AvailableJmsPooledObject<JmsPooledConsumer>>();
+    private final Map<String, AvailableJmsPooledObject<JmsPooledConsumer>> availableConsumers = new HashMap<>();
 
-    private final Map<String, AvailableJmsPooledObject<JmsPooledProducer>> availableProducers = new HashMap<String, AvailableJmsPooledObject<JmsPooledProducer>>();
+    private final Map<String, AvailableJmsPooledObject<JmsPooledProducer>> availableProducers = new HashMap<>();
 
-    private final Map<String, JmsPooledConsumer> inUseConsumers = new HashMap<String, JmsPooledConsumer>();
+    private final Map<String, JmsPooledConsumer> inUseConsumers = new HashMap<>();
 
-    private final Map<String, JmsPooledProducer> inUseProducers = new HashMap<String, JmsPooledProducer>();
+    private final Map<String, JmsPooledProducer> inUseProducers = new HashMap<>();
 
-    public JmsPooledSession(JmsPooledConnection conn, Session sess) {
+    public JmsPooledSession(JmsPooledConnection conn, Session sess, IBrokerRestProvider jmsAdmin) {
         this.conn = conn;
         this.sess = sess;
         this.thread = conn.getThread();
+        this.jmsAdmin = jmsAdmin;
         if (statusHandler.isPriorityEnabled(Priority.DEBUG)) {
             statusHandler.debug("Opening session: " + this.toString());
         }
@@ -135,6 +138,10 @@ public class JmsPooledSession {
 
     public Thread getThread() {
         return thread;
+    }
+
+    public IBrokerRestProvider getJmsAdmin() {
+        return jmsAdmin;
     }
 
     public boolean isValid() {
@@ -204,8 +211,8 @@ public class JmsPooledSession {
      */
     public int closeOldPooledResources(int resourceRetention) {
         int count = 0;
-        List<AvailableJmsPooledObject<JmsPooledProducer>> producersToClose = new LinkedList<AvailableJmsPooledObject<JmsPooledProducer>>();
-        List<AvailableJmsPooledObject<JmsPooledConsumer>> consumersToClose = new LinkedList<AvailableJmsPooledObject<JmsPooledConsumer>>();
+        List<AvailableJmsPooledObject<JmsPooledProducer>> producersToClose = new LinkedList<>();
+        List<AvailableJmsPooledObject<JmsPooledConsumer>> consumersToClose = new LinkedList<>();
         long curTime = System.currentTimeMillis();
         synchronized (availableProducers) {
             Iterator<AvailableJmsPooledObject<JmsPooledProducer>> iter = availableProducers
@@ -251,7 +258,7 @@ public class JmsPooledSession {
     }
 
     public void closePooledConsumersProducers() {
-        List<JmsPooledProducer> producersToClose = new ArrayList<JmsPooledProducer>(
+        List<JmsPooledProducer> producersToClose = new ArrayList<>(
                 inUseProducers.size() + availableProducers.size());
         synchronized (inUseProducers) {
             producersToClose.addAll(inUseProducers.values());
@@ -259,7 +266,7 @@ public class JmsPooledSession {
         }
 
         synchronized (availableProducers) {
-            producersToClose = new ArrayList<JmsPooledProducer>(
+            producersToClose = new ArrayList<>(
                     availableProducers.size());
             for (AvailableJmsPooledObject<JmsPooledProducer> wrapper : availableProducers
                     .values()) {
@@ -268,7 +275,7 @@ public class JmsPooledSession {
             availableProducers.clear();
         }
 
-        List<JmsPooledConsumer> consumersToClose = new ArrayList<JmsPooledConsumer>(
+        List<JmsPooledConsumer> consumersToClose = new ArrayList<>(
                 inUseConsumers.size() + availableConsumers.size());
 
         synchronized (inUseConsumers) {
@@ -329,7 +336,7 @@ public class JmsPooledSession {
                 synchronized (availableProducers) {
                     AvailableJmsPooledObject<JmsPooledProducer> prev = availableProducers
                             .put(destKey,
-                                    new AvailableJmsPooledObject<JmsPooledProducer>(
+                                    new AvailableJmsPooledObject<>(
                                             producer));
                     if (prev != null) {
                         // there was a previous producer registered to
@@ -416,7 +423,7 @@ public class JmsPooledSession {
                 synchronized (availableConsumers) {
                     AvailableJmsPooledObject<JmsPooledConsumer> prev = availableConsumers
                             .put(destKey,
-                                    new AvailableJmsPooledObject<JmsPooledConsumer>(
+                                    new AvailableJmsPooledObject<>(
                                             consumer));
                     if (prev != null) {
                         // there was a previous consumer registered to

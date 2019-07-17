@@ -26,8 +26,11 @@ import javax.jms.Destination;
 import javax.jms.JMSException;
 import javax.jms.MessageConsumer;
 
-import org.apache.qpid.client.BasicMessageConsumer;
+import org.apache.qpid.jms.JmsMessageConsumer;
+import org.apache.qpid.jms.JmsTopic;
 
+import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.jms.qpid.JMSConfigurationException;
 import com.raytheon.uf.common.jms.wrapper.JmsConsumerWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
@@ -53,6 +56,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 08, 2012 194        njensen     Improved logging.
  * Feb 26, 2013 1642       rjpeter     Removed lazy initialization.
  * Feb 07, 2014 2357       rjpeter     Updated logging.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * </pre>
  * 
  * @author rjpeter
@@ -80,7 +84,7 @@ public class JmsPooledConsumer {
      * Bullet proofing in case 3rd party ever tries to get multiple consumers to
      * the same destination.
      */
-    private final List<JmsConsumerWrapper> references = new ArrayList<JmsConsumerWrapper>(
+    private final List<JmsConsumerWrapper> references = new ArrayList<>(
             1);
 
     public JmsPooledConsumer(JmsPooledSession sess, String destKey,
@@ -88,13 +92,23 @@ public class JmsPooledConsumer {
             throws JMSException {
         this.sess = sess;
         this.destKey = destKey;
+
+        try {
+            if (!(destination instanceof JmsTopic)) {
+                this.sess.getJmsAdmin().createQueue(destKey);
+                this.sess.getJmsAdmin().createBinding(destKey, "amq.direct");
+            }
+        } catch (JMSConfigurationException | CommunicationException e) {
+            statusHandler.error("An error occurred while creating the queue " + destKey, e);
+        }
+
         consumer = sess.getSession().createConsumer(destination,
                 messageSelector);
 
-        if (consumer instanceof BasicMessageConsumer) {
+        if (consumer instanceof JmsMessageConsumer) {
             statusHandler.info("Creating AMQ consumer "
-                    + ((BasicMessageConsumer) consumer).getDestination()
-                            .getQueueName()); // njensen
+                    + ((JmsMessageConsumer) consumer).getDestination()
+                            .getAddress());
         } else {
             statusHandler.info("Creating consumer " + destKey); // njensen
         }
@@ -175,10 +189,10 @@ public class JmsPooledConsumer {
 
         if (close) {
             try {
-                if (consumer instanceof BasicMessageConsumer) {
+                if (consumer instanceof JmsMessageConsumer) {
                     statusHandler.info("Closing AMQ consumer "
-                            + ((BasicMessageConsumer) consumer)
-                                    .getDestination().getQueueName()); // njensen
+                            + ((JmsMessageConsumer) consumer)
+                                    .getDestination().getAddress()); // njensen
                 } else {
                     statusHandler.info("Closing consumer " + destKey); // njensen
                 }

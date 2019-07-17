@@ -49,6 +49,9 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.jms.qpid.IBrokerRestProvider;
+import com.raytheon.uf.common.jms.qpid.JMSConfigurationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -63,23 +66,24 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * May 08, 2008  1127     randerso  Initial Creation
- * Sep 03, 2008  1448     chammack  Refactored notification observer interface
- * Apr 23, 2013  1939     randerso  Add separate connect method to allow
- *                                  application to complete initialization
- *                                  before connecting to JMS.
- * Oct 15, 2013  2389     rjpeter   Updated synchronization to remove session
- *                                  leaks.
- * Jul 21, 2014  3390     bsteffen  Extracted logic from the
- *                                  NotificationManagerJob
- * Oct 23, 2014  3390     bsteffen  Fix concurrency of disconnect and name
- *                                  threads.
- * Apr 06, 2015  3343     rjpeter   Fix deadlock and reconnect.
- * Feb 11, 2016  4630     rjpeter   Fix memory leak.
- * Mar 19, 2018  7141     randerso  Use a single timer for all
- *                                  ReconnectTimerTasks
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ---------   --------------------------------------------
+ * May 08, 2008  1127     randerso    Initial Creation
+ * Sep 03, 2008  1448     chammack    Refactored notification observer interface
+ * Apr 23, 2013  1939     randerso    Add separate connect method to allow
+ *                                    application to complete initialization
+ *                                    before connecting to JMS.
+ * Oct 15, 2013  2389     rjpeter     Updated synchronization to remove session
+ *                                    leaks.
+ * Jul 21, 2014  3390     bsteffen    Extracted logic from the
+ *                                    NotificationManagerJob
+ * Oct 23, 2014  3390     bsteffen    Fix concurrency of disconnect and name
+ *                                    threads.
+ * Apr 06, 2015  3343     rjpeter     Fix deadlock and reconnect.
+ * Feb 11, 2016  4630     rjpeter     Fix memory leak.
+ * Mar 19, 2018  7141     randerso    Use a single timer for all
+ *                                    ReconnectTimerTasks
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  *
  * </pre>
  *
@@ -154,6 +158,8 @@ public class JmsNotificationManager
 
     protected final ConnectionFactory connectionFactory;
 
+    protected final IBrokerRestProvider jmsAdmin;
+
     /** The observer map of topic to listeners */
     protected final Map<ListenerKey, NotificationListener> listeners;
 
@@ -184,8 +190,8 @@ public class JmsNotificationManager
      *
      * @param connectionFactory
      */
-    public JmsNotificationManager(ConnectionFactory connectionFactory) {
-        this(connectionFactory, "JmsNotificationPool");
+    public JmsNotificationManager(ConnectionFactory connectionFactory, IBrokerRestProvider jmsAdmin) {
+        this(connectionFactory, jmsAdmin, "JmsNotificationPool");
     }
 
     /**
@@ -195,8 +201,9 @@ public class JmsNotificationManager
      * @param notificationThreadNamePrefix
      */
     public JmsNotificationManager(ConnectionFactory connectionFactory,
-            String notificationThreadNamePrefix) {
+            IBrokerRestProvider jmsAdmin, String notificationThreadNamePrefix) {
         this.connectionFactory = connectionFactory;
+        this.jmsAdmin = jmsAdmin;
         this.listeners = new HashMap<>();
         executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0,
                 TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
@@ -587,6 +594,12 @@ public class JmsNotificationManager
             session = manager.createSession();
             if (session != null) {
                 String queueName = id;
+                try {
+                    manager.jmsAdmin.createQueue(queueName);
+                    manager.jmsAdmin.createBinding(queueName, "amq.direct");
+                } catch (JMSConfigurationException | CommunicationException e) {
+                    statusHandler.error("An error occurred trying to create the destination for " + queueName, e);
+                }
                 Queue t = session.createQueue(queueName);
 
                 if (queryString != null) {
@@ -605,6 +618,12 @@ public class JmsNotificationManager
             session = manager.createSession();
             if (session != null) {
                 String topicName = id;
+                try {
+                    manager.jmsAdmin.createQueue(topicName);
+                    manager.jmsAdmin.createBinding(topicName, "amq.topic");
+                } catch (JMSConfigurationException | CommunicationException e) {
+                    statusHandler.error("An error occurred trying to create the destination for " + topicName, e);
+                }
                 Topic t = session.createTopic(topicName);
 
                 if (queryString != null) {

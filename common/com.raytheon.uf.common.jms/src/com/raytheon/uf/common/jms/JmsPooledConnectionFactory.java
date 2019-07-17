@@ -27,12 +27,15 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 
+import com.raytheon.uf.common.jms.qpid.IBrokerRestProvider;
 import com.raytheon.uf.common.jms.wrapper.JmsConnectionWrapper;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Connection Factory that keep underlying JMS resources used by a thread open
@@ -59,6 +62,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Oct 04, 2013 2357       rjpeter     Removed pooling, keeps resources open for the
  *                                     thread that created them for a configured amount of time.
  * Feb 07, 2014 2357       rjpeter     Track by Thread object, periodly check that tracked Threads are still alive.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton
  * </pre>
  * 
  * @author rjpeter
@@ -71,22 +75,29 @@ public class JmsPooledConnectionFactory implements ConnectionFactory {
 
     private final ConnectionFactory connFactory;
 
+    private final IBrokerRestProvider brokerRestProvider;
+
     private String provider = "QPID";
 
     // connections in use
-    private final Map<Thread, JmsPooledConnection> inUseConnections = new HashMap<Thread, JmsPooledConnection>();
+    private final Map<Thread, JmsPooledConnection> inUseConnections = new HashMap<>();
 
     // connections that were recently returned
-    private final Map<Thread, AvailableJmsPooledObject<JmsPooledConnection>> pendingConnections = new HashMap<Thread, AvailableJmsPooledObject<JmsPooledConnection>>();
+    private final Map<Thread, AvailableJmsPooledObject<JmsPooledConnection>> pendingConnections = new HashMap<>();
 
-    private final ConcurrentLinkedQueue<JmsPooledConnection> deadConnections = new ConcurrentLinkedQueue<JmsPooledConnection>();
+    private final ConcurrentLinkedQueue<JmsPooledConnection> deadConnections = new ConcurrentLinkedQueue<>();
 
-    private int reconnectInterval = 30000;
+    private int reconnectInterval = 30 * (int) TimeUtil.MILLIS_PER_SECOND;
 
-    private int resourceRetention = 180000;
+    private int resourceRetention = 3 * (int) TimeUtil.MILLIS_PER_MINUTE;
 
-    public JmsPooledConnectionFactory(ConnectionFactory factory) {
+    public JmsPooledConnectionFactory(ConnectionFactory factory, IBrokerRestProvider brokerRestProvider) {
         this.connFactory = factory;
+        this.brokerRestProvider = brokerRestProvider;
+    }
+    
+    public IBrokerRestProvider getBrokerRestProvider() {
+        return brokerRestProvider;
     }
 
     /*
@@ -140,7 +151,7 @@ public class JmsPooledConnectionFactory implements ConnectionFactory {
 
         // create new connection?
         if (conn == null) {
-            conn = new JmsPooledConnection(this, thread);
+            conn = new JmsPooledConnection(this, thread, brokerRestProvider);
         }
 
         return getConnectionWrapper(conn);
@@ -278,7 +289,7 @@ public class JmsPooledConnectionFactory implements ConnectionFactory {
             synchronized (pendingConnections) {
                 prev = pendingConnections
                         .put(thread,
-                                new AvailableJmsPooledObject<JmsPooledConnection>(
+                                new AvailableJmsPooledObject<>(
                                         conn));
             }
             if ((prev != null) && (prev.getPooledObject() != conn)) {
@@ -338,7 +349,7 @@ public class JmsPooledConnectionFactory implements ConnectionFactory {
 
         ArrayList<JmsPooledConnection> connectionsToCheck = null;
         synchronized (inUseConnections) {
-            connectionsToCheck = new ArrayList<JmsPooledConnection>(
+            connectionsToCheck = new ArrayList<>(
                     inUseConnections.values());
         }
 
@@ -369,6 +380,28 @@ public class JmsPooledConnectionFactory implements ConnectionFactory {
                             + resourcesClosed + ", total time "
                             + (System.currentTimeMillis() - curTime));
         }
+    }
+
+    @Override
+    public JMSContext createContext() {
+        return connFactory.createContext();
+    }
+
+    @Override
+    public JMSContext createContext(int sessionMode) {
+        return connFactory.createContext(sessionMode);
+    }
+
+    @Override
+    public JMSContext createContext(String userName, String password) {
+        throw new UnsupportedOperationException(
+                "JmsPooledConnectionFactory not implemented for username/password connections");
+    }
+
+    @Override
+    public JMSContext createContext(String userName, String password, int sessionMode) {
+        throw new UnsupportedOperationException(
+                "JmsPooledConnectionFactory not implemented for username/password connections");
     }
 
 }
