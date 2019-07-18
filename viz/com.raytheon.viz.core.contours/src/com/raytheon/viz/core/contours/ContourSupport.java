@@ -129,6 +129,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Apr 30, 2018  6697     bsteffen     Support zoomLock.
  * May 07, 2019  65510    ksunil       multiple changes to support customized contour support
  * Jun 27, 2019  65510    ksunil       refactor smoothData
+ * Jul 11, 2019  65905    ksunil       fixed the issue with labelFormat within the values tag
  *
  * </pre>
  *
@@ -711,7 +712,7 @@ public class ContourSupport {
                                 float[] values = currentPref.getValues();
                                 for (int k = 0; k < values.length; k++) {
                                     if (contourValue == values[k]) {
-                                        label = Float.toString(values[k]);
+                                        label = dfLabel.format(values[k]);
                                         if (currentPref.noStylesSet()) {
                                             if (contourValue >= 0) {
                                                 shapeToAddTo = contourGroup.posValueShape;
@@ -1295,7 +1296,7 @@ public class ContourSupport {
                                     float[] values = currentPref.getValues();
                                     for (int k = 0; k < values.length; k++) {
                                         if (contourValue == values[k]) {
-                                            label = Float.toString(values[k]);
+                                            label = dfLabel.format(values[k]);
                                             if (currentPref.noStylesSet()) {
                                                 if (contourValue >= 0) {
                                                     shapeToAddTo = contourGroup.posValueShape;
