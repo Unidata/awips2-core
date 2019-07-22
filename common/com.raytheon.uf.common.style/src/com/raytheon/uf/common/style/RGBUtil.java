@@ -23,6 +23,7 @@ package com.raytheon.uf.common.style;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -43,6 +44,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date          Ticket#     Engineer     Description
  * ------------- ----------- ------------ --------------------------
  * Jun 27, 2019  65510       ksunil       initial creation
+ * Jul 18, 2019  66188       ksunil       Change RGBColors to refer to static RGBUtil instead extending.
  *
  * </pre>
  *
@@ -59,31 +61,26 @@ public class RGBUtil {
     private static final String RGB_FILE_NAME = LocalizationUtil
             .join("colorfile", "rgb.txt");
 
-    protected static LocalizationFile rgbFile;
+    private static LocalizationFile rgbFile;
 
-    protected static class RGBIntEntry {
+    public static class RGBIntEntry {
         public int[] colorValues;
 
         public String colorName;
     }
 
     /**
-     * Map of color names (key) and RGB color (value).
+     * Map of color names (key) and RGB color int[] values.
      */
-    protected static Map<String, RGBIntEntry> colorMap;
-
-    /**
-     * Maps of RGB colors to color names
-     */
-    protected static Map<int[], String> reverseMap;
+    private static Map<String, RGBIntEntry> colorMap;
 
     /**
      * Constructor.
      */
-    protected RGBUtil() {
+    private RGBUtil() {
     }
 
-    protected static synchronized void init() {
+    private static synchronized void init() {
         rgbFile = PathManagerFactory.getPathManager()
                 .getStaticLocalizationFile(RGB_FILE_NAME);
 
@@ -132,26 +129,18 @@ public class RGBUtil {
                 }
 
             }
-            colorMap = colorMapTmp;
-            reverseMap = reverseMapTmp;
+            colorMap = Collections.unmodifiableMap(colorMapTmp);
 
         } catch (LocalizationException | IOException e) {
             statusHandler.error("Error reading " + rgbFile, e);
         }
     }
 
-    protected static synchronized Map<String, RGBIntEntry> getColorMap() {
+    public static synchronized Map<String, RGBIntEntry> getColorMap() {
         if (colorMap == null) {
             init();
         }
         return colorMap;
-    }
-
-    protected static synchronized Map<int[], String> getReverseMap() {
-        if (reverseMap == null) {
-            init();
-        }
-        return reverseMap;
     }
 
     /**
@@ -191,5 +180,9 @@ public class RGBUtil {
 
         throw new IllegalArgumentException("\"" + s
                 + "\" is not a valid hexadecimal color string of the form (#rrggbb))");
+    }
+
+    public static LocalizationFile getRgbFile() {
+        return rgbFile;
     }
 }

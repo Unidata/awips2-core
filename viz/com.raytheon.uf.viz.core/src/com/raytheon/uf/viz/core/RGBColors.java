@@ -28,6 +28,7 @@ import org.eclipse.swt.graphics.RGB;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.style.RGBUtil;
+import com.raytheon.uf.common.style.RGBUtil.RGBIntEntry;
 
 /**
  * This class reads in the rgb.txt file and creates a map of color names and the
@@ -46,13 +47,14 @@ import com.raytheon.uf.common.style.RGBUtil;
  * Jun 18, 2018  6748        randerso     Trim leading and trailing spaces when
  *                                        looking up color by name. Added text
  *                                        to IllegalArgumentException.
- * Jun 27, 2019  65510       ksunil       Made to extend RGBUtils and some refactoring around it.
+ * Jun 27, 2019  65510       ksunil       Made to extend RGBUtils and some re-factoring around it.
+ * Jul 18, 2019  66188       ksunil       Change RGBColors to refer to static RGBUtil instead extending.
  * </pre>
  *
  * @author lvenable
  *
  */
-public class RGBColors extends RGBUtil {
+public class RGBColors {
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(RGBColors.class);
 
@@ -78,14 +80,14 @@ public class RGBColors extends RGBUtil {
      */
     public static RGB getRGBColor(String colorName) {
         if (colorName.startsWith("#")) {
-            int[] rgb = parseHexString(colorName);
+            int[] rgb = RGBUtil.parseHexString(colorName);
             return new RGB(rgb[0], rgb[1], rgb[2]);
         }
 
         RGB rgbColor = getRGBColorMap().get(colorName.trim().toUpperCase());
         if (rgbColor == null) {
             String msg = String.format("\"%s\" is not defined in %s", colorName,
-                    rgbFile);
+                    RGBUtil.getRgbFile());
             statusHandler.warn(msg + ", using \"white\"",
                     new IllegalArgumentException(msg));
             return new RGB(255, 255, 255);
@@ -114,7 +116,7 @@ public class RGBColors extends RGBUtil {
         Map<String, RGB> rgbObjectcolorMapTmp = new HashMap<>();
         Map<RGB, String> rgbObjectReverseColorMapTmp = new HashMap<>();
 
-        Map<String, RGBIntEntry> entryMap = getColorMap();
+        Map<String, RGBIntEntry> entryMap = RGBUtil.getColorMap();
         for (Map.Entry<String, RGBIntEntry> rgbNameVals : entryMap.entrySet()) {
             RGBIntEntry entry = rgbNameVals.getValue();
             RGB col = new RGB(entry.colorValues[0], entry.colorValues[1],
@@ -156,7 +158,7 @@ public class RGBColors extends RGBUtil {
      */
     public static String getColorName(String hexColor) {
 
-        int[] rgb = parseHexString(hexColor);
+        int[] rgb = RGBUtil.parseHexString(hexColor);
 
         String name = getRGBReverseColorMap()
                 .get(new RGB(rgb[0], rgb[1], rgb[2]));
