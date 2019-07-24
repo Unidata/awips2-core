@@ -126,10 +126,10 @@ public class TableBloat {
 
     @Override
     public String toString() {
-        return String
-                .format("TableBloatInformation [schema=%s, tableName=%s, realSizeBytes=%s, bloatPercent=%.2f, bloatBytes=%s]",
-                        schema, tableName, realSizeBytes, bloatPercent,
-                        SizeUtil.prettyByteSize(bloatBytes));
+        return String.format(
+                "TableBloatInformation [schema=%s, tableName=%s, realSizeBytes=%s, bloatPercent=%.2f, bloatBytes=%s]",
+                schema, tableName, realSizeBytes, bloatPercent,
+                SizeUtil.prettyByteSize(bloatBytes));
     }
 
 }
