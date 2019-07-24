@@ -27,14 +27,20 @@ import javax.measure.unit.Unit;
 
 import org.apache.commons.lang3.ArrayUtils;
 
+import com.raytheon.uf.common.colormap.ColorMap;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
+import com.raytheon.uf.common.colormap.IColorMap;
+import com.raytheon.uf.common.colormap.image.Colormapper;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingEntry;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.FillLabelingPreferences;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.ParamLevelMatchCriteria;
+import com.raytheon.uf.common.style.RGBUtil;
 import com.raytheon.uf.common.style.StyleException;
 import com.raytheon.uf.common.style.StyleManager;
 import com.raytheon.uf.common.style.StyleRule;
@@ -71,8 +77,9 @@ import com.raytheon.uf.common.util.GridUtil;
  * Aug 31, 2015  4709     bsteffen    Fix incremental labeling.
  * Oct 22, 2015  4914     bsteffen    Expose an additional build method.
  * Apr 30, 2018  7284     bsteffen    Allow lower log minimums.
+ * Jun 27, 2019  65510    ksunil      support color fill through XML entries
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class ColorMapParameterFactory {
@@ -89,6 +96,7 @@ public class ColorMapParameterFactory {
 
         // StyleRule sr = StyleLoader.getInstance()
         // .getStyleRule(parameter, levels);
+
         ParamLevelMatchCriteria match = new ParamLevelMatchCriteria();
         match.setLevel(level);
         ArrayList<String> paramList = new ArrayList<>();
@@ -107,7 +115,7 @@ public class ColorMapParameterFactory {
 
     /**
      * Find style rules for match and construct colormap parameters for data
-     * 
+     *
      * @param data
      *            primitive number array
      * @param parameterUnits
@@ -117,6 +125,7 @@ public class ColorMapParameterFactory {
      */
     public static ColorMapParameters build(Object data, Unit<?> parameterUnits,
             ParamLevelMatchCriteria match) throws StyleException {
+
         StyleRule sr = StyleManager.getInstance()
                 .getStyleRule(StyleManager.StyleType.IMAGERY, match);
         SingleLevel level = null;
@@ -132,6 +141,7 @@ public class ColorMapParameterFactory {
     public static ColorMapParameters build(float minValue, float maxValue,
             Unit<?> parameterUnits, ParamLevelMatchCriteria match)
             throws StyleException {
+
         float[] data = { minValue, maxValue };
         return build(data, parameterUnits, match);
     }
@@ -146,6 +156,9 @@ public class ColorMapParameterFactory {
             preferences = (ImagePreferences) sr.getPreferences();
         } else {
             preferences = new ImagePreferences();
+        }
+        if (preferences.getFill().size() > 0) {
+            updateColorMapWithFill(preferences, params);
         }
 
         // If a record to convert units exists, use it
@@ -381,7 +394,7 @@ public class ColorMapParameterFactory {
     /**
      * Does the same thing as {@link #build(ImagePreferences, Unit)} but first
      * unpacks the ImagePreference from a {@link StyleRule}.
-     * 
+     *
      * @param sr
      * @param defaultColorMapUnit
      * @return
@@ -389,6 +402,7 @@ public class ColorMapParameterFactory {
      */
     public static ColorMapParameters build(StyleRule sr,
             Unit<?> defaultColorMapUnit) throws StyleException {
+
         if (sr == null) {
             throw new IllegalArgumentException(
                     "StyleRule must not be null when building ColorMapParameters");
@@ -408,7 +422,7 @@ public class ColorMapParameterFactory {
      * {@link ImagePreferences} must specify an exact range or data mapping and
      * also no lableing is added unless the colorbar labeling is specifically
      * set in the style rule.
-     * 
+     *
      * @param preferences
      * @param defaultColorMapUnit
      * @return
@@ -416,7 +430,12 @@ public class ColorMapParameterFactory {
      */
     public static ColorMapParameters build(ImagePreferences preferences,
             Unit<?> defaultColorMapUnit) throws StyleException {
+
         ColorMapParameters params = new ColorMapParameters();
+
+        if (preferences.getFill().size() > 0) {
+            updateColorMapWithFill(preferences, params);
+        }
 
         Unit<?> colorMapUnit = preferences.getColorMapUnitsObject();
         if (colorMapUnit == null) {
@@ -506,7 +525,7 @@ public class ColorMapParameterFactory {
         params.setColorMapMin(colorMapMin);
         params.setColorMapMax(colorMapMax);
 
-        LabelingPreferences labeling = preferences.getColorbarLabeling();
+        ImageryLabelingPreferences labeling = preferences.getColorbarLabeling();
         if (labeling != null) {
             if (labeling.getValues() != null) {
                 params.setColorBarIntervals(labeling.getValues());
@@ -562,6 +581,7 @@ public class ColorMapParameterFactory {
 
     public static ColorMapParameters build(Object data, String parameter,
             Unit<?> parameterUnits, SingleLevel level) throws StyleException {
+
         return build(data, parameter, parameterUnits, level, null);
     }
 
@@ -593,7 +613,7 @@ public class ColorMapParameterFactory {
 
     /**
      * Copy positive values to negative side.
-     * 
+     *
      * @param preferences
      * @param parameters
      */
@@ -623,7 +643,7 @@ public class ColorMapParameterFactory {
         float increment = 0.1f;
         Type dataScaleType = Type.LINEAR;
         boolean isMirror = false;
-        LabelingPreferences prefs = preferences.getColorbarLabeling();
+        ImageryLabelingPreferences prefs = preferences.getColorbarLabeling();
         if (prefs != null) {
             increment = prefs.getIncrement();
             haveIncrement = true;
@@ -788,4 +808,70 @@ public class ColorMapParameterFactory {
         }
         return m * e;
     }
+
+    /**
+     * This maps the display range to the fill range. The display range may be
+     * from -100 to 115. And we may want to fill the range from 32 to 75 in red.
+     * The function fills red color in the exact spots within the cMap
+     *
+     * @param cMap
+     * @param fillRange
+     * @param displayRangeMinMax
+     * @param color
+     */
+
+    public static IColorMap mergeFillColors(IColorMap cMap, double[] fillRange,
+            double[] displayRangeMinMax, String color) {
+
+        double range = displayRangeMinMax[1] - displayRangeMinMax[0];
+
+        if (range == 0) {
+            return cMap;
+        }
+        int first = (int) ((cMap.getSize() / range)
+                * (fillRange[0] - displayRangeMinMax[0]));
+        int last = (int) ((cMap.getSize() / range)
+                * (fillRange[1] - displayRangeMinMax[0]));
+        return (refillColorMap(cMap, color, first, last));
+    }
+
+    public static IColorMap refillColorMap(IColorMap cMap, String colorName,
+            int first, int last) {
+
+        int[] color = RGBUtil.getRGBIntValues(colorName);
+        float[] r = cMap.getRed();
+        float[] g = cMap.getGreen();
+        float[] b = cMap.getBlue();
+        for (int i = first; i <= last; i++) {
+            r[i] = color[0] / Colormapper.MAX_VALUE;
+            g[i] = color[1] / Colormapper.MAX_VALUE;
+            b[i] = color[2] / Colormapper.MAX_VALUE;
+        }
+        return new ColorMap(cMap.getName(), r, g, b);
+    }
+
+    private static void updateColorMapWithFill(ImagePreferences preferences,
+            ColorMapParameters params) {
+
+        IColorMap cMap = null;
+        try {
+            cMap = ColorMapLoader
+                    .loadColorMap(preferences.getDefaultColormap());
+            for (FillLabelingPreferences fillPrefs : preferences.getFill()) {
+                cMap = mergeFillColors(cMap,
+                        new double[] { fillPrefs.getMin(), fillPrefs.getMax() },
+                        new double[] { preferences.getDataScale().getMinValue(),
+                                preferences.getDataScale().getMaxValue() },
+                        fillPrefs.getColor());
+
+            }
+            params.setColorMap(cMap);
+        } catch (Exception e1) {
+            // If any issues, take the default route (XML driven color fill
+            // requests will be ignored)
+            statusHandler.handle(Priority.WARN,
+                    "Unable to honor specified fill request. ", e1);
+        }
+    }
+
 }

@@ -1,168 +1,78 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 
 package com.raytheon.uf.common.style;
 
-import java.util.Arrays;
-
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
-import javax.xml.bind.annotation.XmlElement;
-import javax.xml.bind.annotation.XmlList;
 
 /**
  * Contains the style preferences related to labeling
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ------------------
  * Jul 12, 2007           chammack  Initial Creation.
  * Apr 26, 2017  6247     bsteffen  Implement clone
  * Apr 30, 2018  6697     bsteffen  Add zoomLock
- * 
+ * May 07, 2019  64008    ksunil    Changed the structure, renamed to new abstract base
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public class LabelingPreferences {
-
-    private static final String SEPARATOR = " ";
-
-    @XmlElement(name = "values")
-    @XmlList
-    private float[] values;
-
-    @XmlElement(name = "increment")
-    private float increment;
+public abstract class AbstractLabelingPreferences {
 
     @XmlAttribute
-    private int labelSpacing;
+    protected int labelSpacing;
 
     @XmlAttribute
-    private String minLabel;
+    protected String minLabel;
 
     @XmlAttribute
-    private String maxLabel;
+    protected String maxLabel;
 
     @XmlAttribute
-    private String labelFormat;
+    protected String labelFormat;
 
     @XmlAttribute
-    private String minMaxLabelFormat;
+    protected String minMaxLabelFormat;
 
     @XmlAttribute
-    private int numberOfContours = -1;
+    protected int numberOfContours = -1;
 
     @XmlAttribute
-    private boolean createNegativeValues = false;
+    protected boolean createNegativeValues = false;
 
     @XmlAttribute
-    private int labelTrimLeft = 0;
+    protected int labelTrimLeft = 0;
 
     @XmlAttribute
-    private int maxMinTrimLeft = 0;
+    protected int maxMinTrimLeft = 0;
 
     @XmlAttribute
-    private boolean zoomLock = false;
-
-    public LabelingPreferences() {
-
-    }
-
-    public LabelingPreferences(LabelingPreferences prefs) {
-        if (prefs.values != null) {
-            this.values = new float[prefs.values.length];
-            System.arraycopy(prefs.values, 0, this.values, 0,
-                    this.values.length);
-        }
-        this.increment = prefs.increment;
-        this.createNegativeValues = prefs.createNegativeValues;
-        this.labelFormat = prefs.labelFormat;
-        this.labelSpacing = prefs.labelSpacing;
-        this.labelTrimLeft = prefs.labelTrimLeft;
-        this.maxLabel = prefs.maxLabel;
-        this.maxMinTrimLeft = prefs.maxMinTrimLeft;
-        this.minLabel = prefs.minLabel;
-        this.minMaxLabelFormat = prefs.minMaxLabelFormat;
-        this.numberOfContours = prefs.numberOfContours;
-    }
-
-    @Override
-    public LabelingPreferences clone() {
-        return new LabelingPreferences(this);
-    }
-
-    public float[] getValues() {
-        return values;
-    }
-
-    public void setValues(float[] values) {
-        this.values = values;
-    }
-
-    public float getIncrement() {
-        return increment;
-    }
-
-    public void setIncrement(float increment) {
-        this.increment = increment;
-    }
-
-    /**
-     * Gets the values interpreted as a String
-     * 
-     * @return a space separated list of values
-     */
-    public String getValuesString() {
-        String returnString = null;
-        if (values != null) {
-            StringBuilder sb = new StringBuilder();
-            for (Float f : values) {
-                sb.append(f);
-                sb.append(SEPARATOR);
-            }
-            returnString = sb.toString().trim();
-        }
-
-        return returnString;
-    }
-
-    /**
-     * Sets the values from an interpretation of a String
-     * 
-     * @param aValues
-     *            a space separated list of values
-     */
-    public void setValuesString(String aValues) {
-        if (aValues != null) {
-            String[] floats = aValues.split(SEPARATOR);
-            values = new float[floats.length];
-            for (int i = 0; i < floats.length; i++) {
-                values[i] = Float.parseFloat(floats[i]);
-            }
-        }
-    }
+    protected boolean zoomLock = false;
 
     public String getMinLabel() {
         return minLabel;
@@ -240,30 +150,64 @@ public class LabelingPreferences {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = prime * result + Float.floatToIntBits(increment);
-        result = prime * result + Arrays.hashCode(values);
+        result = prime * result + (createNegativeValues ? 1231 : 1237);
+        result = prime * result
+                + ((labelFormat == null) ? 0 : labelFormat.hashCode());
+        result = prime * result + labelSpacing;
+        result = prime * result + labelTrimLeft;
+        result = prime * result
+                + ((maxLabel == null) ? 0 : maxLabel.hashCode());
+        result = prime * result + maxMinTrimLeft;
+        result = prime * result
+                + ((minLabel == null) ? 0 : minLabel.hashCode());
+        result = prime * result + ((minMaxLabelFormat == null) ? 0
+                : minMaxLabelFormat.hashCode());
+        result = prime * result + numberOfContours;
+        result = prime * result + (zoomLock ? 1231 : 1237);
         return result;
     }
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj) {
+        if (this == obj)
             return true;
-        }
-        if (obj == null) {
+        if (obj == null)
             return false;
-        }
-        if (getClass() != obj.getClass()) {
+        if (getClass() != obj.getClass())
             return false;
-        }
-        LabelingPreferences other = (LabelingPreferences) obj;
-        if (Float.floatToIntBits(increment) != Float
-                .floatToIntBits(other.increment)) {
+        AbstractLabelingPreferences other = (AbstractLabelingPreferences) obj;
+        if (createNegativeValues != other.createNegativeValues)
             return false;
-        }
-        if (!Arrays.equals(values, other.values)) {
+        if (labelFormat == null) {
+            if (other.labelFormat != null)
+                return false;
+        } else if (!labelFormat.equals(other.labelFormat))
             return false;
-        }
+        if (labelSpacing != other.labelSpacing)
+            return false;
+        if (labelTrimLeft != other.labelTrimLeft)
+            return false;
+        if (maxLabel == null) {
+            if (other.maxLabel != null)
+                return false;
+        } else if (!maxLabel.equals(other.maxLabel))
+            return false;
+        if (maxMinTrimLeft != other.maxMinTrimLeft)
+            return false;
+        if (minLabel == null) {
+            if (other.minLabel != null)
+                return false;
+        } else if (!minLabel.equals(other.minLabel))
+            return false;
+        if (minMaxLabelFormat == null) {
+            if (other.minMaxLabelFormat != null)
+                return false;
+        } else if (!minMaxLabelFormat.equals(other.minMaxLabelFormat))
+            return false;
+        if (numberOfContours != other.numberOfContours)
+            return false;
+        if (zoomLock != other.zoomLock)
+            return false;
         return true;
     }
 
