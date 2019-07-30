@@ -44,10 +44,17 @@ import JUtil
 #
 
 from collections import OrderedDict
-
-from java.util import Date
-from com.raytheon.uf.common.python import PyJavaUtil
 import datetime
+
+import jep
+
+from java.lang import Object
+from java.lang.reflect import Array
+from java.util import Date
+from java.util import Collections, HashMap, LinkedHashMap, ArrayList, HashSet
+from java.util import List, Set, Map
+from com.raytheon.uf.common.python import PyJavaUtil
+
 
 # Java -> Python conversion
 
@@ -72,7 +79,7 @@ def _toPythonDatetime(obj, customConverter=None):
     '''
     Turns a Java Date to a Python datetime
     '''
-    return datetime.datetime.fromtimestamp(obj.getTime() / 1000)
+    return datetime.datetime.fromtimestamp(obj.getTime() // 1000)
 
 # Python -> Java conversion
 
@@ -96,25 +103,17 @@ def _toJavaDate(val):
     '''
     Turns a Python datetime to a Java Date
     '''
-    epoch = datetime.datetime.utcfromtimestamp(0)
-    delta = val - epoch
-    return Date(long(delta.total_seconds()) * 1000)
+    return Date(int(val.timestamp()) * 1000)
 
 # the dict that registers the Python data type to the method for conversion
-pythonBasics = OrderedDict({unicode:_toJavaString, datetime.datetime:_toJavaDate})
+pythonBasics = OrderedDict({str:_toJavaString, datetime.datetime:_toJavaDate})
 # the dict that registers the Java String of type to the method for conversion
 javaBasics = OrderedDict({'java.util.Date':_toPythonDatetime})
 
 '''
 The following methods will handle Python and Java collection conversion.
 '''
-from java.lang import Object
-from java.util import Collections, HashMap, LinkedHashMap, ArrayList, HashSet
-from java.util import Date
-from java.lang.reflect import Array
-from java.util import List, Set, Map
 
-import jep
 
 # make a jarray to find out if we have that
 JEP_ARRAY_TYPE = type(jep.jarray(0, Object))
@@ -173,7 +172,7 @@ def _toPythonSet(obj, customConverter=None):
     retVal = set()
     itr = obj.iterator()
     while itr.hasNext():
-        val = itr.next() 
+        val = next(itr) 
         retVal.add(JUtil.javaObjToPyVal(val, customConverter))
     return retVal
 
@@ -210,7 +209,7 @@ def __toPythonDictInternal(javaMap, pyDict, customConverter=None):
     keys = javaMap.keySet()
     itr = keys.iterator()
     while itr.hasNext() :
-        key = itr.next()
+        key = next(itr)
         obj = javaMap.get(key)
         pyDict[JUtil.javaObjToPyVal(key)] = JUtil.javaObjToPyVal(obj, customConverter)
     return pyDict
