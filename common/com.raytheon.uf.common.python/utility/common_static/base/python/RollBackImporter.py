@@ -38,7 +38,7 @@ class RollBackImporter:
         builtins.__import__ = self._import
         self.newModules = set()
 
-    def _import(self, name, globals=None, locals=None, fromlist=[], level=-1):
+    def _import(self, name, globals=None, locals=None, fromlist=[], level=0):
         result = self.realImport(name, globals, locals, fromlist, level)
         
         if hasattr(result, '__file__'):
