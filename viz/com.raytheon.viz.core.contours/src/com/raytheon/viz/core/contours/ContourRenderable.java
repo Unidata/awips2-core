@@ -59,6 +59,7 @@ import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
  *                                    reduce loop freezing.
  * Jun 30, 2015 RM14663   kshresth    Font size increased for Contour labels.
  * Jun 27, 2019  65510    ksunil      refactor smoothData call
+ * Jul 31, 2019  66719    ksunil      Ignore smoothingDistance of 0 or less.
  *
  * </pre>
  *
@@ -129,7 +130,8 @@ public abstract class ContourRenderable implements IRenderable {
                 GeneralGridGeometry gridGeometry = getGridGeometry();
                 ContourPreferences contourPrefs = getPreferences();
                 if (gridGeometry != null && contourPrefs != null
-                        && contourPrefs.getSmoothingDistance() != null) {
+                        && contourPrefs.getSmoothingDistance() != null
+                        && contourPrefs.getSmoothingDistance() > 0) {
                     data = ContourSupport.smoothData(data, gridGeometry,
                             contourPrefs.getSmoothingDistance());
                 }
