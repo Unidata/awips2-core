@@ -89,28 +89,18 @@ class MasterInterface(object):
 
     def getMethodArgs(self, moduleName, className, methodName):
         members = self.__getClassMethods(moduleName, className)
-        result = []
         for x, y in members:
             if x == methodName:
-                count = y.__code__.co_argcount
-                args = y.__code__.co_varnames
-                i = 0
-                for a in args:
-                    if i < count:
-                        result.append(a)
-                    else:
-                        break
-                    i = i + 1
-        return result
+                argSpec = inspect.getfullargspec(y)
+                return list(argSpec.args)
+        return []
 
     def getMethodInfo(self, moduleName, className, methodName):
         members = self.__getClassMethods(moduleName, className)
-        result = None
         for n, m in members:
             if n == methodName:
-                result = m.__doc__
-                break
-        return result
+                return inspect.getdoc(m)
+        return None
 
     def hasMethod(self, moduleName, className, methodName):
         md = sys.modules[moduleName]
@@ -120,7 +110,7 @@ class MasterInterface(object):
     def __getClassMethods(self, moduleName, className):
         md = sys.modules[moduleName]
         classObj = md.__dict__.get(className)
-        return inspect.getmembers(classObj, inspect.ismethod)
+        return inspect.getmembers(classObj, inspect.isfunction)
 
     def isInstantiated(self, moduleName):
         return moduleName in self.__instanceMap

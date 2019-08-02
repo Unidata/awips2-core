@@ -35,9 +35,12 @@
 # 
 #
 
-import datetime, time, exceptions
-import AbsTime, JUtil, TimeRange
+import AbsTime
+import JUtil
+import TimeRange
+
 from com.raytheon.uf.common.time import DataTime as JavaDataTime
+
 
 class DataTime(JUtil.JavaWrapperClass):
 
