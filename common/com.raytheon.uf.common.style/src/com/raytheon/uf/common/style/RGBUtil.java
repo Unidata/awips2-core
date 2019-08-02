@@ -21,22 +21,34 @@
 package com.raytheon.uf.common.style;
 
 import java.io.BufferedReader;
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import com.raytheon.uf.common.colormap.ColorMap;
+import com.raytheon.uf.common.colormap.ColorMapLoader;
+import com.raytheon.uf.common.colormap.IColorMap;
+import com.raytheon.uf.common.localization.ILocalizationFile;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.SaveableOutputStream;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * This class reads in the rgb.txt file and creates a map of color names and the
- * associated RGB int[] values.
+ * associated RGB int[] values. Also holds some static color map file operations
+ * that were moved from ColorUtil to here.
  *
  * <pre>
  * SOFTWARE HISTORY
@@ -45,6 +57,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------- ----------- ------------ --------------------------
  * Jun 27, 2019  65510       ksunil       initial creation
  * Jul 18, 2019  66188       ksunil       Change RGBColors to refer to static RGBUtil instead extending.
+ * Jul 25, 2019  65809       ksunil       re-factoring around ColorUtil and RGBUtil
  *
  * </pre>
  *
@@ -185,4 +198,73 @@ public class RGBUtil {
     public static LocalizationFile getRgbFile() {
         return rgbFile;
     }
+
+    /**
+     * Saves a colormap to localization
+     *
+     * @param colorMap
+     * @param colormapName
+     * @param level
+     * @throws LocalizationException
+     */
+    public static void saveColorMap(IColorMap colorMap, String colormapName,
+            LocalizationLevel level) throws LocalizationException {
+        String filename = getColormapFilename(colormapName);
+        IPathManager pathMgr = PathManagerFactory.getPathManager();
+        LocalizationContext context = pathMgr
+                .getContext(LocalizationType.COMMON_STATIC, level);
+        ILocalizationFile localizationFile = pathMgr
+                .getLocalizationFile(context, filename);
+        try (SaveableOutputStream sos = localizationFile.openOutputStream()) {
+            ColorMap.JAXB.marshalToStream(colorMap, sos);
+            sos.save();
+        } catch (SerializationException | IOException e) {
+            throw new LocalizationException(
+                    "Error saving colormap " + colormapName, e);
+        }
+    }
+
+    public static String getColormapFilename(String shortName) {
+        String filename = ColorMapLoader.DIR_NAME + IPathManager.SEPARATOR
+                + shortName;
+        if (!filename.endsWith(ColorMapLoader.EXTENSION)) {
+            filename += ColorMapLoader.EXTENSION;
+        }
+        return filename;
+    }
+
+    /**
+     * Checks if a colormap already exists at the specified localization level
+     *
+     * @param colormapName
+     * @param level
+     * @return
+     */
+    public static boolean checkIfColormapExists(String colormapName,
+            LocalizationLevel level) {
+        String filename = RGBUtil.getColormapFilename(colormapName);
+        File path = null;
+        IPathManager pm = PathManagerFactory.getPathManager();
+        path = pm.getFile(pm.getContext(LocalizationType.COMMON_STATIC, level),
+                filename);
+        return path.exists();
+    }
+
+    /**
+     * Deletes a color map at the specified level
+     *
+     * @param colormapName
+     *            the name of the colormap to delete
+     */
+    public static void deleteColorMap(String colormapName,
+            LocalizationLevel level) throws LocalizationException {
+        String filename = RGBUtil.getColormapFilename(colormapName);
+        IPathManager pm = PathManagerFactory.getPathManager();
+        ILocalizationFile lfile = pm.getLocalizationFile(
+                pm.getContext(LocalizationType.COMMON_STATIC, level), filename);
+        if (lfile.exists()) {
+            lfile.delete();
+        }
+    }
+
 }

@@ -28,12 +28,18 @@ import javax.measure.unit.Unit;
 import org.apache.commons.lang3.ArrayUtils;
 
 import com.raytheon.uf.common.colormap.ColorMap;
+import com.raytheon.uf.common.colormap.ColorMapException;
 import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.IColorMap;
 import com.raytheon.uf.common.colormap.image.Colormapper;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences.DataMappingEntry;
+import com.raytheon.uf.common.localization.IPathManager;
+import com.raytheon.uf.common.localization.LocalizationContext;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
+import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
+import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -78,6 +84,8 @@ import com.raytheon.uf.common.util.GridUtil;
  * Oct 22, 2015  4914     bsteffen    Expose an additional build method.
  * Apr 30, 2018  7284     bsteffen    Allow lower log minimums.
  * Jun 27, 2019  65510    ksunil      support color fill through XML entries
+ * Jul 25, 2019  65809    ksunil      fixed potential cache issue in colormap
+ *                                     when fill colors are overridden through XML
  * </pre>
  *
  * @author chammack
@@ -157,8 +165,11 @@ public class ColorMapParameterFactory {
         } else {
             preferences = new ImagePreferences();
         }
-        if (preferences.getFill().size() > 0) {
+        if (preferences.getColorMapExtensions() != null
+                && !preferences.getColorMapExtensions().getFill().isEmpty()) {
             updateColorMapWithFill(preferences, params);
+        } else {
+            params.setColorMapName(preferences.getDefaultColormap());
         }
 
         // If a record to convert units exists, use it
@@ -294,9 +305,6 @@ public class ColorMapParameterFactory {
                 }
             }
 
-            if (sr != null) {
-                params.setColorMapName(preferences.getDefaultColormap());
-            }
         } else {
             double displayMin = definedMin;
             double displayMax = definedMax;
@@ -380,7 +388,6 @@ public class ColorMapParameterFactory {
 
             extractLabelValues(preferences, (float) displayMax,
                     (float) displayMin, params);
-            params.setColorMapName(preferences.getDefaultColormap());
         }
         if (preferences.getDataScale() != null) {
             if (dataScaleType == Type.LOG) {
@@ -433,8 +440,11 @@ public class ColorMapParameterFactory {
 
         ColorMapParameters params = new ColorMapParameters();
 
-        if (preferences.getFill().size() > 0) {
+        if (preferences.getColorMapExtensions() != null
+                && !preferences.getColorMapExtensions().getFill().isEmpty()) {
             updateColorMapWithFill(preferences, params);
+        } else {
+            params.setColorMapName(preferences.getDefaultColormap());
         }
 
         Unit<?> colorMapUnit = preferences.getColorMapUnitsObject();
@@ -452,7 +462,6 @@ public class ColorMapParameterFactory {
         params.setColorMapUnit(colorMapUnit);
         params.setDisplayUnit(displayUnit);
         params.setDataMapping(preferences.getDataMapping());
-        params.setColorMapName(preferences.getDefaultColormap());
 
         Float displayMin = null, displayMax = null;
         DataScale scale = preferences.getDataScale();
@@ -854,18 +863,46 @@ public class ColorMapParameterFactory {
             ColorMapParameters params) {
 
         IColorMap cMap = null;
-        try {
-            cMap = ColorMapLoader
-                    .loadColorMap(preferences.getDefaultColormap());
-            for (FillLabelingPreferences fillPrefs : preferences.getFill()) {
-                cMap = mergeFillColors(cMap,
-                        new double[] { fillPrefs.getMin(), fillPrefs.getMax() },
-                        new double[] { preferences.getDataScale().getMinValue(),
-                                preferences.getDataScale().getMaxValue() },
-                        fillPrefs.getColor());
+        List<FillLabelingPreferences> currentFillValues = preferences
+                .getColorMapExtensions().getFill();
+        String extendedName = "-"
+                + preferences.getColorMapExtensions().getName();
+        String cMapDefaultName = preferences.getDefaultColormap();
 
+        try {
+            try {
+                cMap = ColorMapLoader
+                        .loadColorMap(cMapDefaultName + extendedName);
+            } catch (ColorMapException e) {
+                cMap = ColorMapLoader.loadColorMap(cMapDefaultName);
+                for (FillLabelingPreferences fillPrefs : currentFillValues) {
+                    cMap = mergeFillColors(cMap,
+                            new double[] { fillPrefs.getMin(),
+                                    fillPrefs.getMax() },
+                            new double[] {
+                                    preferences.getDataScale().getMinValue(),
+                                    preferences.getDataScale().getMaxValue() },
+                            fillPrefs.getColor());
+
+                }
+                // Now put the modified color map in the cache with the new
+                // (non-default) name
+
+                RGBUtil.saveColorMap(cMap, cMapDefaultName + extendedName,
+                        LocalizationLevel.USER);
+                ColorMapLoader.putIfAbsentInCache(
+                        cMapDefaultName + extendedName, cMap);
             }
+
             params.setColorMap(cMap);
+            IPathManager pathManager = PathManagerFactory.getPathManager();
+            LocalizationContext context = pathManager.getContext(
+                    LocalizationType.COMMON_STATIC, LocalizationLevel.USER);
+            String fullName = LocalizationLevel.USER.toString()
+                    + IPathManager.SEPARATOR + context.getContextName()
+                    + IPathManager.SEPARATOR + cMapDefaultName + extendedName;
+            params.setColorMapName(fullName);
+
         } catch (Exception e1) {
             // If any issues, take the default route (XML driven color fill
             // requests will be ignored)
