@@ -130,6 +130,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * May 07, 2019  65510    ksunil       multiple changes to support customized contour support
  * Jun 27, 2019  65510    ksunil       refactor smoothData
  * Jul 11, 2019  65905    ksunil       fixed the issue with labelFormat within the values tag
+ * Jul 31, 2019  66719    ksunil       Make sure the lat is within the +/-90 range
  *
  * </pre>
  *
@@ -1787,6 +1788,10 @@ public class ContourSupport {
             crs2ll.transform(lowerCorner, lowerCorner);
             upperCorner.x = MapUtil.correctLon(upperCorner.x);
             lowerCorner.x = MapUtil.correctLon(lowerCorner.x);
+
+            upperCorner.y = MapUtil.correctLat(upperCorner.y);
+            lowerCorner.y = MapUtil.correctLat(lowerCorner.y);
+
             distanceInM = JTS.orthodromicDistance(
                     new Coordinate(lowerCorner.x, lowerCorner.y),
                     new Coordinate(upperCorner.x, upperCorner.y),

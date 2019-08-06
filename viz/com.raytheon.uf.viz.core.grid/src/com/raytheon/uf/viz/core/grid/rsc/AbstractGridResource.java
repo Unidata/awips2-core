@@ -158,6 +158,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
  * Feb 28, 2019  7713     tjensen   Fix wind barb config
  * Jun 27, 2019  65510    ksunil    Support color fill through XML entries, support smoothData
+ * Jul 30, 2019  66477    mapeters  Don't set minimumMagnitude based off arrowHeadSizeRatio
  *
  * </pre>
  *
@@ -615,8 +616,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             VectorGraphicsConfig config = new VectorGraphicsConfig(PLUGIN_NAME,
                     CLASS_NAME);
             if (displayType != DisplayType.BARB) {
-                config.setMinimumMagnitude(
-                        config.getBaseSize() * config.getArrowHeadSizeRatio());
                 config.disableCalmCircle();
                 if (stylePreferences != null
                         && stylePreferences instanceof ArrowPreferences) {
