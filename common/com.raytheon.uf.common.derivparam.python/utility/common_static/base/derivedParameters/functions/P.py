@@ -28,7 +28,7 @@
 #
 
 from numpy import equal, where, zeros, concatenate, greater, float32
-from .unit import pascalToMilliBar
+from unit import pascalToMilliBar
 
 def execute1(pressure, sfcPress):
     sfcPress = sfcPress.reshape(- 1, 1)

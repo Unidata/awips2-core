@@ -27,7 +27,7 @@
 # Aug 05, 2015   4703         njensen       cast NaN to float32
 #
 
-from .Multiply import execute as Multiply
+from Multiply import execute as Multiply
 from numpy import NaN, where, float32
 
 
@@ -49,7 +49,7 @@ def test():
     if not( all(execute(array([2.,4.]),array([2.,2.])) == array([1.,2.]))):
         raise Exception
 
-    from .Vector import execute as Vector
+    from Vector import execute as Vector
 
     vector = Vector(array([2.,4.]),array([0.,270.]),True)
     (mag, dir, u, v) = execute(vector,2.)

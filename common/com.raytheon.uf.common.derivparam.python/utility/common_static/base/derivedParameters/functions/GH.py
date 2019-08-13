@@ -25,11 +25,11 @@
 # ------------   ----------   -----------   -----------
 # Aug 05, 2015   4703         njensen       Removed unused imports
 # Apt 26, 2018   6974         bsteffen      remove execute1.
-# 
+#
 
-from . import meteolib
+import meteolib
 
-from . import P
+import P
 
 def execute2(pres):
     return meteolib.ptozsa(pres)*4
@@ -37,4 +37,3 @@ def execute2(pres):
 def execute3(prCloudStation,lowCldStation,midCldStation,hiCldStation):
     prCloudClg = P.execute6(prCloudStation,lowCldStation,midCldStation,hiCldStation)
     return meteolib.ptozsa(prCloudClg)
-
