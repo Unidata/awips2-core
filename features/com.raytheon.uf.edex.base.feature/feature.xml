@@ -167,7 +167,7 @@
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="9.4.11.v20180605"/>
+         version="9.4.17.v20190418"/>
 
    <plugin
          id="com.raytheon.uf.common.json"
@@ -180,7 +180,7 @@
          id="com.fasterxml.jackson"
          download-size="0"
          install-size="0"
-         version="2.9.8"/>
+         version="2.9.9"/>
 
    <plugin
          id="javax.servlet"

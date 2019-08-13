@@ -36,15 +36,14 @@ import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.PlatformUI;
 
-import com.raytheon.uf.viz.core.IDisplayPane;
-import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
 import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.ProcedureXmlManager;
 import com.raytheon.viz.ui.EditorUtil;
-import com.raytheon.viz.ui.IRenameablePart;
 import com.raytheon.viz.ui.UiPlugin;
+import com.raytheon.viz.ui.UiUtil;
+import com.raytheon.viz.ui.editor.AbstractEditor;
 
 /**
  * Save a bundle to disk
@@ -59,14 +58,21 @@ import com.raytheon.viz.ui.UiPlugin;
  * Oct 22, 2013  2491     bsteffen    Switch serialization to
  *                                     ProcedureXmlManager
  * Mar 02, 2015  4204     njensen     Extract part name as bundle name
- * May 03, 2018  6622     bsteffen    Support hidden panes.
  * 
  * </pre>
  * 
  * @author chammack
+ * @version 1
  */
 public class SaveBundle extends AbstractHandler {
 
+    /*
+     * (non-Javadoc)
+     * 
+     * @see
+     * org.eclipse.core.commands.AbstractHandler#execute(org.eclipse.core.commands
+     * .ExecutionEvent)
+     */
     @Override
     public Object execute(ExecutionEvent arg0) throws ExecutionException {
         Shell shell = PlatformUI.getWorkbench().getActiveWorkbenchWindow()
@@ -86,15 +92,19 @@ public class SaveBundle extends AbstractHandler {
 
             String name = fd.getFileName();
             fileName = fd.getFilterPath() + File.separator + name;
-            if (!name.endsWith(".xml")) {
+            if (name.endsWith(".xml") == false) {
                 name += ".xml";
                 fd.setFileName(name);
                 fileName = fd.getFilterPath() + File.separator + name;
                 if (new File(fileName).exists()) {
-                    boolean result = MessageDialog.openQuestion(shell,
-                            "Confirm Overwrite", "A file named \"" + name
-                                    + "\" already exists.  Do you want to replace it?");
-                    if (!result) {
+                    boolean result = MessageDialog
+                            .openQuestion(
+                                    shell,
+                                    "Confirm Overwrite",
+                                    "A file named \""
+                                            + name
+                                            + "\" already exists.  Do you want to replace it?");
+                    if (result == false) {
                         fileName = null;
                     }
                 }
@@ -109,16 +119,31 @@ public class SaveBundle extends AbstractHandler {
                     "Error occurred during bundle save.", e);
             ErrorDialog.openError(Display.getCurrent().getActiveShell(),
                     "ERROR", "Error occurred during bundle save.", status);
-            throw new ExecutionException("Error occurred during bundle save",
-                    e);
+            throw new ExecutionException("Error occurred during bundle save", e);
         }
         return null;
     }
 
     public static Bundle extractCurrentBundle() {
         IEditorPart part = EditorUtil.getActiveEditor();
-        if (part instanceof IDisplayPaneContainer) {
-            return extractBundle((IDisplayPaneContainer) part);
+        if (part instanceof AbstractEditor) {
+            AbstractEditor editor = (AbstractEditor) part;
+            IRenderableDisplay[] displays = UiUtil
+                    .getDisplaysFromContainer(editor);
+            List<AbstractRenderableDisplay> absdisplays = new ArrayList<AbstractRenderableDisplay>();
+            for (IRenderableDisplay display : displays) {
+                if ((display instanceof AbstractRenderableDisplay)) {
+                    absdisplays.add((AbstractRenderableDisplay) display);
+                }
+            }
+
+            Bundle bundle = new Bundle();
+            bundle.setName(editor.getPartName());
+            bundle.setDisplays(absdisplays
+                    .toArray(new AbstractRenderableDisplay[absdisplays.size()]));
+            bundle.setLoopProperties(EditorUtil.getActiveVizContainer()
+                    .getLoopProperties());
+            return bundle;
         } else {
             String msg = null;
             if (part == null) {
@@ -130,37 +155,6 @@ public class SaveBundle extends AbstractHandler {
             throw new IllegalStateException(msg);
         }
 
-    }
-
-    public static Bundle extractBundle(IDisplayPaneContainer container) {
-        List<AbstractRenderableDisplay> displays = new ArrayList<>();
-        List<Integer> hidden = new ArrayList<>();
-        int index = 0;
-        for (IDisplayPane pane : container.getDisplayPanes()) {
-            IRenderableDisplay idisp = pane.getRenderableDisplay();
-            if (idisp instanceof AbstractRenderableDisplay) {
-                displays.add((AbstractRenderableDisplay) idisp);
-                if (!pane.isVisible()) {
-                    hidden.add(index);
-                }
-                index += 1;
-            }
-        }
-        if (displays.isEmpty()) {
-            return null;
-        }
-        Bundle bundle = new Bundle();
-        if (container instanceof IRenameablePart) {
-            bundle.setName(((IRenameablePart) container).getPartName());
-        }
-        bundle.setDisplays(displays.toArray(new AbstractRenderableDisplay[0]));
-        if (!hidden.isEmpty()) {
-            bundle.setHidden(
-                    hidden.stream().mapToInt(Integer::intValue).toArray());
-        }
-        bundle.setLoopProperties(
-                EditorUtil.getActiveVizContainer().getLoopProperties());
-        return bundle;
     }
 
 }
