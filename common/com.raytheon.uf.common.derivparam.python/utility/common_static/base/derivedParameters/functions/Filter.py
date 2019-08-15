@@ -29,6 +29,7 @@
 
 from numpy import ndarray, float32, NaN
 from numpy import sin, isnan, invert
+import math
 from com.raytheon.uf.common.derivparam.python.function import DistFilterPythonAdapter as DistFilter
 
 MAX_WAVE_NUMBER = 15
@@ -45,21 +46,22 @@ def execute(grid, dist, dx, dy, worldWrapX=False):
     if dist < 0:
         npts = -dist
     else:
-        npts = dist * (1000/dx[grid.shape[0]/2,grid.shape[1]/2])
+        npts = dist * (1000 / dx[grid.shape[0] // 2, grid.shape[1] // 2])
 
     if worldWrapX:
-            shape = grid.shape
-            shape = (shape[0], shape[1]+2*npts)
-            r = ndarray(shape, grid.dtype)
-            r[:,1*npts:-1*npts] = grid
-            r[:,0:npts] = grid[:,-npts:]
-            r[:,-npts:] = grid[:,0:npts]
-            grid = r
+        n = math.ceil(npts)
+        shape = grid.shape
+        shape = (shape[0], shape[1] + 2 * n)
+        r = ndarray(shape, grid.dtype)
+        r[:, n:-n] = grid
+        r[:, 0:n] = grid[:, -n:]
+        r[:, -n:] = grid[:, 0:n]
+        grid = r
     
     result = executeJava(grid, npts, 1)
     
     if worldWrapX:
-        result = result[:,1*npts:-1*npts]
+        result = result[:, n:-n]
     
     return result
 
@@ -76,11 +78,11 @@ def executePython(grid, npts, times=1):
         n = 2
     elif (n>MAX_WAVE_NUMBER):
         n = MAX_WAVE_NUMBER
-    d = (n+1)/2
+    d = (n+1)//2
     dd = d+d
     m = dd+1
     #Calculate wave table
-    waveno = 3.14159265/npts
+    waveno = math.pi / npts
     jweights = ndarray([m,m], float32)
     iweights = ndarray([m,m], float32)
     for c in range(-d, d+1):

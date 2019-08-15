@@ -20,7 +20,8 @@
 
 from Add import execute as Add
 from Multiply import execute as Multiply
-from numpy import zeros_like, ndarray
+import numpy
+import math
 
 def execute(*args):
     """Perform a linear transform
@@ -35,19 +36,17 @@ def execute(*args):
 
 
     if type(args[0]) == tuple:
-        zeroArray = zeros_like(args[0][0])
+        zeroArray = numpy.zeros_like(args[0][0])
         result = (zeroArray, zeroArray.copy())
     else:
         for arg in args:
-            if (type(arg) == ndarray):
-                result = zeros_like(arg)
+            if (type(arg) == numpy.ndarray):
+                result = numpy.zeros_like(arg)
                 break
 
     termLength = 2
 
-    terms = len(args) / termLength
-    if len(args) % termLength != 0:
-        terms = terms + 1
+    terms = math.ceil(len(args) / termLength)
 
     for i in range(terms):
         coefficient = args[i * termLength]
