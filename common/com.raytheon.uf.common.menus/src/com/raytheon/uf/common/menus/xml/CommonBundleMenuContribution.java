@@ -46,16 +46,16 @@ import javax.xml.bind.annotation.XmlType;
  * ------------ ---------- ----------- --------------------------
  * Mar 12, 2009            chammack    Initial creation
  * Jun 09, 2014 3266       njensen     Deprecated unused fields
- * Jun 07, 2017 7304       bsteffen    Added precommand
  * 
  * </pre>
  * 
  * @author chammack
+ * @version 1.0
  */
 @XmlType(name = "bundleItem")
 @XmlAccessorType(XmlAccessType.NONE)
-public class CommonBundleMenuContribution
-        extends CommonAbstractMenuContribution {
+public class CommonBundleMenuContribution extends
+        CommonAbstractMenuContribution {
 
     /**
      * Indicates whether the bundle should be extracted for metadata and time
@@ -96,7 +96,7 @@ public class CommonBundleMenuContribution
      * @deprecated No code actually make uses of this for menu times or loading
      *             the bundle. Any xml files with this attribute should remove
      *             the attribute.
-     */
+     * */
     @Deprecated
     @XmlAttribute(name = "productInterval", required = false)
     public Integer productInterval;
@@ -131,12 +131,6 @@ public class CommonBundleMenuContribution
      */
     @XmlAttribute(name = "commandId", required = false)
     public String command;
-
-    /**
-     * Indicates a command to execute before loading the bundle
-     */
-    @XmlAttribute(name = "precedingCommandId", required = false)
-    public String precommand;
 
     @Override
     public String toString() {
