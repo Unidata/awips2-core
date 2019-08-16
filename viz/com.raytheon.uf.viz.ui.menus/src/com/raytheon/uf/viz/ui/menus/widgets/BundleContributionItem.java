@@ -99,7 +99,6 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * Dec 16, 2016  5976     bsteffen  Use localization file streams
- * Jun 07, 2017  7304     bsteffen  Allow executing a command before loading.
  * May 15, 2019  7850     tgurney   Use left-padding with spaces to right-align
  *                                  data times (GTK3 fix). + Code cleanup
  * </pre>
@@ -297,7 +296,7 @@ public class BundleContributionItem extends ContributionItem {
      */
     public void refreshText() {
         lastUsedTime = null;
-        if (pdoMapList != null && !pdoMapList.isEmpty()) {
+        if (pdoMapList != null && pdoMapList.size() > 0) {
             URICatalog cat = URICatalog.getInstance();
             for (BundleDataItem d : pdoMapList) {
                 cat.query(d.metadata);
@@ -307,9 +306,8 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected synchronized void updateMenuText() {
-        if (widget == null) {
+        if (widget == null)
             return;
-        }
 
         String textToSet;
         if (performQuery) {
@@ -462,7 +460,6 @@ public class BundleContributionItem extends ContributionItem {
 
     private void loadBundle() {
         try {
-            executeCommand(this.menuContribution.xml.precommand);
             boolean fullBundleLoad = false;
             if (this.menuContribution.xml.fullBundleLoad != null) {
                 fullBundleLoad = this.menuContribution.xml.fullBundleLoad;
@@ -470,31 +467,32 @@ public class BundleContributionItem extends ContributionItem {
             new LoadBundleHandler(this.menuContribution.xml.bundleFile,
                     substitutions, this.menuContribution.xml.editorType,
                     fullBundleLoad).execute(null);
-            executeCommand(this.menuContribution.xml.command);
+            if (this.menuContribution.xml.command != null) {
+                ICommandService service = (ICommandService) PlatformUI
+                        .getWorkbench().getService(ICommandService.class);
+                try {
+                    Map<String, String> parms = new HashMap<String, String>();
+                    if (substitutions != null) {
+                        parms = substitutions;
+                    }
+                    Command command = service
+                            .getCommand(this.menuContribution.xml.command);
+                    command.executeWithChecks(
+                            new ExecutionEvent(command, parms, null, null));
+                } catch (Exception e) {
+                    statusHandler
+                            .handle(Priority.PROBLEM,
+                                    "Failed to execute command: "
+                                            + this.menuContribution.xml.command,
+                                    e);
+                }
+            }
 
         } catch (ExecutionException e) {
             statusHandler.handle(Priority.PROBLEM, "Error loading bundle : "
                     + this.menuContribution.xml.bundleFile, e);
         }
-    }
 
-    private void executeCommand(String commandId) {
-        if (commandId != null) {
-            ICommandService service = PlatformUI.getWorkbench()
-                    .getService(ICommandService.class);
-            try {
-                Map<String, String> parms = new HashMap<>();
-                if (substitutions != null) {
-                    parms = substitutions;
-                }
-                Command command = service.getCommand(commandId);
-                command.executeWithChecks(
-                        new ExecutionEvent(command, parms, null, null));
-            } catch (Exception e) {
-                statusHandler.handle(Priority.PROBLEM,
-                        "Failed to execute command: " + commandId, e);
-            }
-        }
     }
 
     @Override

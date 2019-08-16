@@ -25,44 +25,38 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
-import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Map;
 
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.e4.ui.model.application.ui.advanced.MArea;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
-import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainer;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartSashContainerElement;
 import org.eclipse.e4.ui.model.application.ui.basic.MPartStack;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
 import org.eclipse.e4.ui.workbench.modeling.EModelService;
 import org.eclipse.swt.widgets.Shell;
-import org.eclipse.ui.IEditorPart;
-import org.eclipse.ui.IEditorReference;
 import org.eclipse.ui.IMemento;
 import org.eclipse.ui.IPageLayout;
-import org.eclipse.ui.IViewPart;
-import org.eclipse.ui.IViewReference;
 import org.eclipse.ui.IWorkbenchPage;
-import org.eclipse.ui.IWorkbenchWindow;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.XMLMemento;
 import org.eclipse.ui.internal.IWorkbenchConstants;
-import org.eclipse.ui.internal.WorkbenchPage;
 import org.eclipse.ui.services.IServiceLocator;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.viz.core.IDisplayPaneContainer;
+import com.raytheon.uf.viz.core.drawables.AbstractRenderableDisplay;
+import com.raytheon.uf.viz.core.drawables.IRenderableDisplay;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.procedures.Procedure;
+import com.raytheon.viz.ui.IRenameablePart;
 import com.raytheon.viz.ui.UiUtil;
-import com.raytheon.viz.ui.VizWorkbenchManager;
+import com.raytheon.viz.ui.UiUtil.ContainerPart;
+import com.raytheon.viz.ui.UiUtil.ContainerPart.Container;
 import com.raytheon.viz.ui.actions.PerspectiveFileListDlg.FILE_SOURCE;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
@@ -75,21 +69,18 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  *
  * <pre>
  *
- * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Sep 11, 2007           chammack  Initial Creation.
- * Mar 02, 2015  4204     njensen   Set bundle name to part name
- * Jun 02, 2015  4401     bkowal    It is now also possible to load displays
- *                                  from localization. Renamed class; originally
- *                                  SaveProcedure.
- * Jun 10, 2015  4401     bkowal    Extend {@link
- *                                  AbstractVizPerspectiveLocalizationHandler}.
- * Dec 21, 2015  5191     bsteffen  Updated layout handling for Eclipse 4.
- * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
- * May 03, 2018  6622     bsteffen  Support hidden panes.
- * 
+ *    SOFTWARE HISTORY
+ *
+ *    Date         Ticket#     Engineer    Description
+ *    ------------ ----------  ----------- --------------------------
+ *    Sep 11, 2007             chammack    Initial Creation.
+ *    Mar 02, 2015  4204       njensen     Set bundle name to part name
+ *    Jun 02, 2015  4401       bkowal      It is now also possible to load displays from
+ *                                         localization. Renamed class; originally SaveProcedure.
+ *    Jun 10, 2015  4401       bkowal      Extend {@link AbstractVizPerspectiveLocalizationHandler}.
+ *    Dec 21, 2015  5191       bsteffen    Updated layout handling for Eclipse 4.
+ *    Jun 22, 2017  4818       mapeters    Changed setCloseCallback to addCloseCallback
+ *
  * </pre>
  *
  * @author chammack
@@ -197,18 +188,42 @@ public class SavePerspectiveHandler
 
         List<Bundle> bundleList = new ArrayList<>();
 
-        List<ContainerPart> panes = getActiveDisplayMap();
+        List<ContainerPart> panes = UiUtil.getActiveDisplayMap();
         for (ContainerPart part : panes) {
             for (Container c : part.containers) {
-                Bundle b = SaveBundle.extractBundle(c.container);
-                if (b != null) {
-                    String key = part.id;
-                    b.setLayoutId(c.layoutId);
-                    if (UiUtil.isEditor(key)) {
-                        b.setEditor(key);
-                    } else if (UiUtil.isView(key)) {
-                        b.setView(key);
+                IRenderableDisplay[] displayArr = c.displays;
+                Bundle b = new Bundle();
+                if (displayArr.length > 0) {
+                    b.setLoopProperties(
+                            displayArr[0].getContainer().getLoopProperties());
+
+                    if (displayArr[0]
+                            .getContainer() instanceof IRenameablePart) {
+                        String partName = ((IRenameablePart) displayArr[0]
+                                .getContainer()).getPartName();
+                        if (partName != null) {
+                            b.setName(partName);
+                        }
                     }
+                }
+                String key = part.id;
+                b.setLayoutId(c.layoutId);
+                if (UiUtil.isEditor(key)) {
+                    b.setEditor(key);
+                } else if (UiUtil.isView(key)) {
+                    b.setView(key);
+                }
+
+                List<AbstractRenderableDisplay> displays = new ArrayList<>();
+                for (IRenderableDisplay disp : displayArr) {
+                    if (disp instanceof AbstractRenderableDisplay) {
+                        displays.add((AbstractRenderableDisplay) disp);
+                    }
+                }
+
+                if (!displays.isEmpty()) {
+                    b.setDisplays(displays.toArray(
+                            new AbstractRenderableDisplay[displays.size()]));
                     bundleList.add(b);
                 }
             }
@@ -319,94 +334,4 @@ public class SavePerspectiveHandler
         }
     }
 
-    /**
-     * Get a map of all active CAVE panes, keyed by the editor or view
-     * 
-     * @return the pane map
-     */
-    @SuppressWarnings("restriction")
-    protected static List<ContainerPart> getActiveDisplayMap() {
-        List<ContainerPart> parts = new ArrayList<>();
-        Map<String, ContainerPart> partMap = new LinkedHashMap<>();
-
-        IWorkbenchWindow window = VizWorkbenchManager.getInstance()
-                .getCurrentWindow();
-
-        if (window != null) {
-            IWorkbenchPage pages[] = window.getPages();
-            for (IWorkbenchPage page : pages) {
-                IEditorReference[] refs = page.getEditorReferences();
-
-                // Pull out editors
-                for (IEditorReference ref : refs) {
-                    IEditorPart part = ref.getEditor(false);
-                    if (part == null) {
-                        continue;
-                    }
-
-                    if (part instanceof IDisplayPaneContainer) {
-                        IDisplayPaneContainer container = (IDisplayPaneContainer) part;
-                        ContainerPart cp = partMap.get(ref.getId());
-                        if (cp == null) {
-                            List<Container> list = new ArrayList<>();
-                            cp = new ContainerPart(ref.getId(), list);
-                            partMap.put(ref.getId(), cp);
-                        }
-                        Container c = new Container();
-                        c.container = container;
-                        if (page instanceof WorkbenchPage) {
-                            MPart modelPart = ((WorkbenchPage) page)
-                                    .findPart(part);
-                            c.layoutId = modelPart.getParent().getElementId();
-                        }
-                        cp.containers.add(c);
-                    }
-                }
-
-                // Pull out views
-                IViewReference[] viewReferences = page.getViewReferences();
-                for (IViewReference ref : viewReferences) {
-                    IViewPart view = ref.getView(false);
-                    if (view == null) {
-                        continue;
-                    }
-
-                    if (view instanceof IDisplayPaneContainer) {
-                        IDisplayPaneContainer container = (IDisplayPaneContainer) view;
-                        String id = ref.getId() + UiUtil.SECONDARY_ID_SEPARATOR
-                                + ref.getSecondaryId();
-                        ContainerPart cp = partMap.get(id);
-                        if (cp == null) {
-                            List<Container> list = new ArrayList<>();
-                            cp = new ContainerPart(id, list);
-                            partMap.put(id, cp);
-                        }
-                        Container c = new Container();
-                        c.container = container;
-                        cp.containers.add(c);
-                    }
-                }
-            }
-        }
-        parts.addAll(partMap.values());
-        return parts;
-    }
-
-    protected static class Container {
-        public String layoutId;
-
-        public IDisplayPaneContainer container;
-    }
-
-    protected static class ContainerPart {
-
-        public final String id;
-
-        public final List<Container> containers;
-
-        protected ContainerPart(String id, List<Container> containers) {
-            this.id = id;
-            this.containers = containers;
-        }
-    }
 }

@@ -47,15 +47,17 @@ import org.slf4j.LoggerFactory;
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 14, 2008            chammack    Initial creation.
- * Feb 15, 2013 1638       mschenke    Removed reference to unused "stop" method.
- * Apr 15, 2014 2726       rjpeter     Use slf4j logger.
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------------
+ * Nov 14, 2008           chammack  Initial creation.
+ * Feb 15, 2013  1638     mschenke  Removed reference to unused "stop" method.
+ * Apr 15, 2014  2726     rjpeter   Use slf4j logger.
+ * Jul 03, 2019  7875     randerso  Logged EDEX_VERSION setting. Code cleanup.
+ * 
  * </pre>
  * 
  * @author chammack
- * @version 1.0
  */
 
 public class Main {
@@ -64,9 +66,9 @@ public class Main {
 
     private File edexHome;
 
-    private final Set<File> classPath = new HashSet<File>();
+    private final Set<File> classPath = new HashSet<>();
 
-    private final Set<File> extensions = new HashSet<File>();
+    private final Set<File> extensions = new HashSet<>();
 
     private ClassLoader classLoader;
 
@@ -104,7 +106,7 @@ public class Main {
 
         app.addExtension(baseLibDir);
 
-        List<File> dirList = new ArrayList<File>();
+        List<File> dirList = new ArrayList<>();
         buildRecursiveDirList(0, dirList, baseLibDir);
 
         for (File dir : dirList) {
@@ -117,45 +119,25 @@ public class Main {
             // dependencies
             Class<?> c = cl
                     .loadClass("com.raytheon.uf.edex.esb.camel.Executor");
-            if (args[0].equals("start")) {
+            if ("start".equals(args[0])) {
                 // Print the banner
-                File banner = new File(app.getEDEXHome().getAbsolutePath()
-                        + File.separator + "conf" + File.separator
-                        + "banner.txt");
-                if (banner.exists()) {
-                    FileReader fr = null;
-                    BufferedReader br = null;
-                    try {
-                        fr = new FileReader(banner);
-                        br = new BufferedReader(fr);
-                        StringBuilder msg = new StringBuilder(250);
-                        while (br.ready()) {
-                            String line = br.readLine();
-                            msg.append("\n").append(line);
-                        }
-                        logger.info(msg.toString());
-                    } catch (Throwable e) {
-                        // ignore
-                    } finally {
-                        if (br != null) {
-                            try {
-                                br.close();
-                            } catch (RuntimeException e) {
-                                // ignore
-                            }
-                        }
-
-                        if (fr != null) {
-                            try {
-                                fr.close();
-                            } catch (RuntimeException e) {
-                                // ignore
-                            }
-                        }
-
+                File banner = new File(
+                        app.getEDEXHome().getAbsolutePath() + File.separator
+                                + "conf" + File.separator + "banner.txt");
+                try (BufferedReader br = new BufferedReader(
+                        new FileReader(banner))) {
+                    StringBuilder msg = new StringBuilder(250);
+                    while (br.ready()) {
+                        String line = br.readLine();
+                        msg.append("\n").append(line);
                     }
-
+                    logger.info(msg.toString());
+                } catch (Throwable e) {
+                    logger.error("Unable to read EDEX banner from: " + banner,
+                            e);
                 }
+
+                logger.info("EDEX_VERSION: " + System.getenv("EDEX_VERSION"));
 
                 Method m = c.getMethod("start", new Class<?>[0]);
                 m.invoke(null, new Object[0]);
@@ -182,14 +164,15 @@ public class Main {
             classLoader = Main.class.getClassLoader();
             if (!extensions.isEmpty() || !classPath.isEmpty()) {
 
-                ArrayList<URL> urls = new ArrayList<URL>(500);
+                List<URL> urls = new ArrayList<>(500);
 
                 for (File dir : classPath) {
                     try {
                         urls.add(dir.toURI().toURL());
                     } catch (MalformedURLException e) {
-                        logger.warn("Bad directory entry: " + dir
-                                + ":: Skipping.", e);
+                        logger.warn(
+                                "Bad directory entry: " + dir + ":: Skipping.",
+                                e);
                     }
                 }
 
@@ -265,8 +248,8 @@ public class Main {
             }
 
             if (edexHome == null) {
-                URL url = Main.class.getClassLoader().getResource(
-                        Main.class.getName());
+                URL url = Main.class.getClassLoader()
+                        .getResource(Main.class.getName());
                 if (url != null) {
                     try {
                         JarURLConnection jarConnection = (JarURLConnection) url
@@ -276,7 +259,8 @@ public class Main {
                         edexHome = new File(baseURI).getCanonicalFile();
                         System.setProperty(SYSTEM_PROPERTY,
                                 edexHome.getAbsolutePath());
-                    } catch (Exception ignored) {
+                    } catch (Exception e) {
+                        logger.error("Error determining " + SYSTEM_PROPERTY, e);
                     }
                 }
             }

@@ -26,7 +26,6 @@ import java.util.List;
 
 import org.hibernate.boot.Metadata;
 import org.hibernate.boot.MetadataSources;
-import org.hibernate.boot.model.naming.ImplicitNamingStrategyLegacyJpaImpl;
 import org.hibernate.service.ServiceRegistry;
 import org.hibernate.tool.hbm2ddl.SchemaExport;
 import org.hibernate.tool.hbm2ddl.SchemaExport.Action;
@@ -45,6 +44,7 @@ import org.hibernate.tool.schema.spi.TargetDescriptor;
  * ------------ ---------- ----------- --------------------------
  * Feb 26, 2019 6140       tgurney     Initial creation
  * May 31, 2019 6140       tgurney     Specify the legacy naming strategy
+ * Aug 12, 2019 6140       tgurney     No longer specify legacy naming strategy
  *
  * </pre>
  *
@@ -102,11 +102,13 @@ public class DropCreateSqlUtil {
     public static List<String> getCreateSql(Collection<Class<?>> classes,
             ServiceRegistry serviceRegistry)
             throws org.hibernate.AnnotationException {
-        MetadataSources metadata = getMetadataSources(classes, serviceRegistry);
+        MetadataSources metadataSources = getMetadataSources(classes,
+                serviceRegistry);
         SchemaExport export = new SchemaExport();
         ListTargetDescriptor targetDescriptor = new ListTargetDescriptor();
-        export.doExecution(Action.CREATE, false, buildMetadata(metadata),
-                metadata.getServiceRegistry(), targetDescriptor);
+        Metadata m = metadataSources.getMetadataBuilder().build();
+        export.doExecution(Action.CREATE, false, m,
+                metadataSources.getServiceRegistry(), targetDescriptor);
         return targetDescriptor.getCommands();
     }
 
@@ -126,28 +128,14 @@ public class DropCreateSqlUtil {
     public static List<String> getDropSql(Collection<Class<?>> classes,
             ServiceRegistry serviceRegistry)
             throws org.hibernate.AnnotationException {
-        MetadataSources metadata = getMetadataSources(classes, serviceRegistry);
+        MetadataSources metadataSources = getMetadataSources(classes,
+                serviceRegistry);
         SchemaExport export = new SchemaExport();
         ListTargetDescriptor targetDescriptor = new ListTargetDescriptor();
-        export.doExecution(Action.DROP, false, buildMetadata(metadata),
-                metadata.getServiceRegistry(), targetDescriptor);
+        Metadata m = metadataSources.getMetadataBuilder().build();
+        export.doExecution(Action.DROP, false, m,
+                metadataSources.getServiceRegistry(), targetDescriptor);
         return targetDescriptor.getCommands();
-    }
-
-    private static Metadata buildMetadata(MetadataSources metadataSources) {
-        /*
-         * TODO: This is necessary to preserve join column naming based on the
-         * referenced table name. In Hibernate 5.0 the default implicit naming
-         * strategy switched to the JPA-compliant strategy, which is to name
-         * join columns based on the entity name. This change breaks our
-         * existing databases, since generally we specify our own names for
-         * tables (rather than generate the table name from the entity name). So
-         * to avoid this breakage we explicitly specify the legacy behavior.
-         * Eventually we should rename our join columns (either in the database
-         * or via annotations in code) so we can remove this.
-         */
-        return metadataSources.getMetadataBuilder().applyImplicitNamingStrategy(
-                ImplicitNamingStrategyLegacyJpaImpl.INSTANCE).build();
     }
 
     private static MetadataSources getMetadataSources(
