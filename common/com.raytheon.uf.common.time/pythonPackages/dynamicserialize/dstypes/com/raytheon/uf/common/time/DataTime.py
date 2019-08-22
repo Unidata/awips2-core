@@ -51,13 +51,19 @@ from dynamicserialize.dstypes.java.util import EnumSet
 
 from .TimeRange import TimeRange
 
-_DATE=r'(\d{4}-\d{2}-\d{2})'
-_TIME=r'(\d{2}:\d{2}:\d{2})'
-_MILLIS='(?:\.(\d{1,3})(?:\d{1,4})?)?' # might have microsecond but that is thrown out
-REFTIME_PATTERN_STR=_DATE + '[ _]' + _TIME + _MILLIS
-FORECAST_PATTERN_STR=r'(?:[ _]\((\d+)(?::(\d{1,2}))?\))?'
-VALID_PERIOD_PATTERN_STR=r'(?:\['+ REFTIME_PATTERN_STR + '--' + REFTIME_PATTERN_STR + r'\])?'
-STR_PATTERN=re.compile(REFTIME_PATTERN_STR + FORECAST_PATTERN_STR + VALID_PERIOD_PATTERN_STR)
+_DATE = r'(\d{4}-\d{2}-\d{2})'
+_TIME = r'(\d{2}:\d{2}:\d{2})'
+# might have microsecond but that is thrown out
+_MILLIS = '(?:\.(\d{1,3})(?:\d{1,4})?)?'
+REFTIME_PATTERN_STR = _DATE + '[ _]' + _TIME + _MILLIS
+FORECAST_PATTERN_STR = r'(?:[ _]\((\d+)(?::(\d{1,2}))?\))?'
+VALID_PERIOD_PATTERN_STR = r'(?:\[' + REFTIME_PATTERN_STR + \
+    '--' + REFTIME_PATTERN_STR + r'\])?'
+STR_PATTERN = re.compile(
+    REFTIME_PATTERN_STR +
+    FORECAST_PATTERN_STR +
+    VALID_PERIOD_PATTERN_STR)
+
 
 class DataTime(object):
 
@@ -79,15 +85,19 @@ class DataTime(object):
         else:
             self.fcstTime = 0
         self.refTime = refTime
-        if validPeriod is not None and type(validPeriod) is not TimeRange:
-            raise ValueError("Invalid validPeriod object specified for DataTime.")
+        if validPeriod is not None and not isinstance(validPeriod, TimeRange):
+            raise ValueError(
+                "Invalid validPeriod object specified for DataTime.")
         self.validPeriod = validPeriod
-        self.utilityFlags = EnumSet('com.raytheon.uf.common.time.DataTime$FLAG')
+        self.utilityFlags = EnumSet(
+            'com.raytheon.uf.common.time.DataTime$FLAG')
         self.levelValue = numpy.float64(-1.0)
 
         if self.refTime is not None:
             if isinstance(self.refTime, datetime.datetime):
-                self.refTime = int(calendar.timegm(self.refTime.utctimetuple()) * 1000)
+                self.refTime = int(
+                    calendar.timegm(
+                        self.refTime.utctimetuple()) * 1000)
             elif isinstance(self.refTime, time.struct_time):
                 self.refTime = int(calendar.timegm(self.refTime) * 1000)
             elif hasattr(self.refTime, 'getTime'):
@@ -112,7 +122,8 @@ class DataTime(object):
                     fcstTimeMin = groups[4]
                     periodStart = groups[5], groups[6], (groups[7] or 0)
                     periodEnd = groups[8], groups[9], (groups[10] or 0)
-                    self.refTime = self._getTimeAsEpochMillis(rDate, rTime, rMillis)
+                    self.refTime = self._getTimeAsEpochMillis(
+                        rDate, rTime, rMillis)
 
                     if fcstTimeHr is not None:
                         self.fcstTime = int(fcstTimeHr) * 3600
@@ -121,7 +132,8 @@ class DataTime(object):
 
                     if periodStart[0] is not None:
                         self.validPeriod = TimeRange()
-                        periodStartTime = self._getTimeAsEpochMillis(*periodStart)
+                        periodStartTime = self._getTimeAsEpochMillis(
+                            *periodStart)
                         self.validPeriod.setStart(periodStartTime / 1000)
                         periodEndTime = self._getTimeAsEpochMillis(*periodEnd)
                         self.validPeriod.setEnd(periodEndTime / 1000)
@@ -178,7 +190,8 @@ class DataTime(object):
             micros = (self.refTime.getTime() % 1000) * 1000
             dtObj = datetime.datetime.utcfromtimestamp(refTimeInSecs)
             dtObj = dtObj.replace(microsecond=micros)
-            # This won't be compatible with java or string from java since its to microsecond
+            # This won't be compatible with java or string from java since its
+            # to microsecond
             buffer.write(dtObj.isoformat(' '))
 
         if "FCST_USED" in self.utilityFlags:
@@ -204,29 +217,35 @@ class DataTime(object):
         return "<DataTime instance: " + str(self) + " >"
 
     def __hash__(self):
-        hashCode = hash(self.refTime) ^ hash(self.fcstTime)
-        if self.validPeriod is not None and self.validPeriod.isValid():
-            hashCode ^= hash(self.validPeriod.getStart())
-            hashCode ^= hash(self.validPeriod.getEnd())
-        hashCode ^= hash(self.levelValue)
-        return hashCode
+        if getRefTime() is None:
+            return hash(self.fcstTime)
+        return hash((self.refTime, self.fcstTime,
+                     self.validPeriod, self.levelValue))
 
     def __eq__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return False
 
         if other.getRefTime() is None:
             return self.fcstTime == other.fcstTime
 
-        dataTime1 = (self.refTime, self.fcstTime, self.validPeriod, self.levelValue)
-        dataTime2 = (other.refTime, other.fcstTime, other.validPeriod, other.levelValue)
+        dataTime1 = (
+            self.refTime,
+            self.fcstTime,
+            self.validPeriod,
+            self.levelValue)
+        dataTime2 = (
+            other.refTime,
+            other.fcstTime,
+            other.validPeriod,
+            other.levelValue)
         return dataTime1 == dataTime2
 
     def __ne__(self, other):
         return not self.__eq__(other)
 
     def __lt__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return NotImplemented
 
         myValidTime = self.getRefTime().getTime() + self.getFcstTime()
@@ -249,13 +268,13 @@ class DataTime(object):
         return False
 
     def __le__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return NotImplemented
 
         return self.__lt__(other) or self.__eq__(other)
 
     def __gt__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return NotImplemented
 
         myValidTime = self.getRefTime().getTime() + self.getFcstTime()
@@ -278,7 +297,7 @@ class DataTime(object):
         return False
 
     def __ge__(self, other):
-        if type(self) != type(other):
+        if not isinstance(self, type(other)):
             return NotImplemented
 
         return self.__gt__(other) or self.__eq__(other)
