@@ -89,7 +89,7 @@ def __execute(*args):
         pressureValues = zeros(temperatureValues.shape, temperatureValues.dtype)
     else:
         # we have a list of pressures followed by temperatures
-        temperatureListLength = (argLength - temperatureListLengthOffset) / 2 
+        temperatureListLength = (argLength - temperatureListLengthOffset) // 2
         for i in range(0, temperatureListLength):
             pressureValues.append(args[i])
             temperatureValues.append(args[i + temperatureListLength])
