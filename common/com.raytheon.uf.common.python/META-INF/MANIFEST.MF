@@ -10,5 +10,4 @@ Require-Bundle: org.jep;visibility:=reexport,
  com.raytheon.uf.common.localization
 Export-Package: com.raytheon.uf.common.python,
  com.raytheon.uf.common.python.controller,
- com.raytheon.uf.common.python.multiprocessing,
  com.raytheon.uf.common.python.thread
