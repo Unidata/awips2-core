@@ -37,6 +37,16 @@
 import numpy
 import zlib
 
+######################################
+# TODO Remove after switch to Python 3
+# This is necessary because some APIs in Python 2 expect a buffer and not a
+# memoryview.
+import sys
+if sys.version_info.major < 3:
+    memoryview = buffer
+######################################
+
+
 class CompressedDataRecord(object):
 
     def __init__(self):
