@@ -79,28 +79,38 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 7/24/07      353         bphillip    Initial Check in
- * 5/14/08      1076        brockwoo    Fix for distinct with multiple properties
- * Oct 10, 2012 1261        djohnson    Incorporate changes to DaoConfig, add generic to {@link IPersistableDataObject}.
- * Apr 15, 2013 1868        bsteffen    Rewrite mergeAll in PluginDao.
- * Nov 08, 2013 2361        njensen     Changed method signature of saveOrUpdate to take Objects, not PersistableDataObjects
- * Dec 13, 2013 2555        rjpeter     Added processByCriteria and fixed Generics warnings.
- * Jan 23, 2014 2555        rjpeter     Updated processByCriteria to be a row at a time using ScrollableResults.
- * Apr 23, 2014 2726        rjpeter     Updated processByCriteria to throw exceptions back up to caller.
- * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
- * 10/28/2014   3454        bphillip    Fix usage of getSession()
- * Feb 23, 2015 4127        dgilling    Added bulkSaveOrUpdateAndDelete().
- * Jul 09, 2015 4500        rjpeter     Added parameterized executeSQLQuery, executeSQLUpdate, and executeMappedSQLQuery.
- * Aug 04, 2015 4500        rjpeter     Removed executeNativeSql.
- * Aug 18, 2015 4758        rjpeter     Update MAPPED_SQL_PATTERN to work with multiline sql queries.
- * Aug 19, 2015 4763        rjpeter     Update mappedSql to remove distinct and function definitions from name mapping.
- * Nov 20, 2015 5140        bsteffen    Update mappedSql to ignore comma in function argument lists.
- * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
- * Jan 31, 2018 6945        tgurney     Add maxResults param to executeHQLQuery
- * Mar 26, 2018 6711        randerso    Added support for named queries
- * Feb 26, 2019 6140        tgurney     Hibernate 5 upgrade
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jul 24, 2007  353      bphillip  Initial Check in
+ * May 14, 2008  1076     brockwoo  Fix for distinct with multiple properties
+ * Oct 10, 2012  1261     djohnson  Incorporate changes to DaoConfig, add
+ *                                  generic to {@link IPersistableDataObject}.
+ * Apr 15, 2013  1868     bsteffen  Rewrite mergeAll in PluginDao.
+ * Nov 08, 2013  2361     njensen   Changed method signature of saveOrUpdate to
+ *                                  take Objects, not PersistableDataObjects
+ * Dec 13, 2013  2555     rjpeter   Added processByCriteria and fixed Generics
+ *                                  warnings.
+ * Jan 23, 2014  2555     rjpeter   Updated processByCriteria to be a row at a
+ *                                  time using ScrollableResults.
+ * Apr 23, 2014  2726     rjpeter   Updated processByCriteria to throw
+ *                                  exceptions back up to caller.
+ * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
+ * Oct 28, 2014  3454     bphillip  Fix usage of getSession()
+ * Feb 23, 2015  4127     dgilling  Added bulkSaveOrUpdateAndDelete().
+ * Jul 09, 2015  4500     rjpeter   Added parameterized executeSQLQuery,
+ *                                  executeSQLUpdate, and executeMappedSQLQuery.
+ * Aug 04, 2015  4500     rjpeter   Removed executeNativeSql.
+ * Aug 18, 2015  4758     rjpeter   Update MAPPED_SQL_PATTERN to work with
+ *                                  multiline sql queries.
+ * Aug 19, 2015  4763     rjpeter   Update mappedSql to remove distinct and
+ *                                  function definitions from name mapping.
+ * Nov 20, 2015  5140     bsteffen  Update mappedSql to ignore comma in function
+ *                                  argument lists.
+ * Nov 29, 2016  5937     tgurney   Add maxRowCount param to executeSQLQuery
+ * Jan 31, 2018  6945     tgurney   Add maxResults param to executeHQLQuery
+ * Mar 26, 2018  6711     randerso  Added support for named queries
+ * Feb 26, 2019  6140     tgurney   Hibernate 5 upgrade
+ * Sep 09, 2019  6140     randerso  Fix queries with maxResults.
  *
  * </pre>
  *
@@ -409,8 +419,9 @@ public class CoreDao {
                             }
                             // hibQuery.setCacheMode(CacheMode.NORMAL);
                             // hibQuery.setCacheRegion(QUERY_CACHE_REGION);
-                            if (query.getMaxResults() != null) {
-                                hibQuery.setMaxResults(query.getMaxResults());
+                            Integer maxResults = query.getMaxResults();
+                            if (maxResults != null && maxResults > 0) {
+                                hibQuery.setMaxResults(maxResults);
                             }
                             List<?> results = hibQuery.list();
                             return results;
@@ -925,7 +936,9 @@ public class CoreDao {
                         SQLQuery query = getCurrentSession()
                                 .createSQLQuery(replaced);
                         addParamsToQuery(query, paramMap);
-                        query.setMaxResults(maxRowCount);
+                        if (maxRowCount > 0) {
+                            query.setMaxResults(maxRowCount);
+                        }
                         return query.list();
                     }
                 });
@@ -1328,7 +1341,9 @@ public class CoreDao {
             public List<?> doInTransaction(TransactionStatus status) {
                 Session session = getCurrentSession();
                 Query query = session.getNamedQuery(queryName);
-                query.setMaxResults(maxRowCount);
+                if (maxRowCount > 0) {
+                    query.setMaxResults(maxRowCount);
+                }
                 return query.list();
             }
         });
@@ -1373,7 +1388,9 @@ public class CoreDao {
                 Session session = getCurrentSession();
                 Query query = session.getNamedQuery(queryName);
                 addParamToQuery(query, paramName, paramValue);
-                query.setMaxResults(maxRowCount);
+                if (maxRowCount > 0) {
+                    query.setMaxResults(maxRowCount);
+                }
                 return query.list();
             }
         });
@@ -1419,7 +1436,9 @@ public class CoreDao {
                 Session session = getCurrentSession();
                 Query query = session.getNamedQuery(queryName);
                 addParamsToQuery(query, paramMap);
-                query.setMaxResults(maxRowCount);
+                if (maxRowCount > 0) {
+                    query.setMaxResults(maxRowCount);
+                }
                 return query.list();
             }
         });
