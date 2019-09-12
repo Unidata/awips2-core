@@ -22,10 +22,7 @@ package com.raytheon.uf.viz.localization.perspective.view.actions;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
-import java.util.StringJoiner;
 
 import org.eclipse.jface.action.Action;
 import org.eclipse.swt.SWT;
@@ -36,19 +33,18 @@ import org.eclipse.ui.IWorkbenchPage;
 import org.eclipse.ui.PartInitException;
 
 import com.raytheon.uf.common.localization.ILocalizationFile;
-import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationUtil;
-import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.localization.exception.LocalizationException;
+import com.raytheon.uf.common.python.PyCacheUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
 import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationCompareEditorInput;
 import com.raytheon.uf.viz.localization.perspective.ui.compare.LocalizationMergeEditorInput;
-import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
 
 /**
@@ -75,6 +71,7 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Aug 15, 2016  5834     njensen   Enable delete regardless of protection level
  * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
  * Feb 08, 2018  6906     randerso  Fix deletion of pyc files
+ * Sep 12, 2019  7917     tgurney   Update handling of pyc files for Python 3
  *
  * </pre>
  *
@@ -91,11 +88,6 @@ public class DeleteAction extends Action {
 
     private boolean prompt;
 
-    /**
-     * Map of extensions associated with the key extension.
-     */
-    private Map<String, String[]> associatedExtensions = new HashMap<>();
-
     public DeleteAction(IWorkbenchPage page, LocalizationFile[] toDelete) {
         this(page, toDelete, true);
     }
@@ -106,7 +98,6 @@ public class DeleteAction extends Action {
         this.page = page;
         this.toDelete = toDelete;
         this.prompt = prompt;
-        populateAssociatedExtensions();
     }
 
     @Override
@@ -128,14 +119,10 @@ public class DeleteAction extends Action {
                     "Delete Confirmation", msg.toString(),
                     SWT.OK | SWT.CANCEL | SWT.ICON_QUESTION);
 
-            messageDialog.addCloseCallback(new ICloseCallback() {
-
-                @Override
-                public void dialogClosed(Object returnValue) {
-                    if (returnValue instanceof Integer) {
-                        if ((int) returnValue == SWT.OK) {
-                            deleteFiles();
-                        }
+            messageDialog.addCloseCallback(returnValue -> {
+                if (returnValue instanceof Integer) {
+                    if ((int) returnValue == SWT.OK) {
+                        deleteFiles();
                     }
                 }
             });
@@ -193,11 +180,10 @@ public class DeleteAction extends Action {
             try {
                 input = ref.getEditorInput();
             } catch (PartInitException e) {
-                statusHandler
-                        .handle(Priority.PROBLEM,
-                                "Failed to check if an editor for the deleted "
-                                        + "file was open (in order to close it)",
-                                e);
+                statusHandler.handle(Priority.PROBLEM,
+                        "Failed to check if an editor for the deleted "
+                                + "file was open (in order to close it)",
+                        e);
             }
 
             LocalizationEditorInput[] editorInputs = new LocalizationEditorInput[0];
@@ -247,51 +233,26 @@ public class DeleteAction extends Action {
     }
 
     /**
-     * Delete the file and all associated file extension variations.
+     * Delete the file. If the file has a .py extension, also delete any
+     * corresponding pycache files.
      *
      * @param file
      *            The file to delete
      * @throws Exception
      */
     private void deleteFile(ILocalizationFile file) throws Exception {
-        if (!file.isDirectory()) {
-            // Check for file extension
-            String name = LocalizationUtil.extractName(file.getPath());
-            String[] parts = name.split("[.]");
-
-            if (parts.length > 1) {
-                // file has an extension, delete associated extensions if any
-                String ext = parts[parts.length - 1];
-                String[] extensions = associatedExtensions.get(ext);
-
-                if (extensions != null) {
-                    String path = file.getPath().substring(0,
-                            file.getPath().lastIndexOf(name));
-
-                    StringJoiner prefix = new StringJoiner(".");
-                    for (int i = 0; i < (parts.length - 1); ++i) {
-                        prefix.add(parts[i]);
-                    }
-
-                    path += prefix;
-
-                    LocalizationContext ctx = file.getContext();
-                    IPathManager pathManager = PathManagerFactory
-                            .getPathManager();
-
-                    for (String extension : extensions) {
-                        String deletePath = path + "." + extension;
-                        ILocalizationFile result = pathManager
-                                .getLocalizationFile(ctx, deletePath);
-                        if (result != null) {
-                            result.delete();
-                        }
-                    }
-                }
+        if (!file.isDirectory() && file.getPath().endsWith(".py")) {
+            try {
+                PyCacheUtil.clean(file);
+            } catch (LocalizationException e) {
+                /*
+                 * Don't want to fail the whole delete if just the pycache
+                 * file(s) failed to delete.
+                 */
+                statusHandler
+                        .info("Error deleting the pycache file for " + file, e);
             }
         }
-
-        // Didn't delete based on extensions, just delete the file
         file.delete();
     }
 
@@ -307,13 +268,5 @@ public class DeleteAction extends Action {
             }
         }
         return canDelete;
-    }
-
-    /**
-     * Fill the associatedExtensions Map with associated extensions.
-     */
-    private void populateAssociatedExtensions() {
-        // Python: .py = .pyo, .pyc
-        associatedExtensions.put("py", new String[] { "pyo", "pyc" });
     }
 }

@@ -20,6 +20,8 @@
 package com.raytheon.uf.common.python.controller;
 
 import java.io.File;
+import java.io.IOException;
+import java.nio.file.Paths;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,6 +36,7 @@ import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.PathManagerFactory;
+import com.raytheon.uf.common.python.PyCacheUtil;
 import com.raytheon.uf.common.python.PyConstants;
 import com.raytheon.uf.common.python.PythonErrorExtractor;
 import com.raytheon.uf.common.python.PythonScript;
@@ -68,6 +71,7 @@ import jep.JepException;
  * Dec 12, 2018  6906     randerso  Ensure added/updated files get downloaded
  *                                  and pyo and pyc files get deleted when the
  *                                  py is deleted.
+ * Sep 12, 2019  7917     tgurney   Update handling of pyc files for Python 3
  *
  * </pre>
  *
@@ -81,9 +85,6 @@ public abstract class PythonScriptController extends PythonScript
             .getHandler(PythonScriptController.class);
 
     protected static final String INTERFACE = "interface";
-
-    protected static final String[] ADDITIONAL_EXTENSIONS = new String[] {
-            ".pyo", ".pyc" };
 
     protected final String pythonClassName;
 
@@ -230,11 +231,11 @@ public abstract class PythonScriptController extends PythonScript
                 File toDelete = lf.getFile();
                 toDelete.delete();
 
-                // remove pyo and pyc files
-                for (String extension : ADDITIONAL_EXTENSIONS) {
-                    File f = new File(toDelete.getAbsolutePath()
-                            .replaceAll("\\.py$", extension));
-                    f.delete();
+                // remove compiled Python files
+                try {
+                    PyCacheUtil.clean(Paths.get(toDelete.getAbsolutePath()));
+                } catch (IOException e) {
+                    statusHandler.debug(e.getLocalizedMessage(), e);
                 }
                 break;
             }
