@@ -224,7 +224,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public List<ENTITY> query(String queryString, Object... params) {
-        return executeHQLQuery(queryString, null, params);
+        return executeHQLQuery(queryString, 0, params);
     }
 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
@@ -247,7 +247,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      */
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public <T extends Object> List<T> executeHQLQuery(String queryString) {
-        return executeHQLQuery(queryString, null);
+        return executeHQLQuery(queryString, 0);
     }
 
     /**
@@ -270,7 +270,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public <T extends Object> List<T> executeHQLQuery(String queryString,
             Object... params) {
-        return executeHQLQuery(queryString, null, params);
+        return executeHQLQuery(queryString, 0, params);
     }
 
     /**
