@@ -37,7 +37,7 @@
 #    05/26/16         2416         rjpeter        Added str based constructor.
 #    08/02/16         2416         tgurney        Forecast time regex bug fix,
 #                                                 plus misc cleanup
-
+#    09/13/19         7888         tgurney        Python 3 division fixes
 
 import calendar
 import datetime
@@ -134,17 +134,17 @@ class DataTime(object):
                         self.validPeriod = TimeRange()
                         periodStartTime = self._getTimeAsEpochMillis(
                             *periodStart)
-                        self.validPeriod.setStart(periodStartTime / 1000)
+                        self.validPeriod.setStart(periodStartTime // 1000)
                         periodEndTime = self._getTimeAsEpochMillis(*periodEnd)
-                        self.validPeriod.setEnd(periodEndTime / 1000)
+                        self.validPeriod.setEnd(periodEndTime // 1000)
 
             self.refTime = Date(self.refTime)
 
             if self.validPeriod is None:
                 validTimeMillis = self.refTime.getTime() + int(self.fcstTime * 1000)
                 self.validPeriod = TimeRange()
-                self.validPeriod.setStart(validTimeMillis / 1000)
-                self.validPeriod.setEnd(validTimeMillis / 1000)
+                self.validPeriod.setStart(validTimeMillis // 1000)
+                self.validPeriod.setEnd(validTimeMillis // 1000)
 
         # figure out utility flags
         if self.fcstTime:
@@ -186,7 +186,7 @@ class DataTime(object):
         buffer = io.StringIO()
 
         if self.refTime is not None:
-            refTimeInSecs = self.refTime.getTime() / 1000
+            refTimeInSecs = self.refTime.getTime() // 1000
             micros = (self.refTime.getTime() % 1000) * 1000
             dtObj = datetime.datetime.utcfromtimestamp(refTimeInSecs)
             dtObj = dtObj.replace(microsecond=micros)
