@@ -62,12 +62,12 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Jun 14, 2010            njensen     Initial creation
  * Jul 31, 2012  #965      dgilling    Fix path to file header.
- * Jul 24, 2014   3185     njesnen     Improved javadoc
+ * Jul 24, 2014   3185     njensen     Improved javadoc
  * Aug 19, 2014   3393     nabowle     Added numpy wrappers, software header.
+ * Sep 23, 2019   7920     tgurney     Update for Python 3
  * </pre>
  *
  * @author njensen
- * @version 1.0
  */
 
 public class PythonFileGenerator {
@@ -93,8 +93,7 @@ public class PythonFileGenerator {
     }
 
     public static void generateFile(File destDir, Class<?> clz, String header,
-            boolean wrap)
-            throws IOException {
+            boolean wrap) throws IOException {
         String name = clz.getName();
         String shortname = name.substring(name.lastIndexOf('.') + 1);
         System.out.println(shortname);
@@ -109,7 +108,7 @@ public class PythonFileGenerator {
 
         for (int i = 0; i < packages.length - 1; ++i) {
             File packageFile = new File(parentFile, packages[i]);
-            if (packageFile.exists() && packageFile.isDirectory() == false) {
+            if (packageFile.exists() && !packageFile.isDirectory()) {
                 packageFile.delete();
             }
             packageFile.mkdir();
@@ -119,181 +118,185 @@ public class PythonFileGenerator {
             parentFile = packageFile;
         }
 
-        FileWriter fw = new FileWriter(new File(parentFile, shortname + ".py"),
-                false);
-        fw.write(header);
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("File auto-generated against equivalent DynamicSerialize Java class");
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("     SOFTWARE HISTORY");
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("    Date            Ticket#       Engineer       Description");
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("    ------------    ----------    -----------    --------------------------");
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("    ");
-        fw.write(new SimpleDateFormat("MMM dd, yyyy").format(new Date()));
-        fw.write("                  ");
-        String username = System.getProperty("user.name");
-        String namespace = "              ";
-        if (username.length() > namespace.length()) {
-            // long-named users will have to fill it out themselves
-            username = "";
-        }
-        fw.write(username);
-        fw.write(namespace.substring(username.length()));
-        fw.write(" Generated");
-        fw.write(NEW_LINE);
-        fw.write(NEW_LINE);
+        try (FileWriter fw = new FileWriter(
+                new File(parentFile, shortname + ".py"), false)) {
+            fw.write(header);
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write(
+                    "File auto-generated against equivalent DynamicSerialize Java class");
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write("     SOFTWARE HISTORY");
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write(
+                    "    Date            Ticket#       Engineer       Description");
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write(
+                    "    ------------    ----------    -----------    --------------------------");
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write("    ");
+            fw.write(new SimpleDateFormat("MMM dd, yyyy").format(new Date()));
+            fw.write("                  ");
+            String username = System.getProperty("user.name");
+            String namespace = "              ";
+            if (username.length() > namespace.length()) {
+                // long-named users will have to fill it out themselves
+                username = "";
+            }
+            fw.write(username);
+            fw.write(namespace.substring(username.length()));
+            fw.write(" Generated");
+            fw.write(NEW_LINE);
+            fw.write(NEW_LINE);
 
-        Map<String, Class<?>> fields = getSerializedFields(clz);
-        // only import numpy if used.
-        if (wrap) {
-            for (Class<?> clazz : fields.values()) {
-                if (WRAPPERS.containsKey(clazz)) {
-                    fw.write("import numpy");
-                    fw.write(NEW_LINE);
-                    fw.write(NEW_LINE);
-                    break;
+            Map<String, Class<?>> fields = getSerializedFields(clz);
+            // only import numpy if used.
+            if (wrap) {
+                for (Class<?> clazz : fields.values()) {
+                    if (WRAPPERS.containsKey(clazz)) {
+                        fw.write("import numpy");
+                        fw.write(NEW_LINE);
+                        fw.write(NEW_LINE);
+                        break;
+                    }
                 }
             }
-        }
 
-        fw.write("class " + shortname + "(object):");
-        fw.write(NEW_LINE);
-        fw.write(NEW_LINE);
-
-
-
-        fw.write(INDENT);
-        fw.write("def __init__(self):");
-        fw.write(NEW_LINE);
-        for (String s : fields.keySet()) {
-            fw.write(INDENT);
-            fw.write(INDENT);
-            fw.write("self.");
-            fw.write(s);
-            fw.write(" = None");
-            fw.write(NEW_LINE);
-        }
-
-        fw.write(NEW_LINE);
-        String s;
-        Class<?> fieldClass;
-        String title;
-        for (Entry<String, Class<?>> entry : fields.entrySet()) {
-            s = entry.getKey();
-            fieldClass = entry.getValue();
-            title = s.substring(0, 1).toUpperCase() + s.substring(1);
-            fw.write(INDENT);
-            fw.write("def get");
-            fw.write(title);
-            fw.write("(self):");
-            fw.write(NEW_LINE);
-            fw.write(INDENT);
-            fw.write(INDENT);
-            fw.write("return self.");
-            fw.write(s);
+            fw.write("class " + shortname + "(object):");
             fw.write(NEW_LINE);
             fw.write(NEW_LINE);
 
             fw.write(INDENT);
-            fw.write("def set");
-            fw.write(title);
-            fw.write("(self, ");
-            fw.write(s);
-            fw.write("):");
+            fw.write("def __init__(self):");
             fw.write(NEW_LINE);
-            fw.write(INDENT);
-            fw.write(INDENT);
-            fw.write("self.");
-            fw.write(s);
-            fw.write(" = ");
-            if (wrap && WRAPPERS.containsKey(fieldClass)) {
-                fw.write(WRAPPERS.get(fieldClass));
-                fw.write("(");
+            for (String s : fields.keySet()) {
+                fw.write(INDENT);
+                fw.write(INDENT);
+                fw.write("self.");
                 fw.write(s);
-                fw.write(")");
-            } else {
-                fw.write(s);
+                fw.write(" = None");
+                fw.write(NEW_LINE);
             }
-            fw.write(NEW_LINE);
-            fw.write(NEW_LINE);
-        }
 
-        fw.flush();
-        fw.close();
+            fw.write(NEW_LINE);
+            String s;
+            Class<?> fieldClass;
+            String title;
+            for (Entry<String, Class<?>> entry : fields.entrySet()) {
+                s = entry.getKey();
+                fieldClass = entry.getValue();
+                title = s.substring(0, 1).toUpperCase() + s.substring(1);
+                fw.write(INDENT);
+                fw.write("def get");
+                fw.write(title);
+                fw.write("(self):");
+                fw.write(NEW_LINE);
+                fw.write(INDENT);
+                fw.write(INDENT);
+                fw.write("return self.");
+                fw.write(s);
+                fw.write(NEW_LINE);
+                fw.write(NEW_LINE);
+
+                fw.write(INDENT);
+                fw.write("def set");
+                fw.write(title);
+                fw.write("(self, ");
+                fw.write(s);
+                fw.write("):");
+                fw.write(NEW_LINE);
+                fw.write(INDENT);
+                fw.write(INDENT);
+                fw.write("self.");
+                fw.write(s);
+                fw.write(" = ");
+                if (wrap && WRAPPERS.containsKey(fieldClass)) {
+                    fw.write(WRAPPERS.get(fieldClass));
+                    fw.write("(");
+                    fw.write(s);
+                    fw.write(")");
+                } else {
+                    fw.write(s);
+                }
+                fw.write(NEW_LINE);
+                fw.write(NEW_LINE);
+            }
+
+            fw.flush();
+        }
 
         createInitFile(header, parentFile);
     }
 
     private static void createInitFile(String header, File dir)
             throws IOException {
-        File initFile = new File(dir, "__init__.py");
+        File initFile = new File(dir, INIT_FILE);
         initFile.delete();
-        FileWriter fw = new FileWriter(initFile, false);
-        fw.write(header);
-        fw.write(NEW_LINE);
-        fw.write(COMMENT);
-        fw.write("File auto-generated by PythonFileGenerator");
-        fw.write(NEW_LINE);
-        fw.write(NEW_LINE);
-        fw.write("__all__ = [");
-        fw.write(NEW_LINE);
+        try (FileWriter fw = new FileWriter(initFile, false)) {
+            fw.write(header);
+            fw.write(NEW_LINE);
+            fw.write(COMMENT);
+            fw.write("File auto-generated by PythonFileGenerator");
+            fw.write(NEW_LINE);
+            fw.write(NEW_LINE);
+            fw.write("__all__ = [");
+            fw.write(NEW_LINE);
 
-        File[] files = dir.listFiles();
-        List<String> dirs = new ArrayList<String>();
-        List<String> pythonFiles = new ArrayList<String>();
-        // add all packages, then files
-        for (int i = 0; i < 2; ++i) {
-            for (File file : files) {
-                String fileName = file.getName();
-                if (i == 0 && file.isDirectory() && file.isHidden() == false) {
-                    dirs.add(fileName);
-                } else if (i == 1 && fileName.endsWith(".py")
-                        && fileName.equals(INIT_FILE) == false) {
-                    dirs.add(fileName.substring(0, fileName.length() - 3));
-                    pythonFiles
-                            .add(fileName.substring(0, fileName.length() - 3));
+            File[] files = dir.listFiles();
+            List<String> dirs = new ArrayList<>();
+            List<String> pythonFiles = new ArrayList<>();
+            // add all packages, then files
+            for (int i = 0; i < 2; ++i) {
+                for (File file : files) {
+                    String fileName = file.getName();
+                    if ("__pycache__".equals(fileName)) {
+                        continue;
+                    }
+                    if (i == 0 && file.isDirectory() && !file.isHidden()) {
+                        dirs.add(fileName);
+                    } else if (i == 1 && fileName.endsWith(".py")
+                            && !fileName.equals(INIT_FILE)) {
+                        dirs.add(fileName.substring(0, fileName.length() - 3));
+                        pythonFiles.add(
+                                fileName.substring(0, fileName.length() - 3));
+                    }
                 }
             }
-        }
 
-        Collections.sort(dirs);
-        Collections.sort(pythonFiles);
+            Collections.sort(dirs);
+            Collections.sort(pythonFiles);
 
-        for (int j = 0; j < dirs.size(); ++j) {
-            fw.write(INDENT + INDENT + INDENT);
-            fw.write("'");
-            fw.write(dirs.get(j));
-            fw.write("'");
-            if (j < dirs.size() - 1) {
-                fw.write(",");
+            for (int j = 0; j < dirs.size(); ++j) {
+                fw.write(INDENT + INDENT + INDENT);
+                fw.write("'");
+                fw.write(dirs.get(j));
+                fw.write("'");
+                if (j < dirs.size() - 1) {
+                    fw.write(",");
+                }
+                fw.write(NEW_LINE);
+            }
+
+            fw.write("          ]");
+            fw.write(NEW_LINE);
+            fw.write(NEW_LINE);
+
+            for (String pythonFile : pythonFiles) {
+                fw.write("from ." + pythonFile + " import " + pythonFile);
+                fw.write(NEW_LINE);
             }
             fw.write(NEW_LINE);
+
+            fw.flush();
         }
-
-        fw.write("          ]");
-        fw.write(NEW_LINE);
-        fw.write(NEW_LINE);
-
-        for (String pythonFile : pythonFiles) {
-            fw.write("from " + pythonFile + " import " + pythonFile);
-            fw.write(NEW_LINE);
-        }
-        fw.write(NEW_LINE);
-
-        fw.flush();
-        fw.close();
     }
 
     public static Map<String, Class<?>> getSerializedFields(Class<?> clz) {
@@ -321,18 +324,20 @@ public class PythonFileGenerator {
         boolean wrap = true;
 
         for (int i = 0; i < args.length; ++i) {
-            if (args[i].equals("-f") && i < args.length - 1) {
-                fileToRead = args[++i];
-            } else if (args[i].equals("-d") && i < args.length - 1) {
-                destDir = args[++i];
-            } else if (args[i].equals("--no-wrap")) {
+            if ("-f".equals(args[i]) && i < args.length - 1) {
+                i++;
+                fileToRead = args[i];
+            } else if ("-d".equals(args[i]) && i < args.length - 1) {
+                i++;
+                destDir = args[i];
+            } else if ("--no-wrap".equals(args[i])) {
                 wrap = false;
             }
         }
 
         if (fileToRead == null) {
-            System.err
-                    .println("Pass in file to read classes in from using -f <filepath> argument");
+            System.err.println(
+                    "Pass in file to read classes in from using -f <filepath> argument");
             System.exit(1);
         }
 
@@ -340,38 +345,38 @@ public class PythonFileGenerator {
         File destFile = null;
 
         if (destDir == null) {
-            System.out
-                    .println("No destination directory specified, specify with -d <dir> argument");
+            System.out.println(
+                    "No destination directory specified, specify with -d <dir> argument");
 
             File tmp = File.createTempFile("tmp", "");
             destFile = new File(tmp.getParentFile(), "python");
             tmp.delete();
 
-            if (destFile.exists() && destFile.isDirectory() == false) {
+            if (destFile.exists() && !destFile.isDirectory()) {
                 destFile.delete();
             }
             destFile.mkdirs();
         } else {
             destFile = new File(destDir);
-            if (destFile.exists() == true && destFile.isDirectory() == false) {
-                System.err
-                        .println("Can not write to destination directory, it is already a file");
+            if (destFile.exists() && !destFile.isDirectory()) {
+                System.err.println(
+                        "Can not write to destination directory, it is already a file");
                 System.exit(2);
             }
             destFile.mkdirs();
 
         }
 
-        System.out.println("Reading class list file: "
-                + readFile.getAbsolutePath());
-        System.out.println("Writing python file to "
-                + destFile.getAbsolutePath());
+        System.out.println(
+                "Reading class list file: " + readFile.getAbsolutePath());
+        System.out.println(
+                "Writing python file to " + destFile.getAbsolutePath());
 
-        try {
-            BufferedReader br = new BufferedReader(new FileReader(readFile));
+        try (FileReader fr = new FileReader(readFile);
+                BufferedReader br = new BufferedReader(fr)) {
             String line;
             while ((line = br.readLine()) != null) {
-                if ("".equals(line.trim())) {
+                if (line.trim().isEmpty()) {
                     continue;
                 }
                 Class<?> c = null;
@@ -409,24 +414,25 @@ public class PythonFileGenerator {
         File file = new File(
                 "../../../AWIPS2_baseline/cave/build/tools/headup/AWIPS/awipsHeader.txt");
         if (!file.exists()) {
-            System.out
-                    .println("Unable to determine header information, skipping header");
+            System.out.println(
+                    "Unable to determine header information, skipping header");
             return "";
         }
 
-        BufferedReader br = new BufferedReader(new FileReader(file));
-        StringBuffer sb = new StringBuffer();
-        sb.append("##" + NEW_LINE);
-        String line = br.readLine();
-        while (line != null) {
-            sb.append(COMMENT);
-            sb.append(line);
-            sb.append(NEW_LINE);
-            line = br.readLine();
+        try (FileReader fr = new FileReader(file);
+                BufferedReader br = new BufferedReader(fr)) {
+            StringBuilder sb = new StringBuilder();
+            sb.append("##" + NEW_LINE);
+            String line = br.readLine();
+            while (line != null) {
+                sb.append(COMMENT);
+                sb.append(line);
+                sb.append(NEW_LINE);
+                line = br.readLine();
+            }
+            sb.append("##" + NEW_LINE);
+            return sb.toString();
         }
-        sb.append("##" + NEW_LINE);
-        br.close();
 
-        return sb.toString();
     }
 }
