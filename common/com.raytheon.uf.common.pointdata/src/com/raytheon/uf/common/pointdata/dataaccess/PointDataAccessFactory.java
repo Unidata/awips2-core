@@ -30,7 +30,6 @@ import java.util.Set;
 
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
-import javax.measure.quantity.Dimensionless;
 
 import org.locationtech.jts.geom.Coordinate;
 import org.locationtech.jts.geom.Envelope;
@@ -58,6 +57,7 @@ import com.raytheon.uf.common.pointdata.PointDataView;
 import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
+import com.raytheon.uf.common.units.UnitConv;
 
 import tec.uom.se.AbstractConverter;
 
@@ -88,6 +88,7 @@ import tec.uom.se.AbstractConverter;
  * Nov 08, 2016  5986     tgurney   Handle reftime stored in seconds and
  *                                  forecast time stored in hours
  * Mar 06, 2017  6142     bsteffen  Remove dataURI as optional identifier
+ * Sep 23, 2019  7939     tgurney   Fix levels unit conversion
  *
  * </pre>
  *
@@ -431,20 +432,21 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
 
         List<IGeometryData> result = new ArrayList<>(count);
 
-        Unit<Dimensionless> levelUnit;
+        Unit<?> levelUnit;
         Number[] levelValues;
         if (p2d.levelParameter == null) {
             levelUnit = null;
             levelValues = new Number[0];
         } else {
-            levelUnit = pdv.getUnit(p2d.levelParameter).asType(Dimensionless.class);
+            levelUnit = pdv.getUnit(p2d.levelParameter);
             levelValues = pdv.getNumberAllLevels(p2d.levelParameter);
         }
         MasterLevel masterLevel = lf.getMasterLevel(p2d.levelType);
-        Unit<Dimensionless> masterUnit = masterLevel.getUnit().asType(Dimensionless.class);
+        Unit<?> masterUnit = masterLevel.getUnit();
         UnitConverter levelUnitConverter = AbstractConverter.IDENTITY;
         if (levelUnit != null && masterUnit != null) {
-            levelUnitConverter = levelUnit.getConverterTo(masterUnit);
+            levelUnitConverter = UnitConv.getConverterToUnchecked(levelUnit,
+                    masterUnit);
         }
 
         String[] stringValues;
