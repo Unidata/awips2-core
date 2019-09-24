@@ -85,7 +85,7 @@ public class LocalizationInitializer {
             if (copyFrom != null) {
                 String searchPath = bundle + IPathManager.SEPARATOR + filePath;
                 File copyTo = pm.getFile(baseContext, searchPath);
-                if (copyTo.exists() == false
+                if (!copyTo.exists()
                         || copyFrom.lastModified() != copyTo.lastModified()) {
                     FileLocker.lock(this, copyTo, Type.WRITE);
                     try {
@@ -110,7 +110,7 @@ public class LocalizationInitializer {
         if (promptUI) {
             ConnectivityPreferenceDialog dlg = new ConnectivityPreferenceDialog(
                     checkAlertviz, "Connectivity Preferences");
-            if (dlg.open() == true) {
+            if (dlg.open()) {
                 System.exit(0);
             }
         }
@@ -130,6 +130,7 @@ public class LocalizationInitializer {
                 false);
         VizApp.setHttpServer(resp.getHttpServer());
         VizApp.setJmsConnectionString(resp.getJmsConnectionString());
+        VizApp.setConnectionInfo(resp.getConnectionInfo());
         VizApp.setPypiesServer(resp.getPypiesServer());
         VizServers.getInstance().setServerLocations(resp.getServerLocations());
     }

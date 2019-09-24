@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.esb.camel.jms;
+package com.raytheon.uf.common.jms.qpid;
 
 /**
  * Exception for missing/invalid JMS configuration parameters
@@ -29,6 +29,7 @@ package com.raytheon.uf.edex.esb.camel.jms;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 26, 2017 6092       randerso     Initial creation
+ * Jul 17, 2019 7724       mrichardson  Upgrade Qpid to Qpid Proton.
  *
  * </pre>
  *

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -35,6 +35,7 @@ import com.raytheon.uf.common.stats.StatsRecord;
 import com.raytheon.uf.common.stats.xml.StatisticsEventConfig;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.time.util.TimeUtil;
 import com.raytheon.uf.edex.database.DataAccessLayerException;
 import com.raytheon.uf.edex.database.dao.CoreDao;
 import com.raytheon.uf.edex.database.dao.DaoConfig;
@@ -45,9 +46,9 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
 
 /**
  * Purges the stats table of expired/unused stat records.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -55,27 +56,28 @@ import com.raytheon.uf.edex.stats.util.ConfigLoader;
  * May 22, 2013 1917       rjpeter     Added purging off offline statistics.
  * Sep 04, 2014 3582       mapeters    Replaced SerializationUtil usage with SingleTypeJAXBManager.
  * May 11, 2018 19178      ryu         Purging of stats table.
+ * Sep 11, 2019 7931       tgurney     Add a column alias for min date query
  * </pre>
- * 
+ *
  * @author jsanchez
- * 
+ *
  */
 public class StatsPurge {
 
     /** Property key defined in stats.properties. */
-    private final static String STATIC_RETENTION_HOURS = "stats.retentionHours";
+    private static final String STATIC_RETENTION_HOURS = "stats.retentionHours";
 
     /** Default value for retention hours when property is not available */
-    private final static int STATIC_RETENTION_DEFAULT = 1;    
-    
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final int STATIC_RETENTION_DEFAULT = 1;
+
+    private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(StatsPurge.class);
 
-    private final CoreDao aggregateRecordDao = new CoreDao(DaoConfig.forClass(
-            "metadata", AggregateRecord.class));
+    private final CoreDao aggregateRecordDao = new CoreDao(
+            DaoConfig.forClass("metadata", AggregateRecord.class));
 
-    private final CoreDao statsRecordDao = new CoreDao(DaoConfig.forClass(
-            "metadata", StatsRecord.class));
+    private final CoreDao statsRecordDao = new CoreDao(
+            DaoConfig.forClass("metadata", StatsRecord.class));
 
     private final PurgeRuleSet aggregatePurgeRules;
 
@@ -83,7 +85,7 @@ public class StatsPurge {
 
     public StatsPurge() {
         aggregatePurgeRules = readPurgeRules("aggregatePurgeRules.xml");
-        
+
         String retention = System.getProperty(STATIC_RETENTION_HOURS);
         if (retention != null) {
             statsRetentionHours = Integer.parseInt(retention);
@@ -110,8 +112,8 @@ public class StatsPurge {
     public void purgeAggregates() {
         if (aggregatePurgeRules != null) {
             try {
-                Calendar expiration = Calendar.getInstance(TimeZone
-                        .getTimeZone("GMT"));
+                Calendar expiration = Calendar
+                        .getInstance(TimeZone.getTimeZone("GMT"));
                 DatabaseQuery deleteStmt = new DatabaseQuery(
                         AggregateRecord.class);
                 List<PurgeRule> allRules = new ArrayList<>();
@@ -126,7 +128,7 @@ public class StatsPurge {
                 for (PurgeRule rule : allRules) {
                     if (rule.isPeriodSpecified()) {
                         long ms = rule.getPeriodInMillis();
-                        int minutes = new Long(ms / (1000 * 60)).intValue();
+                        int minutes = (int) (ms / TimeUtil.MILLIS_PER_MINUTE);
                         expiration.add(Calendar.MINUTE, -minutes);
 
                         deleteStmt.addQueryParam("endDate", expiration,
@@ -147,21 +149,21 @@ public class StatsPurge {
      */
     private void purgeStats() {
         try {
-            Calendar expiration = Calendar.getInstance(TimeZone
-                    .getTimeZone("GMT"));
+            Calendar expiration = Calendar
+                    .getInstance(TimeZone.getTimeZone("GMT"));
             expiration.add(Calendar.HOUR, -statsRetentionHours);
-            
+
             Calendar minTime = retrieveMinStatsTime();
             if (minTime == null) {
                 return;
             }
-            
+
             if (expiration.after(minTime)) {
                 statusHandler.warn("Stats table records between date values of "
-                    + minTime.toString() + " and " + expiration.toString()
-                    + " will be purged.");
+                        + minTime.toString() + " and " + expiration.toString()
+                        + " will be purged.");
             }
-            
+
             Calendar threshold = (Calendar) minTime.clone();
             while (threshold.before(expiration)) {
                 threshold.add(Calendar.MINUTE, 30);
@@ -186,8 +188,8 @@ public class StatsPurge {
     private PurgeRuleSet readPurgeRules(String xml) {
         PurgeRuleSet purgeRules = null;
         try {
-            File file = PathManagerFactory.getPathManager().getStaticFile(
-                    "purge/" + xml);
+            File file = PathManagerFactory.getPathManager()
+                    .getStaticFile("purge/" + xml);
             if (file != null) {
                 try {
                     SingleTypeJAXBManager<PurgeRuleSet> jaxb = new SingleTypeJAXBManager<>(
@@ -195,13 +197,13 @@ public class StatsPurge {
                     purgeRules = jaxb.unmarshalFromXmlFile(file);
 
                 } catch (SerializationException e) {
-                    statusHandler.error("Error deserializing purge rule " + xml
-                            + "!", e);
+                    statusHandler.error(
+                            "Error deserializing purge rule " + xml + "!", e);
                 }
 
             } else {
-                statusHandler.error(xml
-                        + " rule not defined!!  Data will not be purged.");
+                statusHandler.error(
+                        xml + " rule not defined!!  Data will not be purged.");
             }
         } catch (Exception e) {
             statusHandler.error("Error reading purge file " + xml, e);
@@ -211,17 +213,16 @@ public class StatsPurge {
 
     /**
      * Retrieves the earliest time in the stats table.
-     * 
-     * @param 
+     *
+     * @param
      * @return
      * @throws DataAccessLayerException
      */
-    public Calendar retrieveMinStatsTime()
-            throws DataAccessLayerException {
-        String hql = "select min(rec.date) from StatsRecord rec";
+    public Calendar retrieveMinStatsTime() throws DataAccessLayerException {
+        String hql = "select min(rec.date) as minDate from StatsRecord rec";
         QueryResult result = statsRecordDao.executeHQLQuery(hql);
-        if ((result != null) && result.getResultCount() > 0) {
-            Object time = result.getRowColumnValue(0, 0);
+        if (result != null && result.getResultCount() > 0) {
+            Object time = result.getRowColumnValue(0, "minDate");
             if (time != null) {
                 return (Calendar) time;
             }

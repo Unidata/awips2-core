@@ -43,6 +43,9 @@ import javax.jms.TextMessage;
 import javax.jms.Topic;
 import javax.jms.TopicSubscriber;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.jms.JmsPooledSession;
 
 /**
@@ -58,6 +61,7 @@ import com.raytheon.uf.common.jms.JmsPooledSession;
  * ------------ ---------- ----------- --------------------------
  * Nov 30, 2011            rjpeter     Initial creation
  * Feb 26, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * </pre>
  * 
  * @author rjpeter
@@ -65,16 +69,19 @@ import com.raytheon.uf.common.jms.JmsPooledSession;
  */
 
 public class JmsSessionWrapper implements Session {
+    private static final Logger logger = LoggerFactory
+            .getLogger(JmsSessionWrapper.class);
+
     private final JmsPooledSession mgr;
 
     private volatile boolean closed = false;
 
     private volatile boolean exceptionOccurred = false;
 
-    private final List<JmsProducerWrapper> producers = new ArrayList<JmsProducerWrapper>(
-            1);;
+    private final List<JmsProducerWrapper> producers = new ArrayList<>(
+            1);
 
-    private final List<JmsConsumerWrapper> consumers = new ArrayList<JmsConsumerWrapper>(
+    private final List<JmsConsumerWrapper> consumers = new ArrayList<>(
             1);
 
     public JmsSessionWrapper(JmsPooledSession mgr) {
@@ -742,6 +749,153 @@ public class JmsSessionWrapper implements Session {
             JMSException exc = new JMSException(
                     "Exception occurred on pooled session");
             exc.initCause(e);
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createDurableConsumer(javax.jms.Topic,
+     * java.lang.String)
+     */
+    @Override
+    public MessageConsumer createDurableConsumer(Topic topic,
+            String name) throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createDurableConsumer(topic, name);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createDurableConsumer(javax.jms.Topic,
+     * java.lang.String, boolean)
+     */
+    @Override
+    public MessageConsumer createDurableConsumer(Topic topic,
+            String name, String messageSelector, boolean noLocal)
+            throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createDurableConsumer(topic, name,
+                    messageSelector, noLocal);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createSharedConsumer(javax.jms.Topic,
+     * java.lang.String)
+     */
+    @Override
+    public MessageConsumer createSharedConsumer(Topic topic,
+            String sharedSubscriptionName) throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createSharedConsumer(topic, sharedSubscriptionName);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createSharedConsumer(javax.jms.Topic,
+     * java.lang.String, java.lang.String)
+     */
+    @Override
+    public MessageConsumer createSharedConsumer(Topic topic,
+            String sharedSubscriptionName, String messageSelector)
+            throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createSharedConsumer(topic, sharedSubscriptionName, messageSelector);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createSharedDurableConsumer(javax.jms.Topic,
+     * java.lang.String)
+     */
+    @Override
+    public MessageConsumer createSharedDurableConsumer(Topic topic,
+            String name) throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createSharedDurableConsumer(topic, name);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
+            throw exc;
+        }
+    }
+
+    /*
+     * (non-Javadoc)
+     * 
+     * @see javax.jms.Session#createSharedDurableConsumer(javax.jms.Topic,
+     * java.lang.String, java.lang.String)
+     */
+    @Override
+    public MessageConsumer createSharedDurableConsumer(Topic topic,
+            String name, String messageSelector) throws JMSException {
+        Session sess = getSession();
+
+        try {
+            // no pooling for now
+            return sess.createSharedDurableConsumer(topic, name, messageSelector);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled session");
+            exc.initCause(e);
+            logger.warn("Session pooling is not currently supported.");
             throw exc;
         }
     }

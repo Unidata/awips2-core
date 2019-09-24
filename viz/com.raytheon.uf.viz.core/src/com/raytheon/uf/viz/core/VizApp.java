@@ -21,6 +21,7 @@
 package com.raytheon.uf.viz.core;
 
 import java.lang.management.ManagementFactory;
+import java.util.Map;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.swt.widgets.Display;
@@ -72,6 +73,8 @@ public final class VizApp {
     private static String jmsConnectionString;
 
     private static String pypiesServer;
+
+    private static Map<String, String> connectionInfo;
 
     static {
         ManagementFactory.getRuntimeMXBean().getName();
@@ -203,6 +206,14 @@ public final class VizApp {
 
     public static void setJmsConnectionString(String jmsConnectionString) {
         VizApp.jmsConnectionString = jmsConnectionString;
+    }
+
+    public static Map<String, String> getConnectionInfo() {
+        return connectionInfo;
+    }
+
+    public static void setConnectionInfo(Map<String, String> connectionInfo) {
+        VizApp.connectionInfo = connectionInfo;
     }
 
     public static String getPypiesServer() {

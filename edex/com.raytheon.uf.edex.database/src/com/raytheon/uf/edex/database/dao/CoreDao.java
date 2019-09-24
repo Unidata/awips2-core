@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -111,6 +112,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Mar 26, 2018  6711     randerso  Added support for named queries
  * Feb 26, 2019  6140     tgurney   Hibernate 5 upgrade
  * Sep 09, 2019  6140     randerso  Fix queries with maxResults.
+ * Sep 11, 2019  7931     tgurney   Add default aliases for returned columns
+ *                                  that don't have aliases
  *
  * </pre>
  *
@@ -788,7 +791,13 @@ public class CoreDao {
                             result.addColumnName("record", 0);
                         } else {
                             for (int i = 0; i < returnAliases.length; i++) {
-                                result.addColumnName(returnAliases[i], i);
+                                if (returnAliases[i] == null) {
+                                    String suffix = UUID.randomUUID().toString()
+                                            .substring(0, 8);
+                                    result.addColumnName("column_" + suffix, i);
+                                } else {
+                                    result.addColumnName(returnAliases[i], i);
+                                }
                             }
                         }
                         result.setRows(rows);

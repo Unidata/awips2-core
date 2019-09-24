@@ -17,7 +17,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.edex.esb.camel.jms;
+package com.raytheon.uf.common.jms.qpid;
 
 import java.io.IOException;
 import java.net.URI;
@@ -40,6 +40,7 @@ import com.raytheon.uf.common.jms.JmsSslConfiguration;
  * ------------- -------- ----------- --------------------------
  * Jan 31, 2017  6083     bsteffen    Initial creation
  * Feb 02, 2017  6085     bsteffen    Extract certificate lookup to JmsSslConfiguration
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  *
  * </pre>
  *

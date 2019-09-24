@@ -19,6 +19,7 @@
  **/
 package com.raytheon.uf.common.jms.wrapper;
 
+import javax.jms.CompletionListener;
 import javax.jms.Destination;
 import javax.jms.IllegalStateException;
 import javax.jms.JMSException;
@@ -41,6 +42,7 @@ import com.raytheon.uf.common.jms.JmsPooledProducer;
  * Feb 26, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
  * Jun 07, 2013 DR 16316   rjpeter     Fix memory leak.
  * Feb 07, 2014 2357       rjpeter     Set linked exception in exception handling.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * </pre>
  * 
  * @author rjpeter
@@ -107,11 +109,6 @@ public class JmsProducerWrapper implements MessageProducer {
         return mgr.getProducer();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getDeliveryMode()
-     */
     @Override
     public int getDeliveryMode() throws JMSException {
         MessageProducer producer = getProducer();
@@ -130,11 +127,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getDestination()
-     */
     @Override
     public Destination getDestination() throws JMSException {
         MessageProducer producer = getProducer();
@@ -153,11 +145,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getDisableMessageID()
-     */
     @Override
     public boolean getDisableMessageID() throws JMSException {
         MessageProducer producer = getProducer();
@@ -176,11 +163,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getDisableMessageTimestamp()
-     */
     @Override
     public boolean getDisableMessageTimestamp() throws JMSException {
         MessageProducer producer = getProducer();
@@ -199,11 +181,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getPriority()
-     */
     @Override
     public int getPriority() throws JMSException {
         MessageProducer producer = getProducer();
@@ -222,11 +199,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#getTimeToLive()
-     */
     @Override
     public long getTimeToLive() throws JMSException {
         MessageProducer producer = getProducer();
@@ -245,11 +217,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#send(javax.jms.Message)
-     */
     @Override
     public void send(Message message) throws JMSException {
         MessageProducer producer = getProducer();
@@ -268,12 +235,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#send(javax.jms.Destination,
-     * javax.jms.Message)
-     */
     @Override
     public void send(Destination destination, Message message)
             throws JMSException {
@@ -293,11 +254,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#send(javax.jms.Message, int, int, long)
-     */
     @Override
     public void send(Message message, int deliveryMode, int priority,
             long timeToLive) throws JMSException {
@@ -317,12 +273,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#send(javax.jms.Destination,
-     * javax.jms.Message, int, int, long)
-     */
     @Override
     public void send(Destination destination, Message message,
             int deliveryMode, int priority, long timeToLive)
@@ -330,8 +280,7 @@ public class JmsProducerWrapper implements MessageProducer {
         MessageProducer producer = getProducer();
 
         try {
-            producer.send(destination, message, deliveryMode, priority,
-                    timeToLive);
+            producer.send(destination, message, deliveryMode, priority, timeToLive);
         } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(
@@ -344,11 +293,85 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#setDeliveryMode(int)
-     */
+    @Override
+    public void send(Message message, CompletionListener completionListener) throws JMSException {
+        MessageProducer producer = getProducer();
+
+        try {
+            producer.send(message, completionListener);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled producer");
+            exc.initCause(e);
+            if (e instanceof Exception) {
+                exc.setLinkedException((Exception) e);
+            }
+            throw exc;
+        }
+    }
+
+    @Override
+    public void send(Destination destination, Message message,
+            CompletionListener completionListener) throws JMSException {
+        MessageProducer producer = getProducer();
+
+        try {
+            producer.send(destination, message, completionListener);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled producer");
+            exc.initCause(e);
+            if (e instanceof Exception) {
+                exc.setLinkedException((Exception) e);
+            }
+            throw exc;
+        }
+    }
+
+    @Override
+    public void send(Message message, int deliveryMode,
+            int priority, long timeToLive,
+            CompletionListener completionListener) throws JMSException {
+        MessageProducer producer = getProducer();
+
+        try {
+            producer.send(message, deliveryMode, priority,
+                    timeToLive, completionListener);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled producer");
+            exc.initCause(e);
+            if (e instanceof Exception) {
+                exc.setLinkedException((Exception) e);
+            }
+            throw exc;
+        }
+    }
+
+    @Override
+    public void send(Destination destination, Message message,
+            int deliveryMode, int priority, long timeToLive,
+            CompletionListener completionListener) throws JMSException {
+        MessageProducer producer = getProducer();
+
+        try {
+            producer.send(destination, message, deliveryMode, priority,
+                    timeToLive, completionListener);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled producer");
+            exc.initCause(e);
+            if (e instanceof Exception) {
+                exc.setLinkedException((Exception) e);
+            }
+            throw exc;
+        }
+    }
+
     @Override
     public void setDeliveryMode(int deliveryMode) throws JMSException {
         MessageProducer producer = getProducer();
@@ -367,11 +390,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#setDisableMessageID(boolean)
-     */
     @Override
     public void setDisableMessageID(boolean value) throws JMSException {
         MessageProducer producer = getProducer();
@@ -390,11 +408,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#setDisableMessageTimestamp(boolean)
-     */
     @Override
     public void setDisableMessageTimestamp(boolean value) throws JMSException {
         MessageProducer producer = getProducer();
@@ -413,11 +426,6 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#setPriority(int)
-     */
     @Override
     public void setPriority(int defaultPriority) throws JMSException {
         MessageProducer producer = getProducer();
@@ -436,17 +444,37 @@ public class JmsProducerWrapper implements MessageProducer {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.MessageProducer#setTimeToLive(long)
-     */
     @Override
     public void setTimeToLive(long timeToLive) throws JMSException {
         MessageProducer producer = getProducer();
 
         try {
             producer.setTimeToLive(timeToLive);
+        } catch (Throwable e) {
+            exceptionOccurred = true;
+            JMSException exc = new JMSException(
+                    "Exception occurred on pooled producer");
+            exc.initCause(e);
+            if (e instanceof Exception) {
+                exc.setLinkedException((Exception) e);
+            }
+            throw exc;
+        }
+    }
+
+    @Override
+    public long getDeliveryDelay() throws JMSException {
+        MessageProducer producer = getProducer();
+
+        return producer.getDeliveryDelay();
+    }
+
+    @Override
+    public void setDeliveryDelay(long deliveryDelay) throws JMSException {
+        MessageProducer producer = getProducer();
+
+        try {
+            producer.setDeliveryDelay(deliveryDelay);
         } catch (Throwable e) {
             exceptionOccurred = true;
             JMSException exc = new JMSException(

@@ -324,6 +324,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                         .checkLocalizationServer(currentServer, false);
                 VizApp.setHttpServer(resp.getHttpServer());
                 VizApp.setJmsConnectionString(resp.getJmsConnectionString());
+                VizApp.setConnectionInfo(resp.getConnectionInfo());
                 VizApp.setPypiesServer(resp.getPypiesServer());
                 VizServers.getInstance()
                         .setServerLocations(resp.getServerLocations());

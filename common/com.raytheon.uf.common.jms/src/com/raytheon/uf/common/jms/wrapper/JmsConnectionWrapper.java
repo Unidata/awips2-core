@@ -48,6 +48,8 @@ import com.raytheon.uf.common.jms.JmsPooledConnection;
  * ------------ ---------- ----------- --------------------------
  * Apr 15, 2011            rjpeter     Initial creation
  * Feb 21, 2013 1642       rjpeter     Added volatile references for better concurrency handling.
+ * Jul 17, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
+ * 
  * </pre>
  * 
  * @author rjpeter
@@ -61,10 +63,8 @@ public class JmsConnectionWrapper implements Connection {
 
     private volatile boolean exceptionOccurred = false;
 
-    private final List<JmsSessionWrapper> sessions = new ArrayList<JmsSessionWrapper>(
+    private final List<JmsSessionWrapper> sessions = new ArrayList<>(
             1);
-
-    private final String clientId = null;
 
     public JmsConnectionWrapper(JmsPooledConnection mgr) {
         this.mgr = mgr;
@@ -98,11 +98,6 @@ public class JmsConnectionWrapper implements Connection {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#close()
-     */
     @Override
     public void close() throws JMSException {
         if (closeWrapper()) {
@@ -123,25 +118,12 @@ public class JmsConnectionWrapper implements Connection {
         return mgr.getConnection();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#createConnectionConsumer(javax.jms.Destination,
-     * java.lang.String, javax.jms.ServerSessionPool, int)
-     */
     @Override
     public ConnectionConsumer createConnectionConsumer(Destination arg0,
             String arg1, ServerSessionPool arg2, int arg3) throws JMSException {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * javax.jms.Connection#createDurableConnectionConsumer(javax.jms.Topic,
-     * java.lang.String, java.lang.String, javax.jms.ServerSessionPool, int)
-     */
     @Override
     public ConnectionConsumer createDurableConnectionConsumer(Topic arg0,
             String arg1, String arg2, ServerSessionPool arg3, int arg4)
@@ -149,11 +131,6 @@ public class JmsConnectionWrapper implements Connection {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#createSession(boolean, int)
-     */
     @Override
     public Session createSession(boolean transacted, int acknowledgeMode)
             throws JMSException {
@@ -179,31 +156,16 @@ public class JmsConnectionWrapper implements Connection {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#getClientID()
-     */
     @Override
     public String getClientID() throws JMSException {
-        return clientId;
+        return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#getExceptionListener()
-     */
     @Override
     public ExceptionListener getExceptionListener() throws JMSException {
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#getMetaData()
-     */
     @Override
     public ConnectionMetaData getMetaData() throws JMSException {
         Connection conn = getConnection();
@@ -219,46 +181,55 @@ public class JmsConnectionWrapper implements Connection {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#setClientID(java.lang.String)
-     */
     @Override
     public void setClientID(String clientId) throws JMSException {
         throw new IllegalArgumentException(
                 "ClientId not implemented on session pool");
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * javax.jms.Connection#setExceptionListener(javax.jms.ExceptionListener)
-     */
     @Override
     public void setExceptionListener(ExceptionListener arg0)
             throws JMSException {
         // don't allow others to listen
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#start()
-     */
     @Override
     public void start() throws JMSException {
         // ignore
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.jms.Connection#stop()
-     */
     @Override
     public void stop() throws JMSException {
         // ignore
+    }
+
+    @Override
+    public Session createSession() throws JMSException {
+        JmsSessionWrapper session = (JmsSessionWrapper) createSession(false, Session.AUTO_ACKNOWLEDGE);
+        sessions.add(session);
+        
+        return session;
+    }
+
+    @Override
+    public Session createSession(int sessionMode) throws JMSException {
+        JmsSessionWrapper session = (JmsSessionWrapper) createSession(sessionMode == Session.SESSION_TRANSACTED ? true : false, sessionMode);
+        sessions.add(session);
+        
+        return session;
+    }
+
+    @Override
+    public ConnectionConsumer createSharedConnectionConsumer(Topic topic, String subscriptionName, String messageSelector,
+            ServerSessionPool sessionPool, int maxMessages) {
+        throw new UnsupportedOperationException(
+                "JmsConnectionWraper not implemented for shared connection consumer");
+    }
+
+    @Override
+    public ConnectionConsumer createSharedDurableConnectionConsumer(Topic topic, String subscriptorName, String messageSelector,
+            ServerSessionPool sessionPool, int maxMessages) {
+        throw new UnsupportedOperationException(
+                "JmsConnectionWraper not implemented for durable shared connection consumer");
     }
 }
