@@ -21,8 +21,10 @@ package com.raytheon.uf.viz.core.notification.jobs;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 
+import org.apache.qpid.jms.exceptions.JmsExceptionSupport;
 import org.eclipse.ui.services.IDisposable;
 
 import com.raytheon.uf.common.jms.notification.JmsNotificationManager;
@@ -49,6 +51,7 @@ import com.raytheon.uf.viz.core.comm.JMSConnection;
  * Jul 21, 2014  3390     bsteffen    Extracted logic to the JmsNotificationLogic
  * Nov 08, 2016  5976     bsteffen    Remove deprecated methods
  * Feb 02, 2017  6085     bsteffen    Do not NPE after problems in JMSConnection
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  * 
  * </pre>
  * 
@@ -108,8 +111,43 @@ public class NotificationManagerJob implements IDisposable {
                 }
                 return factory.createConnection();
             }
+
+            @Override
+            public JMSContext createContext() {
+                try {
+                    return JMSConnection.getInstance().getFactory().createContext();
+                } catch (JMSException jmse) {
+                    throw JmsExceptionSupport.createRuntimeException(jmse);
+                }
+            }
+
+            @Override
+            public JMSContext createContext(int sessionMode) {
+                try {
+                    return JMSConnection.getInstance().getFactory().createContext(sessionMode);
+                } catch (JMSException jmse) {
+                    throw JmsExceptionSupport.createRuntimeException(jmse);
+                }
+            }
+
+            @Override
+            public JMSContext createContext(String userName, String password) {
+                throw new UnsupportedOperationException(
+                        "NotificationManagerJob not implemented for username/password connections");
+            }
+
+            @Override
+            public JMSContext createContext(String userName, String password, int sessionMode) {
+                throw new UnsupportedOperationException(
+                        "NotificationManagerJob not implemented for username/password connections");
+            }
         };
-        manager = new JmsNotificationManager(delegateFactory);
+        try {
+            manager = new JmsNotificationManager(delegateFactory,
+                    JMSConnection.getInstance().getJmsAdmin());
+        } catch (JMSException e) {
+            throw JmsExceptionSupport.createRuntimeException(e);
+        }
         Activator.getDefault().registerDisposable(this);
     }
 

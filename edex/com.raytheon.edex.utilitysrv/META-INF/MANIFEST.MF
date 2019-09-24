@@ -16,5 +16,7 @@ Export-Package: com.raytheon.edex.services
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Import-Package: com.raytheon.uf.common.auth.req,
  com.raytheon.uf.common.auth.user,
+ com.raytheon.uf.common.jms,
  com.raytheon.uf.edex.auth.req,
- com.raytheon.uf.edex.auth.resp
+ com.raytheon.uf.edex.auth.resp,
+ org.apache.http.client.utils

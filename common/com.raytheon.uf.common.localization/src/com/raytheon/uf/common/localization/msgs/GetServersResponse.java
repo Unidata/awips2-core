@@ -58,6 +58,17 @@ public class GetServersResponse {
     @DynamicSerializeElement
     private Map<String, String> serverLocations;
 
+    @DynamicSerializeElement
+    private Map<String, String> connectionInfo;
+
+    public Map<String, String> getConnectionInfo() {
+        return connectionInfo;
+    }
+
+    public void setConnectionInfo(Map<String, String> connectionInfo) {
+        this.connectionInfo = connectionInfo;
+    }
+
     public String getHttpServer() {
         return httpServer;
     }

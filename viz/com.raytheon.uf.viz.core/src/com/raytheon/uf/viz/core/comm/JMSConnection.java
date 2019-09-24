@@ -23,11 +23,9 @@ package com.raytheon.uf.viz.core.comm;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
+import org.apache.qpid.jms.JmsConnectionFactory;
 
-import com.raytheon.uf.common.jms.JmsSslConfiguration;
+import com.raytheon.uf.common.jms.qpid.QpidBrokerRestImpl;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
@@ -48,16 +46,18 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     no longer needs to be constructed. Replaced stacktrace
  *                                     printing with UFStatus.
  * Feb 02, 2017 6085       bsteffen    Enable ssl in the JMS connection.
+ * Sep 23, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * 
  * </pre>
  * 
  * @author chammack
  */
 public class JMSConnection {
-
     private static JMSConnection instance;
 
-    private AMQConnectionFactory factory;
+    private JmsConnectionFactory factory;
+
+    private QpidBrokerRestImpl jmsAdmin;
 
     public static synchronized JMSConnection getInstance() throws JMSException {
         if (instance == null) {
@@ -68,17 +68,22 @@ public class JMSConnection {
     }
 
     public JMSConnection() throws JMSException {
-        this(VizApp.getJmsConnectionString());
+        this(VizApp.getJmsConnectionString(),
+                VizApp.getConnectionInfo().get("hostname"),
+                VizApp.getConnectionInfo().get("vhost"));
     }
 
     public JMSConnection(String connectionUrl) throws JMSException {
+        this(connectionUrl,
+                VizApp.getConnectionInfo().get("hostname"),
+                VizApp.getConnectionInfo().get("vhost"));
+    }
+
+    public JMSConnection(String connectionUrl,
+            String brokerHost, String jmsVirtualHost) throws JMSException {
         try {
-            ConnectionURL url = new AMQConnectionURL(connectionUrl);
-            url.setClientName(VizApp.getWsId().toString());
-
-            JmsSslConfiguration.configureURL(url);
-
-            this.factory = new AMQConnectionFactory(url);
+            this.factory = new JmsConnectionFactory(connectionUrl);
+            this.jmsAdmin = new QpidBrokerRestImpl(brokerHost, jmsVirtualHost);
         } catch (Exception e) {
             JMSException wrapper = new JMSException(
                     "Failed to connect to the JMS Server!");
@@ -92,7 +97,7 @@ public class JMSConnection {
      * @return the jms connection url
      */
     public String getConnectionUrl() {
-        return factory.getConnectionURLString();
+        return factory.getRemoteURI();
     }
 
     /**
@@ -100,6 +105,10 @@ public class JMSConnection {
      */
     public ConnectionFactory getFactory() {
         return factory;
+    }
+    
+    public QpidBrokerRestImpl getJmsAdmin() {
+        return jmsAdmin;
     }
 
 }
