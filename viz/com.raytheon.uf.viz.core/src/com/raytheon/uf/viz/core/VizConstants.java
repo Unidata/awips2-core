@@ -21,16 +21,17 @@ package com.raytheon.uf.viz.core;
 
 /**
  * TODO Add Description
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 5, 2009            njensen     Initial creation
- * 
+ * Oct 01 2019   69438    ksunil      added FRAME_NUM_IN_LOOP
+ *
  * </pre>
- * 
+ *
  * @author njensen
  * @version 1.0
  */
@@ -54,6 +55,8 @@ public class VizConstants {
     public static final String LOADMODE_ID = "loadmode";
 
     public static final String LOOPING_ID = "looping";
+
+    public static final String FRAME_NUM_IN_LOOP = "framenum";
 
     public static final String CAVE = "CAVE";
 }

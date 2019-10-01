@@ -54,14 +54,14 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.AddListener;
 import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
 
 /**
- * 
+ *
  * Abstract renderable display class, implements common functionality between
  * all IRenderableDisplays. Note: classes extending this class should be away
  * that cloneDisplay/createNewDisplay will not work properly unless the
  * extending class has the annotation XmlRootElement above the class.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
@@ -71,9 +71,9 @@ import com.raytheon.uf.viz.core.rsc.ResourceList.RemoveListener;
  * Dec 09, 2016  6027     bsteffen    Copy bounds in clone
  * Apr 18, 2017  6049     bsteffen    Fix race condition causing NPE
  * Mar 20, 2018  6855     njensen     Rewrote calcPixelExtent(Rectangle)
- * 
+ * Oct 02, 2019  69438    ksunil      add FRAME_NUM_IN_LOOP to the globals
  * </pre>
- * 
+ *
  * @author mschenke
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -489,6 +489,8 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
     public Map<String, Object> getGlobalsMap() {
         globals.put(VizConstants.FRAME_COUNT_ID,
                 getDescriptor().getFramesInfo().getFrameCount());
+        globals.put(VizConstants.FRAME_NUM_IN_LOOP,
+                getDescriptor().getFramesInfo().frameIndex);
         return globals;
     }
 
