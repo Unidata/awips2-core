@@ -131,6 +131,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jun 27, 2019  65510    ksunil       refactor smoothData
  * Jul 11, 2019  65905    ksunil       fixed the issue with labelFormat within the values tag
  * Jul 31, 2019  66719    ksunil       Make sure the lat is within the +/-90 range
+ * Sep 17, 2019  68196    ksunil       added fixContourWorldPoints
  *
  * </pre>
  *
@@ -653,7 +654,8 @@ public class ContourSupport {
                 long tZ1 = System.currentTimeMillis();
                 tMinMaxAccum += tZ1 - tZ0;
 
-                correctWorldWrapping(contours, descriptor, rastPosToLatLon);
+                correctWorldWrapping(contours, descriptor, rastPosToLatLon,
+                        rastPosToWorldGrid);
 
                 int size = contours.xyContourPoints.size();
                 // total coordinates
@@ -1680,11 +1682,14 @@ public class ContourSupport {
      * @param rastPosToLatLon
      *            transform for converting the coordinates within contours to
      *            LatLon coordinates.
+     * @param rastPosToWorldGrid
+     *            transform for converting the coordinates within contours to
+     *            worldGrid coordinates.
      * @throws TransformException
      */
     private static void correctWorldWrapping(ContourContainer contours,
-            IMapDescriptor descriptor, MathTransform rastPosToLatLon)
-            throws TransformException {
+            IMapDescriptor descriptor, MathTransform rastPosToLatLon,
+            MathTransform rastPosToWorldGrid) throws TransformException {
         long tZ0 = System.currentTimeMillis();
 
         WorldWrapChecker wwc = new WorldWrapChecker(
@@ -1712,8 +1717,13 @@ public class ContourSupport {
                 if (wwc.check(lastLon, lon)) {
                     remove = true;
                     if (startIndex + 1 < i) {
-                        splitLines.add(Arrays.copyOfRange(data, startIndex, i));
-                        dupValues.add(val);
+                        float[] cwp = fixContourWorldPoints(data, startIndex, i,
+                                rastPosToWorldGrid);
+                        if (cwp != null) {
+                            splitLines.add(cwp);
+                            dupValues.add(val);
+                        }
+
                     }
                     startIndex = i;
                 }
@@ -1723,9 +1733,12 @@ public class ContourSupport {
                 lineIter.remove();
                 valueIter.remove();
                 if (startIndex + 1 < data.length) {
-                    splitLines.add(
-                            Arrays.copyOfRange(data, startIndex, data.length));
-                    dupValues.add(val);
+                    float[] cwp = fixContourWorldPoints(data, startIndex,
+                            data.length, rastPosToWorldGrid);
+                    if (cwp != null) {
+                        splitLines.add(cwp);
+                        dupValues.add(val);
+                    }
                 }
             }
 
@@ -1736,6 +1749,72 @@ public class ContourSupport {
         long tZ1 = System.currentTimeMillis();
 
         perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
+    }
+
+    private static float[] fixContourWorldPoints(float[] data, int startIndex,
+            int incr, MathTransform rastPosToWorldGrid)
+            throws TransformException {
+
+        float[] contourGridPoints = Arrays.copyOfRange(data, startIndex, incr);
+        if (contourGridPoints.length == 2) {
+            return contourGridPoints;
+        }
+        float[] contourWorldPoints = new float[contourGridPoints.length];
+
+        int contourPoints = contourGridPoints.length / 2;
+        rastPosToWorldGrid.transform(contourGridPoints, 0, contourWorldPoints,
+                0, contourPoints);
+
+        /*
+         * See if the first 2 elements are either both +ve or -ve. If so, see if
+         * the last element has the same sign. If so, line is good. Else, remove
+         * the last element and return the rest. Similar logic for the last 2
+         * elements
+         *
+         * Since this code gets called only if the logic in
+         * correctWorldWrapping(...) is being applied, we can assume that only
+         * the first or the last element in the contourWorldPoints is
+         * conflicting with the rest. And we eliminate that point (not the
+         * entire line).
+         *
+         * For lines that don't need to be split to begin with, the following
+         * doesn't apply anyway.
+         */
+
+        if ((contourWorldPoints[0] * contourWorldPoints[2]) > 0) {
+            if ((contourWorldPoints[0]
+                    * contourWorldPoints[contourGridPoints.length - 2]) > 0) {
+                // nothing to change
+                return contourGridPoints;
+            } else {
+                // remove the last value and return the rest
+                return (Arrays.copyOfRange(contourGridPoints, 0,
+                        contourGridPoints.length - 2));
+            }
+        }
+        // the last 2 points are either both +ve or both -ve
+        else if ((contourWorldPoints[contourGridPoints.length - 2]
+                * contourWorldPoints[contourGridPoints.length - 4]) > 0) {
+            if ((contourWorldPoints[contourGridPoints.length - 2]
+                    * contourWorldPoints[0]) > 0) {
+                // nothing to change
+                return contourGridPoints;
+            } else {
+                // remove the first value
+                return (Arrays.copyOfRange(contourGridPoints, 2,
+                        contourGridPoints.length));
+            }
+        }
+        /*
+         * special cases. First and last points are the same. Or lines that has
+         * one end world wrapping that needs to be fixed and the other end goes
+         * all the way to the prime meridian and then ends with one point on the
+         * other side of the prime meridian.
+         */
+        else {
+            return (Arrays.copyOfRange(contourGridPoints, 2,
+                    contourGridPoints.length - 2));
+        }
     }
 
     private static ContourContainer concatContourContainers(
