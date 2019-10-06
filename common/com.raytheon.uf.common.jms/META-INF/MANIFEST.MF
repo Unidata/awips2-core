@@ -13,7 +13,6 @@ Require-Bundle: javax.jms,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.json,
  com.raytheon.uf.common.time,
- com.raytheon.uf.edex.core,
  org.slf4j,
  org.springframework
 Export-Package: com.raytheon.uf.common.jms,
