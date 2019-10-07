@@ -19,6 +19,11 @@
  **/
 package com.raytheon.uf.edex.database.health;
 
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlAttribute;
+
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 import com.raytheon.uf.common.util.SizeUtil;
 
 /**
@@ -32,36 +37,83 @@ import com.raytheon.uf.common.util.SizeUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Feb 10, 2016 4630       rjpeter     Initial creation
+ * Jul 18, 2019 7840       mroos       Remade class to be represented in XML
  * 
  * </pre>
  * 
  * @author rjpeter
- * @version 1.0
  */
 
+@XmlAccessorType(XmlAccessType.NONE)
 public class Threshold {
-    /** Size of table or index */
-    private final long sizeInBytes;
 
-    /** Percent of size to take action on */
-    private final double percent;
+    @XmlAttribute(name = "size")
+    @DynamicSerializeElement
+    // The minimum size of the table to which the threshold applies
+    private long size;
 
-    public Threshold(long sizeInMb, double percent) {
-        this.sizeInBytes = sizeInMb * SizeUtil.BYTES_PER_MB;
-        this.percent = percent;
+    @XmlAttribute(name = "warningPercent")
+    @DynamicSerializeElement
+    // The bloat percent at which the table bloat is within warning range.
+    private double warningPercent = 100;
+
+    @XmlAttribute(name = "criticalPercent")
+    @DynamicSerializeElement
+    // The bloat percent at which the table bloat is considered critical.
+    private double criticalPercent = 100;
+
+    /**
+     * @return the size.
+     */
+    public long getSize() {
+        return size;
     }
 
     /**
-     * @return the size
+     * Sets the size.
+     * 
+     * @param size
      */
-    public long getSizeInBytes() {
-        return sizeInBytes;
+    public void setSize(long size) {
+        this.size = size;
     }
 
     /**
-     * @return the percent
+     * @return warning bloat percent
      */
-    public double getPercent() {
-        return percent;
+    public double getWarningPercent() {
+        return warningPercent;
+    }
+
+    /**
+     * Sets the warning bloat percent.
+     * 
+     * @param warningPercent
+     */
+    public void setWarningPercent(double warningPercent) {
+        this.warningPercent = warningPercent;
+    }
+
+    /**
+     * @return critical bloat percent
+     */
+    public double getCriticalPercent() {
+        return criticalPercent;
+    }
+
+    /**
+     * Sets the critical bloat percent.
+     * 
+     * @param criticalPercent
+     */
+    public void setCriticalPercent(double criticalPercent) {
+        this.criticalPercent = criticalPercent;
+    }
+
+    /**
+     * @return the size of the threshold in bytes rather than megabytes
+     */
+    public double getSizeInBytes() {
+        return getSize() * SizeUtil.BYTES_PER_MB;
     }
 }
