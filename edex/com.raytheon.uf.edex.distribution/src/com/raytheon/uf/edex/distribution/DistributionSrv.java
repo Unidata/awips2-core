@@ -58,13 +58,14 @@ import org.slf4j.LoggerFactory;
  * Dec 11, 2015  5166     kbisanz   Update logging to use SLF4J
  * Aug 30, 2017  6381     randerso  Fix ClassCastException when no header is
  *                                  present
+ * Oct 10, 2019  7724     randerso  Fix to be compatible with javax.jms
  *
  * </pre>
  *
  * @author brockwoo
  */
 public class DistributionSrv {
-    private static final String HEADER_QPID_SUBJECT = "qpid.subject";
+    private static final String SUBJECT_HEADER = "JMSType";
 
     private static final String MESSAGE_HEADER = "header";
 
@@ -128,7 +129,7 @@ public class DistributionSrv {
     public List<String> route(Exchange exchange) {
         Message in = exchange.getIn();
         // determine if the header is in the qpid subject field?
-        String header = (String) in.getHeader(HEADER_QPID_SUBJECT);
+        String header = (String) in.getHeader(SUBJECT_HEADER);
         if (header != null) {
             // make the qpid subject the header so that everything downstream
             // will be able to read it as the header.
