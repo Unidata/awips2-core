@@ -68,7 +68,7 @@ import com.raytheon.uf.common.status.UFStatus;
 public class JmsSslConfiguration {
 
     private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(JmsPooledConnection.class);
+            .getHandler(JmsSslConfiguration.class);
 
     private static final String CERTIFICATE_DIR = "QPID_SSL_CERT_DB";
 
