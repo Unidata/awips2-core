@@ -111,25 +111,7 @@
          unpack="false"/>
 
    <plugin
-         id="com.python.pydev"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
          id="com.python.pydev.analysis"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="com.python.pydev.codecompletion"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="com.python.pydev.fastparser"
          download-size="0"
          install-size="0"
          version="0.0.0"/>
