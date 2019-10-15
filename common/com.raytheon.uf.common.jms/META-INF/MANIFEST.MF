@@ -9,6 +9,7 @@ Require-Bundle: javax.jms,
  org.apache.qpid,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.util,
+ javax.xml.bind,
  org.apache.http,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.json,
@@ -18,4 +19,4 @@ Require-Bundle: javax.jms,
 Export-Package: com.raytheon.uf.common.jms,
  com.raytheon.uf.common.jms.notification,
  com.raytheon.uf.common.jms.qpid
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11

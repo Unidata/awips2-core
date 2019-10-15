@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,19 +22,20 @@ package com.raytheon.uf.viz.ui.menus.widgets;
 import java.io.IOException;
 import java.io.InputStream;
 import java.text.ParseException;
-import java.text.SimpleDateFormat;
+import java.time.ZoneOffset;
+import java.time.format.DateTimeFormatter;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-import java.util.TimeZone;
 
 import org.eclipse.core.commands.Command;
 import org.eclipse.core.commands.ExecutionEvent;
 import org.eclipse.core.commands.ExecutionException;
 import org.eclipse.jface.action.ContributionItem;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
@@ -69,10 +70,10 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
 /**
  * Provides an Eclipse menu contribution that loads a bundle, and is decorated
  * with bundle availability times.
- * 
+ *
  * The dataURIs are utilized for the bundle availability times (this is
  * redundant in the bundle, but is necessary for performance reasons).
- * 
+ *
  * The bundle availability times are updated at two times:
  * <UL>
  * <LI>when the menu is pulled down, the times are checked to guarantee
@@ -80,12 +81,12 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * <LI>while the menu is open, a callback is utilized to keep the menu up to
  * date
  * </UL>
- * 
- * 
+ *
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 12, 2009  2214     chammack  Initial creation
@@ -98,13 +99,14 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * Nov 08, 2016  5976     bsteffen  Use VariableSubstitutor directly
  * Dec 16, 2016  5976     bsteffen  Use localization file streams
- * 
+ * May 15, 2019  7850     tgurney   Use left-padding with spaces to right-align
+ *                                  data times (GTK3 fix). + Code cleanup
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class BundleContributionItem extends ContributionItem {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(BundleContributionItem.class);
 
     protected static JobPool prepareBundleJobPool = new JobPool(
@@ -122,22 +124,34 @@ public class BundleContributionItem extends ContributionItem {
 
     protected BundleMenuContribution menuContribution;
 
-    protected static final SimpleDateFormat DATE_FORMATTER = new SimpleDateFormat(
-            "dd.HHmm");
+    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter
+            .ofPattern("dd.HHmm").withZone(ZoneOffset.UTC);
 
-    protected String menuText;
+    private final String menuText;
 
     protected boolean shownBefore;
 
-    protected final static String NOT_AVAILABLE = "--.----";
+    private static final String NOT_AVAILABLE = "--.----";
 
-    protected final static String UNKNOWN = "??.????";
+    private static final String UNKNOWN = "??.????";
+
+    /**
+     * Separates the datatime part of the text from the non-datatime part. Used
+     * multiple times to left-pad the datatime part
+     */
+    /* This is a unicode "hair space". */
+    public static final String TIME_SEPARATOR = "\u200A";
+
+    /**
+     * Minimum number of separator chars between menu item text and data time
+     */
+    private static final int MINIMUM_PADDING_CHARS = 10;
 
     protected DataTime lastUsedTime;
 
     protected boolean queryPerformed = false;
 
-    protected boolean performQuery = true;
+    private boolean performQuery = true;
 
     /**
      * A flag to indicate simulated time has changed and item's values needs to
@@ -183,7 +197,7 @@ public class BundleContributionItem extends ContributionItem {
      * substitutions before calling this constructor so that they are available
      * as a local variable for both the substitution in the id and for saving in
      * a field.
-     * 
+     *
      * @param contribution
      *            the deserialized contribution information
      * @param substitutions
@@ -197,8 +211,6 @@ public class BundleContributionItem extends ContributionItem {
         this.performQuery = contribution.timeQuery;
         this.menuContribution = new BundleMenuContribution();
         this.menuContribution.xml = contribution;
-        // this.keySet = new HashSet<URIKey>();
-        // this.adjustedKeyMap = new HashMap<URIKey, URIKey>();
 
         // Build the substitutions:
         // Everything defaults to the include value
@@ -216,26 +228,22 @@ public class BundleContributionItem extends ContributionItem {
                     + menuContribution.xml.id);
         }
 
-        this.menuText = processVariables(menuContribution.xml.text,
+        menuText = processVariables(menuContribution.xml.text,
                 this.substitutions);
 
         // The bundle persists for the life of CAVE; no need to remove the
         // listener.
-        ISimulatedTimeChangeListener stcl = new ISimulatedTimeChangeListener() {
+        //
+        // Updating the value here will generate a flood of requests for
+        // all bundles.
+        //
+        // This will force the update of the item's value the next time
+        // it is displayed.
+        //
+        // Any open widget using the bundle will need to handle the
+        // update.
+        ISimulatedTimeChangeListener stcl = () -> timeChangeUpdate = true;
 
-            @Override
-            public void timechanged() {
-                // Updating the value here will generate a flood of requests for
-                // all bundles.
-                //
-                // This will force the update of the item's value the next time
-                // it is displayed.
-                //
-                // Any open widget using the bundle will need to handle the
-                // update.
-                timeChangeUpdate = true;
-            }
-        };
         SimulatedTime.getSystemTime().addSimulatedTimeChangeListener(stcl);
     }
 
@@ -248,13 +256,6 @@ public class BundleContributionItem extends ContributionItem {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * org.eclipse.jface.action.ContributionItem#fill(org.eclipse.swt.widgets
-     * .Menu, int)
-     */
     @Override
     public void fill(Menu parent, int index) {
         if (this.menuContribution == null) {
@@ -285,12 +286,7 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected void updateMenuTextAsync() {
-        VizApp.runAsync(new Runnable() {
-            @Override
-            public void run() {
-                updateMenuText();
-            }
-        });
+        VizApp.runAsync(this::updateMenuText);
     }
 
     /**
@@ -313,25 +309,29 @@ public class BundleContributionItem extends ContributionItem {
         if (widget == null)
             return;
 
-        if (!performQuery) {
-            widget.setText(menuText);
-
-            // notify things of menu update times
-            Event event = new Event();
-            event.data = widget;
-            event.widget = widget;
-            widget.notifyListeners(SWT.Modify, event);
-            return;
+        String textToSet;
+        if (performQuery) {
+            String timeStr = getTimeString();
+            String timePadding = getTimePadding(timeStr);
+            textToSet = menuText + TIME_SEPARATOR + timePadding + timeStr;
+        } else {
+            textToSet = menuText;
         }
 
-        String dateStr = UNKNOWN;
+        widget.setText(textToSet);
 
+        // notify things of menu update times
+        Event event = new Event();
+        event.data = widget;
+        event.widget = widget;
+        widget.notifyListeners(SWT.Modify, event);
+    }
+
+    private String getTimeString() {
         boolean useReferenceTime = this.menuContribution.xml.useReferenceTime;
 
         if (lastUsedTime != null) {
-            // We have a
-            DATE_FORMATTER.setTimeZone(TimeZone.getTimeZone("UTC"));
-
+            // We have a time
             Date timeToUse;
             if (useReferenceTime) {
                 timeToUse = lastUsedTime.getRefTime();
@@ -339,21 +339,42 @@ public class BundleContributionItem extends ContributionItem {
                 timeToUse = lastUsedTime.getValidTime().getTime();
             }
 
-            dateStr = DATE_FORMATTER.format(timeToUse);
-        } else if (this.queryPerformed) {
+            return DATE_FORMATTER.format(timeToUse.toInstant());
+        }
+        if (this.queryPerformed) {
             // indicates that query has completed, and data is not there
-            dateStr = NOT_AVAILABLE;
+            return NOT_AVAILABLE;
+        }
+        return UNKNOWN;
+    }
+
+    /**
+     * @return String to prepend to the time string that will right-align it in
+     *         the menu
+     */
+    private String getTimePadding(String timeStr) {
+        String minimumPadding = TIME_SEPARATOR.repeat(MINIMUM_PADDING_CHARS);
+
+        int padCharsToAdd = 0;
+        GC gc = new GC(widget.getParent().getShell());
+
+        try {
+            int myWidth = gc.textExtent(
+                    menuText + TIME_SEPARATOR + minimumPadding + timeStr).x;
+            int maxWidth = myWidth;
+            for (MenuItem item : widget.getParent().getItems()) {
+                int itemWidth = gc.textExtent(item.getText()).x;
+                maxWidth = Math.max(maxWidth, itemWidth);
+            }
+            int padCharWidth = gc.textExtent(String.valueOf(TIME_SEPARATOR)).x;
+            int widthToAdd = maxWidth - myWidth;
+            padCharsToAdd = (int) Math.ceil(widthToAdd / (double) padCharWidth);
+        } finally {
+            gc.dispose();
         }
 
-        String labelStr = this.menuText + " \t" + dateStr;
-
-        widget.setText(labelStr);
-
-        // notify things of menu update times
-        Event event = new Event();
-        event.data = widget;
-        event.widget = widget;
-        widget.notifyListeners(SWT.Modify, event);
+        String extraPadding = TIME_SEPARATOR.repeat(padCharsToAdd);
+        return minimumPadding + extraPadding;
     }
 
     protected void updateTime(DataTime time, BinOffset offset) {
@@ -370,20 +391,16 @@ public class BundleContributionItem extends ContributionItem {
             // is larger or mostRecentProduct is null
             if (BundleContributionItem.this.lastUsedTime == null) {
                 BundleContributionItem.this.lastUsedTime = time.clone();
-
-            } else {
-                if (useReferenceTime) {
-                    if (BundleContributionItem.this.lastUsedTime.getRefTime()
-                            .compareTo(time.getRefTime()) < 0) {
-                        BundleContributionItem.this.lastUsedTime = time.clone();
-                    }
-                } else {
-                    if (BundleContributionItem.this.lastUsedTime
-                            .compareTo(time) < 0) {
-                        BundleContributionItem.this.lastUsedTime = time.clone();
-                    }
+            } else if (useReferenceTime) {
+                if (BundleContributionItem.this.lastUsedTime.getRefTime()
+                        .compareTo(time.getRefTime()) < 0) {
+                    BundleContributionItem.this.lastUsedTime = time.clone();
                 }
+            } else if (BundleContributionItem.this.lastUsedTime
+                    .compareTo(time) < 0) {
+                BundleContributionItem.this.lastUsedTime = time.clone();
             }
+
         }
 
         updateMenuTextAsync();
@@ -391,24 +408,20 @@ public class BundleContributionItem extends ContributionItem {
 
     private Listener getItemListener() {
         if (menuItemListener == null) {
-            menuItemListener = new Listener() {
-                @Override
-                public void handleEvent(Event event) {
-                    switch (event.type) {
-                    case SWT.Dispose:
-                        handleWidgetDispose(event);
-                        break;
-                    case SWT.Selection:
-                        if (event.widget != null) {
-                            loadBundle();
-                        }
-                        break;
-                    case SWT.Show:
-                        onShow();
-                        break;
+            menuItemListener = event -> {
+                switch (event.type) {
+                case SWT.Dispose:
+                    handleWidgetDispose(event);
+                    break;
+                case SWT.Selection:
+                    if (event.widget != null) {
+                        loadBundle();
                     }
+                    break;
+                case SWT.Show:
+                    onShow();
+                    break;
                 }
-
             };
         }
         return menuItemListener;
@@ -416,10 +429,10 @@ public class BundleContributionItem extends ContributionItem {
 
     /**
      * Called when the menu is about to be shown
-     * 
+     *
      * First see if the item has ever been shown before. If not, prepare the
      * bundle (parse the metadata maps out)
-     * 
+     *
      */
     protected void onShow() {
         if (timeChangeUpdate) {
@@ -427,15 +440,12 @@ public class BundleContributionItem extends ContributionItem {
             return;
         }
 
-        if (performQuery) {
-            if (!shownBefore) {
-                shownBefore = true;
-                prepareBundleJobPool.schedule(new PrepareBundleJob());
-            }
+        if (performQuery && !shownBefore) {
+            shownBefore = true;
+            prepareBundleJobPool.schedule(new PrepareBundleJob());
         }
 
-        if (widget != null
-                && (widget.getText() == null || widget.getText().equals(""))) {
+        if (widget != null) {
             updateMenuText();
         }
     }
@@ -485,22 +495,6 @@ public class BundleContributionItem extends ContributionItem {
 
     }
 
-    private Set<BundleDataItem> loadBundleFromXml() {
-        try {
-            ILocalizationFile file = PathManagerFactory.getPathManager()
-                    .getStaticLocalizationFile(
-                            this.menuContribution.xml.bundleFile);
-            Bundle b;
-            try (InputStream stream = file.openInputStream()) {
-                b = Bundle.unmarshalBundle(stream, substitutions);
-            }
-            return BundleUtil.extractMetadata(b);
-        } catch (VizException | LocalizationException | IOException e) {
-            statusHandler.error(e.getLocalizedMessage(), e);
-            return new HashSet<>();
-        }
-    }
-
     @Override
     public void dispose() {
         super.dispose();
@@ -514,10 +508,6 @@ public class BundleContributionItem extends ContributionItem {
 
         private final BinOffset offset;
 
-        /**
-         * @param optional2
-         * @param offset
-         */
         public BundleRefreshCallback(BinOffset offset) {
             this.offset = offset;
         }
@@ -536,6 +526,23 @@ public class BundleContributionItem extends ContributionItem {
             for (BundleDataItem d : BundleContributionItem.this.pdoMapList) {
                 URICatalog.getInstance().catalogAndQueryDataURI(d.metadata,
                         new BundleRefreshCallback(d.offset));
+            }
+        }
+
+        private Set<BundleDataItem> loadBundleFromXml() {
+            String bundleFile = BundleContributionItem.this.menuContribution.xml.bundleFile;
+            try {
+                ILocalizationFile file = PathManagerFactory.getPathManager()
+                        .getStaticLocalizationFile(bundleFile);
+                Bundle b;
+                try (InputStream stream = file.openInputStream()) {
+                    b = Bundle.unmarshalBundle(stream, substitutions);
+                }
+                return BundleUtil.extractMetadata(b);
+            } catch (VizException | LocalizationException | IOException e) {
+                statusHandler.error("Failed to load bundle from " + bundleFile,
+                        e);
+                return new HashSet<>();
             }
         }
 

@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Dataplugin Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.dataplugin
-Bundle-Version: 1.14.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataplugin.annotations,
  com.raytheon.uf.common.dataplugin.exception,
@@ -20,5 +20,6 @@ Require-Bundle: com.raytheon.uf.common.localization;bundle-version="1.12.1174",
  org.apache.commons.beanutils;bundle-version="1.8.3",
  javax.measure;bundle-version="1.0.0",
  javax.persistence;bundle-version="1.0.0";visibility:=reexport,
- org.hibernate;bundle-version="1.0.0";visibility:=reexport
+ org.hibernate;bundle-version="1.0.0";visibility:=reexport,
+ javax.xml.bind
 Import-Package: com.raytheon.uf.common.convert

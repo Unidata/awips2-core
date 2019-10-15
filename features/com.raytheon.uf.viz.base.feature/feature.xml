@@ -50,7 +50,7 @@
          id="org.apache.xmlgraphics"
          download-size="0"
          install-size="0"
-         version="2.2.0"/>
+         version="2.3.0"/>
 
    <plugin
          id="org.apache.batik"

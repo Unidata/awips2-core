@@ -4,7 +4,7 @@ Bundle-Name: Derived Parameter Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.derivparam
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Import-Package: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataplugin.level,
@@ -38,4 +38,5 @@ Export-Package: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.derivparam.inv,
  com.raytheon.uf.common.derivparam.library,
  com.raytheon.uf.common.derivparam.tree
-Require-Bundle: org.geotools
+Require-Bundle: org.geotools,
+ javax.xml.bind

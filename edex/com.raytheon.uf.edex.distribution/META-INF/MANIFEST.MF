@@ -2,13 +2,14 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Distribution Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.distribution
-Bundle-Version: 1.16.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.status,
  org.apache.commons.lang3,
- org.slf4j;bundle-version="1.7.12"
+ org.slf4j;bundle-version="1.7.12",
+ javax.xml.bind
 Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution

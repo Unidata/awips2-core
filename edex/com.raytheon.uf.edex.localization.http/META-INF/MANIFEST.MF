@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Localization Http
 Bundle-SymbolicName: com.raytheon.uf.edex.localization.http
-Bundle-Version: 1.17.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.http;bundle-version="1.15.0",
  com.raytheon.uf.common.localization;bundle-version="1.14.1",
  javax.servlet;bundle-version="3.1.0",
@@ -13,6 +13,7 @@ Require-Bundle: com.raytheon.uf.common.http;bundle-version="1.15.0",
  com.raytheon.uf.common.auth;bundle-version="1.14.0",
  com.raytheon.uf.common.util,
  com.fasterxml.jackson;bundle-version="2.6.5",
- com.raytheon.uf.common.serialization;bundle-version="1.17.0"
+ com.raytheon.uf.common.serialization;bundle-version="1.17.0",
+ javax.xml.bind
 Import-Package: com.raytheon.uf.common.status,
  com.raytheon.uf.edex.core

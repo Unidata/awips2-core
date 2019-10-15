@@ -33,15 +33,17 @@ import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.core.runtime.preferences.IEclipsePreferences;
 import org.eclipse.core.runtime.preferences.InstanceScope;
 import org.eclipse.jface.preference.IPreferenceStore;
+import org.python.pydev.ast.interpreter_managers.InterpreterManagersAPI;
+import org.python.pydev.core.CorePlugin;
 import org.python.pydev.core.IInterpreterInfo;
 import org.python.pydev.core.IInterpreterManager;
 import org.python.pydev.editor.PydevShowBrowserMessage;
 import org.python.pydev.plugin.PydevPlugin;
 import org.python.pydev.plugin.preferences.PydevRootPrefs;
-import org.python.pydev.runners.SimplePythonRunner;
+import org.python.pydev.ast.runners.SimplePythonRunner;
 import org.python.pydev.shared_core.string.StringUtils;
 import org.python.pydev.shared_core.structure.Tuple;
-import org.python.pydev.ui.pythonpathconf.InterpreterInfo;
+import org.python.pydev.ast.interpreter_managers.InterpreterInfo;
 
 import com.python.pydev.analysis.AnalysisPlugin;
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -63,6 +65,7 @@ import com.raytheon.uf.common.util.FileUtil;
  * Oct 11, 2013  2441     bsteffen    Make initialize async.
  * May 09, 2014  3075     njensen     Updates for pydev 3.4.1
  * Nov 08, 2016  5958     dlovely     Updates for pydev 5.3.1
+ * Nov 16, 2018  7615     lsingh      Updates for pydev 7.0.3
  * 
  * </pre>
  * 
@@ -109,7 +112,7 @@ public class PydevSetup {
             for (int i = 0; i < 2; ++i) {
                 boolean retry = i > 0;
                 // Setup python environment for pydev
-                IInterpreterManager mgr = PydevPlugin
+                IInterpreterManager mgr = InterpreterManagersAPI
                         .getPythonInterpreterManager();
                 String persistedStr = mgr.getPersistedString();
                 if ((persistedStr == null) || "".equals(persistedStr.trim())) {
@@ -129,7 +132,7 @@ public class PydevSetup {
                     if (pathToFile != null) {
                         try {
                             // Taken from pydev source to get rid of UI prompt
-                            File script = PydevPlugin
+                            File script = CorePlugin
                                     .getScriptWithinPySrc("interpreterInfo.py");
                             Tuple<String, String> outTup = new SimplePythonRunner()
                                     .runAndGetOutputWithInterpreter(pathToFile,

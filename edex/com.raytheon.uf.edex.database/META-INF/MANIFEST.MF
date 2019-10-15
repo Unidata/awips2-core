@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Database
 Bundle-SymbolicName: com.raytheon.uf.edex.database
-Bundle-Version: 1.18.0.qualifier
+Bundle-Version: 1.18.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataquery,
@@ -22,7 +22,11 @@ Require-Bundle: com.raytheon.uf.common.dataaccess,
  org.hibernate;visibility:=reexport,
  org.reflections,
  org.slf4j;bundle-version="1.7.25",
- org.springframework;visibility:=reexport
+ org.reflections;bundle-version="0.9.9",
+ com.raytheon.uf.common.numeric;bundle-version="1.14.0",
+ org.springframework;visibility:=reexport,
+ com.raytheon.uf.common.dataaccess;bundle-version="1.15.1",
+ javax.xml.bind
 Export-Package: com.raytheon.uf.edex.database,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.database.cluster.handler,

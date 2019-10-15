@@ -4,7 +4,7 @@ Bundle-Name: Core
 Bundle-SymbolicName: com.raytheon.uf.edex.core
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.edex.core,
  com.raytheon.uf.edex.core.dataplugin,
  com.raytheon.uf.edex.core.exception,
@@ -18,4 +18,5 @@ Require-Bundle: org.springframework,
  com.raytheon.uf.common.util,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
- org.slf4j;bundle-version="1.7.5"
+ org.slf4j;bundle-version="1.7.5",
+ javax.xml.bind

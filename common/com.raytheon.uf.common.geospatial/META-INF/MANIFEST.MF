@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Geospatial Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.geospatial
-Bundle-Version: 1.18.0.qualifier
+Bundle-Version: 1.18.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-RegisterBuddy: org.geotools
 Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
  org.apache.commons.collections;bundle-version="3.2.0",
@@ -18,7 +18,8 @@ Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
  com.raytheon.uf.common.util,
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
  com.raytheon.uf.common.convert;bundle-version="1.14.0",
- com.raytheon.uf.common.localization
+ com.raytheon.uf.common.localization,
+ javax.xml.bind
 Export-Package: com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.geospatial.adapter,
  com.raytheon.uf.common.geospatial.data,

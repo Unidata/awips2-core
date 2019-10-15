@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Style
 Bundle-SymbolicName: com.raytheon.uf.common.style
-Bundle-Version: 1.15.1.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.common.style,
  com.raytheon.uf.common.style.arrow,
  com.raytheon.uf.common.style.contour,
@@ -16,5 +16,6 @@ Require-Bundle: com.raytheon.uf.common.colormap,
  javax.measure;bundle-version="1.0.0",
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.localization,
- org.apache.commons.lang3;bundle-version="3.4.0"
+ org.apache.commons.lang3;bundle-version="3.4.0",
+ javax.xml.bind
 Import-Package: com.raytheon.uf.common.util

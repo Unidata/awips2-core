@@ -26,10 +26,10 @@ import java.util.Map;
 import javax.xml.bind.JAXBContext;
 import javax.xml.bind.JAXBException;
 
-import com.sun.xml.internal.bind.api.TypeReference;
-import com.sun.xml.internal.bind.v2.model.annotation.RuntimeInlineAnnotationReader;
-import com.sun.xml.internal.bind.v2.runtime.JAXBContextImpl;
-import com.sun.xml.internal.bind.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
+import com.sun.xml.bind.api.TypeReference;
+import com.sun.xml.bind.v2.model.annotation.RuntimeInlineAnnotationReader;
+import com.sun.xml.bind.v2.runtime.JAXBContextImpl;
+import com.sun.xml.bind.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
 
 /**
  * JAXBContext factory, creates the jaxb context. This classes is used so that
@@ -56,7 +56,7 @@ import com.sun.xml.internal.bind.v2.runtime.JAXBContextImpl.JAXBContextBuilder;
 public class SerializationContextFactory {
 
     @SuppressWarnings("rawtypes")
-	public static JAXBContext createContext(Class[] classes, Map props) {
+    public static JAXBContext createContext(Class[] classes, Map props) {
         // Construct delegate implementation
         System.setProperty(JAXBContextImpl.class.getName() + ".fastBoot",
                 "true");

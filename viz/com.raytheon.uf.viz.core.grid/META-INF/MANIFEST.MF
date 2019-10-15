@@ -4,7 +4,7 @@ Bundle-Name: Geolocated Grid Data Displays
 Bundle-SymbolicName: com.raytheon.uf.viz.core.grid
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.viz.core,
  org.eclipse.core.runtime,
  org.eclipse.ui,
@@ -16,7 +16,8 @@ Require-Bundle: com.raytheon.uf.viz.core,
  com.raytheon.uf.common.colormap,
  javax.measure,
  com.raytheon.uf.viz.core.point,
- com.raytheon.uf.viz.core.rsc
+ com.raytheon.uf.viz.core.rsc,
+ javax.xml.bind
 Export-Package: com.raytheon.uf.viz.core.grid.display,
  com.raytheon.uf.viz.core.grid.rsc,
  com.raytheon.uf.viz.core.grid.rsc.data

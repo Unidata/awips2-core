@@ -2,15 +2,16 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: ProductBrowser Plug-in
 Bundle-SymbolicName: com.raytheon.uf.viz.productbrowser;singleton:=true
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Activator: com.raytheon.uf.viz.productbrowser.Activator
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Export-Package: com.raytheon.uf.viz.productbrowser,
  com.raytheon.uf.viz.productbrowser.pref
 Require-Bundle: org.eclipse.core.runtime;bundle-version="3.4.0",
  com.raytheon.viz.ui;bundle-version="1.14.0",
  com.raytheon.uf.viz.core;bundle-version="1.14.3",
- com.raytheon.uf.common.dataplugin
+ com.raytheon.uf.common.dataplugin,
+ javax.xml.bind
 Bundle-ClassPath: com.raytheon.uf.viz.productbrowser.jar

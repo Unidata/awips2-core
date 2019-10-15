@@ -42,6 +42,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import javax.xml.datatype.Duration;
+import javax.xml.datatype.XMLGregorianCalendar;
 import javax.xml.namespace.QName;
 
 import com.raytheon.uf.common.serialization.BuiltInTypeSupport.CalendarSerializer;
@@ -58,7 +59,8 @@ import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContext;
 import com.raytheon.uf.common.serialization.thrift.ThriftSerializationContextBuilder;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
-import com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl;
+
+import net.sf.cglib.beans.BeanMap;
 
 import net.sf.cglib.beans.BeanMap;
 
@@ -85,6 +87,10 @@ import net.sf.cglib.beans.BeanMap;
  * Aug 27, 2014 3503        bclement    improved error message in registerAdapter()
  * Jun 16, 2015 4561        njensen     Deprecated EnclosureType
  * Oct 30, 2015 4710        bclement    ByteArrayOutputStream renamed to PooledByteArrayOutputStream
+ * Jun 11, 2019 7595        tgurney     Replace compile-time reference to
+ *                                      XMLGregorianCalendarImpl with loading at
+ *                                      runtime (the class is no longer
+ *                                      accessible at compile time)
  * Jul  1, 2019 7888        tgurney     deserialize(ctx) changed method signature
  *
  * </pre>
@@ -113,8 +119,16 @@ public class DynamicSerializationManager {
 
     static {
         registerAdapter(GregorianCalendar.class, new CalendarSerializer());
-        registerAdapter(XMLGregorianCalendarImpl.class,
-                new BuiltInTypeSupport.XMLGregorianCalendarSerializer());
+        try {
+            registerAdapter(
+                    (Class<? extends XMLGregorianCalendar>) Class.forName(
+                            "com.sun.org.apache.xerces.internal.jaxp.datatype.XMLGregorianCalendarImpl"),
+                    new BuiltInTypeSupport.XMLGregorianCalendarSerializer());
+        } catch (ClassNotFoundException e) {
+            // Better not just catch-and-log this if it ever happens
+            throw new RuntimeException(
+                    "Could not load XMLGregorianCalendarImpl", e);
+        }
         registerAdapter(Date.class, new DateSerializer());
         registerAdapter(Timestamp.class, new TimestampSerializer());
         registerAdapter(java.sql.Date.class,
@@ -133,14 +147,6 @@ public class DynamicSerializationManager {
         registerAdapter(Throwable.class,
                 new BuiltInTypeSupport.ThrowableSerializer());
         registerAdapter(Buffer.class, new BufferAdapter());
-    }
-
-    /**
-     * @deprecated No longer used.
-     */
-    @Deprecated
-    public enum EnclosureType {
-        FIELD, COLLECTION
     }
 
     public enum SerializationType {
