@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,27 +34,29 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
 
 /**
  * General purpose utility method class
- * 
+ *
  * <pre>
- * 
- * 
+ *
+ *
  *    SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * Jul 01, 2006           chammack  Initial Creation.
- * Sep 12, 2012  1167     djohnson  Add datadelivery servers.
- * Jan 14, 2013  1469     bkowal    Removed the hdf5 data directory.
- * Aug 27, 2013  2295     bkowal    Removed the jms server property; added jms
- *                                  connection string
- * Feb 17, 2014  2812     njensen   getHostName() now uses getWsId()'s hostname
- * Mar 20, 2014  2726     rjpeter   Moved host processing to SystemUtil.
- * Nov 03, 2016  5976     bsteffen  Remove logging methods
- * 
+ *
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- --------------------------------------------
+ * Jul 01, 2006           chammack    Initial Creation.
+ * Sep 12, 2012  1167     djohnson    Add datadelivery servers.
+ * Jan 14, 2013  1469     bkowal      Removed the hdf5 data directory.
+ * Aug 27, 2013  2295     bkowal      Removed the jms server property; added jms
+ *                                    connection string
+ * Feb 17, 2014  2812     njensen     getHostName() now uses getWsId()'s hostname
+ * Mar 20, 2014  2726     rjpeter     Moved host processing to SystemUtil.
+ * Nov 03, 2016  5976     bsteffen    Remove logging methods
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019  7724     randerso    Set client ID in JMS connection URL
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * 
+ *
  */
 public final class VizApp {
 
@@ -82,10 +84,10 @@ public final class VizApp {
 
     /**
      * Get a unique workstation Id
-     * 
+     *
      * @return the wsId
      */
-    public static WsId getWsId() {
+    public static synchronized WsId getWsId() {
         if (wsId == null) {
             String[] args = Platform.getApplicationArgs();
             String userName = "";
@@ -110,7 +112,7 @@ public final class VizApp {
 
     /**
      * Run a task asynchronously on the UI thread
-     * 
+     *
      * @param aTask
      *            the task to run
      */
@@ -120,7 +122,7 @@ public final class VizApp {
 
     /**
      * Run a task synchronously on the UI thread
-     * 
+     *
      * @param task
      *            the task to run
      */
@@ -131,7 +133,7 @@ public final class VizApp {
     /**
      * Run a task synchronously on the UI thread if a workbench is running,
      * otherwise just runs the task
-     * 
+     *
      * @param task
      *            the task to run
      */
@@ -145,9 +147,9 @@ public final class VizApp {
 
     /**
      * Return the base installation directory
-     * 
+     *
      * This should be used rather than absolute paths
-     * 
+     *
      * @return the installation directory
      */
     public static String getBaseDir() {
@@ -156,9 +158,9 @@ public final class VizApp {
 
     /**
      * Return the user installation directory
-     * 
+     *
      * This should be used rather than absolute paths
-     * 
+     *
      * @return the user directory
      */
     public static String getUserDir() {
@@ -176,11 +178,8 @@ public final class VizApp {
      * @return the dataDir
      */
     public static String getDataDir() {
-        return Activator
-                .getDefault()
-                .getPreferenceStore()
-                .getString(
-                        com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_DATA_DIRECTORY);
+        return Activator.getDefault().getPreferenceStore().getString(
+                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_DATA_DIRECTORY);
     }
 
     public static int getCorePreferenceInt(String pref) {
@@ -205,7 +204,8 @@ public final class VizApp {
     }
 
     public static void setJmsConnectionString(String jmsConnectionString) {
-        VizApp.jmsConnectionString = jmsConnectionString;
+        VizApp.jmsConnectionString = jmsConnectionString.replace("__WSID__",
+                getWsId().toString());
     }
 
     public static Map<String, String> getConnectionInfo() {
@@ -228,7 +228,7 @@ public final class VizApp {
 
     /**
      * Gets the host name of the machine calling the function
-     * 
+     *
      * @return
      */
     public static synchronized String getHostName() {
