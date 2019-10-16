@@ -49,9 +49,6 @@ import javax.jms.Queue;
 import javax.jms.Session;
 import javax.jms.Topic;
 
-import com.raytheon.uf.common.comm.CommunicationException;
-import com.raytheon.uf.common.jms.qpid.IBrokerRestProvider;
-import com.raytheon.uf.common.jms.qpid.JMSConfigurationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -84,6 +81,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Mar 19, 2018  7141     randerso    Use a single timer for all
  *                                    ReconnectTimerTasks
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019  7724     tgurney     Move queue creation to the session
  *
  * </pre>
  *
@@ -115,10 +113,9 @@ public class JmsNotificationManager
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = (prime * result)
-                    + ((queryString == null) ? 0 : queryString.hashCode());
-            result = (prime * result)
-                    + ((topic == null) ? 0 : topic.hashCode());
+            result = prime * result
+                    + (queryString == null ? 0 : queryString.hashCode());
+            result = prime * result + (topic == null ? 0 : topic.hashCode());
             return result;
         }
 
@@ -152,13 +149,11 @@ public class JmsNotificationManager
         }
     }
 
-    private static enum Type {
+    private enum Type {
         QUEUE, TOPIC;
     }
 
     protected final ConnectionFactory connectionFactory;
-
-    protected final IBrokerRestProvider jmsAdmin;
 
     /** The observer map of topic to listeners */
     protected final Map<ListenerKey, NotificationListener> listeners;
@@ -190,8 +185,8 @@ public class JmsNotificationManager
      *
      * @param connectionFactory
      */
-    public JmsNotificationManager(ConnectionFactory connectionFactory, IBrokerRestProvider jmsAdmin) {
-        this(connectionFactory, jmsAdmin, "JmsNotificationPool");
+    public JmsNotificationManager(ConnectionFactory connectionFactory) {
+        this(connectionFactory, "JmsNotificationPool");
     }
 
     /**
@@ -201,9 +196,8 @@ public class JmsNotificationManager
      * @param notificationThreadNamePrefix
      */
     public JmsNotificationManager(ConnectionFactory connectionFactory,
-            IBrokerRestProvider jmsAdmin, String notificationThreadNamePrefix) {
+            String notificationThreadNamePrefix) {
         this.connectionFactory = connectionFactory;
-        this.jmsAdmin = jmsAdmin;
         this.listeners = new HashMap<>();
         executorService = new ThreadPoolExecutor(0, Integer.MAX_VALUE, 0,
                 TimeUnit.SECONDS, new SynchronousQueue<Runnable>(),
@@ -381,13 +375,14 @@ public class JmsNotificationManager
             }
         }
 
-        if ((newListener != null) && connected) {
+        if (newListener != null && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler
-                        .error("NotificationManager failed to create queue consumer for queue ["
-                                + queue + "].", e);
+                statusHandler.error(
+                        "NotificationManager failed to create queue consumer for queue ["
+                                + queue + "].",
+                        e);
             }
         }
     }
@@ -432,13 +427,14 @@ public class JmsNotificationManager
             }
         }
 
-        if ((newListener != null) && connected) {
+        if (newListener != null && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler
-                        .error("NotificationManager failed to create topic consumer for topic ["
-                                + topic + "].", e);
+                statusHandler.error(
+                        "NotificationManager failed to create topic consumer for topic ["
+                                + topic + "].",
+                        e);
             }
         }
     }
@@ -594,12 +590,6 @@ public class JmsNotificationManager
             session = manager.createSession();
             if (session != null) {
                 String queueName = id;
-                try {
-                    manager.jmsAdmin.createQueue(queueName);
-                    manager.jmsAdmin.createBinding(queueName, "amq.direct");
-                } catch (JMSConfigurationException | CommunicationException e) {
-                    statusHandler.error("An error occurred trying to create the destination for " + queueName, e);
-                }
                 Queue t = session.createQueue(queueName);
 
                 if (queryString != null) {
@@ -618,12 +608,6 @@ public class JmsNotificationManager
             session = manager.createSession();
             if (session != null) {
                 String topicName = id;
-                try {
-                    manager.jmsAdmin.createQueue(topicName);
-                    manager.jmsAdmin.createBinding(topicName, "amq.topic");
-                } catch (JMSConfigurationException | CommunicationException e) {
-                    statusHandler.error("An error occurred trying to create the destination for " + topicName, e);
-                }
                 Topic t = session.createTopic(topicName);
 
                 if (queryString != null) {
@@ -745,7 +729,7 @@ public class JmsNotificationManager
             if (messageCount.incrementAndGet() > IN_MEM_MESSAGE_LIMIT) {
                 messageCount.decrementAndGet();
                 messages.remove();
-                if ((System.currentTimeMillis() - lastErrorPrintTime) > Duration
+                if (System.currentTimeMillis() - lastErrorPrintTime > Duration
                         .of(10, ChronoUnit.MINUTES).toMillis()) {
                     statusHandler
                             .error("Message queue size exceeded for observer "
@@ -754,7 +738,7 @@ public class JmsNotificationManager
                     lastErrorPrintTime = System.currentTimeMillis();
                 }
             }
-            if ((lastRun == null) || lastRun.isDone()) {
+            if (lastRun == null || lastRun.isDone()) {
                 lastRun = executorService.submit(this);
             }
         }
@@ -783,7 +767,7 @@ public class JmsNotificationManager
 
         public NamedThreadFactory(String namePrefix) {
             SecurityManager s = System.getSecurityManager();
-            group = (s != null) ? s.getThreadGroup()
+            group = s != null ? s.getThreadGroup()
                     : Thread.currentThread().getThreadGroup();
             this.namePrefix = namePrefix + "-" + poolNumber.getAndIncrement()
                     + "-thread-";

@@ -21,12 +21,12 @@
 package com.raytheon.uf.viz.core;
 
 import java.lang.management.ManagementFactory;
-import java.util.Map;
 
 import org.eclipse.core.runtime.Platform;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.ui.PlatformUI;
 
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.common.util.SystemUtil;
@@ -52,6 +52,8 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Nov 03, 2016  5976     bsteffen    Remove logging methods
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  * Oct 16, 2019  7724     randerso    Set client ID in JMS connection URL
+ * Oct 16, 2019  7724     tgurney     Replace connection string and info map with
+ *                                    a single {@link JMSConnectionInfo} object
  *
  * </pre>
  *
@@ -60,9 +62,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  */
 public final class VizApp {
 
-    /**
-     * Disabled constructor.
-     */
+    /** Static methods only */
     private VizApp() {
     }
 
@@ -72,11 +72,9 @@ public final class VizApp {
 
     private static String httpServer;
 
-    private static String jmsConnectionString;
-
     private static String pypiesServer;
 
-    private static Map<String, String> connectionInfo;
+    private static JMSConnectionInfo jmsConnectionInfo;
 
     static {
         ManagementFactory.getRuntimeMXBean().getName();
@@ -93,7 +91,7 @@ public final class VizApp {
             String userName = "";
             for (int i = 0; i < args.length; i++) {
                 String arg = args[i];
-                if ((USER_FLAG.equals(arg)) && ((i + 1) < args.length)) {
+                if (USER_FLAG.equals(arg) && i + 1 < args.length) {
                     userName = args[i + 1];
                 }
             }
@@ -199,21 +197,15 @@ public final class VizApp {
         VizApp.httpServer = System.getProperty("awips.httpServer", httpServer);
     }
 
-    public static String getJmsConnectionString() {
-        return jmsConnectionString;
+    public static JMSConnectionInfo getJmsConnectionInfo() {
+        return jmsConnectionInfo;
     }
 
-    public static void setJmsConnectionString(String jmsConnectionString) {
-        VizApp.jmsConnectionString = jmsConnectionString.replace("__WSID__",
+    public static void setJmsConnectionInfo(
+            JMSConnectionInfo jmsConnectionInfo) {
+        VizApp.jmsConnectionInfo = jmsConnectionInfo;
+        VizApp.jmsConnectionInfo.getParameters().put("jms.clientID",
                 getWsId().toString());
-    }
-
-    public static Map<String, String> getConnectionInfo() {
-        return connectionInfo;
-    }
-
-    public static void setConnectionInfo(Map<String, String> connectionInfo) {
-        VizApp.connectionInfo = connectionInfo;
     }
 
     public static String getPypiesServer() {
@@ -237,4 +229,5 @@ public final class VizApp {
         }
         return host;
     }
+
 }
