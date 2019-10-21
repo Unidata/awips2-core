@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,15 +23,14 @@ package com.raytheon.uf.viz.core.comm;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
-import org.apache.qpid.jms.JmsConnectionFactory;
-
-import com.raytheon.uf.common.jms.qpid.QpidBrokerRestImpl;
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
+import com.raytheon.uf.common.jms.qpid.QpidUFConnectionFactory;
 import com.raytheon.uf.viz.core.VizApp;
 
 /**
- * 
+ *
  * Common JMS connection code
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -47,17 +46,17 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     printing with UFStatus.
  * Feb 02, 2017 6085       bsteffen    Enable ssl in the JMS connection.
  * Sep 23, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
- * 
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class JMSConnection {
     private static JMSConnection instance;
 
-    private JmsConnectionFactory factory;
-
-    private QpidBrokerRestImpl jmsAdmin;
+    private ConnectionFactory factory;
 
     public static synchronized JMSConnection getInstance() throws JMSException {
         if (instance == null) {
@@ -68,22 +67,12 @@ public class JMSConnection {
     }
 
     public JMSConnection() throws JMSException {
-        this(VizApp.getJmsConnectionString(),
-                VizApp.getConnectionInfo().get("hostname"),
-                VizApp.getConnectionInfo().get("vhost"));
+        this(VizApp.getJmsConnectionInfo());
     }
 
-    public JMSConnection(String connectionUrl) throws JMSException {
-        this(connectionUrl,
-                VizApp.getConnectionInfo().get("hostname"),
-                VizApp.getConnectionInfo().get("vhost"));
-    }
-
-    public JMSConnection(String connectionUrl,
-            String brokerHost, String jmsVirtualHost) throws JMSException {
+    public JMSConnection(JMSConnectionInfo connInfo) throws JMSException {
         try {
-            this.factory = new JmsConnectionFactory(connectionUrl);
-            this.jmsAdmin = new QpidBrokerRestImpl(brokerHost, jmsVirtualHost);
+            this.factory = new QpidUFConnectionFactory(connInfo);
         } catch (Exception e) {
             JMSException wrapper = new JMSException(
                     "Failed to connect to the JMS Server!");
@@ -93,22 +82,9 @@ public class JMSConnection {
     }
 
     /**
-     * 
-     * @return the jms connection url
-     */
-    public String getConnectionUrl() {
-        return factory.getRemoteURI();
-    }
-
-    /**
      * @return the factory
      */
     public ConnectionFactory getFactory() {
         return factory;
     }
-    
-    public QpidBrokerRestImpl getJmsAdmin() {
-        return jmsAdmin;
-    }
-
 }

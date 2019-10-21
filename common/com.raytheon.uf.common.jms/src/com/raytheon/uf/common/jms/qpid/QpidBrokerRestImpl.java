@@ -59,6 +59,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Feb 08, 2017  6092     randerso    Add additional error checking in
  *                                    queueReady.
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 17, 2019  7724     tgurney     Minor fixes in {@link #createBinding(String, String)}
  *
  * </pre>
  *
@@ -86,7 +87,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
         httpClient = new HttpClient(getSSLClientConfigBuilder().build());
     }
 
-    public QpidBrokerRestImpl(String hostname, String vhost) throws JMSConfigurationException {
+    public QpidBrokerRestImpl(String hostname, String vhost)
+            throws JMSConfigurationException {
         this();
         setConnectionUrl(hostname);
         setExchangeUrl(hostname, vhost);
@@ -109,14 +111,16 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
             String attributes = "{ \"name\" : \"" + queue + "\" }";
 
             try {
-                queueCreatedSuccessfully = postSucceeded(
-                        new String(httpClient.postByteResult(jmsQueueUrl, attributes)));
+                queueCreatedSuccessfully = postSucceeded(new String(
+                        httpClient.postByteResult(jmsQueueUrl, attributes)));
             } catch (Exception e) {
                 if (queueExists(queueUrl)) {
                     queueCreatedSuccessfully = true;
                 } else {
                     statusHandler.error(
-                            "An error occurred while trying to create the queue " + queue, e);
+                            "An error occurred while trying to create the queue "
+                                    + queue,
+                            e);
                 }
             }
         }
@@ -145,14 +149,18 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
         String exchangeUrl = String.join("/", jmsExcUrl, type);
 
-        if (!exchangeExists(exchangeUrl, name) || isTopic) {
+        if (isTopic || !exchangeExists(exchangeUrl, name)) {
             try {
                 String operationUrl = String.join("/", exchangeUrl, "bind");
-                String attributes = "{ \"bindingKey\" : \"" + name + "\", \"destination\" : \"" + name + "\" }";
+                String attributes = "{ \"bindingKey\" : \"" + name
+                        + "\", \"destination\" : \"" + name + "\" }";
                 httpClient.postByteResult(operationUrl, attributes);
+                exchangeCreatedSuccessfully = true;
             } catch (Exception e) {
                 statusHandler.error(
-                        "An error occurred while trying to create the exchange binding for " + name, e);
+                        "An error occurred while trying to create the exchange binding for "
+                                + name,
+                        e);
             }
         }
 
@@ -160,27 +168,28 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
     }
 
     @Override
-    public boolean createBinding(String hostname, String queue, String type, String vhost)
+    public boolean createBinding(String hostname, String queue, String type,
+            String vhost)
             throws JMSConfigurationException, CommunicationException {
         setConnectionUrl(hostname);
         setQueueUrl(hostname, vhost);
         setExchangeUrl(hostname, vhost);
         return createBinding(queue, type);
     }
-    
+
     public void setConnectionUrl(String hostname) {
-        jmsConnUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/connection";
+        jmsConnUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/connection";
     }
-    
+
     public void setQueueUrl(String hostname, String vhost) {
-        jmsQueueUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/queue/" + vhost + "/" + vhost;
+        jmsQueueUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/queue/" + vhost + "/" + vhost;
     }
-    
+
     public void setExchangeUrl(String hostname, String vhost) {
-        jmsExcUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/exchange/" + vhost + "/" + vhost;
+        jmsExcUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/exchange/" + vhost + "/" + vhost;
     }
 
     @Override
@@ -268,7 +277,7 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
                                 .get(0).get("statistics");
                         int bindingCount = statistics.get("bindingCount");
                         int consumerCount = statistics.get("consumerCount");
-                        return (bindingCount > 0) && (consumerCount > 0);
+                        return bindingCount > 0 && consumerCount > 0;
                     }
 
                 } catch (JsonException | IOException e) {
@@ -324,7 +333,7 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
                     @SuppressWarnings("unchecked")
                     Map<String, Object> jsonObjMap = (Map<String, Object>) json
-                        .deserialize(content, Object.class);
+                            .deserialize(content, Object.class);
 
                     if (!jsonObjMap.isEmpty()) {
                         queueExists = true;
@@ -356,13 +365,13 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
                     BasicJsonService json = new BasicJsonService();
 
                     @SuppressWarnings("unchecked")
-                    Map<String, Object> jsonObjList =
-                        (Map<String, Object>) json.deserialize(content, Object.class);
+                    Map<String, Object> jsonObjList = (Map<String, Object>) json
+                            .deserialize(content, Object.class);
 
                     if (!jsonObjList.isEmpty()) {
                         @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> bindings =
-                            (List<Map<String, Object>>) jsonObjList.get("bindings");
+                        List<Map<String, Object>> bindings = (List<Map<String, Object>>) jsonObjList
+                                .get("bindings");
 
                         for (Map<String, Object> binding : bindings) {
                             if (binding.containsKey(name)) {
@@ -386,7 +395,7 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private boolean isSuccess(CloseableHttpResponse response) {
         int statusCode = response.getStatusLine().getStatusCode();
-        return (statusCode >= 200) && (statusCode < 300);
+        return statusCode >= 200 && statusCode < 300;
     }
 
     private boolean postSucceeded(String result) throws JsonException {
@@ -397,7 +406,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
         Map<String, Object> jsonObjList = (Map<String, Object>) json
                 .deserialize(result, Object.class);
 
-        if (jsonObjList.containsKey("id") && !jsonObjList.get("id").toString().isEmpty()) {
+        if (jsonObjList.containsKey("id")
+                && !jsonObjList.get("id").toString().isEmpty()) {
             postSucceeded = true;
         }
 
@@ -419,8 +429,8 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
             boolean https = false;
             if (jmsConnUrl != null) {
                 https = jmsConnUrl.startsWith("https://");
-                if ((jmsQueueUrl != null)
-                        && (jmsQueueUrl.startsWith("https://") != https)) {
+                if (jmsQueueUrl != null
+                        && jmsQueueUrl.startsWith("https://") != https) {
                     throw new JMSConfigurationException(
                             "The queue and connection REST urls must use the same protocol.");
                 }

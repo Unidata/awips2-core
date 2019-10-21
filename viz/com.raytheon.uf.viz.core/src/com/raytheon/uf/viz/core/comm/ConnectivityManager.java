@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,6 +30,7 @@ import org.apache.activemq.ActiveMQConnectionFactory;
 import org.apache.http.client.methods.HttpGet;
 
 import com.raytheon.uf.common.comm.HttpClient;
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -43,9 +44,9 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * from all other things. Should be handlers passed in for hasConnectivity
  * function. Each class using hasConnectivity probably has their own method of
  * handling the check.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -55,11 +56,12 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Aug 02, 2013 2202       bsteffen    Add edex specific connectivity checking.
  * Jan 15, 2014            njensen     Added printConnectivityProblems()
  * Feb 04, 2014 2704       njensen     Check JMS capability, return exceptions with results
- * 
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class ConnectivityManager {
@@ -91,7 +93,7 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given server
-     * 
+     *
      * @param server
      *            server to check
      * @return whether quit was selected. TODO: need to return two booleans, one
@@ -115,7 +117,7 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given localization server
-     * 
+     *
      * @param server
      *            server to check
      */
@@ -154,7 +156,7 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given alert service
-     * 
+     *
      * @param server
      *            server to check
      * @return whether quit was selected. TODO: need to return two booleans, one
@@ -176,23 +178,23 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given JMS server
-     * 
-     * @param connectionString
+     *
+     * @param connectionInfo
      * @param callback
      */
-    public static void checkJmsServer(String connectionString,
+    public static void checkJmsServer(JMSConnectionInfo connectionInfo,
             IConnectivityCallback callback) {
         boolean good = true;
         Exception exc = null;
         try {
-            JMSConnection jms = new JMSConnection(connectionString);
+            JMSConnection jms = new JMSConnection(connectionInfo);
             jms.getFactory().createConnection().close();
         } catch (JMSException e) {
             exc = e;
             good = false;
         }
-        callback.connectionChecked(new ConnectivityResult(good,
-                connectionString, exc));
+        callback.connectionChecked(
+                new ConnectivityResult(good, connectionInfo.getHost(), exc));
     }
 
 }
