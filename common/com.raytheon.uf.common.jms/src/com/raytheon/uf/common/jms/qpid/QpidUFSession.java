@@ -71,8 +71,6 @@ public class QpidUFSession implements Session {
 
     private IBrokerRestProvider jmsAdmin;
 
-    private static final Object jmsAdminLock = new Object();
-
     public QpidUFSession(Session session, IBrokerRestProvider jmsAdmin) {
         this.session = session;
         this.jmsAdmin = jmsAdmin;
@@ -199,15 +197,12 @@ public class QpidUFSession implements Session {
 
     @Override
     public Queue createQueue(String queueName) throws JMSException {
-        synchronized (jmsAdminLock) {
-            try {
-                jmsAdmin.createQueue(queueName);
-                jmsAdmin.createBinding(queueName, queueName, "amq.direct");
-            } catch (JMSConfigurationException | CommunicationException e) {
-                statusHandler
-                        .error("An error occurred while creating the queue "
-                                + queueName, e);
-            }
+        try {
+            jmsAdmin.createQueue(queueName);
+        } catch (CommunicationException e) {
+            statusHandler.error(
+                    "An error occurred while creating the queue " + queueName,
+                    e);
         }
         return session.createQueue(queueName);
     }

@@ -45,59 +45,30 @@ import com.raytheon.uf.common.comm.HttpServerException;
 public interface IBrokerRestProvider {
 
     /**
-     * Create the specified queue.
+     * Create the specified queue. Also creates a direct binding with the same
+     * name as the new queue that points to the new queue. This operation is
+     * idempotent
      *
      * @param queue
      *            the name of the queue to be created
-     * @return true if successfully created
+     * @throws CommunicationException
+     *             if communication with the server failed
+     * @throws HttpServerException
+     *             if the server returned an error
      */
-    boolean createQueue(String queue)
-            throws JMSConfigurationException, CommunicationException;
-
-    /**
-     * Create a binding for the specified queue.
-     *
-     * @param queue
-     *            the name of the queue
-     * @param bindingKey
-     *            the binding key
-     * @param exchange
-     *            the exchange where the binding will be created
-     * @return true if successfully created
-     */
-    boolean createBinding(String queue, String bindingKey, String exchange)
-            throws JMSConfigurationException, CommunicationException;
-
-    /**
-     * Determine if the specified queue exists
-     *
-     * @param url
-     *            url that specifies which queue to check for
-     * @return true if queue exists
-     */
-    boolean queueExists(String url)
-            throws CommunicationException, JMSConfigurationException;
-
-    /**
-     * Determine if the specified exchange exists
-     *
-     * @param url
-     *            url used to get the list of exchanges
-     * @param name
-     *            name of the exchange to check exists
-     * @return true if exchange exists
-     */
-    boolean bindingExists(String url, String name)
-            throws CommunicationException, JMSConfigurationException;
+    void createQueue(String queue)
+            throws HttpServerException, CommunicationException;
 
     /**
      * @return list of Client IDs for active broker connections
      *
      * @throws CommunicationException
+     *             if communication with the server failed
      * @throws JMSConfigurationException
+     *             if the server returned an error
      */
-    List<String> getConnections() throws CommunicationException,
-            JMSConfigurationException, HttpServerException;
+    List<String> getConnections()
+            throws HttpServerException, CommunicationException;
 
     /**
      * Determine if the specified queue exists and is ready to receive messages
@@ -107,20 +78,24 @@ public interface IBrokerRestProvider {
      * @return true if queue exists
      *
      * @throws CommunicationException
-     * @throws JMSConfigurationException
+     *             if communication with the server failed
+     * @throws HttpServerException
+     *             if the server returned an error
      */
     boolean queueReady(String queue)
-            throws CommunicationException, JMSConfigurationException;
+            throws HttpServerException, CommunicationException;
 
     /**
-     * Delete the specified JMS queue
+     * Delete the specified JMS queue. This operation is idempotent
      *
      * @param queue
      *            the name of the queue to be deleted
      *
      * @throws CommunicationException
-     * @throws JMSConfigurationException
+     *             if communication with the server failed
+     * @throws HttpServerException
+     *             if the server returned an error.
      */
-    void deleteQueue(String queue) throws CommunicationException,
-            JMSConfigurationException, HttpServerException;
+    void deleteQueue(String queue)
+            throws HttpServerException, CommunicationException;
 }
