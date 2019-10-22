@@ -54,6 +54,8 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 15, 2019 7724       tgurney     Initial creation
+ * Oct 22, 2019 7724       tgurney     Fix topic creation. Change broker REST
+ *                                     API
  *
  * </pre>
  *
@@ -188,9 +190,9 @@ public class QpidUFSession implements Session {
 
     @Override
     public MessageConsumer createConsumer(Destination destination,
-            String messageSelector, boolean NoLocal) throws JMSException {
+            String messageSelector, boolean noLocal) throws JMSException {
         MessageConsumer consumer = session.createConsumer(destination,
-                messageSelector, NoLocal);
+                messageSelector, noLocal);
         statusHandler.info("Created consumer " + destination);
         return consumer;
     }
@@ -200,7 +202,7 @@ public class QpidUFSession implements Session {
         synchronized (jmsAdminLock) {
             try {
                 jmsAdmin.createQueue(queueName);
-                jmsAdmin.createBinding(queueName, "amq.direct");
+                jmsAdmin.createBinding(queueName, queueName, "amq.direct");
             } catch (JMSConfigurationException | CommunicationException e) {
                 statusHandler
                         .error("An error occurred while creating the queue "
@@ -212,18 +214,6 @@ public class QpidUFSession implements Session {
 
     @Override
     public Topic createTopic(String topicName) throws JMSException {
-        if (!topicName.startsWith("amq.topic/")) {
-            synchronized (jmsAdminLock) {
-                try {
-                    jmsAdmin.createQueue(topicName);
-                    jmsAdmin.createBinding(topicName, "amq.topic");
-                } catch (JMSConfigurationException | CommunicationException e) {
-                    statusHandler
-                            .error("An error occurred while creating the topic "
-                                    + topicName, e);
-                }
-            }
-        }
         return session.createTopic(topicName);
     }
 

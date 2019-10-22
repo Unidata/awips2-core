@@ -36,6 +36,7 @@ import com.raytheon.uf.common.comm.HttpServerException;
  * Apr 04, 2014           randerso    Initial creation
  * Jan 25, 2017  6092     randerso    Renamed and added queueReady method
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 22, 2019  7724     tgurney     API cleanup
  *
  * </pre>
  *
@@ -50,47 +51,21 @@ public interface IBrokerRestProvider {
      *            the name of the queue to be created
      * @return true if successfully created
      */
-    public boolean createQueue(String queue) throws JMSConfigurationException,
-            CommunicationException;
-
-    /**
-     * Create the specified queue.
-     *
-     * @param hostname
-     *            the hostname where the broker is located
-     * @param vhost
-     *            the name of the virtual host
-     * @return true if successfully created
-     */
-    public boolean createQueue(String hostname, String queue, String vhost)
+    boolean createQueue(String queue)
             throws JMSConfigurationException, CommunicationException;
 
     /**
      * Create a binding for the specified queue.
      *
-     * @param name
-     *            the name of the binding
-     * @param type
-     *            the exchange type for the binding
-     * @return true if successfully created
-     */
-    public boolean createBinding(String name, String type) throws JMSConfigurationException,
-            CommunicationException;
-
-    /**
-     * Create a binding for the specified queue.
-     *
-     * @param hostname
-     *            the hostname where the broker is located
      * @param queue
-     *            the name of the queue to create a binding on
-     * @param type
-     *            the exchange type for the binding
-     * @param vhost
-     *            the name of the virtual host
+     *            the name of the queue
+     * @param bindingKey
+     *            the binding key
+     * @param exchange
+     *            the exchange where the binding will be created
      * @return true if successfully created
      */
-    public boolean createBinding(String hostname, String queue, String type, String vhost)
+    boolean createBinding(String queue, String bindingKey, String exchange)
             throws JMSConfigurationException, CommunicationException;
 
     /**
@@ -100,8 +75,8 @@ public interface IBrokerRestProvider {
      *            url that specifies which queue to check for
      * @return true if queue exists
      */
-    public boolean queueExists(String url) throws CommunicationException,
-            JMSConfigurationException;
+    boolean queueExists(String url)
+            throws CommunicationException, JMSConfigurationException;
 
     /**
      * Determine if the specified exchange exists
@@ -112,16 +87,16 @@ public interface IBrokerRestProvider {
      *            name of the exchange to check exists
      * @return true if exchange exists
      */
-    public boolean exchangeExists(String url, String name) throws CommunicationException,
-            JMSConfigurationException;
-    
+    boolean bindingExists(String url, String name)
+            throws CommunicationException, JMSConfigurationException;
+
     /**
      * @return list of Client IDs for active broker connections
      *
      * @throws CommunicationException
      * @throws JMSConfigurationException
      */
-    public List<String> getConnections() throws CommunicationException,
+    List<String> getConnections() throws CommunicationException,
             JMSConfigurationException, HttpServerException;
 
     /**
@@ -134,7 +109,7 @@ public interface IBrokerRestProvider {
      * @throws CommunicationException
      * @throws JMSConfigurationException
      */
-    public boolean queueReady(String queue)
+    boolean queueReady(String queue)
             throws CommunicationException, JMSConfigurationException;
 
     /**
@@ -146,6 +121,6 @@ public interface IBrokerRestProvider {
      * @throws CommunicationException
      * @throws JMSConfigurationException
      */
-    public void deleteQueue(String queue) throws CommunicationException,
+    void deleteQueue(String queue) throws CommunicationException,
             JMSConfigurationException, HttpServerException;
 }
