@@ -63,6 +63,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Nov 14, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
  * Mar 14, 2019  7713     tjensen     Refactor setting of default values
  * Apr 10, 2019  7804     tjensen     Fix arrowHeadStaffRatio check
+ * Oct 22, 2019  7950     tjensen     Correct barbRotationRadians default value
  *
  * </pre>
  *
@@ -116,7 +117,7 @@ public class VectorGraphicsConfig {
 
     protected double minimumMagnitude = 0.0;
 
-    protected double barbRotationRadians = 75.0;
+    protected double barbRotationRadians = Math.toRadians(75.0);
 
     protected double barbLengthRatio = 0.3;
 
