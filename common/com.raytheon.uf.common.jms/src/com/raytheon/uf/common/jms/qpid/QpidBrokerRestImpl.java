@@ -21,8 +21,10 @@ package com.raytheon.uf.common.jms.qpid;
 
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -40,6 +42,8 @@ import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpServerException;
 import com.raytheon.uf.common.json.BasicJsonService;
 import com.raytheon.uf.common.json.JsonException;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * Qpid implementation of IBrokerRestProvider
@@ -63,12 +67,17 @@ import com.raytheon.uf.common.json.JsonException;
  * Oct 22, 2019  7724     tgurney     Additional cleanup and fixes
  * Oct 22, 2019  7724     tgurney     More cleanup. Use PUT instead of POST
  *                                    for queue creation. Set JSON content type
+ * Oct 23, 2019  7724     tgurney     Put created queue names into a set to
+ *                                    avoid repeated REST API calls
  *
  * </pre>
  *
  * @author randerso
  */
 public class QpidBrokerRestImpl implements IBrokerRestProvider {
+
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
 
     private static final String HTTP_SCHEME = "https";
 
@@ -84,6 +93,25 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private String jmsExcUrl = null;
 
+    /**
+     * Set of queues that have been created. This may not reflect the actual
+     * list of queues in Qpid. It is only updated on EDEX startup and every time
+     * a queue is created or deleted via this class. This is checked before
+     * queue creations/deletions to see if a REST API call is necessary or not.
+     * This is necessary for adequate performance. <br>
+     * <br>
+     * FIXME: Since this is tracked separately on every EDEX JVM, it can lead to
+     * inconsistencies between JVMs if queues are ever deleted. If one JVM
+     * deletes a queue, others may still believe it exists and try to send
+     * messages to it. Generally we do not delete queues so this is not an
+     * urgent problem. For now, the worst that can happen is that a JVM may make
+     * a single unnecessary REST API call for a queue that already exists but
+     * has not yet been added to this set.
+     */
+    private static Set<String> queueUrlCache = null;
+
+    private static final Object queueUrlCacheLock = new Object();
+
     public QpidBrokerRestImpl(String hostname, String vhost)
             throws JMSConfigurationException {
         HttpClientConfigBuilder configBuilder = new HttpClientConfigBuilder();
@@ -96,43 +124,67 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
                 + "/api/latest/exchange/" + vhost + "/" + vhost;
         jmsQueueUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
                 + "/api/latest/queue/" + vhost + "/" + vhost;
+        synchronized (queueUrlCacheLock) {
+            if (queueUrlCache == null) {
+                queueUrlCache = new HashSet<>();
+                try {
+                    statusHandler.info("Refreshing queue list");
+                    // Prevents unnecessary createQueue calls on EDEX startup
+                    refreshQueueList();
+                } catch (CommunicationException e) {
+                    statusHandler.warn("Failed to refresh queue list", e);
+                }
+            }
+        }
     }
 
     @Override
     public void createQueue(String queue)
             throws CommunicationException, HttpServerException {
-        String queueUrl = String.join("/", jmsQueueUrl, queue);
-        String json = "{ \"name\" : \"" + queue + "\" }";
-
-        HttpClientResponse resp = putJson(queueUrl, json);
-
-        if (!isSuccess(resp)) {
-            String responseBody = null;
-            if (resp.data != null && resp.data.length != 0) {
-                responseBody = new String(resp.data, StandardCharsets.UTF_8);
+        synchronized (queueUrlCacheLock) {
+            String queueUrl = String.join("/", jmsQueueUrl, queue);
+            if (queueUrlCache.contains(queueUrl)) {
+                return;
             }
-            throw new HttpServerException(
-                    "Failed to create the queue " + queue + "; broker returned "
-                            + resp.code + ". Response body: " + responseBody,
-                    resp.code);
-        }
+            String json = "{ \"name\" : \"" + queue + "\" }";
 
-        // create binding for the queue
+            HttpClientResponse resp = putJson(queueUrl, json);
 
-        String bindUrl = String.join("/", jmsExcUrl, "amq.direct", "bind");
-        json = "{ \"bindingKey\" : \"" + queue + "\", \"destination\" : \""
-                + queue + "\", \"replaceExistingArguments\": true }";
-
-        resp = postJson(bindUrl, json);
-
-        if (!isSuccess(resp)) {
-            String responseBody = null;
-            if (resp.data != null && resp.data.length != 0) {
-                responseBody = new String(resp.data, StandardCharsets.UTF_8);
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to create the queue " + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
             }
-            throw new HttpServerException("Failed to create the binding "
-                    + "amq.direct/" + queue + "; broker returned " + resp.code
-                    + ". Response body: " + responseBody, resp.code);
+
+            // create binding for the queue
+
+            String bindUrl = String.join("/", jmsExcUrl, "amq.direct", "bind");
+            json = "{ \"bindingKey\" : \"" + queue + "\", \"destination\" : \""
+                    + queue + "\", \"replaceExistingArguments\": true }";
+
+            resp = postJson(bindUrl, json);
+
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to create the binding " + "amq.direct/" + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
+            }
+            statusHandler.debug("Created queue " + queue);
+            queueUrlCache.add(queueUrl);
         }
     }
 
@@ -197,23 +249,31 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
     @Override
     public void deleteQueue(String queue)
             throws CommunicationException, HttpServerException {
-        String url = String.join("/", jmsQueueUrl, queue);
-
-        HttpClientResponse resp = delete(url);
-
-        if (!isSuccess(resp)) {
-            if (resp.code == 404) {
-                // this is okay if we are deleting
+        synchronized (queueUrlCacheLock) {
+            String url = String.join("/", jmsQueueUrl, queue);
+            if (!queueUrlCache.contains(url)) {
                 return;
             }
-            String responseBody = null;
-            if (resp.data != null && resp.data.length != 0) {
-                responseBody = new String(resp.data, StandardCharsets.UTF_8);
+
+            HttpClientResponse resp = delete(url);
+
+            if (!isSuccess(resp)) {
+                if (resp.code == 404) {
+                    // this is okay if we are deleting
+                    return;
+                }
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to get delete queue " + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
             }
-            throw new HttpServerException(
-                    "Failed to get delete queue " + queue + "; broker returned "
-                            + resp.code + ". Response body: " + responseBody,
-                    resp.code);
+            queueUrlCache.remove(url);
         }
     }
 
@@ -280,5 +340,35 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private static boolean isSuccess(HttpClientResponse response) {
         return response.code >= 200 && response.code < 300;
+    }
+
+    public void refreshQueueList() throws CommunicationException {
+        synchronized (queueUrlCacheLock) {
+            HttpClientResponse resp = get(jmsQueueUrl);
+
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to get queue list; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> jsonObjs = (List<Map<String, Object>>) getJsonObject(
+                    resp);
+            queueUrlCache.clear();
+            for (Map<String, Object> jsonObj : jsonObjs) {
+                Object name = jsonObj.get("name");
+                if (name != null) {
+                    queueUrlCache.add(
+                            String.join("/", jmsQueueUrl, name.toString()));
+                }
+            }
+        }
     }
 }

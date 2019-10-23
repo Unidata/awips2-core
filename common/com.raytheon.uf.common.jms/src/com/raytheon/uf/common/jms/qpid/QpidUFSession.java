@@ -56,6 +56,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Oct 15, 2019 7724       tgurney     Initial creation
  * Oct 22, 2019 7724       tgurney     Fix topic creation. Change broker REST
  *                                     API
+ * Oct 23, 2019 7724       tgurney     Log producer creation
  *
  * </pre>
  *
@@ -166,7 +167,9 @@ public class QpidUFSession implements Session {
     @Override
     public MessageProducer createProducer(Destination destination)
             throws JMSException {
-        return session.createProducer(destination);
+        MessageProducer producer = session.createProducer(destination);
+        statusHandler.info("Created producer " + destination);
+        return producer;
     }
 
     @Override
@@ -198,6 +201,12 @@ public class QpidUFSession implements Session {
     @Override
     public Queue createQueue(String queueName) throws JMSException {
         try {
+            /*
+             * TODO Dynamically creating queues in Qpid Broker is problematic
+             * now that it can only be done via the REST API. Consider
+             * alternative solutions, e.g. moving this call somewhere else, or
+             * entirely doing away with dynamically creating queues.
+             */
             jmsAdmin.createQueue(queueName);
         } catch (CommunicationException e) {
             statusHandler.error(

@@ -37,6 +37,7 @@ import com.raytheon.uf.common.comm.HttpServerException;
  * Jan 25, 2017  6092     randerso    Renamed and added queueReady method
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  * Oct 22, 2019  7724     tgurney     API cleanup
+ * Oct 23, 2019  7724     tgurney     Deprecate {@link #deleteQueue(String)}
  *
  * </pre>
  *
@@ -95,7 +96,14 @@ public interface IBrokerRestProvider {
      *             if communication with the server failed
      * @throws HttpServerException
      *             if the server returned an error.
+     * @deprecated Don't do this. It may cause problems with internal caching
+     *             mechanisms, such that deleted queues may not be createable
+     *             again via {@link #createQueue(String)}. If you find yourself
+     *             needing to delete queues you should be creating those as
+     *             temporary queues instead, using
+     *             {@link javax.jms.Session#createTemporaryQueue()}
      */
+    @Deprecated
     void deleteQueue(String queue)
             throws HttpServerException, CommunicationException;
 }

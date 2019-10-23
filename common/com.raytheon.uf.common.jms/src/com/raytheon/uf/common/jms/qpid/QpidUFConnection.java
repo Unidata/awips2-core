@@ -29,6 +29,9 @@ import javax.jms.ServerSessionPool;
 import javax.jms.Session;
 import javax.jms.Topic;
 
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
 /**
  * Wrapper over a Qpid connection that exposes the broker's REST API to sessions
  * created from this connection
@@ -41,6 +44,7 @@ import javax.jms.Topic;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 15, 2019 7724       tgurney     Initial creation
+ * Oct 23, 2019 7724       tgurney     Log session creation
  *
  * </pre>
  *
@@ -53,6 +57,9 @@ public class QpidUFConnection implements Connection {
 
     private final Connection connection;
 
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(QpidUFConnection.class);
+
     public QpidUFConnection(Connection connection,
             IBrokerRestProvider jmsAdmin) {
         this.connection = connection;
@@ -63,18 +70,23 @@ public class QpidUFConnection implements Connection {
     public Session createSession(boolean transacted, int acknowledgeMode)
             throws JMSException {
         Session session = connection.createSession(transacted, acknowledgeMode);
+        statusHandler.info("Created new Qpid session (transacted = "
+                + transacted + ", acknowledgeMode = " + acknowledgeMode + ")");
         return new QpidUFSession(session, jmsAdmin);
     }
 
     @Override
     public Session createSession(int sessionMode) throws JMSException {
         Session session = connection.createSession(sessionMode);
+        statusHandler.info(
+                "Created new Qpid session (sessionMode = " + sessionMode + ")");
         return new QpidUFSession(session, jmsAdmin);
     }
 
     @Override
     public Session createSession() throws JMSException {
         Session session = connection.createSession();
+        statusHandler.info("Created new Qpid session");
         return new QpidUFSession(session, jmsAdmin);
     }
 
