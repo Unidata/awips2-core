@@ -42,10 +42,13 @@ import com.raytheon.uf.common.status.UFStatus;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 14, 2018 #57905     edebebe     Initial creation
- * Mar 14, 2019 7713       tjensen     Force default config to be reread to get updates
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Nov 14, 2018  57905    edebebe   Initial creation
+ * Mar 14, 2019  7713     tjensen   Force default config to be reread to get
+ *                                  updates
+ * Oct 22, 2019  7950     tjensen   Only initialize jaxbManager if not yet
+ *                                  initialized
  *
  * </pre>
  *
@@ -53,14 +56,18 @@ import com.raytheon.uf.common.status.UFStatus;
  */
 public class WindBarbPluginManager {
 
+    private final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(getClass());
+
     /**
      * The localization path of the default GlobalWindBarbConfig.xml file.
      */
     public static final String DEFAULT_CONFIG_PATH = "windBarb"
             + IPathManager.SEPARATOR + "GlobalWindBarbConfig.xml";
 
-    public WindBarbPluginManager() {
+    private SingleTypeJAXBManager<WindBarbPluginConfig> jaxbManager;
 
+    public WindBarbPluginManager() {
     }
 
     /**
@@ -70,21 +77,28 @@ public class WindBarbPluginManager {
      */
     private WindBarbPluginConfig readConfig(ILocalizationFile configFile) {
 
-        IUFStatusHandler statusHandler = UFStatus.getHandler(getClass());
-
         WindBarbPluginConfig config = null;
         try (InputStream is = configFile.openInputStream()) {
-            SingleTypeJAXBManager<WindBarbPluginConfig> jaxb = new SingleTypeJAXBManager<>(
-                    WindBarbPluginConfig.class);
+            SingleTypeJAXBManager<WindBarbPluginConfig> jaxb = getJaxb();
             config = jaxb.unmarshalFromInputStream(is);
-
-        } catch (JAXBException | IOException | LocalizationException
-                | SerializationException e) {
+        } catch (IOException | LocalizationException | SerializationException
+                | JAXBException e) {
             statusHandler.error("Error in reading wind barb config file: "
                     + configFile.getPath(), e);
         }
 
         return config;
+    }
+
+    private SingleTypeJAXBManager<WindBarbPluginConfig> getJaxb()
+            throws JAXBException {
+        if (jaxbManager == null) {
+            jaxbManager = new SingleTypeJAXBManager<>(
+                    WindBarbPluginConfig.class);
+        }
+
+        return jaxbManager;
+
     }
 
     /**
@@ -106,20 +120,24 @@ public class WindBarbPluginManager {
                 .getStaticLocalizationFile(pluginConfigPath);
 
         // Read the config file for a specific Plugin
-        WindBarbPluginConfig pluginConfig = readConfig(pluginConfigFile);
-
-        List<WindBarbPlugin> windBarbPluginList = pluginConfig
-                .getWindBarbPluginList();
+        WindBarbPluginConfig pluginConfig = null;
+        if (pluginConfigFile != null) {
+            pluginConfig = readConfig(pluginConfigFile);
+        }
 
         // Get the WindBarbPlugin for the specific className
         WindBarbPlugin windBarbPluginFound = null;
+        if (pluginConfig != null) {
+            List<WindBarbPlugin> windBarbPluginList = pluginConfig
+                    .getWindBarbPluginList();
 
-        for (WindBarbPlugin windBarbPlugin : windBarbPluginList) {
+            for (WindBarbPlugin windBarbPlugin : windBarbPluginList) {
 
-            if (className.equals(windBarbPlugin.getClassName())) {
+                if (className.equals(windBarbPlugin.getClassName())) {
 
-                windBarbPluginFound = windBarbPlugin;
-                break;
+                    windBarbPluginFound = windBarbPlugin;
+                    break;
+                }
             }
         }
 

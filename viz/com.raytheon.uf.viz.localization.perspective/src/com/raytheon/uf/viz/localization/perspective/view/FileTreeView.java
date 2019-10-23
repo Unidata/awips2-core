@@ -185,6 +185,8 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  * Aug 04, 2017  6379     njensen   Use ProtectedFileLookup
  * Apr 23, 2019  7756     mapeters  Prevent "Invalid name for Python module"
  *                                  warnings
+ * Oct 11, 2019  7949     tgurney   Apply INVALID_MODULE_CHAR_PATTERN to .py
+ *                                  files only
  *
  * </pre>
  *
@@ -1394,8 +1396,10 @@ public class FileTreeView extends ViewPart
             String rscName = context.getLocalizationType() + "_"
                     + context.getLocalizationLevel() + "_"
                     + context.getContextName() + "_" + parentItem.getText();
-            rscName = INVALID_MODULE_CHAR_PATTERN.matcher(rscName)
-                    .replaceAll("_");
+            if (rscName.endsWith(".py")) {
+                rscName = INVALID_MODULE_CHAR_PATTERN.matcher(rscName)
+                        .replaceAll("_");
+            }
             rsc = folder.getFile(rscName);
         } else {
             rsc = createFolder(folder, fileItem.getText());
