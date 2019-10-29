@@ -64,27 +64,27 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
 
 /**
  * AbstractDescriptor
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 15, 2007           chammack    Initial Creation.
  * Nov 30, 2007  461      bphillip    Using VizTime now for time matching
  * Oct 22, 2009  3348     bsteffen    added ability to limit number of frames
  * Jul 03, 2013  2154     bsteffen    Ensure all resource groups get removed
- *                                    from the time matcher.
+ *                                     from the time matcher.
  * Apr 09, 2014  2997     randerso    Stopped printing stack trace for 
  *                                    otherwise ignored exception
  * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
  * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
  * Jun 12, 2017  6297     bsteffen    Make listeners thread safe.
  * Jan 04, 2018  6753     bsteffen    Remove unneccesary time matcher operations.
- * 
+ * Oct 01, 2019  69438    ksunil      When the frame changes, notify frame number listener.
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -494,7 +494,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     /**
      * Notify the listeners that the frame changed
-     * 
+     *
      * @param oldTime
      * @param newTime
      */
@@ -502,6 +502,8 @@ public abstract class AbstractDescriptor extends ResourceGroup
         for (IFrameChangedListener listener : listeners) {
             listener.frameChanged(this, oldTime, newTime);
         }
+        VizGlobalsManager.getCurrentInstance()
+                .updateUI(getRenderableDisplay().getContainer());
     }
 
     @Override
