@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,11 +21,13 @@
 package com.raytheon.uf.viz.core.catalog;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 
 import com.raytheon.uf.common.dataquery.db.QueryResult;
 import com.raytheon.uf.common.dataquery.db.QueryResultRow;
+import com.raytheon.uf.common.dataquery.requests.DbCreateRequest;
 import com.raytheon.uf.common.dataquery.requests.QlServerRequest;
 import com.raytheon.uf.common.dataquery.requests.QlServerRequest.QueryType;
 import com.raytheon.uf.common.dataquery.requests.SaveOrUpdateRequest;
@@ -39,7 +41,7 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
 /**
  * Executes an arbitrary hql or sql query. Also contains functionality to insert
  * or update an object in a database
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -48,17 +50,18 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * 12/11/2008   1777       bphillip    Added insert/update functionality
  * Nov 08, 2013 2361       njensen     Refactored/improved saveOrUpdateList()
  * Jul 13, 2015 4500       rjpeter     Fix SQL Injection concerns.
+ * Nov 04, 2019 7960       mapeters    Added create() functionality
  * </pre>
- * 
+ *
  * @author bphillip
- * @version 1.0
  */
 public class DirectDbQuery {
 
     /** The language of the query */
     public static enum QueryLanguage {
-        SQL, HQL
-    };
+        SQL,
+        HQL
+    }
 
     /** The hql Query */
     private final String query;
@@ -76,7 +79,7 @@ public class DirectDbQuery {
 
     /**
      * Executes a database query
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -94,7 +97,7 @@ public class DirectDbQuery {
 
     /**
      * Executes a database query
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -117,7 +120,7 @@ public class DirectDbQuery {
     /**
      * Executes a database query. The results are returned in a QueryResult
      * object
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -136,7 +139,7 @@ public class DirectDbQuery {
     /**
      * Executes a database query. The results are returned in a QueryResult
      * object
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -159,7 +162,7 @@ public class DirectDbQuery {
     /**
      * Executes a non-query database statement. The number of rows modified is
      * returned.
-     * 
+     *
      * @param statement
      *            The statement
      * @param database
@@ -179,7 +182,7 @@ public class DirectDbQuery {
     /**
      * Executes a non-query database statement. The number of rows modified is
      * returned.
-     * 
+     *
      * @param statement
      *            The statement
      * @param database
@@ -201,7 +204,7 @@ public class DirectDbQuery {
 
     /**
      * Saves or updates an object into the specified database
-     * 
+     *
      * @param obj
      *            The object to save or update
      * @param database
@@ -212,14 +215,14 @@ public class DirectDbQuery {
      */
     public static int saveOrUpdate(Object obj, String database)
             throws VizException {
-        List<Object> objList = new ArrayList<Object>(1);
+        List<Object> objList = new ArrayList<>(1);
         objList.add(obj);
         return saveOrUpdate(objList, database);
     }
 
     /**
      * Saves or updates an object into the specified database
-     * 
+     *
      * @param objList
      *            The list of objects to save or update
      * @param database
@@ -230,12 +233,43 @@ public class DirectDbQuery {
      */
     public static int saveOrUpdate(List<Object> objList, String database)
             throws VizException {
-        return new DirectDbQuery().saveOrUpdateList(objList, database);
+        return saveOrUpdateList(objList, database);
+    }
+
+    /**
+     * Creates an object in the specified database
+     *
+     * @param obj
+     *            The object to create
+     * @param database
+     *            The database in which to create
+     * @throws VizException
+     *             If errors occur
+     */
+    public static void create(Object obj, String database) throws VizException {
+        List<Object> objList = Collections.singletonList(obj);
+        create(objList, database);
+    }
+
+    /**
+     * Creates objects in the specified database
+     *
+     * @param objList
+     *            The list of objects to create
+     * @param database
+     *            The database in which to create
+     * @throws VizException
+     *             If errors occur. The objects are created as a single
+     *             transaction, so none will have been created if errors occur.
+     */
+    public static void create(List<Object> objList, String database)
+            throws VizException {
+        createList(objList, database);
     }
 
     /**
      * Constructs a new DirectDbQuery
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -252,7 +286,7 @@ public class DirectDbQuery {
 
     /**
      * Constructs a new DirectDbQuery
-     * 
+     *
      * @param query
      *            The query
      * @param database
@@ -260,8 +294,8 @@ public class DirectDbQuery {
      * @param language
      *            The query language
      */
-    private DirectDbQuery(String query, String database,
-            QueryLanguage language, Map<String, Object> paramMap) {
+    private DirectDbQuery(String query, String database, QueryLanguage language,
+            Map<String, Object> paramMap) {
         this.query = query;
         this.database = database;
         this.queryLanguage = language;
@@ -270,7 +304,7 @@ public class DirectDbQuery {
 
     /**
      * Performs the mapped query
-     * 
+     *
      * @return The results
      * @throws VizException
      *             If the query fails
@@ -320,14 +354,14 @@ public class DirectDbQuery {
 
     /**
      * Performs the query
-     * 
+     *
      * @return The results
      * @throws VizException
      *             query error
      */
     private List<Object[]> performQuery() throws VizException {
         QueryResult result = performMappedQuery();
-        List<Object[]> unmappedResults = new ArrayList<Object[]>();
+        List<Object[]> unmappedResults = new ArrayList<>();
 
         for (QueryResultRow row : result.getRows()) {
             unmappedResults.add(row.getColumnValues());
@@ -337,7 +371,7 @@ public class DirectDbQuery {
 
     /**
      * Performs the statement
-     * 
+     *
      * @return The number of rows modified by the statement
      * @throws VizException
      *             If the statement fails
@@ -383,7 +417,7 @@ public class DirectDbQuery {
 
     /**
      * Communicates with the server to insert/update objects
-     * 
+     *
      * @param objList
      *            The list of objects to insert/update
      * @param database
@@ -392,7 +426,7 @@ public class DirectDbQuery {
      * @throws VizException
      *             If errors occur
      */
-    private int saveOrUpdateList(List<Object> objList, String database)
+    private static int saveOrUpdateList(List<Object> objList, String database)
             throws VizException {
         SaveOrUpdateRequest req = new SaveOrUpdateRequest();
         req.setDbName(database);
@@ -400,5 +434,25 @@ public class DirectDbQuery {
 
         Object result = ThriftClient.sendRequest(req);
         return (Integer) result;
+    }
+
+    /**
+     * Communicates with the server to create objects
+     *
+     * @param objList
+     *            The list of objects to create
+     * @param database
+     *            The database to use
+     * @throws VizException
+     *             If errors occur. The objects are created as a single
+     *             transaction, so none will have been created if errors occur.
+     */
+    private static void createList(List<Object> objList, String database)
+            throws VizException {
+        DbCreateRequest req = new DbCreateRequest();
+        req.setDbName(database);
+        req.setObjectsToCreate(objList);
+
+        ThriftClient.sendRequest(req);
     }
 }
