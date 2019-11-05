@@ -132,7 +132,7 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jul 11, 2019  65905    ksunil       fixed the issue with labelFormat within the values tag
  * Jul 31, 2019  66719    ksunil       Make sure the lat is within the +/-90 range
  * Sep 17, 2019  68196    ksunil       added fixContourWorldPoints
- *
+ * Oct 28, 2019  68196    ksunil       code tweak to apply world wrapping correction to streamLines.
  * </pre>
  *
  * @author chammack
@@ -825,7 +825,8 @@ public class ContourSupport {
 
             makeStreamLines(sources[0], sources[1], minX, minY, maxX, maxY, sz,
                     contourGroup, currentMagnification, zoom,
-                    contourGroup.lastDensity, rastPosToWorldGrid);
+                    contourGroup.lastDensity, rastPosToWorldGrid,
+                    rastPosToLatLon, descriptor);
         }
 
         return contourGroup;
@@ -1413,7 +1414,7 @@ public class ContourSupport {
 
             makeStreamLines(uWSource, vWSource, minX, minY, maxX, maxY, sz,
                     contourGroup, 1, 1, contourGroup.lastDensity * 2,
-                    gridToPixel);
+                    gridToPixel, null, null);
 
             return contourGroup;
         } else {
@@ -1427,7 +1428,8 @@ public class ContourSupport {
     private static void makeStreamLines(DataSource uW, DataSource vW, int minX,
             int minY, int maxX, int maxY, long[] sz, ContourGroup contourGroup,
             double currentMagnification, float zoom, double density,
-            MathTransform rastPosToWorldGrid) throws VizException {
+            MathTransform rastPosToWorldGrid, MathTransform rastPosToLatLon,
+            IMapDescriptor descriptor) throws VizException {
 
         int szX = (maxX - minX) + 1;
         int szY = (maxY - minY) + 1;
@@ -1496,7 +1498,16 @@ public class ContourSupport {
                 -1000000f, -999998f);
         StreamLineContainer container = StrmPak.strmpak(uW, vW, szX, szY,
                 config);
-
+        try {
+            if (rastPosToLatLon != null) {
+                correctWorldWrappingStreamLine(container, descriptor,
+                        rastPosToLatLon, rastPosToWorldGrid);
+            }
+        } catch (TransformException e1) {
+            throw new VizException(
+                    "Could not transform stream line coordinate into world grid space.",
+                    e1);
+        }
         long t1 = System.currentTimeMillis();
         perfLog.logDuration("Contouring", t1 - t0);
 
@@ -1749,6 +1760,88 @@ public class ContourSupport {
         long tZ1 = System.currentTimeMillis();
 
         perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
+    }
+
+    private static void correctWorldWrappingStreamLine(
+            StreamLineContainer container, IMapDescriptor descriptor,
+            MathTransform rastPosToLatLon, MathTransform rastPosToWorldGrid)
+            throws TransformException {
+        long tZ0 = System.currentTimeMillis();
+
+        WorldWrapChecker wwc = new WorldWrapChecker(
+                descriptor.getGridGeometry());
+        if (!wwc.needsChecking()) {
+            return;
+        }
+
+        List<List<StreamLinePoint>> splitLines = new ArrayList<>();
+
+        Iterator<List<StreamLinePoint>> lineIter = container.streamLines
+                .iterator();
+
+        while (lineIter.hasNext()) {
+            List<StreamLinePoint> data = lineIter.next();
+            float[] floatData = convertSLPointListToFloatArray(data);
+            double[] ll = new double[floatData.length];
+            rastPosToLatLon.transform(floatData, 0, ll, 0,
+                    floatData.length / 2);
+            boolean remove = false;
+            int startIndex = 0;
+            double lastLon = ll[0];
+            for (int i = 2; i < ll.length; i += 2) {
+                double lon = ll[i];
+                if (wwc.check(lastLon, lon)) {
+                    remove = true;
+                    if (startIndex + 1 < i) {
+                        float[] cwp = fixContourWorldPoints(floatData,
+                                startIndex, i, rastPosToWorldGrid);
+                        if (cwp != null) {
+                            splitLines.add(convertFloatArrayToSLPointList(cwp));
+                        }
+                    }
+                    startIndex = i;
+                }
+                lastLon = lon;
+            }
+            if (remove) {
+                lineIter.remove();
+                if (startIndex + 1 < floatData.length) {
+                    float[] cwp = fixContourWorldPoints(floatData, startIndex,
+                            floatData.length, rastPosToWorldGrid);
+                    if (cwp != null) {
+                        splitLines.add(convertFloatArrayToSLPointList(cwp));
+                    }
+                }
+            }
+
+        }
+        container.streamLines.addAll(splitLines);
+
+        long tZ1 = System.currentTimeMillis();
+
+        perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
+    }
+
+    private static float[] convertSLPointListToFloatArray(List<StreamLinePoint> data) {
+
+        float[] ret = new float[data.size() * 2];
+        for (int i = 0; i < data.size(); i++) {
+            ret[(i * 2) + 0] = data.get(i).getX();
+            ret[(i * 2) + 1] = data.get(i).getY();
+
+        }
+        return ret;
+    }
+
+    private static List<StreamLinePoint> convertFloatArrayToSLPointList(
+            float[] data) {
+
+        List<StreamLinePoint> ret = new ArrayList<>();
+        for (int i = 0; i < data.length; i = i + 2) {
+            StreamLinePoint pt = new StreamLinePoint(data[i], data[i + 1]);
+            ret.add(pt);
+        }
+        return ret;
     }
 
     private static float[] fixContourWorldPoints(float[] data, int startIndex,
