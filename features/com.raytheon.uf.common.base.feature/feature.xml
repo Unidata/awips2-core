@@ -17,6 +17,10 @@
       [Enter License Description here.]
    </license>
 
+   <includes
+         id="com.raytheon.uf.common.java.extensions.feature"
+         version="0.0.0"/>
+
    <plugin
          id="com.fasterxml.jackson"
          download-size="0"
@@ -306,12 +310,6 @@
          version="0.0.0"/>
 
    <plugin
-         id="javax.media.jai"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
          id="org.jdom"
          download-size="0"
          install-size="0"
@@ -504,31 +502,6 @@
 
    <plugin
          id="com.raytheon.uf.common.json"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="javax.xml.bind"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="javax.xml.ws"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="javax.activation"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="javax.annotation"
          download-size="0"
          install-size="0"
          version="0.0.0"
