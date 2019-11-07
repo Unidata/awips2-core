@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -28,22 +28,23 @@ import javax.measure.Unit;
 import javax.measure.UnitConverter;
 
 import tec.uom.se.AbstractUnit;
-import tec.uom.se.quantity.QuantityDimension;
 
 
 /**
  * TODO Add Description
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Apr 15, 2019  7596       lsingh      Updated the javax.measure framework to JSR-363.
- *                                      DerivedUnit has been replaced with AbstractUnit.
- *                                      Updated method names and implemented additional methods.
- * 
+ * Apr 15, 2019 7596       lsingh      Updated the javax.measure framework to JSR-363.
+ *                                     DerivedUnit has been replaced with AbstractUnit.
+ *                                     Updated method names and implemented additional methods.
+ * Oct 28, 2019 7961       tgurney     Change getDimension to return
+ *                                     stdUnit.getDimension() instead of NONE.
+ *
  * </pre>
- * 
+ *
  * @author randerso
  */
 
@@ -67,7 +68,7 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
         if (dispUnit instanceof AbstractUnit && !((AbstractUnit<Q>)dispUnit).getSystemConverter().isLinear()) {
             stdUnit = dispUnit;
         } else {
-            this.stdUnit = (Unit<Q>) dispUnit.getSystemUnit();
+            this.stdUnit = dispUnit.getSystemUnit();
         }
 
         UnitConverter toStd = dispUnit.getConverterTo(stdUnit);
@@ -82,7 +83,7 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
     @SuppressWarnings("unchecked")
     @Override
     protected Unit<Q> toSystemUnit() {
-        return (Unit<Q>) stdUnit.getSystemUnit();
+        return stdUnit.getSystemUnit();
     }
 
     @Override
@@ -91,9 +92,8 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
                 && !((AbstractUnit<Q>) stdUnit).getSystemConverter().isLinear()) {
             return ((AbstractUnit<Q>) stdUnit).getSystemConverter().concatenate(
                     new PiecewiseLinearConverter(pixelValues, stdValues));
-        } else {
-            return new PiecewiseLinearConverter(pixelValues, stdValues);
         }
+        return new PiecewiseLinearConverter(pixelValues, stdValues);
     }
 
     @Override
@@ -101,7 +101,7 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
         final int prime = 31;
         int result = 1;
         result = prime * result + Arrays.hashCode(pixelValues);
-        result = prime * result + ((stdUnit == null) ? 0 : stdUnit.hashCode());
+        result = prime * result + (stdUnit == null ? 0 : stdUnit.hashCode());
         result = prime * result + Arrays.hashCode(stdValues);
         return result;
     }
@@ -109,22 +109,29 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
     @SuppressWarnings("unchecked")
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         final PiecewisePixel<Q> other = (PiecewisePixel<Q>) obj;
-        if (!Arrays.equals(pixelValues, other.pixelValues))
+        if (!Arrays.equals(pixelValues, other.pixelValues)) {
             return false;
+        }
         if (stdUnit == null) {
-            if (other.stdUnit != null)
+            if (other.stdUnit != null) {
                 return false;
-        } else if (!stdUnit.equals(other.stdUnit))
+            }
+        } else if (!stdUnit.equals(other.stdUnit)) {
             return false;
-        if (!Arrays.equals(stdValues, other.stdValues))
+        }
+        if (!Arrays.equals(stdValues, other.stdValues)) {
             return false;
+        }
         return true;
     }
 
@@ -136,7 +143,7 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
 
     @Override
     public Dimension getDimension() {
-        return QuantityDimension.NONE;
+        return stdUnit.getDimension();
     }
 
 }

@@ -19,21 +19,25 @@
  **/
 package com.raytheon.uf.common.jms.qpid;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.GeneralSecurityException;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import org.apache.http.client.methods.CloseableHttpResponse;
 import org.apache.http.client.methods.HttpDelete;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.methods.HttpPut;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
 
-import com.raytheon.uf.common.comm.ApacheHttpClientCreator;
 import com.raytheon.uf.common.comm.CommunicationException;
 import com.raytheon.uf.common.comm.HttpClient;
+import com.raytheon.uf.common.comm.HttpClient.HttpClientResponse;
 import com.raytheon.uf.common.comm.HttpClientConfigBuilder;
 import com.raytheon.uf.common.comm.HttpServerException;
 import com.raytheon.uf.common.json.BasicJsonService;
@@ -59,14 +63,21 @@ import com.raytheon.uf.common.status.UFStatus;
  * Feb 08, 2017  6092     randerso    Add additional error checking in
  *                                    queueReady.
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 17, 2019  7724     tgurney     Minor fixes in {@link #createBinding(String, String)}
+ * Oct 22, 2019  7724     tgurney     Additional cleanup and fixes
+ * Oct 22, 2019  7724     tgurney     More cleanup. Use PUT instead of POST
+ *                                    for queue creation. Set JSON content type
+ * Oct 23, 2019  7724     tgurney     Put created queue names into a set to
+ *                                    avoid repeated REST API calls
  *
  * </pre>
  *
  * @author randerso
  */
 public class QpidBrokerRestImpl implements IBrokerRestProvider {
+
     private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(QpidBrokerRestImpl.class);
+            .getHandler(getClass());
 
     private static final String HTTP_SCHEME = "https";
 
@@ -74,375 +85,290 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private HttpClient httpClient;
 
+    private ReadWriteLock httpClientLock = new ReentrantReadWriteLock();
+
     private String jmsConnUrl = null;
 
     private String jmsQueueUrl = null;
 
     private String jmsExcUrl = null;
 
-    private CloseableHttpClient client = null;
+    /**
+     * Set of queues that have been created. This may not reflect the actual
+     * list of queues in Qpid. It is only updated on EDEX startup and every time
+     * a queue is created or deleted via this class. This is checked before
+     * queue creations/deletions to see if a REST API call is necessary or not.
+     * This is necessary for adequate performance. <br>
+     * <br>
+     * FIXME: Since this is tracked separately on every EDEX JVM, it can lead to
+     * inconsistencies between JVMs if queues are ever deleted. If one JVM
+     * deletes a queue, others may still believe it exists and try to send
+     * messages to it. Generally we do not delete queues so this is not an
+     * urgent problem. For now, the worst that can happen is that a JVM may make
+     * a single unnecessary REST API call for a queue that already exists but
+     * has not yet been added to this set.
+     */
+    private static Set<String> queueUrlCache = null;
 
-    public QpidBrokerRestImpl() throws JMSConfigurationException {
-        httpClient = new HttpClient(getSSLClientConfigBuilder().build());
-    }
+    private static final Object queueUrlCacheLock = new Object();
 
-    public QpidBrokerRestImpl(String hostname, String vhost) throws JMSConfigurationException {
-        this();
-        setConnectionUrl(hostname);
-        setExchangeUrl(hostname, vhost);
-        setQueueUrl(hostname, vhost);
-    }
-
-    @Override
-    public boolean createQueue(String queue)
-            throws JMSConfigurationException, CommunicationException {
-        boolean queueCreatedSuccessfully = false;
-
-        if (jmsQueueUrl == null) {
-            throw new JMSConfigurationException(
-                    "The queue REST url has not been defined");
-        }
-
-        String queueUrl = String.join("/", jmsQueueUrl, queue);
-
-        if (!queueExists(queueUrl)) {
-            String attributes = "{ \"name\" : \"" + queue + "\" }";
-
-            try {
-                queueCreatedSuccessfully = postSucceeded(
-                        new String(httpClient.postByteResult(jmsQueueUrl, attributes)));
-            } catch (Exception e) {
-                if (queueExists(queueUrl)) {
-                    queueCreatedSuccessfully = true;
-                } else {
-                    statusHandler.error(
-                            "An error occurred while trying to create the queue " + queue, e);
+    public QpidBrokerRestImpl(String hostname, String vhost)
+            throws JMSConfigurationException {
+        HttpClientConfigBuilder configBuilder = new HttpClientConfigBuilder();
+        configBuilder.setHttpAuthHandler(new QpidCertificateAuthHandler());
+        configBuilder.setMaxConnections(1);
+        httpClient = new HttpClient(configBuilder.build());
+        jmsConnUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/connection";
+        jmsExcUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/exchange/" + vhost + "/" + vhost;
+        jmsQueueUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
+                + "/api/latest/queue/" + vhost + "/" + vhost;
+        synchronized (queueUrlCacheLock) {
+            if (queueUrlCache == null) {
+                queueUrlCache = new HashSet<>();
+                try {
+                    statusHandler.info("Refreshing queue list");
+                    // Prevents unnecessary createQueue calls on EDEX startup
+                    refreshQueueList();
+                } catch (CommunicationException e) {
+                    statusHandler.warn("Failed to refresh queue list", e);
                 }
             }
         }
-
-        return queueCreatedSuccessfully;
     }
 
     @Override
-    public boolean createQueue(String hostname, String queue, String vhost)
-            throws JMSConfigurationException, CommunicationException {
-        setConnectionUrl(hostname);
-        setQueueUrl(hostname, vhost);
-        return createQueue(queue);
-    }
-
-    @Override
-    public boolean createBinding(String name, String type)
-            throws JMSConfigurationException, CommunicationException {
-        boolean exchangeCreatedSuccessfully = false;
-        boolean isTopic = "amq.topic".equals(type);
-
-        if (jmsExcUrl == null) {
-            throw new JMSConfigurationException(
-                    "The exchange REST url has not been defined");
-        }
-
-        String exchangeUrl = String.join("/", jmsExcUrl, type);
-
-        if (!exchangeExists(exchangeUrl, name) || isTopic) {
-            try {
-                String operationUrl = String.join("/", exchangeUrl, "bind");
-                String attributes = "{ \"bindingKey\" : \"" + name + "\", \"destination\" : \"" + name + "\" }";
-                httpClient.postByteResult(operationUrl, attributes);
-            } catch (Exception e) {
-                statusHandler.error(
-                        "An error occurred while trying to create the exchange binding for " + name, e);
+    public void createQueue(String queue)
+            throws CommunicationException, HttpServerException {
+        synchronized (queueUrlCacheLock) {
+            String queueUrl = String.join("/", jmsQueueUrl, queue);
+            if (queueUrlCache.contains(queueUrl)) {
+                return;
             }
-        }
+            String json = "{ \"name\" : \"" + queue + "\" }";
 
-        return exchangeCreatedSuccessfully;
-    }
+            HttpClientResponse resp = putJson(queueUrl, json);
 
-    @Override
-    public boolean createBinding(String hostname, String queue, String type, String vhost)
-            throws JMSConfigurationException, CommunicationException {
-        setConnectionUrl(hostname);
-        setQueueUrl(hostname, vhost);
-        setExchangeUrl(hostname, vhost);
-        return createBinding(queue, type);
-    }
-    
-    public void setConnectionUrl(String hostname) {
-        jmsConnUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/connection";
-    }
-    
-    public void setQueueUrl(String hostname, String vhost) {
-        jmsQueueUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/queue/" + vhost + "/" + vhost;
-    }
-    
-    public void setExchangeUrl(String hostname, String vhost) {
-        jmsExcUrl = HTTP_SCHEME + "://" + hostname
-                + ":" + BROKER_REST_PORT + "/api/latest/exchange/" + vhost + "/" + vhost;
-    }
-
-    @Override
-    public List<String> getConnections() throws CommunicationException,
-            JMSConfigurationException, HttpServerException {
-        // Use rest services to pull connection clientId
-        // http://brokerHost:port/rest/connection/edex
-        // port needs to be passed as a parameter
-        // parse json response for clientId, recommend using a hash of some kind
-
-        HttpGet request = new HttpGet(jmsConnUrl);
-        try (CloseableHttpResponse response = getHttpClient()
-                .execute(request)) {
-
-            if (!isSuccess(response)) {
-                String msg = String.format("Broker returned %d",
-                        response.getStatusLine().getStatusCode());
-
-                throw new HttpServerException(msg,
-                        response.getStatusLine().getStatusCode());
-            }
-
-            List<String> resultSet = new ArrayList<>();
-            try (InputStream content = response.getEntity().getContent()) {
-                BasicJsonService json = new BasicJsonService();
-
-                @SuppressWarnings("unchecked")
-                List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
-                        .deserialize(content, Object.class);
-
-                /*
-                 * if there are no connections then we are probably not using
-                 * the correct REST URL
-                 */
-                if (jsonObjList.isEmpty()) {
-                    throw new JMSConfigurationException(
-                            "Connection list is empty. Check "
-                                    + "that the hostname and vhost "
-                                    + "have been set.");
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
                 }
-
-                for (Map<String, Object> statDict : jsonObjList) {
-                    String clientId = (String) statDict.get("clientId");
-                    if (clientId != null) {
-                        resultSet.add(clientId);
-                    }
-                }
-            } catch (JsonException e) {
-                throw new CommunicationException("Unable to parse response", e);
+                throw new HttpServerException(
+                        "Failed to create the queue " + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
             }
-            return resultSet;
 
-        } catch (IOException e) {
-            throw new CommunicationException(e);
+            // create binding for the queue
+
+            String bindUrl = String.join("/", jmsExcUrl, "amq.direct", "bind");
+            json = "{ \"bindingKey\" : \"" + queue + "\", \"destination\" : \""
+                    + queue + "\", \"replaceExistingArguments\": true }";
+
+            resp = postJson(bindUrl, json);
+
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to create the binding " + "amq.direct/" + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
+            }
+            statusHandler.debug("Created queue " + queue);
+            queueUrlCache.add(queueUrl);
         }
+    }
+
+    @Override
+    public List<String> getConnections()
+            throws CommunicationException, HttpServerException {
+
+        HttpClientResponse resp = get(jmsConnUrl);
+
+        if (!isSuccess(resp)) {
+            String responseBody = null;
+            if (resp.data != null && resp.data.length != 0) {
+                responseBody = new String(resp.data, StandardCharsets.UTF_8);
+            }
+            throw new HttpServerException(
+                    "Failed to get connections list; broker returned "
+                            + resp.code + ". Response body: " + responseBody,
+                    resp.code);
+        }
+
+        List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) getJsonObject(
+                resp);
+        List<String> resultSet = new ArrayList<>();
+        for (Map<String, Object> statDict : jsonObjList) {
+            String clientId = (String) statDict.get("clientId");
+            if (clientId != null) {
+                resultSet.add(clientId);
+            }
+        }
+        return resultSet;
     }
 
     @Override
     public boolean queueReady(String queue)
-            throws CommunicationException, JMSConfigurationException {
-        // Use the Qpid rest service to determine if the specified queue exists
-        // and is ready to receive messages
-
-        if (jmsQueueUrl == null) {
-            throw new JMSConfigurationException(
-                    "The queue REST url has not been defined.");
-        }
-
+            throws CommunicationException, HttpServerException {
         String url = String.join("/", jmsQueueUrl, queue);
-        HttpGet request = new HttpGet(url);
-        try (CloseableHttpResponse response = getHttpClient()
-                .execute(request)) {
+        HttpClientResponse resp = get(url);
 
-            if (isSuccess(response)) {
-                try (InputStream content = response.getEntity().getContent()) {
-                    BasicJsonService json = new BasicJsonService();
-
-                    @SuppressWarnings("unchecked")
-                    List<Map<String, Object>> jsonObjList = (List<Map<String, Object>>) json
-                            .deserialize(content, Object.class);
-
-                    if (!jsonObjList.isEmpty()) {
-                        @SuppressWarnings("unchecked")
-                        Map<String, Integer> statistics = (Map<String, Integer>) jsonObjList
-                                .get(0).get("statistics");
-                        int bindingCount = statistics.get("bindingCount");
-                        int consumerCount = statistics.get("consumerCount");
-                        return (bindingCount > 0) && (consumerCount > 0);
-                    }
-
-                } catch (JsonException | IOException e) {
-                    throw new CommunicationException("Unable to parse response",
-                            e);
-                }
+        if (!isSuccess(resp)) {
+            if (resp.code == 404) {
+                return false;
             }
-        } catch (IOException e) {
-            throw new CommunicationException(e);
-        }
-        return false;
-    }
-
-    @Override
-    public void deleteQueue(String queue) throws CommunicationException,
-            JMSConfigurationException, HttpServerException {
-        // Use the Qpid rest service to delete the queue
-
-        if (jmsQueueUrl == null) {
-            throw new JMSConfigurationException(
-                    "The queue REST url has not been defined.");
-        }
-
-        String url = String.join("/", jmsQueueUrl, queue);
-        HttpDelete request = new HttpDelete(url);
-        try (CloseableHttpResponse response = getHttpClient()
-                .execute(request)) {
-
-            if (!isSuccess(response)) {
-                String msg = String.format("Broker returned %d",
-                        response.getStatusLine().getStatusCode());
-
-                throw new HttpServerException(msg,
-                        response.getStatusLine().getStatusCode());
+            String responseBody = null;
+            if (resp.data != null && resp.data.length != 0) {
+                responseBody = new String(resp.data, StandardCharsets.UTF_8);
             }
-        } catch (IOException e) {
-            throw new CommunicationException(e);
-        }
-    }
-
-    @Override
-    public boolean queueExists(String url)
-            throws CommunicationException, JMSConfigurationException {
-        boolean queueExists = false;
-
-        HttpGet request = new HttpGet(url);
-        try (CloseableHttpResponse response = getHttpClient()
-                .execute(request)) {
-
-            if (isSuccess(response)) {
-                try (InputStream content = response.getEntity().getContent()) {
-                    BasicJsonService json = new BasicJsonService();
-
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> jsonObjMap = (Map<String, Object>) json
-                        .deserialize(content, Object.class);
-
-                    if (!jsonObjMap.isEmpty()) {
-                        queueExists = true;
-                    }
-                } catch (JsonException e) {
-                    throw new CommunicationException(
-                            "Unable to parse response from " + url, e);
-                }
-            }
-        } catch (IOException e) {
-            throw new CommunicationException(
-                    "Error occurred executing request for " + url, e);
+            throw new HttpServerException(
+                    "Failed to get queue information; broker returned "
+                            + resp.code + ". Response body: " + responseBody,
+                    resp.code);
         }
 
-        return queueExists;
-    }
-
-    @Override
-    public boolean exchangeExists(String url, String name)
-            throws CommunicationException, JMSConfigurationException {
-        boolean exchangeExists = false;
-
-        HttpGet request = new HttpGet(url);
-        try (CloseableHttpResponse response = getHttpClient()
-                .execute(request)) {
-
-            if (isSuccess(response)) {
-                try (InputStream content = response.getEntity().getContent()) {
-                    BasicJsonService json = new BasicJsonService();
-
-                    @SuppressWarnings("unchecked")
-                    Map<String, Object> jsonObjList =
-                        (Map<String, Object>) json.deserialize(content, Object.class);
-
-                    if (!jsonObjList.isEmpty()) {
-                        @SuppressWarnings("unchecked")
-                        List<Map<String, Object>> bindings =
-                            (List<Map<String, Object>>) jsonObjList.get("bindings");
-
-                        for (Map<String, Object> binding : bindings) {
-                            if (binding.containsKey(name)) {
-                                exchangeExists = true;
-                                break;
-                            }
-                        }
-                    }
-                } catch (JsonException e) {
-                    throw new CommunicationException(
-                            "Unable to parse response from " + url, e);
-                }
-            }
-        } catch (IOException e) {
-            throw new CommunicationException(
-                    "Error occurred executing request for " + url, e);
-        }
-
-        return exchangeExists;
-    }
-
-    private boolean isSuccess(CloseableHttpResponse response) {
-        int statusCode = response.getStatusLine().getStatusCode();
-        return (statusCode >= 200) && (statusCode < 300);
-    }
-
-    private boolean postSucceeded(String result) throws JsonException {
-        BasicJsonService json = new BasicJsonService();
-        boolean postSucceeded = false;
-
+        Map<String, Object> jsonObj = (Map<String, Object>) getJsonObject(resp);
         @SuppressWarnings("unchecked")
-        Map<String, Object> jsonObjList = (Map<String, Object>) json
-                .deserialize(result, Object.class);
-
-        if (jsonObjList.containsKey("id") && !jsonObjList.get("id").toString().isEmpty()) {
-            postSucceeded = true;
-        }
-
-        return postSucceeded;
+        Map<String, Integer> statistics = (Map<String, Integer>) jsonObj
+                .get("statistics");
+        int bindingCount = statistics.get("bindingCount");
+        int consumerCount = statistics.get("consumerCount");
+        return bindingCount > 0 && consumerCount > 0;
     }
 
-    private HttpClientConfigBuilder getSSLClientConfigBuilder()
-            throws JMSConfigurationException {
-        HttpClientConfigBuilder config = new HttpClientConfigBuilder();
-        config.setMaxConnections(1);
-        config.setHttpAuthHandler(new QpidCertificateAuthHandler());
-        return config;
-    }
-
-    private synchronized CloseableHttpClient getHttpClient()
-            throws JMSConfigurationException {
-
-        if (client == null) {
-            boolean https = false;
-            if (jmsConnUrl != null) {
-                https = jmsConnUrl.startsWith("https://");
-                if ((jmsQueueUrl != null)
-                        && (jmsQueueUrl.startsWith("https://") != https)) {
-                    throw new JMSConfigurationException(
-                            "The queue and connection REST urls must use the same protocol.");
-                }
-            } else if (jmsQueueUrl != null) {
-                https = jmsQueueUrl.startsWith("https://");
+    @Override
+    public void deleteQueue(String queue)
+            throws CommunicationException, HttpServerException {
+        synchronized (queueUrlCacheLock) {
+            String url = String.join("/", jmsQueueUrl, queue);
+            if (!queueUrlCache.contains(url)) {
+                return;
             }
-            HttpClientConfigBuilder config = new HttpClientConfigBuilder();
-            config.setMaxConnections(1);
-            if (https) {
-                config.setHttpAuthHandler(new QpidCertificateAuthHandler());
-                try {
-                    client = ApacheHttpClientCreator
-                            .createSslClient(config.build());
-                } catch (GeneralSecurityException e) {
-                    throw new JMSConfigurationException(
-                            "Failed to load ssl configuration.", e);
+
+            HttpClientResponse resp = delete(url);
+
+            if (!isSuccess(resp)) {
+                if (resp.code == 404) {
+                    // this is okay if we are deleting
+                    return;
                 }
-            } else {
-                client = ApacheHttpClientCreator.createClient(config.build());
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to get delete queue " + queue
+                                + "; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
             }
+            queueUrlCache.remove(url);
         }
-        return client;
     }
 
+    private HttpClientResponse putJson(String url, String jsonBody)
+            throws CommunicationException {
+        HttpPut put = new HttpPut(url);
+        put.setEntity(new StringEntity(jsonBody, ContentType.APPLICATION_JSON));
+        httpClientLock.writeLock().lock();
+        try {
+            return httpClient.executeRequest(put);
+        } finally {
+            httpClientLock.writeLock().unlock();
+        }
+    }
+
+    private HttpClientResponse postJson(String url, String jsonBody)
+            throws CommunicationException {
+        HttpPost post = new HttpPost(url);
+        post.setEntity(
+                new StringEntity(jsonBody, ContentType.APPLICATION_JSON));
+        httpClientLock.writeLock().lock();
+        try {
+            return httpClient.executeRequest(post);
+        } finally {
+            httpClientLock.writeLock().unlock();
+        }
+    }
+
+    private HttpClientResponse get(String url) throws CommunicationException {
+        HttpGet get = new HttpGet(url);
+        httpClientLock.readLock().lock();
+        try {
+            return httpClient.executeRequest(get);
+        } finally {
+            httpClientLock.readLock().unlock();
+        }
+    }
+
+    private HttpClientResponse delete(String url)
+            throws CommunicationException {
+        HttpDelete delete = new HttpDelete(url);
+        httpClientLock.writeLock().lock();
+        try {
+            return httpClient.executeRequest(delete);
+        } finally {
+            httpClientLock.writeLock().unlock();
+        }
+    }
+
+    private Object getJsonObject(HttpClientResponse resp)
+            throws CommunicationException {
+        String responseBody = new String(resp.data, StandardCharsets.UTF_8);
+        try {
+            BasicJsonService json = new BasicJsonService();
+            return json.deserialize(responseBody, Object.class);
+
+        } catch (JsonException e) {
+            throw new CommunicationException(
+                    "Unable to parse JSON response. Response body: "
+                            + responseBody,
+                    e);
+        }
+    }
+
+    private static boolean isSuccess(HttpClientResponse response) {
+        return response.code >= 200 && response.code < 300;
+    }
+
+    public void refreshQueueList() throws CommunicationException {
+        synchronized (queueUrlCacheLock) {
+            HttpClientResponse resp = get(jmsQueueUrl);
+
+            if (!isSuccess(resp)) {
+                String responseBody = null;
+                if (resp.data != null && resp.data.length != 0) {
+                    responseBody = new String(resp.data,
+                            StandardCharsets.UTF_8);
+                }
+                throw new HttpServerException(
+                        "Failed to get queue list; broker returned " + resp.code
+                                + ". Response body: " + responseBody,
+                        resp.code);
+            }
+
+            @SuppressWarnings("unchecked")
+            List<Map<String, Object>> jsonObjs = (List<Map<String, Object>>) getJsonObject(
+                    resp);
+            queueUrlCache.clear();
+            for (Map<String, Object> jsonObj : jsonObjs) {
+                Object name = jsonObj.get("name");
+                if (name != null) {
+                    queueUrlCache.add(
+                            String.join("/", jmsQueueUrl, name.toString()));
+                }
+            }
+        }
+    }
 }

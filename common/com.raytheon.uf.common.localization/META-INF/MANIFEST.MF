@@ -11,6 +11,7 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  org.apache.commons.configuration;bundle-version="1.6.0",
  org.apache.commons.lang3;bundle-version="3.4.0",
  com.raytheon.uf.common.util,
+ com.raytheon.uf.common.jms,
  javax.xml.bind
 Export-Package: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.localization.checksum,

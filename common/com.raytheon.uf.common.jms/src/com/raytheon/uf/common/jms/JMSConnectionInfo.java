@@ -1,203 +1,152 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.jms;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Map.Entry;
+import java.util.Objects;
 
-import org.apache.http.client.utils.URIBuilder;
+import javax.xml.bind.annotation.XmlAccessType;
+import javax.xml.bind.annotation.XmlAccessorType;
+import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlRootElement;
+
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * Class to manage JMS connection information.
- * 
+ * Class that encapsulates all information required to make a JMS connection
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 17, 2019 7724       mrichardson Initial creation
- * 
+ * Oct 16, 2019 7724       tgurney     Move connection URL and SSL logic to
+ *                                     the connection factory. Add serialization
+ *                                     annotations
+ *
  * </pre>
- * 
+ *
  * @author mrichardson
  */
 
+@DynamicSerialize
+@XmlRootElement(name = "jmsConnectionInfo")
+@XmlAccessorType(XmlAccessType.NONE)
 public class JMSConnectionInfo {
 
-    private String hostname;
+    @DynamicSerializeElement
+    @XmlElement(name = "host", required = true)
+    private String host;
+
+    @DynamicSerializeElement
+    @XmlElement(name = "port", required = true)
     private String port;
+
+    @DynamicSerializeElement
+    @XmlElement(name = "vhost", required = true)
     private String vhost;
-    private Map<String, String> optionalParameters = null;
-    private static JMSConnectionInfo instance;
-    private static final String BROKER_HOST = "BROKER_HOST";
-    private static final String BROKER_PORT = "BROKER_PORT";
-    private static final String JMS_VIRTUALHOST = "JMS_VIRTUALHOST";
-    private static final String QPID_SSL_CERT_DB = "QPID_SSL_CERT_DB";
-    private static final String TRUST_KEYSTORE_PASSWORD = "password";
 
-    private JMSConnectionInfo() {
+    @DynamicSerializeElement
+    @XmlElement(name = "parameters")
+    private Map<String, String> parameters = new HashMap<>();
+
+    /** For serialization only */
+    public JMSConnectionInfo() {
     }
 
-    public static synchronized JMSConnectionInfo getInstance() {
-        if (instance == null) {
-            instance = new JMSConnectionInfo();
-        }
-        
-        return instance;
-    }
-
-    public void setConnectionInfo(Map<String,String> connectionInfo) {
-        String hostname = connectionInfo.remove("hostname");
-        if (hostname != null) {
-            setHostname(hostname);
-        }
-        String port = connectionInfo.remove("port");
-        if (port != null) {
-            setPort(port);
-        }
-        String vhost = connectionInfo.remove("vhost");
-        if (vhost != null) {
-            setVhost(vhost);
-        }
-        if (!connectionInfo.isEmpty()) {
-            setOptionalParameters(connectionInfo);
-        }
-    }
-    
-    public Map<String,String> getConnectionInfo() {
-        Map<String,String> connectionInfo = new HashMap<>();
-        connectionInfo.put("hostname", getHostname());
-        connectionInfo.put("port", getPort());
-        connectionInfo.put("vhost", getVhost());
-        connectionInfo.putAll(optionalParameters);
-        return connectionInfo;
-    }
-
-    public String configureURL(Map<String, String> connectionInfo) {
-        getInstance().setConnectionInfo(connectionInfo);
-        return configureURL();
-    }
-
-    public String configureURL() {
-        URIBuilder uriBuilder = new URIBuilder();
-        
-        if (hostname == null || hostname.isEmpty()) {
-            hostname = System.getenv(BROKER_HOST);
-            // really, this shouldn't ever happen; however, for
-            //  the sake of consistency, let's default to localhost
-            if ((hostname == null) || hostname.isEmpty()) {
-                hostname = "localhost";
-            }
-        }
-        
-        if (port == null || port.isEmpty()) {
-            port = System.getenv(BROKER_PORT);
-            if (port == null || port.isEmpty()) {
-                port = "5672";
-            }
-        }
-        
-        if (vhost == null || vhost.isEmpty()) {
-            vhost = System.getenv(JMS_VIRTUALHOST);
-            if (vhost == null || vhost.isEmpty()) {
-                vhost = "edex";
-            }
-        }
-        
-        uriBuilder.setScheme("amqps");
-        uriBuilder.setHost(hostname);
-        uriBuilder.setPort(Integer.parseInt(port));
-        uriBuilder.addParameter("amqp.vhost", vhost);
-        uriBuilder.addParameter("jms.username", "guest");
-        for (Entry<String, String> parameter : optionalParameters.entrySet()) {
-            uriBuilder.addParameter(parameter.getKey(), parameter.getValue());
-        }
-        uriBuilder = configureSSL(uriBuilder);
-        
-        return uriBuilder.toString();
-    }
-
-    public URIBuilder configureSSL(URIBuilder uriBuilder) {
-        String qpidSslCertDb = System.getenv(QPID_SSL_CERT_DB);
-        Path certsPath = null;
-        
-        if (qpidSslCertDb == null) {
-            String userHome = System.getProperty("user.home");
-            if (userHome != null) {
-                certsPath = Paths.get(userHome).resolve(".qpid");
-                if (!Files.isDirectory(certsPath)) {
-                    certsPath = null;
-                }
-            }
-            if (certsPath == null) {
-                throw new IllegalStateException(
-                        "Unable to load ssl certificates for jms ssl. "
-                        + "Consider setting the environmental variable: "
-                        + QPID_SSL_CERT_DB);
-            }
-        } else {
-            certsPath = Paths.get(qpidSslCertDb);
-        }
-        
-        uriBuilder.addParameter("transport.trustStoreLocation",
-                certsPath.resolve("guest.jks").toString());
-        uriBuilder.addParameter("transport.trustStorePassword",
-                TRUST_KEYSTORE_PASSWORD);
-        uriBuilder.addParameter("transport.keyStoreLocation",
-                certsPath.resolve("root.jks").toString());
-        uriBuilder.addParameter("transport.keyStorePassword",
-                TRUST_KEYSTORE_PASSWORD);
-        
-        return uriBuilder;
-    }
-
-    public void setHostname(String hostname) {
-        this.hostname = hostname;
-    }
-
-    public String getHostname() {
-        return hostname;
-    }
-
-    public void setPort(String port) {
+    public JMSConnectionInfo(String host, String port, String vhost,
+            Map<String, String> parameters) {
+        this.host = host;
         this.port = port;
+        this.vhost = vhost;
+        this.parameters = parameters;
+    }
+
+    public Map<String, String> getParameters() {
+        return parameters;
+    }
+
+    public void setParameters(Map<String, String> parameters) {
+        this.parameters = parameters;
+    }
+
+    public String getHost() {
+        return host;
+    }
+
+    public void setHost(String host) {
+        this.host = host;
     }
 
     public String getPort() {
         return port;
     }
 
-    public void setVhost(String vhost) {
-        this.vhost = vhost;
+    public void setPort(String port) {
+        this.port = port;
     }
 
     public String getVhost() {
         return vhost;
     }
-    
-    public void setOptionalParameters(Map<String, String> optionalParameters) {
-        this.optionalParameters = optionalParameters;
+
+    public void setVhost(String vhost) {
+        this.vhost = vhost;
     }
 
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + (host == null ? 0 : host.hashCode());
+        result = prime * result
+                + (parameters == null ? 0 : parameters.hashCode());
+        result = prime * result + (port == null ? 0 : port.hashCode());
+        result = prime * result + (vhost == null ? 0 : vhost.hashCode());
+        return result;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        JMSConnectionInfo other = (JMSConnectionInfo) obj;
+        return Objects.equals(host, other.host)
+                && Objects.equals(port, other.port)
+                && Objects.equals(vhost, other.vhost)
+                && Objects.equals(parameters, other.parameters);
+    }
+
+    @Override
+    public String toString() {
+        return "JMSConnectionInfo [host=" + host + ", port=" + port + ", vhost="
+                + vhost + ", parameters=" + parameters + "]";
+    }
 }

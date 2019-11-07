@@ -42,6 +42,7 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
@@ -114,6 +115,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  * Jul 18, 2017 6316       njensen     Log setting site localization
  * Sep 12, 2019 7917       tgurney     Update handling of pyc files for Python 3
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
  *
  * </pre>
  *
@@ -124,14 +127,8 @@ public class LocalizationManager implements IPropertyChangeListener {
     private static IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationManager.class, "CAVE");
 
-    /**
-     * User context
-     */
     public static final String USER_CONTEXT = LocalizationConstants.P_LOCALIZATION_USER_NAME;
 
-    /**
-     * Site context
-     */
     public static final String SITE_CONTEXT = LocalizationConstants.P_LOCALIZATION_SITE_NAME;
 
     private static final String PREINSTALLED_DIR = "utility"
@@ -323,8 +320,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                 GetServersResponse resp = ConnectivityManager
                         .checkLocalizationServer(currentServer, false);
                 VizApp.setHttpServer(resp.getHttpServer());
-                VizApp.setJmsConnectionString(resp.getJmsConnectionString());
-                VizApp.setConnectionInfo(resp.getConnectionInfo());
+                VizApp.setJmsConnectionInfo(resp.getJmsConnectionInfo());
                 VizApp.setPypiesServer(resp.getPypiesServer());
                 VizServers.getInstance()
                         .setServerLocations(resp.getServerLocations());

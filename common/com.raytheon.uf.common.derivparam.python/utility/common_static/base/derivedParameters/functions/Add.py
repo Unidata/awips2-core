@@ -18,10 +18,11 @@
 # further licensing information.
 ##
 
-
 import numpy
 
 import Vector
+from functools import reduce
+
 
 def execute(*args):
     """Perform scalar or vector addition"""
@@ -33,7 +34,8 @@ def execute(*args):
         return scalarAddition(args)
 
 def scalarAddition(args):
-    return numpy.sum(args)
+    return reduce(numpy.add, args)
+
 
 def vectorAddition(args):
     uResult = numpy.zeros_like(args[0][0])
