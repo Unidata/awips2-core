@@ -78,7 +78,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
         String brokerPort = System.getenv("BROKER_PORT");
         logger.info("http.server=" + httpServer);
         logger.info("broker host=" + brokerHost);
-        logger.info("broker port" + brokerPort);
+        logger.info("broker port=" + brokerPort);
         logger.info("jms.virtualhost=" + jmsVirtualHost);
         logger.info("pypies.server=" + pypiesServer);
         logger.info("server locations=" + registry);
