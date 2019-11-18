@@ -32,9 +32,10 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
+import javax.measure.IncommensurableException;
 import javax.measure.Quantity;
+import javax.measure.UnconvertibleException;
 import javax.measure.Unit;
-import javax.measure.quantity.Dimensionless;
 
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
@@ -134,33 +135,34 @@ import tec.uom.se.quantity.Quantities;
  *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
- * Mar 09, 2011  7738     bsteffen  Initial creation
- * May 08, 2013  1980     bsteffen  Set paint status in GridResources for KML.
- * Jul 15, 2013  2107     bsteffen  Fix sampling of grid vector arrows.
- * Aug 27, 2013  2287     randerso  Added new parameters required by
- *                                  GriddedVectorDisplay and GriddedIconDisplay
- * Sep 24, 2013  2404     bclement  colormap params now created using match
- *                                  criteria
- * Sep 23, 2013  2363     bsteffen  Add more vector configuration options.
- * Jan 14, 2014  2594     bsteffen  Switch vector mag/dir to use data source
- *                                  instead of raw float data.
- * Feb 28, 2014  2791     bsteffen  Switch all data to use data source.
- * Aug 21, 2014  17313    jgerth    Implements ImageProvider
- * Oct 07, 2014  3668     bclement  Renamed requestJob to requestRunner
- * Dec 09, 2014  5056     jing      Added data access interfaces
- * May 11, 2015  4384     dgilling  Add arrow style preference for minimum
- *                                  magnitude.
- * May 14, 2015  4079     bsteffen  Move to core.grid, add getDisplayUnit
- * Aug 30, 2016  3240     bsteffen  Implement Interrogatable
- * Apr 26, 2017  6247     bsteffen  Provide getter/setter for style preferences.
- * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
- * Feb 15, 2018  6902     njensen   Added interrogate support for Direction To
- * Mar 21, 208   7157     njensen   Improved if statement in createColorMapParameters()
- * Apr 04, 2018  6889     njensen   Use brightness from ImagePreferences if
- *                                  present but missing in ImagingCapability
- * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
- * Apr 15, 2019  7596     lsingh    Updated units framework to JSR-363
- * Feb 28, 2019  7713     tjensen   Fix wind barb config
+ * Mar 09, 2011  7738     bsteffen    Initial creation
+ * May 08, 2013  1980     bsteffen    Set paint status in GridResources for KML.
+ * Jul 15, 2013  2107     bsteffen    Fix sampling of grid vector arrows.
+ * Aug 27, 2013  2287     randerso    Added new parameters required by
+ *                                    GriddedVectorDisplay and GriddedIconDisplay
+ * Sep 24, 2013  2404     bclement    colormap params now created using match
+ *                                    criteria
+ * Sep 23, 2013  2363     bsteffen    Add more vector configuration options.
+ * Jan 14, 2014  2594     bsteffen    Switch vector mag/dir to use data source
+ *                                    instead of raw float data.
+ * Feb 28, 2014  2791     bsteffen    Switch all data to use data source.
+ * Aug 21, 2014  17313    jgerth      Implements ImageProvider
+ * Oct 07, 2014  3668     bclement    Renamed requestJob to requestRunner
+ * Dec 09, 2014  5056     jing        Added data access interfaces
+ * May 11, 2015  4384     dgilling    Add arrow style preference for minimum
+ *                                    magnitude.
+ * May 14, 2015  4079     bsteffen    Move to core.grid, add getDisplayUnit
+ * Aug 30, 2016  3240     bsteffen    Implement Interrogatable
+ * Apr 26, 2017  6247     bsteffen    Provide getter/setter for style preferences.
+ * Nov 28, 2017  5863     bsteffen    Change dataTimes to a NavigableSet
+ * Feb 15, 2018  6902     njensen     Added interrogate support for Direction To
+ * Mar 21, 208   7157     njensen     Improved if statement in createColorMapParameters()
+ * Apr 04, 2018  6889     njensen     Use brightness from ImagePreferences if
+ *                                    present but missing in ImagingCapability
+ * Nov 15, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363
+ * Feb 28, 2019  7713     tjensen     Fix wind barb config
+ * Nov 11, 2019  7596     mrichardson Fix unit conversion for sampling
  *
  * </pre>
  *
@@ -980,10 +982,19 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                         Unit<?> styleUnit = stylePreferences.getDisplayUnits();
                         if (unit != null && styleUnit != null
                                 && unit.isCompatible(styleUnit)) {
-                            value = (float) unit.asType(Dimensionless.class)
-                                    .getConverterTo(styleUnit
-                                            .asType(Dimensionless.class))
-                                    .convert(value);
+                            try {
+                                value = (float) unit
+                                        .getConverterToAny(styleUnit)
+                                        .convert(value);
+                            } catch (UnconvertibleException | IncommensurableException e) {
+                                SimpleUnitFormat stringFormat = SimpleUnitFormat
+                                        .getInstance(SimpleUnitFormat.Flavor.ASCII);
+                                statusHandler.handle(Priority.ERROR,
+                                        "Unable to convert data unit "
+                                                + stringFormat.format(unit) + " to style unit "
+                                                + stringFormat.format(styleUnit) +".",
+                                        e);
+                            }
                             unit = styleUnit;
                             unitString = stylePreferences.getDisplayUnitLabel();
                         }
