@@ -38,6 +38,8 @@
 #    08/02/16         2416         tgurney        Forecast time regex bug fix,
 #                                                 plus misc cleanup
 #    09/13/19         7888         tgurney        Python 3 division fixes
+#    11/18/19         7881         tgurney        Fix __hash__
+
 
 import calendar
 import datetime
@@ -217,7 +219,7 @@ class DataTime(object):
         return "<DataTime instance: " + str(self) + " >"
 
     def __hash__(self):
-        if getRefTime() is None:
+        if self.getRefTime() is None:
             return hash(self.fcstTime)
         return hash((self.refTime, self.fcstTime,
                      self.validPeriod, self.levelValue))
