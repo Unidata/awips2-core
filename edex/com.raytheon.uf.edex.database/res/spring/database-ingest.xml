@@ -13,8 +13,6 @@
                 <constructor-arg value="metadata"/>
             </bean>
         </constructor-arg>
-        <constructor-arg ref="warningThresholds"/>
-        <constructor-arg ref="criticalThresholds"/>
     </bean>
 
     <bean id="mapsBloatMonitor" class="com.raytheon.uf.edex.database.health.DatabaseBloatMonitor">
@@ -23,8 +21,6 @@
                 <constructor-arg value="maps"/>
             </bean>
         </constructor-arg>
-        <constructor-arg ref="warningThresholds"/>
-        <constructor-arg ref="criticalThresholds"/>
     </bean>
 
     <bean factory-bean="dbMonitorRegistry" factory-method="registerMonitor">

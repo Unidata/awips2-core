@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+    <!--
+        This_software_was_developed_and_/_or_modified_by_Raytheon_Company,
+        pursuant_to_Contract_DG133W-05-CQ-1067_with_the_US_Government.
+        
+        U.S._EXPORT_CONTROLLED_TECHNICAL_DATA
+        This_software_product_contains_export-restricted_data_whose
+        export/transfer/disclosure_is_restricted_by_U.S._law._Dissemination
+        to_non-U.S._persons_whether_in_the_United_States_or_abroad_requires
+        an_export_license_or_other_authorization.
+        
+        Contractor_Name:________Raytheon_Company
+        Contractor_Address:_____6825_Pine_Street,_Suite_340
+        ________________________Mail_Stop_B8
+        ________________________Omaha,_NE_68106
+        ________________________402.291.0100
+        
+        See_the_AWIPS_II_Master_Rights_File_("Master_Rights_File.pdf")_for
+        further_licensing_information.
+    -->
+    
+<!--
+    This file is contains the default values for the bloat composition percentiles 
+    for database tables at which both warnings and critical warnings will be 
+    issued by Bloat Monitors.  Size is measured in megabytes.
+    
+    Site-level threshold files similar to this can be made, following the same
+    format of size=<val> warningPercent=<val> criticalPercent=<val>.  Thresholds
+    are defined by their size, so any number of thresholds may exist so long as each has a
+    different size. While each threshold may have no more than one warning 
+    percentile and one critical percentile, the values for those percentiles may
+    be altered however it is seen fit (though the values must be from 1 to 100 
+    inclusive, for obvious reasons). Also of note, threshold size is read in as a
+    long and percentiles are read in as doubles. In order to completely override another 
+    bloat threshold configuration file, the ID must be the same, and the priority must be 
+    higher (default file priority is 0, numbers greater than that will have a higher priority, 
+    negative numbers will have less priority), as the files are overridden in order of
+    priority, highest to lowest.  Should it be desired to use a specific list of thresholds
+    for only a certain database, schema, or table, add the requisite name of the item to
+    its field in thresholdList ('.*' refers to 'all' items of that type).
+    
+    The 'database', 'schema', and 'table' fields are converted into RegEx statements, so multiple 
+    possible overrides can exist for a single list. Example of overriding multiple 
+    databases/schemas/tables with the same thresholdList:
+    
+        <thresholdList id="default" database=".*" schema=".*" table="r.*" priority="0">
+        or 
+        <thresholdList id="default" database=".*" schema=".*" table="(grid|grid_info)" priority="0">
+    
+    In order to "disable" or remove all warnings of bloat percent, an empty thresholdList can
+    be made, and will apply to the corresponding specifications for the thresholdList.
+    
+    Please note, this is an incremental override file, indicating that files at different
+    localization levels will be combined.
+ -->
+<thresholdList id="default" database=".*" schema=".*" table=".*" priority="0">
+    <threshold size="1000" warningPercent="30" criticalPercent="40"/>
+    <threshold size="500" warningPercent="40" criticalPercent="50"/>
+    <threshold size="100" warningPercent="50" criticalPercent="60"/>
+    <threshold size="10" warningPercent="60" criticalPercent="65"/>
+</thresholdList>
