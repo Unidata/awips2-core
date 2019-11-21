@@ -100,6 +100,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Nov 29, 2016 5937        tgurney     Add maxRowCount param to executeSQLQuery
  * Jan 31, 2018 6945        tgurney     Add maxResults param to executeHQLQuery
  * Mar 26, 2018 6711        randerso    Added support for named queries
+ * Nov 04, 2019 7960        mapeters    Added {@link #createAll}
  *
  * </pre>
  *
@@ -189,6 +190,25 @@ public class CoreDao {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
                 getCurrentSession().save(obj);
+            }
+        });
+    }
+
+    /**
+     * Creates the object entries in the database as a single transaction. If
+     * any fail, none will be created.
+     *
+     * @param objs
+     *            The objects to be created in the database
+     */
+    public void createAll(List<?> objs) {
+        txTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            public void doInTransactionWithoutResult(TransactionStatus status) {
+                Session session = getCurrentSession();
+                for (Object obj : objs) {
+                    session.save(obj);
+                }
             }
         });
     }
