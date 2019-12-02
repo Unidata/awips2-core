@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.StringJoiner;
+
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
 import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
@@ -34,7 +35,6 @@ import com.raytheon.uf.common.derivparam.library.DerivedParameterRequest;
 import com.raytheon.uf.common.inventory.tree.CubeLevel;
 import com.raytheon.uf.common.localization.IPathManager;
 import com.raytheon.uf.common.python.PythonInterpreter;
-import com.raytheon.uf.common.python.PythonSharedModulesUtil;
 
 import jep.JepConfig;
 import jep.JepException;
@@ -43,10 +43,10 @@ import jep.NDArray;
 /**
  * A script for running the master derived parameter script, which can run any
  * of the derived parameter scripts
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 08, 2008           njensen   Initial creation
@@ -58,14 +58,14 @@ import jep.NDArray;
  * May 01, 2014  3101     njensen   Safe cast result shape values to Number
  * Apr 20, 2015  4259     njensen   Updated for new Jep API
  * Oct 05, 2016  5891     bsteffen  Allow functions in subdirectories
- * Nov 02, 2016  5979     njensen     Cast to Number where applicable
- * Jan 04, 2017  5959     njensen     Use JepConfig in constructor
+ * Nov 02, 2016  5979     njensen   Cast to Number where applicable
+ * Jan 04, 2017  5959     njensen   Use JepConfig in constructor
  * Aug 28, 2017  6391     bsteffen  Handle cubes at a single point.
- * Dec 19, 2017  7149     njensen     Set shared modules on JepConfig
- * 
- * 
+ * Dec 19, 2017  7149     njensen   Set shared modules on JepConfig
+ * Dec 02, 2019  7986     randerso  Remove redundant setting of shared modules
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 public class MasterDerivScript extends PythonInterpreter {
@@ -78,7 +78,7 @@ public class MasterDerivScript extends PythonInterpreter {
 
     /**
      * Constructor
-     * 
+     *
      * @param includePath
      *            the python include path
      * @param classLoader
@@ -93,9 +93,7 @@ public class MasterDerivScript extends PythonInterpreter {
     public MasterDerivScript(String includePath, ClassLoader classLoader,
             List<String> preEvals) throws JepException {
         super(new JepConfig().setIncludePath(includePath)
-                .setClassLoader(classLoader)
-                .setSharedModules(PythonSharedModulesUtil.getSharedModules()),
-                preEvals);
+                .setClassLoader(classLoader), preEvals);
     }
 
     public Object executeFunction(String name, List<Object> args)
@@ -143,7 +141,7 @@ public class MasterDerivScript extends PythonInterpreter {
             name = name.replace(IPathManager.SEPARATOR, ".");
             jep.eval("from " + name + " import execute");
         }
-            jep.eval(functionCall.toString());
+        jep.eval(functionCall.toString());
     }
 
     @Override
