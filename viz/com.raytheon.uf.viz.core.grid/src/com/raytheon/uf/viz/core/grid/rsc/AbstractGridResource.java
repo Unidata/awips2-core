@@ -162,6 +162,7 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Jun 27, 2019  65510    ksunil    Support color fill through XML entries, support smoothData
  * Jul 30, 2019  66477    mapeters  Don't set minimumMagnitude based off arrowHeadSizeRatio
  * Aug 29, 2019  67949    tjensen   Refactor to support additional GFE products
+ * Dec 02, 2019  71870    tjensen   Make disposeRenderable visible to be overridden
  *
  *
  * </pre>
@@ -844,7 +845,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      *
      * @param renderable
      */
-    private void disposeRenderable(final IRenderable renderable) {
+    protected void disposeRenderable(final IRenderable renderable) {
         VizApp.runAsync(new Runnable() {
 
             @Override
