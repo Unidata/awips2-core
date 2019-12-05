@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -47,11 +47,11 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * clause, it consists of a type(operator) and a value. When a request is made
  * fields will be compared to the constraint value with the specified type to
  * determine what data to return.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- *   
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Aug 21, 2007           chammack    Initial Creation.
@@ -67,10 +67,11 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jun 30, 2016  5725     tgurney     Add NOT IN
  * Jul 05, 2016  5728     mapeters    Add RequestConstraint(String[], boolean)
  * Jul 07, 2016  5728     mapeters    Add more String & Date support in evaluate()
- * 
- * 
+ * Nov 15, 2019  71273    ksunil      Added fromOperand
+ *
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -93,10 +94,19 @@ public class RequestConstraint implements Cloneable {
     private static final float EQUALITY_TOLERANCE = 0.0001f;
 
     public enum ConstraintType {
-        EQUALS("="), NOT_EQUALS("!="), GREATER_THAN(">"), GREATER_THAN_EQUALS(
-                ">="), LESS_THAN("<"), LESS_THAN_EQUALS("<="), BETWEEN(
-                "between"), IN("in"), LIKE("like"), ILIKE("ilike"), ISNULL(
-                "isnull"), ISNOTNULL("isnotnull"), NOT_IN("not in");
+        EQUALS("="),
+        NOT_EQUALS("!="),
+        GREATER_THAN(">"),
+        GREATER_THAN_EQUALS(">="),
+        LESS_THAN("<"),
+        LESS_THAN_EQUALS("<="),
+        BETWEEN("between"),
+        IN("in"),
+        LIKE("like"),
+        ILIKE("ilike"),
+        ISNULL("isnull"),
+        ISNOTNULL("isnotnull"),
+        NOT_IN("not in");
 
         private String operand;
 
@@ -107,10 +117,19 @@ public class RequestConstraint implements Cloneable {
         public String getOperand() {
             return this.operand;
         }
+
+        public static ConstraintType fromOperand(String operand) {
+            for (ConstraintType type : values()) {
+                if (type.operand.equals(operand)) {
+                    return type;
+                }
+            }
+            return null;
+        }
     }
 
-    private static EnumSet<ConstraintType> mergableTypesEqualIn = EnumSet.of(
-            ConstraintType.EQUALS, ConstraintType.IN);
+    private static EnumSet<ConstraintType> mergableTypesEqualIn = EnumSet
+            .of(ConstraintType.EQUALS, ConstraintType.IN);
 
     @XmlAttribute
     @DynamicSerializeElement
@@ -135,7 +154,7 @@ public class RequestConstraint implements Cloneable {
 
     /**
      * Convenience constructor to construct an equals constraint
-     * 
+     *
      * @param value
      *            the value to constrain on
      */
@@ -145,7 +164,7 @@ public class RequestConstraint implements Cloneable {
 
     /**
      * Constructor for a specified constraint type and value
-     * 
+     *
      * @param value
      * @param type
      */
@@ -157,7 +176,7 @@ public class RequestConstraint implements Cloneable {
     /**
      * Converts inConstraints into String[] and calls
      * {@link RequestConstraint#RequestConstraint(String[])}
-     * 
+     *
      * @param inConstraints
      */
     public RequestConstraint(Collection<String> inConstraints) {
@@ -169,7 +188,7 @@ public class RequestConstraint implements Cloneable {
      * inConstraints set as the {@link #setConstraintValueList(String[])} if
      * inConstraints size == 1 then {@link ConstraintType#EQUALS} will be used
      * instead
-     * 
+     *
      * @param inConstraints
      */
     public RequestConstraint(String[] inConstraints) {
@@ -183,12 +202,12 @@ public class RequestConstraint implements Cloneable {
      * If inConstraints size == 1, then the corresponding
      * {@link ConstraintType#EQUALS} or {@link ConstraintType#NOT_EQUALS} is
      * used instead
-     * 
+     *
      * @param inConstraints
      * @param in
      *            if true, IN (or EQUALS) is created, otherwise NOT IN (or NOT
      *            EQUALS) is
-     * 
+     *
      */
     public RequestConstraint(String[] inConstraints, boolean in) {
         if (inConstraints.length == 1) {
@@ -204,7 +223,7 @@ public class RequestConstraint implements Cloneable {
 
     /**
      * Creates a {@link RequestConstraint} with {@link ConstraintType#BETWEEN}
-     * 
+     *
      * @param low
      * @param high
      */
@@ -265,7 +284,7 @@ public class RequestConstraint implements Cloneable {
     }
 
     /**
-     * 
+     *
      * @param constraintValues
      *            the constraintValues to set
      */
@@ -276,7 +295,7 @@ public class RequestConstraint implements Cloneable {
     /**
      * Set a list of possible value for a request constraint, used for IN
      * ConstraintType.
-     * 
+     *
      * @param constraintValues
      */
     public void setConstraintValueList(Collection<String> constraintValues) {
@@ -298,14 +317,14 @@ public class RequestConstraint implements Cloneable {
         if (this.constraintValue == null) {
             this.setConstraintValue(constraintValue);
         } else {
-            this.setConstraintValue(this.constraintValue + ","
-                    + constraintValue);
+            this.setConstraintValue(
+                    this.constraintValue + "," + constraintValue);
         }
 
     }
 
     /**
-     * 
+     *
      * @param constraintValues
      *            the constraintValues to set
      */
@@ -326,7 +345,7 @@ public class RequestConstraint implements Cloneable {
 
     /**
      * Evaluate whether a value satisfies a constraint
-     * 
+     *
      * @param value
      *            the value
      * @return true if the value is satisfied by the constraint
@@ -478,7 +497,8 @@ public class RequestConstraint implements Cloneable {
                 if (d == null) {
                     continue;
                 }
-                if (Math.abs(d.doubleValue() - valueDouble) < EQUALITY_TOLERANCE) {
+                if (Math.abs(
+                        d.doubleValue() - valueDouble) < EQUALITY_TOLERANCE) {
                     return true;
                 }
             }
@@ -531,7 +551,8 @@ public class RequestConstraint implements Cloneable {
                     d = Double.valueOf(constraintValue);
                     asMap.put(Double.class, d);
                 }
-                if (Math.abs(d.doubleValue() - ((Number) value).doubleValue()) < EQUALITY_TOLERANCE) {
+                if (Math.abs(d.doubleValue() - ((Number) value)
+                        .doubleValue()) < EQUALITY_TOLERANCE) {
                     return true;
                 }
             } catch (NumberFormatException e) {
@@ -616,7 +637,7 @@ public class RequestConstraint implements Cloneable {
      * field will have {@link Object#toString()} called on it. If field value is
      * null, {@link ConstraintType#ISNULL} will be used instead as the
      * {@link ConstraintType}
-     * 
+     *
      * @param fieldMapping
      * @return
      */
@@ -628,7 +649,7 @@ public class RequestConstraint implements Cloneable {
     /**
      * Same functionality as {@link #toConstraintMapping(Map)} except null
      * values are not included in the resultant constraint map
-     * 
+     *
      * @param fieldMapping
      * @return
      */

@@ -241,5 +241,4 @@ public abstract class GeneralGridData {
     }
 
     public abstract GeographicDataSource getData();
-
 }
