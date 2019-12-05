@@ -24,7 +24,7 @@
   <dataDirectory>/awips2/edex/data/share</dataDirectory>
   <textureCardPreference>1024</textureCardPreference>
   <tearoffmenus>true</tearoffmenus>
-  <framesPerSecondPreference>25</framesPerSecondPreference>
+  <framesPerSecondPreference>30</framesPerSecondPreference>
   <tileBoundaries>false</tileBoundaries>
   <fontMagnification>1.0</fontMagnification>
   <qpid>

@@ -34,17 +34,18 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import com.raytheon.uf.common.colormap.prefs.DataMappingPreferences;
 import com.raytheon.uf.common.style.AbstractStylePreferences;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ColorMapFillExtensions;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.StyleException;
 
 /**
- * 
+ *
  * Contains the imagery preferences
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ---------------------------
  * Jul 27, 2007           chammack  Initial Creation.
@@ -52,9 +53,11 @@ import com.raytheon.uf.common.style.StyleException;
  * Apr 26, 2017  6247     bsteffen  Implement clone
  * Aug 25, 2017  6403     bsteffen  Use CollapsedStringAdapter
  * Apr 04, 2018  6889     njensen   Added brightness
- * 
+ * Jun 27, 2019  65510    ksunil    support color fill through XML entries
+ * Jul 25, 2019  65809    ksunil    added colorMapFillExtensions
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -79,7 +82,7 @@ public class ImagePreferences extends AbstractStylePreferences {
     private DataMappingPreferences dataMapping;
 
     @XmlElement
-    private LabelingPreferences colorbarLabeling;
+    private ImageryLabelingPreferences colorbarLabeling;
 
     @XmlElement
     private boolean interpolate = true;
@@ -90,6 +93,12 @@ public class ImagePreferences extends AbstractStylePreferences {
 
     @XmlElement
     private Float brightness;
+
+    @XmlElement
+    private Double smoothingDistance;
+
+    @XmlElement(name = "colorMapFillExtensions")
+    private ColorMapFillExtensions colorMapExtensions;
 
     public ImagePreferences() {
 
@@ -105,6 +114,19 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.colorbarLabeling = prefs.getColorbarLabeling().clone();
         this.interpolate = prefs.isInterpolate();
         this.colorMapUnits = prefs.getColorMapUnits();
+        this.smoothingDistance = prefs.getSmoothingDistance();
+
+        this.colorMapExtensions = prefs.getColorMapExtensions();
+
+    }
+
+    public ColorMapFillExtensions getColorMapExtensions() {
+        return colorMapExtensions;
+    }
+
+    public void setColorMapExtensions(
+            ColorMapFillExtensions colorMapExtensions) {
+        this.colorMapExtensions = colorMapExtensions;
     }
 
     public boolean isInterpolate() {
@@ -131,11 +153,20 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.dataScale = dataScale;
     }
 
-    public LabelingPreferences getColorbarLabeling() {
+    public Double getSmoothingDistance() {
+        return smoothingDistance;
+    }
+
+    public void setSmoothingDistance(Double smoothingDistance) {
+        this.smoothingDistance = smoothingDistance;
+    }
+
+    public ImageryLabelingPreferences getColorbarLabeling() {
         return colorbarLabeling;
     }
 
-    public void setColorbarLabeling(LabelingPreferences colorbarLabeling) {
+    public void setColorbarLabeling(
+            ImageryLabelingPreferences colorbarLabeling) {
         this.colorbarLabeling = colorbarLabeling;
     }
 
