@@ -114,6 +114,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Sep 09, 2019  6140     randerso  Fix queries with maxResults.
  * Sep 11, 2019  7931     tgurney   Add default aliases for returned columns
  *                                  that don't have aliases
+ * Nov 04, 2019  7960     mapeters  Added {@link #createAll}
  *
  * </pre>
  *
@@ -203,6 +204,25 @@ public class CoreDao {
             @Override
             public void doInTransactionWithoutResult(TransactionStatus status) {
                 getCurrentSession().save(obj);
+            }
+        });
+    }
+
+    /**
+     * Creates the object entries in the database as a single transaction. If
+     * any fail, none will be created.
+     *
+     * @param objs
+     *            The objects to be created in the database
+     */
+    public void createAll(List<?> objs) {
+        txTemplate.execute(new TransactionCallbackWithoutResult() {
+            @Override
+            public void doInTransactionWithoutResult(TransactionStatus status) {
+                Session session = getCurrentSession();
+                for (Object obj : objs) {
+                    session.save(obj);
+                }
             }
         });
     }

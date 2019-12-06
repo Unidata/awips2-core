@@ -17,7 +17,7 @@
     <bean id="timeQueryHandler" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandler" />
     <bean id="timeQueryHandlerSet" class="com.raytheon.uf.edex.database.handlers.TimeQueryHandlerSet" />
     <bean id="saveOrUpdateHandler" class="com.raytheon.uf.edex.database.handlers.SaveOrUpdateHandler" />
-
+    <bean id="dbCreateHandler" class="com.raytheon.uf.edex.database.handlers.DbCreateHandler" />
 
     <bean id="pluginFactory" class="com.raytheon.uf.edex.database.plugin.PluginFactory" factory-method="getInstance">
         <property name="defaultPathProvider" ref="defaultPathProvider"/>
