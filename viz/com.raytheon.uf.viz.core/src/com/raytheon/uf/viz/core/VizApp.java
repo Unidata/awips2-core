@@ -30,6 +30,7 @@ import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.common.util.SystemUtil;
+import com.raytheon.uf.viz.core.comm.JMSConnection;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 
 /**
@@ -54,6 +55,7 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  * Oct 16, 2019  7724     randerso    Set client ID in JMS connection URL
  * Oct 16, 2019  7724     tgurney     Replace connection string and info map with
  *                                    a single {@link JMSConnectionInfo} object
+ * Dec  9, 2019  7724     tgurney     Delegate JMS connection info to {@link JMSConnection}
  *
  * </pre>
  *
@@ -73,8 +75,6 @@ public final class VizApp {
     private static String httpServer;
 
     private static String pypiesServer;
-
-    private static JMSConnectionInfo jmsConnectionInfo;
 
     static {
         ManagementFactory.getRuntimeMXBean().getName();
@@ -198,14 +198,14 @@ public final class VizApp {
     }
 
     public static JMSConnectionInfo getJmsConnectionInfo() {
-        return jmsConnectionInfo;
+        return JMSConnection.getInstance().getConnectionInfo();
     }
 
     public static void setJmsConnectionInfo(
             JMSConnectionInfo jmsConnectionInfo) {
-        VizApp.jmsConnectionInfo = jmsConnectionInfo;
-        VizApp.jmsConnectionInfo.getParameters().put("jms.clientID",
+        jmsConnectionInfo.getParameters().put("jms.clientID",
                 getWsId().toString());
+        JMSConnection.getInstance().setConnectionInfo(jmsConnectionInfo);
     }
 
     public static String getPypiesServer() {

@@ -42,7 +42,8 @@ Require-Bundle: org.eclipse.ui,
  org.slf4j;bundle-version="1.7.5",
  com.raytheon.uf.common.python,
  javax.xml.bind,
- javax.jws
+ javax.jws,
+ org.springframework
 Bundle-ActivationPolicy: lazy
 Eclipse-RegisterBuddy: org.apache.velocity, com.raytheon.uf.common.status, ch.qos.logback
 Export-Package: com.raytheon.uf.viz.core,

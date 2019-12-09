@@ -58,6 +58,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Feb 04, 2014 2704       njensen     Check JMS capability, return exceptions with results
  * Oct 16, 2019 7724       tgurney     Replace connection string with a
  *                                     {@link JMSConnectionInfo} object
+ * Dec  9, 2019 7724       tgurney     Call JMSConnectionInfo.testConnection to
+ *                                     test JMS connection
  *
  * </pre>
  *
@@ -187,8 +189,7 @@ public class ConnectivityManager {
         boolean good = true;
         Exception exc = null;
         try {
-            JMSConnection jms = new JMSConnection(connectionInfo);
-            jms.getFactory().createConnection().close();
+            JMSConnection.getInstance().testConnection(connectionInfo);
         } catch (JMSException e) {
             exc = e;
             good = false;

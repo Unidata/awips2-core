@@ -23,9 +23,10 @@ package com.raytheon.uf.viz.core.comm;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
+import org.springframework.jms.connection.CachingConnectionFactory;
+
 import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.jms.qpid.QpidUFConnectionFactory;
-import com.raytheon.uf.viz.core.VizApp;
 
 /**
  *
@@ -48,43 +49,84 @@ import com.raytheon.uf.viz.core.VizApp;
  * Sep 23, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
  * Oct 16, 2019 7724       tgurney     Replace connection string with a
  *                                     {@link JMSConnectionInfo} object
+ * Dec  9, 2019 7724       tgurney     Allow only a single JMS connection at a
+ *                                     time
  *
  * </pre>
  *
  * @author chammack
  */
 public class JMSConnection {
-    private static JMSConnection instance;
+
+    /** No particular reasoning behind this default value. */
+    private static final int DEFAULT_SESSION_CACHE_SIZE = 50;
+
+    private static final JMSConnection INSTANCE = new JMSConnection();
 
     private ConnectionFactory factory;
 
-    public static synchronized JMSConnection getInstance() throws JMSException {
-        if (instance == null) {
-            instance = new JMSConnection();
-        }
+    private JMSConnectionInfo connInfo;
 
-        return instance;
+    private boolean connInfoChanged = true;
+
+    private JMSConnection() {
+        // singleton
     }
 
-    public JMSConnection() throws JMSException {
-        this(VizApp.getJmsConnectionInfo());
+    public static JMSConnection getInstance() {
+        return INSTANCE;
     }
 
-    public JMSConnection(JMSConnectionInfo connInfo) throws JMSException {
-        try {
-            this.factory = new QpidUFConnectionFactory(connInfo);
-        } catch (Exception e) {
-            JMSException wrapper = new JMSException(
-                    "Failed to connect to the JMS Server!");
-            wrapper.initCause(e);
-            throw wrapper;
-        }
+    public synchronized void setConnectionInfo(JMSConnectionInfo connInfo) {
+        this.connInfo = connInfo;
+        connInfoChanged = true;
+    }
+
+    public synchronized JMSConnectionInfo getConnectionInfo() {
+        return connInfo;
     }
 
     /**
-     * @return the factory
+     * Test the JMS connection specified by connInfo. If this method returns,
+     * then the connection was successful.
+     * 
+     * @param connInfo
+     *            The connection info
+     * @throws JMSException
+     *             If the connection failed.
      */
-    public ConnectionFactory getFactory() {
+    public synchronized void testConnection(JMSConnectionInfo connInfo)
+            throws JMSException {
+        JMSConnection theJmsConnection = this;
+        if (!connInfo.equals(this.connInfo)) {
+            theJmsConnection = new JMSConnection();
+            theJmsConnection.setConnectionInfo(connInfo);
+        }
+        theJmsConnection.getFactory().createConnection().close();
+    }
+
+    /**
+     * @return the connection factory
+     * @throws JMSException
+     */
+    public synchronized ConnectionFactory getFactory() throws JMSException {
+        if (connInfoChanged) {
+            try {
+                CachingConnectionFactory cachingFactory = new CachingConnectionFactory(
+                        new QpidUFConnectionFactory(connInfo));
+                int sessionCacheSize = Integer.getInteger(
+                        "viz.jms.sessioncachesize", DEFAULT_SESSION_CACHE_SIZE);
+                cachingFactory.setSessionCacheSize(sessionCacheSize);
+                factory = cachingFactory;
+            } catch (Exception e) {
+                JMSException wrapper = new JMSException(
+                        "Failed to connect to the JMS Server!");
+                wrapper.initCause(e);
+                throw wrapper;
+            }
+            connInfoChanged = false;
+        }
         return factory;
     }
+
 }
