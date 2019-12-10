@@ -33,6 +33,7 @@ import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
+import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.requests.ThriftClient;
 
@@ -60,6 +61,9 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  *                                     {@link JMSConnectionInfo} object
  * Dec  9, 2019 7724       tgurney     Call JMSConnectionInfo.testConnection to
  *                                     test JMS connection
+ * Dec 10, 2019 7993       tgurney     Forbid connection to incompatible servers
+ *                                     (determined by checking for null JMS
+ *                                     connection info in the GetServersResponse)
  *
  * </pre>
  *
@@ -152,6 +156,15 @@ public class ConnectivityManager {
         GetServersRequest req = new GetServersRequest();
         GetServersResponse resp = (GetServersResponse) ThriftClient
                 .sendRequest(req, server);
+        if (resp.getJmsConnectionInfo() == null) {
+            /*
+             * The JMS connection info failed to deserialize. This is
+             * attributable to an incompatibility between client and server
+             */
+            throw new VizException(
+                    "Server is incompatible with this version of "
+                            + AppInfo.getInstance().getName());
+        }
         getServersResponseCache.put(server, resp);
         return resp;
     }
