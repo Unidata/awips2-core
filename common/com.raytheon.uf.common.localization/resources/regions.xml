@@ -7,7 +7,6 @@
         <wfo>GUM</wfo>
         <wfo>HNL</wfo>
         <wfo>HFO</wfo>
-        <wfo>PPG</wfo>
     </region>
     <!-- Eastern Region VUY -->
     <region regionId="ER">
@@ -74,7 +73,6 @@
         <wfo>LUB</wfo>
         <wfo>MAF</wfo>
         <wfo>SJT</wfo>
-        <wfo>TAE</wfo>
     </region>
     <!-- Western Region VHW -->
     <region regionId="WR">
