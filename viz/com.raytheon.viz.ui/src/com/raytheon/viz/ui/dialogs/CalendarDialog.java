@@ -64,13 +64,19 @@ import com.raytheon.viz.ui.widgets.DateTimeSpinner;
 
 public class CalendarDialog extends CaveSWTDialog {
 
-    private static String[] formatStrings = new String[] { "HH", "HH:mm",
+    private static final String[] formatStrings = new String[] { "HH", "HH:mm",
             "HH:mm:ss" };
+
+    private static final int[] timeFields = new int[] { Calendar.HOUR_OF_DAY,
+            Calendar.MINUTE, Calendar.SECOND };
 
     private Calendar cal;
 
     /** The date selection calendar widget */
     private DateTime calendarWidget;
+
+    /** the time selection widget */
+    private DateTimeSpinner timeEntryWidget = null;
 
     private int timeFieldCount;
 
@@ -179,7 +185,7 @@ public class CalendarDialog extends CaveSWTDialog {
                 lbl.setText("Select Time (" + tzId + ") and Date: ");
             }
 
-            DateTimeSpinner timeEntryWidget = new DateTimeSpinner(shell, cal,
+            timeEntryWidget = new DateTimeSpinner(shell, cal,
                     formatStrings[timeFieldCount - 1], false);
             timeEntryWidget.setLayoutData(
                     new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false));
@@ -242,20 +248,23 @@ public class CalendarDialog extends CaveSWTDialog {
      * Event handler action for OK button
      */
     private void handleOk() {
-        /*
-         * fallthroughs in the following switch statement are intentional
-         */
-        switch (timeFieldCount) {
-        case (0):
-            cal.set(Calendar.HOUR_OF_DAY, 0);
-        case (1):
-            cal.set(Calendar.MINUTE, 0);
-        case (2):
-            cal.set(Calendar.SECOND, 0);
-        default:
-            // do nothing
-        }
         cal.set(Calendar.MILLISECOND, 0);
+
+        Calendar timeCal = null;
+        if (timeFieldCount > 0) {
+            timeCal = timeEntryWidget.getSelection();
+        }
+
+        for (int i = 0; i < timeFields.length; i++) {
+            int field = timeFields[i];
+
+            if (i < timeFieldCount) {
+                cal.set(field, timeCal.get(field));
+            } else {
+                cal.set(field, 0);
+            }
+        }
+
         this.setReturnValue(cal.getTime());
     }
 }
