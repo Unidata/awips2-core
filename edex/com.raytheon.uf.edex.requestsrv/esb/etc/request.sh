@@ -42,3 +42,9 @@ export SERIALIZE_STREAM_MAX_SIZE_MB=8
 
 export EDEX_DEBUG_PORT=5005
 export HTTP_PORT=9581
+
+
+#clean up leftover processes from last run of request
+pkill -f sendAT
+pkill -f requestAT
+pkill -f ingestAT
