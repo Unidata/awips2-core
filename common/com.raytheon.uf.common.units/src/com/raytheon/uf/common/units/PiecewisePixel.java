@@ -27,8 +27,10 @@ import javax.measure.Quantity;
 import javax.measure.Unit;
 import javax.measure.UnitConverter;
 
-import tec.uom.se.AbstractUnit;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
+import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
+import tec.uom.se.AbstractUnit;
 
 /**
  * TODO Add Description
@@ -48,12 +50,16 @@ import tec.uom.se.AbstractUnit;
  * @author randerso
  */
 
-public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
+@DynamicSerialize
+public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q> {
 
+    @DynamicSerializeElement
     private final Unit<Q> stdUnit;
 
+    @DynamicSerializeElement
     private final double[] pixelValues;
 
+    @DynamicSerializeElement
     private final double[] stdValues;
 
     public PiecewisePixel(Unit<Q> dispUnit, double[] pixelValues,
@@ -65,7 +71,8 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
         }
         this.pixelValues = pixelValues;
 
-        if (dispUnit instanceof AbstractUnit && !((AbstractUnit<Q>)dispUnit).getSystemConverter().isLinear()) {
+        if (dispUnit instanceof AbstractUnit && !((AbstractUnit<Q>) dispUnit)
+                .getSystemConverter().isLinear()) {
             stdUnit = dispUnit;
         } else {
             this.stdUnit = dispUnit.getSystemUnit();
@@ -88,8 +95,8 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
 
     @Override
     public UnitConverter getSystemConverter() {
-        if (stdUnit instanceof AbstractUnit
-                && !((AbstractUnit<Q>) stdUnit).getSystemConverter().isLinear()) {
+        if (stdUnit instanceof AbstractUnit && !((AbstractUnit<Q>) stdUnit)
+                .getSystemConverter().isLinear()) {
             return ((AbstractUnit<Q>) stdUnit).getSystemConverter().concatenate(
                     new PiecewiseLinearConverter(pixelValues, stdValues));
         }
@@ -134,7 +141,6 @@ public class PiecewisePixel<Q extends Quantity<Q>> extends AbstractUnit<Q>{
         }
         return true;
     }
-
 
     @Override
     public Map<? extends Unit<?>, Integer> getBaseUnits() {
