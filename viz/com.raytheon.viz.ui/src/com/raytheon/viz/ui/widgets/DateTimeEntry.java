@@ -29,6 +29,10 @@ import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.DisposeEvent;
 import org.eclipse.swt.events.DisposeListener;
+import org.eclipse.swt.events.FocusAdapter;
+import org.eclipse.swt.events.FocusEvent;
+import org.eclipse.swt.events.KeyAdapter;
+import org.eclipse.swt.events.KeyEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.graphics.Image;
@@ -52,10 +56,12 @@ import com.raytheon.viz.ui.dialogs.CalendarDialog;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Dec 6, 2012             randerso    Initial creation
- * Apr 9, 2013  1860       randerso    Fix image disposed issued on Windows
- * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
- * Sep 29, 2017 6461       tgurney     Add dateFormat to constructor
+ * Dec 6,  2012             randerso    Initial creation
+ * Apr 9,  2013  1860       randerso    Fix image disposed issued on Windows
+ * Mar 1,  2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
+ * Sep 29, 2017  6461       tgurney     Add dateFormat to constructor
+ * Dec 31, 2019  7996       skabasele   Add ability to make textbox editable &
+ *                                      updated getDate()
  *
  * </pre>
  *
@@ -107,10 +113,30 @@ public class DateTimeEntry extends Composite {
         layout.horizontalSpacing = 0;
         setLayout(layout);
 
+        FocusAdapter myFocusAdapter = new FocusAdapter() {
+            @Override
+            public void focusLost(FocusEvent focusEvent) {
+              getDate();
+            }
+          
+        };
+
+        KeyAdapter keyAdapter = new KeyAdapter() {
+
+            @Override
+            public void keyPressed(KeyEvent arg0) {
+                if (arg0.keyCode == SWT.CR || arg0.keyCode == SWT.KEYPAD_CR) {
+                    getDate();
+                }
+            }
+
+           
+        };
         text = new Text(this, SWT.BORDER | SWT.READ_ONLY);
         GridData layoutData = new GridData(SWT.FILL, SWT.FILL, true, true);
         text.setLayoutData(layoutData);
-
+        text.addFocusListener(myFocusAdapter);
+        text.addKeyListener(keyAdapter);
         Button button = new Button(this, SWT.PUSH);
         ImageDescriptor imageDesc = UiPlugin
                 .getImageDescriptor("icons/calendar.gif");
@@ -127,9 +153,21 @@ public class DateTimeEntry extends Composite {
         button.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent e) {
+
                 int fieldCount = getFieldCount();
-                CalendarDialog dlg = new CalendarDialog(getShell(), date,
-                        fieldCount);
+                CalendarDialog dlg;
+                Date dateEntered = getDate();
+                // if the user has entered a valid date in the text then reflect
+                // it in the
+                // calendar
+                if (dateEntered != null) {
+                    dlg = new CalendarDialog(getShell(), dateEntered,
+                            fieldCount);
+                } else {
+                    // Otherwise default to current date
+
+                    dlg = new CalendarDialog(getShell(), date, fieldCount);
+                }
                 dlg.setTimeZone(sdf.getTimeZone());
                 Date selectedDate = (Date) dlg.open();
                 if (selectedDate != null) {
@@ -205,11 +243,22 @@ public class DateTimeEntry extends Composite {
     }
 
     /**
-     * Retrieve the date from the widget
+     * Retrieve the date from the widget. When The Text is editable, this method
+     * will return null if the user hasn't entered a valid date.
      *
      * @return the date
      */
     public Date getDate() {
+        if (text.getEditable()) {
+            try {
+                this.date = sdf.parse(text.getText());
+                fireUpdateListeners(date);
+            } catch (ParseException e) {
+                return null;
+            }
+
+            
+        }
         return this.date;
     }
 
@@ -250,4 +299,15 @@ public class DateTimeEntry extends Composite {
             ((IUpdateListener) listener).dateTimeUpdated(date);
         }
     }
+
+    /**
+     * Method used to allow the text box to be editable
+     * 
+     * @param value
+     */
+    public void setTextBoxEditable(boolean value) {
+        text.setEditable(value);
+
+    }
+
 }
