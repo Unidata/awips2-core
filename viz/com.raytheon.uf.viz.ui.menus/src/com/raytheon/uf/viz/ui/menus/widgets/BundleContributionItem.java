@@ -101,6 +101,8 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Dec 16, 2016  5976     bsteffen  Use localization file streams
  * May 15, 2019  7850     tgurney   Use left-padding with spaces to right-align
  *                                  data times (GTK3 fix). + Code cleanup
+ * Jan 13, 2020  7850     tgurney   Realign all other items in the menu when
+ *                                  one menu item text updates
  * </pre>
  *
  * @author chammack
@@ -151,7 +153,7 @@ public class BundleContributionItem extends ContributionItem {
 
     protected boolean queryPerformed = false;
 
-    private boolean performQuery = true;
+    private final boolean performQuery;
 
     /**
      * A flag to indicate simulated time has changed and item's values needs to
@@ -286,7 +288,24 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected void updateMenuTextAsync() {
-        VizApp.runAsync(this::updateMenuText);
+        VizApp.runAsync(() -> {
+            updateMenuText();
+            for (MenuItem mi : widget.getParent().getItems()) {
+                if (mi.getData() instanceof BundleContributionItem) {
+                    BundleContributionItem item = (BundleContributionItem) mi
+                            .getData();
+                    if (item.performQuery) {
+                        VizApp.runAsync(() -> {
+                            String timeStr = item.getTimeString();
+                            String timePadding = item.getTimePadding(timeStr);
+                            String textToSet = item.menuText + TIME_SEPARATOR
+                                    + timePadding + timeStr;
+                            item.widget.setText(textToSet);
+                        });
+                    }
+                }
+            }
+        });
     }
 
     /**
@@ -296,7 +315,7 @@ public class BundleContributionItem extends ContributionItem {
      */
     public void refreshText() {
         lastUsedTime = null;
-        if (pdoMapList != null && pdoMapList.size() > 0) {
+        if (pdoMapList != null && !pdoMapList.isEmpty()) {
             URICatalog cat = URICatalog.getInstance();
             for (BundleDataItem d : pdoMapList) {
                 cat.query(d.metadata);
@@ -306,8 +325,9 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected synchronized void updateMenuText() {
-        if (widget == null)
+        if (widget == null) {
             return;
+        }
 
         String textToSet;
         if (performQuery) {
@@ -468,10 +488,10 @@ public class BundleContributionItem extends ContributionItem {
                     substitutions, this.menuContribution.xml.editorType,
                     fullBundleLoad).execute(null);
             if (this.menuContribution.xml.command != null) {
-                ICommandService service = (ICommandService) PlatformUI
-                        .getWorkbench().getService(ICommandService.class);
+                ICommandService service = PlatformUI.getWorkbench()
+                        .getService(ICommandService.class);
                 try {
-                    Map<String, String> parms = new HashMap<String, String>();
+                    Map<String, String> parms = new HashMap<>();
                     if (substitutions != null) {
                         parms = substitutions;
                     }
