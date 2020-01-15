@@ -28,6 +28,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 
+import org.apache.http.conn.HttpHostConnectException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -87,6 +88,7 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  * Nov 15, 2016  5992      bsteffen    Compress large records
  * Oct 19, 2017  6367      tgurney     Use logger instead of stdout
  * Sep 19, 2018  7435      ksunil      Eliminate compression/decompression on HDF5
+ * Jan 15, 2020  8005      drogalla    Update sendRequest to keep trying until there's a response.
  * Jan 28, 2020  7985      ksunil      Removed the compression changes introduced in 7435
  *
  * </pre>
@@ -303,12 +305,34 @@ public class PyPiesDataStore implements IDataStore {
 
         Object ret = null;
         long t0 = System.currentTimeMillis();
-        try {
-            ret = doSendRequest(obj, huge);
-        } catch (Exception e) {
-            throw new StorageException("Error communicating with pypies server",
-                    null, e);
+
+        boolean logged = false;
+        while (ret == null) {
+
+            try {
+                ret = doSendRequest(obj, huge);
+            } catch (CommunicationException ce) {
+                if (ce.getCause() instanceof HttpHostConnectException) {
+                    if (logged == false) {
+                        logger.error(
+                                "Unable to connect with pypies. Check the PyPies logs to see if it is running. Waiting 6 seconds to try again...",
+                                ce);
+                        logged = true;
+                    }
+
+                } else {
+                    logger.error(
+                            "A CommunnicationException occurred trying to communicate with pypies.",
+                            ce);
+                    break;
+                }
+
+            } catch (Exception e) {
+                logger.error("Error communicating with pypies server", e);
+                break;
+            }
         }
+
         long time = System.currentTimeMillis() - t0;
 
         if (time >= SIMPLE_LOG_TIME) {
