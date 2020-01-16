@@ -83,6 +83,7 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  * Oct 16, 2019  7724     tgurney     Move queue creation to the session
  * Oct 22, 2019  7724     tgurney     Fix topic creation
+ * Jan 16, 2020  8008     randerso    Move topic prefix to QpidUFSession
  *
  * </pre>
  *
@@ -608,8 +609,7 @@ public class JmsNotificationManager
             disconnect();
             session = manager.createSession();
             if (session != null) {
-                String topicName = "amq.topic/" + id;
-                Topic t = session.createTopic(topicName);
+                Topic t = session.createTopic(id);
 
                 if (queryString != null) {
                     consumer = session.createConsumer(t, queryString);

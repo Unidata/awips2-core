@@ -57,6 +57,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Oct 22, 2019 7724       tgurney     Fix topic creation. Change broker REST
  *                                     API
  * Oct 23, 2019 7724       tgurney     Log producer creation
+ * Jan 16, 2020 8008       randerso    Move topic prefix to QpidUFSession
  *
  * </pre>
  *
@@ -218,7 +219,7 @@ public class QpidUFSession implements Session {
 
     @Override
     public Topic createTopic(String topicName) throws JMSException {
-        return session.createTopic(topicName);
+        return session.createTopic("amq.topic/" + topicName);
     }
 
     @Override
