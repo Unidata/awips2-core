@@ -103,6 +103,7 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  *                                  data times (GTK3 fix). + Code cleanup
  * Jan 13, 2020  7850     tgurney   Realign all other items in the menu when
  *                                  one menu item text updates
+ * Jan 18, 2020  7850     tgurney   Fix NPE on CAVE perspective switch
  * </pre>
  *
  * @author chammack
@@ -290,8 +291,13 @@ public class BundleContributionItem extends ContributionItem {
     protected void updateMenuTextAsync() {
         VizApp.runAsync(() -> {
             updateMenuText();
-            for (MenuItem mi : widget.getParent().getItems()) {
-                if (mi.getData() instanceof BundleContributionItem) {
+            if (widget == null || widget.isDisposed()) {
+                return;
+            }
+            MenuItem[] items = widget.getParent().getItems();
+            for (MenuItem mi : items) {
+                if (!mi.isDisposed()
+                        && mi.getData() instanceof BundleContributionItem) {
                     BundleContributionItem item = (BundleContributionItem) mi
                             .getData();
                     if (item.performQuery) {
@@ -300,7 +306,10 @@ public class BundleContributionItem extends ContributionItem {
                             String timePadding = item.getTimePadding(timeStr);
                             String textToSet = item.menuText + TIME_SEPARATOR
                                     + timePadding + timeStr;
-                            item.widget.setText(textToSet);
+                            if (item.widget != null
+                                    && !item.widget.isDisposed()) {
+                                item.widget.setText(textToSet);
+                            }
                         });
                     }
                 }
@@ -325,10 +334,9 @@ public class BundleContributionItem extends ContributionItem {
     }
 
     protected synchronized void updateMenuText() {
-        if (widget == null) {
+        if (widget == null || widget.isDisposed()) {
             return;
         }
-
         String textToSet;
         if (performQuery) {
             String timeStr = getTimeString();
@@ -376,6 +384,10 @@ public class BundleContributionItem extends ContributionItem {
         String minimumPadding = TIME_SEPARATOR.repeat(MINIMUM_PADDING_CHARS);
 
         int padCharsToAdd = 0;
+        if (widget.isDisposed() || widget.getParent() == null
+                || widget.getParent().isDisposed()) {
+            return minimumPadding;
+        }
         GC gc = new GC(widget.getParent().getShell());
 
         try {
