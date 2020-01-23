@@ -13,6 +13,16 @@
         </constructor-arg>
     </bean>
 
+    <bean class="com.raytheon.uf.common.convert.ConvertUtil"
+        factory-method="registerConverter">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.common.units.UnitConverter" />
+        </constructor-arg>
+        <constructor-arg>
+            <value>tec.uom.se.AbstractUnit</value>
+        </constructor-arg>
+    </bean>
+
     <!--
     Must serialize using java.io.Serializable because for some types of Units
     there is no other way to access the state. For example if you apply a scale
@@ -24,7 +34,7 @@
         class="com.raytheon.uf.common.serialization.DynamicSerializationManager"
         factory-method="registerAdapter">
         <constructor-arg>
-            <value>javax.measure.Unit</value>
+            <value>tec.uom.se.AbstractUnit</value>
         </constructor-arg>
         <constructor-arg>
             <bean
