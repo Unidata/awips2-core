@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,18 +21,19 @@ package com.raytheon.uf.viz.core.preferences;
 
 /**
  * Framework preference constants
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- ------------------------------
  * Sep 24, 2008           chammack  Initial creation
  * Mar 29, 2017  6202     bsteffen  Add pixel density preference.
- * 
- * 
+ * Jan 21, 2020  73572    tjensen   Add P_TEXTURES_HEAP and P_TEXTURES_RESTAGING
+ *
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class PreferenceConstants {
@@ -42,6 +43,10 @@ public class PreferenceConstants {
     public static final String P_CACHE_DIRECTORY = "cacheDirectory";
 
     public static final String P_TEXTURES_CARD = "textureCardPreference";
+
+    public static final String P_TEXTURES_HEAP = "textureHeapPreference";
+
+    public static final String P_TEXTURES_RESTAGING = "textureRestagingPreference";
 
     public static final String P_FS_CACHE_SIZE = "FSCachePreference";
 
@@ -55,6 +60,6 @@ public class PreferenceConstants {
 
     public static final String P_PIXEL_DENSITY = "tileSetPixelDensity";
 
-    // public static final String P_DATA_RETENTION = "dataRetentionTime";
-
+    private PreferenceConstants() {
+    }
 }
