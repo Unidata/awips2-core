@@ -12,12 +12,12 @@
         <propertyPlaceholder id="requestServiceProperties"
                              location="classpath:edex-requestsrv.properties"/>
 
-        <restConfiguration component="jetty" host="0.0.0.0" port="{{env:HTTP_PORT}}" >
+        <restConfiguration component="jetty" host="0.0.0.0" port="{{edex.http.port}}" >
             <endpointProperty key="disableStreamCache" value="{{edex.requestsrv.http.disableStreamCache}}" />
             <endpointProperty key="chunked" value="{{edex.requestsrv.http.chunked}}" />
         </restConfiguration>
 
-        <rest path="{{env:HTTP_SERVER_PATH}}">
+        <rest path="{{edex.http.server.path}}">
             <post uri="/{format}">
                 <to uri="bean:httpServiceExecutor?method=execute(${body}, ${header.format}, ${in.header.accept-encoding}, ${in.header.CamelHttpServletResponse})" />
             </post>
