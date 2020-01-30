@@ -51,6 +51,7 @@ import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
  * May 25, 2017  6202     bsteffen  Remove text limit on pixel density.
  * Jun 10, 2019  64619    tjensen   Added prompt to restart after changing
  *                                  preferences
+ * Jan 21, 2020  73572    tjensen   Refactor getTextureSizeEntries
  *
  * </pre>
  *
@@ -78,18 +79,16 @@ public class PerformancePreferences extends FieldEditorPreferencePage
      * Get the possible values for the texture cache. The result is paired
      * key/values for use with a {@link ComboFieldEditor}.
      */
-    private String[][] getTextureSizeEntries() {
+    private String[][] getTextureSizeEntries(String typePreference) {
         int[] textureChoices = TEXTURE_SIZE_CHOICES;
 
-        int currentTextureValue = getPreferenceStore().getInt(
-                com.raytheon.uf.viz.core.preferences.PreferenceConstants.P_TEXTURES_CARD);
-        if (currentTextureValue > 0) {
-            if (Arrays.binarySearch(textureChoices, currentTextureValue) < 0) {
-                textureChoices = Arrays.copyOf(textureChoices,
-                        textureChoices.length + 1);
-                textureChoices[textureChoices.length - 1] = currentTextureValue;
-                Arrays.sort(textureChoices);
-            }
+        int currentTextureValue = getPreferenceStore().getInt(typePreference);
+        if (currentTextureValue > 0 && Arrays.binarySearch(textureChoices,
+                currentTextureValue) < 0) {
+            textureChoices = Arrays.copyOf(textureChoices,
+                    textureChoices.length + 1);
+            textureChoices[textureChoices.length - 1] = currentTextureValue;
+            Arrays.sort(textureChoices);
         }
 
         String[][] values = new String[textureChoices.length][2];
@@ -105,10 +104,19 @@ public class PerformancePreferences extends FieldEditorPreferencePage
     public void createFieldEditors() {
         ComboFieldEditor gpuEditor = new ComboFieldEditor(
                 PreferenceConstants.P_TEXTURES_CARD,
-                "&Video Card Texture Cache Size:", getTextureSizeEntries(),
+                "&Video Card Texture Cache Size:",
+                getTextureSizeEntries(PreferenceConstants.P_TEXTURES_CARD),
                 getFieldEditorParent());
-
         addField(gpuEditor);
+        ComboFieldEditor heapEditor = new ComboFieldEditor(
+                PreferenceConstants.P_TEXTURES_HEAP,
+                "&Heap Texture Cache Size:",
+                getTextureSizeEntries(PreferenceConstants.P_TEXTURES_HEAP),
+                getFieldEditorParent());
+        addField(
+                new BooleanFieldEditor(PreferenceConstants.P_TEXTURES_RESTAGING,
+                        "&Enable Texture Restaging", getFieldEditorParent()));
+        addField(heapEditor);
         addField(new IntegerFieldEditor(PreferenceConstants.P_FPS,
                 "&Frames Per Second:", getFieldEditorParent()));
 
@@ -133,7 +141,7 @@ public class PerformancePreferences extends FieldEditorPreferencePage
 
     @Override
     public void init(IWorkbench workbench) {
-
+        // Nothing to init
     }
 
     @Override

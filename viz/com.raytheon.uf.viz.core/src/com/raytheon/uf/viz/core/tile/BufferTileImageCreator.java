@@ -23,50 +23,51 @@ import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
 /**
  * {@link TileImageCreator} for {@link TileSetRenderable} that creates image
  * tiles for Buffers. Only supports single level tiling
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Nov 29, 2012            mschenke     Initial creation
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Nov 29, 2012           mschenke  Initial creation
+ * Jan 21, 2020  73572    tjensen   Add isRestagingEnabled()
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 public class BufferTileImageCreator implements TileImageCreator {
 
-    private class BufferColorMapRetrievalCallback implements
-            IColorMapDataRetrievalCallback {
+    private class BufferColorMapRetrievalCallback
+            implements IColorMapDataRetrievalCallback {
 
-        private Rectangle slice;
+        private final Rectangle slice;
 
         private BufferColorMapRetrievalCallback(Rectangle slice) {
             this.slice = slice;
         }
 
-        /*
-         * (non-Javadoc)
-         * 
-         * @see com.raytheon.uf.viz.core.data.IColorMapDataRetrievalCallback#
-         * getColorMapData()
-         */
         @Override
         public ColorMapData getColorMapData() throws VizException {
-            return new ColorMapData(BufferSlicer.slice(buffer, slice,
-                    bufferBounds), new int[] { slice.width, slice.height });
+            return new ColorMapData(
+                    BufferSlicer.slice(buffer, slice, bufferBounds),
+                    new int[] { slice.width, slice.height });
+        }
+
+        @Override
+        public boolean isRestagingEnabled() {
+            // Grid data is already cached by the GridMemoryManager
+            return false;
         }
 
     }
 
-    private Buffer buffer;
+    private final Buffer buffer;
 
-    private Rectangle bufferBounds;
+    private final Rectangle bufferBounds;
 
-    private ColorMapCapability cmapCapability;
+    private final ColorMapCapability cmapCapability;
 
     public BufferTileImageCreator(Buffer buffer, Rectangle bufferBounds,
             ColorMapCapability cmapCapability) {
@@ -83,10 +84,10 @@ public class BufferTileImageCreator implements TileImageCreator {
                     + " only supports single level tiled data");
         }
 
-        IImage image = target
-                .getExtension(IColormappedImageExtension.class)
+        IImage image = target.getExtension(IColormappedImageExtension.class)
                 .initializeRaster(
-                        new BufferColorMapRetrievalCallback(tile.getRectangle()),
+                        new BufferColorMapRetrievalCallback(
+                                tile.getRectangle()),
                         cmapCapability.getColorMapParameters());
         IMesh mesh = target.getExtension(IMapMeshExtension.class)
                 .constructMesh(tile.tileGeometry, targetGeometry);
