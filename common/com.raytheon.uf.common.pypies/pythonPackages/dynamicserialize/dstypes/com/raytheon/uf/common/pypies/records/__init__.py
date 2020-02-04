@@ -29,14 +29,13 @@
 #    08/31/10                      njensen        Initial Creation.
 #    Apr 24, 2015    4425          nabowle        Add DoubleDataRecord
 #    Oct 04, 2018    7435          ksunil         Added Chunked records
-#
+#    Jan 28, 2020    7985          ksunil         Removed the compression changes introduced in 7985 
 #
 #
 
 
 __all__ = [
-            'CompressedDataRecord', 'CompressedChunk', 'CompressedChunkedDataRecord'
+            'CompressedDataRecord'
           ]
 from CompressedDataRecord import CompressedDataRecord
-from CompressedChunk import CompressedChunk
-from CompressedChunkedDataRecord import CompressedChunkedDataRecord
+
