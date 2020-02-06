@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.pointdata;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.pointdata.PointDataDescription.Type;
 

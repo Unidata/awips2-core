@@ -45,27 +45,27 @@ def execute(paramArray, vertArray, numLevels, vertPoints, maxGap=None):
         for j in range(len(verts)):
             if isnan(verts[j]) or isnan(params[j]):
                 continue
-            if (verts[j] > vertPoint and (above == None or verts[above] > verts[j])):
+            if (verts[j] > vertPoint and (above is None or verts[above] > verts[j])):
                 above = j
-            if (verts[j] < vertPoint and (below == None or verts[below] < verts[j])):
+            if (verts[j] < vertPoint and (below is None or verts[below] < verts[j])):
                 below = j
-        if(above == None and below == None):
+        if(above is None and below is None):
             ret[i] = NaN
             continue
-        if (maxGap != None):
+        if (maxGap is not None):
             gap = None
-            if(above == None):
+            if(above is None):
                 gap = (vertPoint - verts[below])*2
-            elif(below == None):
+            elif(below is None):
                 gap = (verts[above] - vertPoint)*2
             else:
                 gap = verts[above] - verts[below]
-            if(gap == None or gap > maxGap):
+            if(gap is None or gap > maxGap):
                 ret[i] = NaN
                 continue
-        if(above == None):
+        if(above is None):
             ret[i] = params[below]
-        elif(below == None):
+        elif(below is None):
             ret[i] = params[above]
         else:
             wgt = (vertPoint-verts[below])/(verts[above] - verts[below])

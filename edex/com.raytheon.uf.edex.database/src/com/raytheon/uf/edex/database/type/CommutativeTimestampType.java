@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -28,7 +28,7 @@ import java.sql.Types;
 import java.util.Date;
 
 import org.hibernate.HibernateException;
-import org.hibernate.engine.spi.SessionImplementor;
+import org.hibernate.engine.spi.SharedSessionContractImplementor;
 import org.hibernate.usertype.UserType;
 
 import com.raytheon.uf.common.time.CommutativeTimestamp;
@@ -38,20 +38,20 @@ import com.raytheon.uf.common.time.FormattedDate;
  * Type override for {@link java.util.Date} and {@link java.sql.Timestamp} so
  * that Hibernate returns a
  * {@link com.raytheon.uf.common.time.CommutativeTimestamp}.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 05, 2015 4486       rjpeter     Initial creation.
  * Sep 14, 2015 4486       rjpeter     Return FormattedDate.
  * Jun 23, 2016 5696       rjpeter     Return CommutativeTimestamp.
+ * Feb 26, 2019 6140       tgurney     Hibernate 5 UserType fix
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class CommutativeTimestampType implements UserType {
     private static final int[] SQL_TYPES = { Types.TIMESTAMP };
@@ -90,7 +90,7 @@ public class CommutativeTimestampType implements UserType {
 
     @Override
     public Object nullSafeGet(ResultSet rs, String[] names,
-            SessionImplementor session, Object owner)
+            SharedSessionContractImplementor session, Object owner)
             throws HibernateException, SQLException {
         Timestamp s = rs.getTimestamp(names[0]);
         return translate(s);
@@ -98,7 +98,8 @@ public class CommutativeTimestampType implements UserType {
 
     @Override
     public void nullSafeSet(PreparedStatement st, Object value, int index,
-            SessionImplementor session) throws HibernateException, SQLException {
+            SharedSessionContractImplementor session)
+            throws HibernateException, SQLException {
         if (value == null) {
             st.setTimestamp(index, null);
         } else if (value instanceof Timestamp) {

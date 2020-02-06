@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,7 +21,9 @@ package com.raytheon.viz.ui.widgets;
 
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.ArrayList;
 import java.util.Calendar;
+import java.util.List;
 
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
@@ -45,39 +47,51 @@ import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  * Date/Time entry field with spinner controls
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 17, 2016  #5483     randerso     Initial creation
- * May 04, 2016  #5602     bkowal       Added enable/disable, backing date get/set
- *                                      capabilities.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 17, 2016  5483     randerso  Initial creation
+ * May 04, 2016  5602     bkowal    Added enable/disable, backing date get/set
+ *                                  capabilities.
+ * Dec 11, 2019  7994     randerso  Added constructor with format string to
+ *                                  allow more flexibility. Deprecated
+ *                                  constructors using field count.
+ *
  * </pre>
- * 
+ *
  * @author randerso
- * @version 1.0
  */
 
 public class DateTimeSpinner extends Canvas implements PaintListener {
-    private static final Point[] fieldIndices = new Point[] { new Point(0, 4),
-            new Point(5, 7), new Point(8, 10), new Point(11, 13),
-            new Point(14, 16), new Point(17, 19) };
+    /**
+     * Only characters in this string, punctuation, and whitespace are allowed
+     * in the format string
+     */
+    public static final String supportedFormatChars = "yMdHms";
 
-    private static final int[] fieldNames = new int[] { Calendar.YEAR,
+    /*
+     * This array must match the format characters above
+     */
+    private static final int fieldType[] = new int[] { Calendar.YEAR,
             Calendar.MONTH, Calendar.DAY_OF_MONTH, Calendar.HOUR_OF_DAY,
             Calendar.MINUTE, Calendar.SECOND };
 
+    // TODO: remove this when the deprecated constructors are removed
     private static final String[] formatStrings = new String[] { "yyyy",
             "yyyy-MM", "yyyy-MM-dd", "yyyy-MM-dd HH", "yyyy-MM-dd HH:mm",
             "yyyy-MM-dd HH:mm:ss" };
 
-    private Text text;
+    private List<Point> fieldIndices = new ArrayList<>(
+            supportedFormatChars.length());
 
-    private int fieldCount;
+    private final List<Integer> editableFields = new ArrayList<>(
+            supportedFormatChars.length());;
+
+    private Text text;
 
     private int characterCount = 0;
 
@@ -95,21 +109,33 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
      */
     private int spinIncrement = 0;
 
-    private final int SPIN_START_DELAY_MS = 300;
+    private static final int SPIN_START_DELAY_MS = 300;
 
-    private final int SPIN_INTERVAL_MS = 30;
+    private static final int SPIN_INTERVAL_MS = 30;
 
     private DateFormat format;
 
+    private boolean clearNonEditable;
+
+    private static int validateFieldCount(int fieldCount) {
+        if ((fieldCount < 1) || (fieldCount > formatStrings.length)) {
+            throw new IllegalArgumentException(
+                    "fieldCount must be in the range 1-"
+                            + formatStrings.length);
+        }
+        return fieldCount - 1;
+    }
+
     /**
      * Constructor
-     * 
+     *
      * @param parent
      *            parent composite
      * @param calendar
      *            Calendar instance containing initial date. This instance will
      *            be updated as the widget is updated
      * @param fieldCount
+     *
      *            <pre>
      *            1 = yyyy
      *            2 = yyyy-MM
@@ -117,21 +143,27 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
      *            4 = yyyy-MM-dd HH
      *            5 = yyyy-MM-dd HH:mm
      *            6 = yyyy-MM-dd HH:mm:ss
-     * </pre>
+     *            </pre>
+     *
+     * @deprecated use
+     *             {@link #DateTimeSpinner(Composite, Calendar, String, boolean)}
      */
-    public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount) {
+    @Deprecated
+    public DateTimeSpinner(Composite parent, Calendar calendar,
+            int fieldCount) {
         this(parent, calendar, fieldCount, false);
     }
 
     /**
      * Constructor
-     * 
+     *
      * @param parent
      *            parent composite
      * @param calendar
      *            Calendar instance containing initial date. This instance will
      *            be updated as the widget is updated
      * @param fieldCount
+     *
      *            <pre>
      *            1 = yyyy
      *            2 = yyyy-MM
@@ -139,32 +171,101 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
      *            4 = yyyy-MM-dd HH
      *            5 = yyyy-MM-dd HH:mm
      *            6 = yyyy-MM-dd HH:mm:ss
-     * </pre>
+     *            </pre>
+     *
+     * @param clearNonEditable
+     *            triggers the execution of the {@link Calendar#clear(int)}
+     *            method on non-editable fields when set.
+     * @deprecated use
+     *             {@link #DateTimeSpinner(Composite, Calendar, String, boolean)}
+     */
+    @Deprecated
+    public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount,
+            boolean clearNonEditable) {
+        this(parent, calendar, formatStrings[validateFieldCount(fieldCount)],
+                clearNonEditable);
+    }
+
+    /**
+     * @param parent
+     *            parent composite
+     * @param calendar
+     *            Calendar instance containing initial date. This instance will
+     *            be updated as the widget is updated
+     * @param formatString
+     *            format string for SimpleDateFormat. Limited to only the those
+     *            characters in {@link #supportedFormatChars}
      * @param clearNonEditable
      *            triggers the execution of the {@link Calendar#clear(int)}
      *            method on non-editable fields when set.
      */
-    public DateTimeSpinner(Composite parent, Calendar calendar, int fieldCount,
-            boolean clearNonEditable) {
+    public DateTimeSpinner(Composite parent, Calendar calendar,
+            String formatString, boolean clearNonEditable) {
         super(parent, SWT.NONE);
+        this.clearNonEditable = clearNonEditable;
 
-        if ((fieldCount < 1) || (fieldCount > formatStrings.length)) {
-            throw new IllegalArgumentException(
-                    "fieldCount must be in the range 1-" + formatStrings.length);
-        }
-        this.fieldCount = fieldCount;
+        parseFormatString(formatString);
 
         this.calendar = TimeUtil.newCalendar(calendar);
-        if (clearNonEditable && fieldCount < formatStrings.length) {
-            for (int i = fieldCount; i < formatStrings.length; i++) {
-                this.calendar.clear(fieldNames[i]);
-            }
+        if (clearNonEditable) {
+            clearNonEditableFields();
         }
 
-        format = new SimpleDateFormat(formatStrings[fieldCount - 1]);
+        format = new SimpleDateFormat(formatString);
         format.setTimeZone(calendar.getTimeZone());
 
         initializeControls();
+    }
+
+    private void clearNonEditableFields() {
+        calendar.set(Calendar.MILLISECOND, 0);
+        for (int field : fieldType) {
+            if (!editableFields.contains(field)) {
+                calendar.set(field, 0);
+            }
+        }
+    }
+
+    private void parseFormatString(String formatString) {
+        int i = 0;
+        while (i < formatString.length()) {
+            char formatChar = formatString.charAt(i);
+            int index = supportedFormatChars.indexOf(formatChar);
+
+            if (index < 0) {
+                // if it's a letter it may be an unsupported format character
+                if (Character.isLetter(formatChar)) {
+                    throw new IllegalArgumentException(
+                            "formatString contains unsupported character: '"
+                                    + formatChar + "'");
+                }
+
+                // must be punctuation or whitespace
+                i++;
+                continue;
+            }
+
+            // determine field type
+            Integer type = fieldType[index];
+
+            // check for redundant fields (e.g. two year fields)
+            if (!editableFields.contains(type)) {
+                editableFields.add(fieldType[index]);
+            } else {
+                throw new IllegalArgumentException(
+                        "formatString contains redundant fields");
+            }
+
+            // determine extent of field
+            int start = i;
+            i++;
+            while (i < formatString.length()
+                    && formatString.charAt(i) == formatChar) {
+                i++;
+            }
+            fieldIndices.add(new Point(start, i));
+
+        }
     }
 
     private void initializeControls() {
@@ -270,13 +371,13 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         Rectangle tb = text.getBounds();
 
         // Fill text area
-        e.gc.setBackground(getDisplay().getSystemColor(
-                SWT.COLOR_LIST_BACKGROUND));
+        e.gc.setBackground(
+                getDisplay().getSystemColor(SWT.COLOR_LIST_BACKGROUND));
         e.gc.fillRectangle(tb.x, ca.y, tb.width, ca.height);
 
         // Draw border
-        e.gc.setForeground(getDisplay().getSystemColor(
-                SWT.COLOR_WIDGET_NORMAL_SHADOW));
+        e.gc.setForeground(
+                getDisplay().getSystemColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
         e.gc.drawRoundRectangle(ca.x, ca.y, ca.width, ca.height, 5, 5);
 
         // Determine button dimensions
@@ -288,14 +389,14 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         int buttonMiddle = (buttonTop + buttonBottom) / 2;
 
         // Fill button if pressed
-        e.gc.setBackground(getDisplay().getSystemColor(
-                SWT.COLOR_WIDGET_NORMAL_SHADOW));
+        e.gc.setBackground(
+                getDisplay().getSystemColor(SWT.COLOR_WIDGET_NORMAL_SHADOW));
         if (spinIncrement > 0) {
             e.gc.fillRectangle(buttonLeft, buttonTop, buttonRight - buttonLeft,
                     buttonMiddle - buttonTop);
         } else if (spinIncrement < 0) {
-            e.gc.fillRectangle(buttonLeft, buttonMiddle, buttonRight
-                    - buttonLeft, buttonBottom - buttonMiddle);
+            e.gc.fillRectangle(buttonLeft, buttonMiddle,
+                    buttonRight - buttonLeft, buttonBottom - buttonMiddle);
         }
 
         // Draw button borders
@@ -308,8 +409,8 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         int arrowTip = buttonTop + 4;
         int arrowBase = buttonMiddle - 4;
 
-        e.gc.setForeground(getDisplay().getSystemColor(
-                SWT.COLOR_WIDGET_FOREGROUND));
+        e.gc.setForeground(
+                getDisplay().getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
         e.gc.drawLine(arrowLeft, arrowBase, buttonCenter, arrowTip);
         e.gc.drawLine(buttonCenter, arrowTip, arrowRight, arrowBase);
 
@@ -332,7 +433,7 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
 
     /**
      * Returns the selected date/time as a {@link Calendar}
-     * 
+     *
      * @return the selected date/time as a {@link Calendar}
      */
     public Calendar getSelection() {
@@ -341,43 +442,30 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
 
     /**
      * Sets the selected date/time based on the specified {@link Calendar}.
-     * 
+     * onlyEditable will determine whether all Calendar fields will be copied
+     * from the specified Calendar or if only the editable fields will be
+     * copied.
+     *
      * @param calendar
      *            the specified {@link Calendar}
      */
     public void setSelection(Calendar calendar) {
-        setSelection(calendar, false);
-    }
-
-    /**
-     * Sets the selected date/time based on the specified {@link Calendar}.
-     * onlyEditable will determine whether all Calendar fields will be copied
-     * from the specified Calendar or if only the editable fields will be
-     * copied.
-     * 
-     * @param calendar
-     *            the specified {@link Calendar}
-     * @param onlyEditable
-     *            will only replace the editable fields in the backing Calendar
-     *            when set.
-     */
-    public void setSelection(Calendar calendar, boolean onlyEditable) {
-        int fieldCountToSet = (onlyEditable) ? fieldCount : fieldNames.length;
-        for (int i = 0; i < fieldCountToSet; i++) {
-            this.calendar.set(fieldNames[i], calendar.get(fieldNames[i]));
+        this.calendar = TimeUtil.newCalendar(calendar);
+        if (clearNonEditable) {
+            clearNonEditableFields();
         }
         updateControl();
     }
 
     private void incrementField(int amount) {
-        int currentFieldName = fieldNames[currentField];
+        int currentFieldName = editableFields.get(currentField);
         calendar.add(currentFieldName, amount);
         updateControl();
     }
 
     private void selectField(int index) {
-        final int start = fieldIndices[index].x;
-        final int end = fieldIndices[index].y;
+        final int start = fieldIndices.get(index).x;
+        final int end = fieldIndices.get(index).y;
         Point pt = text.getSelection();
         if ((index == currentField) && (start == pt.x) && (end == pt.y)) {
             return;
@@ -403,7 +491,7 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
     }
 
     private void setField(int value) {
-        calendar.set(fieldNames[currentField], value);
+        calendar.set(editableFields.get(currentField), value);
         updateControl();
     }
 
@@ -413,12 +501,12 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
         case SWT.ARROW_RIGHT:
             // a right arrow or a valid separator navigates to the field on the
             // right, with wraping
-            selectField((currentField + 1) % fieldCount);
+            selectField((currentField + 1) % fieldIndices.size());
             break;
         case SWT.ARROW_LEFT:
             // navigate to the field on the left, with wrapping
             int index = currentField - 1;
-            selectField(index < 0 ? fieldCount - 1 : index);
+            selectField(index < 0 ? fieldIndices.size() - 1 : index);
             break;
         case SWT.ARROW_UP:
         case SWT.KEYPAD_ADD:
@@ -432,13 +520,13 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
             break;
         case SWT.HOME:
             // set the value of the current field to its minimum
-            fieldName = fieldNames[currentField];
+            fieldName = editableFields.get(currentField);
             setField(calendar.getActualMinimum(fieldName));
             selectField(currentField);
             break;
         case SWT.END:
             // set the value of the current field to its maximum
-            fieldName = fieldNames[currentField];
+            fieldName = editableFields.get(currentField);
             setField(calendar.getActualMaximum(fieldName));
             selectField(currentField);
             break;
@@ -450,7 +538,7 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
             case '.':
                 // a valid separator navigates to the field on the right, with
                 // wrapping
-                selectField((currentField + 1) % fieldCount);
+                selectField((currentField + 1) % fieldIndices.size());
                 break;
             }
         }
@@ -465,8 +553,9 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
             return;
         }
         Point sel = text.getSelection();
-        for (int i = 0; i < fieldCount; i++) {
-            if ((fieldIndices[i].x <= sel.x) && (sel.x <= fieldIndices[i].y)) {
+        for (int i = 0; i < fieldIndices.size(); i++) {
+            Point p = fieldIndices.get(i);
+            if ((p.x <= sel.x) && (sel.x <= p.y)) {
                 selectField(i);
                 break;
             }
@@ -478,13 +567,15 @@ public class DateTimeSpinner extends Canvas implements PaintListener {
             return;
         }
         event.doit = false;
-        int fieldName = fieldNames[currentField];
-        int start = fieldIndices[currentField].x;
-        int end = fieldIndices[currentField].y;
+        int fieldName = editableFields.get(currentField);
+        Point indices = fieldIndices.get(currentField);
+        int start = indices.x;
+        int end = indices.y;
         int length = end - start;
         String newText = event.text;
         if (characterCount > 0) {
             try {
+                // parsing just to validate
                 Integer.parseInt(newText);
             } catch (NumberFormatException ex) {
                 return;

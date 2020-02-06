@@ -21,6 +21,8 @@
 from collections import OrderedDict
 from java.util import HashMap, LinkedHashMap, ArrayList
 from java.lang import String
+import array
+import pickle
 
 #
 # Provides convenience methods for Java-Python bridging
@@ -53,6 +55,8 @@ from java.lang import String
 #    10/15/13                      mnash          Refactor to reduce dependencies and clean up
 #    Apr 23, 2015     4259         njensen        Updated for new JEP API
 #    Nov 28, 2016     5959         njensen        Renamed methods for clarity
+#    Jul 31, 2019     7878         tgurney        Add helpers for handling
+#                                                 pickled objects as java byte[]
 #
 #
 
@@ -100,6 +104,28 @@ def javaObjToPyVal(obj, customConverter=None):
                 break
     return retVal
 
+def _javaByteArrayToPyBytes(jarray):
+    # TODO: Consider using this as a handler for PyJArrays of bytes once there
+    # is some way to tell what type a given PyJArray is. May be able to do this
+    # after upgrading to jep 3.9 or later.
+    #
+    # Until then, javaObjToPyVal will return a list of ints when called on
+    # a PyJArray of bytes. This mirrors the behavior of javaObjToPyVal as
+    # applied to other types of Java primitive arrays.
+    pyarray = array.array('b', jarray)
+    view = memoryview(pyarray).cast('B')
+    return bytes(view)
+
+def javaPickle(obj):
+    """Return pickled Python object as a Java byte[]"""
+    obj = pickle.dumps(obj)
+    return pyValToJavaObj(obj)
+
+def javaUnpickle(jarray):
+    """Return Python object unpickled from Java byte[]"""
+    byteString = _javaByteArrayToPyBytes(jarray)
+    return pickle.loads(byteString)
+
 def javaStringListToPylist(jlist):
     '''
     Going forward should use javaObjToPyVal instead.
@@ -114,7 +140,7 @@ def pylistToJavaStringList(pylist):
     '''
     Going forward should use pyValToJavaObj instead.
     '''
-    jlist = ArrayList();
+    jlist = ArrayList()
     for i in pylist:
         jlist.add(String(i))
     return jlist
@@ -131,10 +157,11 @@ def javaMapToPyDict(javaMap, customConverter=None):
     else:
         pyDict = {}
     while itr.hasNext():
-        key = itr.next()
+        key = next(itr)
         obj = javaMap.get(key)
         pyDict[javaObjToPyVal(key)] = javaObjToPyVal(obj, customConverter)
     return pyDict
+
 
 def pyDictToJavaMap(pyDict):
     '''
@@ -154,7 +181,7 @@ def pyDictToJavaMap(pyDict):
 
 class JavaWrapperClass(object):
     def toJavaObj(self):
-        raise NotImplementedError, "Subclasses must override this method."
+        raise NotImplementedError("Subclasses must override this method.")
 
 # this initializes the basic handlers for Java->Python conversion and Python->Java conversion
 

@@ -18,7 +18,7 @@
 # further licensing information.
 ##
 
-import sys, inspect, string, traceback
+import sys, inspect, traceback
 
 #
 # Provides a wrapper to the Java logging classes
@@ -80,7 +80,7 @@ def logUse(*args):
     
 def exc():
     t, v, tb = sys.exc_info()
-    return string.join(traceback.format_exception(t, v, tb))
+    return ' '.join(traceback.format_exception(t, v, tb))
     
 def _line():
     return inspect.currentframe().f_back.f_back.f_lineno

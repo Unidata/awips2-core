@@ -1,19 +1,19 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
 # pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
+#
 # U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
-# 
+#
 # Contractor Name:        Raytheon Company
 # Contractor Address:     6825 Pine Street, Suite 340
 #                         Mail Stop B8
 #                         Omaha, NE 68106
 #                         402.291.0100
-# 
+#
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ###
@@ -32,7 +32,7 @@ from WorldWrapUtil import HandleWorldWrapX
 # execute() instead.
 #
 # The returned arrays are the same size as Qty, with all the outermost
-# edges masked. d/dx could extend to the top and bottom, and 
+# edges masked. d/dx could extend to the top and bottom, and
 # d/dy to the left and right edge, but this has not been done, in order
 # to maintain the same output as the old g2gkinematics.f function #7.
 #
@@ -47,27 +47,27 @@ from WorldWrapUtil import HandleWorldWrapX
 @HandleWorldWrapX
 def calculate(Qty, dx, dy):
     "Calculate d/dx and d/dy of Qty."
-    
+
     if not isscalar(dx):
         dx = dx[1:-1,1:-1]
-        
+
     if not isscalar(dy):
         dy = dy[1:-1,1:-1]
-        
+
     cropped_dqdx = Qty[1:-1,2:] - Qty[1:-1,0:-2]
     cropped_dqdx /= dx * 2
-    
+
     cropped_dqdy = Qty[2:,1:-1] - Qty[0:-2,1:-1]
     cropped_dqdy /= dy * 2
-    
+
     dqdx = Qty + NaN
     dqdy = Qty + NaN
-    
+
     dqdx[1:-1,1:-1] = cropped_dqdx
     dqdy[1:-1,1:-1] = cropped_dqdy
-    
+
     return (dqdx, dqdy)
-    
+
 ##
 # Calculate d/dx and d/dy of Qty.
 # This method takes unmasked arrays and returns unmasked arrays.
@@ -82,9 +82,9 @@ def calculate(Qty, dx, dy):
 # @rtype: tuple(dq/dx,dq/dy) of 2D numpy arrays.
 def execute(Qty, dx, dy, worldWrapX = False):
     ""
-    
+
     # assume dx and dy are never zero or near-inifinite
-    
+
     dqdx, dqdy = calculate(Qty, dx, dy, worldWrapX)
 
     return (dqdx, dqdy)

@@ -22,7 +22,7 @@ import thrift.transport.TTransport
 import thrift.transport.THttpClient
 import SelfDescribingBinaryProtocol
 import time
-from StringIO import StringIO
+from io import StringIO
 
 
 t1 = time.time()
@@ -38,18 +38,18 @@ msg.write(protoWrite)
 protoWrite.writeMessageEnd()
 memTrans.flush()
 msg = memTrans.message
-print msg
+print(msg)
 
 
 proto = SelfDescribingBinaryProtocol.SelfDescribingBinaryProtocol(memTrans)
-print proto.readMessageBegin()
+print(proto.readMessageBegin())
 s = PointData.ttypes.com_raytheon_uf_common_pointdata_PointDataThriftContainer()
 t3 = time.time()
 s.read(proto)
 t2 = time.time()
-print 'Took %0.3f ms ' % ((t2-t1) * 1000.0)
-print 'Deserialize Took %0.3f ms ' % ((t2-t3) * 1000.0)
-print s
+print('Took %0.3f ms ' % ((t2-t1) * 1000.0))
+print('Deserialize Took %0.3f ms ' % ((t2-t3) * 1000.0))
+print(s)
 
  
 # doRead() 

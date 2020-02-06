@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,8 +21,10 @@ package com.raytheon.uf.viz.core.notification.jobs;
 
 import javax.jms.Connection;
 import javax.jms.ConnectionFactory;
+import javax.jms.JMSContext;
 import javax.jms.JMSException;
 
+import org.apache.qpid.jms.exceptions.JmsExceptionSupport;
 import org.eclipse.ui.services.IDisposable;
 
 import com.raytheon.uf.common.jms.notification.JmsNotificationManager;
@@ -34,11 +36,11 @@ import com.raytheon.uf.viz.core.comm.JMSConnection;
  * messages to the appropriate listeners. Listener execution is performed in
  * isolated threads, so users may perform appropriate operations inside the
  * listener method.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * May 08, 2008  1127     randerso    Initial Creation
@@ -49,9 +51,11 @@ import com.raytheon.uf.viz.core.comm.JMSConnection;
  * Jul 21, 2014  3390     bsteffen    Extracted logic to the JmsNotificationLogic
  * Nov 08, 2016  5976     bsteffen    Remove deprecated methods
  * Feb 02, 2017  6085     bsteffen    Do not NPE after problems in JMSConnection
- * 
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019  7724     tgurney     Remove references to broker REST API
+ *
  * </pre>
- * 
+ *
  * @author randerso
  */
 public class NotificationManagerJob implements IDisposable {
@@ -64,7 +68,7 @@ public class NotificationManagerJob implements IDisposable {
     /**
      * Get the active subscription manager job. If one does not exist, start an
      * instance as a system job.
-     * 
+     *
      * @return the subscription manager
      */
     protected static synchronized NotificationManagerJob getInstance() {
@@ -108,6 +112,39 @@ public class NotificationManagerJob implements IDisposable {
                 }
                 return factory.createConnection();
             }
+
+            @Override
+            public JMSContext createContext() {
+                try {
+                    return JMSConnection.getInstance().getFactory()
+                            .createContext();
+                } catch (JMSException jmse) {
+                    throw JmsExceptionSupport.createRuntimeException(jmse);
+                }
+            }
+
+            @Override
+            public JMSContext createContext(int sessionMode) {
+                try {
+                    return JMSConnection.getInstance().getFactory()
+                            .createContext(sessionMode);
+                } catch (JMSException jmse) {
+                    throw JmsExceptionSupport.createRuntimeException(jmse);
+                }
+            }
+
+            @Override
+            public JMSContext createContext(String userName, String password) {
+                throw new UnsupportedOperationException(
+                        "NotificationManagerJob not implemented for username/password connections");
+            }
+
+            @Override
+            public JMSContext createContext(String userName, String password,
+                    int sessionMode) {
+                throw new UnsupportedOperationException(
+                        "NotificationManagerJob not implemented for username/password connections");
+            }
         };
         manager = new JmsNotificationManager(delegateFactory);
         Activator.getDefault().registerDisposable(this);
@@ -138,7 +175,7 @@ public class NotificationManagerJob implements IDisposable {
 
     /**
      * Register for notification messages using a callback.
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
@@ -158,7 +195,7 @@ public class NotificationManagerJob implements IDisposable {
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
@@ -172,7 +209,7 @@ public class NotificationManagerJob implements IDisposable {
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs
@@ -188,7 +225,7 @@ public class NotificationManagerJob implements IDisposable {
     /**
      * Removes an alert message observer that was registered using the
      * addObserver method. This must be called in exactly the same
-     * 
+     *
      * @param topic
      *            message topic
      * @param obs

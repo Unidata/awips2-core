@@ -22,9 +22,8 @@ package com.raytheon.uf.common.inventory.data;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.NonSI;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import com.raytheon.uf.common.datastorage.records.ByteDataRecord;
 import com.raytheon.uf.common.datastorage.records.DoubleDataRecord;
@@ -33,6 +32,9 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
 import com.raytheon.uf.common.datastorage.records.ShortDataRecord;
 import com.raytheon.uf.common.inventory.exception.DataCubeException;
+import com.raytheon.uf.common.units.UnitConv;
+
+import si.uom.NonSI;
 
 /**
  * Represents a simple alias, where a parameter represents the same data as
@@ -105,7 +107,8 @@ public class AliasRequestableData extends AbstractRequestableData {
         if (!unit.equals(record.getUnit())) {
             Unit<?> sourceUnits = record.getUnit();
             if (sourceUnits.isCompatible(unit)) {
-                UnitConverter converter = sourceUnits.getConverterTo(unit);
+                UnitConverter converter = UnitConv
+                        .getConverterToUnchecked(sourceUnits, unit);
                 if (rval instanceof Float) {
                     if ((Float) rval > -9999) {
                         rval = converter.convert((Float) rval);

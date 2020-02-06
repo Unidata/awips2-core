@@ -23,6 +23,7 @@ package com.raytheon.uf.viz.core.localization;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -41,6 +42,7 @@ import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.ui.preferences.ScopedPreferenceStore;
 
 import com.raytheon.uf.common.comm.CommunicationException;
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.Checksum;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
@@ -68,6 +70,7 @@ import com.raytheon.uf.common.localization.msgs.PrivilegedUtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityRequestMessage;
 import com.raytheon.uf.common.localization.msgs.UtilityResponseMessage;
 import com.raytheon.uf.common.localization.region.RegionLookup;
+import com.raytheon.uf.common.python.PyCacheUtil;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
@@ -111,6 +114,9 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Jun 22, 2017 6339       njensen     Use fileExtension in ListUtilityCommands
  * Jun 30, 2017 6316       njensen     Improved regions.xml debug message
  * Jul 18, 2017 6316       njensen     Log setting site localization
+ * Sep 12, 2019 7917       tgurney     Update handling of pyc files for Python 3
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
  *
  * </pre>
  *
@@ -121,14 +127,8 @@ public class LocalizationManager implements IPropertyChangeListener {
     private static IUFStatusHandler statusHandler = UFStatus
             .getHandler(LocalizationManager.class, "CAVE");
 
-    /**
-     * User context
-     */
     public static final String USER_CONTEXT = LocalizationConstants.P_LOCALIZATION_USER_NAME;
 
-    /**
-     * Site context
-     */
     public static final String SITE_CONTEXT = LocalizationConstants.P_LOCALIZATION_SITE_NAME;
 
     private static final String PREINSTALLED_DIR = "utility"
@@ -199,7 +199,7 @@ public class LocalizationManager implements IPropertyChangeListener {
          * is available
          */
         String currentSite = getCurrentSite();
-        if ((currentSite != null) && (!currentSite.isEmpty())) {
+        if (currentSite != null && !currentSite.isEmpty()) {
             registerContextName(LocalizationLevel.SITE, currentSite);
             registerContextName(LocalizationLevel.CONFIGURED, currentSite);
             String region = RegionLookup.getWfoRegion(getCurrentSite());
@@ -320,7 +320,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                 GetServersResponse resp = ConnectivityManager
                         .checkLocalizationServer(currentServer, false);
                 VizApp.setHttpServer(resp.getHttpServer());
-                VizApp.setJmsConnectionString(resp.getJmsConnectionString());
+                VizApp.setJmsConnectionInfo(resp.getJmsConnectionInfo());
                 VizApp.setPypiesServer(resp.getPypiesServer());
                 VizServers.getInstance()
                         .setServerLocations(resp.getServerLocations());
@@ -361,7 +361,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             baseDir = Platform.getInstallLocation().getURL().getPath();
             // Win32 URLS start with "/" but also may contain a drive letter
             // if so, then remove the "/" because it's improper for a path
-            if (baseDir.startsWith("/") && (baseDir.charAt(2) == ':')) {
+            if (baseDir.startsWith("/") && baseDir.charAt(2) == ':') {
                 baseDir = baseDir.substring(1);
             }
         }
@@ -382,7 +382,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             userDir = Platform.getUserLocation().getURL().getPath();
             // Win32 URLS start with "/" but also may contain a drive letter
             // if so, then remove the "/" because it's improper for a path
-            if (userDir.startsWith("/") && (userDir.charAt(2) == ':')) {
+            if (userDir.startsWith("/") && userDir.charAt(2) == ':') {
                 userDir = userDir.substring(1);
             }
         }
@@ -542,13 +542,12 @@ public class LocalizationManager implements IPropertyChangeListener {
 
     protected List<ListResponseEntry[]> getListResponseEntry(
             LocalizationContext[] contexts, String fileName,
-            String fileExtension, boolean recursive,
-            boolean filesOnly) throws LocalizationException {
+            String fileExtension, boolean recursive, boolean filesOnly)
+            throws LocalizationException {
         ListUtilityCommand[] cmds = new ListUtilityCommand[contexts.length];
         for (int i = 0; i < contexts.length; i++) {
             cmds[i] = new ListUtilityCommand(contexts[i], fileName,
-                    fileExtension, recursive,
-                    filesOnly, getCurrentSite());
+                    fileExtension, recursive, filesOnly, getCurrentSite());
         }
 
         UtilityRequestMessage localizationRequest = new UtilityRequestMessage(
@@ -567,8 +566,8 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         List<ListResponseEntry[]> responses = new ArrayList<>();
 
-        for (int i = 0; i < responseList.length; i++) {
-            AbstractUtilityResponse response = responseList[i];
+        for (AbstractUtilityResponse element : responseList) {
+            AbstractUtilityResponse response = element;
             if (!(response instanceof ListUtilityResponse)) {
                 throw new LocalizationException("Unexpected type returned"
                         + response.getClass().getName());
@@ -674,12 +673,8 @@ public class LocalizationManager implements IPropertyChangeListener {
                         file.mkdirs();
                     }
 
-                    File[] list = file.listFiles(new FileFilter() {
-                        @Override
-                        public boolean accept(File pathname) {
-                            return !pathname.isDirectory();
-                        }
-                    });
+                    File[] list = file.listFiles(
+                            (FileFilter) pathname -> !pathname.isDirectory());
 
                     if (list != null) {
                         toCheck.addAll(Arrays.asList(list));
@@ -699,14 +694,16 @@ public class LocalizationManager implements IPropertyChangeListener {
         for (File check : toCheck) {
             SimpleDateFormat sdf = new SimpleDateFormat("yyyyMMddHHmmss");
             // hidden files are not returned from server so ignore those
-            if ((!check.isHidden()) && (!available.contains(check))) {
+            if (!check.isHidden() && !available.contains(check)) {
                 String name = check.getName();
-                // Make sure python object files don't get removed when
-                // .py file is still available
-                if (name.endsWith(".pyo") || name.endsWith(".pyc")) {
-                    String pyName = name.substring(0, name.length() - 1);
-                    if (available
-                            .contains(new File(check.getParent(), pyName))) {
+                /*
+                 * Make sure compiled Python files don't get removed when the
+                 * source file is still available
+                 */
+                if (PyCacheUtil.isPyCacheFile(check.toPath())) {
+                    Path sourceFilePath = PyCacheUtil
+                            .getSourceFilePath(check.toPath());
+                    if (available.contains(sourceFilePath.toFile())) {
                         continue;
                     }
                 }
@@ -724,7 +721,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             String fullFileName, boolean createDirectories) {
         File file = this.adapter.getPath(context, fullFileName);
 
-        if (createDirectories && (file != null)) {
+        if (createDirectories && file != null) {
             file.getParentFile().mkdirs();
         }
 
@@ -756,7 +753,7 @@ public class LocalizationManager implements IPropertyChangeListener {
             for (String b : bundles) {
                 File foundFile = BundleScanner.searchInBundle(b,
                         PREINSTALLED_DIR, filename);
-                if ((foundFile != null) && foundFile.exists()) {
+                if (foundFile != null && foundFile.exists()) {
                     try {
                         if (FileLocker.lock(this, localFile, Type.WRITE)) {
                             /*
@@ -900,7 +897,7 @@ public class LocalizationManager implements IPropertyChangeListener {
                         "No response received for delete command");
             }
             AbstractUtilityResponse[] responses = response.getResponses();
-            if ((responses == null) || (responses.length != commands.length)) {
+            if (responses == null || responses.length != commands.length) {
                 throw new LocalizationException(
                         "Unexpected return type from delete: Expected "
                                 + commands.length + " responses, received "
@@ -982,8 +979,8 @@ public class LocalizationManager implements IPropertyChangeListener {
 
         List<ListResponseEntry[]> responses = new ArrayList<>();
 
-        for (int i = 0; i < responseList.length; i++) {
-            AbstractUtilityResponse response = responseList[i];
+        for (AbstractUtilityResponse element : responseList) {
+            AbstractUtilityResponse response = element;
             if (!(response instanceof ListUtilityResponse)) {
                 throw new LocalizationException("Unexpected type returned"
                         + response.getClass().getName());

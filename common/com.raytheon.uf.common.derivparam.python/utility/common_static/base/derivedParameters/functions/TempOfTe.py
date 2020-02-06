@@ -1,19 +1,19 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
 # pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
+#
 # U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
-# 
+#
 # Contractor Name:        Raytheon Company
 # Contractor Address:     6825 Pine Street, Suite 340
 #                         Mail Stop B8
 #                         Omaha, NE 68106
 #                         402.291.0100
-# 
+#
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ###
@@ -31,7 +31,7 @@ pSplits = np.array([250,400,550,650,750,900], dtype=np.float32)
 tmax = 333
 tmin = 193
 
-# create a lookup table of adiabatic temperatures for chosen base pressures 
+# create a lookup table of adiabatic temperatures for chosen base pressures
 parr, tarr = np.ogrid[0:len(pBases), tmin:tmax]
 parr = pBases[parr]
 tarr = np.array(tarr, dtype=np.float32)
@@ -47,7 +47,7 @@ lookupTable = AdiabaticTemp.execute(tarr, parr)
 # @param P: The pressure at which the calculation is made (mb)
 # @type P: Numpy array of float32
 # @return: TofTe
-# @rtype: Numpy array 
+# @rtype: Numpy array
 def execute(T,P):
     "Find Tans such that AdiabaticTemp.execute(Tans,P) == T."
     if np.shape(T) != np.shape(P):
@@ -64,7 +64,7 @@ def execute(T,P):
     goodMask = ~( lowTMask | highTMask)
     Tgood = Tgood[goodMask]
     pBaseIdx = pBaseIdx[goodMask]
-    
+
     # find t1 and t2, lower/upper integer estimate arrays
     t1 = np.ones(Tgood.shape, dtype=np.integer) * tmin
     t2 = np.array(Tgood, dtype=np.integer)
@@ -79,18 +79,18 @@ def execute(T,P):
         # t = (int)((t1+t2)/2), for cells where TMask is True
         tEst = np.array((t1[TMask]+t2[TMask])/2, dtype=np.integer)
         telu = lookupTable[pBaseIdx[TMask], tEst-tmin]
-        
+
         # where adiabaticTemp(t,pBase) is > T, adjust t2 down.
         cmpMask = telu > Tgood[TMask]
         t2Mask[TMask] = cmpMask
         t2[t2Mask] = tEst[cmpMask]
-        
-        # where adiabaticTemp(t,pBase) is < T, adjust t1 up.  
+
+        # where adiabaticTemp(t,pBase) is < T, adjust t1 up.
         cmpMask = telu < Tgood[TMask]
         t1Mask[TMask] = cmpMask
         t1[t1Mask] = tEst[cmpMask]
-        
-        # where we hit it exactly, set t1 and t2 to one-off. 
+
+        # where we hit it exactly, set t1 and t2 to one-off.
         cmpMask = (telu == Tgood[TMask])
         t1Mask[TMask] = cmpMask
         t2Mask[TMask] = cmpMask
@@ -110,7 +110,7 @@ def execute(T,P):
     weight = np.sqrt(pBase/P[goodMask])
     t1 = (1-weight) * lookupTable[pBaseIdx, t1-tmin] + weight * t1.astype(T.dtype)
     t2 = (1-weight) * lookupTable[pBaseIdx, t2-tmin] + weight * t2.astype(T.dtype)
-    
+
     # now find a new weight based on the difference between T and
     # the adiabatic temperature of t1 and t2.
     if np.isscalar(P):
@@ -122,42 +122,41 @@ def execute(T,P):
     weight = diff2/(diff1+diff2)
     Tans = weight*t1 + (1-weight)*t2
     diff = AdiabaticTemp.execute(Tans,PP) - T[goodMask]
-    
+
     # Iterate to find result to nearest .01 degree K
     TMask[:] = True # all cells still to calculate
-    for loopcount in xrange(10):
+    for loopcount in range(10):
         if np.any(TMask):
             # see which estimates are high and low
             t1Mask[TMask] = diff[TMask] < -0.01
             t2Mask[TMask] = diff[TMask] > 0.01
-            
+
             # adjust down the high estimates
             t2[t2Mask] = Tans[t2Mask]
             diff2[t2Mask] = diff[t2Mask]
-            
+
             # adjust up the low estimates
             t1[t1Mask] = Tans[t1Mask]
             diff1[t1Mask] = -diff[t1Mask]
-            
+
             # calculate a new weight, estimated T, and diff for active cells
             if np.isscalar(P):
                 PPP = P
             else:
                 PPP = PP[TMask]
             weight[TMask] = diff2[TMask]/(diff1[TMask]+diff2[TMask])
-            Tans[TMask] = weight[TMask]*t1[TMask] + (1-weight[TMask])*t2[TMask] 
+            Tans[TMask] = weight[TMask]*t1[TMask] + (1-weight[TMask])*t2[TMask]
             diff[TMask] = AdiabaticTemp.execute(Tans[TMask], PPP) - T[TMask]
             # eliminate cells we've finished
             TMask[TMask] = t1Mask[TMask] | t2Mask[TMask]
         else:
             break
-    
+
     # Create an empty fully masked array for the result
     result = np.empty(np.shape(T), dtype=np.float32)
-    result[:] = np.NaN 
-    
+    result[:] = np.NaN
+
     result[goodMask] = Tans
     # replace the very low input values with the original T
     result[lowTMask] = T[lowTMask]
     return result
-    

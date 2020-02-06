@@ -43,11 +43,13 @@
 #    10/05/16        5891          bsteffen       Treat all directories as modules, even without __init___.py.
 #    06/01/17        5891          bsteffen       Separate files into their own modules to support source code lookup. 
 #    05/30/18        6995          njensen        Move sep from global scope to class scope to avoid reinit issue
+#    01/30/20        7911          tgurney        Remove use of imp module
 #    
 # 
 #
 
-import sys, imp
+import sys
+import types
 
 from com.raytheon.uf.common.derivparam.library import DerivedParameterGenerator
 from com.raytheon.uf.common.derivparam.python import MasterDerivScriptFactory
@@ -94,9 +96,9 @@ class DerivParamImporter(object):
         return None
     
     def load_module(self, fullname):
-        if sys.modules.has_key(fullname):
+        if fullname in sys.modules:
             return sys.modules[fullname]
-        combined = imp.new_module(fullname)
+        combined = types.ModuleType(fullname)
         combined.__loader__ = self
         fullpath = fullname.replace('.', self.sep)
         files = self.__getRegularFiles(fullpath)
@@ -125,8 +127,8 @@ class LocalizedModuleLoader(object):
         self.sep = IPathManager.SEPARATOR
 
     def load_module(self, fullname):
-        module = imp.new_module(fullname)
-        exec self.get_code(fullname) in module.__dict__
+        module = types.ModuleType(fullname)
+        exec(self.get_code(fullname), module.__dict__)
         module.__loader__ = self
         # Must put the module in sys.module or source lookup doesn't work.
         sys.modules[fullname] = module

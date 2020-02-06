@@ -8,7 +8,7 @@ import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.nio.ShortBuffer;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 

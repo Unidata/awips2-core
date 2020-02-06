@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: PointData
 Bundle-SymbolicName: com.raytheon.uf.common.pointdata
-Bundle-Version: 1.15.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.serialization,
@@ -15,7 +15,9 @@ Require-Bundle: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.message,
- javax.measure
+ javax.measure,
+ com.raytheon.uf.common.units,
+ javax.xml.bind
 Export-Package: com.raytheon.uf.common.pointdata,
  com.raytheon.uf.common.pointdata.accumulate,
  com.raytheon.uf.common.pointdata.dataaccess,

@@ -59,9 +59,10 @@
 #
 #
 
-import os, string
+import os
 import sys, inspect, traceback
 import LogStream
+import importlib
 
 class MasterInterface(object):
 
@@ -76,11 +77,11 @@ class MasterInterface(object):
                 scriptfiles = os.listdir(s)
 
                 for filename in scriptfiles:
-                    split = string.split(filename, ".")
-                    if len(split) == 2 and len(split[0]) > 0 and split[1] == "py" and not filename.endswith("Interface.py"):
+                    split = os.path.splitext(filename)
+                    if len(split[0]) and '.py' == split[1] and not filename.endswith("Interface.py"):
                         try:
                             MasterInterface.addModule(self, split[0])
-                        except Exception, e:
+                        except Exception as e:
                             msg = split[0] + "\n" + traceback.format_exc()
                             self.__importErrors.append(msg)
             else:
@@ -88,44 +89,34 @@ class MasterInterface(object):
 
     def getMethodArgs(self, moduleName, className, methodName):
         members = self.__getClassMethods(moduleName, className)
-        result = []
         for x, y in members:
             if x == methodName:
-                count = y.func_code.co_argcount
-                args = y.func_code.co_varnames
-                i = 0
-                for a in args:
-                    if i < count:
-                        result.append(a)
-                    else:
-                        break
-                    i = i + 1
-        return result
+                argSpec = inspect.getfullargspec(y)
+                return list(argSpec.args)
+        return []
 
     def getMethodInfo(self, moduleName, className, methodName):
         members = self.__getClassMethods(moduleName, className)
-        result = None
         for n, m in members:
             if n == methodName:
-                result = m.__doc__
-                break
-        return result
+                return inspect.getdoc(m)
+        return None
 
     def hasMethod(self, moduleName, className, methodName):
         md = sys.modules[moduleName]
         classObj = md.__dict__.get(className)
-        return classObj.__dict__.has_key(methodName)
+        return methodName in classObj.__dict__
 
     def __getClassMethods(self, moduleName, className):
         md = sys.modules[moduleName]
         classObj = md.__dict__.get(className)
-        return inspect.getmembers(classObj, inspect.ismethod)
+        return inspect.getmembers(classObj, inspect.isfunction)
 
     def isInstantiated(self, moduleName):
-        return self.__instanceMap.has_key(moduleName)
+        return moduleName in self.__instanceMap
 
     def instantiate(self, moduleName, className, **kwargs):
-        if sys.modules[moduleName].__dict__.has_key(className):
+        if className in sys.modules[moduleName].__dict__:
             instance = sys.modules[moduleName].__dict__.get(className)(**kwargs)
             self.__instanceMap[moduleName] = instance
         else:
@@ -144,7 +135,7 @@ class MasterInterface(object):
     def removeModule(self, moduleName):
         if self.isInstantiated(moduleName):
             self.__instanceMap.__delitem__(moduleName)
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             self.clearModuleAttributes(moduleName)
             sys.modules.pop(moduleName)
         if moduleName in self.scripts:
@@ -169,7 +160,7 @@ class MasterInterface(object):
         self.__importErrors.append(error)
 
     def reloadModule(self, moduleName):
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             # From the python documentation:
             # "When a module is reloaded, its dictionary (containing the module's
             # global variables) is retained. Redefinitions of names will override the
@@ -184,11 +175,11 @@ class MasterInterface(object):
             # but built-ins to ensure everything gets re-initialized when
             # reload() is called.
             self.clearModuleAttributes(moduleName)
-            reload(sys.modules[moduleName])
+            importlib.reload(sys.modules[moduleName])
                 
 
     def clearModuleAttributes(self, moduleName):
-        if sys.modules.has_key(moduleName):
+        if moduleName in sys.modules:
             mod = sys.modules[moduleName]
             modGlobalsToRemove = [k for k in mod.__dict__ if not k.startswith('_')]
             for k in modGlobalsToRemove:

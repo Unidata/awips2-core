@@ -38,33 +38,37 @@ import org.eclipse.swt.widgets.Shell;
 
 import com.raytheon.uf.common.time.SimulatedTime;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.raytheon.viz.ui.widgets.TimeEntry;
+import com.raytheon.viz.ui.widgets.DateTimeSpinner;
 
 /**
- * Awips Calendar Date Selection Dialog.
- * 
+ * AWIPS Calendar Date Selection Dialog.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jan 9, 2012             mpduff      Initial creation
- * Mar 24, 2014 #1426      lvenable    Removed unnecessary code, cleaned up code.
- * Jan 15, 2016 #5054      randerso    Change to subclass CaveSWTDialog
- * Mar 1, 2016  3989       tgurney     Rename AwipsCalendar to CalendarDialog
- * Mar 2, 2016  3989       tgurney     Add time and date rollover
- * Mar 17, 2016 #5483      randerso    Added timeEntry.setLayoutData()
-
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------------
+ * Jan 09, 2012           mpduff    Initial creation
+ * Mar 24, 2014  1426     lvenable  Removed unnecessary code, cleaned up code.
+ * Jan 15, 2016  5054     randerso  Change to subclass CaveSWTDialog
+ * Mar 01, 2016  3989     tgurney   Rename AwipsCalendar to CalendarDialog
+ * Mar 02, 2016  3989     tgurney   Add time and date rollover
+ * Mar 17, 2016  5483     randerso  Added timeEntry.setLayoutData()
+ * Dec 11, 2019  7994     randerso  Replace TimeEntry with DateTimeSpinner. Code cleanup.
+ *
  * </pre>
- * 
+ *
  * @author mpduff
- * @version 1.0
  */
 
-public class CalendarDialog extends CaveSWTDialog implements
-        TimeEntry.IDateChangeCallback {
+public class CalendarDialog extends CaveSWTDialog {
+
+    private static final String[] formatStrings = new String[] { "HH", "HH:mm",
+            "HH:mm:ss" };
+
+    private static final int[] timeFields = new int[] { Calendar.HOUR_OF_DAY,
+            Calendar.MINUTE, Calendar.SECOND };
 
     private Calendar cal;
 
@@ -72,13 +76,13 @@ public class CalendarDialog extends CaveSWTDialog implements
     private DateTime calendarWidget;
 
     /** the time selection widget */
-    private TimeEntry timeEntryWidget;
+    private DateTimeSpinner timeEntryWidget = null;
 
     private int timeFieldCount;
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentShell
      */
     public CalendarDialog(Shell parentShell) {
@@ -87,17 +91,17 @@ public class CalendarDialog extends CaveSWTDialog implements
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentShell
      * @param timeFieldCount
      *            number of time fields to display
-     * 
+     *
      *            <pre>
-     *   0 - do not display time field 
-     *   1 - display hours 
-     *   2 - display hours and minutes 
+     *   0 - do not display time field
+     *   1 - display hours
+     *   2 - display hours and minutes
      *   3 - display hours, minutes, and seconds
-     * </pre>
+     *            </pre>
      */
     public CalendarDialog(Shell parentShell, int timeFieldCount) {
         this(parentShell, null, timeFieldCount);
@@ -105,26 +109,26 @@ public class CalendarDialog extends CaveSWTDialog implements
 
     /**
      * Constructor.
-     * 
+     *
      * @param parentShell
      * @param initialDate
      *            Date/time to preset the calendar widget (null = current
      *            simulated time)
      * @param timeFieldCount
      *            number of time fields to display
-     * 
+     *
      *            <pre>
-     *   0 - do not display time field 
-     *   1 - display hours 
+     *   0 - do not display time field
+     *   1 - display hours
      *   2 - display hours and minutes
      *   3 - display hours, minutes, and seconds
-     * </pre>
+     *            </pre>
      */
     public CalendarDialog(Shell parentShell, Date initialDate,
             int timeFieldCount) {
-        super(parentShell, SWT.DIALOG_TRIM);
+        super(parentShell, SWT.DIALOG_TRIM | SWT.RESIZE);
         setText("Calendar");
-        if ((timeFieldCount < 0) || (timeFieldCount > 3)) {
+        if ((timeFieldCount < 0) || (timeFieldCount > formatStrings.length)) {
             throw new IllegalArgumentException(
                     "timeFieldCount must be 0, 1, 2, or 3");
         }
@@ -135,18 +139,16 @@ public class CalendarDialog extends CaveSWTDialog implements
         } else {
             cal.setTime(SimulatedTime.getSystemTime().getTime());
         }
+        cal.set(Calendar.MILLISECOND, 0);
     }
 
     /**
      * The time zone used for displaying the time field
-     * 
+     *
      * @param timeZone
      */
     public void setTimeZone(TimeZone timeZone) {
         cal.setTimeZone(timeZone);
-        if (timeEntryWidget != null) {
-            timeEntryWidget.setTimeZone(timeZone);
-        }
     }
 
     @Override
@@ -183,14 +185,15 @@ public class CalendarDialog extends CaveSWTDialog implements
                 lbl.setText("Select Time (" + tzId + ") and Date: ");
             }
 
-            timeEntryWidget = new TimeEntry(shell, timeFieldCount, tz, this);
-            timeEntryWidget.setTime(cal.getTime());
-            timeEntryWidget.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true,
-                    false));
+            timeEntryWidget = new DateTimeSpinner(shell, cal,
+                    formatStrings[timeFieldCount - 1], false);
+            timeEntryWidget.setLayoutData(
+                    new GridData(SWT.DEFAULT, SWT.DEFAULT, false, false));
         }
 
         calendarWidget = new DateTime(shell, SWT.CALENDAR | SWT.BORDER);
-        GridData layoutData = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
+        GridData layoutData = new GridData(SWT.DEFAULT, SWT.DEFAULT, false,
+                false);
         layoutData.horizontalSpan = 2;
         calendarWidget.setLayoutData(layoutData);
         calendarWidget.setDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
@@ -198,15 +201,8 @@ public class CalendarDialog extends CaveSWTDialog implements
         calendarWidget.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
-                // Update the time entry widget when new date is picked
-                if (timeEntryWidget != null) {
-                    cal.setTime(timeEntryWidget.getTime());
-                }
                 cal.set(calendarWidget.getYear(), calendarWidget.getMonth(),
                         calendarWidget.getDay());
-                if (timeEntryWidget != null) {
-                    timeEntryWidget.setTime(cal.getTime());
-                }
             }
         });
 
@@ -217,19 +213,17 @@ public class CalendarDialog extends CaveSWTDialog implements
      * Create the buttons
      */
     private void createButtons() {
-        int buttonWidth = 75;
-        GridData btnData = new GridData(buttonWidth, SWT.DEFAULT);
-
         GridData gd = new GridData(SWT.CENTER, SWT.DEFAULT, true, false);
         gd.horizontalSpan = 2;
-        GridLayout gl = new GridLayout(2, false);
+        GridLayout gl = new GridLayout(2, true);
         Composite btnComp = new Composite(shell, SWT.NONE);
         btnComp.setLayout(gl);
         btnComp.setLayoutData(gd);
 
         Button okBtn = new Button(btnComp, SWT.PUSH);
         okBtn.setText("OK");
-        okBtn.setLayoutData(btnData);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        okBtn.setLayoutData(gd);
         okBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -240,7 +234,8 @@ public class CalendarDialog extends CaveSWTDialog implements
 
         Button cancelBtn = new Button(btnComp, SWT.PUSH);
         cancelBtn.setText("Cancel");
-        cancelBtn.setLayoutData(btnData);
+        gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
+        cancelBtn.setLayoutData(gd);
         cancelBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -253,43 +248,23 @@ public class CalendarDialog extends CaveSWTDialog implements
      * Event handler action for OK button
      */
     private void handleOk() {
-        if (timeEntryWidget != null) {
-            cal.setTime(timeEntryWidget.getTime());
-        }
-        if (timeFieldCount == 0) {
-            cal.set(Calendar.HOUR_OF_DAY, 0);
-            cal.set(Calendar.MINUTE, 0);
-            cal.set(Calendar.SECOND, 0);
-        }
         cal.set(Calendar.MILLISECOND, 0);
+
+        Calendar timeCal = null;
+        if (timeFieldCount > 0) {
+            timeCal = timeEntryWidget.getSelection();
+        }
+
+        for (int i = 0; i < timeFields.length; i++) {
+            int field = timeFields[i];
+
+            if (i < timeFieldCount) {
+                cal.set(field, timeCal.get(field));
+            } else {
+                cal.set(field, 0);
+            }
+        }
+
         this.setReturnValue(cal.getTime());
-    }
-
-    @Override
-    public void dateChange() {
-        if (timeEntryWidget != null) {
-            cal.setTime(timeEntryWidget.getTime());
-        }
-        calendarWidget.setDate(cal.get(Calendar.YEAR), cal.get(Calendar.MONTH),
-                cal.get(Calendar.DAY_OF_MONTH));
-    }
-
-    /**
-     * Main
-     * 
-     * @param args
-     */
-    public static void main(String[] args) {
-        CalendarDialog ac = new CalendarDialog(new Shell(), 3);
-        ac.setTimeZone(TimeZone.getDefault());
-        Date date = (Date) ac.open();
-        if (date == null) {
-            System.out.println("null");
-        } else {
-            SimpleDateFormat sdf = new SimpleDateFormat(
-                    "yyyy-MM-dd HH:mm:ss'Z'");
-            sdf.setTimeZone(TimeZone.getTimeZone("GMT"));
-            System.out.println(sdf.format(date));
-        }
     }
 }

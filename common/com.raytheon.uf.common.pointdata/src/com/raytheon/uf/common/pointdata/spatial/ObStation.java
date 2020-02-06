@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,7 +30,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.hibernate.annotations.Index;
-import org.hibernate.annotations.Type;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
@@ -38,16 +37,16 @@ import com.raytheon.uf.common.geospatial.ISpatialObject;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.vividsolutions.jts.geom.Point;
+import org.locationtech.jts.geom.Point;
 
 /**
  * Class representing a observation station. Mapped to stations_spatial table in
  * the database
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#     Engineer    Description
  * ------------ ----------  ----------- --------------------------
  * Jul 24, 2007 353         bphillip    Initial Check in
@@ -55,17 +54,17 @@ import com.vividsolutions.jts.geom.Point;
  *                                      spatial
  * 10/16/2014   3454        bphillip    Upgrading to Hibernate 4
  * Oct 12, 2015 4911        rjpeter     Removed unused columns.
+ * Feb 26, 2019 6140        tgurney     Hibernate 5 GeometryType fix
  * </pre>
- * 
+ *
  * @author bphillip
- * @version 1
  */
 @Entity
 @Table(name = "common_obs_spatial")
 @XmlAccessorType(XmlAccessType.NONE)
 @DynamicSerialize
-public class ObStation extends PersistableDataObject<String> implements
-        ISpatialObject {
+public class ObStation extends PersistableDataObject<String>
+        implements ISpatialObject {
 
     private static final long serialVersionUID = 1L;
 
@@ -185,45 +184,29 @@ public class ObStation extends PersistableDataObject<String> implements
     private Integer upperAirElevation;
 
     /** The upper air geometry information */
-    @Column(name = "upperairgeom")
-    @Type(type = "org.hibernate.spatial.GeometryType")
+    @Column(name = "upperairgeom", columnDefinition = "geometry")
     @XmlJavaTypeAdapter(value = GeometryAdapter.class)
     @DynamicSerializeElement
     private Point upperAirGeometry;
 
     /** The station location */
-    @Column(name = "the_geom")
-    @Type(type = "org.hibernate.spatial.GeometryType")
+    @Column(name = "the_geom", columnDefinition = "geometry")
     @XmlJavaTypeAdapter(value = GeometryAdapter.class)
     @DynamicSerializeElement
     private Point location;
 
-    /**
-     * @return the catalogType
-     */
     public Integer getCatalogType() {
         return catalogType;
     }
 
-    /**
-     * @param catalogType
-     *            the catalogType to set
-     */
     public void setCatalogType(Integer catalogType) {
         this.catalogType = catalogType;
     }
 
-    /**
-     * @return the stationId
-     */
     public String getStationId() {
         return stationId;
     }
 
-    /**
-     * @param stationId
-     *            the stationId to set
-     */
     public void setStationId(String stationId) {
         this.stationId = stationId;
     }
@@ -336,47 +319,31 @@ public class ObStation extends PersistableDataObject<String> implements
         return 0;
     }
 
-    /**
-     * @return the location
-     */
     public Point getLocation() {
         return location;
     }
 
-    /**
-     * @param location
-     *            the location to set
-     */
     public void setLocation(Point location) {
         this.location = location;
     }
 
-    public static final String createGID(Integer catalogType, String stationId) {
+    public static final String createGID(Integer catalogType,
+            String stationId) {
         String gid = null;
-        if ((catalogType != null) && (stationId != null)) {
+        if (catalogType != null && stationId != null) {
             gid = String.format("%04d-%s", catalogType, stationId);
         }
         return gid;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + ((gid == null) ? 0 : gid.hashCode());
+        result = prime * result + (gid == null ? 0 : gid.hashCode());
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj) {

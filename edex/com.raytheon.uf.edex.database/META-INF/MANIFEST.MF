@@ -2,27 +2,31 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Database
 Bundle-SymbolicName: com.raytheon.uf.edex.database
-Bundle-Version: 1.18.0.qualifier
+Bundle-Version: 1.18.1.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
-Require-Bundle: com.raytheon.uf.common.dataquery,
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: com.raytheon.uf.common.dataaccess,
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.dataquery,
+ com.raytheon.uf.common.datastorage,
+ com.raytheon.uf.common.geospatial,
+ com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
- net.sf.ehcache,
- org.springframework;visibility:=reexport,
- org.hibernate;bundle-version="4.2.15";visibility:=reexport,
- com.raytheon.uf.edex.core,
- com.raytheon.uf.common.datastorage,
- com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.time,
- com.raytheon.uf.common.geospatial,
- org.geotools,
- com.raytheon.uf.common.localization,
  com.raytheon.uf.common.util,
+ com.raytheon.uf.common.numeric,
+ com.raytheon.uf.edex.core,
+ net.sf.ehcache,
+ org.geotools,
+ org.hibernate;visibility:=reexport,
+ org.reflections,
  org.slf4j;bundle-version="1.7.25",
  org.reflections;bundle-version="0.9.9",
  com.raytheon.uf.common.numeric;bundle-version="1.14.0",
- com.raytheon.uf.common.dataaccess;bundle-version="1.15.1"
+ org.springframework;visibility:=reexport,
+ com.raytheon.uf.common.dataaccess;bundle-version="1.15.1",
+ javax.xml.bind
 Export-Package: com.raytheon.uf.edex.database,
  com.raytheon.uf.edex.database.cluster,
  com.raytheon.uf.edex.database.cluster.handler,
@@ -42,5 +46,6 @@ Import-Package: com.raytheon.uf.common.convert,
  com.raytheon.uf.common.util,
  com.raytheon.uf.common.util.registry,
  javax.persistence,
- org.apache.commons.beanutils
+ org.apache.commons.beanutils,
+ org.apache.commons.collections
 

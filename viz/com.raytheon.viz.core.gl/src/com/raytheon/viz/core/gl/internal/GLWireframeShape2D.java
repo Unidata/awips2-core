@@ -47,7 +47,7 @@ import com.raytheon.viz.core.gl.Activator;
 import com.raytheon.viz.core.gl.GLGeometryObject2D;
 import com.raytheon.viz.core.gl.GLGeometryObject2D.GLGeometryObjectData;
 import com.raytheon.viz.core.gl.IGLTarget;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Wireframe Shape object adapted from GLWireframeShape that is much simpler and

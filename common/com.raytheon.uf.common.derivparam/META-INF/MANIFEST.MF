@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Derived Parameter Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.derivparam
-Bundle-Version: 1.14.1.qualifier
+Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Import-Package: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataplugin.level,
@@ -31,12 +31,12 @@ Import-Package: com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.units,
  com.raytheon.uf.common.util.mapping,
  javax.measure,
- javax.measure.converter,
- javax.measure.unit,
- javax.persistence
+ javax.persistence,
+ tec.uom.se
 Export-Package: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.derivparam.data,
  com.raytheon.uf.common.derivparam.inv,
  com.raytheon.uf.common.derivparam.library,
  com.raytheon.uf.common.derivparam.tree
-Require-Bundle: org.geotools;bundle-version="10.5.0"
+Require-Bundle: org.geotools,
+ javax.xml.bind

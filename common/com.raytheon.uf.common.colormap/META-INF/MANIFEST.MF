@@ -2,15 +2,17 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Colormap Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.colormap
-Bundle-Version: 1.18.0.qualifier
+Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.colormap.image,
  com.raytheon.uf.common.colormap.prefs
 Require-Bundle: com.raytheon.uf.common.serialization,
- javax.measure;bundle-version="1.0.0",
- com.raytheon.uf.common.units;bundle-version="1.0.0",
- com.raytheon.uf.common.localization;bundle-version="1.14.0"
+ javax.measure,
+ com.raytheon.uf.common.units,
+ javax.xml.bind,
+ com.raytheon.uf.common.localization
+Import-Package: com.raytheon.uf.common.status
 

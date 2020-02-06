@@ -95,9 +95,9 @@ def typeTransform(dataArray, lookup):
 
 def concatArrays(stringArrays, delimiter=" "):
     finalStringArray = list()
-    for num in xrange(len(stringArrays)):
+    for num in range(len(stringArrays)):
         flatArray = list(stringArrays[num])
-        for stringLoc in xrange(len(flatArray)):
+        for stringLoc in range(len(flatArray)):
             if num == 0:
                 finalStringArray.append('');
             if flatArray[stringLoc].itemsize > 0:

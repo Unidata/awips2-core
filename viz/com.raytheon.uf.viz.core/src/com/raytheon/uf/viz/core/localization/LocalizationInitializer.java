@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -21,6 +21,7 @@ package com.raytheon.uf.viz.core.localization;
 
 import java.io.File;
 
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
 import com.raytheon.uf.common.localization.FileLocker;
 import com.raytheon.uf.common.localization.FileLocker.Type;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -29,6 +30,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.PathManagerFactory;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.util.FileUtil;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.VizServers;
@@ -40,9 +43,9 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * unable to connect and gets the http/jms server from localization server,
  * PlatformUI.createDisplay should have already been called before this code
  * executes
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
@@ -53,14 +56,18 @@ import com.raytheon.uf.viz.core.exception.VizException;
  * Aug 27, 2013 2295       bkowal      The entire jms connection string is now
  *                                     provided by EDEX.
  * Feb 04, 2014 2704       njensen     Pass connectivity dialog title
- * 
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class LocalizationInitializer {
+
+    private final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler(getClass().getSimpleName() + ": ");
 
     protected boolean checkAlertviz;
 
@@ -85,7 +92,7 @@ public class LocalizationInitializer {
             if (copyFrom != null) {
                 String searchPath = bundle + IPathManager.SEPARATOR + filePath;
                 File copyTo = pm.getFile(baseContext, searchPath);
-                if (copyTo.exists() == false
+                if (!copyTo.exists()
                         || copyFrom.lastModified() != copyTo.lastModified()) {
                     FileLocker.lock(this, copyTo, Type.WRITE);
                     try {
@@ -102,15 +109,15 @@ public class LocalizationInitializer {
                 }
             }
         }
-        System.out.println("Time to setup CAVE_CONFIG = "
-                + (System.currentTimeMillis() - t0));
+        perfLog.logDuration("Setup CAVE_CONFIG",
+                System.currentTimeMillis() - t0);
     }
 
     protected void setupServers() throws VizException {
         if (promptUI) {
             ConnectivityPreferenceDialog dlg = new ConnectivityPreferenceDialog(
                     checkAlertviz, "Connectivity Preferences");
-            if (dlg.open() == true) {
+            if (dlg.open()) {
                 System.exit(0);
             }
         }
@@ -121,7 +128,7 @@ public class LocalizationInitializer {
     /**
      * Sends a GetServersRequest and sets the references that hold the various
      * server addresses
-     * 
+     *
      * @throws VizException
      */
     protected final void processGetServers() throws VizException {
@@ -129,7 +136,7 @@ public class LocalizationInitializer {
                 LocalizationManager.getInstance().getLocalizationServer(),
                 false);
         VizApp.setHttpServer(resp.getHttpServer());
-        VizApp.setJmsConnectionString(resp.getJmsConnectionString());
+        VizApp.setJmsConnectionInfo(resp.getJmsConnectionInfo());
         VizApp.setPypiesServer(resp.getPypiesServer());
         VizServers.getInstance().setServerLocations(resp.getServerLocations());
     }

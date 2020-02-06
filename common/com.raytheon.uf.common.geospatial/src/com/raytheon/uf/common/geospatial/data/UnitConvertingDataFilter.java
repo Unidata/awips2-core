@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.geospatial.data;
 
-import javax.measure.converter.UnitConverter;
+import javax.measure.UnitConverter;
 
 import com.raytheon.uf.common.numeric.dest.DataDestination;
 import com.raytheon.uf.common.numeric.dest.FilteredDataDestination;

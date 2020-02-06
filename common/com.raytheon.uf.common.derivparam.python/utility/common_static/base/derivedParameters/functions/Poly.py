@@ -18,8 +18,8 @@
 # further licensing information.
 ##
 
-from numpy import power
-from numpy import multiply
+import numpy
+import math
 
 def execute(*args):
     """Combine the arguments into a polynomial result
@@ -30,9 +30,7 @@ def execute(*args):
 
     result = 0
     
-    terms = len(args) / 3
-    if len(args) % 3 != 0:
-        terms = terms + 1
+    terms = math.ceil(len(args) / 3)
     
     for i in range(terms):
                 
@@ -40,7 +38,7 @@ def execute(*args):
         variable = 1 if i * 3 + 1 >= len(args) else args[i * 3 + 1]
         exponent = 1 if i * 3 + 2 >= len(args) else args[i * 3 + 2]
         
-        result += multiply(coefficient, power(variable, exponent))
+        result += numpy.multiply(coefficient, numpy.power(variable, exponent))
         
     return result 
 
@@ -57,4 +55,4 @@ def test():
     if not(all(execute(array([1., 2.]), array([3., 4.]), array([5., 6.])) == array([243., 8192.]))):
         raise Exception
 
-    print "Poly Test Complete"
+    print("Poly Test Complete")

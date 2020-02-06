@@ -62,7 +62,7 @@ import com.raytheon.viz.ui.panes.PaneManager;
 import com.raytheon.viz.ui.perspectives.AbstractCAVEPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Provides the basis for editors in viz

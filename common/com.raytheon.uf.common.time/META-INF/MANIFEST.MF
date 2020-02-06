@@ -2,19 +2,22 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Time Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.time
-Bundle-Version: 1.16.0.qualifier
+Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: net.sf.cglib,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.util,
- com.raytheon.uf.common.convert;bundle-version="1.14.0",
- org.apache.commons.lang3;bundle-version="3.4.0",
- org.hibernate;bundle-version="4.2.15"
-Import-Package: javax.persistence,
- org.apache.commons.beanutils
+ com.raytheon.uf.common.convert,
+ org.apache.commons.lang3,
+ org.hibernate,
+ javax.xml.bind
+Import-Package: javax.measure.quantity,
+ javax.persistence,
+ org.apache.commons.beanutils,
+ tec.uom.se.format
 Export-Package: com.raytheon.uf.common.time,
  com.raytheon.uf.common.time.adapter,
  com.raytheon.uf.common.time.domain,

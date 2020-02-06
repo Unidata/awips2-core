@@ -23,7 +23,7 @@ import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
 

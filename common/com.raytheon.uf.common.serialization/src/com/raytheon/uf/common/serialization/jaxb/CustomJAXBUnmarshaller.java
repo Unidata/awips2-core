@@ -34,12 +34,12 @@ import org.xml.sax.SAXException;
 import org.xml.sax.XMLReader;
 import org.xml.sax.helpers.DefaultHandler;
 
-import com.sun.xml.internal.bind.v2.runtime.JaxBeanInfo;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.InterningXmlVisitor;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.SAXConnector;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.UnmarshallerImpl;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.UnmarshallingContext;
-import com.sun.xml.internal.bind.v2.runtime.unmarshaller.XmlVisitor;
+import com.sun.xml.bind.v2.runtime.JaxBeanInfo;
+import com.sun.xml.bind.v2.runtime.unmarshaller.InterningXmlVisitor;
+import com.sun.xml.bind.v2.runtime.unmarshaller.SAXConnector;
+import com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallerImpl;
+import com.sun.xml.bind.v2.runtime.unmarshaller.UnmarshallingContext;
+import com.sun.xml.bind.v2.runtime.unmarshaller.XmlVisitor;
 
 /**
  * Custom JAXB Unmarshaller, used to set custom content handler. Delegates
@@ -165,8 +165,9 @@ public class CustomJAXBUnmarshaller extends AbstractUnmarshallerImpl {
             JaxBeanInfo expectedType) {
         XmlVisitor h = delegate.createUnmarshallerHandler(null, false,
                 expectedType);
-        if (intern)
+        if (intern) {
             h = new InterningXmlVisitor(h);
+        }
         return new SAXConnector(h, null);
     }
 

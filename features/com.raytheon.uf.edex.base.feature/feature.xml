@@ -22,12 +22,6 @@
    </requires>
 
    <plugin
-         id="com.mchange"
-         download-size="0"
-         install-size="0"
-         version="0.9.2.1"/>
-
-   <plugin
          id="com.raytheon.edex.common"
          download-size="0"
          install-size="0"
@@ -140,12 +134,6 @@
          unpack="false"/>
 
    <plugin
-         id="net.sf.ehcache"
-         download-size="0"
-         install-size="0"
-         version="2.4.3"/>
-
-   <plugin
          id="org.apache.camel"
          download-size="0"
          install-size="0"
@@ -168,19 +156,6 @@
          download-size="0"
          install-size="0"
          version="9.4.18.v20190429"/>
-
-   <plugin
-         id="com.raytheon.uf.common.json"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"
-         unpack="false"/>
-
-   <plugin
-         id="com.fasterxml.jackson"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
 
    <plugin
          id="javax.servlet"

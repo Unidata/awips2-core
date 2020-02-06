@@ -19,10 +19,10 @@
  **/
 package com.raytheon.uf.common.pointdata;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -30,6 +30,9 @@ import javax.xml.bind.annotation.XmlAttribute;
 import com.raytheon.uf.common.pointdata.PointDataDescription.Type;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * 
@@ -43,6 +46,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Apr 27, 2009           chammack    Initial creation
  * Jun 22, 2009  2538     jsanchez    Added missing  DynamicSerializeElement.
  * Dec 02, 2013  2537     bsteffen    Remove ISerializableObject
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -182,16 +186,14 @@ public class ParameterDescription {
 
     public Unit<?> getUnitObject() {
         if (this.unit == null)
-            return Unit.ONE;
+            return AbstractUnit.ONE;
 
         if (this.unitObj == null) {
             try {
-                this.unitObj = (Unit<?>) UnitFormat.getUCUMInstance()
-                        .parseObject(this.unit);
-            } catch (ParseException e) {
-                // logger.warn("ParseException while parsing unit string: "
-                // + this.unit + " defaulting to unit: " + Unit.ONE);
-                this.unitObj = Unit.ONE;
+                this.unitObj = (Unit<?>) SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .parseObject(this.unit, new ParsePosition(0));
+            } catch (ParserException e) {
+                this.unitObj = AbstractUnit.ONE;
             }
         }
 

@@ -22,8 +22,7 @@ package com.raytheon.uf.common.dataplugin.level.mapping;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
 import javax.xml.bind.JAXBException;
 
 import com.raytheon.uf.common.dataplugin.level.Level;
@@ -36,6 +35,8 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.mapping.Mapper;
 import com.raytheon.uf.common.util.mapping.MultipleMappingException;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Provide mapping of master level names. The base set is defined by what is in
@@ -118,13 +119,13 @@ public class LevelMapper extends Mapper {
             double levelone, double leveltwo, Unit<?> unit)
             throws MultipleLevelMappingException {
         return lookupLevel(masterLevelAlias, namespace, levelone, leveltwo,
-                UnitFormat.getUCUMInstance().format(unit));
+                SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
             double levelone, Unit<?> unit) throws MultipleLevelMappingException {
-        return lookupLevel(masterLevelAlias, namespace, levelone, UnitFormat
-                .getUCUMInstance().format(unit));
+        return lookupLevel(masterLevelAlias, namespace, levelone, SimpleUnitFormat
+                .getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
@@ -150,13 +151,13 @@ public class LevelMapper extends Mapper {
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
             double levelone, double leveltwo, Unit<?> unit) {
         return lookupLevels(masterLevelAlias, namespace, levelone, leveltwo,
-                UnitFormat.getUCUMInstance().format(unit));
+                SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
             double levelone, Unit<?> unit) {
-        return lookupLevels(masterLevelAlias, namespace, levelone, UnitFormat
-                .getUCUMInstance().format(unit));
+        return lookupLevels(masterLevelAlias, namespace, levelone, SimpleUnitFormat
+                .getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,

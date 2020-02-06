@@ -52,27 +52,27 @@ def execute(paramArray, vertArray, numLevels, vertPoints, maxGap=None):
             vertPoint = vertPoints
         else:
             vertPoint = vertPoints[i]
-        if (maxGap != None):
+        if maxGap is not None:
             below = None
             above = None
             gap = None
             match = None
             for point in verts:
-                if (point > vertPoint and (above == None or above > point)):
+                if (point > vertPoint and (above is None or above > point)):
                     above = point
-                if (point < vertPoint and (below == None or below < point)):
+                if (point < vertPoint and (below is None or below < point)):
                     below = point
                 if (point == vertPoint):
                     match = point
-            if(above == None and below == None):
+            if(above is None and below is None):
                 continue
-            elif(above == None):
+            elif(above is None):
                 gap = (vertPoint - below)*2
-            elif(below == None):
+            elif(below is None):
                 gap = (above - vertPoint)*2
             else:
                 gap = above - below
-            if((gap == None or gap > maxGap) and match == None):
+            if((gap is None or gap > maxGap) and match is None):
                 ret[i] = NaN
                 continue
             # If withion gap and only 1 value just use it

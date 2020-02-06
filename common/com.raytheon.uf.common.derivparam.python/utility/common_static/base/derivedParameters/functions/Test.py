@@ -18,13 +18,8 @@
 # further licensing information.
 ##
 
-from numpy import all
-from numpy import any
-from numpy import add
-from numpy import subtract
-from numpy import multiply
-from numpy import divide
-from numpy import copy
+import numpy
+
 
 def execute(*args):
     ''' Search and replace values of the initial input argument 
@@ -89,11 +84,11 @@ def execute(*args):
     
     '''
     
-    result = copy(args[0])
+    result = numpy.copy(args[0])
     
     termLength = 4
     
-    terms = (len(args) - 1) / termLength
+    terms = (len(args) - 1) // termLength
     
     for i in range(terms):
         operation = int(args[i * termLength + 1])    
@@ -103,30 +98,30 @@ def execute(*args):
         
         if type(replacement) != type(result):
             replacementFillValue = replacement
-            replacement = copy(result)
+            replacement = numpy.copy(result)
             replacement[:] = replacementFillValue
         
         comparisonType = abs(operation) % 10
-        replacementType = abs(operation) / 1000
+        replacementType = abs(operation) // 1000
         replaceMask = (lowTest <= result) & (result <= highTest)
         
         if operation < 0:
             replaceMask = (lowTest > result) | (result > highTest)
             
         if replacementType == 1:
-            replacement = add(result, replacement)
+            replacement = numpy.add(result, replacement)
         elif replacementType == 2:
-            replacement = subtract(result, replacement)
+            replacement = numpy.subtract(result, replacement)
         elif replacementType == 3:
-            replacement = multiply(result, replacement)
+            replacement = numpy.multiply(result, replacement)
         elif replacementType == 4:
-            replacement = divide(result, replacement)
+            replacement = numpy.divide(result, replacement)
 
         if comparisonType == 1:
             result[replaceMask] = replacement[replaceMask]
-        elif comparisonType == 2 and any(replaceMask):
+        elif comparisonType == 2 and numpy.any(replaceMask):
             result = replacement
-        elif comparisonType == 3 and all(replaceMask):
+        elif comparisonType == 3 and numpy.all(replaceMask):
             result = replacement
     
     return result
@@ -135,34 +130,34 @@ def test():
     
     from numpy import array
     
-    if not(all(execute(array([1., 2., 3., 4.]), 1., 1., 3., array([3., 4., 5., 6.])) == array([3., 4., 5., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 1., 1., 3., array([3., 4., 5., 6.])) == array([3., 4., 5., 4.]))):
         raise Exception
     
-    if not(all(execute(array([1., 2., 3., 4.]), 2., 1., 3., array([3., 4., 5., 6.])) == array([3., 4., 5., 6.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 2., 1., 3., array([3., 4., 5., 6.])) == array([3., 4., 5., 6.]))):
         raise Exception
     
-    if not(all(execute(array([1., 2., 3., 4.]), 3., 1., 3., array([3., 4., 5., 6.])) == array([1., 2., 3., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 3., 1., 3., array([3., 4., 5., 6.])) == array([1., 2., 3., 4.]))):
         raise Exception
         
-    if not(all(execute(array([1., 2., 3., 4.]), - 1., 1., 3., array([3., 4., 5., 6.])) == array([1., 2., 3., 6.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), -1., 1., 3., array([3., 4., 5., 6.])) == array([1., 2., 3., 6.]))):
         raise Exception
         
-    if not(all(execute(array([1., 2., 3., 4.]), - 1., 1., 3., array([3., 4., 5., 6.]), 1., 2., 6., array([7., 8., 9., 0.])) == array([1., 8., 9., 0.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), -1., 1., 3., array([3., 4., 5., 6.]), 1., 2., 6., array([7., 8., 9., 0.])) == array([1., 8., 9., 0.]))):
         raise Exception
         
-    if not(all(execute(array([1., 2., 3., 4.]), 1001., 1., 3., array([3., 4., 5., 6.])) == array([4., 6., 8., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 1001., 1., 3., array([3., 4., 5., 6.])) == array([4., 6., 8., 4.]))):
         raise Exception
     
-    if not(all(execute(array([1., 2., 3., 4.]), 2001., 1., 3., array([3., 4., 5., 6.])) == array([ - 2., - 2., - 2., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 2001., 1., 3., array([3., 4., 5., 6.])) == array([ -2., -2., -2., 4.]))):
         raise Exception
         
-    if not(all(execute(array([1., 2., 3., 4.]), 3001., 1., 3., array([3., 4., 5., 6.])) == array([3., 8., 15., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 3001., 1., 3., array([3., 4., 5., 6.])) == array([3., 8., 15., 4.]))):
         raise Exception
         
-    if not(all(execute(array([3., 2., 3., 4.]), 4001., 1., 3., array([3., 4., 5., 6.])) == array([1., 0.5, 0.6, 4.]))):
+    if not(numpy.all(execute(array([3., 2., 3., 4.]), 4001., 1., 3., array([3., 4., 5., 6.])) == array([1., 0.5, 0.6, 4.]))):
         raise Exception
 
-    if not(all(execute(array([1., 2., 3., 4.]), 1., 1., 3., 2.) == array([2., 2., 2., 4.]))):
+    if not(numpy.all(execute(array([1., 2., 3., 4.]), 1., 1., 3., 2.) == array([2., 2., 2., 4.]))):
         raise Exception
     
-    print "Test Test Complete"
+    print("Test Test Complete")

@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.derivparam.library;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -30,6 +30,8 @@ import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMapping;
 import com.raytheon.uf.common.dataplugin.level.mapping.LevelMappingFactory;
 import com.raytheon.uf.common.units.UnitAdapter;
+
+import tec.uom.se.AbstractUnit;
 
 /**
  * Metadata about a derived parameter field.
@@ -44,6 +46,7 @@ import com.raytheon.uf.common.units.UnitAdapter;
  * Nov 21, 2009  3576     rjpeter     Initial version
  * Jan 14, 2014  2661     bsteffen    Remove ISerializableObject
  * Sep 09, 2014  3356     njensen     Remove CommunicationException
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -74,7 +77,7 @@ public class DerivParamField implements IDerivParamField {
 
     @XmlAttribute
     @XmlJavaTypeAdapter(value = UnitAdapter.class)
-    private Unit<?> unit = Unit.ONE;
+    private Unit<?> unit = AbstractUnit.ONE;
 
     public String getParam() {
         return param;

@@ -26,7 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.measure.unit.SI;
+import si.uom.SI;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -40,10 +40,10 @@ import com.raytheon.uf.common.serialization.DynamicSerializationManager.Serializ
 import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.util.TimeUtil;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Point;
-import com.vividsolutions.jts.io.WKBWriter;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.io.WKBWriter;
 
 /**
  * Tests that the {@link GeomDataRespAdapter} is symmetrical, i.e. the data that

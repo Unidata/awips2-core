@@ -26,6 +26,7 @@
 #     Jun 01, 2016    5574          tgurney        Initial creation
 #     Jun 27, 2016    5725          tgurney        Add NOT IN
 #     Jul 22, 2016    2416          tgurney        Add evaluate()
+#     Jun 26, 2019    7888          tgurney        Python 3 fixes
 #
 #
 
@@ -99,7 +100,7 @@ class RequestConstraint(object):
         """Make a pattern using % wildcard into a regex"""
         pattern = re.escape(pattern)
         pattern = pattern.replace('\\%', '.*')
-        pattern = pattern.replace('\\_', '.')
+        pattern = pattern.replace('_', '.')
         pattern = pattern + '$'
         return re.compile(pattern, flags)
 
@@ -227,8 +228,12 @@ class RequestConstraint(object):
 
     @staticmethod
     def _stringify(value):
-        if type(value) in {str, int, long, bool, float, unicode}:
+        if type(value) in {int, bool, float}:
             return str(value)
+        elif type(value) is str:
+            return value
+        elif type(value) is bytes:
+            return value.decode()
         else:
             # Collections are not allowed; they are handled separately.
             # Arbitrary objects are not allowed because the string
@@ -280,10 +285,10 @@ class RequestConstraint(object):
         """Build a new RequestConstraint."""
         try:
             constraintType = cls.CONSTRAINT_MAP[operator.upper()]
-        except KeyError, AttributeError:
+        except (KeyError, AttributeError) as e:
             errmsg = '{} is not a valid operator. Valid operators are: {}'
             validOperators = list(sorted(cls.CONSTRAINT_MAP.keys()))
-            raise ValueError(errmsg.format(operator, validOperators))
+            raise ValueError(errmsg.format(operator, validOperators)) from e
         if constraintType in ('IN', 'NOT_IN'):
             return cls._constructIn(constraintType, constraintValue)
         elif constraintType in {'EQUALS', 'NOT_EQUALS'}:

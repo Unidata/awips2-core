@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.viz.core.drawables;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 

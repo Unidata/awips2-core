@@ -9,7 +9,17 @@
             <bean class="com.raytheon.uf.common.units.UnitConverter" />
         </constructor-arg>
         <constructor-arg>
-            <value>javax.measure.unit.Unit</value>
+            <value>javax.measure.Unit</value>
+        </constructor-arg>
+    </bean>
+
+    <bean class="com.raytheon.uf.common.convert.ConvertUtil"
+        factory-method="registerConverter">
+        <constructor-arg>
+            <bean class="com.raytheon.uf.common.units.UnitConverter" />
+        </constructor-arg>
+        <constructor-arg>
+            <value>tec.uom.se.AbstractUnit</value>
         </constructor-arg>
     </bean>
 
@@ -24,7 +34,7 @@
         class="com.raytheon.uf.common.serialization.DynamicSerializationManager"
         factory-method="registerAdapter">
         <constructor-arg>
-            <value>javax.measure.unit.Unit</value>
+            <value>tec.uom.se.AbstractUnit</value>
         </constructor-arg>
         <constructor-arg>
             <bean

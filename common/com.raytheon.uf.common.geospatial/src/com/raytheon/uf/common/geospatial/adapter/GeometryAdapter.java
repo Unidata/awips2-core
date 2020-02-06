@@ -21,8 +21,8 @@ package com.raytheon.uf.common.geospatial.adapter;
 
 import javax.xml.bind.annotation.adapters.XmlAdapter;
 
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.io.WKTReader;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.WKTReader;
 
 /**
  * Geometry Adapter for JAXB

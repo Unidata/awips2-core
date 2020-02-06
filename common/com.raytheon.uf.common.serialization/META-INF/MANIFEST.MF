@@ -2,14 +2,16 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Serialization Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.serialization
-Bundle-Version: 1.17.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Eclipse-BuddyPolicy: global, dependent
+Eclipse-RegisterBuddy: javax.xml.bind
 Comment: dependent policy is only here until SerializableManager is no longer used, as it ensures the ISerializableObject files can be detected
 Require-Bundle: org.apache.thrift,
  net.sf.cglib;visibility:=reexport,
  com.raytheon.uf.common.util,
- org.slf4j;bundle-version="1.7.21"
+ org.slf4j;bundle-version="1.7.21",
+ javax.xml.bind
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.adapters,
@@ -17,4 +19,4 @@ Export-Package: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.jaxb,
  com.raytheon.uf.common.serialization.reflect,
  com.raytheon.uf.common.serialization.thrift
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11

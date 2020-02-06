@@ -21,8 +21,10 @@ package com.raytheon.uf.common.geospatial.projection;
 
 import java.awt.geom.Point2D;
 
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
+import si.uom.SI;
+import tec.uom.se.AbstractUnit;
+
+import javax.measure.Unit;
 
 import org.geotools.parameter.DefaultParameterDescriptor;
 import org.geotools.parameter.DefaultParameterDescriptorGroup;
@@ -59,6 +61,7 @@ import org.opengis.referencing.operation.MathTransform;
  * Nov 18, 2013  2528     bsteffen    Add hashCode/equals.
  * Apr 14, 2015  4387     bsteffen    Fix the quadratic equation.
  * Mar 15, 2016  5456     bsteffen    Fix swapped sweep axis.
+ * Apr 15, 2019  7596     lsingh      Updated units framework to JSR-363
  * 
  * </pre>
  * 
@@ -291,10 +294,10 @@ public class Geostationary extends MapProjection {
         static final ParameterDescriptor<Double> ORBITAL_HEIGHT = DefaultParameterDescriptor
                 .create(Geostationary.ORBITAL_HEIGHT,
                         DEFAULT_PERSPECTIVE_HEIGHT, 0, Double.MAX_VALUE,
-                        SI.METER);
+                        SI.METRE);
 
         static final ParameterDescriptor<Double> SWEEP_AXIS = DefaultParameterDescriptor
-                .create(Geostationary.SWEEP_AXIS, 0.0, 0.0, 1.0, Unit.ONE);
+                .create(Geostationary.SWEEP_AXIS, 0.0, 0.0, 1.0, AbstractUnit.ONE);
 
         static final ParameterDescriptorGroup PARAMETERS = new DefaultParameterDescriptorGroup(
                 PROJECTION_NAME, new ParameterDescriptor[] { SEMI_MAJOR,

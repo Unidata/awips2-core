@@ -43,9 +43,6 @@ import java.util.List;
 
 import javax.xml.bind.DatatypeConverter;
 
-import org.apache.qpid.jms.BrokerDetails;
-import org.apache.qpid.jms.ConnectionURL;
-
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 
@@ -62,6 +59,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * ------------- -------- ----------- --------------------------
  * Feb 02, 2017  6085     bsteffen    Initial creation
  * Jun 26, 2017  6340     rjpeter     Check file times and recreate stores if necessary.
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
  *
  * </pre>
  *
@@ -70,7 +68,7 @@ import com.raytheon.uf.common.status.UFStatus;
 public class JmsSslConfiguration {
 
     private final IUFStatusHandler statusHandler = UFStatus
-            .getHandler(JmsPooledConnection.class);
+            .getHandler(JmsSslConfiguration.class);
 
     private static final String CERTIFICATE_DIR = "QPID_SSL_CERT_DB";
 
@@ -246,57 +244,6 @@ public class JmsSslConfiguration {
             password = "password";
         }
         return password;
-    }
-
-    /**
-     * If the url passed in has the ssl option set to true then this will find
-     * the correct ssl certificates based off the environmental variables and
-     * add the corresponding options to the URL. If there is no ssl option on
-     * the provided url, or if it is not set to true, then no changes are made
-     * to the URL.
-     *
-     * @param url
-     *            The url, which may need to be modified to add ssl
-     *            certificates.
-     * @return The same URL that was passed in.
-     */
-    public static ConnectionURL configureURL(ConnectionURL url) {
-
-        String ssl = url.getOption("ssl");
-        if (ssl != null && Boolean.parseBoolean(ssl)) {
-            JmsSslConfiguration config = new JmsSslConfiguration(
-                    url.getUsername());
-            boolean newerQpidLibrary = false;
-            /*
-             * TODO in newer version of qpid it is simpler to use the
-             * certificate files directly instead of creating jks files.
-             */
-            if (newerQpidLibrary) {
-                url.setOption("client_cert_path",
-                        config.getClientCert().toString());
-                url.setOption("client_cert_priv_key_path",
-                        config.getClientKey().toString());
-                url.setOption("trusted_certs_path",
-                        config.getRootCert().toString());
-            } else {
-                for (BrokerDetails details : url.getAllBrokerDetails()) {
-                    details.setProperty("ssl", "true");
-                    details.setProperty("trust_store",
-                            config.getJavaTrustStoreFile().toString());
-                    details.setProperty("trust_store_password",
-                            config.getPassword());
-                    details.setProperty("key_store",
-                            config.getJavaKeyStoreFile().toString());
-                    details.setProperty("key_store_password",
-                            config.getPassword());
-                    // Avoid extra output from
-                    // https://issues.apache.org/jira/browse/QPID-6743
-                    details.setProperty("ssl_verify_hostname", "false");
-                }
-            }
-
-        }
-        return url;
     }
 
     /**

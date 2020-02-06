@@ -33,9 +33,7 @@
 
 import abc
 
-class AbstractIdentifierRequest(object):
-    __metaclass__ = abc.ABCMeta
-
+class AbstractIdentifierRequest(object, metaclass=abc.ABCMeta):
     def __init__(self):
         self.request = None
 

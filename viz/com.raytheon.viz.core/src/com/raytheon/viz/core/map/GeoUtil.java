@@ -24,7 +24,7 @@ import java.util.ArrayList;
 
 import org.geotools.referencing.GeodeticCalculator;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Utility methods for geographic calculations

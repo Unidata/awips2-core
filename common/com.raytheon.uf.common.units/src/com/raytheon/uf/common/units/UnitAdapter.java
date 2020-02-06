@@ -20,11 +20,13 @@
 package com.raytheon.uf.common.units;
 
 import java.rmi.UnmarshalException;
-import java.text.ParseException;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.adapters.XmlAdapter;
+
+import tec.uom.se.AbstractUnit;
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Serialization adapter for Unit
@@ -39,6 +41,7 @@ import javax.xml.bind.annotation.adapters.XmlAdapter;
  *                                  common.units
  * Mar 25, 2016  5439     bsteffen  Include unparseable unit in exception text.
  * Jul 28, 2016  5738     bsteffen  Remove unused ISerializationTypeAdapter methods.
+ * Apr 15, 2019  7596     lsingh    Updated units framework to JSR-363.
  * 
  * </pre>
  * 
@@ -57,14 +60,15 @@ public class UnitAdapter extends XmlAdapter<String, Unit<?>> {
 
     @Override
     public Unit<?> unmarshal(String unit) throws Exception {
-        Unit<?> retVal = Unit.ONE;
+        Unit<?> retVal = AbstractUnit.ONE;
 
         if (unit != null) {
             if (!unit.equals("")) {
                 try {
-                    retVal = (Unit<?>) UnitFormat.getUCUMInstance()
-                            .parseObject(unit);
-                } catch (ParseException e) {
+                    retVal = (Unit<?>) SimpleUnitFormat
+                            .getInstance(SimpleUnitFormat.Flavor.ASCII)
+                            .parse(unit);
+                } catch (ParserException e) {
                     throw new UnmarshalException(
                             "Error parsing unit from string " + unit, e);
                 }

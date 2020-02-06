@@ -2,9 +2,9 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Camel Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.esb.camel
-Bundle-Version: 1.17.0.qualifier
+Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: Raytheon
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Require-Bundle: org.apache.camel;bundle-version="2.16.0",
  javax.jms,
  com.raytheon.edex.common,
@@ -15,10 +15,11 @@ Require-Bundle: org.apache.camel;bundle-version="2.16.0",
  com.raytheon.uf.edex.core,
  com.raytheon.uf.common.stats,
  org.quartz;bundle-version="1.8.6",
- org.slf4j;bundle-version="1.7.21",
+ org.slf4j;bundle-version="1.7.25",
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.json,
- com.raytheon.uf.common.jms;bundle-version="1.14.0"
+ com.raytheon.uf.common.jms,
+ javax.activation
 Export-Package: com.raytheon.uf.edex.esb.camel,
  com.raytheon.uf.edex.esb.camel.context,
  com.raytheon.uf.edex.esb.camel.jms
@@ -28,4 +29,7 @@ Import-Package: com.raytheon.uf.common.event,
  com.raytheon.uf.edex.event,
  javax.persistence,
  javax.servlet,
- javax.servlet.http
+ javax.servlet.http,
+ org.apache.qpid.jms,
+ org.apache.qpid.jms.jndi
+

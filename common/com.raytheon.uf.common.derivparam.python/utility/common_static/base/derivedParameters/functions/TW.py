@@ -204,7 +204,7 @@ def calcTW(T, Td, P, satVP):
     # This is basically trying to find the value of Tw where de is 0.  The
     # value s is the derivative of de with respect to Tw, a fairly standard
     # numerical technique for finding the zero value of a function.
-    for iteration in xrange(10):
+    for iteration in range(10):
         satVPinRange = (satVPmin<=satVP) & (satVP<=satVPmax)
         if not any(satVPinRange):
             break

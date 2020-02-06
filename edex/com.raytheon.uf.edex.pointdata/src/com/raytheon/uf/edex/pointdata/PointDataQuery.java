@@ -30,7 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import javax.measure.converter.UnitConverter;
+import javax.measure.UnitConverter;
 
 import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.dataplugin.PluginException;
@@ -51,6 +51,8 @@ import com.raytheon.uf.edex.database.plugin.PluginDao;
 import com.raytheon.uf.edex.database.plugin.PluginFactory;
 import com.raytheon.uf.edex.database.query.DatabaseQuery;
 import com.raytheon.uf.edex.pointdata.PointDataPluginDao.LevelRequest;
+
+import tec.uom.se.AbstractConverter;
 
 /**
  * A query task for accessing point data
@@ -358,7 +360,7 @@ public class PointDataQuery {
                     if (obj instanceof Number) {
                         num = (Number) obj;
                         UnitConverter conv = desc.getUnitConverter();
-                        if (conv != null && conv != UnitConverter.IDENTITY) {
+                        if (conv != null && conv != AbstractConverter.IDENTITY) {
                             num = conv.convert(num.doubleValue());
                         }
                     }

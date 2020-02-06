@@ -27,8 +27,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.UnitFormat;
 
 import org.eclipse.jface.util.IPropertyChangeListener;
 import org.eclipse.jface.util.PropertyChangeEvent;
@@ -36,6 +36,7 @@ import org.eclipse.swt.graphics.Rectangle;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridGeometry2D;
 import org.geotools.referencing.crs.DefaultGeographicCRS;
+import org.locationtech.jts.geom.Coordinate;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
@@ -44,6 +45,7 @@ import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.units.UnitConv;
 import com.raytheon.uf.viz.core.Activator;
 import com.raytheon.uf.viz.core.DrawableImage;
 import com.raytheon.uf.viz.core.IExtent;
@@ -59,7 +61,8 @@ import com.raytheon.uf.viz.core.jobs.JobPool;
 import com.raytheon.uf.viz.core.localization.HierarchicalPreferenceStore;
 import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
 import com.raytheon.uf.viz.core.rsc.capabilities.ImagingCapability;
-import com.vividsolutions.jts.geom.Coordinate;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Renderable tile set class that creates a {@link TileSet} and renders images
@@ -638,12 +641,16 @@ public class TileSetRenderable implements IRenderable {
                 if (resultUnit != null && dataUnit != null
                         && !dataUnit.equals(resultUnit)) {
                     if (resultUnit.isCompatible(dataUnit)) {
-                        dataValue = dataUnit.getConverterTo(resultUnit)
-                                .convert(dataValue);
+                        dataValue = UnitConv
+                                .getConverterToUnchecked(dataUnit, resultUnit)
+                                    .convert(dataValue);
                     } else {
-                        UnitFormat uf = UnitFormat.getUCUMInstance();
+                        UnitFormat uf = SimpleUnitFormat
+                                .getInstance(SimpleUnitFormat.Flavor.ASCII);
                         String message = String.format(
-                                "Unable to interrogate tile set.  Desired unit (%s) is not compatible with data unit (%s).",
+                                "Unable to interrogate tile set.  "
+                                        + "Desired unit (%s) is not compatible "
+                                        + "with data unit (%s).",
                                 uf.format(resultUnit), uf.format(dataUnit));
                         throw new IllegalArgumentException(message);
                     }

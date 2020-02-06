@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.common.dataplugin.level.util;
 
-import java.text.ParsePosition;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashMap;
@@ -27,13 +26,14 @@ import java.util.Map;
 import java.util.NavigableSet;
 import java.util.TreeSet;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.dataplugin.level.CompareType;
 import com.raytheon.uf.common.dataplugin.level.Level;
 import com.raytheon.uf.common.dataplugin.level.LevelFactory;
 import com.raytheon.uf.common.dataplugin.level.MasterLevel;
+
+import si.uom.SI;
 
 /**
  * Level utilities
@@ -57,17 +57,6 @@ import com.raytheon.uf.common.dataplugin.level.MasterLevel;
  * @version 1.0
  */
 public class LevelUtilities {
-    private static Unit<?> hPa;
-
-    static {
-        try {
-            hPa = UnitFormat.getUCUMInstance().parseProductUnit("hPa",
-                    new ParsePosition(0));
-        } catch (Exception e) {
-            // this is bad
-        }
-    }
-
     public static boolean isPressureLevel(long levelId) {
         return isPressureLevel(LevelFactory.getInstance().getLevel(levelId)
                 .getMasterLevel());
@@ -84,7 +73,7 @@ public class LevelUtilities {
 
     public static boolean isPressureLevel(MasterLevel ml) {
         Unit<?> unit = ml.getUnit();
-        return unit != null && unit.isCompatible(hPa);
+        return unit != null && unit.isCompatible(SI.PASCAL);
     }
 
     private static Map<String, NavigableSet<Level>> masterLevelToOrderedSet = null;

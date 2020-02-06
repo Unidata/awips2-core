@@ -11,3 +11,6 @@ scipy.interpolate
 scipy.sparse.linalg
 scipy.ndimage
 h5py
+netCDF4
+tables
+shapely.speedups

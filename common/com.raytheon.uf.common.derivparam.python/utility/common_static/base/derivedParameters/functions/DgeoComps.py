@@ -1,19 +1,19 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
 # pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
+#
 # U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
-# 
+#
 # Contractor Name:        Raytheon Company
 # Contractor Address:     6825 Pine Street, Suite 340
 #                         Mail Stop B8
 #                         Omaha, NE 68106
 #                         402.291.0100
-# 
+#
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ###
@@ -50,12 +50,12 @@ def execute(height, dx, dy, coriolis):
     # Generate output arrays as arrays of NaN,
     # the same size and dtype as Height.
     # dugdx = masked_where(True, Height) -- not needed
-    dugdy = ones(shape(height), dtype=height.dtype) * NaN 
+    dugdy = ones(shape(height), dtype=height.dtype) * NaN
     dvgdx = Copy(dugdy)
     dvgdy = Copy(dugdy)
-    
+
     gravAcc = 9.806
-    
+
     # use cropped versions of dx, dy, and coriolis in calculations
     if not isscalar(dx):
         dx = dx[1:-1,1:-1]
@@ -65,7 +65,7 @@ def execute(height, dx, dy, coriolis):
 
     if not isscalar(coriolis):
         coriolis = coriolis[1:-1,1:-1]
-    
+
     # intermediate values that are used repeatedly
     qqq = gravAcc / coriolis
     www = height[1:-1,1:-1] * 2.0
@@ -77,17 +77,17 @@ def execute(height, dx, dy, coriolis):
     croppedDvgdy *= qqq
     croppedDvgdy /= 4 * dx * dy
     dvgdy[1:-1,1:-1] = croppedDvgdy
-    
+
     dugdx = -dvgdy#*0.0
-    
+
     croppedDugdy = www - height[2:,1:-1] - height[0:-2,1:-1]
     croppedDugdy *= qqq
     croppedDugdy /= dy * dy
     dugdy[1:-1,1:-1] = croppedDugdy
-    
+
     croppedDvgdx = height[1:-1,2:] + height[1:-1,0:-2] - www
     croppedDvgdx *= qqq
     croppedDvgdx /= dx * dx
     dvgdx[1:-1,1:-1] = croppedDvgdx
-    
+
     return (dugdx, dugdy, dvgdx, dvgdy)

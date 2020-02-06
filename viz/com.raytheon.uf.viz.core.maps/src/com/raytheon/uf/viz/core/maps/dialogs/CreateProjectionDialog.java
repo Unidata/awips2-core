@@ -76,7 +76,7 @@ import com.raytheon.uf.viz.core.maps.actions.NewMapEditor;
 import com.raytheon.uf.viz.core.maps.scales.IMapScaleDisplay;
 import com.raytheon.viz.ui.EditorUtil;
 import com.raytheon.viz.ui.dialogs.CaveJFACEDialog;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Dialog that creates a custom geotools projection

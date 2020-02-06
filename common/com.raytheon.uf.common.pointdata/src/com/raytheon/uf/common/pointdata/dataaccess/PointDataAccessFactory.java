@@ -28,8 +28,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
+import org.locationtech.jts.geom.GeometryFactory;
 
 import com.raytheon.uf.common.dataaccess.DataAccessLayer;
 import com.raytheon.uf.common.dataaccess.IDataRequest;
@@ -53,9 +57,9 @@ import com.raytheon.uf.common.pointdata.PointDataView;
 import com.raytheon.uf.common.serialization.comm.RequestRouter;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.common.time.TimeRange;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
-import com.vividsolutions.jts.geom.GeometryFactory;
+import com.raytheon.uf.common.units.UnitConv;
+
+import tec.uom.se.AbstractConverter;
 
 /**
  * Data Access Factory for retrieving point data as a geometry.
@@ -84,6 +88,7 @@ import com.vividsolutions.jts.geom.GeometryFactory;
  * Nov 08, 2016  5986     tgurney   Handle reftime stored in seconds and
  *                                  forecast time stored in hours
  * Mar 06, 2017  6142     bsteffen  Remove dataURI as optional identifier
+ * Sep 23, 2019  7939     tgurney   Fix levels unit conversion
  *
  * </pre>
  *
@@ -438,9 +443,10 @@ public class PointDataAccessFactory extends AbstractDataPluginFactory {
         }
         MasterLevel masterLevel = lf.getMasterLevel(p2d.levelType);
         Unit<?> masterUnit = masterLevel.getUnit();
-        UnitConverter levelUnitConverter = UnitConverter.IDENTITY;
+        UnitConverter levelUnitConverter = AbstractConverter.IDENTITY;
         if (levelUnit != null && masterUnit != null) {
-            levelUnitConverter = levelUnit.getConverterTo(masterUnit);
+            levelUnitConverter = UnitConv.getConverterToUnchecked(levelUnit,
+                    masterUnit);
         }
 
         String[] stringValues;

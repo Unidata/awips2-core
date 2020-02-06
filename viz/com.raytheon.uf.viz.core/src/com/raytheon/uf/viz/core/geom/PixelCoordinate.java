@@ -21,7 +21,7 @@ package com.raytheon.uf.viz.core.geom;
 
 import org.opengis.geometry.DirectPosition;
 
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Use {@link Coordinate} or {@link DirectPosition} instead.

@@ -71,7 +71,7 @@ import com.raytheon.viz.ui.cmenu.IContextMenuProvider;
 import com.raytheon.viz.ui.input.preferences.MousePreferenceManager;
 import com.raytheon.viz.ui.perspectives.AbstractVizPerspectiveManager;
 import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
-import com.vividsolutions.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Coordinate;
 
 /**
  * Creates a GL Context for drawing

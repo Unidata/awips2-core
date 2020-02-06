@@ -2,12 +2,13 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Status Plug-in
 Bundle-SymbolicName: com.raytheon.uf.common.status
-Bundle-Version: 1.17.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
 Export-Package: com.raytheon.uf.common.status,
  com.raytheon.uf.common.status.slf4j
-Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-BuddyPolicy: registered
-Require-Bundle: org.slf4j;bundle-version="1.7.21"
+Require-Bundle: org.slf4j;bundle-version="1.7.21",
+ javax.xml.bind
 Import-Package: com.raytheon.uf.common.util,
  org.apache.commons.io.output

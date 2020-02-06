@@ -70,9 +70,9 @@ def execute(prMan, htMan, tpMan, tdMan, wdMan, wsMan, prSigT, tpSigT, tdSigT, ht
                 levelblo = levels[i-1]
                 tv1 = level.tp
                 tv2 = levelblo.tp
-                mtv = ((tv1 + tv2) / 2);
-                delta = log(levelblo.pr) - log(level.pr);
-                delta *= 29.2898 * mtv;
+                mtv = ((tv1 + tv2) / 2)
+                delta = log(levelblo.pr) - log(level.pr)
+                delta *= 29.2898 * mtv
                 level.ht = levelblo.ht + delta
     for c in range(0, len(numMand)):
         key = (validTime[c],wmoStaNum[c])
@@ -103,7 +103,7 @@ def execute(prMan, htMan, tpMan, tdMan, wdMan, wsMan, prSigT, tpSigT, tdSigT, ht
                     if not(isnan(levels[j].tp)):
                         levelabv = levels[j]
                         break
-                if levelabv != None:
+                if levelabv is not None:
                     level.tp = levelblo.tp + (level.ht - levelblo.ht)*(levelabv.tp - levelblo.tp)/(levelabv.ht - levelblo.ht)
 
             # Interpolate missing Dewpoints
@@ -113,23 +113,23 @@ def execute(prMan, htMan, tpMan, tdMan, wdMan, wsMan, prSigT, tpSigT, tdSigT, ht
                     if not(isnan(levels[j].td)):
                         levelabv = levels[j]
                         break
-                if levelabv != None:
+                if levelabv is not None:
                     level.td = levelblo.td + (level.ht - levelblo.ht)*(levelabv.td - levelblo.td)/(levelabv.ht - levelblo.ht)
             # Interpolate missing Pressure
             if isnan(level.pr):
-                zA = levelblo.ht;
-                zB = level.ht;
-                dz = zB - zA;
-                tvA = levelblo.tp + 273.13;
-                tvB = level.tp + 273.13;
-                k = (tvA + tvB) / 2 * 28.2898;
-                pA = levelblo.pr;
-                k = (-dz / k) + log(pA);
-                level.pr = exp(k);
+                zA = levelblo.ht
+                zB = level.ht
+                dz = zB - zA
+                tvA = levelblo.tp + 273.13
+                tvB = level.tp + 273.13
+                k = (tvA + tvB) / 2 * 28.2898
+                pA = levelblo.pr
+                k = (-dz / k) + log(pA)
+                level.pr = exp(k)
     levelsList = []
     for c in range(0, len(numMand)):
         key = (validTime[c],wmoStaNum[c])
         levels = levelsMap.get(key, None)
-        if (levels != None):
+        if levels is not None:
             levelsList.append(levels)
     return levelsList

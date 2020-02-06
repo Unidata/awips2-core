@@ -19,7 +19,7 @@
  **/
 package com.raytheon.viz.core.gl.internal.ext.mosaic;
 
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
 
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 import com.raytheon.uf.viz.core.DrawableImage;

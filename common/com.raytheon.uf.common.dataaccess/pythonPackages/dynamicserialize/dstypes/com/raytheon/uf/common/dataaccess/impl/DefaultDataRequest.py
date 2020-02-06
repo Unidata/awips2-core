@@ -33,7 +33,7 @@
 
 from ufpy.dataaccess import IDataRequest
 
-from dynamicserialize.dstypes.com.vividsolutions.jts.geom import Envelope
+from dynamicserialize.dstypes.org.locationtech.jts.geom import Envelope
 from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.level import Level
 
 
@@ -57,10 +57,10 @@ class DefaultDataRequest(IDataRequest):
         del self.identifiers[key]
     
     def setParameters(self, *params):
-        self.parameters = map(str, params)
+        self.parameters = list(map(str, params))
     
     def setLevels(self, *levels):
-        self.levels = map(self.__makeLevel, levels)
+        self.levels = list(map(self.__makeLevel, levels))
     
     def __makeLevel(self, level):
         if type(level) is Level:
@@ -74,7 +74,7 @@ class DefaultDataRequest(IDataRequest):
         self.envelope = Envelope(env.envelope)
 
     def setLocationNames(self, *locationNames):
-        self.locationNames = map(str, locationNames)
+        self.locationNames = list(map(str, locationNames))
 
     def getDatatype(self):
         return self.datatype

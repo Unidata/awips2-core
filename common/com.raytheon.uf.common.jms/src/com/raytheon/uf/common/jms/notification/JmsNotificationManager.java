@@ -63,23 +63,27 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------------
- * May 08, 2008  1127     randerso  Initial Creation
- * Sep 03, 2008  1448     chammack  Refactored notification observer interface
- * Apr 23, 2013  1939     randerso  Add separate connect method to allow
- *                                  application to complete initialization
- *                                  before connecting to JMS.
- * Oct 15, 2013  2389     rjpeter   Updated synchronization to remove session
- *                                  leaks.
- * Jul 21, 2014  3390     bsteffen  Extracted logic from the
- *                                  NotificationManagerJob
- * Oct 23, 2014  3390     bsteffen  Fix concurrency of disconnect and name
- *                                  threads.
- * Apr 06, 2015  3343     rjpeter   Fix deadlock and reconnect.
- * Feb 11, 2016  4630     rjpeter   Fix memory leak.
- * Mar 19, 2018  7141     randerso  Use a single timer for all
- *                                  ReconnectTimerTasks
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ---------   --------------------------------------------
+ * May 08, 2008  1127     randerso    Initial Creation
+ * Sep 03, 2008  1448     chammack    Refactored notification observer interface
+ * Apr 23, 2013  1939     randerso    Add separate connect method to allow
+ *                                    application to complete initialization
+ *                                    before connecting to JMS.
+ * Oct 15, 2013  2389     rjpeter     Updated synchronization to remove session
+ *                                    leaks.
+ * Jul 21, 2014  3390     bsteffen    Extracted logic from the
+ *                                    NotificationManagerJob
+ * Oct 23, 2014  3390     bsteffen    Fix concurrency of disconnect and name
+ *                                    threads.
+ * Apr 06, 2015  3343     rjpeter     Fix deadlock and reconnect.
+ * Feb 11, 2016  4630     rjpeter     Fix memory leak.
+ * Mar 19, 2018  7141     randerso    Use a single timer for all
+ *                                    ReconnectTimerTasks
+ * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019  7724     tgurney     Move queue creation to the session
+ * Oct 22, 2019  7724     tgurney     Fix topic creation
+ * Jan 16, 2020  8008     randerso    Move topic prefix to QpidUFSession
  *
  * </pre>
  *
@@ -111,10 +115,9 @@ public class JmsNotificationManager
         public int hashCode() {
             final int prime = 31;
             int result = 1;
-            result = (prime * result)
-                    + ((queryString == null) ? 0 : queryString.hashCode());
-            result = (prime * result)
-                    + ((topic == null) ? 0 : topic.hashCode());
+            result = prime * result
+                    + (queryString == null ? 0 : queryString.hashCode());
+            result = prime * result + (topic == null ? 0 : topic.hashCode());
             return result;
         }
 
@@ -148,7 +151,7 @@ public class JmsNotificationManager
         }
     }
 
-    private static enum Type {
+    private enum Type {
         QUEUE, TOPIC;
     }
 
@@ -374,13 +377,14 @@ public class JmsNotificationManager
             }
         }
 
-        if ((newListener != null) && connected) {
+        if (newListener != null && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler
-                        .error("NotificationManager failed to create queue consumer for queue ["
-                                + queue + "].", e);
+                statusHandler.error(
+                        "NotificationManager failed to create queue consumer for queue ["
+                                + queue + "].",
+                        e);
             }
         }
     }
@@ -425,13 +429,14 @@ public class JmsNotificationManager
             }
         }
 
-        if ((newListener != null) && connected) {
+        if (newListener != null && connected) {
             try {
                 newListener.setupConnection(this);
             } catch (JMSException e) {
-                statusHandler
-                        .error("NotificationManager failed to create topic consumer for topic ["
-                                + topic + "].", e);
+                statusHandler.error(
+                        "NotificationManager failed to create topic consumer for topic ["
+                                + topic + "].",
+                        e);
             }
         }
     }
@@ -604,8 +609,7 @@ public class JmsNotificationManager
             disconnect();
             session = manager.createSession();
             if (session != null) {
-                String topicName = id;
-                Topic t = session.createTopic(topicName);
+                Topic t = session.createTopic(id);
 
                 if (queryString != null) {
                     consumer = session.createConsumer(t, queryString);
@@ -726,7 +730,7 @@ public class JmsNotificationManager
             if (messageCount.incrementAndGet() > IN_MEM_MESSAGE_LIMIT) {
                 messageCount.decrementAndGet();
                 messages.remove();
-                if ((System.currentTimeMillis() - lastErrorPrintTime) > Duration
+                if (System.currentTimeMillis() - lastErrorPrintTime > Duration
                         .of(10, ChronoUnit.MINUTES).toMillis()) {
                     statusHandler
                             .error("Message queue size exceeded for observer "
@@ -735,7 +739,7 @@ public class JmsNotificationManager
                     lastErrorPrintTime = System.currentTimeMillis();
                 }
             }
-            if ((lastRun == null) || lastRun.isDone()) {
+            if (lastRun == null || lastRun.isDone()) {
                 lastRun = executorService.submit(this);
             }
         }
@@ -764,7 +768,7 @@ public class JmsNotificationManager
 
         public NamedThreadFactory(String namePrefix) {
             SecurityManager s = System.getSecurityManager();
-            group = (s != null) ? s.getThreadGroup()
+            group = s != null ? s.getThreadGroup()
                     : Thread.currentThread().getThreadGroup();
             this.namePrefix = namePrefix + "-" + poolNumber.getAndIncrement()
                     + "-thread-";

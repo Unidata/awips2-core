@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -47,28 +47,33 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * transaction, nor will it commit/rollback transactions. Any number of Daos
  * should be utilizable in the same transaction from a service that demarcates
  * the transaction boundaries.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ----------------------------------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Feb 07, 2013  1543     djohnson  Initial creation
- * Mar 18, 2013  1802     bphillip  Added additional database functions. Enforcing mandatory
- *                                  transaction propogation
- * Mar 27, 2013  1802     bphillip  Changed transaction propagation of query methods
- * Apr 09, 2013  1802     bphillip  Modified how arguments are passed in to query methods
+ * Mar 18, 2013  1802     bphillip  Added additional database functions.
+ *                                  Enforcing mandatory transaction propogation
+ * Mar 27, 2013  1802     bphillip  Changed transaction propagation of query
+ *                                  methods
+ * Apr 09, 2013  1802     bphillip  Modified how arguments are passed in to
+ *                                  query methods
  * May 01, 2013  1967     njensen   Fixed autoboxing for Eclipse 3.8
  * Jun 24, 2013  2106     djohnson  Use IDENTIFIER generic for method signature.
  * Oct 08, 2013  1682     bphillip  Added the createCriteria method
  * Dec 09, 2013  2613     bphillip  Added flushAndClearSession method
  * Jan 17, 2014  2459     mpduff    Added null check to prevent NPE.
- * Feb 13, 2014  2769     bphillip  Added read-only flag to query methods and loadById method
+ * Feb 13, 2014  2769     bphillip  Added read-only flag to query methods and
+ *                                  loadById method
  * Oct 16, 2014  3454     bphillip  Upgrading to Hibernate 4
  * Sep 01, 2016  5846     rjpeter   Support IN style hql queries
+ * Sep 09, 2019  6140     randerso  Fix queries with maxResults.
+ *
  * </pre>
- * 
+ *
  * @author djohnson
  */
 @Repository
@@ -177,8 +182,8 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     @SuppressWarnings("unchecked")
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
     public List<ENTITY> loadAll() {
-        return getCurrentSession().createQuery(
-                "FROM " + getEntityClass().getName()).list();
+        return getCurrentSession()
+                .createQuery("FROM " + getEntityClass().getName()).list();
     }
 
     @Transactional(propagation = Propagation.REQUIRED, readOnly = true)
@@ -188,7 +193,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Internal convenience method for returning a single result.
-     * 
+     *
      * @param queryString
      * @param params
      * @return
@@ -212,7 +217,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Internal convenience method for querying.
-     * 
+     *
      * @param queryString
      * @param params
      * @return
@@ -231,7 +236,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Executes an HQL query in a new Hibernate session
-     * 
+     *
      * @param <T>
      *            An object type to query for
      * @param queryString
@@ -249,7 +254,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * Executes an HQL query with a map of name value pairs with which to
      * substitute into the query. This method is a convenience method for
      * executing prepared statements
-     * 
+     *
      * @param <T>
      *            The return object type
      * @param queryString
@@ -278,7 +283,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * WHERE obj.id=:id' you would call: <br>
      * executeHQLQuery("SELECT obj.field FROM object obj WHERE obj.id=:id", 0,
      * ":id",idValue)
-     * 
+     *
      * @param <T>
      *            An object type to query for
      * @param queryString
@@ -298,7 +303,9 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
                     "Wrong number of arguments submitted to executeHQLQuery.");
         }
         Query query = getCurrentSession().createQuery(queryString);
-        query.setMaxResults(maxResults);
+        if (maxResults != null && maxResults > 0) {
+            query.setMaxResults(maxResults);
+        }
         for (int i = 0; i < params.length; i += 2) {
             if (params[i + 1] instanceof Collection<?>) {
                 query.setParameterList((String) params[i],
@@ -312,7 +319,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Executes an HQL query in a new Hibernate session
-     * 
+     *
      * @param <T>
      *            An object type to query for
      * @param queryString
@@ -328,7 +335,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Executes an HQL query
-     * 
+     *
      * @param <T>
      *            The return object type
      * @param queryString
@@ -346,7 +353,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
      * Executes a named parameter statement(non-query). The params argument
      * contains the parameter names in alternating fashion. The parameter name
      * comes first followed by the parameter value.
-     * 
+     *
      * @param <T>
      *            An object type to query for
      * @param queryString
@@ -385,7 +392,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
     /**
      * Executes a criteria query. This method expects a DetachedQuery instance.
      * The DetachedQuery is attached to a new session and executed
-     * 
+     *
      * @param <T>
      *            An Object type
      * @param criteria
@@ -410,13 +417,13 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     @SuppressWarnings("unchecked")
     public ENTITY load(Serializable id) {
-        return (ENTITY) getCurrentSession().load(getEntityClass(), id);
+        return getCurrentSession().load(getEntityClass(), id);
 
     }
 
     /**
      * Low-level method to execute a unit of work.
-     * 
+     *
      * @param work
      *            the work
      */
@@ -426,7 +433,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Creates and returns a criteria instance
-     * 
+     *
      * @return The criteria instance
      */
     protected Criteria createCriteria() {
@@ -435,7 +442,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Get the hibernate dialect.
-     * 
+     *
      * @return the dialect.
      */
     public Dialect getDialect() {
@@ -460,7 +467,7 @@ public abstract class SessionManagedDao<IDENTIFIER extends Serializable, ENTITY 
 
     /**
      * Return the entity class type.
-     * 
+     *
      * @return the entity class type
      */
     protected abstract Class<ENTITY> getEntityClass();

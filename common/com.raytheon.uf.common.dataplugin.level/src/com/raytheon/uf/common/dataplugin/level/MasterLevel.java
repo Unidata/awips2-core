@@ -19,10 +19,10 @@
  **/
 package com.raytheon.uf.common.dataplugin.level;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.Id;
@@ -39,6 +39,10 @@ import com.raytheon.uf.common.dataplugin.persist.PersistableDataObject;
 import com.raytheon.uf.common.serialization.ISerializableObject;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * MasterLevel - once a field is set it cannot be changed.
@@ -50,6 +54,8 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------ ---------- ----------- --------------------------
  * Sep 03, 2009            rjpeter     Initial creation.
  * Sep 09, 2014  3356      njensen     Remove CommunicationException
+ * May 30, 2019  7596      lsingh      Updated to units framework to JSR-363,
+ *                                     added logger.
  * </pre>
  * 
  * @author rjpeter
@@ -64,6 +70,9 @@ public class MasterLevel extends PersistableDataObject implements
         ISerializableObject {
 
     private static final long serialVersionUID = 1L;
+    
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(MasterLevel.class);
 
     @Id
     @DynamicSerializeElement
@@ -134,7 +143,7 @@ public class MasterLevel extends PersistableDataObject implements
         dirtyFlag = true;
     }
 
-    public Unit<?> getUnit() {
+    public Unit<?> getUnit() throws ParserException{
         if (dirtyFlag) {
             generateDependentFields();
         }
@@ -172,17 +181,18 @@ public class MasterLevel extends PersistableDataObject implements
         return hashCode;
     }
 
-    private void generateDependentFields() {
+    private void generateDependentFields(){
         final int prime = 31;
         hashCode = prime + ((name == null) ? 0 : name.hashCode());
 
         if (unitString != null && unitString.length() > 0) {
-            try {
-                unit = (Unit<?>) UnitFormat.getUCUMInstance().parseObject(
-                        unitString);
-            } catch (ParseException e) {
-                e.printStackTrace();
+            try{
+            unit = (Unit<?>) SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).parseObject(
+                    unitString, new ParsePosition(0));
+            }catch(ParserException e) {
+                statusHandler.debug("Unable to parse unit: " + unitString + ".", e);
             }
+
         } else {
             unit = null;
         }

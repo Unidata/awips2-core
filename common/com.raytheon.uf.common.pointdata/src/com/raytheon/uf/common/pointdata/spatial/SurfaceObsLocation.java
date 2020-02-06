@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,7 +29,6 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
 
 import org.hibernate.annotations.Index;
-import org.hibernate.annotations.Type;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 
 import com.raytheon.uf.common.dataplugin.NullUtil;
@@ -41,19 +40,19 @@ import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.geospatial.adapter.GeometryAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Point;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
 
 /**
  * SurfaceObsLocation represents an observation point on the surface of the
  * earth.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 26, 2007 391        jkorman     Initial Coding.
@@ -67,11 +66,11 @@ import com.vividsolutions.jts.geom.Point;
  * Jul 23, 2014 3410       bclement    changed lat and lon to floats
  * 10/16/2014   3454       bphillip    Upgrading to Hibernate 4
  * Jul 31, 2016 4360       rferrel     Made stationId, latitude and longitude non-nullable.
- * 
+ * Feb 26, 2019 6140       tgurney     Hibernate 5 GeometryType fix
+ *
  * </pre>
- * 
+ *
  * @author jkorman
- * @version 1.0
  */
 @Embeddable
 @XmlAccessorType(XmlAccessType.NONE)
@@ -111,7 +110,6 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
     private Boolean locationDefined = Boolean.FALSE;
 
     @Column(name = "location", columnDefinition = "geometry")
-    @Type(type = "org.hibernate.spatial.GeometryType")
     @XmlJavaTypeAdapter(value = GeometryAdapter.class)
     @DynamicSerializeElement
     private Point location;
@@ -138,7 +136,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see java.lang.Object#clone()
      */
     @Override
@@ -154,7 +152,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     /**
      * Create an instance of this class using a given station identifier.
-     * 
+     *
      * @param stationIdentifier
      */
     public SurfaceObsLocation(String stationIdentifier) {
@@ -179,7 +177,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     /**
      * Get the elevation, in meters, of the observing platform or location.
-     * 
+     *
      * @return The observation elevation, in meters.
      */
     public Integer getElevation() {
@@ -188,7 +186,7 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     /**
      * Set the elevation, in meters, of the observing platform or location.
-     * 
+     *
      * @param elevation
      *            The elevation to set
      */
@@ -196,17 +194,10 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
         this.elevation = elevation;
     }
 
-    /**
-     * @return the stationId
-     */
     public String getStationId() {
         return NullUtil.convertNullStringToNull(this.stationId);
     }
 
-    /**
-     * @param stationId
-     *            the stationId to set
-     */
     public void setStationId(String stationId) {
         this.stationId = NullUtil.convertNullToNullString(stationId);
     }
@@ -222,17 +213,13 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     /**
      * Is this location a station lookup.
-     * 
+     *
      * @return the locationDefined
      */
     public Boolean getLocationDefined() {
         return locationDefined;
     }
 
-    /**
-     * @param locationDefined
-     *            the locationDefined to set
-     */
     public void setLocationDefined(Boolean locationDefined) {
         this.locationDefined = locationDefined;
     }
@@ -278,14 +265,14 @@ public class SurfaceObsLocation implements ISpatialObject, Cloneable {
 
     public void assignLatitude(float latitude) {
         this.latitude = latitude;
-        if (!NullUtil.isNull(longitude) && (location == null)) {
+        if (!NullUtil.isNull(longitude) && location == null) {
             assignLocation(this.latitude, this.longitude);
         }
     }
 
     public void assignLongitude(float longitude) {
         this.longitude = longitude;
-        if (!NullUtil.isNull(latitude) && (location == null)) {
+        if (!NullUtil.isNull(latitude) && location == null) {
             assignLocation(this.latitude, this.longitude);
         }
     }

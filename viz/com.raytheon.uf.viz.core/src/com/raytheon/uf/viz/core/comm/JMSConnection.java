@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,17 +23,15 @@ package com.raytheon.uf.viz.core.comm;
 import javax.jms.ConnectionFactory;
 import javax.jms.JMSException;
 
-import org.apache.qpid.client.AMQConnectionFactory;
-import org.apache.qpid.client.AMQConnectionURL;
-import org.apache.qpid.jms.ConnectionURL;
+import org.springframework.jms.connection.CachingConnectionFactory;
 
-import com.raytheon.uf.common.jms.JmsSslConfiguration;
-import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.common.jms.JMSConnectionInfo;
+import com.raytheon.uf.common.jms.qpid.QpidUFConnectionFactory;
 
 /**
- * 
+ *
  * Common JMS connection code
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -48,57 +46,86 @@ import com.raytheon.uf.viz.core.VizApp;
  *                                     no longer needs to be constructed. Replaced stacktrace
  *                                     printing with UFStatus.
  * Feb 02, 2017 6085       bsteffen    Enable ssl in the JMS connection.
- * 
+ * Sep 23, 2019 7724       mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019 7724       tgurney     Replace connection string with a
+ *                                     {@link JMSConnectionInfo} object
+ * Dec  9, 2019 7724       tgurney     Allow only a single JMS connection at a
+ *                                     time
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class JMSConnection {
 
-    private static JMSConnection instance;
+    /** No particular reasoning behind this default value. */
+    private static final int DEFAULT_SESSION_CACHE_SIZE = 50;
 
-    private AMQConnectionFactory factory;
+    private static final JMSConnection INSTANCE = new JMSConnection();
 
-    public static synchronized JMSConnection getInstance() throws JMSException {
-        if (instance == null) {
-            instance = new JMSConnection();
-        }
+    private ConnectionFactory factory;
 
-        return instance;
+    private JMSConnectionInfo connInfo;
+
+    private boolean connInfoChanged = true;
+
+    private JMSConnection() {
+        // singleton
     }
 
-    public JMSConnection() throws JMSException {
-        this(VizApp.getJmsConnectionString());
+    public static JMSConnection getInstance() {
+        return INSTANCE;
     }
 
-    public JMSConnection(String connectionUrl) throws JMSException {
-        try {
-            ConnectionURL url = new AMQConnectionURL(connectionUrl);
-            url.setClientName(VizApp.getWsId().toString());
+    public synchronized void setConnectionInfo(JMSConnectionInfo connInfo) {
+        this.connInfo = connInfo;
+        connInfoChanged = true;
+    }
 
-            JmsSslConfiguration.configureURL(url);
-
-            this.factory = new AMQConnectionFactory(url);
-        } catch (Exception e) {
-            JMSException wrapper = new JMSException(
-                    "Failed to connect to the JMS Server!");
-            wrapper.initCause(e);
-            throw wrapper;
-        }
+    public synchronized JMSConnectionInfo getConnectionInfo() {
+        return connInfo;
     }
 
     /**
+     * Test the JMS connection specified by connInfo. If this method returns,
+     * then the connection was successful.
      * 
-     * @return the jms connection url
+     * @param connInfo
+     *            The connection info
+     * @throws JMSException
+     *             If the connection failed.
      */
-    public String getConnectionUrl() {
-        return factory.getConnectionURLString();
+    public synchronized void testConnection(JMSConnectionInfo connInfo)
+            throws JMSException {
+        JMSConnection theJmsConnection = this;
+        if (!connInfo.equals(this.connInfo)) {
+            theJmsConnection = new JMSConnection();
+            theJmsConnection.setConnectionInfo(connInfo);
+        }
+        theJmsConnection.getFactory().createConnection().close();
     }
 
     /**
-     * @return the factory
+     * @return the connection factory
+     * @throws JMSException
      */
-    public ConnectionFactory getFactory() {
+    public synchronized ConnectionFactory getFactory() throws JMSException {
+        if (connInfoChanged) {
+            try {
+                CachingConnectionFactory cachingFactory = new CachingConnectionFactory(
+                        new QpidUFConnectionFactory(connInfo));
+                int sessionCacheSize = Integer.getInteger(
+                        "viz.jms.sessioncachesize", DEFAULT_SESSION_CACHE_SIZE);
+                cachingFactory.setSessionCacheSize(sessionCacheSize);
+                factory = cachingFactory;
+            } catch (Exception e) {
+                JMSException wrapper = new JMSException(
+                        "Failed to connect to the JMS Server!");
+                wrapper.initCause(e);
+                throw wrapper;
+            }
+            connInfoChanged = false;
+        }
         return factory;
     }
 

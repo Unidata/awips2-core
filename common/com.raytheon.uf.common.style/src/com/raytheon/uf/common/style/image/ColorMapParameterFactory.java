@@ -22,8 +22,8 @@ package com.raytheon.uf.common.style.image;
 import java.util.ArrayList;
 import java.util.List;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import org.apache.commons.lang3.ArrayUtils;
 
@@ -210,7 +210,7 @@ public class ColorMapParameterFactory {
                     if (definedMax != null) {
                         double definedDataMax = definedMax;
                         if (displayToData != null) {
-                            definedDataMax = displayToData.convert(definedMax);
+                            definedDataMax = displayToData.convert(definedMax).doubleValue();
                         }
                         if (definedDataMax > max) {
                             max = (float) definedDataMax;
@@ -223,7 +223,7 @@ public class ColorMapParameterFactory {
                     if (definedMin != null) {
                         double definedDataMin = definedMin;
                         if (displayToData != null) {
-                            definedDataMin = displayToData.convert(definedMin);
+                            definedDataMin = displayToData.convert(definedMin).doubleValue();
                         }
                         if (definedDataMin < min) {
                             min = (float) definedDataMin;
@@ -499,8 +499,8 @@ public class ColorMapParameterFactory {
         UnitConverter displayToColorMap = params
                 .getDisplayToColorMapConverter();
         if (displayToColorMap != null) {
-            colorMapMin = (float) displayToColorMap.convert(displayMin);
-            colorMapMax = (float) displayToColorMap.convert(displayMax);
+            colorMapMin = displayToColorMap.convert(displayMin).floatValue();
+            colorMapMax = displayToColorMap.convert(displayMax).floatValue();
         }
 
         params.setColorMapMin(colorMapMin);

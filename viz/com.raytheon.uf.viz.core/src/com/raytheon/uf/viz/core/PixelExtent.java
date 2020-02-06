@@ -23,8 +23,8 @@ package com.raytheon.uf.viz.core;
 import org.eclipse.swt.graphics.Rectangle;
 import org.opengis.coverage.grid.GridEnvelope;
 
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.Envelope;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Envelope;
 
 /**
  * PixelExtent represents the coverage of an object in pixel space.

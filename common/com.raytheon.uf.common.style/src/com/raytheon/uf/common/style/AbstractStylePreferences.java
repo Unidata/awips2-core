@@ -20,14 +20,13 @@
 
 package com.raytheon.uf.common.style;
 
-import java.text.ParseException;
 import java.text.ParsePosition;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.Unit;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlAttribute;
@@ -35,6 +34,8 @@ import javax.xml.bind.annotation.XmlElement;
 import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.XmlValue;
+
+import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Abstract style preferences
@@ -79,9 +80,9 @@ public abstract class AbstractStylePreferences {
             Unit<?> unit = null;
             if (unitString != null && unitString.length() > 0) {
                 try {
-                    unit = UnitFormat.getUCUMInstance()
+                    unit = SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
                             .parseProductUnit(unitString, new ParsePosition(0));
-                } catch (ParseException e) {
+                } catch (ParserException e) {
                     throw new RuntimeException(e);
                 }
             }

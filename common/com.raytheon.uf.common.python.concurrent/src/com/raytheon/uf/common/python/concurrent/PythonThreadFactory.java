@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,32 +22,39 @@ package com.raytheon.uf.common.python.concurrent;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import jep.JepException;
-
 import com.raytheon.uf.common.python.PythonInterpreter;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
+
+import jep.JepException;
 
 /**
  * Creates new threads named according to what python task they were created
  * for. Based nearly identically off of {@link ThreadFactory}
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jan 31, 2013            mnash       Initial creation
  * Jun 04, 2013 2041       bsteffen    Improve exception handling for concurrent
  *                                     python.
  * Dec 10, 2015 4816       dgilling    Make classes package private.
- * 
+ * Jun 03, 2019 7852       dgilling    Update code for jep 3.8.
+ *
  * </pre>
- * 
+ *
  * @author mnash
  * @version 1.0
  */
 
 class PythonThreadFactory<P extends PythonInterpreter> implements ThreadFactory {
+
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(PythonThreadFactory.class);
+
     private static final AtomicInteger poolNumber = new AtomicInteger(1);
 
     private final ThreadGroup group;
@@ -60,7 +67,7 @@ class PythonThreadFactory<P extends PythonInterpreter> implements ThreadFactory 
 
     /**
      * Default constructor.
-     * 
+     *
      * @param scriptFactory
      *            {@code  IPythonInterpreterFactory} instance used to build the
      *            thread-specific {@code PythonInterpreter} instance for each
@@ -120,7 +127,12 @@ class PythonThreadFactory<P extends PythonInterpreter> implements ThreadFactory 
             try {
                 super.run();
             } finally {
-                threadLocal.get().dispose();
+                try {
+                    threadLocal.get().dispose();
+                } catch (JepException e) {
+                    statusHandler.debug("Failed to dispose script instance.",
+                            e);
+                }
                 threadLocal.remove();
             }
         }

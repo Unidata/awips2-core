@@ -26,18 +26,18 @@ import java.util.List;
 import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.geometry.jts.ReferencedEnvelope;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.CoordinateSequence;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Polygon;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
 import org.opengis.geometry.Envelope;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.operation.MathTransform;
 import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.MapUtil;
-import com.vividsolutions.jts.geom.Coordinate;
-import com.vividsolutions.jts.geom.CoordinateSequence;
-import com.vividsolutions.jts.geom.Geometry;
-import com.vividsolutions.jts.geom.GeometryFactory;
-import com.vividsolutions.jts.geom.Polygon;
-import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
 
 /**
  * Solves the problem of intersecting two envelopes in different coordinate
@@ -112,10 +112,10 @@ class BruteForceEnvelopeIntersection {
                 .getCoordinateReferenceSystem());
 
         double[] latLonCoords = buildLatLonCoords();
-        this.latLonCoords = new PackedCoordinateSequence.Double(latLonCoords, 2);
+        this.latLonCoords = new PackedCoordinateSequence.Double(latLonCoords, 2, 0);
 
         double[] targetCoords = buildTargetCoords(latLonCoords);
-        this.targetCoords = new PackedCoordinateSequence.Double(targetCoords, 2);
+        this.targetCoords = new PackedCoordinateSequence.Double(targetCoords, 2, 0);
     }
 
     /**

@@ -27,17 +27,18 @@
 #
 ##
 
-import sys, __builtin__, LogStream
+import sys, builtins 
+# import LogStream
 
 class RollBackImporter:
     def __init__(self):
         "Creates an instance and installs as the global importer"
         self.previousModules = set(sys.modules.keys())
-        self.realImport = __builtin__.__import__
-        __builtin__.__import__ = self._import
+        self.realImport = builtins.__import__
+        builtins.__import__ = self._import
         self.newModules = set()
 
-    def _import(self, name, globals=None, locals=None, fromlist=[], level=-1):
+    def _import(self, name, globals=None, locals=None, fromlist=[], level=0):
         result = self.realImport(name, globals, locals, fromlist, level)
         
         if hasattr(result, '__file__'):
@@ -54,7 +55,7 @@ class RollBackImporter:
         for modname in self.newModules:
             if modname not in self.previousModules:
                 # Force reload when modname next imported
-                if sys.modules.has_key(modname):
+                if modname in sys.modules:
 #                     LogStream.logDebug("UNLOADING:", modname)
                     del(sys.modules[modname])
 #                 else:

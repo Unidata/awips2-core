@@ -19,27 +19,31 @@
  **/
 package com.raytheon.uf.common.units;
 
+import java.math.BigDecimal;
+import java.math.MathContext;
 import java.util.Arrays;
 
-import javax.measure.converter.ConversionException;
-import javax.measure.converter.UnitConverter;
+import javax.measure.UnitConverter;
+
+import tec.uom.se.AbstractConverter;
 
 /**
  * TODO Add Description
  * 
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 	
+ * Date          Ticket#    Engineer    Description
+ * ------------  ---------- ----------- --------------------------
+ *  Apr 15, 2019  7596       lsingh      Updated the javax.measure framework to JSR-363.
+ *                                       UnitConverter has been replaced with AbstractConverter. 
+ *                                       Updated methods and implemented additional methods.
  * 
  * </pre>
  * 
  * @author randerso
- * @version 1.0
  */
 
-public class PiecewiseLinearConverter extends UnitConverter {
+public class PiecewiseLinearConverter extends AbstractConverter {
 
     private static final long serialVersionUID = 1L;
 
@@ -52,13 +56,8 @@ public class PiecewiseLinearConverter extends UnitConverter {
         this.yVals = yVals;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.converter.UnitConverter#convert(double)
-     */
     @Override
-    public double convert(double x) throws ConversionException {
+    public double convert(double x) {
         if (Double.isNaN(x)) {
             return Double.NaN;
         }
@@ -82,31 +81,16 @@ public class PiecewiseLinearConverter extends UnitConverter {
         return y;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.converter.UnitConverter#inverse()
-     */
     @Override
-    public UnitConverter inverse() {
+    public AbstractConverter inverse() {
         return new PiecewiseLinearConverter(yVals, xVals);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.converter.UnitConverter#isLinear()
-     */
     @Override
     public boolean isLinear() {
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see javax.measure.converter.UnitConverter#concatenate(javax.measure.converter.UnitConverter)
-     */
     @Override
     public UnitConverter concatenate(UnitConverter converter) {
         // TODO Auto-generated method stub
@@ -114,31 +98,19 @@ public class PiecewiseLinearConverter extends UnitConverter {
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#hashCode()
-     */
     @Override
     public int hashCode() {
         final int prime = 31;
-        int result = super.hashCode();
+        int result = Float.floatToIntBits((float)convert(1.0));
         result = prime * result + Arrays.hashCode(xVals);
         result = prime * result + Arrays.hashCode(yVals);
         return result;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj) {
         if (this == obj)
             return true;
-        if (!super.equals(obj))
-            return false;
         if (getClass() != obj.getClass())
             return false;
         final PiecewiseLinearConverter other = (PiecewiseLinearConverter) obj;
@@ -147,6 +119,12 @@ public class PiecewiseLinearConverter extends UnitConverter {
         if (!Arrays.equals(yVals, other.yVals))
             return false;
         return true;
+    }
+
+    @Override
+    public BigDecimal convert(BigDecimal value, MathContext ctx)
+            throws ArithmeticException {
+        return BigDecimal.valueOf(convert(value.doubleValue()));
     }
 
 }

@@ -2,15 +2,16 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Edex Ingest Plug-in
 Bundle-SymbolicName: com.raytheon.uf.edex.ingest
-Bundle-Version: 1.16.0.qualifier
+Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
 Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.common.dataplugin.notify,
  com.raytheon.uf.common.localization,
  org.slf4j;bundle-version="1.7.5",
- org.apache.camel
+ org.apache.camel,
+ javax.xml.bind
 Export-Package: com.raytheon.uf.edex.ingest
-Bundle-RequiredExecutionEnvironment: JavaSE-1.7
+Bundle-RequiredExecutionEnvironment: JavaSE-11
 Import-Package: com.raytheon.uf.edex.core,
  com.raytheon.uf.common.status,
  com.raytheon.uf.edex.database.plugin

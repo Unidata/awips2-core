@@ -1,31 +1,31 @@
 ##
 # This software was developed and / or modified by Raytheon Company,
 # pursuant to Contract DG133W-05-CQ-1067 with the US Government.
-# 
+#
 # U.S. EXPORT CONTROLLED TECHNICAL DATA
 # This software product contains export-restricted data whose
 # export/transfer/disclosure is restricted by U.S. law. Dissemination
 # to non-U.S. persons whether in the United States or abroad requires
 # an export license or other authorization.
-# 
+#
 # Contractor Name:        Raytheon Company
 # Contractor Address:     6825 Pine Street, Suite 340
 #                         Mail Stop B8
 #                         Omaha, NE 68106
 #                         402.291.0100
-# 
+#
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 #
 # Software History
 #
-# 2013/1/17    DR 15655    Melissa Porricelli    Modified final 'result' 
+# 2013/1/17    DR 15655    Melissa Porricelli    Modified final 'result'
 #                                                calculation to remove multiplication
 #                                                by 0.5.  Displayed values were
-#                                                off by a factor of this amount 
-#                                                in comparison to A1.  
+#                                                off by a factor of this amount
+#                                                in comparison to A1.
 #                                                A1 calc in pvpres.f.
-# 2018/11/09   7531        bsteffen              Handle world wrapping data. 
+# 2018/11/09   7531        bsteffen              Handle world wrapping data.
 ###
 
 import Gradient
@@ -62,11 +62,11 @@ def execute(t_up, t_lo, p_up, p_lo, vector_up, vector_lo, dx, dy, coriolis, worl
 
     u_up, v_up = vector_up
     u_lo, v_lo = vector_lo
-    
+
     # Calculate the absolute vorticity at each isobaric surface.
     avort1 = Vorticity.execute(u_up, v_up, coriolis, dx, dy, worldWrapX)
     avort2 = Vorticity.execute(u_lo, v_lo, coriolis, dx, dy, worldWrapX)
-    
+
     # Calculate the temperature gradient on each surface.
     grad_lo = Gradient.execute(t_lo, dx, dy, worldWrapX)
     grad_up = Gradient.execute(t_up, dx, dy, worldWrapX)
@@ -80,8 +80,7 @@ def execute(t_up, t_lo, p_up, p_lo, vector_up, vector_lo, dx, dy, coriolis, worl
     dtdx = dtdx1 + dtdx2
     dtdy = dtdy1 + dtdy2
     av = avort1 + avort2
-    
+
     result = (-0.5 * (av*dt + (du*dtdy - dv*dtdx)) / dp)
-    
+
     return result
-    

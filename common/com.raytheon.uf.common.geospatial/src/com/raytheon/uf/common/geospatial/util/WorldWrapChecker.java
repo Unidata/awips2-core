@@ -23,6 +23,7 @@ import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.referencing.CRS;
 import org.geotools.referencing.operation.projection.MapProjection;
 import org.geotools.referencing.operation.projection.MapProjection.AbstractProvider;
+import org.locationtech.jts.geom.impl.PackedCoordinateSequence;
 import org.opengis.geometry.Envelope;
 import org.opengis.parameter.ParameterNotFoundException;
 import org.opengis.parameter.ParameterValueGroup;
@@ -32,7 +33,6 @@ import org.opengis.referencing.operation.TransformException;
 import com.raytheon.uf.common.geospatial.MapUtil;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.vividsolutions.jts.geom.impl.PackedCoordinateSequence;
 
 /**
  * Given a descriptor of a map, this class will check line segments for wrapping
@@ -129,7 +129,7 @@ public class WorldWrapChecker {
         idealLowInverseCentralMeridian = centralMeridian - 180.0;
 
         PackedCoordinateSequence.Double testCoords = new PackedCoordinateSequence.Double(
-                4, 2);
+                4, 2, 0);
         testCoords.setX(0, centralMeridian + 179.9);
         testCoords.setY(0, latitudeOfOrigin);
         testCoords.setX(1, centralMeridian + 179.8);
