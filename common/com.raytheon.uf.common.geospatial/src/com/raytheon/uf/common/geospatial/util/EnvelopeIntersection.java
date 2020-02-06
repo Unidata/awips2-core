@@ -81,6 +81,9 @@ import com.vividsolutions.jts.geom.Triangle;
  *                                  coordinates that have been through the
  *                                  WorldWrapCorrector.
  * Jan 30, 2018  7172     bsteffen  Handle abnormal envelopes.
+ * Jan 27, 2020  3375     bsteffen  Defer to Brute force when intersections
+ *                                  fail. Only invert the area if it actually
+ *                                  improves the result.
  * 
  * </pre>
  * 
@@ -532,7 +535,10 @@ public class EnvelopeIntersection {
                             statusHandler
                                     .debug("Could not find intersection point in polygon "
                                             + "boundry for last point in LineString");
-                            continue;
+                            return BruteForceEnvelopeIntersection
+                                    .createEnvelopeIntersection(sourceEnvelope,
+                                            targetEnvelope, maxHorDivisions,
+                                            maxVertDivisions);
                         }
                         while (!done) {
                             // Append points to the LineString until we find
@@ -551,7 +557,10 @@ public class EnvelopeIntersection {
                             statusHandler
                                     .debug("Could not find intersection point in polygon "
                                             + "boundry for first point in LineString");
-                            continue;
+                            return BruteForceEnvelopeIntersection
+                                    .createEnvelopeIntersection(sourceEnvelope,
+                                            targetEnvelope, maxHorDivisions,
+                                            maxVertDivisions);
                         }
 
                         // Create polygon out of LineString points and check if
@@ -644,7 +653,14 @@ public class EnvelopeIntersection {
             if (!sourceREnvelope.contains(interior)) {
                 // Interior point does not fall inside the source envelope, use
                 // the difference of the border
-                border = targetBorder.difference(border);
+                Geometry inverted = targetBorder.difference(border);
+                Coordinate invertedInterior = JTS
+                        .transform(border.getInteriorPoint(),
+                                targetCRSToSourceCRS)
+                        .getCoordinate();
+                if (sourceREnvelope.contains(invertedInterior)) {
+                    border = inverted;
+                }
             }
         }
 
