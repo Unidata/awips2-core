@@ -104,6 +104,7 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Jan 13, 2020  7850     tgurney   Realign all other items in the menu when
  *                                  one menu item text updates
  * Jan 18, 2020  7850     tgurney   Fix NPE on CAVE perspective switch
+ * Feb 11, 2020  8036     tgurney   Fix another NPE on CAVE perspective switch
  * </pre>
  *
  * @author chammack
@@ -290,8 +291,13 @@ public class BundleContributionItem extends ContributionItem {
 
     protected void updateMenuTextAsync() {
         VizApp.runAsync(() -> {
-            updateMenuText();
             if (widget == null || widget.isDisposed()) {
+                return;
+            }
+            String oldMenuText = widget.getText();
+            updateMenuText();
+            if (widget == null || widget.isDisposed()
+                    || widget.getText().equals(oldMenuText)) {
                 return;
             }
             MenuItem[] items = widget.getParent().getItems();
@@ -384,7 +390,7 @@ public class BundleContributionItem extends ContributionItem {
         String minimumPadding = TIME_SEPARATOR.repeat(MINIMUM_PADDING_CHARS);
 
         int padCharsToAdd = 0;
-        if (widget.isDisposed() || widget.getParent() == null
+        if (widget == null || widget.isDisposed() || widget.getParent() == null
                 || widget.getParent().isDisposed()) {
             return minimumPadding;
         }
@@ -400,7 +406,8 @@ public class BundleContributionItem extends ContributionItem {
             }
             int padCharWidth = gc.textExtent(String.valueOf(TIME_SEPARATOR)).x;
             int widthToAdd = maxWidth - myWidth;
-            padCharsToAdd = (int) Math.ceil(widthToAdd / (double) padCharWidth);
+            padCharsToAdd = (int) Math
+                    .floor(widthToAdd / (double) padCharWidth);
         } finally {
             gc.dispose();
         }
