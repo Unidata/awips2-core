@@ -1,0 +1,12 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Ignite PointData
+Bundle-SymbolicName: com.raytheon.uf.edex.pointdata.ignite
+Bundle-Version: 1.20.0.qualifier
+Bundle-Vendor: RAYTHEON
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: com.raytheon.uf.edex.pointdata,
+ com.raytheon.uf.common.datastore.ignite,
+ com.raytheon.uf.edex.core,
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.util

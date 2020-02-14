@@ -1,0 +1,147 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<beans xmlns="http://www.springframework.org/schema/beans"
+    xmlns:context="http://www.springframework.org/schema/context"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xsi:schemaLocation="
+       http://www.springframework.org/schema/beans
+       http://www.springframework.org/schema/beans/spring-beans.xsd
+       ">
+    <bean
+        class="org.springframework.beans.factory.config.PropertyPlaceholderConfigurer">
+        <property name="systemPropertiesModeName">
+           <value>SYSTEM_PROPERTIES_MODE_OVERRIDE</value>
+        </property>
+        <property name="searchSystemEnvironment">
+            <value type="boolean">true</value>
+        </property>
+        <property name="ignoreUnresolvablePlaceholders" value="true" />
+    </bean>
+
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="discoverySpi">
+            <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
+                <property name="ipFinder">
+                    <bean
+                        class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
+                        <property name="addresses"
+                            value="#{'${IGNITE_SERVERS:localhost}'.split(',')}" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="dataStorageConfiguration">
+            <bean
+                class="org.apache.ignite.configuration.DataStorageConfiguration">
+                <property name="pageSize" value="#{16 * 1024}" />
+                <property name="defaultDataRegionConfiguration">
+                    <bean
+                        class="org.apache.ignite.configuration.DataRegionConfiguration">
+                        <property name="persistenceEnabled"
+                            value="false" />
+                        <property name="maxSize"
+                            value="#{${IGNITE_DATA_REGION_MAX_SIZE_GB:2} * 1024L * 1024 * 1024}" />
+                        <property name="initialSize"
+                            value="#{${IGNITE_DATA_REGION_INITIAL_SIZE_GB:1} * 1024L * 1024 * 1024}" />
+                        <property name="pageEvictionMode"
+                            value="RANDOM_LRU" />
+                        <property name="evictionThreshold"
+                            value="0.90" />
+                        <property name="emptyPagesPoolSize"
+                            value="${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:8192}" />
+                    </bean>
+                </property>
+            </bean>
+        </property>
+        <property name="cacheConfiguration">
+            <list>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="*" />
+                    <property name="cacheMode" value="PARTITIONED" />
+                    <property name="backups" value="${IGNITE_CACHE_BACKUPS:0}" />
+                    <!-- Rebalancing is unnecessary, missing entries will read
+                        from the underlying datastore instead of being copied
+                        preemptively. Attempting to rebalance will load the entire
+                        cache in the heap and results in OOM.
+                    -->
+                    <property name="rebalanceMode" value="NONE" />
+                    <property name="readThrough" value="true" />
+                    <property name="writeThrough" value="true" />
+                    <property name="writeBehindEnabled" value="true" />
+                    <property name="writeBehindFlushFrequency"
+                        value="30000" />
+                    <property name="writeBehindFlushThreadCount"
+                        value="16" />
+                    <property name="sqlIndexMaxInlineSize" value="350" />
+                    <property name="cacheStoreFactory">
+                        <bean
+                            class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
+                            <constructor-arg>
+                                <bean
+                                    class="com.raytheon.uf.common.datastore.ignite.pypies.SerializablePyPiesDataStoreFactory">
+                                    <constructor-arg name="address"
+                                        value="http://${PYPIES_HOST:localhost}:${PYPIES_PORT:9582}/" />
+                                </bean>
+                            </constructor-arg>
+                        </bean>
+                    </property>
+                    <property name="indexedTypes">
+                        <list>
+                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreKey
+                            </value>
+                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreValue
+                            </value>
+                        </list>
+                    </property>
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="data-store-cache-name-map" />
+                    <property name="cacheMode" value="REPLICATED" />
+                    <property name="onheapCacheEnabled" value="true"/>
+                </bean>
+            </list>
+        </property>
+        <property name="gridLogger">
+            <bean class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
+        </property>
+        <property name="serviceConfiguration">
+            <list>
+                <bean class="org.apache.ignite.services.ServiceConfiguration">
+                    <property name="name" value="PyPiesCompatibilityService" />
+                    <property name="maxPerNodeCount" value="1" />
+                    <property name="service">
+                        <bean
+                            class="com.raytheon.uf.common.datastore.ignite.pypies.PyPiesCompatibilityService">
+                            <property name="port"
+                                value="${PYPIES_COMPATIBILITY_PORT:9585}" />
+                        </bean>
+                    </property>
+                </bean>
+            </list>
+        </property>
+    </bean>
+
+    <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
+        <constructor-arg value="IGNITE"/>
+        <constructor-arg>
+            <null />
+        </constructor-arg>
+        <constructor-arg>
+            <null />
+        </constructor-arg>
+    </bean>
+
+    <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
+        <property name="socketTimeout" value="330000" />
+        <property name="connectionTimeout" value="10000" />
+        <property name="maxConnections" value="24" />
+    </bean>
+
+    <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder"
+        factory-method="build" />
+
+    <bean id="httpClient" class="com.raytheon.uf.common.comm.HttpClient"
+        factory-method="configureGlobalInstance">
+        <constructor-arg ref="httpClientConfig" />
+    </bean>
+
+</beans>

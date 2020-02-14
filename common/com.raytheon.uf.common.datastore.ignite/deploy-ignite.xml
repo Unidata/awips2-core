@@ -1,0 +1,29 @@
+<project name="deploy.ignite" default="deploy" basedir=".">
+    <description>
+        Deploys files for running apache ignite as a standalone application.
+    </description>
+    <property name="ignite.root.directory" location="/awips2/ignite" />
+    <property name="ignite.config.directory" location="${ignite.root.directory}/config" />
+    <property name="ignite.bin.directory" location="${ignite.root.directory}/bin" />
+
+
+    <target name="deploy">
+        <copy todir="${ignite.config.directory}" overwrite="true">
+            <fileset dir="${basedir}/config" />
+        </copy>
+        <copy todir="${ignite.bin.directory}" overwrite="true">
+            <fileset dir="${basedir}/scripts" />
+        </copy>
+        <chmod perm="ugo+rx">
+            <fileset dir="${ignite.bin.directory}" />
+        </chmod>
+    	<!--
+    	  Most users cannot write systemd units so you will need extra permissions if you want to do this:
+    	  sudo touch /lib/systemd/system/ignite@.service
+    	  sudo chown $USER: /lib/systemd/system/ignite@.service
+    	-->
+    	<copy todir="/lib/systemd/system/" overwrite="true" failonerror="false">
+    	    <fileset dir="${basedir}/service" />
+    	</copy>
+    </target>
+</project>

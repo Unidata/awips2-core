@@ -1,0 +1,20 @@
+# This file should be installed as a systemd unit into /etc/systemd/system/ or /lib/systemd/system/
+# This is a template, so ignite can be enabled with commands like:
+# sudo systemctl enable ignite@developer
+# or
+# sudo systemctl enable ignite@production
+
+[Unit]
+Description=Apache Ignite for AWIPS2
+After=network-online.target
+
+[Service]
+User=awips
+Group=fxalpha
+Type=simple
+Restart=always
+SuccessExitStatus=143
+ExecStart=/awips2/ignite/bin/a2_ignite.sh %I
+
+[Install]
+WantedBy=multi-user.target

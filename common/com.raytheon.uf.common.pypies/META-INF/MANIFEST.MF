@@ -11,5 +11,6 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.comm;bundle-version="1.15",
  org.slf4j;bundle-version="1.7.21"
 Export-Package: com.raytheon.uf.common.pypies,
+ com.raytheon.uf.common.pypies.records,
  com.raytheon.uf.common.pypies.request,
  com.raytheon.uf.common.pypies.response

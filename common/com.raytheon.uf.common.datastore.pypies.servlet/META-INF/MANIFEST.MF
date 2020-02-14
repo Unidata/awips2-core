@@ -1,0 +1,14 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: PyPies Compatible Servlet
+Bundle-SymbolicName: com.raytheon.uf.common.datastore.pypies.servlet
+Bundle-Version: 1.19.0.qualifier
+Bundle-Vendor: RAYTHEON
+Bundle-RequiredExecutionEnvironment: JavaSE-1.8
+Require-Bundle: com.raytheon.uf.common.datastorage,
+ com.raytheon.uf.common.pypies,
+ com.raytheon.uf.common.serialization,
+ javax.servlet,
+ com.raytheon.uf.common.util,
+ org.slf4j;bundle-version="1.7.25"
+Export-Package: com.raytheon.uf.common.datastore.pypies.servlet

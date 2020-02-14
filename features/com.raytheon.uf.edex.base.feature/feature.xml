@@ -190,4 +190,49 @@
          install-size="0"
          version="1.3.2"/>
 
+   <plugin
+         id="com.raytheon.uf.common.datastore.ignite"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+   <plugin
+         id="com.raytheon.uf.common.datastore.pypies.servlet"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.raytheon.uf.common.datastore.ignite.pypies"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="com.raytheon.uf.edex.pointdata.ignite"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+   <plugin
+         id="org.apache.ignite"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
+         id="com.h2database"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
+   <plugin
+         id="javax.cache"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"/>
+
 </feature>
