@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -38,24 +38,36 @@ import com.raytheon.viz.ui.perspectives.VizPerspectiveListener;
 
 /**
  * Creates a new four panel map editor
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 25, 2010            mschenke     Initial creation
- * 
+ * Feb 17, 2020 75012      ksunil       changed name. Not hard-coded to 4 panels anymore
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
-public class NewFourPanelEditor extends AbstractHandler {
+public class MultiPanelEditor extends AbstractHandler {
     private static final transient IUFStatusHandler statusHandler = UFStatus
-            .getHandler(NewFourPanelEditor.class);
+            .getHandler(MultiPanelEditor.class);
+
+    private int numPanes;
+
+    public MultiPanelEditor() {
+        super();
+        this.numPanes = 4;
+    }
+
+    public MultiPanelEditor(MultiPanes numPanes) {
+        super();
+        this.numPanes = numPanes.numPanes();
+    }
 
     @Override
     public Object execute(ExecutionEvent event) throws ExecutionException {
@@ -64,8 +76,8 @@ public class NewFourPanelEditor extends AbstractHandler {
         }
         IWorkbenchWindow window = VizWorkbenchManager.getInstance()
                 .getCurrentWindow();
-        IEditorPart part = VizWorkbenchManager.getInstance().getActiveEditor(
-                window);
+        IEditorPart part = VizWorkbenchManager.getInstance()
+                .getActiveEditor(window);
         if (part == null || part instanceof IMultiPaneEditor == false) {
             // If no open editor or current editor is not multi pane editor,
             // attempt to open new one
@@ -90,7 +102,7 @@ public class NewFourPanelEditor extends AbstractHandler {
             // 4 panel
             IMultiPaneEditor mpe = (IMultiPaneEditor) part;
             IDisplayPane[] panes = mpe.getDisplayPanes();
-            if (panes != null && panes.length < 4) {
+            if (panes != null && panes.length < numPanes) {
                 IRenderableDisplay displayToClone = null;
                 for (IDisplayPane pane : panes) {
                     displayToClone = pane.getRenderableDisplay();
@@ -98,7 +110,7 @@ public class NewFourPanelEditor extends AbstractHandler {
                         break;
                     }
                 }
-                for (int i = panes.length; i < 4; ++i) {
+                for (int i = panes.length; i < numPanes; ++i) {
                     mpe.addPane(displayToClone.createNewDisplay());
                 }
             }
