@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -29,31 +29,32 @@ import com.raytheon.viz.core.gl.GLDisposalManager.GLDisposer;
 
 /**
  * Cache for GLImages, one for memory and one fore texture
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 13, 2007            chammack    Initial Creation.
- * Jan  9, 2013 2680       mschenke    Changed size calculation to longs to
- *                                     avoid int overflow when using cache 
- *                                     size > 1GB
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 13, 2007           chammack  Initial Creation.
+ * Jan 09, 2013  2680     mschenke  Changed size calculation to longs to avoid
+ *                                  int overflow when using cache size > 1GB
+ * Jan 21, 2020  73572    tjensen   Allow sizing of heap memory and restaging of
+ *                                  textures from cache
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 
-public class ImageCache extends LRUCache<Object, IImageCacheable> implements
-        java.io.Serializable {
+public class ImageCache extends LRUCache<Object, IImageCacheable>
+        implements java.io.Serializable {
 
     private static final long serialVersionUID = 1L;
 
     /**
      * The defined cache types
      */
-    public static enum CacheType {
+    public enum CacheType {
         TEXTURE, MEMORY
     }
 
@@ -62,16 +63,29 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
     static {
         int sz = Activator.getDefault().getPreferenceStore()
                 .getInt(PreferenceConstants.P_TEXTURES_CARD);
-        if (sz == 0)
+        if (sz == 0) {
             TEXTURE_CACHE_SIZE = 512;
-        else
+        } else {
             TEXTURE_CACHE_SIZE = sz;
+        }
     }
 
     /** Memory cache size */
     private static final int MEMORY_CACHE_SIZE;
     static {
-        MEMORY_CACHE_SIZE = TEXTURE_CACHE_SIZE / 2;
+        int sz = Activator.getDefault().getPreferenceStore()
+                .getInt(PreferenceConstants.P_TEXTURES_HEAP);
+        if (sz == 0) {
+            MEMORY_CACHE_SIZE = 512;
+        } else {
+            MEMORY_CACHE_SIZE = sz;
+        }
+    }
+
+    private static final boolean RESTAGING_ENABLED;
+    static {
+        RESTAGING_ENABLED = Activator.getDefault().getPreferenceStore()
+                .getBoolean(PreferenceConstants.P_TEXTURES_RESTAGING);
     }
 
     /** The instance of the texture cache */
@@ -82,10 +96,10 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
 
     /**
      * Get Singletons
-     * 
+     *
      * Get the instance of the LRU cache the corresponds to the level of caching
      * desired
-     * 
+     *
      * @param type
      *            the cache type of the LRU cache
      * @return the LRU cache
@@ -112,7 +126,7 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
 
     /**
      * Constructor
-     * 
+     *
      * @param maxSz
      * @param type
      */
@@ -126,6 +140,10 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
 
     @Override
     protected void removeItem(Item item) {
+        removeItem(item, false);
+    }
+
+    protected void removeItem(Item item, boolean sizeManagement) {
         super.removeItem(item);
         final IImageCacheable i = item.value;
         if (this == memoryCache) {
@@ -134,9 +152,19 @@ public class ImageCache extends LRUCache<Object, IImageCacheable> implements
             new GLDisposer() {
                 @Override
                 protected void dispose(GL gl) {
-                    i.disposeTexture();
+                    i.disposeTexture(sizeManagement);
                 }
             }.dispose();
+        }
+    }
+
+    @Override
+    protected void manageSize() {
+        Item last = null;
+        while (this.curSize >= this.maxSize) {
+            last = this.tail.previous;
+            this.lruMap.remove(last.key);
+            removeItem(last, RESTAGING_ENABLED);
         }
     }
 }

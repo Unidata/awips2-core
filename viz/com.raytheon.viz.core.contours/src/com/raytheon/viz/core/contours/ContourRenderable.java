@@ -26,22 +26,9 @@ import java.util.UUID;
 
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridGeometry;
-import org.geotools.geometry.DirectPosition2D;
-import org.geotools.geometry.jts.JTS;
-import org.opengis.coverage.grid.GridEnvelope;
-import org.opengis.referencing.operation.MathTransform;
 
-import com.raytheon.uf.common.geospatial.MapUtil;
-import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
-import com.raytheon.uf.common.numeric.DataUtilities;
-import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
-import com.raytheon.uf.common.numeric.dest.DataDestination;
-import com.raytheon.uf.common.numeric.filter.FillValueFilter;
-import com.raytheon.uf.common.numeric.filter.InverseFillValueFilter;
 import com.raytheon.uf.common.numeric.source.DataSource;
 import com.raytheon.uf.common.style.contour.ContourPreferences;
-import com.raytheon.uf.common.wxmath.Constants;
-import com.raytheon.uf.common.wxmath.DistFilter;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.IGraphicsTarget.LineStyle;
 import com.raytheon.uf.viz.core.PixelExtent;
@@ -54,14 +41,13 @@ import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.map.MapDescriptor;
 import com.raytheon.viz.core.contours.ContourSupport.ContourGroup;
-import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Generalized contour renderable
- * 
+ *
  * May be embedded in other renderable displays or form the basis of contour
  * resources
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date          Ticket#  Engineer    Description
@@ -72,9 +58,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  * Feb 27, 2014  2791     bsteffen    Switch from IDataRecord to DataSource and
  *                                    reduce loop freezing.
  * Jun 30, 2015 RM14663   kshresth    Font size increased for Contour labels.
- * 
+ * Jun 27, 2019  65510    ksunil      refactor smoothData call
+ * Jul 31, 2019  66719    ksunil      Ignore smoothingDistance of 0 or less.
+ *
  * </pre>
- * 
+ *
  * @author chammack
  * @version 1.0
  */
@@ -122,7 +110,7 @@ public abstract class ContourRenderable implements IRenderable {
 
     /**
      * Constructor
-     * 
+     *
      * @param styleRule
      * @param descriptor
      * @param callback
@@ -141,8 +129,11 @@ public abstract class ContourRenderable implements IRenderable {
             if (data != null) {
                 GeneralGridGeometry gridGeometry = getGridGeometry();
                 ContourPreferences contourPrefs = getPreferences();
-                if (gridGeometry != null && contourPrefs != null) {
-                    data = smoothData(data, gridGeometry, contourPrefs);
+                if (gridGeometry != null && contourPrefs != null
+                        && contourPrefs.getSmoothingDistance() != null
+                        && contourPrefs.getSmoothingDistance() > 0) {
+                    data = ContourSupport.smoothData(data, gridGeometry,
+                            contourPrefs.getSmoothingDistance());
                 }
             }
         }
@@ -151,7 +142,7 @@ public abstract class ContourRenderable implements IRenderable {
 
     /**
      * Set color
-     * 
+     *
      * @param color
      *            the color to set
      */
@@ -190,7 +181,7 @@ public abstract class ContourRenderable implements IRenderable {
 
     /**
      * Set outline width
-     * 
+     *
      * @param outlineWidth
      *            the outlineWidth to set
      */
@@ -200,7 +191,7 @@ public abstract class ContourRenderable implements IRenderable {
 
     /**
      * Set the line style
-     * 
+     *
      * @param lineStyle
      *            the lineStyle to set
      */
@@ -210,7 +201,7 @@ public abstract class ContourRenderable implements IRenderable {
 
     /*
      * (non-Javadoc)
-     * 
+     *
      * @see
      * com.raytheon.viz.core.drawables.IRenderable#paint(com.raytheon.viz.core
      * .IGraphicsTarget, com.raytheon.viz.core.drawables.PaintProperties)
@@ -231,30 +222,32 @@ public abstract class ContourRenderable implements IRenderable {
                 if (font == null) {
                     font = target.getDefaultFont();
 
-                    if(magnification < 1.0f)
+                    if (magnification < 1.0f)
                         font = target.initializeFont(font.getFontName(),
-                            (float) (font.getFontSize() / 0.9 * magnification),
-                            null);
+                                (float) (font.getFontSize() / 0.9
+                                        * magnification),
+                                null);
                     else
                         font = target.initializeFont(font.getFontName(),
-                            (float) (font.getFontSize() / 1.05 * magnification),
-                            null);
+                                (float) (font.getFontSize() / 1.05
+                                        * magnification),
+                                null);
                 }
 
                 if (minMaxFont == null) {
                     minMaxFont = target.getDefaultFont();
 
                     if (magnification < 1.0f)
-                        minMaxFont = target
-                            .initializeFont(
-                                    minMaxFont.getFontName(),
-                                    (float) (minMaxFont.getFontSize() / 0.85 * magnification),
-                                    new Style[] { Style.BOLD });
-                    else
-                        minMaxFont = target
-                        .initializeFont(
+                        minMaxFont = target.initializeFont(
                                 minMaxFont.getFontName(),
-                                (float) (minMaxFont.getFontSize() / 1.0 * magnification),
+                                (float) (minMaxFont.getFontSize() / 0.85
+                                        * magnification),
+                                new Style[] { Style.BOLD });
+                    else
+                        minMaxFont = target.initializeFont(
+                                minMaxFont.getFontName(),
+                                (float) (minMaxFont.getFontSize() / 1.0
+                                        * magnification),
                                 new Style[] { Style.BOLD });
                 }
 
@@ -271,16 +264,19 @@ public abstract class ContourRenderable implements IRenderable {
                     curlvl *= paintProps.getCanvasBounds().width
                             / BASE_CANVAS_SIZE;
                     if (widthInMeters <= curlvl || i == 0) {
-                        boolean contains = (contourGroup[i] == null || contourGroup[i].lastUsedPixelExtent == null) ? false
-                                : (contourGroup[i].lastUsedPixelExtent
-                                        .getEnvelope()
-                                        .contains(((PixelExtent) paintProps
-                                                .getView().getExtent())
-                                                .getEnvelope()));
+                        boolean contains = (contourGroup[i] == null
+                                || contourGroup[i].lastUsedPixelExtent == null)
+                                        ? false
+                                        : (contourGroup[i].lastUsedPixelExtent
+                                                .getEnvelope().contains(
+                                                        ((PixelExtent) paintProps
+                                                                .getView()
+                                                                .getExtent())
+                                                                        .getEnvelope()));
                         // calculate the pixel density
                         float pixelDensity = (float) (paintProps
-                                .getCanvasBounds().width / paintProps.getView()
-                                .getExtent().getWidth());
+                                .getCanvasBounds().width
+                                / paintProps.getView().getExtent().getWidth());
 
                         double pdRatio = contourGroup[i] == null ? 1
                                 : pixelDensity
@@ -329,8 +325,8 @@ public abstract class ContourRenderable implements IRenderable {
                                     // add new request
                                     requestMap.put(identifier, request);
                                     // send request
-                                    ContourManagerJob.getInstance().request(
-                                            request);
+                                    ContourManagerJob.getInstance()
+                                            .request(request);
                                 }
                             } else {
                                 // there is no exiting request, insert new one
@@ -355,8 +351,8 @@ public abstract class ContourRenderable implements IRenderable {
                                  * everyone a chance to queue up work so that
                                  * multiprocessing is done more efficiently.
                                  */
-                                retries = 100 / descriptor.getResourceList()
-                                        .size();
+                                retries = 100
+                                        / descriptor.getResourceList().size();
                             }
                             do {
                                 // grab request from map
@@ -396,11 +392,8 @@ public abstract class ContourRenderable implements IRenderable {
                         }
 
                         if (contourGroup[i] != null
-                                && paintProps
-                                        .getView()
-                                        .getExtent()
-                                        .intersects(
-                                                contourGroup[i].lastUsedPixelExtent)) {
+                                && paintProps.getView().getExtent().intersects(
+                                        contourGroup[i].lastUsedPixelExtent)) {
                             // System.out.println("Painting group at " + i);
                             drawContourGroup(target, contourGroup[i]);
                         } else {
@@ -410,8 +403,8 @@ public abstract class ContourRenderable implements IRenderable {
                                 if (contourGroup[j] != null) {
                                     if (contourGroup[j].posValueShape != null) {
                                         if (contourGroup[j].lastUsedPixelExtent
-                                                .intersects(paintProps
-                                                        .getView().getExtent())) {
+                                                .intersects(paintProps.getView()
+                                                        .getExtent())) {
                                             drawContourGroup(target,
                                                     contourGroup[j]);
                                         }
@@ -428,59 +421,6 @@ public abstract class ContourRenderable implements IRenderable {
                     i--;
                 }
             }
-        }
-    }
-
-    private DataSource[] smoothData(DataSource[] dataRecord,
-            GeneralGridGeometry gridGeometry, ContourPreferences contourPrefs)
-            throws VizException {
-        if (contourPrefs != null && contourPrefs.getSmoothingDistance() != null) {
-            // Calculate the Diagnol Distance of the Grid In Meters.
-            DirectPosition2D upperCorner = new DirectPosition2D(gridGeometry
-                    .getEnvelope().getUpperCorner());
-            DirectPosition2D lowerCorner = new DirectPosition2D(gridGeometry
-                    .getEnvelope().getLowerCorner());
-            double distanceInM;
-            try {
-                MathTransform crs2ll = MapUtil
-                        .getTransformToLatLon(gridGeometry
-                                .getCoordinateReferenceSystem());
-                crs2ll.transform(upperCorner, upperCorner);
-                crs2ll.transform(lowerCorner, lowerCorner);
-                upperCorner.x = MapUtil.correctLon(upperCorner.x);
-                lowerCorner.x = MapUtil.correctLon(lowerCorner.x);
-                distanceInM = JTS
-                        .orthodromicDistance(
-                                new Coordinate(lowerCorner.getOrdinate(0),
-                                        lowerCorner.getOrdinate(1)),
-                                new Coordinate(upperCorner.getOrdinate(0),
-                                        upperCorner.getOrdinate(1)), MapUtil
-                                        .getLatLonProjection());
-            } catch (Exception e) {
-                throw new VizException(e);
-            }
-            // Calculate the Diagnol Distance in Points
-            GridEnvelope range = gridGeometry.getGridRange();
-            int nx = range.getSpan(0);
-            int ny = range.getSpan(1);
-            double distanceInPoints = Math.sqrt(nx * nx + ny * ny);
-            // Determine the number of points to smooth, assume
-            // smoothingDistance is in km
-            float npts = (float) (distanceInPoints
-                    * contourPrefs.getSmoothingDistance() / (distanceInM / 1000));
-            FloatBufferWrapper data = new FloatBufferWrapper(nx, ny);
-            DataDestination dest = InverseFillValueFilter.apply(
-                    (DataDestination) data, Constants.LEGACY_NAN);
-            DataUtilities.copy(dataRecord[0], dest, nx, ny);
-            float[] dataArray = data.getArray();
-            dataArray = DistFilter.filter(dataArray, npts, nx, ny, 1);
-            data = new FloatBufferWrapper(dataArray, nx, ny);
-            DataSource source = FillValueFilter.apply((DataSource) data,
-                    Constants.LEGACY_NAN);
-            source = new GeographicDataSource(source, gridGeometry);
-            return new DataSource[] { source };
-        } else {
-            return dataRecord;
         }
     }
 
@@ -526,9 +466,9 @@ public abstract class ContourRenderable implements IRenderable {
 
         ContourPreferences prefs = getPreferences();
 
-        if (prefs != null
-                && prefs.getPositiveLinePattern() != null
-                && (this.lineStyle == null || this.lineStyle == LineStyle.DEFAULT)) {
+        if (prefs != null && prefs.getPositiveLinePattern() != null
+                && (this.lineStyle == null
+                        || this.lineStyle == LineStyle.DEFAULT)) {
             posLineStyle = LineStyle.valueOf(prefs.getPositiveLinePattern());
         } else if (this.lineStyle == null
                 || this.lineStyle == LineStyle.DEFAULT) {
@@ -537,9 +477,9 @@ public abstract class ContourRenderable implements IRenderable {
             posLineStyle = this.lineStyle;
         }
 
-        if (prefs != null
-                && prefs.getNegativeLinePattern() != null
-                && (this.lineStyle == null || this.lineStyle == LineStyle.DEFAULT)) {
+        if (prefs != null && prefs.getNegativeLinePattern() != null
+                && (this.lineStyle == null
+                        || this.lineStyle == LineStyle.DEFAULT)) {
             negLineStyle = LineStyle.valueOf(prefs.getNegativeLinePattern());
         } else if (this.lineStyle == null
                 || this.lineStyle == LineStyle.DEFAULT) {
@@ -547,14 +487,6 @@ public abstract class ContourRenderable implements IRenderable {
         } else {
             negLineStyle = this.lineStyle;
         }
-
-        // if (this.lineStyle == null || this.lineStyle == LineStyle.DEFAULT) {
-        // posLineStyle = LineStyle.SOLID;
-        // negLineStyle = LineStyle.DASHED_LARGE;
-        // } else {
-        // posLineStyle = this.lineStyle;
-        // negLineStyle = this.lineStyle;
-        // }
 
         contourGroup.drawContours(target, this.color, this.outlineWidth,
                 posLineStyle, negLineStyle, font, minMaxFont);

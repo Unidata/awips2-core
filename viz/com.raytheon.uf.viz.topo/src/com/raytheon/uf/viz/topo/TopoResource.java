@@ -41,7 +41,7 @@ import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.ParamLevelMatchCriteria;
 import com.raytheon.uf.common.style.StyleException;
 import com.raytheon.uf.common.style.StyleManager;
@@ -192,7 +192,7 @@ public class TopoResource
                 params.setFormatString(samplePrefs.getFormatString());
             }
 
-            LabelingPreferences labelPrefs = prefs.getColorbarLabeling();
+            ImageryLabelingPreferences labelPrefs = prefs.getColorbarLabeling();
             if ((labelPrefs != null) && (labelPrefs.getValues() != null)) {
                 params.setColorBarIntervals(labelPrefs.getValues());
             }
