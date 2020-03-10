@@ -14,3 +14,4 @@ Export-Package: com.raytheon.uf.common.pypies,
  com.raytheon.uf.common.pypies.records,
  com.raytheon.uf.common.pypies.request,
  com.raytheon.uf.common.pypies.response
+Import-Package: org.apache.http.conn
