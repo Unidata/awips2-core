@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,20 +41,21 @@ import com.sun.opengl.util.texture.TextureIO;
 
 /**
  * Represents a GL "RenderedImage"
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- *      
- * Date          Ticket#  Engineer   Description
- * ------------- -------- ---------- --------------------------
- * Jul 01, 2006           chammack    Initial Creation.
- * May 27, 2014  3196     bsteffen    Remove jai.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------------------------------
+ * Jul 01, 2006           chammack  Initial Creation.
+ * May 27, 2014  3196     bsteffen  Remove jai.
+ * Jan 21, 2020  73572    tjensen   Add sizeManagement arg to disposeTexture
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * 
+ *
  */
 public class GLImage extends AbstractGLImage implements IImageCacheable {
 
@@ -67,7 +68,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
     /** The rendered image representation of the image */
     protected RenderedImage theImage;
 
-    private IRenderedImageCallback imagePreparer;
+    private final IRenderedImageCallback imagePreparer;
 
     protected int size;
 
@@ -78,11 +79,6 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         this.imagePreparer = preparer;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IImage#getImage()
-     */
     public RenderedImage getImage() {
         return theImage;
     }
@@ -90,22 +86,20 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
     /*
      * Return the size in bytes
      */
+    @Override
     public int getSize() {
         return size;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IImage#dispose()
-     */
+    @Override
     public void dispose() {
         super.dispose();
         ImageCache.getInstance(CacheType.MEMORY).remove(this);
         ImageCache.getInstance(CacheType.TEXTURE).remove(this);
     }
 
-    public void disposeTexture() {
+    @Override
+    public void disposeTexture(boolean sizeManagement) {
         synchronized (this) {
             if (theTexture == null) {
                 return;
@@ -127,11 +121,6 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.images.AbstractGLImage#stageTexture()
-     */
     @Override
     public boolean stageTexture() throws VizException {
         if (theImage == null) {
@@ -145,11 +134,12 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     /**
      * Load a staged texture into video memory
-     * 
+     *
      * @param ctx
      *            the OpenGL context
      * @throws VizException
      */
+    @Override
     public void loadTexture(GL gl) throws VizException {
         synchronized (this) {
             Texture tex = TextureIO.newTexture(theStagedData);
@@ -158,12 +148,8 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
             tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NEAREST);
             tex.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_NEAREST);
-            // tex.setTexParameteri(GL.GL_TEXTURE_MIN_FILTER, GL.GL_NICEST);
-            // tex.setTexParameteri(GL.GL_TEXTURE_MAG_FILTER, GL.GL_NICEST);
             tex.setTexParameteri(GL.GL_TEXTURE_WRAP_S, GL.GL_CLAMP_TO_EDGE);
             tex.setTexParameteri(GL.GL_TEXTURE_WRAP_T, GL.GL_CLAMP_TO_EDGE);
-            // tex.setTexParameteri(GL.GL_TEXTURE_WRAP_S, GL.GL_REPEAT);
-            // tex.setTexParameteri(GL.GL_TEXTURE_WRAP_T, GL.GL_REPEAT);
 
             setStatus(Status.LOADED);
 
@@ -174,11 +160,11 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     /**
      * Initialize a texture from a rendered
-     * 
+     *
      * <P>
      * Recommended BufferedImage types are TYPE_INT_RGB and TYPE_4BYTE_ABGR (if
      * transparency is necessary)
-     * 
+     *
      * @param rendImg
      *            the rendered image to load
      */
@@ -192,8 +178,8 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
                     false);
         } else {
             // convert to buf img
-            theStagedData = TextureIO.newTextureData(
-                    fromRenderedToBuffered(rendImg), false);
+            theStagedData = TextureIO
+                    .newTextureData(fromRenderedToBuffered(rendImg), false);
         }
 
         this.size = rendImg.getHeight() * rendImg.getWidth() * 4;
@@ -202,9 +188,9 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     /**
      * Get the texture that represents this image
-     * 
+     *
      * This should not be called externally.
-     * 
+     *
      * @return the texture
      */
     public Texture getTexture() {
@@ -216,10 +202,11 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     /**
      * Dispose the texture data
-     * 
+     *
      * This should not be called directly
-     * 
+     *
      */
+    @Override
     public void disposeTextureData() {
         synchronized (this) {
             if (theStagedData != null) {
@@ -234,11 +221,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IImage#getHeight()
-     */
+    @Override
     public int getHeight() {
         if (theImage != null) {
             return theImage.getHeight();
@@ -250,11 +233,7 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         return -1;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.drawables.IImage#getWidth()
-     */
+    @Override
     public int getWidth() {
         if (theImage != null) {
             return theImage.getWidth();
@@ -272,12 +251,12 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
         int h = img.getHeight();
         WritableRaster raster = cm.createCompatibleWritableRaster(w, h);
         boolean isAlphaPremultiplied = cm.isAlphaPremultiplied();
-        Hashtable<String, Object> props = new Hashtable<String, Object>();
+        Hashtable<String, Object> props = new Hashtable<>();
         String[] keys = img.getPropertyNames();
 
         if (keys != null) {
-            for (int i = 0; i < keys.length; i++) {
-                props.put(keys[i], img.getProperty(keys[i]));
+            for (String key : keys) {
+                props.put(key, img.getProperty(key));
             }
         }
         BufferedImage ret = new BufferedImage(cm, raster, isAlphaPremultiplied,
@@ -288,24 +267,21 @@ public class GLImage extends AbstractGLImage implements IImageCacheable {
 
     /**
      * The texture type
-     * 
+     *
      * @return the texture type id
      */
+    @Override
     public int getTextureStorageType() {
         return theTexture.getTarget();
     }
 
+    @Override
     public int getTextureid() {
         ImageCache.getInstance(CacheType.TEXTURE).put(this);
 
         return getTexture().getTextureObject();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.images.AbstractGLImage#getTextureCoords()
-     */
     @Override
     public TextureCoords getTextureCoords() {
         return theTexture.getImageTexCoords();

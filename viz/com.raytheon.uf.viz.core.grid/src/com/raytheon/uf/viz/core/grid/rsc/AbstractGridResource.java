@@ -86,6 +86,8 @@ import com.raytheon.uf.viz.core.grid.display.GriddedVectorDisplay;
 import com.raytheon.uf.viz.core.grid.rsc.data.GeneralGridData;
 import com.raytheon.uf.viz.core.grid.rsc.data.GridDataRequestRunner;
 import com.raytheon.uf.viz.core.grid.rsc.data.LogArrowScaler;
+import com.raytheon.uf.viz.core.grid.rsc.data.ScalarGridData;
+import com.raytheon.uf.viz.core.grid.rsc.data.VectorGridData;
 import com.raytheon.uf.viz.core.map.IMapDescriptor;
 import com.raytheon.uf.viz.core.point.display.VectorGraphicsConfig;
 import com.raytheon.uf.viz.core.rsc.AbstractRequestableResourceData;
@@ -114,6 +116,7 @@ import com.raytheon.uf.viz.core.tile.DataSourceTileImageCreator;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable;
 import com.raytheon.uf.viz.core.tile.TileSetRenderable.TileImageCreator;
 import com.raytheon.viz.core.contours.ContourRenderable;
+import com.raytheon.viz.core.contours.ContourSupport;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedContourDisplay;
 import com.raytheon.viz.core.contours.rsc.displays.GriddedStreamlineDisplay;
 import com.vividsolutions.jts.geom.Coordinate;
@@ -156,6 +159,11 @@ import com.vividsolutions.jts.geom.Coordinate;
  *                                  present but missing in ImagingCapability
  * Nov 15, 2018  57905    edebebe   Enabled configurable 'Wind Barb' properties
  * Feb 28, 2019  7713     tjensen   Fix wind barb config
+ * Jun 27, 2019  65510    ksunil    Support color fill through XML entries, support smoothData
+ * Jul 30, 2019  66477    mapeters  Don't set minimumMagnitude based off arrowHeadSizeRatio
+ * Aug 29, 2019  67949    tjensen   Refactor to support additional GFE products
+ * Dec 02, 2019  71870    tjensen   Make disposeRenderable visible to be overridden
+ *
  *
  * </pre>
  *
@@ -553,6 +561,29 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
         switch (displayType) {
         case IMAGE:
+            try {
+                StyleRule sr = StyleManager.getInstance().getStyleRule(
+                        StyleManager.StyleType.IMAGERY, getMatchCriteria());
+                if (sr != null) {
+                    ImagePreferences preferences = (ImagePreferences) sr
+                            .getPreferences();
+                    if (gridGeometry != null && preferences != null
+                            && preferences.getSmoothingDistance() != null) {
+                        ((ScalarGridData) data)
+                                .setScalarData(ContourSupport.smoothData(
+                                        new DataSource[] {
+                                                ((ScalarGridData) data)
+                                                        .getScalarData() },
+                                        gridGeometry,
+                                        preferences.getSmoothingDistance())[0]);
+                    }
+                }
+            } catch (Exception e1) {
+                statusHandler.handle(Priority.WARN,
+                        "Unable to honor the specified smoothing request. ",
+                        e1);
+            }
+
             ColorMapCapability colorMapCap = getCapability(
                     ColorMapCapability.class);
             ImagingCapability imagingCap = getCapability(
@@ -579,8 +610,8 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                 data.convert(params.getColorMapUnit());
             }
             TileImageCreator creator = new DataSourceTileImageCreator(
-                    data.getScalarData(), data.getDataUnit(),
-                    ColorMapDataType.FLOAT, colorMapCap);
+                    data.getData(), data.getDataUnit(), ColorMapDataType.FLOAT,
+                    colorMapCap);
             TileSetRenderable tsr = new TileSetRenderable(imagingCap,
                     gridGeometry, creator, 1, IMAGE_TILE_SIZE);
             tsr.project(descriptor.getGridGeometry());
@@ -593,8 +624,6 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             VectorGraphicsConfig config = new VectorGraphicsConfig(PLUGIN_NAME,
                     CLASS_NAME);
             if (displayType != DisplayType.BARB) {
-                config.setMinimumMagnitude(
-                        config.getBaseSize() * config.getArrowHeadSizeRatio());
                 config.disableCalmCircle();
                 if (stylePreferences != null
                         && stylePreferences instanceof ArrowPreferences) {
@@ -613,26 +642,34 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
                     }
                 }
             }
-            GriddedVectorDisplay vectorDisplay = new GriddedVectorDisplay(
-                    data.getMagnitude(), data.getDirectionFrom(), descriptor,
-                    gridGeometry, VECTOR_DENSITY_FACTOR, true, displayType,
-                    config);
-            vectorDisplay.setColor(
-                    getCapability(ColorableCapability.class).getColor());
-            vectorDisplay.setLineStyle(
-                    getCapability(OutlineCapability.class).getLineStyle());
-            vectorDisplay.setLineWidth(
-                    getCapability(OutlineCapability.class).getOutlineWidth());
-            vectorDisplay.setDensity(
-                    getCapability(DensityCapability.class).getDensity());
-            vectorDisplay.setMagnification(
-                    getCapability(MagnificationCapability.class)
-                            .getMagnification());
-            renderable = vectorDisplay;
+            if (data instanceof VectorGridData) {
+                GriddedVectorDisplay vectorDisplay = new GriddedVectorDisplay(
+                        ((VectorGridData) data).getMagnitude(),
+                        ((VectorGridData) data).getDirectionFrom(), descriptor,
+                        gridGeometry, VECTOR_DENSITY_FACTOR, true, displayType,
+                        config);
+                vectorDisplay.setColor(
+                        getCapability(ColorableCapability.class).getColor());
+                vectorDisplay.setLineStyle(
+                        getCapability(OutlineCapability.class).getLineStyle());
+                vectorDisplay
+                        .setLineWidth(getCapability(OutlineCapability.class)
+                                .getOutlineWidth());
+                vectorDisplay.setDensity(
+                        getCapability(DensityCapability.class).getDensity());
+                vectorDisplay.setMagnification(
+                        getCapability(MagnificationCapability.class)
+                                .getMagnification());
+                renderable = vectorDisplay;
+            } else {
+                throw new VizException(
+                        "Unexpected data type for arrow/barb in createRenderable: "
+                                + data.getClass());
+            }
             break;
         case ICON:
             GriddedIconDisplay iconDisplay = new GriddedIconDisplay(
-                    data.getScalarData(), descriptor, gridGeometry, 80, 0.75);
+                    data.getData(), descriptor, gridGeometry, 80, 0.75);
             iconDisplay.setColor(
                     getCapability(ColorableCapability.class).getColor());
             iconDisplay.setDensity(
@@ -648,12 +685,17 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             GriddedContourDisplay contourRenderable = null;
             if (displayType == DisplayType.CONTOUR) {
                 contourRenderable = new GriddedContourDisplay(descriptor,
-                        gridGeometry, data.getScalarData());
-            } else {
+                        gridGeometry, data.getData());
+            } else if (data instanceof VectorGridData) {
                 contourRenderable = new GriddedStreamlineDisplay(descriptor,
-                        gridGeometry, data.getUComponent(),
-                        data.getVComponent());
+                        gridGeometry, ((VectorGridData) data).getUComponent(),
+                        ((VectorGridData) data).getVComponent());
+            } else {
+                throw new VizException(
+                        "Unexpected data type for streamline in createRenderable: "
+                                + data.getClass());
             }
+
             contourRenderable.setColor(
                     getCapability(ColorableCapability.class).getColor());
             contourRenderable.setLineStyle(
@@ -696,7 +738,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         ParamLevelMatchCriteria criteria = getMatchCriteria();
         ColorMapParameters newParameters;
         GridEnvelope2D range = data.getGridGeometry().getGridRange2D();
-        DataSource source = data.getScalarData();
+        DataSource source = data.getData();
         MinMax mm = DataUtilities.getMinMax(source, range.getSpan(0),
                 range.getSpan(1));
         try {
@@ -803,7 +845,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
      *
      * @param renderable
      */
-    private void disposeRenderable(final IRenderable renderable) {
+    protected void disposeRenderable(final IRenderable renderable) {
         VizApp.runAsync(new Runnable() {
 
             @Override
@@ -951,7 +993,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         InterrogateMap result = new InterrogateMap();
         Set<InterrogationKey<?>> keySet = new HashSet<>(Arrays.asList(keys));
         if (keySet.contains(DATA_SOURCE_INTERROGATE_KEY)) {
-            result.put(DATA_SOURCE_INTERROGATE_KEY, data.getScalarData());
+            result.put(DATA_SOURCE_INTERROGATE_KEY, data.getData());
             keySet.remove(DATA_SOURCE_INTERROGATE_KEY);
         }
         if (!keySet.isEmpty()) {
@@ -965,7 +1007,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             }
             Interpolation interpolation = getInspectInterpolation();
             if (keySet.contains(Interrogator.VALUE)) {
-                GridSampler sampler = new GridSampler(data.getScalarData(),
+                GridSampler sampler = new GridSampler(data.getData(),
                         interpolation);
                 double value = sampler.sample(pixel.x, pixel.y);
                 if (!Double.isNaN(value)) {
@@ -999,12 +1041,13 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             if ((keySet.contains(DIRECTION_INTERROGATE_KEY)
                     || keySet.contains(DIRECTION_FROM_INTERROGATE_KEY)
                     || keySet.contains(DIRECTION_TO_INTERROGATE_KEY))
-                    && data.isVector()) {
+                    && data instanceof VectorGridData) {
+                VectorGridData vectorData = (VectorGridData) data;
 
                 if (keySet.contains(DIRECTION_INTERROGATE_KEY)
                         || keySet.contains(DIRECTION_FROM_INTERROGATE_KEY)) {
                     GridSampler samplerFrom = new GridSampler(
-                            data.getDirectionFrom(), interpolation);
+                            vectorData.getDirectionFrom(), interpolation);
                     Double dir = samplerFrom.sample(pixel.x, pixel.y);
                     result.put(DIRECTION_INTERROGATE_KEY, dir);
                     result.put(DIRECTION_FROM_INTERROGATE_KEY, dir);
@@ -1012,7 +1055,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
 
                 if (keySet.contains(DIRECTION_TO_INTERROGATE_KEY)) {
                     GridSampler samplerTo = new GridSampler(
-                            data.getDirectionTo(), interpolation);
+                            vectorData.getDirectionTo(), interpolation);
                     Double dir = samplerTo.sample(pixel.x, pixel.y);
                     result.put(DIRECTION_TO_INTERROGATE_KEY, dir);
                 }
@@ -1236,5 +1279,4 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             renderableMap.clear();
         }
     }
-
 }

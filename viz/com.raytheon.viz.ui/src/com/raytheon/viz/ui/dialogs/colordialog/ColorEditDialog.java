@@ -44,6 +44,7 @@ import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.style.RGBUtil;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IRenderableDisplayChangedListener;
@@ -93,6 +94,7 @@ import com.raytheon.viz.ui.editor.ISelectedPanesChangedListener;
  * Mar 14, 2018  6690     tgurney     Fix delete of colormaps in subdirs
  * Mar 19, 2018  6738     tgurney     Keep color bar history even when opening/closing dialog
  * Jul 24, 2018  7376     bsteffen    UI improvements to prevent delete of unsaved colormap.
+ * Jul 25, 2019  65809     ksunil     use new re-factored color map methods.
  *
  * </pre>
  *
@@ -859,7 +861,7 @@ public class ColorEditDialog extends CaveSWTDialog
                     // split into: localization level, context name, path
                     String[] fullPath = cName.split(IPathManager.SEPARATOR, 3);
                     if (LocalizationLevel.USER.toString().equals(fullPath[0])) {
-                        ColorUtil.deleteColorMap(fullPath[2],
+                        RGBUtil.deleteColorMap(fullPath[2],
                                 LocalizationLevel.USER);
                     }
                     deleteBtn.setEnabled(false);
@@ -928,7 +930,7 @@ public class ColorEditDialog extends CaveSWTDialog
     private void save() {
         ColorMap cm = getColorMap();
         try {
-            ColorUtil.saveColorMap(cm, currentColormapName,
+            RGBUtil.saveColorMap(cm, currentColormapName,
                     LocalizationLevel.USER);
         } catch (LocalizationException e) {
             statusHandler.error("Error saving colormap " + currentColormapName,

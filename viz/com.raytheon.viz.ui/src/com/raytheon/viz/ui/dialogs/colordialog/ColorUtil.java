@@ -20,8 +20,6 @@
 
 package com.raytheon.viz.ui.dialogs.colordialog;
 
-import java.io.File;
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -29,17 +27,7 @@ import org.eclipse.swt.graphics.RGB;
 
 import com.raytheon.uf.common.colormap.Color;
 import com.raytheon.uf.common.colormap.ColorMap;
-import com.raytheon.uf.common.colormap.ColorMapLoader;
 import com.raytheon.uf.common.colormap.IColorMap;
-import com.raytheon.uf.common.localization.ILocalizationFile;
-import com.raytheon.uf.common.localization.IPathManager;
-import com.raytheon.uf.common.localization.LocalizationContext;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
-import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
-import com.raytheon.uf.common.localization.PathManagerFactory;
-import com.raytheon.uf.common.localization.SaveableOutputStream;
-import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.serialization.SerializationException;
 
 /**
  * Utility methods for colormaps.
@@ -57,6 +45,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Jun 30, 2014  3165     njensen     Major cleanup
  * Dec 09, 2015  4834     njensen     Don't save colormaps twice
  * Jan 13, 2016  5242     kbisanz     Replaced calls to deprecated LocalizationFile methods
+ * Jul 25, 2019  65809    ksunil      re-factoring around ColorUtil and RGBUtil. Moved file operations.
  * 
  * </pre>
  * 
@@ -142,86 +131,13 @@ public class ColorUtil {
         if (aColorMap != null) {
             for (Color c : aColorMap.getColors()) {
                 RGB rgb = new RGB(Math.round(c.getRed() * MAX_VALUE),
-                        Math.round(c.getGreen() * MAX_VALUE), Math.round(c
-                                .getBlue() * MAX_VALUE));
-                colors.add(new ColorData(rgb, Math.round(c.getAlpha()
-                        * MAX_VALUE)));
+                        Math.round(c.getGreen() * MAX_VALUE),
+                        Math.round(c.getBlue() * MAX_VALUE));
+                colors.add(new ColorData(rgb,
+                        Math.round(c.getAlpha() * MAX_VALUE)));
             }
         }
         return colors;
     }
 
-    /**
-     * Checks if a colormap already exists at the specified localization level
-     * 
-     * @param colormapName
-     * @param level
-     * @return
-     */
-    public static boolean checkIfColormapExists(String colormapName,
-            LocalizationLevel level) {
-        String filename = getColormapFilename(colormapName);
-        File path = null;
-        IPathManager pm = PathManagerFactory.getPathManager();
-        path = pm.getFile(pm.getContext(LocalizationType.COMMON_STATIC, level),
-                filename);
-        return path.exists();
-    }
-
-    /**
-     * Saves a colormap to localization
-     * 
-     * @param colorMap
-     * @param colormapName
-     * @param level
-     * @throws LocalizationException
-     */
-    public static void saveColorMap(ColorMap colorMap, String colormapName,
-            LocalizationLevel level) throws LocalizationException {
-        String filename = getColormapFilename(colormapName);
-        IPathManager pathMgr = PathManagerFactory.getPathManager();
-        LocalizationContext context = pathMgr.getContext(
-                LocalizationType.COMMON_STATIC, level);
-        ILocalizationFile localizationFile = pathMgr.getLocalizationFile(
-                context, filename);
-        try (SaveableOutputStream sos = localizationFile.openOutputStream()) {
-            ColorMap.JAXB.marshalToStream(colorMap, sos);
-            sos.save();
-        } catch (SerializationException | IOException e) {
-            throw new LocalizationException("Error saving colormap "
-                    + colormapName, e);
-        }
-    }
-
-    /**
-     * Deletes a color map at the specified level
-     * 
-     * @param colormapName
-     *            the name of the colormap to delete
-     */
-    public static void deleteColorMap(String colormapName,
-            LocalizationLevel level) throws LocalizationException {
-        String filename = getColormapFilename(colormapName);
-        IPathManager pm = PathManagerFactory.getPathManager();
-        ILocalizationFile lfile = pm.getLocalizationFile(
-                pm.getContext(LocalizationType.COMMON_STATIC, level), filename);
-        if (lfile.exists()) {
-            lfile.delete();
-        }
-    }
-
-    /**
-     * Returns a localization filename (without the context) of the colormap
-     * 
-     * @param shortName
-     * @return
-     */
-    private static String getColormapFilename(String shortName) {
-        String filename = ColorMapLoader.DIR_NAME + IPathManager.SEPARATOR
-                + shortName;
-        if (!filename.endsWith(ColorMapLoader.EXTENSION)) {
-            filename += ColorMapLoader.EXTENSION;
-        }
-        return filename;
-    }
 }
