@@ -50,6 +50,22 @@
                             value="${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:8192}" />
                     </bean>
                 </property>
+                <property name="dataRegionConfigurations">
+                    <list>
+                        <!-- The data-store-cache-name-map gets a dedicated
+                             region so entries are never purged.
+                        -->
+                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                            <property name="name" value="data-store-cache-name-region"/>
+                             <!-- Documented min size is 10MB but I was still
+                                  getting OutOfMemory so max is slightly larger.
+                            -->
+                            <property name="initialSize" value="#{10 * 1024 * 1024}"/>
+                            <property name="maxSize" value="#{32 * 1024 * 1024}"/>
+                            <property name="emptyPagesPoolSize" value="1" />
+                        </bean>
+                    </list>
+                </property>
             </bean>
         </property>
         <property name="cacheConfiguration">
@@ -95,6 +111,7 @@
                 </bean>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="data-store-cache-name-map" />
+                    <property name="dataRegionName" value="data-store-cache-name-region"/>
                     <property name="cacheMode" value="REPLICATED" />
                     <property name="onheapCacheEnabled" value="true"/>
                 </bean>
