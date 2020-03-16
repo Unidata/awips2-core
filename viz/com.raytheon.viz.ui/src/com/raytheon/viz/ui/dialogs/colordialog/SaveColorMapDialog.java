@@ -42,6 +42,7 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+import com.raytheon.uf.common.style.RGBUtil;
 import com.raytheon.uf.viz.core.localization.LocalizationManager;
 import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 
@@ -57,6 +58,7 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  * Jun 23, 2014 #3158      lvenable    Added code so the dialog trim will appear.
  * Jun 30, 2014  3165      njensen     Cleaned up save actions
  * Aug 01, 2014  3394      rferrel     Added widget default selection to list and text.
+ * Jul 25, 2019  65809     ksunil      use new re-factored color map methods.
  * 
  * </pre>
  * 
@@ -93,8 +95,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
         super(parent, SWT.DIALOG_TRIM, CAVE.DO_NOT_BLOCK);
         colorMapToSave = aColorMap;
         level = locLevel;
-        currentColormapName = new String(aCurrentColormapName == null ? ""
-                : aCurrentColormapName);
+        currentColormapName = new String(
+                aCurrentColormapName == null ? "" : aCurrentColormapName);
         int index = currentColormapName.lastIndexOf(File.separator);
         if (index > -1) {
             currentColormapName = currentColormapName.substring(index + 1,
@@ -183,8 +185,8 @@ public class SaveColorMapDialog extends CaveSWTDialog {
 
         // The intent is for this composite to be centered
         Composite buttons = new Composite(buttonArea, SWT.NONE);
-        buttons.setLayoutData(new GridData(GridData.HORIZONTAL_ALIGN_CENTER
-                | GridData.GRAB_HORIZONTAL));
+        buttons.setLayoutData(new GridData(
+                GridData.HORIZONTAL_ALIGN_CENTER | GridData.GRAB_HORIZONTAL));
         // !!! you need GRAB_HORIZONTAL otherwise the grid is only as wide as
         // its widest cell
         buttons.setLayout(new GridLayout(2, true));
@@ -232,7 +234,7 @@ public class SaveColorMapDialog extends CaveSWTDialog {
             okToSave = false;
         }
 
-        boolean exists = ColorUtil.checkIfColormapExists(filename, level);
+        boolean exists = RGBUtil.checkIfColormapExists(filename, level);
 
         if (exists) {
             String message = "A color table named " + filename
@@ -243,7 +245,7 @@ public class SaveColorMapDialog extends CaveSWTDialog {
 
         if (okToSave) {
             try {
-                ColorUtil.saveColorMap(colorMapToSave, filename, level);
+                RGBUtil.saveColorMap(colorMapToSave, filename, level);
                 setReturnValue(filename);
             } catch (LocalizationException e1) {
                 statusHandler.error("Error saving colormap " + filename, e1);

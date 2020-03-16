@@ -57,6 +57,7 @@ import com.raytheon.uf.common.serialization.SerializationException;
  * Nov 11, 2013  2361     njensen     Use ColorMap.JAXB for XML processing
  * Jun 30, 2014  3165     njensen     Moved to common colormap plugin
  * Dec 10, 2015  4834     njensen     Simplified observing and caching
+ * Jul 25, 2019  65809    ksunil      Added putIfAbsentInCache to support the ticket.
  * 
  * </pre>
  * 
@@ -110,9 +111,8 @@ public class ColorMapLoader {
             // not found in cache
             try {
                 ILocalizationFile f = PathManagerFactory.getPathManager()
-                        .getStaticLocalizationFile(
-                                DIR_NAME + IPathManager.SEPARATOR + name
-                                        + EXTENSION);
+                        .getStaticLocalizationFile(DIR_NAME
+                                + IPathManager.SEPARATOR + name + EXTENSION);
                 if (f == null || !f.exists()) {
                     // If the file was not found check to see if the
                     // localization context is encoded as part of the path.
@@ -123,8 +123,7 @@ public class ColorMapLoader {
                                     LocalizationType.COMMON_STATIC, level,
                                     split[1]);
                             f = PathManagerFactory.getPathManager()
-                                    .getLocalizationFile(
-                                            context,
+                                    .getLocalizationFile(context,
                                             DIR_NAME + IPathManager.SEPARATOR
                                                     + split[2] + EXTENSION);
                             if (f == null) {
@@ -140,8 +139,8 @@ public class ColorMapLoader {
                     throw new ColorMapException("Can't find colormap " + name);
                 }
             } catch (SerializationException e) {
-                throw new ColorMapException("Exception while loading colormap "
-                        + name, e);
+                throw new ColorMapException(
+                        "Exception while loading colormap " + name, e);
             }
         }
         return cm;
@@ -160,8 +159,8 @@ public class ColorMapLoader {
         IPathManager pm = PathManagerFactory.getPathManager();
         Set<LocalizationContext> searchContexts = new HashSet<LocalizationContext>();
 
-        searchContexts.addAll(Arrays.asList(pm
-                .getLocalSearchHierarchy(LocalizationType.COMMON_STATIC)));
+        searchContexts.addAll(Arrays.asList(
+                pm.getLocalSearchHierarchy(LocalizationType.COMMON_STATIC)));
 
         // Use of LocalizationLevels.values() in this case should be okay since
         // we are requesting all possible context names for the level, doesn't
@@ -171,17 +170,18 @@ public class ColorMapLoader {
             if (level.isSystemLevel() == false) {
                 String[] available = pm.getContextList(level);
                 for (String s : available) {
-                    LocalizationContext ctx = pm.getContext(
-                            LocalizationType.COMMON_STATIC, level);
+                    LocalizationContext ctx = pm
+                            .getContext(LocalizationType.COMMON_STATIC, level);
                     ctx.setContextName(s);
                     searchContexts.add(ctx);
                 }
             }
         }
 
-        ILocalizationFile[] files = pm.listFiles(searchContexts
-                .toArray(new LocalizationContext[searchContexts.size()]), dir,
-                new String[] { EXTENSION }, true, true);
+        ILocalizationFile[] files = pm.listFiles(
+                searchContexts.toArray(
+                        new LocalizationContext[searchContexts.size()]),
+                dir, new String[] { EXTENSION }, true, true);
         return files;
     }
 
@@ -195,8 +195,8 @@ public class ColorMapLoader {
      * @return
      */
     public static ILocalizationFile[] listColorMapFiles(String subDirectory) {
-        return internalListColorMapFiles(DIR_NAME + IPathManager.SEPARATOR
-                + subDirectory);
+        return internalListColorMapFiles(
+                DIR_NAME + IPathManager.SEPARATOR + subDirectory);
     }
 
     /**
@@ -259,5 +259,11 @@ public class ColorMapLoader {
         }
 
         return null;
+    }
+
+    public static void putIfAbsentInCache(String name, IColorMap cMap) {
+        synchronized (sharedMutex) {
+            cachedMaps.putIfAbsent(name, cMap);
+        }
     }
 }
