@@ -14,9 +14,11 @@ Require-Bundle: com.raytheon.uf.edex.auth;bundle-version="1.14.1",
  com.raytheon.uf.common.comm;bundle-version="1.14.0",
  com.raytheon.uf.common.http;bundle-version="1.15.0",
  com.raytheon.uf.common.message;bundle-version="1.14.1",
+ com.raytheon.uf.common.localization;bundle-version="1.17.0",
  org.slf4j;bundle-version="1.7.21",
  org.springframework;bundle-version="4.2.7",
- org.apache.shiro;bundle-version="1.3.2"
+ org.apache.shiro;bundle-version="1.3.2",
+ com.fasterxml.jackson;bundle-version="2.6.5"
 Import-Package: com.raytheon.edex.esb,
  javax.servlet,
  javax.servlet.http

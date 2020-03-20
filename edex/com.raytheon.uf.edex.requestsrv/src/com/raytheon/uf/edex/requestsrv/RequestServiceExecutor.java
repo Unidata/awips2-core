@@ -23,6 +23,7 @@ import com.raytheon.uf.common.auth.AuthException;
 import com.raytheon.uf.common.auth.req.AbstractPrivilegedRequest;
 import com.raytheon.uf.common.auth.user.IUser;
 import com.raytheon.uf.common.auth.user.User;
+import com.raytheon.uf.common.message.WsId;
 import com.raytheon.uf.common.serialization.comm.IRequestHandler;
 import com.raytheon.uf.common.serialization.comm.IServerRequest;
 import com.raytheon.uf.common.serialization.comm.RequestWrapper;
@@ -33,6 +34,7 @@ import com.raytheon.uf.edex.auth.AuthManagerFactory;
 import com.raytheon.uf.edex.auth.req.AbstractPrivilegedRequestHandler;
 import com.raytheon.uf.edex.auth.resp.AuthorizationResponse;
 import com.raytheon.uf.edex.auth.resp.ResponseFactory;
+import com.raytheon.uf.edex.requestsrv.logging.RequestLogger;
 
 /**
  * Class that handles the execution of {@link IServerRequest}s. Contains the
@@ -53,6 +55,7 @@ import com.raytheon.uf.edex.auth.resp.ResponseFactory;
  *                                  framework
  * Jul 18, 2017  6217     randerso  Removed support for old roles and
  *                                  permissions framework
+ * Mar 09, 2020  dcs21885 brapp     Added request detail logging
  *
  * </pre>
  *
@@ -71,13 +74,15 @@ public class RequestServiceExecutor {
     }
 
     private final HandlerRegistry registry;
+    private final RequestLogger reqLogger;
 
     public RequestServiceExecutor() {
-        this(HandlerRegistry.getInstance());
+        this(HandlerRegistry.getInstance(), RequestLogger.getInstance());
     }
 
-    public RequestServiceExecutor(HandlerRegistry registry) {
+    public RequestServiceExecutor(HandlerRegistry registry, RequestLogger reqLogger) {
         this.registry = registry;
+        this.reqLogger = reqLogger;
     }
 
     /**
@@ -92,14 +97,19 @@ public class RequestServiceExecutor {
     @SuppressWarnings({ "rawtypes", "unchecked" })
     public Object execute(IServerRequest request) throws Exception {
         boolean subjectSet = false;
+        String wsidPString = null;
+
         try {
             if (request instanceof RequestWrapper) {
 
                 // Check for wrapped request and get actual request to execute
                 RequestWrapper wrapper = (RequestWrapper) request;
+                WsId wsid = wrapper.getWsId();
+                wsidPString = wsid.toPrettyString();
+
                 request = wrapper.getRequest();
 
-                IUser user = new User(wrapper.getWsId().getUserName());
+                IUser user = new User(wsid.getUserName());
 
                 AuthManagerFactory.getInstance().getPermissionsManager()
                         .setThreadSubject(user);
@@ -152,8 +162,9 @@ public class RequestServiceExecutor {
                 }
             }
 
-            return handler.handleRequest(request);
+            reqLogger.logRequest(wsidPString, request);
 
+            return handler.handleRequest(request);
         } finally {
             if (subjectSet) {
                 AuthManagerFactory.getInstance().getPermissionsManager()
