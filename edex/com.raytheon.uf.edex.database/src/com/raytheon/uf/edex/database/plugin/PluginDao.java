@@ -41,6 +41,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.regex.Pattern;
 
+import javax.persistence.PersistenceException;
+
 import org.apache.commons.beanutils.PropertyUtils;
 import org.hibernate.Criteria;
 import org.hibernate.QueryException;
@@ -131,6 +133,7 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Feb 20, 2018  7123     bsteffen    Add postPurge() method
  * Mar 08, 2018  6961     tgurney     Update purge versionsToKeep handling,
  *                                    treat 0 as "keep no data"
+ * Mar 25, 2020  8103     randerso    Fixed ContraintViolationException handling
  *
  * </pre>
  *
@@ -263,10 +266,14 @@ public abstract class PluginDao extends CoreDao {
                         }
                         tx.commit();
                         persisted.addAll(subList);
-                    } catch (ConstraintViolationException e) {
-                        tx.rollback();
-                        session.clear();
-                        constraintViolation = true;
+                    } catch (PersistenceException e) {
+                        if (e.getCause() instanceof ConstraintViolationException) {
+                            tx.rollback();
+                            session.clear();
+                            constraintViolation = true;
+                        } else {
+                            throw e;
+                        }
                     }
                 }
                 if (constraintViolation || duplicateCheck) {
@@ -308,10 +315,14 @@ public abstract class PluginDao extends CoreDao {
                         }
                         tx.commit();
                         persisted.addAll(subPersisted);
-                    } catch (ConstraintViolationException e) {
-                        constraintViolation = true;
-                        tx.rollback();
-                        session.clear();
+                    } catch (PersistenceException e) {
+                        if (e.getCause() instanceof ConstraintViolationException) {
+                            constraintViolation = true;
+                            tx.rollback();
+                            session.clear();
+                        } else {
+                            throw e;
+                        }
                     }
                 }
                 if (constraintViolation) {
@@ -344,27 +355,33 @@ public abstract class PluginDao extends CoreDao {
                             if (add) {
                                 persisted.add(object);
                             }
-                        } catch (ConstraintViolationException e) {
-                            tx.rollback();
+                        } catch (PersistenceException e) {
+                            if (e.getCause() instanceof ConstraintViolationException) {
+                                tx.rollback();
 
-                            String errorMessage = e.getMessage();
-                            SQLException nextException = e.getSQLException()
-                                    .getNextException();
-                            if (nextException != null) {
-                                errorMessage = nextException.getMessage();
-                            }
-                            /*
-                             * Unique constraint violations do not need to be
-                             * logged as an exception, they are fairly normal
-                             * and are logged as just a count.
-                             */
-                            if (errorMessage.contains(" unique ")) {
-                                subDuplicates.add(object);
+                                ConstraintViolationException cve = (ConstraintViolationException) e
+                                        .getCause();
+                                String errorMessage = cve.getMessage();
+                                SQLException nextException = cve
+                                        .getSQLException().getNextException();
+                                if (nextException != null) {
+                                    errorMessage = nextException.getMessage();
+                                }
+                                /*
+                                 * Unique constraint violations do not need to
+                                 * be logged as an exception, they are fairly
+                                 * normal and are logged as just a count.
+                                 */
+                                if (errorMessage.contains(" unique ")) {
+                                    subDuplicates.add(object);
+                                } else {
+                                    logger.handle(Priority.PROBLEM,
+                                            "Query failed: Unable to insert or update "
+                                                    + object.getIdentifier(),
+                                            e);
+                                }
                             } else {
-                                logger.handle(Priority.PROBLEM,
-                                        "Query failed: Unable to insert or update "
-                                                + object.getIdentifier(),
-                                        e);
+                                throw e;
                             }
                         } catch (PluginException e) {
                             tx.rollback();
@@ -855,8 +872,8 @@ public abstract class PluginDao extends CoreDao {
         if (rules == null) {
             PurgeLogger.logWarn("No rules found for purgeKeys: "
                     + Arrays.toString(purgeKeys), pluginName);
-            return new RuleResult(Collections.<Date>emptySet(),
-                    Collections.<Date>emptySet(), 0);
+            return new RuleResult(Collections.<Date> emptySet(),
+                    Collections.<Date> emptySet(), 0);
         }
         /*
          * This section applies the purge rule
@@ -888,8 +905,8 @@ public abstract class PluginDao extends CoreDao {
             if (!rule.isPurgeEnabled()) {
                 PurgeLogger.logInfo("Purge rule is disabled (purge keys: "
                         + Arrays.toString(purgeKeys) + ")", pluginName);
-                return new RuleResult(Collections.<Date>emptySet(),
-                        Collections.<Date>emptySet(), 0);
+                return new RuleResult(Collections.<Date> emptySet(),
+                        Collections.<Date> emptySet(), 0);
             }
             rule.setModTimeToWaitApplied(false);
             // Holds the times kept by this rule
@@ -909,11 +926,11 @@ public abstract class PluginDao extends CoreDao {
                             .getModTimeToWaitInMillis()
                             && !rule.isModTimeToWaitApplied()) {
                         rule.setModTimeToWaitApplied(true);
-                        PurgeLogger.logInfo(
-                                "For product key, " + productKeyString
-                                        + ", the most recent version is less than "
-                                        + rule.getModTimeToWaitDescription()
-                                        + " old. Increasing versions to keep for this key.",
+                        PurgeLogger.logInfo("For product key, "
+                                + productKeyString
+                                + ", the most recent version is less than "
+                                + rule.getModTimeToWaitDescription()
+                                + " old. Increasing versions to keep for this key.",
                                 pluginName);
                     }
                 }
@@ -927,8 +944,8 @@ public abstract class PluginDao extends CoreDao {
                     if (maxRefTime == null) {
                         PurgeLogger.logInfo("No data available to purge",
                                 pluginName);
-                        return new RuleResult(Collections.<Date>emptySet(),
-                                Collections.<Date>emptySet(), 0);
+                        return new RuleResult(Collections.<Date> emptySet(),
+                                Collections.<Date> emptySet(), 0);
                     } else {
                         periodCutoffTime = new Date(maxRefTime.getTime()
                                 - rule.getPeriodInMillis());
@@ -1931,10 +1948,10 @@ public abstract class PluginDao extends CoreDao {
             if (auxRules.getKeys().equals(purgeRules.getKeys())) {
                 purgeRules.getRules().addAll(auxRules.getRules());
             } else {
-                PurgeLogger
-                        .logError("Ignoring purge rules in " + file.toString()
-                                + " because the keys are different from those in "
-                                + masterFileName, pluginName);
+                PurgeLogger.logError("Ignoring purge rules in "
+                        + file.toString()
+                        + " because the keys are different from those in "
+                        + masterFileName, pluginName);
             }
         }
 
