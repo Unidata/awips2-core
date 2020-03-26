@@ -91,13 +91,7 @@
                     <property name="cacheStoreFactory">
                         <bean
                             class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
-                            <constructor-arg>
-                                <bean
-                                    class="com.raytheon.uf.common.datastore.ignite.pypies.SerializablePyPiesDataStoreFactory">
-                                    <constructor-arg name="address"
-                                        value="http://${PYPIES_HOST:localhost}:${PYPIES_PORT:9582}/" />
-                                </bean>
-                            </constructor-arg>
+                            <constructor-arg ref="pypiesFactory" />
                         </bean>
                     </property>
                     <property name="indexedTypes">
@@ -143,6 +137,12 @@
                 <property name="TxTimeoutOnPartitionMapExchange" value="60000"/>
             </bean>
         </property>
+    </bean>
+
+    <bean id="pypiesFactory"
+        class="com.raytheon.uf.common.datastore.ignite.pypies.SerializablePyPiesDataStoreFactory">
+        <constructor-arg name="address"
+            value="http://${PYPIES_HOST:localhost}:${PYPIES_PORT:9582}/" />
     </bean>
 
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">

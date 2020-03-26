@@ -48,6 +48,7 @@ import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Jun 03, 2019  7628     bsteffen  Initial creation
+ * Mar 26, 2020  8074     bsteffen  Ensure fill value is copied.
  *
  * </pre>
  *
@@ -141,6 +142,7 @@ public class RetrieveProcessor implements
                     "Cannot handle request of type: " + request);
         }
         result.setDataAttributes(record.getDataAttributes());
+        result.setFillValue(record.getFillValue());
         return result;
 
     }

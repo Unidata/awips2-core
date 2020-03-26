@@ -44,6 +44,7 @@ import org.slf4j.LoggerFactory;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Feb 03, 2020  7628     bsteffen  Initial creation
+ * Mar 26, 2020  8074     bsteffen  Parse plugin from filenames that start with '/'
  * 
  * </pre>
  *
@@ -56,7 +57,7 @@ public class CachePluginRegistry {
 
     private static final String CACHE_NAME = "data-store-cache-name-map";
 
-    private static final String DEFAULT_CACHE = "defaultDataStore";
+    public static final String DEFAULT_CACHE = "defaultDataStore";
 
     private final Map<String, String> cacheNamesByPlugin = new ConcurrentHashMap<>();
 
@@ -127,9 +128,13 @@ public class CachePluginRegistry {
 
     protected static String getPlugin(File file) {
         String path = file.getPath();
-        int index = path.indexOf(File.separatorChar);
+        int start = 0;
+        if (path.charAt(0) == File.separatorChar) {
+            start = 1;
+        }
+        int index = path.indexOf(File.separatorChar, start);
         if (index >= 0) {
-            return path.substring(0, index);
+            return path.substring(start, index);
         } else {
             return path;
         }

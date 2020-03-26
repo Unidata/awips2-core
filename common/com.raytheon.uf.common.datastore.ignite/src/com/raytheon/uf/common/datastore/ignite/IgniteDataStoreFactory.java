@@ -22,12 +22,16 @@ import java.io.File;
 import java.util.Arrays;
 
 import org.apache.ignite.Ignite;
+import org.apache.ignite.IgniteCache;
 import org.apache.ignite.Ignition;
+import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
 import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
 
+import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.IDataStoreFactory;
+import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
 
 /**
  * 
@@ -40,12 +44,15 @@ import com.raytheon.uf.common.datastorage.IDataStoreFactory;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * May 29, 2019  7628     bsteffen  Initial creation
+ * Mar 26, 2020  8074     bsteffen  Add capability to skip ignite.
  *
  * </pre>
  *
  * @author bsteffen
  */
 public class IgniteDataStoreFactory implements IDataStoreFactory {
+
+    private static final String NO_CACHE_NAME = "none";
 
     private final Ignite ignite;
 
@@ -76,9 +83,29 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
     }
 
     @Override
-    public IgniteDataStore getDataStore(File file, boolean useLocking) {
-        return new IgniteDataStore(file,
-                ignite.getOrCreateCache(pluginRegistry.getCacheName(file)));
+    public IDataStore getDataStore(File file, boolean useLocking) {
+        String cacheName = pluginRegistry.getCacheName(file);
+        if (NO_CACHE_NAME.equalsIgnoreCase(cacheName)) {
+            return findDefaultFactory().getDataStore(file, useLocking);
+        } else {
+            return new IgniteDataStore(file,
+                    ignite.getOrCreateCache(cacheName));
+        }
+    }
+
+    protected IDataStoreFactory findDefaultFactory() {
+        IgniteCache<Object, Object> defaultCache = ignite
+                .getOrCreateCache(CachePluginRegistry.DEFAULT_CACHE);
+        @SuppressWarnings("unchecked")
+        CacheConfiguration<?, ?> config = defaultCache
+                .getConfiguration(CacheConfiguration.class);
+        Object factory = config.getCacheStoreFactory();
+        if (factory instanceof DataStoreCacheStoreFactory) {
+            return ((DataStoreCacheStoreFactory) factory).getDataStoreFactory();
+        } else {
+            throw new IllegalStateException(CachePluginRegistry.DEFAULT_CACHE
+                    + " does not have a DataStoreCacheStoreFactory configured as the CacheStoreFactory.");
+        }
     }
 
     private static IgniteConfiguration getDefaultConfig() {

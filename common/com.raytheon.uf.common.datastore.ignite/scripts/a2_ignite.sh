@@ -8,7 +8,8 @@ Where:
     production  Run using more memory and attempt to cluster with nodes 
                 on hosts cache1,cache2,cache3
     debug       Allow socket connections from a java debugger
-    ncep        Include cache4, cache5 and cache6 in the cluster
+    ncep        Sets cluster nodes to include cache1-cache6. This should be
+                used with production to get the memory settings from production
 "
 
 # When the args come in through a systemd template it is simpler to pass in a
@@ -34,12 +35,14 @@ PYPIES_PORT=${PYPIES_PORT:-9582}
 PYPIES_COMPATIBILITY_PORT=${PYPIES_COMPATIBILITY_PORT:-9585}
 DEBUG_PORT=${DEBUG_PORT:-5102}
 
+THRIFT_STREAM_MAXSIZE=${THRIFT_STREAM_MAXSIZE:-2000}
+
 for arg in "${ARGS[@]}"
 do
     case "${arg}" in
         production)
             IGNITE_SERVERS=${IGNITE_SERVERS:-cache1,cache2,cache3}
-            JVM_OPTS+="-Xms8g -Xmx8g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
+            JVM_OPTS+=" -Xms8g -Xmx8g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
             IGNITE_DATA_REGION_MAX_SIZE_GB=${IGNITE_DATA_REGION_MAX_SIZE_GB:-64}
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-64}
             # The largest objects I have seen are about 374MiB, ignite documentation suggests we need enough pages to
@@ -51,7 +54,7 @@ do
             ;;
         developer)
             IGNITE_SERVERS=${IGNITE_SERVERS:-localhost}
-            JVM_OPTS+="-Xms512m -Xmx1g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
+            JVM_OPTS+=" -Xms512m -Xmx1g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
             IGNITE_DATA_REGION_MAX_SIZE_GB=${IGNITE_DATA_REGION_MAX_SIZE_GB:-2}
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-1}
             IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE=${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:-8192}
@@ -59,7 +62,7 @@ do
             PYPIES_HOST=${PYPIES_HOST:-localhost}
             ;;
         ncep)
-            IGNITE_SERVERS+=",cache4,cache5,cache6"
+            IGNITE_SERVERS=${IGNITE_SERVERS:-cache1,cache2,cache3,cache4,cache5,cache6}
             ;;
         debug)
             JVM_OPTS+=" -Xdebug -Xrunjdwp:transport=dt_socket,address=${DEBUG_PORT},server=y,suspend=n"
@@ -82,6 +85,7 @@ done
 exec ${JAVA_HOME}/bin/java \
             ${JVM_OPTS} \
             -DIGNITE_HOME=${IGNITE_HOME} \
+            -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
             -Dlogback.configurationFile=${IGNITE_HOME}/config/ignite-logback.xml \
             org.apache.ignite.startup.cmdline.CommandLineStartup \
             config/awips2-config.xml
