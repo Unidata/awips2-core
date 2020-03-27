@@ -44,6 +44,7 @@ import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * May 14, 2019  7628     bsteffen  Initial creation
+ * Mar 27, 2020  8071     bsteffen  Add handling for /status
  *
  * </pre>
  *
@@ -83,6 +84,8 @@ public class PyPiesCompatibilityService implements Service {
                 ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
         context.addServlet(new ServletHolder(new PyPiesServlet(factory)), "/");
+        context.addServlet(new ServletHolder(new IgniteStatusServlet(ignite)),
+                "/status");
         server.setHandler(context);
 
         server.start();
