@@ -28,6 +28,7 @@ import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.IDataStore.StoreOp;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
@@ -48,6 +49,8 @@ import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Jun 03, 2019  7628     bsteffen  Initial creation
+ * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
+ *                                  duplicate records.
  *
  * </pre>
  *
@@ -106,7 +109,7 @@ public class StoreProcessor
                     }
                     if (previous != null) {
                         if (op == StoreOp.STORE_ONLY) {
-                            throw new StorageException(
+                            throw new DuplicateRecordStorageException(
                                     "Duplicate record: " + record.getName(),
                                     record);
                         } else if (op == StoreOp.APPEND) {

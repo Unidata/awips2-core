@@ -48,6 +48,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
@@ -74,6 +75,8 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * May 29, 2019  7628     bsteffen  Initial creation
+ * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
+ *                                  duplicate records.
  *
  * </pre>
  *
@@ -311,7 +314,7 @@ public class IgniteDataStore implements IDataStore {
         for (Entry<String, IgniteFuture<Boolean>> entry : storeResults
                 .entrySet()) {
             if (!entry.getValue().get()) {
-                StorageException exception = new StorageException(
+                StorageException exception = new DuplicateRecordStorageException(
                         "Duplicate record in " + entry.getKey(),
                         recordsByGroup.get(entry.getKey()).get(0));
                 resetCorrelationObjects(storeCorrObjs.get(entry.getKey()),
