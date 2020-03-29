@@ -135,6 +135,14 @@
                 </bean>
             </list>
         </property>
+        <property name="transactionConfiguration">
+            <bean class="org.apache.ignite.configuration.TransactionConfiguration">
+                <!-- This should help recover from an issue we are seeing where
+                     OutOfMemory exceptions are causing stuck partition map
+                     exchange that requires a restart. -->
+                <property name="TxTimeoutOnPartitionMapExchange" value="60000"/>
+            </bean>
+        </property>
     </bean>
 
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
