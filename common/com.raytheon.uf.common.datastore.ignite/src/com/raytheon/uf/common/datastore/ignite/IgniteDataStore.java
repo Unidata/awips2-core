@@ -77,6 +77,7 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  * May 29, 2019  7628     bsteffen  Initial creation
  * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
  *                                  duplicate records.
+ * Mar 30, 2020  8073     bsteffen  Make deleteFiles query lazy to prevent OOM.
  *
  * </pre>
  *
@@ -591,6 +592,7 @@ public class IgniteDataStore implements IDataStore {
             SqlFieldsQuery query = new SqlFieldsQuery(
                     "select distinct recgroup from DataStoreValue where path = ?");
             query.setArgs(path);
+            query.setLazy(true);
             QueryCursor<List<?>> cursor = cache.query(query);
             Set<DataStoreKey> keysToDelete = new HashSet<>();
             for (List<?> row : cursor) {
