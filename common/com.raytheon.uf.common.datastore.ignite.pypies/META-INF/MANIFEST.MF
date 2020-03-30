@@ -2,7 +2,7 @@ Manifest-Version: 1.0
 Bundle-ManifestVersion: 2
 Bundle-Name: Ignite PyPies Compatibility
 Bundle-SymbolicName: com.raytheon.uf.common.datastore.ignite.pypies
-Bundle-Version: 1.19.0.qualifier
+Bundle-Version: 1.20.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Require-Bundle: com.raytheon.uf.common.datastorage,
@@ -11,6 +11,7 @@ Require-Bundle: com.raytheon.uf.common.datastorage,
  javax.servlet,
  com.raytheon.uf.common.datastore.ignite,
  com.raytheon.uf.common.datastore.pypies.servlet,
- com.raytheon.uf.common.pypies
+ com.raytheon.uf.common.pypies,
+ com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.common.datastore.ignite.pypies
 Import-Package: com.raytheon.uf.common.datastore.pypies.servlet
