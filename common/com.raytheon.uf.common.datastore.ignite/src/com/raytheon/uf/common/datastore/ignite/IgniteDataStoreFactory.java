@@ -31,6 +31,7 @@ import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMultic
 
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.IDataStoreFactory;
+import com.raytheon.uf.common.datastore.ignite.plugin.CachePluginRegistry;
 import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
 
 /**

@@ -20,7 +20,7 @@ package com.raytheon.uf.edex.pointdata.ignite;
 
 import com.raytheon.uf.common.dataplugin.IPluginRegistryChanged;
 import com.raytheon.uf.common.dataplugin.PluginProperties;
-import com.raytheon.uf.common.datastore.ignite.CachePluginRegistry;
+import com.raytheon.uf.common.datastore.ignite.plugin.CachePluginRegistry;
 import com.raytheon.uf.edex.core.dataplugin.PluginRegistry;
 import com.raytheon.uf.edex.pointdata.PointDataPluginDao;
 
