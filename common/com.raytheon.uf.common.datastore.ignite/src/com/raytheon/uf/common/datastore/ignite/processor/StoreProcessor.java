@@ -21,6 +21,7 @@ package com.raytheon.uf.common.datastore.ignite.processor;
 import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.cache.processor.EntryProcessor;
@@ -51,6 +52,7 @@ import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
  * Jun 03, 2019  7628     bsteffen  Initial creation
  * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
  *                                  duplicate records.
+ * Apr 02, 2020  8075     bsteffen  Extract merge for reuse elsewhere.
  *
  * </pre>
  *
@@ -94,36 +96,9 @@ public class StoreProcessor
         try {
             if (entry.exists()) {
                 DataStoreValue oldValue = entry.getValue();
-                Map<String, IDataRecord> byName = new HashMap<>();
-                for (IDataRecord record : oldValue.getRecords()) {
-                    byName.put(record.getName(), record);
-                }
-                for (int i = 0; i < records.length; i += 1) {
-                    IDataRecord record = records[i];
-                    boolean partial = isPartial(record);
-                    IDataRecord previous = null;
-                    if (partial) {
-                        previous = byName.get(record.getName());
-                    } else {
-                        previous = byName.put(record.getName(), record);
-                    }
-                    if (previous != null) {
-                        if (op == StoreOp.STORE_ONLY) {
-                            throw new DuplicateRecordStorageException(
-                                    "Duplicate record: " + record.getName(),
-                                    record);
-                        } else if (op == StoreOp.APPEND) {
-                            IDataRecord merged = append(status, i, previous,
-                                    record);
-                            byName.put(record.getName(), merged);
-                        } else if (partial) {
-                            insertPartial(previous, record);
-                        }
-                    } else if (partial) {
-                        byName.put(record.getName(), expandPartial(record));
-                    }
-                }
-                entry.setValue(new DataStoreValue(byName.values()));
+                DataStoreValue newValue = merge(oldValue,
+                        Arrays.asList(records), op, status);
+                entry.setValue(newValue);
             } else {
                 for (int i = 0; i < records.length; i += 1) {
                     if (isPartial(records[i])) {
@@ -136,6 +111,39 @@ public class StoreProcessor
             status.setExceptions(new StorageException[] { e });
         }
         return status;
+    }
+
+    public static DataStoreValue merge(DataStoreValue oldValue,
+            List<IDataRecord> newRecords, StoreOp op, StorageStatus status)
+            throws StorageException {
+        Map<String, IDataRecord> byName = new HashMap<>();
+        for (IDataRecord record : oldValue.getRecords()) {
+            byName.put(record.getName(), record);
+        }
+        for (int i = 0; i < newRecords.size(); i += 1) {
+            IDataRecord record = newRecords.get(i);
+            boolean partial = isPartial(record);
+            IDataRecord previous = null;
+            if (partial) {
+                previous = byName.get(record.getName());
+            } else {
+                previous = byName.put(record.getName(), record);
+            }
+            if (previous != null) {
+                if (op == StoreOp.STORE_ONLY) {
+                    throw new DuplicateRecordStorageException(
+                            "Duplicate record: " + record.getName(), record);
+                } else if (op == StoreOp.APPEND) {
+                    IDataRecord merged = append(status, i, previous, record);
+                    byName.put(record.getName(), merged);
+                } else if (partial) {
+                    insertPartial(previous, record);
+                }
+            } else if (partial) {
+                byName.put(record.getName(), expandPartial(record));
+            }
+        }
+        return new DataStoreValue(byName.values());
     }
 
     protected static IDataRecord append(StorageStatus status, int recordIndex,
@@ -180,7 +188,7 @@ public class StoreProcessor
         return result;
     }
 
-    protected static boolean isPartial(IDataRecord record) {
+    public static boolean isPartial(IDataRecord record) {
         long[] minIndex = record.getMinIndex();
         return (minIndex != null && minIndex.length > 0);
     }
