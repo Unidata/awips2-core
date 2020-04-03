@@ -36,6 +36,7 @@ import java.util.StringJoiner;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessorException;
 
 import org.apache.ignite.IgniteCache;
@@ -48,7 +49,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
-import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
@@ -78,6 +78,7 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
  *                                  duplicate records.
  * Mar 30, 2020  8073     bsteffen  Make deleteFiles query lazy to prevent OOM.
+ * Apr 02, 2020  8075     bsteffen  Handle updates in fastStore.
  *
  * </pre>
  *
@@ -134,8 +135,7 @@ public class IgniteDataStore implements IDataStore {
 
     @Override
     public void addDataRecord(IDataRecord dataset) {
-        long[] minIndex = dataset.getMinIndex();
-        if (minIndex != null && minIndex.length > 0) {
+        if (StoreProcessor.isPartial(dataset)) {
             fastStore = false;
         }
         String group = dataset.getGroup();
@@ -276,19 +276,35 @@ public class IgniteDataStore implements IDataStore {
     }
 
     /**
-     * Like store but overwrites any previous value in the cache. This means it
-     * is impossible to store separate datasets in a group using multiple calls
-     * to store. Also duplicate records are only detected for store operations
-     * if they are loaded in the cache, if read through is used it will not be
-     * consulted.
+     * Alternative implementation of store that is optimized for the common case
+     * where all of the data in a group is stored in a single operation.
+     * 
+     * This implementation is not as good for more complex operations such as
+     * append, detecting duplicates, and partial inserts(including inserting
+     * different datasets in a group with multiple store operations). For these
+     * operations the previous cache value is needed. This method will pull the
+     * previous value to the local node and then push the result to the node
+     * storing the data. Bringing the data local is more expensive than using a
+     * {@link StoreProcessor} to move the new data to the node responsible for
+     * storing the data so this method is not recommended if these operations
+     * are performed often.
+     * 
+     * For the complex operations described above the exact behavior of this
+     * method is dependent on the value of
+     * {@link CacheConfiguration#isLoadPreviousValue()}. When this setting is
+     * false the previous value will only be used if it is already loaded in the
+     * cache, this is much faster but may overwrite the previous value if it is
+     * not already in the cache. When loadPreviousValue is true the previous
+     * value is loaded with the {@link CacheLoader} which is slower but
+     * guarantees the existing data will not be overwritten unless this is a
+     * REPLACE operation.
      * 
      * @param storeOp
      * @return
      * @throws StorageException
      */
     protected StorageStatus fastStore(StoreOp storeOp) throws StorageException {
-
-        Map<String, IgniteFuture<Boolean>> storeResults = new HashMap<>();
+        Map<String, IgniteFuture<DataStoreValue>> storeResults = new HashMap<>();
         Map<String, Map<String, Object>> storeCorrObjs = new HashMap<>();
         List<IgniteFuture<Void>> replaceResults = new ArrayList<>();
         for (Entry<String, List<IDataRecord>> entry : recordsByGroup
@@ -301,7 +317,7 @@ public class IgniteDataStore implements IDataStore {
                 replaceResults.add(cache.putAsync(key, value));
             } else {
                 storeResults.put(entry.getKey(),
-                        cache.putIfAbsentAsync(key, value));
+                        cache.getAndPutIfAbsentAsync(key, value));
                 storeCorrObjs.put(entry.getKey(), corrObjs);
             }
         }
@@ -309,19 +325,26 @@ public class IgniteDataStore implements IDataStore {
         StorageStatus result = new StorageStatus();
         List<StorageException> exceptions = new ArrayList<>();
         result.setOperationPerformed(storeOp);
+        for (Entry<String, IgniteFuture<DataStoreValue>> entry : storeResults
+                .entrySet()) {
+            DataStoreValue previous = entry.getValue().get();
+            if (previous != null) {
+                List<IDataRecord> updated = recordsByGroup.get(entry.getKey());
+                try {
+                    DataStoreValue value = StoreProcessor.merge(previous,
+                            updated, storeOp, result);
+                    DataStoreKey key = new DataStoreKey(path, entry.getKey());
+                    replaceResults.add(cache.putAsync(key, value));
+                } catch (StorageException e) {
+                    resetCorrelationObjects(storeCorrObjs.get(entry.getKey()),
+                            e);
+                    exceptions.add(e);
+                }
+
+            }
+        }
         for (IgniteFuture<Void> future : replaceResults) {
             future.get();
-        }
-        for (Entry<String, IgniteFuture<Boolean>> entry : storeResults
-                .entrySet()) {
-            if (!entry.getValue().get()) {
-                StorageException exception = new DuplicateRecordStorageException(
-                        "Duplicate record in " + entry.getKey(),
-                        recordsByGroup.get(entry.getKey()).get(0));
-                resetCorrelationObjects(storeCorrObjs.get(entry.getKey()),
-                        exception);
-                exceptions.add(exception);
-            }
         }
 
         result.setExceptions(exceptions.toArray(new StorageException[0]));
