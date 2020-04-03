@@ -85,7 +85,9 @@ done
 exec ${JAVA_HOME}/bin/java \
             ${JVM_OPTS} \
             -DIGNITE_HOME=${IGNITE_HOME} \
+            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true \
             -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
+            -Djava.net.preferIPv4Stack=true \
             -Dlogback.configurationFile=${IGNITE_HOME}/config/ignite-logback.xml \
             org.apache.ignite.startup.cmdline.CommandLineStartup \
             config/awips2-config.xml
