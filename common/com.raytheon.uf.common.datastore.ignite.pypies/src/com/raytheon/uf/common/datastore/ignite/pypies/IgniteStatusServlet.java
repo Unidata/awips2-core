@@ -109,6 +109,9 @@ public class IgniteStatusServlet extends HttpServlet {
                 ? ((double) ((heapMax - heapUsed) * 100)) / heapMax
                 : -1;
 
+        boolean storageMetricsEnabled = ignite.configuration()
+                .getDataStorageConfiguration().isMetricsEnabled();
+
         long offHeapUsed = 0;
         long offHeapComm = 0;
         Collection<DataRegionMetrics> regions = ignite.dataRegionMetrics();
@@ -130,13 +133,23 @@ public class IgniteStatusServlet extends HttpServlet {
         out.printf(
                 "H/N/S/C/CPU [hosts=%d, nodes=%d, servers=%d, clients=%d, CPUs=%d]<br />\n",
                 hosts, nodes, servers, clients, cpus);
-        out.printf("CPU [cur=%.2f%%, avg=%.2f%%, GC=%.2f%%]<br />\n",
-                cpuLoadPct, avgCpuLoadPct, gcPct);
-        out.printf("Heap [used=%s, free=%.2f, comm=%s]<br />\n", prettyHeapUsed,
-                freeHeapPct, prettyHeapComm);
+        if (cpuLoadPct >= 0) {
+            out.printf("CPU [cur=%.2f%%, avg=%.2f%%, GC=%.2f%%]<br />\n",
+                    cpuLoadPct, avgCpuLoadPct, gcPct);
+        } else {
+            /* Negative indicates it is not available */
+            out.printf("CPU [GC=%.2f%%]<br />\n", gcPct);
+        }
+        out.printf("Heap [used=%s, free=%.2f%%, comm=%s]<br />\n",
+                prettyHeapUsed, freeHeapPct, prettyHeapComm);
 
-        out.printf("Off-heap [used=%s, comm=%s]<br />\n", prettyOffHeapUsed,
-                prettyOffHeapComm);
+        if (offHeapUsed <= 0 && !storageMetricsEnabled) {
+            /* committed size is currently reported even with metrics off. */
+            out.printf("Off-heap [comm=%s]<br />\n", prettyOffHeapComm);
+        } else {
+            out.printf("Off-heap [used=%s, comm=%s]<br />\n", prettyOffHeapUsed,
+                    prettyOffHeapComm);
+        }
 
         out.println("<ul>");
         for (DataRegionMetrics region : regions) {
@@ -146,8 +159,16 @@ public class IgniteStatusServlet extends HttpServlet {
             String prettyUsed = SizeUtil.prettyByteSize(used);
             String prettyComm = SizeUtil.prettyByteSize(comm);
 
-            out.printf("<li>%s region [used=%s, comm=%s]</li>\n",
-                    region.getName(), prettyUsed, prettyComm);
+            if (used <= 0 && !storageMetricsEnabled) {
+                /*
+                 * committed size is currently reported even with metrics off.
+                 */
+                out.printf("<li>%s region [comm=%s]</li>\n", region.getName(),
+                        prettyComm);
+            } else {
+                out.printf("<li>%s region [used=%s, comm=%s]</li>\n",
+                        region.getName(), prettyUsed, prettyComm);
+            }
 
         }
         out.println("</ul>");
