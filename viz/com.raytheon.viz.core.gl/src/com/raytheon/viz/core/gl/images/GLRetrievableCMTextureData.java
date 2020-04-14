@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -23,7 +23,6 @@ import java.nio.Buffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import javax.measure.Unit;
 import javax.media.opengl.GL;
 import javax.media.opengl.glu.GLU;
 
@@ -41,31 +40,31 @@ import com.raytheon.viz.core.gl.internal.cache.ImageCache.CacheType;
  * {@link GLCMTextureData} that's backed by a {@link Buffer} that represents a
  * colormapped texture that is cacheable and can be unloaded and reloaded from
  * main/graphics memory using a retrieval callback
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Jun 24, 2013            mschenke    Initial creation
- * Oct 23, 2013 2492       mschenke    Extracted Buffer backing into super class   
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ------------------------------------------
+ * Jun 24, 2013           mschenke  Initial creation
+ * Oct 23, 2013  2492     mschenke  Extracted Buffer backing into super class
+ * Jan 21, 2020  73572    tjensen   Add sizeManagement arg to disposeTexture
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
-public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
-        IImageCacheable {
+public class GLRetrievableCMTextureData extends GLBufferCMTextureData
+        implements IImageCacheable {
 
-    private static Map<IColorMapDataRetrievalCallback, GLRetrievableCMTextureData> texMap = new HashMap<IColorMapDataRetrievalCallback, GLRetrievableCMTextureData>();
+    private static Map<IColorMapDataRetrievalCallback, GLRetrievableCMTextureData> texMap = new HashMap<>();
 
     /**
      * Gets a {@link GLRetrievableCMTextureData} for the callback. These
      * TextureData objects can be shared among callbacks
-     * 
+     *
      * @param callback
      * @return
      */
@@ -89,19 +88,15 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
     /**
      * Private constructor, access only allowed through
      * {@link #getGlTextureId(IColorMapDataRetrievalCallback)}
-     * 
+     *
      * @param callback
      */
-    private GLRetrievableCMTextureData(IColorMapDataRetrievalCallback callback) {
+    private GLRetrievableCMTextureData(
+            IColorMapDataRetrievalCallback callback) {
         super(null);
         this.callback = callback;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.images.GLCMTextureData#stageTexture()
-     */
     @Override
     public synchronized boolean stageTexture() throws VizException {
         // Don't need to stage if we are already in GL
@@ -131,13 +126,6 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         return false;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.images.GLCMTextureData#loadTexture(javax.media
-     * .opengl.GL)
-     */
     @Override
     public synchronized boolean loadTexture(GL gl) throws VizException {
         if (super.loadTexture(gl)) {
@@ -148,18 +136,16 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
     }
 
     @Override
-    public synchronized void disposeTexture() {
+    public synchronized void disposeTexture(boolean sizeManagement) {
+        // check if this should be restaged
+        if (sizeManagement && callback.isRestagingEnabled()) {
+            GLBufferColorMapData textureData = getDataObject();
+            restageTexture(textureData);
+        }
         super.disposeTexture();
         ImageCache.getInstance(CacheType.TEXTURE).remove(this);
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.viz.core.gl.internal.cache.IImageCacheable#disposeTextureData
-     * ()
-     */
     @Override
     public void disposeTextureData() {
         if (isStaged()) {
@@ -172,11 +158,6 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         refCount += 1;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.images.GLCMTextureData#dispose()
-     */
     @Override
     public void dispose() {
         synchronized (texMap) {
@@ -189,11 +170,6 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.viz.core.gl.images.GLCMTextureData#getTexId()
-     */
     @Override
     public int getTexId() {
         if (isLoaded()) {
@@ -202,28 +178,32 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         return super.getTexId();
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.util.cache.ICacheObject#getSize()
-     */
     @Override
     public int getSize() {
         GLBufferColorMapData data = getDataObject();
         if (data != null) {
             int[] dimensions = data.getDimensions();
             int totalSize = data.getBytesPerPixel();
-            for (int i = 0; i < dimensions.length; ++i) {
-                totalSize *= dimensions[i];
+            for (int dimension : dimensions) {
+                totalSize *= dimension;
             }
             return totalSize;
         }
         return 0;
     }
 
+    @Override
     public double getValue(int x, int y) {
         GLBufferColorMapData data = getDataObject();
         double value = Double.NaN;
+        restageTexture(data);
+        if (data != null) {
+            value = data.getValue(x, y).doubleValue();
+        }
+        return value;
+    }
+
+    public void restageTexture(GLBufferColorMapData data) {
         if (!isStaged() && isLoaded()) {
             GLContextBridge.makeMasterContextCurrent();
             GL gl = GLU.getCurrentGL();
@@ -245,9 +225,7 @@ public class GLRetrievableCMTextureData extends GLBufferCMTextureData implements
         }
         if (data != null) {
             ImageCache.getInstance(CacheType.MEMORY).put(this);
-            value = data.getValue(x, y).doubleValue();
         }
-        return value;
     }
 
 }

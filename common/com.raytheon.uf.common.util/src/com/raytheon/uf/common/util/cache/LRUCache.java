@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -25,18 +25,20 @@ import java.util.Map;
 
 /**
  * LRU Cache based on size, similar to LinkedHashMap but with more control
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Mar 16, 2010            mschenke     Initial creation
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 16, 2010           mschenke  Initial creation
+ * Jan 21, 2020  73572    tjensen   Refactor to allow overrides of size
+ *                                  management
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class LRUCache<K, V extends ICacheObject> {
@@ -69,13 +71,13 @@ public class LRUCache<K, V extends ICacheObject> {
     private final Item head = new Item();
 
     /** The tail (last item in the list */
-    private final Item tail = new Item();
+    protected final Item tail = new Item();
 
     /** The maximum size of items contained in the cache, in bytes */
-    private long maxSize;
+    protected long maxSize;
 
     /** The current size of items contained in the cache, in bytes */
-    private long curSize;
+    protected long curSize;
 
     public LRUCache(long maxSize) {
         this.maxSize = maxSize;
@@ -116,21 +118,9 @@ public class LRUCache<K, V extends ICacheObject> {
             moveToHead(cur);
 
             // make sure we are still under maxSize
-            Item last = null;
-            while (this.curSize >= this.maxSize) {
-                last = this.tail.previous;
-                this.lruMap.remove(last.key);
-                removeItem(last);
-            }
-            return;
+            manageSize();
         } else {
-            // remove if needed
-            Item last = null;
-            while (this.curSize >= this.maxSize) {
-                last = this.tail.previous;
-                this.lruMap.remove(last.key);
-                removeItem(last);
-            }
+            manageSize();
 
             Item item = new Item(key, value);
             item.lastUsedTime = System.currentTimeMillis();
@@ -140,9 +130,18 @@ public class LRUCache<K, V extends ICacheObject> {
         }
     }
 
+    protected void manageSize() {
+        Item last = null;
+        while (this.curSize >= this.maxSize) {
+            last = this.tail.previous;
+            this.lruMap.remove(last.key);
+            removeItem(last);
+        }
+    }
+
     /**
      * Get the item from the cache, move to head
-     * 
+     *
      * @param key
      * @return
      */
@@ -158,7 +157,7 @@ public class LRUCache<K, V extends ICacheObject> {
 
     /**
      * Remove an image from the cache
-     * 
+     *
      * @param image
      *            the image to remove
      */
@@ -181,7 +180,7 @@ public class LRUCache<K, V extends ICacheObject> {
 
     /**
      * Return the current size of the elements contained in the cache (in bytes)
-     * 
+     *
      * @return the size in bytes
      */
     public long size() {
@@ -190,7 +189,7 @@ public class LRUCache<K, V extends ICacheObject> {
 
     /**
      * The maximum size of the cache in bytes
-     * 
+     *
      * @return
      */
     public long maxSize() {

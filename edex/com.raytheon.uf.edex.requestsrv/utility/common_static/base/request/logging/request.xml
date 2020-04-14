@@ -1,0 +1,10 @@
+<?xml version='1.0' encoding='UTF-8'?> 
+<!-- 
+	Refer to common_static/base/request/logging/README.txt for documentation
+-->
+<requests maxFieldStringLength="150">
+    <request class="com.raytheon.uf.common.dataquery.requests.DbQueryRequest" enabled="true"/>
+    <request class="com.raytheon.uf.common.dataquery.requests.DbQueryRequestSet" enabled="true"/>
+    <request class="com.raytheon.uf.common.dataquery.requests.TimeQueryRequestSet" enabled="true"/>
+    <request class="com.raytheon.uf.common.pointdata.PointDataServerRequest" enabled="true"/>
+</requests>

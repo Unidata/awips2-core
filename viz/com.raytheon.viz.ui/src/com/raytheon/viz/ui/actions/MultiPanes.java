@@ -17,31 +17,34 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.viz.core.gl.internal.cache;
-
-import com.raytheon.uf.common.util.cache.ICacheObject;
+package com.raytheon.viz.ui.actions;
 
 /**
- *
- * Interface for objects in the image cache
+ * Utility Enum class
  *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------------------------------
- * Aug 03, 2011           bsteffen  Initial creation
- * Jan 21, 2020  73572    tjensen   Add sizeManagement arg to disposeTexture
+ * Date           Ticket#    Engineer    Description
+ * ------------   ---------- ----------- --------------------------
+ * Feb 17, 2020   75012      ksunil      Initial creation
  *
  * </pre>
  *
- * @author bsteffen
+ * @author ksunil
  */
-public interface IImageCacheable extends ICacheObject {
 
-    public abstract void disposeTextureData();
+public enum MultiPanes {
+    Two(2), Four(4), Nine(9), Sixteen(16);
 
-    public abstract void disposeTexture(boolean sizeManagement);
+    private int count;
 
+    private MultiPanes(int numPanes) {
+        this.count = numPanes;
+    }
+
+    public int numPanes() {
+        return count;
+    }
 }

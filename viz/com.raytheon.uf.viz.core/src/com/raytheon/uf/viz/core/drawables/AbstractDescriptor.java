@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -52,6 +52,7 @@ import com.raytheon.uf.viz.core.AbstractTimeMatcher;
 import com.raytheon.uf.viz.core.IDisplayPane;
 import com.raytheon.uf.viz.core.IDisplayPaneContainer;
 import com.raytheon.uf.viz.core.IExtent;
+import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.core.VizConstants;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
@@ -64,27 +65,31 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
 
 /**
  * AbstractDescriptor
- * 
+ *
  * <pre>
- * 
+ *
  *    SOFTWARE HISTORY
- *   
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Aug 15, 2007           chammack    Initial Creation.
- * Nov 30, 2007  461      bphillip    Using VizTime now for time matching
- * Oct 22, 2009  3348     bsteffen    added ability to limit number of frames
- * Jul 03, 2013  2154     bsteffen    Ensure all resource groups get removed
- *                                    from the time matcher.
- * Apr 09, 2014  2997     randerso    Stopped printing stack trace for 
- *                                    otherwise ignored exception
- * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
- * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
- * Jun 12, 2017  6297     bsteffen    Make listeners thread safe.
- * Jan 04, 2018  6753     bsteffen    Remove unneccesary time matcher operations.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 15, 2007           chammack  Initial Creation.
+ * Nov 30, 2007  461      bphillip  Using VizTime now for time matching
+ * Oct 22, 2009  3348     bsteffen  added ability to limit number of frames
+ * Jul 03, 2013  2154     bsteffen  Ensure all resource groups get removed from
+ *                                  the time matcher.
+ * Apr 09, 2014  2997     randerso  Stopped printing stack trace for otherwise
+ *                                  ignored exception
+ * May 13, 2015  4461     bsteffen  Add setFrameCoordinator
+ * Nov 03, 2016  5976     bsteffen  Remove unused deprecated methods.
+ * Jun 12, 2017  6297     bsteffen  Make listeners thread safe.
+ * Jan 04, 2018  6753     bsteffen  Remove unneccesary time matcher operations.
+ * Oct 01, 2019  69438    ksunil    When the frame changes, notify frame number
+ *                                  listener.
+ * Dec 02, 2019  71868    tjensen   Change updateUI call in notifyFrameChanged()
+ *                                  to be async
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -285,9 +290,9 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     /**
      * Use getFramesInfo() for thread safe use!
-     * 
+     *
      * The times of the frames
-     * 
+     *
      * @return
      */
     @Override
@@ -309,7 +314,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     /**
      * used only to serialize the actual number of frames properly.
-     * 
+     *
      * @return
      */
     @XmlElement(name = "numberOfFrames")
@@ -319,7 +324,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     /**
      * used for (reverse?) serialization.
-     * 
+     *
      * @param val
      */
     public void setNumberOfFramesSerialize(int val) {
@@ -407,7 +412,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
     /**
      * Returns reference to time matching map for reading/writing. Use
      * getTimeForResource(...) where possible if reading only!
-     * 
+     *
      * @return the timeMatchingMap
      */
     public Map<AbstractVizResource<?, ?>, DataTime[]> getTimeMatchingMap() {
@@ -494,7 +499,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
 
     /**
      * Notify the listeners that the frame changed
-     * 
+     *
      * @param oldTime
      * @param newTime
      */
@@ -502,6 +507,13 @@ public abstract class AbstractDescriptor extends ResourceGroup
         for (IFrameChangedListener listener : listeners) {
             listener.frameChanged(this, oldTime, newTime);
         }
+        VizApp.runAsync(new Runnable() {
+            @Override
+            public void run() {
+                VizGlobalsManager.getCurrentInstance()
+                        .updateUI(getRenderableDisplay().getContainer());
+            }
+        });
     }
 
     @Override
@@ -526,8 +538,8 @@ public abstract class AbstractDescriptor extends ResourceGroup
                 error = "Index must be positive when frames are provided";
             }
             if (times != null) {
-                for (int i = 0; i < times.length; i++) {
-                    if (times[i] == null) {
+                for (DataTime time : times) {
+                    if (time == null) {
                         error = "Descriptor should not contain null times";
                         break;
                     }
@@ -771,7 +783,7 @@ public abstract class AbstractDescriptor extends ResourceGroup
      * Check if a resource is in the given group or any IResourceGroups that are
      * in the provided group. If any resourceData in the group is an
      * IResourceGroup then that group is also checked.
-     * 
+     *
      * @param group
      *            the group to check
      * @param resource

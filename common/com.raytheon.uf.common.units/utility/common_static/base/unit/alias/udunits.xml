@@ -36,6 +36,7 @@
     <!-- millimeters are equivalent for precipitation measurements -->
     <alias base="mm">kg m-2</alias>
     <alias base="°">Degree true</alias>
+    <alias base="°">degree true</alias>
     <alias base="min">Minute</alias>
     <alias base="h">Hour</alias>
     <alias base="day">Day</alias>
