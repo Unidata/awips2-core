@@ -43,6 +43,8 @@ import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeneralEnvelope;
 import org.geotools.geometry.jts.JTS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.datum.PixelInCell;
@@ -96,7 +98,6 @@ import com.raytheon.viz.core.contours.util.StreamLineContainer.StreamLinePoint;
 import com.raytheon.viz.core.contours.util.StrmPak;
 import com.raytheon.viz.core.contours.util.StrmPakConfig;
 import com.raytheon.viz.core.interval.XFormFunctions;
-import org.locationtech.jts.geom.Geometry;
 
 /**
  * Provides contouring wrapper.
@@ -712,9 +713,9 @@ public class ContourSupport {
                                         .getContourLabeling().getValues()
                                         .get(i1);
                                 float[] values = currentPref.getValues();
-                                for (int k = 0; k < values.length; k++) {
-                                    if (contourValue == values[k]) {
-                                        label = dfLabel.format(values[k]);
+                                for (float value : values) {
+                                    if (contourValue == value) {
+                                        label = dfLabel.format(value);
                                         if (currentPref.noStylesSet()) {
                                             if (contourValue >= 0) {
                                                 shapeToAddTo = contourGroup.posValueShape;
@@ -912,14 +913,14 @@ public class ContourSupport {
         final double threshold2 = (50.0 / screenToPixel);
 
         double q1, q2, p1, p2;
-        for (int n = 0; n < valsArr.length; n++) {
+        for (double[] vals : valsArr) {
 
             // Distance approximation between last label point
             // and current point
 
             // Absolute value logic inlined for performance
-            q1 = lastPoint[0] - valsArr[n][0];
-            q2 = lastPoint[1] - valsArr[n][1];
+            q1 = lastPoint[0] - vals[0];
+            q2 = lastPoint[1] - vals[1];
             q1 = (q1 <= 0.0D) ? 0.0D - q1 : q1;
             q2 = (q2 <= 0.0D) ? 0.0D - q2 : q2;
 
@@ -931,8 +932,8 @@ public class ContourSupport {
                 // Search for any labels that are too close
                 // to the current one
                 boolean tooClose = false;
-                p1 = valsArr[n][0];
-                p2 = valsArr[n][1];
+                p1 = vals[0];
+                p2 = vals[1];
                 q1 = 0;
                 q2 = 0;
                 for (double[] test : labelPoints) {
@@ -953,9 +954,9 @@ public class ContourSupport {
                 /*
                  * || (labeledAtLeastOnce == false && n == valsArr.length - 1)
                  */) {
-                    shapeToAddTo.addLabel(label, valsArr[n]);
-                    labelPoints.add(valsArr[n]);
-                    lastPoint = valsArr[n];
+                    shapeToAddTo.addLabel(label, vals);
+                    labelPoints.add(vals);
+                    lastPoint = vals;
                 }
             }
         }
@@ -1297,9 +1298,9 @@ public class ContourSupport {
                                             .getContourLabeling().getValues()
                                             .get(i1);
                                     float[] values = currentPref.getValues();
-                                    for (int k = 0; k < values.length; k++) {
-                                        if (contourValue == values[k]) {
-                                            label = dfLabel.format(values[k]);
+                                    for (float value : values) {
+                                        if (contourValue == value) {
+                                            label = dfLabel.format(value);
                                             if (currentPref.noStylesSet()) {
                                                 if (contourValue >= 0) {
                                                     shapeToAddTo = contourGroup.posValueShape;
@@ -1821,7 +1822,8 @@ public class ContourSupport {
         perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
     }
 
-    private static float[] convertSLPointListToFloatArray(List<StreamLinePoint> data) {
+    private static float[] convertSLPointListToFloatArray(
+            List<StreamLinePoint> data) {
 
         float[] ret = new float[data.size() * 2];
         for (int i = 0; i < data.size(); i++) {
