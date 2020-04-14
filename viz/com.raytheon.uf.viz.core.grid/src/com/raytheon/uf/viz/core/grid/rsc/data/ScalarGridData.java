@@ -21,8 +21,8 @@ package com.raytheon.uf.viz.core.grid.rsc.data;
 
 import java.nio.FloatBuffer;
 
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.Unit;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
 
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
@@ -38,6 +38,7 @@ import com.raytheon.uf.common.geospatial.interpolation.GridSampler;
 import com.raytheon.uf.common.geospatial.interpolation.Interpolation;
 import com.raytheon.uf.common.geospatial.interpolation.PrecomputedGridReprojection;
 import com.raytheon.uf.common.numeric.source.DataSource;
+import com.raytheon.uf.common.units.UnitConv;
 
 /**
  *
@@ -111,8 +112,9 @@ public class ScalarGridData extends GeneralGridData {
         if (!dataUnit.isCompatible(unit)) {
             return false;
         }
-        UnitConverter converter = dataUnit.getConverterTo(unit);
-        if (converter.equals(UnitConverter.IDENTITY)) {
+        UnitConverter converter = UnitConv.getConverterToUnchecked(dataUnit,
+                unit);
+        if (converter.isIdentity()) {
             // no need to actually convert if they are the same.
             return true;
         }
