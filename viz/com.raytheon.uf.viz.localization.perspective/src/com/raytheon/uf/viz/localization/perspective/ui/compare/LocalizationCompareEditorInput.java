@@ -34,8 +34,10 @@ import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.IProgressMonitor;
 import org.eclipse.core.runtime.IStatus;
 import org.eclipse.core.runtime.Status;
+import org.eclipse.jface.resource.ImageDescriptor;
 import org.eclipse.jface.text.IDocument;
 import org.eclipse.swt.SWT;
+import org.eclipse.swt.graphics.Image;
 import org.eclipse.swt.widgets.Shell;
 import org.eclipse.ui.IEditorPart;
 import org.eclipse.ui.IReusableEditor;
@@ -49,6 +51,7 @@ import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.viz.core.VizApp;
 import com.raytheon.uf.viz.localization.perspective.LocalizationFileModificationValidator;
 import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorInput;
+import com.raytheon.uf.viz.localization.perspective.editor.LocalizationEditorUtils;
 import com.raytheon.uf.viz.localization.perspective.view.actions.ResolveFileVersionConflictAction;
 import com.raytheon.viz.ui.dialogs.ICloseCallback;
 import com.raytheon.viz.ui.dialogs.SWTMessageBox;
@@ -69,12 +72,12 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  *                                  fix saving with read-only files, abstracted
  *                                  out most of saveable class
  * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ * Apr 16, 2020  8061     bsteffen  Extend ResourceNode to prevent NPE.
  *
  * </pre>
  *
  * @author mschenke
  */
-
 public class LocalizationCompareEditorInput extends CompareEditorInput
         implements ISaveablesSource {
 
@@ -123,8 +126,8 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
         this.leftInput = left;
         this.rightInput = right;
 
-        this.leftNode = new ResourceNode(left.getFile());
-        this.rightNode = new ResourceNode(right.getFile());
+        this.leftNode = new LocalizationResourceNode(left.getFile());
+        this.rightNode = new LocalizationResourceNode(right.getFile());
 
         leftTimestamp = getTimestamp(leftNode);
         rightTimestamp = getTimestamp(rightNode);
@@ -412,5 +415,30 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
             return (left ? parent.isLeftSaveNeeded()
                     : parent.isRightSaveNeeded());
         }
+    }
+
+    /**
+     * Extend ResourceNode to allow more flexibility in getImage() and avoid
+     * NullPointerException.
+     *
+     * In eclipse 4.12, ResourceNode.getImage() throws a NullPointerException if
+     * the resource cannot be adapted to an IWorkbenchAdapter. The Files used as
+     * resources in this class cannot be adapted so a subclass of ResourceNode
+     * is provided that can get images without the adapting.
+     */
+    private static class LocalizationResourceNode extends ResourceNode {
+
+        public LocalizationResourceNode(IResource resource) {
+            super(resource);
+        }
+
+        @Override
+        public Image getImage() {
+            String path = getResource().getLocation().toPortableString();
+            ImageDescriptor desc = LocalizationEditorUtils.getEditorRegistry()
+                    .getImageDescriptor(path);
+            return desc.createImage();
+        }
+
     }
 }
