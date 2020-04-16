@@ -43,34 +43,42 @@ import com.raytheon.uf.common.serialization.reflect.ISubClassLocator;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
+import com.raytheon.uf.common.style.image.SampleFormat;
 import com.raytheon.uf.common.style.level.Level;
 
 /**
  * Manages the visualization styles
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 24, 2007            njensen     Initial creation
- * May 21, 2012 DR 14833   gzhang      Adding a getter for StyleRuleset
- * Sep 06, 2013 2251       mnash       Add ability to plug in new style types
- * Sep 24, 2013 2404       bclement    changed to look in common for files
- * Nov 13, 2013 2361       njensen     Use ISubClassLocator instead of SerializationUtil
- * Mar 10, 2015 4231       nabowle     Watch for changes to loaded style rules and reload them.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 24, 2007           njensen   Initial creation
+ * May 21, 2012  14833    gzhang    Adding a getter for StyleRuleset
+ * Sep 06, 2013  2251     mnash     Add ability to plug in new style types
+ * Sep 24, 2013  2404     bclement  changed to look in common for files
+ * Nov 13, 2013  2361     njensen   Use ISubClassLocator instead of
+ *                                  SerializationUtil
+ * Mar 10, 2015  4231     nabowle   Watch for changes to loaded style rules and
+ *                                  reload them.
+ * Apr 16, 2020  8145     randerso  Updated to allow new sample formatting
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 public class StyleManager implements ILocalizationFileObserver {
     private static final String CONFIG_DIR = "styleRules";
 
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(StyleManager.class);
 
-    public static enum StyleType implements IStyleType {
-        IMAGERY("ImageryStyleRules.xml"), CONTOUR("ContourStyleRules.xml"), ARROW(
-                "ArrowStyleRules.xml"), GEOMETRY("GeometryStyleRules.xml");
+    public enum StyleType implements IStyleType {
+        IMAGERY("ImageryStyleRules.xml"),
+        CONTOUR("ContourStyleRules.xml"),
+        ARROW("ArrowStyleRules.xml"),
+        GEOMETRY("GeometryStyleRules.xml");
 
         private String[] extensions;
 
@@ -82,11 +90,11 @@ public class StyleManager implements ILocalizationFileObserver {
         public String[] getExtensions() {
             return extensions;
         }
-    };
+    }
 
-    private static StyleManager instance;
+    private static final StyleManager instance = new StyleManager();
 
-    private Map<IStyleType, StyleRuleset> rules = new ConcurrentHashMap<IStyleType, StyleRuleset>();
+    private Map<IStyleType, StyleRuleset> rules = new ConcurrentHashMap<>();
 
     private JAXBManager jaxbMgr;
 
@@ -98,10 +106,6 @@ public class StyleManager implements ILocalizationFileObserver {
     }
 
     public static StyleManager getInstance() {
-        if (instance == null) {
-            instance = new StyleManager();
-        }
-
         return instance;
     }
 
@@ -129,8 +133,9 @@ public class StyleManager implements ILocalizationFileObserver {
 
         try {
             IPathManager pathMgr = PathManagerFactory.getPathManager();
-            LocalizationFile[] commonFiles = pathMgr.listFiles(pathMgr
-                    .getLocalSearchHierarchy(LocalizationType.COMMON_STATIC),
+            LocalizationFile[] commonFiles = pathMgr.listFiles(
+                    pathMgr.getLocalSearchHierarchy(
+                            LocalizationType.COMMON_STATIC),
                     CONFIG_DIR, aType.getExtensions(), true, true);
             StyleRuleset ruleset = createRuleset(commonFiles);
             this.rules.put(aType, ruleset);
@@ -180,13 +185,14 @@ public class StyleManager implements ILocalizationFileObserver {
             throw new IllegalStateException(
                     "StyleManager must have an ISubClassLocator set on it, cannot detect and process style rules");
         }
-        Collection<Class<?>> clz = new ArrayList<Class<?>>(20);
+        Collection<Class<?>> clz = new ArrayList<>(20);
         clz.add(JaxbDummyObject.class);
         clz.add(StyleRuleset.class);
         clz.addAll(subClassLocator
                 .locateSubClasses(AbstractStylePreferences.class));
         clz.addAll(subClassLocator.locateSubClasses(MatchCriteria.class));
         clz.addAll(subClassLocator.locateSubClasses(Level.class));
+        clz.addAll(subClassLocator.locateSubClasses(SampleFormat.class));
         subClassLocator.save();
         this.subClassLocator = null;
         try {
@@ -208,16 +214,15 @@ public class StyleManager implements ILocalizationFileObserver {
         try {
             IPathManager pathMgr = PathManagerFactory.getPathManager();
             LocalizationContext context = pathMgr.getContext(
-                    LocalizationType.COMMON_STATIC,
-                    LocalizationLevel.BASE);
+                    LocalizationType.COMMON_STATIC, LocalizationLevel.BASE);
             LocalizationFile dir = pathMgr.getLocalizationFile(context,
                     CONFIG_DIR);
             dir.addFileUpdatedObserver(this);
             this.setupObservation = false;
         } catch (Exception e) {
             statusHandler.handle(Priority.PROBLEM,
-                            "Error setting up observation of changes on style rule files",
-                            e);
+                    "Error setting up observation of changes on style rule files",
+                    e);
         }
     }
 
@@ -231,8 +236,8 @@ public class StyleManager implements ILocalizationFileObserver {
      * @return the best matching style rule, or null if no matches are found
      * @throws StyleException
      */
-    public StyleRule getStyleRule(IStyleType aStyleType, MatchCriteria aCriteria)
-            throws StyleException {
+    public StyleRule getStyleRule(IStyleType aStyleType,
+            MatchCriteria aCriteria) throws StyleException {
         synchronized (aStyleType) {
             if (!this.rules.containsKey(aStyleType)) {
                 loadRules(aStyleType);
@@ -252,7 +257,8 @@ public class StyleManager implements ILocalizationFileObserver {
                     }
                 }
             } catch (Exception e) {
-                throw new StyleException("Error determining matching rules.", e);
+                throw new StyleException("Error determining matching rules.",
+                        e);
             }
         }
         return bestMatch;
