@@ -17,7 +17,6 @@
    <!-- TODO should somehow be contributed from alertviz plugin -->
    <!-- appender name="AlertAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">
       <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
-      <uri>tcp://localhost:61998</uri>
       <destName>messages</destName>
    </appender-->
    
