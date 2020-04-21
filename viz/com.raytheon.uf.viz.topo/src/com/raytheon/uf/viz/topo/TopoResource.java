@@ -189,10 +189,10 @@ public class TopoResource
                 colorMapName = defaultCmap;
             }
 
-            SampleFormat samplePrefs = prefs.getSampleFormat();
-            if (samplePrefs instanceof NumericFormat) {
+            SampleFormat sampleFormat = prefs.getSampleFormat();
+            if (sampleFormat instanceof NumericFormat) {
                 params.setFormatString(
-                        ((NumericFormat) samplePrefs).getPattern());
+                        ((NumericFormat) sampleFormat).getPattern());
             }
 
             ImageryLabelingPreferences labelPrefs = prefs.getColorbarLabeling();
