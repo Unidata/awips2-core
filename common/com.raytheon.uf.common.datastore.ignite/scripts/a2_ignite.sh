@@ -50,7 +50,7 @@ do
             # to grow.
             IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE=${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:-65536}
             IGNITE_CACHE_BACKUPS=${IGNITE_CACHE_BACKUPS:-1}
-            PYPIES_HOST=${PYPIES_HOST:-dx2}
+            PYPIES_HOST=${PYPIES_HOST:-dv2}
             ;;
         developer)
             IGNITE_SERVERS=${IGNITE_SERVERS:-localhost}
