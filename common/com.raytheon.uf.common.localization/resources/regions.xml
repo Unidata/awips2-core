@@ -8,6 +8,8 @@
         <wfo>HNL</wfo>
         <wfo>HFO</wfo>
         <wfo>PPG</wfo>
+        <wfo>PQE</wfo>
+        <wfo>PQW</wfo>
     </region>
     <!-- Eastern Region VUY -->
     <region regionId="ER">
@@ -158,5 +160,17 @@
         <wfo>ACR</wfo>
         <wfo>AAWU</wfo>
         <wfo>AVAK</wfo>
+    </region>
+    <!-- National Centers -->
+    <region regionId="NC">
+    	<wfo>HAK</wfo>
+    	<wfo>HUS</wfo>
+    	<wfo>NH1</wfo>
+    	<wfo>NH2</wfo>
+    	<wfo>NHA</wfo>
+    	<wfo>NHP</wfo>
+    	<wfo>NHZ</wfo>
+    	<wfo>ONA</wfo>
+    	<wfo>ONP</wfo>
     </region>
 </regionSites>
