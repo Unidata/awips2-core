@@ -29,6 +29,7 @@
 # ------------   ----------   -----------   -----------
 #                             ????          Initial creation
 # Aug 05, 2015   4703         njensen       Optimized
+# Apr 30, 2020   7880         tgurney       Python 3 index fix
 #
 
 
@@ -43,4 +44,4 @@
 def execute(skyLayerBase, elevation, index):
     #convert elevation (m) to elevation (ft)
     elevation_ft = (elevation * 3.2808399)
-    return skyLayerBase[:,index] + elevation_ft
+    return skyLayerBase[:,int(index)] + elevation_ft
