@@ -34,7 +34,6 @@
    <!-- this appender will send the messages over ActiveMQ JMS to AlertViz  -->
    <appender name="AlertvizAppender" class="com.raytheon.uf.viz.alertviz.StatusMessageAppender">   
       <connFactoryClass>org.apache.activemq.ActiveMQConnectionFactory</connFactoryClass>
-      <uri>tcp://localhost:61998</uri>
       <destName>messages</destName>
    </appender>
 
