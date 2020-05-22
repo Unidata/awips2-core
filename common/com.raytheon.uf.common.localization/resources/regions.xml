@@ -50,7 +50,7 @@
         <wfo>EYW</wfo>
         <wfo>MLB</wfo>
         <wfo>MFL</wfo>
-        <wfo>TLH</wfo>
+        <wfo>TAE</wfo>
         <wfo>TBW</wfo>
         <wfo>FFC</wfo>
         <wfo>LCH</wfo>
@@ -76,7 +76,6 @@
         <wfo>LUB</wfo>
         <wfo>MAF</wfo>
         <wfo>SJT</wfo>
-        <wfo>TAE</wfo>
     </region>
     <!-- Western Region VHW -->
     <region regionId="WR">
