@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.grid.rsc;
 
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -73,6 +72,8 @@ import com.raytheon.uf.common.style.arrow.ArrowPreferences;
 import com.raytheon.uf.common.style.contour.ContourPreferences;
 import com.raytheon.uf.common.style.image.ColorMapParameterFactory;
 import com.raytheon.uf.common.style.image.ImagePreferences;
+import com.raytheon.uf.common.style.image.NumericFormat;
+import com.raytheon.uf.common.style.image.SampleFormat;
 import com.raytheon.uf.common.time.DataTime;
 import com.raytheon.uf.viz.core.DrawableImage;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -159,7 +160,7 @@ import tec.uom.se.quantity.Quantities;
  * Apr 26, 2017  6247     bsteffen    Provide getter/setter for style preferences.
  * Nov 28, 2017  5863     bsteffen    Change dataTimes to a NavigableSet
  * Feb 15, 2018  6902     njensen     Added interrogate support for Direction To
- * Mar 21, 208   7157     njensen     Improved if statement in createColorMapParameters()
+ * Mar 21, 2018  7157     njensen     Improved if statement in createColorMapParameters()
  * Apr 04, 2018  6889     njensen     Use brightness from ImagePreferences if
  *                                    present but missing in ImagingCapability
  * Nov 15, 2018  57905    edebebe     Enabled configurable 'Wind Barb' properties
@@ -170,7 +171,7 @@ import tec.uom.se.quantity.Quantities;
  * Aug 29, 2019  67949    tjensen     Refactor to support additional GFE products
  * Nov 11, 2019  7596     mrichardson Fix unit conversion for sampling
  * Dec 02, 2019  71870    tjensen     Make disposeRenderable visible to be overridden
- *
+ * Apr 16, 2020  8145     randerso    Updated to allow new sample formatting
  *
  * </pre>
  *
@@ -249,7 +250,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
     /**
      * The format used by the default inspect method
      */
-    protected DecimalFormat sampleFormat = new DecimalFormat("0.00");
+    protected SampleFormat sampleFormat = new NumericFormat("0.00");
 
     protected AbstractGridResource(T resourceData,
             LoadProperties loadProperties) {
@@ -529,23 +530,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
         if (stylePreferences != null
                 && stylePreferences instanceof ImagePreferences) {
             ImagePreferences prefs = (ImagePreferences) stylePreferences;
-            if (prefs.getSamplePrefs() != null
-                    && prefs.getSamplePrefs().getFormatString() != null) {
-                try {
-                    int numDecimalPlaces = Integer
-                            .parseInt(prefs.getSamplePrefs().getFormatString());
-                    char[] zeroes = new char[numDecimalPlaces];
-                    Arrays.fill(zeroes, '0');
-                    sampleFormat = new DecimalFormat(
-                            "0." + String.copyValueOf(zeroes));
-
-                } catch (NumberFormatException e) {
-                    statusHandler.handle(Priority.INFO,
-                            "Invalid sample format in style rules, expected an integer but recieved "
-                                    + prefs.getSamplePrefs().getFormatString(),
-                            e);
-                }
-            }
+            sampleFormat = prefs.getSampleFormat();
         }
     }
 
@@ -962,7 +947,7 @@ public abstract class AbstractGridResource<T extends AbstractResourceData>
             return "NO DATA";
         }
         String unit = map.get(UNIT_STRING_INTERROGATE_KEY);
-        String result = sampleFormat.format(value.getValue()) + unit;
+        String result = sampleFormat.format(value.getValue(), unit);
         // Data mapping images.
         if (hasCapability(ColorMapCapability.class)) {
             ColorMapParameters cmp = getCapability(ColorMapCapability.class)

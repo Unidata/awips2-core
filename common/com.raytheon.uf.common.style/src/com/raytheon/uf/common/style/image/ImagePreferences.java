@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -27,6 +27,7 @@ import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
+import javax.xml.bind.annotation.XmlElementRef;
 import javax.xml.bind.annotation.XmlRootElement;
 import javax.xml.bind.annotation.adapters.CollapsedStringAdapter;
 import javax.xml.bind.annotation.adapters.XmlJavaTypeAdapter;
@@ -48,7 +49,7 @@ import tec.uom.se.format.SimpleUnitFormat;
  *    SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ---------------------------
+ * ------------- -------- --------- ---------------------------------------
  * Jul 27, 2007           chammack  Initial Creation.
  * Nov 25, 2013  2492     bsteffen  Add colorMapUnits
  * Apr 26, 2017  6247     bsteffen  Implement clone
@@ -56,6 +57,7 @@ import tec.uom.se.format.SimpleUnitFormat;
  * Apr 04, 2018  6889     njensen   Added brightness
  * Jun 27, 2019  65510    ksunil    support color fill through XML entries
  * Jul 25, 2019  65809    ksunil    added colorMapFillExtensions
+ * Apr 16, 2020  8145     randerso  Updated to allow new sample formatting
  *
  * </pre>
  *
@@ -76,8 +78,8 @@ public class ImagePreferences extends AbstractStylePreferences {
     @XmlJavaTypeAdapter(CollapsedStringAdapter.class)
     private String legend;
 
-    @XmlElement
-    private SamplePreferences samplePrefs;
+    @XmlElementRef
+    private SampleFormat sampleFormat = NumericFormat.DEFAULT;
 
     @XmlElement
     private DataMappingPreferences dataMapping;
@@ -110,7 +112,7 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.defaultColormap = prefs.getDefaultColormap();
         this.dataScale = prefs.getDataScale();
         this.legend = prefs.getLegend();
-        this.samplePrefs = prefs.getSamplePrefs().clone();
+        this.sampleFormat = prefs.getSampleFormat().clone();
         this.dataMapping = prefs.getDataMapping().clone();
         this.colorbarLabeling = prefs.getColorbarLabeling().clone();
         this.interpolate = prefs.isInterpolate();
@@ -179,12 +181,19 @@ public class ImagePreferences extends AbstractStylePreferences {
         this.dataMapping = dataMapping;
     }
 
-    public SamplePreferences getSamplePrefs() {
-        return samplePrefs;
+    /**
+     * @return the sampleFormat
+     */
+    public SampleFormat getSampleFormat() {
+        return sampleFormat;
     }
 
-    public void setSamplePrefs(SamplePreferences samplePrefs) {
-        this.samplePrefs = samplePrefs;
+    /**
+     * @param sampleFormat
+     *            the sampleFormat to set
+     */
+    public void setSampleFormat(SampleFormat sampleFormat) {
+        this.sampleFormat = sampleFormat;
     }
 
     public String getLegend() {
@@ -192,7 +201,7 @@ public class ImagePreferences extends AbstractStylePreferences {
     }
 
     /**
-     * 
+     *
      * @return String representation of colorMapUnits for serialization.
      * @see ImagePreferences#getColorMapUnitsObject()
      */

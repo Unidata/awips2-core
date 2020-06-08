@@ -8,6 +8,8 @@
         <wfo>HNL</wfo>
         <wfo>HFO</wfo>
         <wfo>PPG</wfo>
+        <wfo>PQE</wfo>
+        <wfo>PQW</wfo>
     </region>
     <!-- Eastern Region VUY -->
     <region regionId="ER">
@@ -48,7 +50,7 @@
         <wfo>EYW</wfo>
         <wfo>MLB</wfo>
         <wfo>MFL</wfo>
-        <wfo>TLH</wfo>
+        <wfo>TAE</wfo>
         <wfo>TBW</wfo>
         <wfo>FFC</wfo>
         <wfo>LCH</wfo>
@@ -74,7 +76,6 @@
         <wfo>LUB</wfo>
         <wfo>MAF</wfo>
         <wfo>SJT</wfo>
-        <wfo>TAE</wfo>
     </region>
     <!-- Western Region VHW -->
     <region regionId="WR">
@@ -158,5 +159,17 @@
         <wfo>ACR</wfo>
         <wfo>AAWU</wfo>
         <wfo>AVAK</wfo>
+    </region>
+    <!-- National Centers -->
+    <region regionId="NC">
+    	<wfo>HAK</wfo>
+    	<wfo>HUS</wfo>
+    	<wfo>NH1</wfo>
+    	<wfo>NH2</wfo>
+    	<wfo>NHA</wfo>
+    	<wfo>NHP</wfo>
+    	<wfo>NHZ</wfo>
+    	<wfo>ONA</wfo>
+    	<wfo>ONP</wfo>
     </region>
 </regionSites>
