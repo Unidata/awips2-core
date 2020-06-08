@@ -19,7 +19,7 @@
  **/
 package com.raytheon.uf.common.style.image;
 
-import java.text.ParseException;
+import java.text.ParsePosition;
 import java.time.DateTimeException;
 import java.time.Duration;
 import java.time.Instant;
@@ -27,11 +27,11 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.zone.ZoneRulesException;
 
-import javax.measure.converter.ConversionException;
-import javax.measure.converter.UnitConverter;
-import javax.measure.unit.SI;
-import javax.measure.unit.Unit;
-import javax.measure.unit.UnitFormat;
+import javax.measure.IncommensurableException;
+import javax.measure.UnconvertibleException;
+import javax.measure.Unit;
+import javax.measure.UnitConverter;
+import javax.measure.format.ParserException;
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -39,6 +39,10 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
+
+import si.uom.SI;
+import tec.uom.se.format.SimpleUnitFormat;
+import tec.uom.se.unit.MetricPrefix;
 
 /**
  * SampleFormat for date formats (e.g. seconds since epoch)
@@ -50,6 +54,7 @@ import com.raytheon.uf.common.status.UFStatus;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Mar 02, 2020  8145     randerso  Initial creation
+ * Jun 08, 2020  7983     randerso  Updated units framework to JSR-363.
  *
  * </pre>
  *
@@ -153,16 +158,18 @@ public class DateFormat extends SampleFormat {
         if (value instanceof Number) {
             Unit<?> unit = null;
             try {
-                unit = (Unit<?>) UnitFormat.getUCUMInstance()
-                        .parseObject(unitString);
+                unit = (Unit<?>) SimpleUnitFormat
+                        .getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .parseObject(unitString, new ParsePosition(0));
                 UnitConverter converter = unit
-                        .getConverterTo(SI.MILLI(SI.SECOND));
+                        .getConverterToAny(MetricPrefix.MILLI(SI.SECOND));
                 millisSinceEpoch = Duration.ofMillis((long) converter
                         .convert(((Number) value).doubleValue()));
-            } catch (ParseException e) {
+            } catch (ParserException e) {
                 statusHandler.error("Unrecognized unit string: " + unitString,
                         e);
-            } catch (ClassCastException | ConversionException e) {
+            } catch (ClassCastException | IncommensurableException
+                    | UnconvertibleException e) {
                 statusHandler.error(
                         "Unit " + unit + " is not compatible with " + SI.SECOND,
                         e);
