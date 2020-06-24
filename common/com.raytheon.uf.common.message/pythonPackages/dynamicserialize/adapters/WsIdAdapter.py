@@ -30,6 +30,8 @@
 # Sep 16, 2010           dgilling  Initial Creation.
 # Apr 25, 2012  545      randerso  Repurposed the lockKey field as threadId
 # Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
+# Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
+#                                  network address.
 # 
 ##
 
@@ -48,10 +50,10 @@ def deserialize(context):
     wsIdParts = wsIdString.split(":", 5)
     
     wsId = WsId()
-    wsId.setNetworkId(wsIdParts[0])
+    wsId.setHostName(wsIdParts[0])
     wsId.setUserName(wsIdParts[1])
     wsId.setProgName(wsIdParts[2])
-    wsId.setPid(wsIdParts[3])
+    wsId.setPid(int(wsIdParts[3]))
     wsId.setThreadId(int(wsIdParts[4]))
     
     return wsId

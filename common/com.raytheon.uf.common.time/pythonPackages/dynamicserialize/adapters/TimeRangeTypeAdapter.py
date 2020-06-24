@@ -20,7 +20,7 @@
 
 
 #
-# Adapter for com.raytheon.uf.common.message.WsId
+# Adapter for com.raytheon.uf.common.message.TimeRange
 #  
 #    
 #     SOFTWARE HISTORY

@@ -26,21 +26,22 @@
 # Apr 25, 2012  545      randerso  Repurposed the lockKey field as threadId
 # Jun 12, 2013  2099     dgilling  Implemented toPrettyString().
 # Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
+# Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
+#                                  network address.
 #
 ##    
 
-import struct
 import socket
 import os
 import pwd
-import _thread
+import threading
 
 class WsId(object):
 
-    def __init__(self, networkId=None, userName=None, progName=None):
-        self.networkId = networkId
-        if networkId is None:
-            self.networkId = str(struct.unpack('<L',socket.inet_aton(socket.gethostbyname(socket.gethostname())))[0])
+    def __init__(self, hostName=None, userName=None, progName=None):
+        self.hostName = hostName
+        if hostName is None:
+            self.hostName = socket.gethostname()
         
         self.userName = userName
         if userName is None:
@@ -52,13 +53,13 @@ class WsId(object):
         
         self.pid = os.getpid()
         
-        self.threadId = int(_thread.get_ident())
+        self.threadId = threading.current_thread().ident
 
-    def getNetworkId(self):
-        return self.networkId
+    def getHostName(self):
+        return self.hostName
 
-    def setNetworkId(self, networkId):
-        self.networkId = networkId
+    def setHostName(self, hostName):
+        self.hostName = hostName
 
     def getUserName(self):
         return self.userName
@@ -85,11 +86,11 @@ class WsId(object):
         self.threadId = threadId
         
     def toPrettyString(self):        
-        hostname = socket.gethostbyaddr(socket.inet_ntoa(struct.pack('<L', int(self.networkId))))[0]
         return self.userName + "@" + hostname + ":" + self.progName + ":" + str(self.pid) + ":" + str(self.threadId)
     
     def __str__(self):
-        return self.networkId + ":" + self.userName + ":" + self.progName + ":" + str(self.pid) + ":" + str(self.threadId)
+        s = ":".join([self.hostName, self.userName, self.progName, str(self.pid), str(self.threadId)])
+        return s
     
     def __repr__(self):
         return self.__str__()

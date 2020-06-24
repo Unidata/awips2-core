@@ -41,21 +41,25 @@ import com.raytheon.uf.viz.core.localization.LocalizationManager;
  *
  *    SOFTWARE HISTORY
  *
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------------------------
- * Jul 01, 2006           chammack    Initial Creation.
- * Sep 12, 2012  1167     djohnson    Add datadelivery servers.
- * Jan 14, 2013  1469     bkowal      Removed the hdf5 data directory.
- * Aug 27, 2013  2295     bkowal      Removed the jms server property; added jms
- *                                    connection string
- * Feb 17, 2014  2812     njensen     getHostName() now uses getWsId()'s hostname
- * Mar 20, 2014  2726     rjpeter     Moved host processing to SystemUtil.
- * Nov 03, 2016  5976     bsteffen    Remove logging methods
- * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
- * Oct 16, 2019  7724     randerso    Set client ID in JMS connection URL
- * Oct 16, 2019  7724     tgurney     Replace connection string and info map with
- *                                    a single {@link JMSConnectionInfo} object
- * Dec  9, 2019  7724     tgurney     Delegate JMS connection info to {@link JMSConnection}
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Jul 01, 2006           chammack     Initial Creation.
+ * Sep 12, 2012  1167     djohnson     Add datadelivery servers.
+ * Jan 14, 2013  1469     bkowal       Removed the hdf5 data directory.
+ * Aug 27, 2013  2295     bkowal       Removed the jms server property; added
+ *                                     jms connection string
+ * Feb 17, 2014  2812     njensen      getHostName() now uses getWsId()'s
+ *                                     hostname
+ * Mar 20, 2014  2726     rjpeter      Moved host processing to SystemUtil.
+ * Nov 03, 2016  5976     bsteffen     Remove logging methods
+ * Jul 17, 2019  7724     mrichardson  Upgrade Qpid to Qpid Proton.
+ * Oct 16, 2019  7724     randerso     Set client ID in JMS connection URL
+ * Oct 16, 2019  7724     tgurney      Replace connection string and info map
+ *                                     with a single {@link JMSConnectionInfo}
+ *                                     object
+ * Dec 09, 2019  7724     tgurney      Delegate JMS connection info to {@link
+ *                                     JMSConnection}
+ * Jun 29, 2020           randerso     Set jms.clientID to SystemUtil.getClientID()
  *
  * </pre>
  *
@@ -204,7 +208,7 @@ public final class VizApp {
     public static void setJmsConnectionInfo(
             JMSConnectionInfo jmsConnectionInfo) {
         jmsConnectionInfo.getParameters().put("jms.clientID",
-                getWsId().toString());
+                SystemUtil.getClientID(Platform.getProduct().getName()));
         JMSConnection.getInstance().setConnectionInfo(jmsConnectionInfo);
     }
 

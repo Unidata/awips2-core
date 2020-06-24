@@ -30,15 +30,18 @@ import ch.qos.logback.core.Context;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 10, 2014 3675       njensen     Initial creation
- * Feb 18, 2015 4015       rferrel     Standard constants and determineLogFilenamePattern.
- * Jun 09, 2015 4473       njensen     Moved from status to logback plugin
- * Jun 07, 2016 5258       bsteffen    Include sequence number in default message
- *                                     pattern to allow log forging detection.
- * Oct 19, 2017 6367       tgurney     Allow specifying null name to log to the
- *                                     default log file
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 10, 2014  3675     njensen   Initial creation
+ * Feb 18, 2015  4015     rferrel   Standard constants and
+ *                                  determineLogFilenamePattern.
+ * Jun 09, 2015  4473     njensen   Moved from status to logback plugin
+ * Jun 07, 2016  5258     bsteffen  Include sequence number in default message
+ *                                  pattern to allow log forging detection.
+ * Oct 19, 2017  6367     tgurney   Allow specifying null name to log to the
+ *                                  default log file
+ * Jun 24, 2020  8187     randerso  Updated for SystemUtil.getPid() returning
+ *                                  long
  *
  * </pre>
  *
@@ -88,7 +91,7 @@ public class LogbackUtil {
      * @return the new filename with %PID% replaced if it was present
      */
     public static String replacePid(String filename) {
-        return filename.replace("%PID%", Integer.toString(SystemUtil.getPid()));
+        return filename.replace("%PID%", Long.toString(SystemUtil.getPid()));
     }
 
     /**
