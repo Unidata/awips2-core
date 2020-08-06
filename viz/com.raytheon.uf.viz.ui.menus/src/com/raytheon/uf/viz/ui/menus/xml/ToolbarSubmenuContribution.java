@@ -43,11 +43,11 @@ import com.raytheon.uf.viz.ui.menus.widgets.ToolbarSubmenuContributionItem;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- -----------------------------------------
  * Dec 11, 2013  2602     bsteffen    Update MenuXMLMap.
+ * Jul 16, 2020  7900     ksunil      included a null check for item.contributions
  * 
  * </pre>
  * 
  * @author unknown
- * @version 1.0
  */
 public class ToolbarSubmenuContribution extends
         AbstractMenuContributionItem<CommonToolbarSubmenuContribution> {
@@ -64,9 +64,14 @@ public class ToolbarSubmenuContribution extends
             CommonAbstractMenuContribution items, VariableSubstitution[] subs,
             Set<String> removals) throws VizException {
         CommonToolbarSubmenuContribution item = (CommonToolbarSubmenuContribution) items;
-        if (removals.contains(items.id))
+        //7900 . If nothing to contribute, return empty list
+        if(item.contributions == null) {
             return new IContributionItem[0];
-        List<IContributionItem> contribItemList = new ArrayList<IContributionItem>();
+        }
+        if (removals.contains(items.id)) {
+            return new IContributionItem[0];
+        }
+        List<IContributionItem> contribItemList = new ArrayList<>();
 
         for (CommonAbstractMenuContribution amc : item.contributions) {
             IContribItemProvider common = MenuXMLMap

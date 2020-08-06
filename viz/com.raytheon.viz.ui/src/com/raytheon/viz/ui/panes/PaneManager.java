@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -65,11 +65,11 @@ import org.locationtech.jts.geom.Coordinate;
 /**
  * Manages panes. If virtual cursor is not desired, override InputAdapter
  * functions functions
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Jul 07, 2009  830      bgonzale  Initial Creation.
@@ -82,11 +82,12 @@ import org.locationtech.jts.geom.Coordinate;
  * Jun 26, 2017  6331     bsteffen  Add null check before reseting shared maps.
  * Feb 14, 2018  6866     njensen   Don't mess with map layers while swapping
  * May 01, 2018  7064     bsteffen  Grab only visible panes for screenshots.
- * 
+ * Jul 08, 2020  80637    tjensen   Reset display bounds on clear
+ *
  * </pre>
- * 
+ *
  * @author bgonzale
- * 
+ *
  */
 public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
@@ -114,7 +115,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     protected Composite composite;
 
-    private Set<ISelectedPanesChangedListener> listeners;
+    private final Set<ISelectedPanesChangedListener> listeners;
 
     protected IDisplayPane[] lastHandledPanes = null;
 
@@ -250,7 +251,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Perform a refresh asynchronously
-     * 
+     *
      */
     @Override
     public void refresh() {
@@ -269,10 +270,10 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Translate a current (x,y) screen coordinate to world coordinates.
-     * 
+     *
      * The container using this manager should not call this method as it will
      * become recursive
-     * 
+     *
      * @param x
      *            a visible x screen coordinate
      * @param y
@@ -301,10 +302,10 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Translate a world coordinate to screen coordinates (x,y).
-     * 
+     *
      * The container using this manager should not call this method as it will
      * become recursive
-     * 
+     *
      * @param c
      *            Coordinate to convert
      * @return the world coordinates for the display
@@ -331,7 +332,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Register a mouse handler to a map
-     * 
+     *
      * @param handler
      *            the handler to register
      */
@@ -342,7 +343,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Unregister a mouse handler to a map
-     * 
+     *
      * @param handler
      *            the handler to unregister
      */
@@ -353,7 +354,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Take a screen shot of each display pane
-     * 
+     *
      * @return the screen shots
      */
     public BufferedImage[] screenshots() {
@@ -403,7 +404,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
 
     /**
      * Returns the mouse manager
-     * 
+     *
      * @return
      */
     public InputManager getMouseManager() {
@@ -612,7 +613,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
      * displayPanes. The descriptor is only changed if the resource is already
      * in one of the panes. If none of the panes contain the resource then it is
      * not changed.
-     * 
+     *
      * @return true if the descriptor was changed.
      */
     private boolean resetDescriptor(ResourcePair rp) {
@@ -656,6 +657,7 @@ public class PaneManager extends InputAdapter implements IMultiPaneEditor {
         }
         IDisplayPane pane = displayPanes.get(0);
         showPane(pane);
+        pane.getRenderableDisplay().setBounds(composite.getBounds());
         pane.clear();
     }
 
