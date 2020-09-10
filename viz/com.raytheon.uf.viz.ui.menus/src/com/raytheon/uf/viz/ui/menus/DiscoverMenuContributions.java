@@ -35,23 +35,18 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
+import org.eclipse.core.expressions.EvaluationResult;
 import org.eclipse.core.expressions.Expression;
+import org.eclipse.core.expressions.IEvaluationContext;
 import org.eclipse.core.runtime.CoreException;
 import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
-import org.eclipse.e4.core.services.events.IEventBroker;
-import org.eclipse.e4.ui.model.application.ui.menu.MMenuElement;
-import org.eclipse.e4.ui.workbench.UIEvents;
-import org.eclipse.e4.ui.workbench.renderers.swt.MenuManagerRenderer;
 import org.eclipse.jface.action.IContributionItem;
-import org.eclipse.jface.action.MenuManager;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.menus.AbstractContributionFactory;
 import org.eclipse.ui.menus.IContributionRoot;
 import org.eclipse.ui.menus.IMenuService;
 import org.eclipse.ui.services.IServiceLocator;
-import org.osgi.service.event.Event;
-import org.osgi.service.event.EventHandler;
 
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.ILocalizationPathObserver;
@@ -97,6 +92,7 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
  * Dec 06, 2017  6355     nabowle   Observe path changes to rediscover menu
  *                                  contributions.
+ * Sep 10, 2020  8213     bsteffen  Fix visibleWhen for eclispe 4.16
  *
  * </pre>
  *
@@ -156,8 +152,6 @@ public class DiscoverMenuContributions {
                         .addLocalizationPathObserver(menu, observer);
             }
         }
-
-        workaround48143();
 
         ILocalizationFile[] file = null;
 
@@ -223,8 +217,8 @@ public class DiscoverMenuContributions {
                                                     new HashSet<String>());
                                     Expression exp = null;
                                     if (imc.visibleOnActionSet != null) {
-                                        org.eclipse.core.internal.expressions.WithExpression we = new org.eclipse.core.internal.expressions.WithExpression(
-                                                "activeContexts");
+                                        org.eclipse.core.internal.expressions.WithExpression we = new VisibleWithExpression(
+                                                "activeContexts", items);
 
                                         org.eclipse.core.internal.expressions.IterateExpression oe = null;
                                         try {
@@ -274,55 +268,60 @@ public class DiscoverMenuContributions {
     }
 
     /**
-     * Workaround to an eclipse bug: "visibleWhen has no effect for MenuManager
-     * added in AbstractContributionFactory"
-     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=484143
+     * This class works around bugs in eclipse that fail to update menu
+     * visibility when a visibleWhen is used. Within eclipse it is properly
+     * executing the visibleWhen expression, however the result does not always
+     * affect the visibility of the IContributionItems so the expression does
+     * not actually affect visibility. To workaround the problem this class
+     * extends the WithExpression and applies the result of the Expression to
+     * the visibility of the IContributionItems each time the expression is
+     * evaluated.
      *
-     * If this bug is fixed then this method should be removed. This method will
-     * add an EventHandler for UIElement changes and update the MenuManager
-     * visibility to match the MMenuElement visibility
+     * Internally the problem with eclipse is that a MMenuElement is created for
+     * each IContributionItem and the Expression result is applied only to the
+     * MMenuElement and not to the IContributionItem. The MenuManagerRenderer
+     * has some code to listen for and copy the visibility from an MMenuElement
+     * to a ContributionItem but it is not working right.
+     *
+     * This is primarily caused by
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=484143 because the
+     * IContributionItems we provide are MenuManagers which is not a subclass of
+     * ContributionItem. The code in MenuManagerRenderer is only checking for
+     * ContributionItem so it does not work with MenuManager.
+     *
+     * The problem has become worse with changes made under
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=558279 because now the
+     * MMenuElement can be removed from the model and is no longer sending out
+     * notification when the visibility is changed. Without an event when
+     * visibility changes it has become more difficult to respond to changes in
+     * visibility. This class has been created to update the visibility of the
+     * IContributionItem without relying on any notification from the
+     * MMenuElement.
+     *
+     * This class should be removed once
+     * https://bugs.eclipse.org/bugs/show_bug.cgi?id=484143 is resolved.
+     *
      */
-    private static void workaround48143() {
-        /* Code is based off of MenuManagerRenderer.toBeRenderedUpdater */
-        IEventBroker eventBroker = PlatformUI.getWorkbench()
-                .getService(IEventBroker.class);
-        eventBroker.subscribe(UIEvents.UIElement.TOPIC_ALL, new EventHandler() {
+    private static class VisibleWithExpression
+            extends org.eclipse.core.internal.expressions.WithExpression {
 
-            @Override
-            public void handleEvent(Event event) {
-                String attName = (String) event
-                        .getProperty(UIEvents.EventTags.ATTNAME);
-                if (UIEvents.UIElement.VISIBLE.equals(attName)) {
-                    Object element = event
-                            .getProperty(UIEvents.EventTags.ELEMENT);
-                    if (element instanceof MMenuElement) {
-                        MMenuElement menuModel = (MMenuElement) element;
-                        Object renderer = menuModel.getRenderer();
-                        if (renderer instanceof MenuManagerRenderer) {
-                            IContributionItem item = ((MenuManagerRenderer) renderer)
-                                    .getContribution(menuModel);
-                            if (item instanceof MenuManager) {
-                                MenuManager manager = (MenuManager) item;
-                                manager.setVisible(menuModel.isVisible());
-                                if (manager.getParent() != null) {
-                                    manager.getParent().markDirty();
-                                    /*
-                                     * When MenuManagerRenderer changes
-                                     * visibility normally then it schedules an
-                                     * update, this class does not have access
-                                     * to the scheduling method. Currently
-                                     * something else always ends up triggering
-                                     * an update so it's not a problem but if
-                                     * there are problems this would be a good
-                                     * place to look.
-                                     */
-                                }
-                            }
-                        }
-                    }
-                }
+        private final IContributionItem[] items;
+
+        public VisibleWithExpression(String variable,
+                IContributionItem[] items) {
+            super(variable);
+            this.items = items;
+        }
+
+        @Override
+        public EvaluationResult evaluate(IEvaluationContext context)
+                throws CoreException {
+            EvaluationResult result = super.evaluate(context);
+            for (IContributionItem item : items) {
+                item.setVisible(result != EvaluationResult.FALSE);
             }
-        });
+            return result;
+        }
     }
 
     public static class MenuPathObserver implements ILocalizationPathObserver {
