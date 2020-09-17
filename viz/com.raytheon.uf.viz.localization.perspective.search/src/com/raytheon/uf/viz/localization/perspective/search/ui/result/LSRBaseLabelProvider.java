@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -52,16 +52,19 @@ import com.raytheon.uf.viz.localization.perspective.view.LocalizationFileGroupDa
  * Base {@link IStyledLabelProvider} for {@link LocalizationSearchResultPage}.
  * This contains any functionality which is shared between the label providers
  * of the tree and list views.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Apr 06, 2017  6188     bsteffen  Initial creation
  * Aug 17, 2017  6359     bsteffen  Remove unused page field.
- * 
+ * Sep 17, 2020  8230     randerso  Fix NPE in getImageDescriptor. Issue was
+ *                                  exposed by change of Eclipse supplied image
+ *                                  changing from gif to png.
+ *
  * </pre>
  *
  * @author bsteffen
@@ -142,7 +145,7 @@ public abstract class LSRBaseLabelProvider extends LabelProvider
         } else if (element instanceof Match) {
             Bundle bundle = FrameworkUtil
                     .getBundle(AbstractTextSearchViewPage.class);
-            Path path = Path.forPosix("icons/full/obj16/line_match.gif");
+            Path path = Path.forPosix("icons/full/obj16/line_match.png");
             return getImageDescriptor(bundle, path);
         } else {
             Bundle bundle = FrameworkUtil.getBundle(FileTreeView.class);
@@ -154,7 +157,7 @@ public abstract class LSRBaseLabelProvider extends LabelProvider
     private static ImageDescriptor getImageDescriptor(Bundle bundle,
             IPath path) {
         URL url = FileLocator.find(bundle, path, null);
-        if (url.getFile() == null) {
+        if (url == null) {
             url = FileLocator.find(bundle, new Path("..").append(path), null);
         }
         return ImageDescriptor.createFromURL(url);
