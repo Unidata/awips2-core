@@ -72,6 +72,7 @@ import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
  * Sep 26, 2017  6413     tjensen   Add pre-sorted options for lists
  * Jul 02, 2018  7329     mapeters  Prevent selected list with up/down arrows
  *                                  from being sorted
+ * Sep 22, 2020  7926     randerso  Fixed move up/down
  *
  * </pre>
  *
@@ -531,10 +532,13 @@ public class DualList extends Composite {
             if (selectedIdx < selectedList.getItemCount() - 2) {
                 selectedList.remove(selectedIdx);
                 selectedList.add(item, selectedIdx + 1);
+                selectedList.deselectAll();
                 selectedList.select(selectedIdx + 1);
             } else if (selectedIdx < selectedList.getItemCount() - 1) {
+                selectedList.deselect(selectedIdx);
                 selectedList.remove(selectedIdx);
                 selectedList.add(item);
+                selectedList.deselectAll();
                 selectedList.select(selectedList.getItemCount() - 1);
             }
             enableDisableUpDownButtons();
@@ -616,6 +620,7 @@ public class DualList extends Composite {
             if (selectedIdx > 0) {
                 selectedList.remove(selectedIdx);
                 selectedList.add(col, selectedIdx - 1);
+                selectedList.deselectAll();
                 selectedList.select(selectedIdx - 1);
             }
             enableDisableUpDownButtons();
@@ -725,7 +730,7 @@ public class DualList extends Composite {
     private void reloadAvailableList() {
 
         String[] selectedStrings = availableList.getSelection();
-        ArrayList<String> selectedItemList = new ArrayList<>(
+        java.util.List<String> selectedItemList = new ArrayList<>(
                 Arrays.asList(selectedList.getItems()));
 
         // Check if search field text present
