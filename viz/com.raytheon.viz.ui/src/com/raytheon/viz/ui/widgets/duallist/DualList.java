@@ -27,14 +27,10 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 import org.eclipse.swt.SWT;
-import org.eclipse.swt.events.DisposeEvent;
-import org.eclipse.swt.events.DisposeListener;
 import org.eclipse.swt.events.MouseAdapter;
 import org.eclipse.swt.events.MouseEvent;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
-import org.eclipse.swt.graphics.Font;
-import org.eclipse.swt.graphics.FontData;
 import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -43,6 +39,8 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.List;
+
+import com.raytheon.viz.ui.widgets.duallist.ButtonImages.ButtonImage;
 
 /**
  * SWT Dual List Widget.
@@ -74,7 +72,6 @@ import org.eclipse.swt.widgets.List;
  * Sep 26, 2017  6413     tjensen   Add pre-sorted options for lists
  * Jul 02, 2018  7329     mapeters  Prevent selected list with up/down arrows
  *                                  from being sorted
- * Sep 03, 2019  7926     randerso  Replace arrow button images with text
  *
  * </pre>
  *
@@ -82,38 +79,6 @@ import org.eclipse.swt.widgets.List;
  */
 
 public class DualList extends Composite {
-
-    private enum ButtonType {
-        AddAll("⏩", "Move all items right"),
-        Add("⏴", "Move selected item(s) right"),
-        Remove("⏵", "Move selected item(s) left"),
-        RemoveAll("⏪", "Move all items left"),
-        Up("⏶", "Move item up in the list"),
-        Down("⏷", "Move item down in the list");
-
-        private String text;
-
-        private String toolTip;
-
-        private ButtonType(String text, String toolTip) {
-            this.text = text;
-            this.toolTip = toolTip;
-        }
-
-        /**
-         * @return button text
-         */
-        public String getText() {
-            return text;
-        }
-
-        /**
-         * @return button tool tip text
-         */
-        public String getToolTip() {
-            return toolTip;
-        }
-    };
 
     /**
      * Available List widget
@@ -171,6 +136,11 @@ public class DualList extends Composite {
     private int numberOfColumns = 3;
 
     /**
+     * Button Images.
+     */
+    private ButtonImages btnImg;
+
+    /**
      * Move left flag.
      */
     private boolean moveLeft = false;
@@ -179,8 +149,6 @@ public class DualList extends Composite {
      * Move All flag.
      */
     private boolean moveAllLeft = false;
-
-    private Font buttonFont;
 
     /**
      * Constructor
@@ -221,6 +189,8 @@ public class DualList extends Composite {
      * Initialize the controls.
      */
     private void init() {
+        // Create the button image class
+        btnImg = new ButtonImages(this);
 
         // Determine how many columns need to be on the layout.
         // The default is three.
@@ -234,18 +204,6 @@ public class DualList extends Composite {
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         this.setLayout(gl);
         this.setLayoutData(gd);
-
-        FontData fontData = this.getFont().getFontData()[0];
-        fontData.setHeight(fontData.getHeight() * 2);
-        fontData.setName("DejaVu Sans");
-        buttonFont = new Font(getDisplay(), fontData);
-        this.addDisposeListener(new DisposeListener() {
-
-            @Override
-            public void widgetDisposed(DisposeEvent e) {
-                buttonFont.dispose();
-            }
-        });
 
         createListLabels();
         createAvailableListControl();
@@ -345,20 +303,6 @@ public class DualList extends Composite {
         });
     }
 
-    private Button createButton(ButtonType type, Composite parent) {
-        Button button = new Button(parent, SWT.PUSH | SWT.CENTER);
-        button.setFont(buttonFont);
-        button.setText(type.getText());
-        button.setToolTipText(type.getToolTip());
-
-        GridData gd = new GridData(SWT.FILL, SWT.DEFAULT, true, false);
-        GC gc = new GC(button);
-        gd.heightHint = gc.textExtent(type.getText(), SWT.DRAW_TRANSPARENT).y;
-        gc.dispose();
-        button.setLayoutData(gd);
-        return button;
-    }
-
     /**
      * Create the add and remove controls.
      */
@@ -368,15 +312,18 @@ public class DualList extends Composite {
          */
         GridData selectData = new GridData(SWT.DEFAULT, SWT.CENTER, false,
                 true);
-        GridLayout selectLayout = new GridLayout(1, true);
+        GridLayout selectLayout = new GridLayout(1, false);
+        selectLayout.verticalSpacing = 2;
 
         Composite selectComp = new Composite(this, SWT.NONE);
         selectComp.setLayout(selectLayout);
         selectComp.setLayoutData(selectData);
 
         // Left/Right buttons
-        moveAllRightBtn = createButton(ButtonType.AddAll, selectComp);
+        moveAllRightBtn = new Button(selectComp, SWT.PUSH);
+        moveAllRightBtn.setImage(btnImg.getImage(ButtonImage.AddAll));
         moveAllRightBtn.setEnabled(false);
+        moveAllRightBtn.setToolTipText("Move all items right");
         moveAllRightBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -387,8 +334,10 @@ public class DualList extends Composite {
             }
         });
 
-        moveRightBtn = createButton(ButtonType.Add, selectComp);
+        moveRightBtn = new Button(selectComp, SWT.PUSH);
+        moveRightBtn.setImage(btnImg.getImage(ButtonImage.Add));
         moveRightBtn.setEnabled(false);
+        moveRightBtn.setToolTipText("Move selected item(s) right");
         moveRightBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -399,8 +348,10 @@ public class DualList extends Composite {
             }
         });
 
-        moveLeftBtn = createButton(ButtonType.Remove, selectComp);
+        moveLeftBtn = new Button(selectComp, SWT.PUSH);
+        moveLeftBtn.setImage(btnImg.getImage(ButtonImage.Remove));
         moveLeftBtn.setEnabled(false);
+        moveLeftBtn.setToolTipText("Move selected item(s) left");
         moveLeftBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -411,8 +362,10 @@ public class DualList extends Composite {
             }
         });
 
-        moveAllLeftBtn = createButton(ButtonType.RemoveAll, selectComp);
+        moveAllLeftBtn = new Button(selectComp, SWT.PUSH);
+        moveAllLeftBtn.setImage(btnImg.getImage(ButtonImage.RemoveAll));
         moveAllLeftBtn.setEnabled(false);
+        moveAllLeftBtn.setToolTipText("Move all items left");
         moveAllLeftBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -486,8 +439,10 @@ public class DualList extends Composite {
         actionComp.setLayout(actionLayout);
         actionComp.setLayoutData(actionData);
 
-        moveUpBtn = createButton(ButtonType.Up, actionComp);
+        moveUpBtn = new Button(actionComp, SWT.PUSH);
+        moveUpBtn.setImage(btnImg.getImage(ButtonImage.Up));
         moveUpBtn.setEnabled(false);
+        moveUpBtn.setToolTipText("Move item up in the list");
         moveUpBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -495,8 +450,10 @@ public class DualList extends Composite {
             }
         });
 
-        moveDownBtn = createButton(ButtonType.Down, actionComp);
+        moveDownBtn = new Button(actionComp, SWT.PUSH);
+        moveDownBtn.setImage(btnImg.getImage(ButtonImage.Down));
         moveDownBtn.setEnabled(false);
+        moveDownBtn.setToolTipText("Move item down in the list");
         moveDownBtn.addSelectionListener(new SelectionAdapter() {
             @Override
             public void widgetSelected(SelectionEvent event) {
@@ -768,7 +725,7 @@ public class DualList extends Composite {
     private void reloadAvailableList() {
 
         String[] selectedStrings = availableList.getSelection();
-        java.util.List<String> selectedItemList = new ArrayList<>(
+        ArrayList<String> selectedItemList = new ArrayList<>(
                 Arrays.asList(selectedList.getItems()));
 
         // Check if search field text present
