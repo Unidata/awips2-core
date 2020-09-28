@@ -465,7 +465,7 @@
          id="org.postgres"
          download-size="0"
          install-size="0"
-         version="42.2.5"/>
+         version="42.2.16"/>
 
    <plugin
          id="javax.persistence"
