@@ -44,6 +44,8 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Sep 12, 2014  3583     bclement  removed ISerializableObject
  * Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
  *                                  network address. Changed pid to long.
+ * Oct 01, 2020  8239     randerso  Added getClientId() to match the JMS
+ *                                  client ID string.
  *
  * </pre>
  *
@@ -156,6 +158,13 @@ public class WsId implements Serializable {
                 .append(':').append("thread-").append(threadId);
 
         return o.toString();
+    }
+
+    public String getClientId() {
+        String s = String.join(":", hostName, userName, progName,
+                Long.toString(pid));
+
+        return s;
     }
 
     public String getHostName() {
