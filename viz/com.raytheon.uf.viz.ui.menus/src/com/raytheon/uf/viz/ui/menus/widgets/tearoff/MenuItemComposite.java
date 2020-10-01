@@ -46,7 +46,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
@@ -70,21 +69,31 @@ import com.raytheon.viz.ui.VizWorkbenchManager;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 15, 2011            mnash     Initial creation
- * Apr 10, 2013 DR 15185   D. Friedman Preserve tear-offs over perspective switches.
- * Feb 26, 2014    2842    mpduff    Utilize the command listener.
- * Apr 10, 2014    2241    mnash     Fix in practice mode, fixed the new month, Jev
- * Jev 26, 2014  2842      mpduff    Utilize the command listener.
- * Aug 21, 2014  15664     snaples   Updated dispose method to fix issue when closing perspecitive with tear offs open.
- * May 01, 2018  6708      tgurney   Refill submenus every time they are opened
- * May 04, 2018  6781      tgurney   Add checkboxes
- * Sep 17, 2018  7466      tgurney   Add disposed check in mouse event handlers
- * Sep 21, 2018  7477      tgurney   Add command listener to HandledContributionItems
- * Feb 21, 2019  7477      tgurney   Update the backing menu item in command listener
- * May 15, 2019  7850      tgurney   Split on BundleContributionItem.TIME_SEPARATOR
- *                                   instead of tab character
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Sep 15, 2011           mnash        Initial creation
+ * Apr 10, 2013  15185    D. Friedman  Preserve tear-offs over perspective
+ *                                     switches.
+ * Feb 26, 2014  2842     mpduff       Utilize the command listener.
+ * Apr 10, 2014  2241     mnash        Fix in practice mode, fixed the new
+ *                                     month, Jev
+ * Jev 26, 2014  2842     mpduff       Utilize the command listener.
+ * Aug 21, 2014  15664    snaples      Updated dispose method to fix issue when
+ *                                     closing perspective with tear offs open.
+ * May 01, 2018  6708     tgurney      Refill submenus every time they are
+ *                                     opened
+ * May 04, 2018  6781     tgurney      Add checkboxes
+ * Sep 17, 2018  7466     tgurney      Add disposed check in mouse event
+ *                                     handlers
+ * Sep 21, 2018  7477     tgurney      Add command listener to
+ *                                     HandledContributionItems
+ * Feb 21, 2019  7477     tgurney      Update the backing menu item in command
+ *                                     listener
+ * May 15, 2019  7850     tgurney      Split on
+ *                                     BundleContributionItem.TIME_SEPARATOR
+ *                                     instead of tab character
+ * Oct 01, 2020  8234     randerso     Fix issues with sub-menu pull out arrows
+ *                                     in practice/test modes. Code cleanup.
  *
  * </pre>
  *
@@ -125,7 +134,7 @@ public class MenuItemComposite extends Composite {
     /** Disabled color */
     private final Color disabledColor;
 
-    private final Color backgroundColor = CAVEMode.getBackgroundColor();
+    private final Color backgroundColor;
 
     /**
      * @param parent
@@ -133,9 +142,9 @@ public class MenuItemComposite extends Composite {
      */
     public MenuItemComposite(Composite parent, int style) {
         super(parent, style);
-        enabledColor = Display.getCurrent().getSystemColor(SWT.COLOR_BLACK);
-        disabledColor = Display.getCurrent()
-                .getSystemColor(SWT.COLOR_DARK_GRAY);
+        enabledColor = CAVEMode.getForegroundColor();
+        disabledColor = getDisplay().getSystemColor(SWT.COLOR_DARK_GRAY);
+        backgroundColor = CAVEMode.getBackgroundColor();
     }
 
     /**
@@ -440,7 +449,9 @@ public class MenuItemComposite extends Composite {
     @Override
     public void setForeground(Color color) {
         firstItem.setForeground(color);
-        secondItem.setForeground(color);
+        if (secondItem != null) {
+            secondItem.setForeground(color);
+        }
         super.setForeground(color);
     }
 
@@ -451,18 +462,18 @@ public class MenuItemComposite extends Composite {
         int imgWidth = 11;
         int imgHeight = 11;
 
-        arrow = new Image(Display.getCurrent(), imgWidth, imgHeight);
-        highlightedArrow = new Image(Display.getCurrent(), imgWidth, imgHeight);
+        arrow = new Image(getDisplay(), imgWidth, imgHeight);
+        highlightedArrow = new Image(getDisplay(), imgWidth, imgHeight);
 
         // the normal arrow
         GC gc = new GC(arrow);
-        drawArrowImage(gc, imgWidth, imgHeight, SWT.COLOR_WIDGET_BACKGROUND,
-                SWT.COLOR_BLACK);
+        drawArrowImage(gc, imgWidth, imgHeight, backgroundColor, enabledColor);
 
         // the highlighted arrow
         gc = new GC(highlightedArrow);
-        drawArrowImage(gc, imgWidth, imgHeight, SWT.COLOR_LIST_SELECTION,
-                SWT.COLOR_WHITE);
+        drawArrowImage(gc, imgWidth, imgHeight,
+                getDisplay().getSystemColor(SWT.COLOR_LIST_SELECTION),
+                getDisplay().getSystemColor(SWT.COLOR_LIST_SELECTION_TEXT));
 
         gc.dispose();
     }
@@ -478,15 +489,15 @@ public class MenuItemComposite extends Composite {
      *            Image height.
      */
     private void drawArrowImage(GC gc, int imgWidth, int imgHeight,
-            int highlightColor, int arrowColor) {
+            Color highlightColor, Color arrowColor) {
         gc.setAntialias(SWT.ON);
 
         // "Erase" the canvas by filling it in with a white rectangle.
-        gc.setBackground(Display.getCurrent().getSystemColor(highlightColor));
+        gc.setBackground(highlightColor);
 
         gc.fillRectangle(0, 0, imgWidth, imgHeight);
 
-        gc.setBackground(Display.getCurrent().getSystemColor(arrowColor));
+        gc.setBackground(arrowColor);
 
         int[] polyArray = new int[] { 2, 0, 8, 4, 2, 8 };
 
@@ -512,9 +523,9 @@ public class MenuItemComposite extends Composite {
                 // and foreground, so we set that here, this is to tell
                 // the whole thing to be highlighted
                 if (!item.isDisposed() && item.isEnabled()) {
-                    setBackground(Display.getCurrent()
+                    setBackground(getDisplay()
                             .getSystemColor(SWT.COLOR_LIST_SELECTION));
-                    setForeground(Display.getCurrent()
+                    setForeground(getDisplay()
                             .getSystemColor(SWT.COLOR_LIST_SELECTION_TEXT));
                     // changes the arrow image to the highlighted version
                     if (secondItem instanceof Label) {
@@ -534,7 +545,7 @@ public class MenuItemComposite extends Composite {
 
                     setBackground(backgroundColor);
 
-                    setForeground(Display.getCurrent()
+                    setForeground(getDisplay()
                             .getSystemColor(SWT.COLOR_WIDGET_FOREGROUND));
                     // changes the arrow image to the unhighlighted version
                     if (secondItem instanceof Label) {
