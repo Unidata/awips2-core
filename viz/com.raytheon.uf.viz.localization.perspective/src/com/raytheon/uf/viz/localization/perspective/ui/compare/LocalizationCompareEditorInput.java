@@ -69,12 +69,13 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  *                                  fix saving with read-only files, abstracted
  *                                  out most of saveable class
  * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ * Apr 16, 2020  8061     bsteffen  Extend ResourceNode to prevent NPE.
+ * Jun 12, 2020  8061     bsteffen  Extract LocalizationResourceNode to its own file.
  *
  * </pre>
  *
  * @author mschenke
  */
-
 public class LocalizationCompareEditorInput extends CompareEditorInput
         implements ISaveablesSource {
 
@@ -123,8 +124,8 @@ public class LocalizationCompareEditorInput extends CompareEditorInput
         this.leftInput = left;
         this.rightInput = right;
 
-        this.leftNode = new ResourceNode(left.getFile());
-        this.rightNode = new ResourceNode(right.getFile());
+        this.leftNode = new LocalizationResourceNode(left.getFile());
+        this.rightNode = new LocalizationResourceNode(right.getFile());
 
         leftTimestamp = getTimestamp(leftNode);
         rightTimestamp = getTimestamp(rightNode);

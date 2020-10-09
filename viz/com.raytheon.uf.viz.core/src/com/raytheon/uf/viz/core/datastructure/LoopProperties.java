@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,23 +26,28 @@ import javax.xml.bind.annotation.XmlElement;
 import org.eclipse.ui.PlatformUI;
 import org.eclipse.ui.commands.ICommandService;
 
+import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.viz.core.VizApp;
+import com.raytheon.uf.viz.core.preferences.PreferenceConstants;
+
 /**
  * This class is a container for the loop properties
- * 
+ *
  * <pre>
- * 
- * 
+ *
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Aug 30, 2007           randerso    Initial Creation.
  * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
  * Jun 23, 2014  3307     njensen     Fix xml serialization of looping field
  * Mar 12, 2018  6757     njensen     Added copy constructor
- * 
+ * Jun 05, 2019  64619    tjensen     Update to line up with performance frame times
+ *
  * </pre>
- * 
+ *
  * @author randerso
  */
 @XmlAccessorType(XmlAccessType.NONE)
@@ -53,25 +58,28 @@ public class LoopProperties {
     }
 
     /** frame time increment in ms */
-    public static final int FRAME_STEP = 100;
+    public static final int FRAME_STEP = (int) (TimeUtil.MILLIS_PER_SECOND
+            / VizApp.getCorePreferenceInt(PreferenceConstants.P_FPS));
 
     /** maximum frame time in ms */
-    public static final int MAX_FRAME_TIME = 950;
+    public static final int MAX_FRAME_TIME = (int) TimeUtil.MILLIS_PER_SECOND;
 
     /** value at which looping should stop */
     public static final int NOT_LOOPING = 1050;
 
-    /** minimum frame time in ms */
-    public static final int MIN_FRAME_TIME = 50;
+    /**
+     * Default frame time. Set it to as close to 250ms as the Performance FPS
+     * allows.
+     */
+    public static final int DEFAULT_FRAME_TIME = Math.floorDiv(250, FRAME_STEP)
+            * FRAME_STEP;
 
-    /** default frame time */
-    public static final int DEFAULT_FRAME_TIME = 250;
-
-    /** dwell time increment in ms */
-    public static final int DWELL_STEP = 100;
-
-    /** maximum dwell time in ms */
-    public static final int MAX_DWELL_TIME = 2500;
+    /**
+     * maximum dwell time. Set it to as close to 2500ms as the Performance FPS
+     * allows
+     */
+    public static final int MAX_DWELL_TIME = Math.floorDiv(2500, FRAME_STEP)
+            * FRAME_STEP;
 
     /** minimum dwell time in ms */
     public static final int MIN_DWELL_TIME = 0;
@@ -84,16 +92,21 @@ public class LoopProperties {
     @XmlElement
     private int revFrameTime = NOT_LOOPING;
 
-    /** first frame dwell time in ms */
+    /**
+     * first frame dwell time. Set it to as close to 700ms as the Performance
+     * FPS allows
+     */
     @XmlElement
-    private int firstFrameDwell = 700;
+    private int firstFrameDwell = Math.floorDiv(700, FRAME_STEP) * FRAME_STEP;
 
-    /** last frame dwell time in ms */
+    /**
+     * last frame dwell time. Set it to as close to 1500ms as the Performance
+     * FPS allows
+     */
     @XmlElement
-    private int lastFrameDwell = 1500;
+    private int lastFrameDwell = Math.floorDiv(1500, FRAME_STEP) * FRAME_STEP;
 
     /** flag indicating if currently looping */
-    // @XmlElement is on get method instead
     private boolean isLooping = false;
 
     /** current loop mode */
@@ -113,7 +126,7 @@ public class LoopProperties {
 
     /**
      * Copy constructor
-     * 
+     *
      * @param original
      */
     public LoopProperties(LoopProperties original) {
@@ -209,7 +222,7 @@ public class LoopProperties {
     /**
      * If waitTime has elapsed since the last draw then isShouldDraw will become
      * true.
-     * 
+     *
      * @param waitTime
      */
     public void drawAfterWait(long waitTime) {

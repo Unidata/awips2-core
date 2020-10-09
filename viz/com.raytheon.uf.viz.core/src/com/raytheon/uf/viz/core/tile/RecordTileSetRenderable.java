@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.measure.Unit;
 
@@ -65,31 +66,30 @@ import org.locationtech.jts.geom.Coordinate;
  * tiles when retrieving data. Default retrieval mechanism uses
  * {@link HDF5DataRetriever}. If other mechanism desired, extend class and
  * override {@link #retrieveRecordData(Tile)}
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Jun 19, 2013  2122     mschenke    Initial creation.
- * Oct 16, 2013  2333     mschenke    Added method for auto-unit conversion
- *                                    interrogating
- * Nov 20, 2013  2492     bsteffen    Move unit converting interrogate into
- *                                    TileSetRenderable.
- * Aug 26, 2015  4633     bsteffen    Preserve CRS when requesting multiple
- *                                    tiles.
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Jun 19, 2013  2122     mschenke  Initial creation.
+ * Oct 16, 2013  2333     mschenke  Added method for auto-unit conversion
+ *                                  interrogating
+ * Nov 20, 2013  2492     bsteffen  Move unit converting interrogate into
+ *                                  TileSetRenderable.
+ * Aug 26, 2015  4633     bsteffen  Preserve CRS when requesting multiple tiles.
+ * Jan 21, 2020  73572    tjensen   Add isRestagingEnabled()
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class RecordTileSetRenderable extends TileSetRenderable {
 
-    private class RecordTileDataCallback implements
-            IColorMapDataRetrievalCallback {
+    private class RecordTileDataCallback
+            implements IColorMapDataRetrievalCallback {
 
         private final Tile tile;
 
@@ -126,27 +126,45 @@ public class RecordTileSetRenderable extends TileSetRenderable {
 
         @Override
         public boolean equals(Object obj) {
-            if (this == obj)
+            if (this == obj) {
                 return true;
-            if (obj == null)
+            }
+            if (obj == null) {
                 return false;
-            if (getClass() != obj.getClass())
+            }
+            if (getClass() != obj.getClass()) {
                 return false;
+            }
             RecordTileDataCallback other = (RecordTileDataCallback) obj;
-            if (!getOuterType().equals(other.getOuterType()))
+            if (!getOuterType().equals(other.getOuterType())) {
                 return false;
+            }
             if (tile == null) {
-                if (other.tile != null)
+                if (other.tile != null) {
                     return false;
-            } else if (!tile.equals(other.tile))
+                }
+            } else if (!tile.equals(other.tile)) {
                 return false;
+            }
             return true;
         }
 
         private RecordTileSetRenderable getOuterType() {
-            // Only compares outer type class to ensure calls to
-            // retrieveRecordData will be the same
+            /*
+             * Only compares outer type class to ensure calls to
+             * retrieveRecordData will be the same
+             */
             return RecordTileSetRenderable.this;
+        }
+
+        @Override
+        public boolean isRestagingEnabled() {
+            /*
+             * Re-retrieving this data is costly, so return it to the staging
+             * area if it is pushed out of the graphics memory due to the
+             * graphics memory filling up.
+             */
+            return true;
         }
 
     }
@@ -171,9 +189,8 @@ public class RecordTileSetRenderable extends TileSetRenderable {
             int numTiles = subTiles.size();
             int numNeedStaging = 0;
 
-            List<RecordTileDataCallback> callbacks = new ArrayList<RecordTileDataCallback>(
-                    numTiles);
-            List<DrawableImage> images = new ArrayList<DrawableImage>(numTiles);
+            List<RecordTileDataCallback> callbacks = new ArrayList<>(numTiles);
+            List<DrawableImage> images = new ArrayList<>(numTiles);
 
             for (Tile tile : subTiles) {
                 RecordTileDataCallback callback = new RecordTileDataCallback(
@@ -203,23 +220,22 @@ public class RecordTileSetRenderable extends TileSetRenderable {
                     for (int i = 0; i < numTiles; i += 1) {
                         Tile tile = subTiles.get(i);
                         DrawableImage image = images.get(i);
-                        if (image != null) {
-                            if (image.getImage().getStatus() == Status.UNLOADED) {
-                                Rectangle tileRect = tile.getRectangle();
-                                ColorMapData subData = new ColorMapData(
-                                        BufferSlicer.slice(data.getBuffer(),
-                                                tileRect, bigTileRect),
-                                        new int[] { tileRect.width,
-                                                tileRect.height },
-                                        data.getDataType(), data.getDataUnit());
+                        if (image != null && image.getImage()
+                                .getStatus() == Status.UNLOADED) {
+                            Rectangle tileRect = tile.getRectangle();
+                            ColorMapData subData = new ColorMapData(
+                                    BufferSlicer.slice(data.getBuffer(),
+                                            tileRect, bigTileRect),
+                                    new int[] { tileRect.width,
+                                            tileRect.height },
+                                    data.getDataType(), data.getDataUnit());
 
-                                callbacks.get(i).setRetrievedData(subData);
-                                try {
-                                    image.getImage().stage();
-                                } catch (VizException e) {
-                                    statusHandler.handle(Priority.PROBLEM,
-                                            e.getLocalizedMessage(), e);
-                                }
+                            callbacks.get(i).setRetrievedData(subData);
+                            try {
+                                image.getImage().stage();
+                            } catch (VizException e) {
+                                statusHandler.handle(Priority.PROBLEM,
+                                        e.getLocalizedMessage(), e);
                             }
                         }
                     }
@@ -236,14 +252,15 @@ public class RecordTileSetRenderable extends TileSetRenderable {
 
         public DrawableImage createTileImage(IGraphicsTarget target, Tile tile,
                 RecordTileDataCallback callback) throws VizException {
-            IColormappedImage image = target.getExtension(
-                    IColormappedImageExtension.class).initializeRaster(
-                    callback, colormapping.getColorMapParameters());
+            IColormappedImage image = target
+                    .getExtension(IColormappedImageExtension.class)
+                    .initializeRaster(callback,
+                            colormapping.getColorMapParameters());
             IMesh mesh = target.getExtension(IMapMeshExtension.class)
                     .constructMesh(tile.tileGeometry,
                             tileSet.getTargetGeometry());
             return new DrawableImage(image, new PixelCoverage(mesh),
-                    RasterMode.SYNCHRONOUS);
+                    RasterMode.ASYNCHRONOUS);
         }
 
     }
@@ -277,23 +294,23 @@ public class RecordTileSetRenderable extends TileSetRenderable {
     @Override
     protected void createTileImages(IGraphicsTarget target,
             Collection<Tile> tilesToCreate) {
-        Map<Integer, List<Tile>> mapped = new HashMap<Integer, List<Tile>>();
+        Map<Integer, List<Tile>> mapped = new HashMap<>();
         for (Tile tile : tilesToCreate) {
             // Ensure no job already scheduled for tile
             if (jobMap.get(tile) == null) {
                 List<Tile> tiles = mapped.get(tile.tileLevel);
                 if (tiles == null) {
-                    tiles = new ArrayList<Tile>();
+                    tiles = new ArrayList<>();
                     mapped.put(tile.tileLevel, tiles);
                 }
                 tiles.add(tile);
             }
         }
 
-        for (Integer tileLevel : mapped.keySet()) {
-            List<Tile> tiles = mapped.get(tileLevel);
-            List<GridEnvelope2D> rectangles = new ArrayList<GridEnvelope2D>();
-            List<Envelope2D> envelopes = new ArrayList<Envelope2D>();
+        for (Entry<Integer, List<Tile>> tileEntry : mapped.entrySet()) {
+            List<Tile> tiles = tileEntry.getValue();
+            List<GridEnvelope2D> rectangles = new ArrayList<>();
+            List<Envelope2D> envelopes = new ArrayList<>();
 
             for (Tile tile : tiles) {
                 rectangles.add(tile.tileGeometry.getGridRange2D());
@@ -308,16 +325,14 @@ public class RecordTileSetRenderable extends TileSetRenderable {
                     Rectangle r2 = rectangles.get(j);
                     Envelope2D e2 = envelopes.get(j);
                     boolean joinable = true;
-                    if (r1.x == r2.x && r1.width == r2.width) {
-                        if (r1.getMaxY() == r2.getMinY()
-                                || r1.getMinY() == r2.getMaxY()) {
-                            joinable = true;
-                        }
-                    } else if (r1.y == r2.y && r1.height == r2.height) {
-                        if (r1.getMaxX() == r2.getMinX()
-                                || r1.getMinX() == r2.getMaxX()) {
-                            joinable = true;
-                        }
+                    if ((r1.x == r2.x && r1.width == r2.width)
+                            && (r1.getMaxY() == r2.getMinY()
+                                    || r1.getMinY() == r2.getMaxY())) {
+                        joinable = true;
+                    } else if ((r1.y == r2.y && r1.height == r2.height)
+                            && (r1.getMaxX() == r2.getMinX()
+                                    || r1.getMinX() == r2.getMaxX())) {
+                        joinable = true;
                     }
                     if (joinable) {
                         // Join the rectangles
@@ -330,7 +345,8 @@ public class RecordTileSetRenderable extends TileSetRenderable {
                         // Join the envelopes
                         envelopes.remove(e1);
                         envelopes.remove(e2);
-                        joined = new Envelope2D(e1.getCoordinateReferenceSystem());
+                        joined = new Envelope2D(
+                                e1.getCoordinateReferenceSystem());
                         Rectangle2D.union(e1, e2, joined);
                         envelopes.add((Envelope2D) joined);
 
@@ -343,8 +359,9 @@ public class RecordTileSetRenderable extends TileSetRenderable {
 
             // start a separate job for every big rectangle
             for (int i = 0; i < rectangles.size(); i++) {
-                Tile joinedTile = new Tile(tileLevel, new GridGeometry2D(
-                        (GridEnvelope) rectangles.get(i), envelopes.get(i)));
+                Tile joinedTile = new Tile(tileEntry.getKey(),
+                        new GridGeometry2D((GridEnvelope) rectangles.get(i),
+                                envelopes.get(i)));
                 RecordTileImageCreatorTask task = new RecordTileImageCreatorTask(
                         target, joinedTile, tiles);
                 for (Tile tile : tiles) {
@@ -397,18 +414,23 @@ public class RecordTileSetRenderable extends TileSetRenderable {
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (obj == null)
+        }
+        if (obj == null) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
         RecordTileSetRenderable other = (RecordTileSetRenderable) obj;
         if (record == null) {
-            if (other.record != null)
+            if (other.record != null) {
                 return false;
-        } else if (!record.equals(other.record))
+            }
+        } else if (!record.equals(other.record)) {
             return false;
+        }
         return true;
     }
 

@@ -28,6 +28,7 @@ BASE:cave_static/gfe/userPython/textUtilities/DefaultCallToActions.py
 
 CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultAreaDictionary.py
 CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultCityLocation.py
+CONFIGURED:common_static/gfe/python/SiteCFG.py
 
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py

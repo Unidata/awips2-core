@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -39,7 +39,7 @@ import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.geospatial.ReferencedCoordinate;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.ImageryLabelingPreferences;
 import com.raytheon.uf.common.style.ParamLevelMatchCriteria;
 import com.raytheon.uf.common.style.StyleException;
 import com.raytheon.uf.common.style.StyleManager;
@@ -47,7 +47,8 @@ import com.raytheon.uf.common.style.StyleManager.StyleType;
 import com.raytheon.uf.common.style.StyleRule;
 import com.raytheon.uf.common.style.image.DataScale;
 import com.raytheon.uf.common.style.image.ImagePreferences;
-import com.raytheon.uf.common.style.image.SamplePreferences;
+import com.raytheon.uf.common.style.image.NumericFormat;
+import com.raytheon.uf.common.style.image.SampleFormat;
 import com.raytheon.uf.common.topo.TopoUtils;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
 import com.raytheon.uf.viz.core.drawables.PaintProperties;
@@ -66,21 +67,23 @@ import tec.uom.se.format.SimpleUnitFormat;
 
 /**
  * Provides an SRTM hdf5-backed topographic map
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Feb 14, 2007             chammack    Initial Creation.
- * Apr 03, 2013 1562        mschenke    Fix for custom colormaps
- * Apr 24, 2013 1638        mschenke    Made topo configurable for source data
- * Aug 06, 2013 2235        bsteffen    Added Caching version of TopoQuery.
- * Aug 05, 2016 4906        randerso    Added no data value to color map parameters
- * Apr 04, 2018 6889        njensen     Use brightness from ImagePreferences if
- *                                      present but missing in ImagingCapability
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 14, 2007           chammack  Initial Creation.
+ * Apr 03, 2013  1562     mschenke  Fix for custom colormaps
+ * Apr 24, 2013  1638     mschenke  Made topo configurable for source data
+ * Aug 06, 2013  2235     bsteffen  Added Caching version of TopoQuery.
+ * Aug 05, 2016  4906     randerso  Added no data value to color map parameters
+ * Apr 04, 2018  6889     njensen   Use brightness from ImagePreferences if
+ *                                  present but missing in ImagingCapability
+ * Apr 20, 2020  8145     randerso  Replace SamplePreferences with SampleFormat
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class TopoResource
@@ -187,13 +190,13 @@ public class TopoResource
                 colorMapName = defaultCmap;
             }
 
-            SamplePreferences samplePrefs = prefs.getSamplePrefs();
-            if ((samplePrefs != null)
-                    && (samplePrefs.getFormatString() != null)) {
-                params.setFormatString(samplePrefs.getFormatString());
+            SampleFormat sampleFormat = prefs.getSampleFormat();
+            if (sampleFormat instanceof NumericFormat) {
+                params.setFormatString(
+                        ((NumericFormat) sampleFormat).getPattern());
             }
 
-            LabelingPreferences labelPrefs = prefs.getColorbarLabeling();
+            ImageryLabelingPreferences labelPrefs = prefs.getColorbarLabeling();
             if ((labelPrefs != null) && (labelPrefs.getValues() != null)) {
                 params.setColorBarIntervals(labelPrefs.getValues());
             }

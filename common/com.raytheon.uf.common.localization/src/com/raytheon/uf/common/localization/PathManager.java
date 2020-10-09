@@ -254,6 +254,8 @@ public class PathManager implements IPathManager {
                 return file;
             }
         }
+        statusHandler.debug("getLocalizationFile is returning null for file(s): "
+            + Arrays.toString(files));
         return null;
     }
 

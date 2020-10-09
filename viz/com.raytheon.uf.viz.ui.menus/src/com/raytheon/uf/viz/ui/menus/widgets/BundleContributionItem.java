@@ -101,10 +101,13 @@ import com.raytheon.viz.ui.actions.LoadBundleHandler;
  * Dec 16, 2016  5976     bsteffen  Use localization file streams
  * May 15, 2019  7850     tgurney   Use left-padding with spaces to right-align
  *                                  data times (GTK3 fix). + Code cleanup
- * Jan 13, 2020  7850     tgurney   Realign all other items in the menu when
- *                                  one menu item text updates
+ * Jan 13, 2020  7850     tgurney   Realign all other items in the menu when one
+ *                                  menu item text updates
  * Jan 18, 2020  7850     tgurney   Fix NPE on CAVE perspective switch
  * Feb 11, 2020  8036     tgurney   Fix another NPE on CAVE perspective switch
+ * Jul 23, 2020  8194     randerso  Added null and exists checks when loading
+ *                                  bundles
+ *
  * </pre>
  *
  * @author chammack
@@ -573,14 +576,17 @@ public class BundleContributionItem extends ContributionItem {
             try {
                 ILocalizationFile file = PathManagerFactory.getPathManager()
                         .getStaticLocalizationFile(bundleFile);
+                if (file == null || !file.exists()) {
+                    throw new VizException("Bundle file not found");
+                }
                 Bundle b;
                 try (InputStream stream = file.openInputStream()) {
                     b = Bundle.unmarshalBundle(stream, substitutions);
                 }
                 return BundleUtil.extractMetadata(b);
             } catch (VizException | LocalizationException | IOException e) {
-                statusHandler.error("Failed to load bundle from " + bundleFile,
-                        e);
+                statusHandler.error("Failed to load bundle from \"" + bundleFile
+                        + "\", " + e.getLocalizedMessage(), e);
                 return new HashSet<>();
             }
         }

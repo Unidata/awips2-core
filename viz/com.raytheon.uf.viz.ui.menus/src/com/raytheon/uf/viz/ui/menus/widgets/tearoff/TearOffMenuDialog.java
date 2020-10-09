@@ -32,7 +32,6 @@ import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.layout.GridLayout;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Control;
-import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
@@ -56,18 +55,22 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Sep 14, 2011            mnash       Initial creation
- * Jan 09, 2013 1442       rferrel     Add Simulated Time Change Listener.
- * Apr 10, 2013 DR 15185   D. Friedman Preserve tear-offs over perspective switches.
- * Aug 21, 2014 15664      snaples     Updated dispose method to fix issue when
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Sep 14, 2011           mnash        Initial creation
+ * Jan 09, 2013  1442     rferrel      Add Simulated Time Change Listener.
+ * Apr 10, 2013  15185    D. Friedman  Preserve tear-offs over perspective
+ *                                     switches.
+ * Aug 21, 2014  15664    snaples      Updated dispose method to fix issue when
  *                                     closing perspective with tear offs open.
- * Oct 28, 2015 5054       randerso    Changed to use getter for perspective manager.
- * Nov 30, 2016 6016       randerso    Change timeChanged to call updateTimes on
+ * Oct 28, 2015  5054     randerso     Changed to use getter for perspective
+ *                                     manager.
+ * Nov 30, 2016  6016     randerso     Change timeChanged to call updateTimes on
  *                                     the UI thread
- * May 15, 2019 7850       tgurney     Replace reference to tab character with
+ * May 15, 2019  7850     tgurney      Replace reference to tab character with
  *                                     BundleContributionItem.TIME_SEPARATOR
+ * Oct 01, 2020  8234     randerso     Improved positioning of tear-off
+ *                                     submenus. Code cleanup.
  *
  * </pre>
  *
@@ -76,7 +79,9 @@ import com.raytheon.viz.ui.dialogs.CaveSWTDialog;
 
 public class TearOffMenuDialog extends CaveSWTDialog {
 
-    private final MenuPathElement[] menuPath;
+    private static final int MENU_OFFSET = 10;
+
+    private final List<MenuPathElement> menuPath;
 
     private Menu menu;
 
@@ -86,7 +91,7 @@ public class TearOffMenuDialog extends CaveSWTDialog {
      * Listener to force the dialog's items' display to be updated when user
      * changes Simulated time.
      */
-    ISimulatedTimeChangeListener stcl;
+    private ISimulatedTimeChangeListener stcl;
 
     private Listener swtListener;
 
@@ -150,16 +155,18 @@ public class TearOffMenuDialog extends CaveSWTDialog {
         scrolledComp.setMinSize(fullComp.computeSize(SWT.DEFAULT, SWT.DEFAULT));
 
         shell.setMinimumSize(150, fullComp.getSize().y);
-        shell.pack();
-        Point point = Display.getCurrent().getCursorLocation();
-        int offset = shell.getBounds().width / 2;
-        int x = point.x - offset;
-        int y = point.y;
-        shell.setLocation(x, y);
 
         swtListener = event -> updateItems();
         shell.addListener(SWT.Show, swtListener);
         menu.addListener(SWT.Show, swtListener);
+    }
+
+    @Override
+    protected void preOpened() {
+        Point point = getDisplay().getCursorLocation();
+        point.x -= MENU_OFFSET;
+        point.y -= MENU_OFFSET;
+        shell.setLocation(point);
     }
 
     @Override
@@ -169,7 +176,7 @@ public class TearOffMenuDialog extends CaveSWTDialog {
         Listener activate = event -> ContextManager.getInstance(locator)
                 .activateContexts(getPerspectiveManager());
         Listener deactivate = event -> {
-            if (Display.getCurrent().getActiveShell() == getShell()) {
+            if (getDisplay().getActiveShell() == getShell()) {
                 ContextManager.getInstance(locator)
                         .deactivateContexts(getPerspectiveManager());
             }
@@ -301,9 +308,9 @@ public class TearOffMenuDialog extends CaveSWTDialog {
      * is not always unique. Menu item text is used to differentiate.
      */
     static class MenuPathElement {
-        Object data;
+        private Object data;
 
-        String cleanText;
+        private String cleanText;
 
         public MenuPathElement(MenuItem item) {
             data = item.getData();
@@ -347,7 +354,7 @@ public class TearOffMenuDialog extends CaveSWTDialog {
         }
     }
 
-    /* package */static MenuItem findItem(Menu menu, MenuPathElement pe) {
+    protected static MenuItem findItem(Menu menu, MenuPathElement pe) {
         MenuItem best = null;
         int bestLevel = 0;
         for (MenuItem item : menu.getItems()) {
@@ -360,8 +367,8 @@ public class TearOffMenuDialog extends CaveSWTDialog {
         return best;
     }
 
-    private static MenuPathElement[] getMenuPath(Menu menu) {
-        ArrayList<MenuPathElement> data = new ArrayList<>();
+    private static List<MenuPathElement> getMenuPath(Menu menu) {
+        List<MenuPathElement> data = new ArrayList<>();
         while (menu != null) {
             MenuItem mi = menu.getParentItem();
             if (mi == null) {
@@ -371,6 +378,6 @@ public class TearOffMenuDialog extends CaveSWTDialog {
             menu = menu.getParentMenu();
         }
         Collections.reverse(data);
-        return data.toArray(new MenuPathElement[data.size()]);
+        return data;
     }
 }

@@ -22,20 +22,29 @@ package com.raytheon.viz.core.contours;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.SortedSet;
 import java.util.TreeSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import org.apache.commons.collections.map.LRUMap;
+import org.apache.commons.lang.ArrayUtils;
 import org.eclipse.swt.graphics.RGB;
 import org.geotools.coverage.grid.GeneralGridEnvelope;
 import org.geotools.coverage.grid.GeneralGridGeometry;
 import org.geotools.coverage.grid.GridEnvelope2D;
 import org.geotools.coverage.grid.GridGeometry2D;
+import org.geotools.geometry.DirectPosition2D;
 import org.geotools.geometry.Envelope2D;
 import org.geotools.geometry.GeneralEnvelope;
+import org.geotools.geometry.jts.JTS;
 import org.geotools.referencing.operation.DefaultMathTransformFactory;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
 import org.opengis.coverage.grid.GridEnvelope;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.datum.PixelInCell;
@@ -44,11 +53,15 @@ import org.opengis.referencing.operation.TransformException;
 
 import com.raytheon.uf.common.geospatial.CRSCache;
 import com.raytheon.uf.common.geospatial.MapUtil;
+import com.raytheon.uf.common.geospatial.data.GeographicDataSource;
 import com.raytheon.uf.common.geospatial.util.GridGeometryWrapChecker;
 import com.raytheon.uf.common.geospatial.util.WorldWrapChecker;
 import com.raytheon.uf.common.numeric.DataUtilities;
 import com.raytheon.uf.common.numeric.DataUtilities.MinMax;
 import com.raytheon.uf.common.numeric.buffer.FloatBufferWrapper;
+import com.raytheon.uf.common.numeric.dest.DataDestination;
+import com.raytheon.uf.common.numeric.filter.FillValueFilter;
+import com.raytheon.uf.common.numeric.filter.InverseFillValueFilter;
 import com.raytheon.uf.common.numeric.source.DataSource;
 import com.raytheon.uf.common.numeric.source.OffsetDataSource;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
@@ -56,9 +69,14 @@ import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.status.UFStatus.Priority;
-import com.raytheon.uf.common.style.LabelingPreferences;
+import com.raytheon.uf.common.style.BaseLabelingPreferences;
+import com.raytheon.uf.common.style.ContourLabelingPreferences;
+import com.raytheon.uf.common.style.IncrementLabelingPreferences;
+import com.raytheon.uf.common.style.ValuesLabelingPreferences;
 import com.raytheon.uf.common.style.contour.ContourPreferences;
 import com.raytheon.uf.common.util.GridUtil;
+import com.raytheon.uf.common.wxmath.Constants;
+import com.raytheon.uf.common.wxmath.DistFilter;
 import com.raytheon.uf.viz.core.DrawableString;
 import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.IGraphicsTarget;
@@ -66,6 +84,7 @@ import com.raytheon.uf.viz.core.IGraphicsTarget.HorizontalAlignment;
 import com.raytheon.uf.viz.core.IGraphicsTarget.LineStyle;
 import com.raytheon.uf.viz.core.IGraphicsTarget.VerticalAlignment;
 import com.raytheon.uf.viz.core.PixelExtent;
+import com.raytheon.uf.viz.core.RGBColors;
 import com.raytheon.uf.viz.core.drawables.IFont;
 import com.raytheon.uf.viz.core.drawables.IWireframeShape;
 import com.raytheon.uf.viz.core.exception.VizException;
@@ -79,7 +98,6 @@ import com.raytheon.viz.core.contours.util.StreamLineContainer.StreamLinePoint;
 import com.raytheon.viz.core.contours.util.StrmPak;
 import com.raytheon.viz.core.contours.util.StrmPakConfig;
 import com.raytheon.viz.core.interval.XFormFunctions;
-import org.locationtech.jts.geom.Geometry;
 
 /**
  * Provides contouring wrapper.
@@ -109,7 +127,12 @@ import org.locationtech.jts.geom.Geometry;
  * Mar 19, 2015  4292     nabowle      Add contour range using A1 configuration
  *                                     rules.
  * Apr 30, 2018  6697     bsteffen     Support zoomLock.
- *
+ * May 07, 2019  65510    ksunil       multiple changes to support customized contour support
+ * Jun 27, 2019  65510    ksunil       refactor smoothData
+ * Jul 11, 2019  65905    ksunil       fixed the issue with labelFormat within the values tag
+ * Jul 31, 2019  66719    ksunil       Make sure the lat is within the +/-90 range
+ * Sep 17, 2019  68196    ksunil       added fixContourWorldPoints
+ * Oct 28, 2019  68196    ksunil       code tweak to apply world wrapping correction to streamLines.
  * </pre>
  *
  * @author chammack
@@ -159,6 +182,9 @@ public class ContourSupport {
 
         public IWireframeShape negValueShape;
 
+        // holds map of unique labeling preferences to frame shape
+        public Map<BaseLabelingPreferences, IWireframeShape> labeledValuesMap = new HashMap<>();
+
         public ContourGroup parent;
 
         public PixelExtent lastUsedPixelExtent;
@@ -185,10 +211,38 @@ public class ContourSupport {
                 float lineWidth, LineStyle posLineStyle, LineStyle negLineStyle,
                 IFont contourLabelFont, IFont minMaxLabelFont)
                 throws VizException {
+
             target.drawWireframeShape(posValueShape, color, lineWidth,
                     posLineStyle, contourLabelFont);
             target.drawWireframeShape(negValueShape, color, lineWidth,
                     negLineStyle, contourLabelFont);
+
+            for (Map.Entry<BaseLabelingPreferences, IWireframeShape> entry : labeledValuesMap
+                    .entrySet()) {
+                RGB col = color;
+                Float thickness = lineWidth;
+                LineStyle lStyle;
+                // Items with no specific styles are bucketed in the
+                // posValueShape/negValueShape
+                BaseLabelingPreferences label = entry.getKey();
+
+                try {
+                    lStyle = LineStyle.valueOf(label.getLinePattern());
+                } catch (Exception e) {
+                    lStyle = LineStyle.DEFAULT;
+                }
+
+                if (label.getColor() != null) {
+                    // if incorrect color is specified, "white" is returned.
+                    col = RGBColors.getRGBColor(label.getColor());
+                }
+                if (label.getThickness() > 0) {
+                    thickness = (float) label.getThickness();
+                }
+                target.drawWireframeShape(entry.getValue(), col, thickness,
+                        lStyle, contourLabelFont);
+            }
+
             drawLabels(target, minMaxLabelFont, color, maxLabelPoints, maxVals,
                     maxMark);
             drawLabels(target, minMaxLabelFont, color, minLabelPoints, minVals,
@@ -266,6 +320,26 @@ public class ContourSupport {
                 descriptor);
         contourGroup.negValueShape = target.createWireframeShape(false,
                 descriptor);
+        if (prefs != null && prefs.getContourLabeling() != null) {
+
+            for (ValuesLabelingPreferences labelPrefs : prefs
+                    .getContourLabeling().getValues()) {
+                if (!labelPrefs.noStylesSet()) {
+                    contourGroup.labeledValuesMap.put(labelPrefs,
+                            target.createWireframeShape(false, descriptor));
+                }
+
+            }
+
+            for (IncrementLabelingPreferences labelPrefs : prefs
+                    .getContourLabeling().getIncrement()) {
+                if (!labelPrefs.noStylesSet()) {
+                    contourGroup.labeledValuesMap.put(labelPrefs,
+                            target.createWireframeShape(false, descriptor));
+                }
+
+            }
+        }
         contourGroup.zoomLevel = level;
 
         // Copy the pixel extent (deep copy required!)
@@ -345,7 +419,7 @@ public class ContourSupport {
                 return contourGroup;
             }
 
-            /* Make contours continous for world wrapping grids. */
+            /* Make contours continuous for world wrapping grids. */
             int wrapNumber = GridGeometryWrapChecker
                     .checkForWrapping(imageGridGeometry);
             if (wrapNumber >= szX - 1) {
@@ -386,8 +460,12 @@ public class ContourSupport {
             config.labelSpacingOverall = (int) (szX * 60 * currentMagnification
                     / ((PixelExtent) extent).getWidth() + 0.5);
 
+            boolean hasLabelingPrefs = true;
             // If nothing provided, attempt to get approximately 50 contours
             if (prefs == null || prefs.getContourLabeling() == null) {
+
+                hasLabelingPrefs = false;
+
                 // TODO this is fairly inefficient to do every time.
                 MinMax mm = DataUtilities.getMinMax(subgridSource, szX, szY);
                 float interval = XFormFunctions.newDataIntervalFromZoom(
@@ -398,7 +476,7 @@ public class ContourSupport {
                 config.mode = -50;
                 contours = FortConBuf.contour(subgridSource, szX, szY, config);
             } else {
-                LabelingPreferences contourLabeling = prefs
+                ContourLabelingPreferences contourLabeling = prefs
                         .getContourLabeling();
                 if (contourLabeling.getLabelSpacing() > 0) {
                     config.labelSpacingLine = szX
@@ -434,11 +512,11 @@ public class ContourSupport {
                 if (prefs.getContourLabeling().isZoomLock()) {
                     dataZoom = (float) contourGroup.lastDensity;
                 }
-                if (contourLabeling.getValues() == null
-                        && prefs.getContourLabeling().getIncrement() > 0.0) {
-                    // interval provided
-                    float initialInterval = prefs.getContourLabeling()
-                            .getIncrement();
+
+                for (IncrementLabelingPreferences labelPrefs : prefs
+                        .getContourLabeling().getIncrement()) {
+
+                    float initialInterval = labelPrefs.getValues()[0];
                     float interval;
                     if (contourLabeling.getNumberOfContours() > 0) {
                         MinMax mm = DataUtilities.getMinMax(subgridSource, szX,
@@ -450,8 +528,9 @@ public class ContourSupport {
                         }
                         if (interval > initialInterval) {
                             initialInterval = interval;
-                            prefs.getContourLabeling()
-                                    .setIncrement(initialInterval);
+                            labelPrefs.setValuesString(
+                                    Float.toHexString(initialInterval));
+
                         }
 
                         // removed +1 to fix EPTC plan view and T_std
@@ -462,26 +541,39 @@ public class ContourSupport {
                                 initialInterval, dataZoom, true, "", 10);
                     }
 
-                    float[] controls = new float[] { interval };
-                    config.mode = 0;
+                    float[] controls = new float[] { interval,
+                            labelPrefs.getMin(), labelPrefs.getMax() };
+                    // This is a special market to restrict contours between min
+                    // and max
+                    config.mode = 1000;
                     config.seed = controls;
 
-                    contours = FortConBuf.contour(subgridSource, szX, szY,
-                            config);
-                } else if (contourLabeling.getValues() != null) {
-                    // explicit contouring values provided
-                    float[] vals = contourLabeling.getValues();
+                    contours = concatContourContainers(contours, FortConBuf
+                            .contour(subgridSource, szX, szY, config));
+
+                }
+                if (contourLabeling.getValues().size() > 0) {
+                    // explicit contouring values provided. First we merge them.
+
+                    float[] vals = {};
+                    for (ValuesLabelingPreferences labelPrefs : prefs
+                            .getContourLabeling().getValues()) {
+                        vals = ArrayUtils.addAll(vals, labelPrefs.getValues());
+                    }
 
                     /*
                      * A contour range is specified by setting
                      * numberOfContours=1000 and values={interval, minContour,
-                     * maxContour} based on AWIPS1 configuration rules.
+                     * maxContour} based on AWIPS1 configuration rules. As of
+                     * 5/2019, You don't have to do this anymore. Left for
+                     * backward compatibility. You can now specify a min/max xml
+                     * attribute directly on the increment label.
                      */
                     if (vals.length == 2
                             && contourLabeling.getNumberOfContours() == 1000) {
                         // non-positive increments treated as 1 by ForConBuf
-                        vals = new float[] { contourLabeling.getIncrement(),
-                                vals[0], vals[1] };
+                        vals = new float[] { contourLabeling.getIncrement()
+                                .get(0).getValues()[0], vals[0], vals[1] };
                     } else {
                         /*
                          * the +0.1 makes it so numbers greater than 0.9 are
@@ -516,11 +608,25 @@ public class ContourSupport {
                     } else {
                         config.mode = vals.length;
                     }
-                    contours = FortConBuf.contour(subgridSource, szX, szY,
-                            config);
+                    if (contours == null) {
+                        contours = FortConBuf.contour(subgridSource, szX, szY,
+                                config);
+                    } else {
+                        // means we have both "values" and "increment" specified
+                        // in the contourLabeling element.
+                        ContourContainer valueContours = FortConBuf
+                                .contour(subgridSource, szX, szY, config);
+
+                        contours = concatContourContainers(contours,
+                                valueContours);
+                    }
                 }
             }
 
+            if (contours == null) {
+                throw new VizException(
+                        "Unable to create contours. Possible empty contourLabeling in XML");
+            }
             long t1 = System.currentTimeMillis();
             perfLog.logDuration("Contouring", t1 - t0);
 
@@ -548,7 +654,8 @@ public class ContourSupport {
                 long tZ1 = System.currentTimeMillis();
                 tMinMaxAccum += tZ1 - tZ0;
 
-                correctWorldWrapping(contours, descriptor, rastPosToLatLon);
+                correctWorldWrapping(contours, descriptor, rastPosToLatLon,
+                        rastPosToWorldGrid);
 
                 int size = contours.xyContourPoints.size();
                 // total coordinates
@@ -568,6 +675,7 @@ public class ContourSupport {
                 contourGroup.negValueShape.allocate(totalNegCoords);
 
                 for (int i = 0; i < size; i++) {
+                    boolean prepareLabel = false;
                     float[] contourGridPoints = contours.xyContourPoints.get(i);
                     float[] contourWorldPoints = new float[contourGridPoints.length];
 
@@ -586,40 +694,106 @@ public class ContourSupport {
                             contourWorldPointsArr[j][1] = contourWorldPoints[index];
                             index += 1;
                         }
+                        IWireframeShape shapeToAddTo = null;
                         contourValue = contours.contourVals.get(i);
                         String label = dfLabel.format(contourValue);
                         label = label.substring(labelTrimLeft);
+
                         if (prefs != null && prefs.getContourLabeling() != null
-                                && prefs.getContourLabeling()
-                                        .getValues() != null
-                                && labelFormat == null) {
+                                && prefs.getContourLabeling().getValues()
+                                        .size() > 0) {
                             // If we have explicit values and no explicit format
                             // use the default String representation of the
                             // given values
-                            float[] values = prefs.getContourLabeling()
-                                    .getValues();
-                            for (int k = 0; k < values.length; k++) {
-                                if (contourValue == values[k]) {
-                                    label = Float.toString(values[k]);
-                                    break;
+                            boolean found = false;
+                            for (int i1 = 0; i1 < prefs.getContourLabeling()
+                                    .getValues().size() && !found; i1++) {
+
+                                ValuesLabelingPreferences currentPref = prefs
+                                        .getContourLabeling().getValues()
+                                        .get(i1);
+                                float[] values = currentPref.getValues();
+                                for (float value : values) {
+                                    if (contourValue == value) {
+                                        label = dfLabel.format(value);
+                                        if (currentPref.noStylesSet()) {
+                                            if (contourValue >= 0) {
+                                                shapeToAddTo = contourGroup.posValueShape;
+                                            } else {
+                                                shapeToAddTo = contourGroup.negValueShape;
+                                            }
+                                        }
+
+                                        else {
+                                            shapeToAddTo = contourGroup.labeledValuesMap
+                                                    .get(currentPref);
+                                        }
+                                        shapeToAddTo.addLineSegment(
+                                                contourWorldPointsArr);
+                                        found = true;
+                                        prepareLabel = true;
+                                        break;
+                                    }
+
                                 }
                             }
                         }
-                        IWireframeShape shapeToAddTo = null;
+                        if (prefs != null && prefs.getContourLabeling() != null
+                                && prefs.getContourLabeling().getIncrement()
+                                        .size() > 0) {
+                            // pick only values that are within the min/max set
+                            // in contourLabeling.increment element
+                            boolean found = false;
+                            for (int i1 = 0; i1 < prefs.getContourLabeling()
+                                    .getIncrement().size() && !found; i1++) {
+                                IncrementLabelingPreferences currentPref = prefs
+                                        .getContourLabeling().getIncrement()
+                                        .get(i1);
+                                float min = currentPref.getMin();
+                                float max = currentPref.getMax();
 
-                        if (contourValue >= 0) {
-                            shapeToAddTo = contourGroup.posValueShape;
-                        } else {
-                            shapeToAddTo = contourGroup.negValueShape;
+                                if (contourValue <= max
+                                        && contourValue >= min) {
+                                    if (currentPref.noStylesSet()) {
+                                        if (contourValue >= 0) {
+                                            shapeToAddTo = contourGroup.posValueShape;
+                                        } else {
+                                            shapeToAddTo = contourGroup.negValueShape;
+                                        }
+                                    } else {
+                                        shapeToAddTo = contourGroup.labeledValuesMap
+                                                .get(currentPref);
+                                    }
+                                    shapeToAddTo.addLineSegment(
+                                            contourWorldPointsArr);
+                                    found = true;
+                                    prepareLabel = true;
+                                }
+                            }
                         }
-
-                        shapeToAddTo.addLineSegment(contourWorldPointsArr);
+                        /*
+                         * can happen if there is no labeling specification in
+                         * the XML.
+                         */
+                        if (!hasLabelingPrefs) {
+                            if (contourValue >= 0) {
+                                shapeToAddTo = contourGroup.posValueShape;
+                            } else {
+                                shapeToAddTo = contourGroup.negValueShape;
+                            }
+                            shapeToAddTo.addLineSegment(contourWorldPointsArr);
+                            prepareLabel = true;
+                        }
 
                         // process contour labels
                         // TODO perform formatting
                         tZ0 = System.currentTimeMillis();
-                        prepareLabel(shapeToAddTo, zoom, label, labelPoints,
-                                contourWorldPointsArr);
+                        // prepare Label only if this value is going to be in
+                        // play.
+                        if (prepareLabel) {
+                            prepareLabel(shapeToAddTo, zoom, label, labelPoints,
+                                    contourWorldPointsArr);
+                        }
                         tZ1 = System.currentTimeMillis();
                         tLabelAccum += tZ1 - tZ0;
                     } catch (TransformException e) {
@@ -634,6 +808,8 @@ public class ContourSupport {
                 perfLog.logDuration("Labeling", tLabelAccum);
                 perfLog.logDuration("Transformation", tTransformAccum);
             } catch (Throwable e) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Error postprocessing contours", e);
                 throw new VizException("Error postprocessing contours", e);
             }
         } else if (sources.length == 2) {
@@ -649,7 +825,8 @@ public class ContourSupport {
 
             makeStreamLines(sources[0], sources[1], minX, minY, maxX, maxY, sz,
                     contourGroup, currentMagnification, zoom,
-                    contourGroup.lastDensity, rastPosToWorldGrid);
+                    contourGroup.lastDensity, rastPosToWorldGrid,
+                    rastPosToLatLon, descriptor);
         }
 
         return contourGroup;
@@ -736,14 +913,14 @@ public class ContourSupport {
         final double threshold2 = (50.0 / screenToPixel);
 
         double q1, q2, p1, p2;
-        for (int n = 0; n < valsArr.length; n++) {
+        for (double[] vals : valsArr) {
 
             // Distance approximation between last label point
             // and current point
 
             // Absolute value logic inlined for performance
-            q1 = lastPoint[0] - valsArr[n][0];
-            q2 = lastPoint[1] - valsArr[n][1];
+            q1 = lastPoint[0] - vals[0];
+            q2 = lastPoint[1] - vals[1];
             q1 = (q1 <= 0.0D) ? 0.0D - q1 : q1;
             q2 = (q2 <= 0.0D) ? 0.0D - q2 : q2;
 
@@ -755,8 +932,8 @@ public class ContourSupport {
                 // Search for any labels that are too close
                 // to the current one
                 boolean tooClose = false;
-                p1 = valsArr[n][0];
-                p2 = valsArr[n][1];
+                p1 = vals[0];
+                p2 = vals[1];
                 q1 = 0;
                 q2 = 0;
                 for (double[] test : labelPoints) {
@@ -777,9 +954,9 @@ public class ContourSupport {
                 /*
                  * || (labeledAtLeastOnce == false && n == valsArr.length - 1)
                  */) {
-                    shapeToAddTo.addLabel(label, valsArr[n]);
-                    labelPoints.add(valsArr[n]);
-                    lastPoint = valsArr[n];
+                    shapeToAddTo.addLabel(label, vals);
+                    labelPoints.add(vals);
+                    lastPoint = vals;
                 }
             }
         }
@@ -825,7 +1002,23 @@ public class ContourSupport {
         contourGroup.negValueShape = target.createWireframeShape(false,
                 pixelGeom);
         contourGroup.negValueShape.allocate(1000);
+        boolean haslabelingXML = true;
+        if (prefs != null && prefs.getContourLabeling() != null) {
 
+            for (ValuesLabelingPreferences labelPrefs : prefs
+                    .getContourLabeling().getValues()) {
+                contourGroup.labeledValuesMap.put(labelPrefs,
+                        target.createWireframeShape(false, pixelGeom));
+
+            }
+
+            for (IncrementLabelingPreferences labelPrefs : prefs
+                    .getContourLabeling().getIncrement()) {
+                contourGroup.labeledValuesMap.put(labelPrefs,
+                        target.createWireframeShape(false, pixelGeom));
+
+            }
+        }
         // Step 3: Get the actual data
 
         float[] data1D = null;
@@ -875,7 +1068,7 @@ public class ContourSupport {
 
             // If nothing provided, attempt to get approximately 50 contours
             if (prefs == null || prefs.getContourLabeling() == null) {
-
+                haslabelingXML = false;
                 float interval = XFormFunctions.newDataIntervalFromZoom(0.5f,
                         (float) ((level + 1) * contourGroup.lastDensity), true,
                         "", 10);
@@ -884,7 +1077,7 @@ public class ContourSupport {
                 config.mode = -50;
                 contours = FortConBuf.contour(subgriddedData, config);
             } else {
-                LabelingPreferences contourLabeling = prefs
+                ContourLabelingPreferences contourLabeling = prefs
                         .getContourLabeling();
                 if (contourLabeling.getLabelSpacing() > 0) {
                     config.labelSpacingLine = subgriddedData.length
@@ -894,7 +1087,7 @@ public class ContourSupport {
                     }
                 }
 
-                // setup min/max processing
+                // setup min/max processing.
                 minMaxLabelFormat = contourLabeling.getMinMaxLabelFormat();
                 minLabel = contourLabeling.getMinLabel();
                 maxLabel = contourLabeling.getMaxLabel();
@@ -914,11 +1107,10 @@ public class ContourSupport {
                     config.minMaxRadius = 7;
                 }
 
-                if (prefs.getContourLabeling().getValues() == null
-                        && prefs.getContourLabeling().getIncrement() > 0.0) {
+                for (IncrementLabelingPreferences labelPrefs : prefs
+                        .getContourLabeling().getIncrement()) {
                     // interval provided
-                    float initialInterval = prefs.getContourLabeling()
-                            .getIncrement();
+                    float initialInterval = labelPrefs.getValues()[0];
                     float interval;
                     if (contourLabeling.getNumberOfContours() > 0) {
                         // use numberOfContours
@@ -949,8 +1141,8 @@ public class ContourSupport {
                             // time
                             // height?
 
-                            // prefs.getContourLabeling()
-                            // .setIncrement(initialInterval);
+                            labelPrefs.setValuesString(
+                                    Float.toHexString(initialInterval));
                         }
 
                         interval = XFormFunctions.newDataIntervalFromZoom(
@@ -966,16 +1158,24 @@ public class ContourSupport {
                                 true, "", 10);
                     }
 
-                    float[] controls = new float[] { interval };
-                    config.mode = 0;
+                    float[] controls = new float[] { interval,
+                            labelPrefs.getMin(), labelPrefs.getMax() };
+                    config.mode = 1000;
                     config.seed = controls;
 
-                    contours = FortConBuf.contour(subgriddedData, config);
-                } else if (prefs.getContourLabeling().getValues() != null) {
+                    contours = concatContourContainers(contours,
+                            FortConBuf.contour(subgriddedData, config));
+                }
+                if (prefs.getContourLabeling().getValues().size() > 0) {
                     // explicit contouring values provided
 
                     // convert Float[] to float[]
-                    float[] vals = prefs.getContourLabeling().getValues();
+                    float[] vals = {};
+                    for (ValuesLabelingPreferences labelPrefs : prefs
+                            .getContourLabeling().getValues()) {
+
+                        vals = ArrayUtils.addAll(vals, labelPrefs.getValues());
+                    }
                     // the +0.1 makes it so numbers greater than 0.9 are rounded
                     // up
                     // and all other numbers are rounded down.
@@ -1004,8 +1204,28 @@ public class ContourSupport {
                     } else {
                         config.mode = vals.length;
                     }
-                    contours = FortConBuf.contour(subgriddedData, config);
+                    if (contours == null) {
+                        contours = FortConBuf.contour(subgriddedData, config);
+                    }
+
+                    else {
+                        // means we have both "values" and "increment" specified
+                        // in the contourLabeling element.
+                        ContourContainer valueContours = FortConBuf
+                                .contour(subgriddedData, config);
+
+                        contours = concatContourContainers(contours,
+                                valueContours);
+
+                    }
                 }
+            }
+
+            if (contours == null) {
+                statusHandler.handle(Priority.PROBLEM,
+                        "Unable to create contours. Possible empty contourLabeling in XML");
+                throw new VizException(
+                        "Unable to create contours. Possible empty contourLabeling in XML");
             }
 
             long t1 = System.currentTimeMillis();
@@ -1040,6 +1260,7 @@ public class ContourSupport {
                     tMinMaxAccum += tZ1 - tZ0;
 
                     for (int i = 0; i < size; i++) {
+                        boolean prepareLabel = false;
                         float[] contourGridPoints = contours.xyContourPoints
                                 .get(i);
                         float[] contourWorldPoints = new float[contourGridPoints.length];
@@ -1060,19 +1281,101 @@ public class ContourSupport {
                                 index += 1;
                             }
                             contourValue = contours.contourVals.get(i);
-
-                            String label = dfLabel.format(contourValue);
                             IWireframeShape shapeToAddTo = null;
+                            String label = dfLabel.format(contourValue);
+                            if (prefs != null
+                                    && prefs.getContourLabeling() != null
+                                    && prefs.getContourLabeling().getValues()
+                                            .size() > 0) {
+                                // If we have explicit values and no explicit
+                                // format
+                                // use the default String representation of the
+                                // given values
+                                boolean found = false;
+                                for (int i1 = 0; i1 < prefs.getContourLabeling()
+                                        .getValues().size() && !found; i1++) {
+                                    ValuesLabelingPreferences currentPref = prefs
+                                            .getContourLabeling().getValues()
+                                            .get(i1);
+                                    float[] values = currentPref.getValues();
+                                    for (float value : values) {
+                                        if (contourValue == value) {
+                                            label = dfLabel.format(value);
+                                            if (currentPref.noStylesSet()) {
+                                                if (contourValue >= 0) {
+                                                    shapeToAddTo = contourGroup.posValueShape;
+                                                } else {
+                                                    shapeToAddTo = contourGroup.negValueShape;
+                                                }
+                                            }
 
-                            if (contourValue >= 0) {
-                                shapeToAddTo = contourGroup.posValueShape;
-                            } else {
-                                shapeToAddTo = contourGroup.negValueShape;
+                                            else {
+                                                shapeToAddTo = contourGroup.labeledValuesMap
+                                                        .get(currentPref);
+                                            }
+                                            shapeToAddTo.addLineSegment(
+                                                    contourWorldPointsArr);
+                                            found = true;
+                                            prepareLabel = true;
+                                            break;
+                                        }
+                                    }
+                                }
                             }
+                            if (prefs != null
+                                    && prefs.getContourLabeling() != null
+                                    && prefs.getContourLabeling().getIncrement()
+                                            .size() > 0) {
+                                // pick only values that are within the min/max
+                                // set
+                                // in contourLabeling.increment element
+                                boolean found = false;
+                                for (int i1 = 0; i1 < prefs.getContourLabeling()
+                                        .getIncrement().size()
+                                        && !found; i1++) {
+                                    IncrementLabelingPreferences currentPref = prefs
+                                            .getContourLabeling().getIncrement()
+                                            .get(i1);
+                                    float min = currentPref.getMin();
+                                    float max = currentPref.getMax();
 
-                            shapeToAddTo.addLineSegment(contourWorldPointsArr);
-                            prepareLabel(shapeToAddTo, levelOffset, label,
-                                    labelPoints, contourWorldPointsArr);
+                                    if (contourValue <= max
+                                            && contourValue >= min) {
+                                        if (currentPref.noStylesSet()) {
+                                            if (contourValue >= 0) {
+                                                shapeToAddTo = contourGroup.posValueShape;
+                                            } else {
+                                                shapeToAddTo = contourGroup.negValueShape;
+                                            }
+                                        } else {
+                                            shapeToAddTo = contourGroup.labeledValuesMap
+                                                    .get(currentPref);
+                                        }
+                                        shapeToAddTo.addLineSegment(
+                                                contourWorldPointsArr);
+                                        found = true;
+                                        prepareLabel = true;
+                                    }
+                                }
+                            }
+                            /*
+                             * can happen only if there is no labeling
+                             * specification in the XML.
+                             */
+                            if (!haslabelingXML) {
+                                if (contourValue >= 0) {
+                                    shapeToAddTo = contourGroup.posValueShape;
+                                } else {
+                                    shapeToAddTo = contourGroup.negValueShape;
+                                }
+                                shapeToAddTo
+                                        .addLineSegment(contourWorldPointsArr);
+                                prepareLabel = true;
+                            }
+                            if (prepareLabel) {
+                                prepareLabel(shapeToAddTo, levelOffset, label,
+                                        labelPoints, contourWorldPointsArr);
+                            }
                         } catch (TransformException e) {
                             statusHandler.handle(Priority.PROBLEM,
                                     "Error transforming points: " + Arrays
@@ -1111,7 +1414,7 @@ public class ContourSupport {
 
             makeStreamLines(uWSource, vWSource, minX, minY, maxX, maxY, sz,
                     contourGroup, 1, 1, contourGroup.lastDensity * 2,
-                    gridToPixel);
+                    gridToPixel, null, null);
 
             return contourGroup;
         } else {
@@ -1125,7 +1428,8 @@ public class ContourSupport {
     private static void makeStreamLines(DataSource uW, DataSource vW, int minX,
             int minY, int maxX, int maxY, long[] sz, ContourGroup contourGroup,
             double currentMagnification, float zoom, double density,
-            MathTransform rastPosToWorldGrid) throws VizException {
+            MathTransform rastPosToWorldGrid, MathTransform rastPosToLatLon,
+            IMapDescriptor descriptor) throws VizException {
 
         int szX = (maxX - minX) + 1;
         int szY = (maxY - minY) + 1;
@@ -1194,7 +1498,16 @@ public class ContourSupport {
                 -1000000f, -999998f);
         StreamLineContainer container = StrmPak.strmpak(uW, vW, szX, szY,
                 config);
-
+        try {
+            if (rastPosToLatLon != null) {
+                correctWorldWrappingStreamLine(container, descriptor,
+                        rastPosToLatLon, rastPosToWorldGrid);
+            }
+        } catch (TransformException e1) {
+            throw new VizException(
+                    "Could not transform stream line coordinate into world grid space.",
+                    e1);
+        }
         long t1 = System.currentTimeMillis();
         perfLog.logDuration("Contouring", t1 - t0);
 
@@ -1376,15 +1689,18 @@ public class ContourSupport {
      * @param contours
      *            container holding contour lines
      * @param descriptor
-     *            the discriptor for the dispaly
+     *            the descriptor for the display
      * @param rastPosToLatLon
      *            transform for converting the coordinates within contours to
      *            LatLon coordinates.
+     * @param rastPosToWorldGrid
+     *            transform for converting the coordinates within contours to
+     *            worldGrid coordinates.
      * @throws TransformException
      */
     private static void correctWorldWrapping(ContourContainer contours,
-            IMapDescriptor descriptor, MathTransform rastPosToLatLon)
-            throws TransformException {
+            IMapDescriptor descriptor, MathTransform rastPosToLatLon,
+            MathTransform rastPosToWorldGrid) throws TransformException {
         long tZ0 = System.currentTimeMillis();
 
         WorldWrapChecker wwc = new WorldWrapChecker(
@@ -1412,8 +1728,13 @@ public class ContourSupport {
                 if (wwc.check(lastLon, lon)) {
                     remove = true;
                     if (startIndex + 1 < i) {
-                        splitLines.add(Arrays.copyOfRange(data, startIndex, i));
-                        dupValues.add(val);
+                        float[] cwp = fixContourWorldPoints(data, startIndex, i,
+                                rastPosToWorldGrid);
+                        if (cwp != null) {
+                            splitLines.add(cwp);
+                            dupValues.add(val);
+                        }
+
                     }
                     startIndex = i;
                 }
@@ -1423,9 +1744,12 @@ public class ContourSupport {
                 lineIter.remove();
                 valueIter.remove();
                 if (startIndex + 1 < data.length) {
-                    splitLines.add(
-                            Arrays.copyOfRange(data, startIndex, data.length));
-                    dupValues.add(val);
+                    float[] cwp = fixContourWorldPoints(data, startIndex,
+                            data.length, rastPosToWorldGrid);
+                    if (cwp != null) {
+                        splitLines.add(cwp);
+                        dupValues.add(val);
+                    }
                 }
             }
 
@@ -1437,4 +1761,239 @@ public class ContourSupport {
 
         perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
     }
+
+    private static void correctWorldWrappingStreamLine(
+            StreamLineContainer container, IMapDescriptor descriptor,
+            MathTransform rastPosToLatLon, MathTransform rastPosToWorldGrid)
+            throws TransformException {
+        long tZ0 = System.currentTimeMillis();
+
+        WorldWrapChecker wwc = new WorldWrapChecker(
+                descriptor.getGridGeometry());
+        if (!wwc.needsChecking()) {
+            return;
+        }
+
+        List<List<StreamLinePoint>> splitLines = new ArrayList<>();
+
+        Iterator<List<StreamLinePoint>> lineIter = container.streamLines
+                .iterator();
+
+        while (lineIter.hasNext()) {
+            List<StreamLinePoint> data = lineIter.next();
+            float[] floatData = convertSLPointListToFloatArray(data);
+            double[] ll = new double[floatData.length];
+            rastPosToLatLon.transform(floatData, 0, ll, 0,
+                    floatData.length / 2);
+            boolean remove = false;
+            int startIndex = 0;
+            double lastLon = ll[0];
+            for (int i = 2; i < ll.length; i += 2) {
+                double lon = ll[i];
+                if (wwc.check(lastLon, lon)) {
+                    remove = true;
+                    if (startIndex + 1 < i) {
+                        float[] cwp = fixContourWorldPoints(floatData,
+                                startIndex, i, rastPosToWorldGrid);
+                        if (cwp != null) {
+                            splitLines.add(convertFloatArrayToSLPointList(cwp));
+                        }
+                    }
+                    startIndex = i;
+                }
+                lastLon = lon;
+            }
+            if (remove) {
+                lineIter.remove();
+                if (startIndex + 1 < floatData.length) {
+                    float[] cwp = fixContourWorldPoints(floatData, startIndex,
+                            floatData.length, rastPosToWorldGrid);
+                    if (cwp != null) {
+                        splitLines.add(convertFloatArrayToSLPointList(cwp));
+                    }
+                }
+            }
+
+        }
+        container.streamLines.addAll(splitLines);
+
+        long tZ1 = System.currentTimeMillis();
+
+        perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
+    }
+
+    private static float[] convertSLPointListToFloatArray(
+            List<StreamLinePoint> data) {
+
+        float[] ret = new float[data.size() * 2];
+        for (int i = 0; i < data.size(); i++) {
+            ret[(i * 2) + 0] = data.get(i).getX();
+            ret[(i * 2) + 1] = data.get(i).getY();
+
+        }
+        return ret;
+    }
+
+    private static List<StreamLinePoint> convertFloatArrayToSLPointList(
+            float[] data) {
+
+        List<StreamLinePoint> ret = new ArrayList<>();
+        for (int i = 0; i < data.length; i = i + 2) {
+            StreamLinePoint pt = new StreamLinePoint(data[i], data[i + 1]);
+            ret.add(pt);
+        }
+        return ret;
+    }
+
+    private static float[] fixContourWorldPoints(float[] data, int startIndex,
+            int incr, MathTransform rastPosToWorldGrid)
+            throws TransformException {
+
+        float[] contourGridPoints = Arrays.copyOfRange(data, startIndex, incr);
+        if (contourGridPoints.length == 2) {
+            return contourGridPoints;
+        }
+        float[] contourWorldPoints = new float[contourGridPoints.length];
+
+        int contourPoints = contourGridPoints.length / 2;
+        rastPosToWorldGrid.transform(contourGridPoints, 0, contourWorldPoints,
+                0, contourPoints);
+
+        /*
+         * See if the first 2 elements are either both +ve or -ve. If so, see if
+         * the last element has the same sign. If so, line is good. Else, remove
+         * the last element and return the rest. Similar logic for the last 2
+         * elements
+         *
+         * Since this code gets called only if the logic in
+         * correctWorldWrapping(...) is being applied, we can assume that only
+         * the first or the last element in the contourWorldPoints is
+         * conflicting with the rest. And we eliminate that point (not the
+         * entire line).
+         *
+         * For lines that don't need to be split to begin with, the following
+         * doesn't apply anyway.
+         */
+
+        if ((contourWorldPoints[0] * contourWorldPoints[2]) > 0) {
+            if ((contourWorldPoints[0]
+                    * contourWorldPoints[contourGridPoints.length - 2]) > 0) {
+                // nothing to change
+                return contourGridPoints;
+            } else {
+                // remove the last value and return the rest
+                return (Arrays.copyOfRange(contourGridPoints, 0,
+                        contourGridPoints.length - 2));
+            }
+        }
+        // the last 2 points are either both +ve or both -ve
+        else if ((contourWorldPoints[contourGridPoints.length - 2]
+                * contourWorldPoints[contourGridPoints.length - 4]) > 0) {
+            if ((contourWorldPoints[contourGridPoints.length - 2]
+                    * contourWorldPoints[0]) > 0) {
+                // nothing to change
+                return contourGridPoints;
+            } else {
+                // remove the first value
+                return (Arrays.copyOfRange(contourGridPoints, 2,
+                        contourGridPoints.length));
+            }
+        }
+        /*
+         * special cases. First and last points are the same. Or lines that has
+         * one end world wrapping that needs to be fixed and the other end goes
+         * all the way to the prime meridian and then ends with one point on the
+         * other side of the prime meridian.
+         */
+        else {
+            return (Arrays.copyOfRange(contourGridPoints, 2,
+                    contourGridPoints.length - 2));
+        }
+    }
+
+    private static ContourContainer concatContourContainers(
+            ContourContainer one, ContourContainer two) {
+
+        if (one == null) {
+            return two;
+        }
+
+        ContourContainer finalContour = new ContourContainer(
+                one.contourVals.size() + two.contourVals.size());
+        finalContour.contourVals.addAll(Stream
+                .concat(one.contourVals.stream(), two.contourVals.stream())
+                .collect(Collectors.toList()));
+        finalContour.xyContourPoints.addAll(Stream
+                .concat(one.xyContourPoints.stream(),
+                        two.xyContourPoints.stream())
+                .collect(Collectors.toList()));
+        finalContour.minLabelPoints.addAll(Stream
+                .concat(one.minLabelPoints.stream(),
+                        two.minLabelPoints.stream())
+                .collect(Collectors.toList()));
+        finalContour.maxLabelPoints.addAll(Stream
+                .concat(one.maxLabelPoints.stream(),
+                        two.maxLabelPoints.stream())
+                .collect(Collectors.toList()));
+        finalContour.minVals.addAll(
+                Stream.concat(one.minVals.stream(), two.minVals.stream())
+                        .collect(Collectors.toList()));
+        finalContour.maxVals.addAll(
+                Stream.concat(one.maxVals.stream(), two.maxVals.stream())
+                        .collect(Collectors.toList()));
+        return finalContour;
+
+    }
+
+    public static GeographicDataSource[] smoothData(DataSource[] dataRecord,
+            GeneralGridGeometry gridGeometry, double smoothingDistance)
+            throws VizException {
+        // Calculate the Diagonal Distance of the Grid In Meters.
+        DirectPosition2D upperCorner = new DirectPosition2D(
+                gridGeometry.getEnvelope().getUpperCorner());
+        DirectPosition2D lowerCorner = new DirectPosition2D(
+                gridGeometry.getEnvelope().getLowerCorner());
+        double distanceInM;
+        try {
+            MathTransform crs2ll = MapUtil.getTransformToLatLon(
+                    gridGeometry.getCoordinateReferenceSystem());
+            crs2ll.transform(upperCorner, upperCorner);
+            crs2ll.transform(lowerCorner, lowerCorner);
+            upperCorner.x = MapUtil.correctLon(upperCorner.x);
+            lowerCorner.x = MapUtil.correctLon(lowerCorner.x);
+
+            upperCorner.y = MapUtil.correctLat(upperCorner.y);
+            lowerCorner.y = MapUtil.correctLat(lowerCorner.y);
+
+            distanceInM = JTS.orthodromicDistance(
+                    new Coordinate(lowerCorner.x, lowerCorner.y),
+                    new Coordinate(upperCorner.x, upperCorner.y),
+                    MapUtil.getLatLonProjection());
+        } catch (Exception e) {
+            throw new VizException(e);
+        }
+        // Calculate the Diagonal Distance in Points
+        GridEnvelope range = gridGeometry.getGridRange();
+        int nx = range.getSpan(0);
+        int ny = range.getSpan(1);
+        double distanceInPoints = Math.sqrt(nx * nx + ny * ny);
+        // Determine the number of points to smooth, assume
+        // smoothingDistance is in km
+        float npts = (float) (distanceInPoints * smoothingDistance
+                / (distanceInM / 1000));
+        FloatBufferWrapper data = new FloatBufferWrapper(nx, ny);
+        DataDestination dest = InverseFillValueFilter
+                .apply((DataDestination) data, Constants.LEGACY_NAN);
+        DataUtilities.copy(dataRecord[0], dest, nx, ny);
+        float[] dataArray = data.getArray();
+        dataArray = DistFilter.filter(dataArray, npts, nx, ny, 1);
+        data = new FloatBufferWrapper(dataArray, nx, ny);
+        DataSource source = FillValueFilter.apply((DataSource) data,
+                Constants.LEGACY_NAN);
+        GeographicDataSource gdSource = new GeographicDataSource(source,
+                gridGeometry);
+        return new GeographicDataSource[] { gdSource };
+
+    }
+
 }

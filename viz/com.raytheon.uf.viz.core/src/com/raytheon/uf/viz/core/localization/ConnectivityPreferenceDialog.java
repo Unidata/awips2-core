@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -36,6 +36,7 @@ import org.eclipse.swt.events.SelectionListener;
 import org.eclipse.swt.events.VerifyEvent;
 import org.eclipse.swt.events.VerifyListener;
 import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.GC;
 import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.graphics.Rectangle;
 import org.eclipse.swt.layout.GridData;
@@ -44,6 +45,7 @@ import org.eclipse.swt.widgets.Button;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
 import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Group;
 import org.eclipse.swt.widgets.Label;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Monitor;
@@ -62,29 +64,33 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
 /**
  * Dialog for configuring connection options at startup. Typically this pops up
  * when unable to connect to the configured or default localization server.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Aug 05, 2009           mschenke    Initial creation
- * Aug 02, 2013  2202     bsteffen    Add edex specific connectivity checking.
- * Feb 04, 2014  2704     njensen     Shifted some private fields/methods to protected,
- *                                    Added status and details, better site validation
- * Feb 17, 2014  2704     njensen     Changed some alertviz fields to protected
- * Jun 03, 2014  3217     bsteffen    Add option to always open startup dialog.
- * Jun 24, 2014  3236     njensen     Add ability to remember multiple servers
- * Oct 29, 2015  4896     lvenable    Made ESC key act like the Quit button.
- * Dec 14, 2015  5195     njensen     Don't extend org.eclipse.swt.widgets.Dialog
- * Feb 08, 2016  5281     tjensen     Added method getServerOptions. Don't extend 
- *                                    org.eclipse.swt.widgets.Dialog
- * Feb 17, 2016  5281     tjensen     Fix Dialog centering
- * Apr 07, 2016  5281     tjensen     Clear details if status is good.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 05, 2009           mschenke  Initial creation
+ * Aug 02, 2013  2202     bsteffen  Add edex specific connectivity checking.
+ * Feb 04, 2014  2704     njensen   Shifted some private fields/methods to
+ *                                  protected, Added status and details, better
+ *                                  site validation
+ * Feb 17, 2014  2704     njensen   Changed some alertviz fields to protected
+ * Jun 03, 2014  3217     bsteffen  Add option to always open startup dialog.
+ * Jun 24, 2014  3236     njensen   Add ability to remember multiple servers
+ * Oct 29, 2015  4896     lvenable  Made ESC key act like the Quit button.
+ * Dec 14, 2015  5195     njensen   Don't extend org.eclipse.swt.widgets.Dialog
+ * Feb 08, 2016  5281     tjensen   Added method getServerOptions. Don't extend
+ *                                  org.eclipse.swt.widgets.Dialog
+ * Feb 17, 2016  5281     tjensen   Fix Dialog centering
+ * Apr 07, 2016  5281     tjensen   Clear details if status is good.
+ * Aug 25, 2020  8219     randerso  Prevent status from overrunning the status
+ *                                  area.
+ *
  * </pre>
- * 
+ *
  * @author mschenke
- * @version 1.0
  */
 
 public class ConnectivityPreferenceDialog {
@@ -147,7 +153,7 @@ public class ConnectivityPreferenceDialog {
 
     protected Text siteText;
 
-    private Label statusLabel;
+    private Text statusText;
 
     private boolean canceled = false;
 
@@ -183,14 +189,12 @@ public class ConnectivityPreferenceDialog {
 
     /**
      * Open the preference dialog
-     * 
+     *
      * @return whether cancel was issued or not
      */
     public boolean open() {
-        boolean prompt = LocalizationManager
-                .getInstance()
-                .getLocalizationStore()
-                .getBoolean(
+        boolean prompt = LocalizationManager.getInstance()
+                .getLocalizationStore().getBoolean(
                         LocalizationConstants.P_LOCALIZATION_PROMPT_ON_STARTUP);
         // Only open if current settings are not valid.
         if (prompt || !validate()) {
@@ -243,8 +247,8 @@ public class ConnectivityPreferenceDialog {
 
     private void initializeComponents() {
         Composite textBoxComp = new Composite(shell, SWT.NONE);
-        textBoxComp.setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true,
-                false));
+        textBoxComp
+                .setLayoutData(new GridData(SWT.FILL, SWT.CENTER, true, false));
         textBoxComp.setLayout(new GridLayout(2, false));
         createTextBoxes(textBoxComp);
         createStatusText();
@@ -256,18 +260,31 @@ public class ConnectivityPreferenceDialog {
      */
     protected void createStatusText() {
         Composite comp = new Composite(shell, SWT.NONE);
-        comp.setLayout(new GridLayout(3, false));
-        comp.setLayoutData(new GridData(SWT.FILL, SWT.DEFAULT, true, false));
+        comp.setLayout(new GridLayout(2, false));
+        comp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
 
-        Label lbl = new Label(comp, SWT.NONE);
-        lbl.setText("Status:");
+        GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
+        Group statusGroup = new Group(comp, SWT.BORDER);
+        statusGroup.setLayoutData(gd);
+        statusGroup.setText("Status:");
+        GridLayout layout = new GridLayout(1, false);
+        layout.marginHeight = 0;
+        layout.marginWidth = 0;
+        statusGroup.setLayout(layout);
 
-        GridData gd = new GridData(SWT.FILL, SWT.CENTER, true, false);
-        statusLabel = new Label(comp, SWT.BORDER);
-        statusLabel.setLayoutData(gd);
-        statusLabel.setText("");
+        gd = new GridData(SWT.FILL, SWT.FILL, true, true);
+        statusText = new Text(statusGroup,
+                SWT.WRAP | SWT.READ_ONLY | SWT.MULTI | SWT.V_SCROLL);
+        GC gc = new GC(statusText);
+        gd.heightHint = 2 * gc.textExtent("X").y;
+        gc.dispose();
+        statusText.setLayoutData(gd);
+        statusText.setText("");
+        statusText.setBackground(statusGroup.getBackground());
 
-        final Button detailsButton = new Button(comp, SWT.TOGGLE);
+        gd = new GridData(SWT.LEFT, SWT.BOTTOM, false, false);
+        final Button detailsButton = new Button(comp, SWT.PUSH);
+        detailsButton.setLayoutData(gd);
         detailsButton.setText("Details");
         detailsButton.addSelectionListener(new SelectionAdapter() {
             @Override
@@ -278,8 +295,9 @@ public class ConnectivityPreferenceDialog {
                     shell.pack();
                 } else {
                     ((GridData) detailsComp.getLayoutData()).exclude = false;
-                    ((GridData) detailsComp.getLayoutData()).widthHint = detailsComp
-                            .getBounds().width;
+                    ((GridData) detailsComp
+                            .getLayoutData()).widthHint = detailsComp
+                                    .getBounds().width;
                     detailsComp.setVisible(true);
                     shell.pack();
                 }
@@ -297,8 +315,8 @@ public class ConnectivityPreferenceDialog {
         detailsComp.setLayoutData(new GridData(SWT.FILL, SWT.FILL, true, true));
         GridData gd = new GridData(SWT.FILL, SWT.FILL, true, true);
         gd.heightHint = 150;
-        detailsText = new StyledText(detailsComp, SWT.BORDER | SWT.MULTI
-                | SWT.H_SCROLL | SWT.V_SCROLL);
+        detailsText = new StyledText(detailsComp,
+                SWT.BORDER | SWT.MULTI | SWT.H_SCROLL | SWT.V_SCROLL);
         detailsText.setText("");
         detailsText.setLayoutData(gd);
 
@@ -381,12 +399,12 @@ public class ConnectivityPreferenceDialog {
 
     /**
      * Get the stored server options for the localization server
-     * 
+     *
      * @return server options
      */
     protected String[] getServerOptions() {
-        return ServerRemembrance.getServerOptions(LocalizationManager
-                .getInstance().getLocalizationStore(),
+        return ServerRemembrance.getServerOptions(
+                LocalizationManager.getInstance().getLocalizationStore(),
                 LocalizationConstants.P_LOCALIZATION_HTTP_SERVER_OPTIONS);
     }
 
@@ -467,11 +485,8 @@ public class ConnectivityPreferenceDialog {
             applySettings();
         } else {
             shell.setVisible(false);
-            MessageDialog
-                    .openError(
-                            shell,
-                            "Connectivity Error",
-                            "Unable to validate localization preferences, please enter valid options or quit the application");
+            MessageDialog.openError(shell, "Connectivity Error",
+                    "Unable to validate localization preferences, please enter valid options or quit the application");
             shell.setVisible(true);
         }
         return valid;
@@ -582,7 +597,7 @@ public class ConnectivityPreferenceDialog {
 
     /**
      * Gets the color for the status label
-     * 
+     *
      * @param isGood
      * @return
      */
@@ -649,7 +664,7 @@ public class ConnectivityPreferenceDialog {
     /**
      * Builds a details string based on a stacktrace of connectivity results. If
      * there is no exception with the results, this returns the empty string.
-     * 
+     *
      * @param results
      * @return
      */
@@ -668,7 +683,7 @@ public class ConnectivityPreferenceDialog {
 
     /**
      * Adds new details to the details field without overwriting it
-     * 
+     *
      * @param newDetails
      */
     protected void appendDetails(String newDetails) {
@@ -684,7 +699,7 @@ public class ConnectivityPreferenceDialog {
     /**
      * Creates an error message for the status label by attempting to find the
      * most relevant error message from the exception's stacktrace.
-     * 
+     *
      * @param result
      * @return
      */
@@ -737,27 +752,27 @@ public class ConnectivityPreferenceDialog {
 
     /**
      * Updates the status label and details of the connectivity dialog
-     * 
+     *
      * @param good
      * @param status
      * @param details
      */
     protected void updateStatus(boolean good, String status, String details) {
-        if (statusLabel != null && !statusLabel.isDisposed()
+        if (statusText != null && !statusText.isDisposed()
                 && detailsText != null && !detailsText.isDisposed()) {
-            statusLabel.setForeground(getForegroundColor(good));
+            statusText.setForeground(getForegroundColor(good));
 
             // If everything is good, we don't need to worry about the details.
             if (good) {
-                statusLabel.setText("Successful connection");
+                statusText.setText("Successful connection");
                 detailsText.setText("");
             } else {
                 detailsText.setText(details != null ? details : "");
                 if (status != null) {
-                    statusLabel.setText(status);
+                    statusText.setText(status);
                 } else {
                     // shoudln't be able to reach this but just in case
-                    statusLabel.setText("Connection error");
+                    statusText.setText("Connection error");
                 }
             }
         }

@@ -79,6 +79,7 @@ import com.raytheon.viz.ui.dialogs.SWTMessageBox;
  * Jun 13, 2016  4907     mapeters  Update remote tmp file from server without
  *                                  overwriting local file.
  * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ * Jun 12, 2020  8061     bsteffen  Use LocalizationResourceNode to prevent NPE.
  *
  * </pre>
  *
@@ -127,8 +128,8 @@ public class LocalizationMergeEditorInput extends CompareEditorInput
         config.setLeftLabel("Local: " + input.getName());
         config.setRightLabel("Remote: " + input.getName());
 
-        this.leftLocalNode = new ResourceNode(local.getFile());
-        this.rightRemoteNode = new ResourceNode(remote.getFile());
+        this.leftLocalNode = new LocalizationResourceNode(local.getFile());
+        this.rightRemoteNode = new LocalizationResourceNode(remote.getFile());
 
         this.serverFileChecksum = serverFileChecksum;
 

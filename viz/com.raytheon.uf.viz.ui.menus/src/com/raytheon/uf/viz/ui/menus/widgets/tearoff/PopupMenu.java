@@ -1,35 +1,38 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.viz.ui.menus.widgets.tearoff;
 
+import java.lang.reflect.Field;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.events.MenuAdapter;
 import org.eclipse.swt.events.MenuEvent;
+import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.MenuItem;
 import org.eclipse.swt.widgets.Shell;
+import org.eclipse.swt.widgets.Widget;
 import org.eclipse.ui.IEditorPart;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
@@ -39,25 +42,62 @@ import com.raytheon.viz.ui.editor.AbstractEditor;
 
 /**
  * The popup menu for when items are populated out of the TearOffMenuDialog
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer   Description
- * ------------- -------- ---------- -----------------------------------------
+ * ------------- -------- ---------- -------------------------------------------
  * Dec 05, 2011           mnash      Initial creation
  * Apr 10, 2013  15185    dfriedman  Do not assume there is an active editor.
  * Apr 24, 2018  6703     bsteffen   Send simulated events more like EventTable.
- * 
+ * Oct 01, 2020  8234     randerso   Added SelectionListenerWrapper to get
+ *                                   tear-offs working again with Eclipse 4.16.
+ *                                   Improved positioning of tear-off submenus.
+ *
  * </pre>
- * 
+ *
  * @author mnash
  */
 
 public class PopupMenu {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PopupMenu.class);
+
+    private static class SelectionListenerWrapper implements Listener {
+
+        private Listener originalListener;
+
+        private Widget originalWidget;
+
+        public SelectionListenerWrapper(Listener originalListener,
+                Widget originalWidget) {
+            this.originalListener = originalListener;
+            this.originalWidget = originalWidget;
+        }
+
+        @Override
+        public void handleEvent(Event originalEvent) {
+            /*
+             * Create new event with original widget so it will get past the
+             * check in org.eclipse.jface.action.ActionContributionItem.
+             * handleWidgetSelection()
+             */
+            Event event = new Event();
+            try {
+                for (Field field : originalEvent.getClass().getFields()) {
+                    event.getClass().getField(field.getName()).set(event,
+                            field.get(originalEvent));
+                }
+
+                event.widget = originalWidget;
+                originalListener.handleEvent(event);
+            } catch (Exception e) {
+                statusHandler.error("Unable to copy event", e);
+            }
+        }
+    }
 
     private Listener selectionListener = null;
 
@@ -91,7 +131,8 @@ public class PopupMenu {
 
             // adding all the selection listeners from the menu
             for (Listener list : menItem.getListeners(SWT.Selection)) {
-                mItem.addListener(SWT.Selection, list);
+                mItem.addListener(SWT.Selection,
+                        new SelectionListenerWrapper(list, menItem));
             }
 
             mItem.addListener(SWT.Selection, new Listener() {
@@ -201,7 +242,7 @@ public class PopupMenu {
 
     /**
      * Adds the popup menu that pops up off the main TearOffMenuDialog
-     * 
+     *
      * @param item
      * @param shell
      * @param y
@@ -211,11 +252,10 @@ public class PopupMenu {
         Menu menu = new Menu(shell, SWT.POP_UP);
         buildMenu(item, shell, menu);
         // get the location for the popup menu
-        // TODO XXX need to figure out bounds and such so that we dont put the
-        // pop up over the menu item selected
         int xOffset = shell.getLocation().x;
-        int yOffset = shell.getLocation().y;
-        menu.setLocation(xOffset + shell.getSize().x, yOffset + y);
+        int yOffset = shell.toDisplay(0, 0).y;
+        Point p = new Point(xOffset + shell.getSize().x, yOffset + y);
+        menu.setLocation(p);
         menu.setVisible(true);
     }
 
@@ -232,7 +272,7 @@ public class PopupMenu {
 
     /**
      * Send a simulated event to any listeners.
-     * 
+     *
      * @param event
      *            the event to send. The widget and type fields of the event
      *            must be populated to determine where to send the event.

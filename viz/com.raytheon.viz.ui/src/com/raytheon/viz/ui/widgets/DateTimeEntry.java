@@ -62,6 +62,7 @@ import com.raytheon.viz.ui.dialogs.CalendarDialog;
  * Sep 29, 2017  6461       tgurney     Add dateFormat to constructor
  * Dec 31, 2019  7996       skabasele   Add ability to make textbox editable &
  *                                      updated getDate()
+ * Jun 16, 2020  7996       skabasele   setLeniency to false in getDate()
  *
  * </pre>
  *
@@ -251,10 +252,15 @@ public class DateTimeEntry extends Composite {
     public Date getDate() {
         if (text.getEditable()) {
             try {
+                // only for this particular parse
+                sdf.setLenient(false);
                 this.date = sdf.parse(text.getText());
                 fireUpdateListeners(date);
             } catch (ParseException e) {
                 return null;
+            }finally{
+               // reset to default
+               sdf.setLenient(true);
             }
 
             
