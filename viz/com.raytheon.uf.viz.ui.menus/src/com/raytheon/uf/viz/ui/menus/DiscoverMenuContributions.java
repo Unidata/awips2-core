@@ -78,7 +78,7 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  * <pre>
  *
  * SOFTWARE HISTORY
- *
+ * 
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Mar 12, 2009  2214     chammack  Initial creation
@@ -86,14 +86,15 @@ import com.raytheon.uf.viz.ui.menus.xml.IncludeMenuItem;
  *                                  method to retrieve localized site.
  * Mar 20, 2013  1638     mschenke  Removed menu creation job use
  * May 04, 2015  4284     bsteffen  Copy subMenuId
- * Dec 10, 2015  5193      bsteffen     Eclipse 4 Upgrade: Workaround 48143
+ * Dec 10, 2015  5193     bsteffen  Eclipse 4 Upgrade: Workaround 48143
  * Jan 15, 2016  5242     kbisanz   Replaced LocalizationFile with
  *                                  ILocalizationFile
  * Jan 28, 2016  5294     bsteffen  Substitute when combining substitutions
- * Dec 06, 2017  6355     nabowle   Observe path changes to rediscover menu
+ * Dec 06, 2017  6355     nabowle   Observe path changes to re-discover menu
  *                                  contributions.
- * Sep 10, 2020  8213     bsteffen  Fix visibleWhen for eclispe 4.16
- *
+ * Sep 10, 2020  8213     bsteffen  Fix visibleWhen for Eclipse 4.16
+ * Oct 12, 2020  8241     randerso  Updated for Eclipse 4.17
+ * 
  * </pre>
  *
  * @author chammack
@@ -217,7 +218,7 @@ public class DiscoverMenuContributions {
                                                     new HashSet<String>());
                                     Expression exp = null;
                                     if (imc.visibleOnActionSet != null) {
-                                        org.eclipse.core.internal.expressions.WithExpression we = new VisibleWithExpression(
+                                        org.eclipse.core.expressions.WithExpression we = new VisibleWithExpression(
                                                 "activeContexts", items);
 
                                         org.eclipse.core.internal.expressions.IterateExpression oe = null;
@@ -228,7 +229,7 @@ public class DiscoverMenuContributions {
                                             // ignore, since this is hardcoded
                                         }
                                         for (String str : imc.visibleOnActionSet) {
-                                            org.eclipse.core.internal.expressions.EqualsExpression ee = new org.eclipse.core.internal.expressions.EqualsExpression(
+                                            org.eclipse.core.expressions.EqualsExpression ee = new org.eclipse.core.expressions.EqualsExpression(
                                                     str);
                                             oe.add(ee);
                                         }
@@ -303,7 +304,7 @@ public class DiscoverMenuContributions {
      *
      */
     private static class VisibleWithExpression
-            extends org.eclipse.core.internal.expressions.WithExpression {
+            extends org.eclipse.core.expressions.WithExpression {
 
         private final IContributionItem[] items;
 
