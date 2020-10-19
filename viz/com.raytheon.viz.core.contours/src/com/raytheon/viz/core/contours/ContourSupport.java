@@ -133,6 +133,8 @@ import com.vividsolutions.jts.geom.Geometry;
  * Jul 31, 2019  66719    ksunil       Make sure the lat is within the +/-90 range
  * Sep 17, 2019  68196    ksunil       added fixContourWorldPoints
  * Oct 28, 2019  68196    ksunil       code tweak to apply world wrapping correction to streamLines.
+ * Jun 09, 2020  79241    pbutler      Removed unnecessary loop to speed up contour processing/loading
+ * Oct 19, 2020  83998    tjensen      Fix rendering of negative contours
  * </pre>
  *
  * @author chammack
@@ -713,31 +715,33 @@ public class ContourSupport {
                                         .getContourLabeling().getValues()
                                         .get(i1);
                                 float[] values = currentPref.getValues();
-                                for (int k = 0; k < values.length; k++) {
-                                    if (contourValue == values[k]) {
-                                        label = dfLabel.format(values[k]);
-                                        if (currentPref.noStylesSet()) {
-                                            if (contourValue >= 0) {
-                                                shapeToAddTo = contourGroup.posValueShape;
-                                            } else {
-                                                shapeToAddTo = contourGroup.negValueShape;
-                                            }
-                                        }
-
-                                        else {
-                                            shapeToAddTo = contourGroup.labeledValuesMap
-                                                    .get(currentPref);
-                                        }
-                                        shapeToAddTo.addLineSegment(
-                                                contourWorldPointsArr);
+                                for (float value : values) {
+                                    if (Float.compare(contourValue,
+                                            value) == 0) {
+                                        label = dfLabel.format(value);
                                         found = true;
                                         prepareLabel = true;
                                         break;
                                     }
-
                                 }
+                                if (currentPref.noStylesSet()) {
+                                    if (contourValue >= 0) {
+                                        shapeToAddTo = contourGroup.posValueShape;
+                                    } else {
+                                        shapeToAddTo = contourGroup.negValueShape;
+                                    }
+                                }
+
+                                else {
+                                    shapeToAddTo = contourGroup.labeledValuesMap
+                                            .get(currentPref);
+                                }
+                                shapeToAddTo
+                                        .addLineSegment(contourWorldPointsArr);
                             }
+
                         }
+
                         if (prefs != null && prefs.getContourLabeling() != null
                                 && prefs.getContourLabeling().getIncrement()
                                         .size() > 0) {
@@ -913,14 +917,14 @@ public class ContourSupport {
         final double threshold2 = (50.0 / screenToPixel);
 
         double q1, q2, p1, p2;
-        for (int n = 0; n < valsArr.length; n++) {
+        for (double[] vals : valsArr) {
 
             // Distance approximation between last label point
             // and current point
 
             // Absolute value logic inlined for performance
-            q1 = lastPoint[0] - valsArr[n][0];
-            q2 = lastPoint[1] - valsArr[n][1];
+            q1 = lastPoint[0] - vals[0];
+            q2 = lastPoint[1] - vals[1];
             q1 = (q1 <= 0.0D) ? 0.0D - q1 : q1;
             q2 = (q2 <= 0.0D) ? 0.0D - q2 : q2;
 
@@ -932,8 +936,8 @@ public class ContourSupport {
                 // Search for any labels that are too close
                 // to the current one
                 boolean tooClose = false;
-                p1 = valsArr[n][0];
-                p2 = valsArr[n][1];
+                p1 = vals[0];
+                p2 = vals[1];
                 q1 = 0;
                 q2 = 0;
                 for (double[] test : labelPoints) {
@@ -954,9 +958,9 @@ public class ContourSupport {
                 /*
                  * || (labeledAtLeastOnce == false && n == valsArr.length - 1)
                  */) {
-                    shapeToAddTo.addLabel(label, valsArr[n]);
-                    labelPoints.add(valsArr[n]);
-                    lastPoint = valsArr[n];
+                    shapeToAddTo.addLabel(label, vals);
+                    labelPoints.add(vals);
+                    lastPoint = vals;
                 }
             }
         }
@@ -1298,28 +1302,29 @@ public class ContourSupport {
                                             .getContourLabeling().getValues()
                                             .get(i1);
                                     float[] values = currentPref.getValues();
-                                    for (int k = 0; k < values.length; k++) {
-                                        if (contourValue == values[k]) {
-                                            label = dfLabel.format(values[k]);
-                                            if (currentPref.noStylesSet()) {
-                                                if (contourValue >= 0) {
-                                                    shapeToAddTo = contourGroup.posValueShape;
-                                                } else {
-                                                    shapeToAddTo = contourGroup.negValueShape;
-                                                }
-                                            }
-
-                                            else {
-                                                shapeToAddTo = contourGroup.labeledValuesMap
-                                                        .get(currentPref);
-                                            }
-                                            shapeToAddTo.addLineSegment(
-                                                    contourWorldPointsArr);
+                                    for (float value : values) {
+                                        if (Float.compare(contourValue,
+                                                value) == 0) {
+                                            label = dfLabel.format(value);
                                             found = true;
                                             prepareLabel = true;
                                             break;
                                         }
                                     }
+                                    if (currentPref.noStylesSet()) {
+                                        if (contourValue >= 0) {
+                                            shapeToAddTo = contourGroup.posValueShape;
+                                        } else {
+                                            shapeToAddTo = contourGroup.negValueShape;
+                                        }
+                                    }
+
+                                    else {
+                                        shapeToAddTo = contourGroup.labeledValuesMap
+                                                .get(currentPref);
+                                    }
+                                    shapeToAddTo.addLineSegment(
+                                            contourWorldPointsArr);
                                 }
                             }
                             if (prefs != null
@@ -1624,9 +1629,9 @@ public class ContourSupport {
         }
 
         float out[] = new float[in.length];
-        for (int i = 0; i < size; i++) {
-            transformToApply.transform(in, 0, out, 0, size);
-        }
+
+        transformToApply.transform(in, 0, out, 0, size);
+
         double[][] rval = new double[size][2];
         index = 0;
         for (int i = 0; i < rval.length; i += 1) {
@@ -1822,7 +1827,8 @@ public class ContourSupport {
         perfLog.logDuration("Checking world wrapping", tZ1 - tZ0);
     }
 
-    private static float[] convertSLPointListToFloatArray(List<StreamLinePoint> data) {
+    private static float[] convertSLPointListToFloatArray(
+            List<StreamLinePoint> data) {
 
         float[] ret = new float[data.size() * 2];
         for (int i = 0; i < data.size(); i++) {
