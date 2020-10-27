@@ -708,6 +708,11 @@ public class ContourSupport {
                             // use the default String representation of the
                             // given values
                             boolean found = false;
+                            float compareValue = contourValue;
+                            if (prefs.getContourLabeling()
+                                    .isCreateNegativeValues()) {
+                                compareValue = Math.abs(compareValue);
+                            }
                             for (int i1 = 0; i1 < prefs.getContourLabeling()
                                     .getValues().size() && !found; i1++) {
 
@@ -716,30 +721,27 @@ public class ContourSupport {
                                         .get(i1);
                                 float[] values = currentPref.getValues();
                                 for (float value : values) {
-                                    if (Float.compare(contourValue,
+                                    if (Float.compare(compareValue,
                                             value) == 0) {
                                         label = dfLabel.format(value);
+                                        if (currentPref.noStylesSet()) {
+                                            if (contourValue >= 0) {
+                                                shapeToAddTo = contourGroup.posValueShape;
+                                            } else {
+                                                shapeToAddTo = contourGroup.negValueShape;
+                                            }
+                                        } else {
+                                            shapeToAddTo = contourGroup.labeledValuesMap
+                                                    .get(currentPref);
+                                        }
+                                        shapeToAddTo.addLineSegment(
+                                                contourWorldPointsArr);
                                         found = true;
                                         prepareLabel = true;
                                         break;
                                     }
                                 }
-                                if (currentPref.noStylesSet()) {
-                                    if (contourValue >= 0) {
-                                        shapeToAddTo = contourGroup.posValueShape;
-                                    } else {
-                                        shapeToAddTo = contourGroup.negValueShape;
-                                    }
-                                }
-
-                                else {
-                                    shapeToAddTo = contourGroup.labeledValuesMap
-                                            .get(currentPref);
-                                }
-                                shapeToAddTo
-                                        .addLineSegment(contourWorldPointsArr);
                             }
-
                         }
 
                         if (prefs != null && prefs.getContourLabeling() != null
@@ -1296,6 +1298,12 @@ public class ContourSupport {
                                 // use the default String representation of the
                                 // given values
                                 boolean found = false;
+
+                                float compareValue = contourValue;
+                                if (prefs.getContourLabeling()
+                                        .isCreateNegativeValues()) {
+                                    compareValue = Math.abs(compareValue);
+                                }
                                 for (int i1 = 0; i1 < prefs.getContourLabeling()
                                         .getValues().size() && !found; i1++) {
                                     ValuesLabelingPreferences currentPref = prefs
@@ -1303,28 +1311,29 @@ public class ContourSupport {
                                             .get(i1);
                                     float[] values = currentPref.getValues();
                                     for (float value : values) {
-                                        if (Float.compare(contourValue,
+                                        if (Float.compare(compareValue,
                                                 value) == 0) {
                                             label = dfLabel.format(value);
+                                            if (currentPref.noStylesSet()) {
+                                                if (contourValue >= 0) {
+                                                    shapeToAddTo = contourGroup.posValueShape;
+                                                } else {
+                                                    shapeToAddTo = contourGroup.negValueShape;
+                                                }
+                                            }
+
+                                            else {
+                                                shapeToAddTo = contourGroup.labeledValuesMap
+                                                        .get(currentPref);
+                                            }
+                                            shapeToAddTo.addLineSegment(
+                                                    contourWorldPointsArr);
                                             found = true;
                                             prepareLabel = true;
                                             break;
                                         }
                                     }
-                                    if (currentPref.noStylesSet()) {
-                                        if (contourValue >= 0) {
-                                            shapeToAddTo = contourGroup.posValueShape;
-                                        } else {
-                                            shapeToAddTo = contourGroup.negValueShape;
-                                        }
-                                    }
 
-                                    else {
-                                        shapeToAddTo = contourGroup.labeledValuesMap
-                                                .get(currentPref);
-                                    }
-                                    shapeToAddTo.addLineSegment(
-                                            contourWorldPointsArr);
                                 }
                             }
                             if (prefs != null
