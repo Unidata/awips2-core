@@ -322,10 +322,12 @@ public class ContourSupport {
                 descriptor);
         contourGroup.negValueShape = target.createWireframeShape(false,
                 descriptor);
-        if (prefs != null && prefs.getContourLabeling() != null) {
+        ContourLabelingPreferences contourLabeling = null;
 
-            for (ValuesLabelingPreferences labelPrefs : prefs
-                    .getContourLabeling().getValues()) {
+        if (prefs != null && prefs.getContourLabeling() != null) {
+            contourLabeling = prefs.getContourLabeling();
+            for (ValuesLabelingPreferences labelPrefs : contourLabeling
+                    .getValues()) {
                 if (!labelPrefs.noStylesSet()) {
                     contourGroup.labeledValuesMap.put(labelPrefs,
                             target.createWireframeShape(false, descriptor));
@@ -333,8 +335,8 @@ public class ContourSupport {
 
             }
 
-            for (IncrementLabelingPreferences labelPrefs : prefs
-                    .getContourLabeling().getIncrement()) {
+            for (IncrementLabelingPreferences labelPrefs : contourLabeling
+                    .getIncrement()) {
                 if (!labelPrefs.noStylesSet()) {
                     contourGroup.labeledValuesMap.put(labelPrefs,
                             target.createWireframeShape(false, descriptor));
@@ -462,12 +464,8 @@ public class ContourSupport {
             config.labelSpacingOverall = (int) (szX * 60 * currentMagnification
                     / ((PixelExtent) extent).getWidth() + 0.5);
 
-            boolean hasLabelingPrefs = true;
             // If nothing provided, attempt to get approximately 50 contours
-            if (prefs == null || prefs.getContourLabeling() == null) {
-
-                hasLabelingPrefs = false;
-
+            if (contourLabeling == null) {
                 // TODO this is fairly inefficient to do every time.
                 MinMax mm = DataUtilities.getMinMax(subgridSource, szX, szY);
                 float interval = XFormFunctions.newDataIntervalFromZoom(
@@ -478,8 +476,6 @@ public class ContourSupport {
                 config.mode = -50;
                 contours = FortConBuf.contour(subgridSource, szX, szY, config);
             } else {
-                ContourLabelingPreferences contourLabeling = prefs
-                        .getContourLabeling();
                 if (contourLabeling.getLabelSpacing() > 0) {
                     config.labelSpacingLine = szX
                             / contourLabeling.getLabelSpacing();
@@ -511,12 +507,12 @@ public class ContourSupport {
                     config.minMaxRadius = 7;
                 }
                 float dataZoom = (float) ((level) * contourGroup.lastDensity);
-                if (prefs.getContourLabeling().isZoomLock()) {
+                if (contourLabeling.isZoomLock()) {
                     dataZoom = (float) contourGroup.lastDensity;
                 }
 
-                for (IncrementLabelingPreferences labelPrefs : prefs
-                        .getContourLabeling().getIncrement()) {
+                for (IncrementLabelingPreferences labelPrefs : contourLabeling
+                        .getIncrement()) {
 
                     float initialInterval = labelPrefs.getValues()[0];
                     float interval;
@@ -558,8 +554,8 @@ public class ContourSupport {
                     // explicit contouring values provided. First we merge them.
 
                     float[] vals = {};
-                    for (ValuesLabelingPreferences labelPrefs : prefs
-                            .getContourLabeling().getValues()) {
+                    for (ValuesLabelingPreferences labelPrefs : contourLabeling
+                            .getValues()) {
                         vals = ArrayUtils.addAll(vals, labelPrefs.getValues());
                     }
 
@@ -594,8 +590,7 @@ public class ContourSupport {
                             }
                             vals = newVals;
                         }
-                        if (prefs.getContourLabeling()
-                                .isCreateNegativeValues()) {
+                        if (contourLabeling.isCreateNegativeValues()) {
                             float[] newVals = new float[vals.length * 2];
                             for (int i = 0; i < vals.length; i++) {
                                 newVals[vals.length + i] = vals[i];
@@ -677,7 +672,6 @@ public class ContourSupport {
                 contourGroup.negValueShape.allocate(totalNegCoords);
 
                 for (int i = 0; i < size; i++) {
-                    boolean prepareLabel = false;
                     float[] contourGridPoints = contours.xyContourPoints.get(i);
                     float[] contourWorldPoints = new float[contourGridPoints.length];
 
@@ -698,108 +692,108 @@ public class ContourSupport {
                         }
                         IWireframeShape shapeToAddTo = null;
                         contourValue = contours.contourVals.get(i);
+
+                        /*
+                         * Set a default label and shapeToAddTo to ensure
+                         * contours are drawn.
+                         */
                         String label = dfLabel.format(contourValue);
                         label = label.substring(labelTrimLeft);
+                        if (contourValue >= 0) {
+                            shapeToAddTo = contourGroup.posValueShape;
+                        } else {
+                            shapeToAddTo = contourGroup.negValueShape;
+                        }
 
-                        if (prefs != null && prefs.getContourLabeling() != null
-                                && prefs.getContourLabeling().getValues()
-                                        .size() > 0) {
-                            // If we have explicit values and no explicit format
-                            // use the default String representation of the
-                            // given values
+                        /*
+                         * If preferences specify at least one values group,
+                         * check all to see if the contourValue matches and
+                         * apply the correct label and shape.
+                         */
+                        if (contourLabeling != null
+                                && contourLabeling.getValues().size() > 0) {
                             boolean found = false;
+
+                            /*
+                             * If createNegativeValues is true, we also need to
+                             * match the negative of the specified values.
+                             */
                             float compareValue = contourValue;
-                            if (prefs.getContourLabeling()
-                                    .isCreateNegativeValues()) {
+                            if (contourLabeling.isCreateNegativeValues()) {
                                 compareValue = Math.abs(compareValue);
                             }
-                            for (int i1 = 0; i1 < prefs.getContourLabeling()
-                                    .getValues().size() && !found; i1++) {
 
-                                ValuesLabelingPreferences currentPref = prefs
-                                        .getContourLabeling().getValues()
-                                        .get(i1);
-                                float[] values = currentPref.getValues();
-                                for (float value : values) {
-                                    if (Float.compare(compareValue,
-                                            value) == 0) {
-                                        label = dfLabel.format(value);
-                                        if (currentPref.noStylesSet()) {
-                                            if (contourValue >= 0) {
-                                                shapeToAddTo = contourGroup.posValueShape;
-                                            } else {
-                                                shapeToAddTo = contourGroup.negValueShape;
-                                            }
-                                        } else {
+                            /*
+                             * Loop over all values tags in the preferences and
+                             * check the specified values for a match
+                             */
+                            for (int i1 = 0; i1 < contourLabeling.getValues()
+                                    .size() && !found; i1++) {
+
+                                ValuesLabelingPreferences currentPref = contourLabeling
+                                        .getValues().get(i1);
+                                /*
+                                 * If we have explicit values and no explicit
+                                 * format use the default String representation
+                                 * of the given values. Else add to the shape
+                                 * for the current preferences.
+                                 */
+                                if (!currentPref.noStylesSet()) {
+                                    float[] values = currentPref.getValues();
+                                    for (float value : values) {
+                                        if (Float.compare(compareValue,
+                                                value) == 0) {
+
                                             shapeToAddTo = contourGroup.labeledValuesMap
                                                     .get(currentPref);
+
+                                            found = true;
+                                            break;
                                         }
-                                        shapeToAddTo.addLineSegment(
-                                                contourWorldPointsArr);
-                                        found = true;
-                                        prepareLabel = true;
-                                        break;
                                     }
                                 }
                             }
                         }
 
-                        if (prefs != null && prefs.getContourLabeling() != null
-                                && prefs.getContourLabeling().getIncrement()
-                                        .size() > 0) {
-                            // pick only values that are within the min/max set
-                            // in contourLabeling.increment element
+                        /*
+                         * If preferences specify at least one increment group,
+                         * check all to see if the contourValue matches and
+                         * apply the correct label and shape.
+                         */
+                        if (contourLabeling != null
+                                && contourLabeling.getIncrement().size() > 0) {
                             boolean found = false;
-                            for (int i1 = 0; i1 < prefs.getContourLabeling()
-                                    .getIncrement().size() && !found; i1++) {
-                                IncrementLabelingPreferences currentPref = prefs
-                                        .getContourLabeling().getIncrement()
-                                        .get(i1);
+                            /*
+                             * Loop over all increment tags in the preferences
+                             * and check the specified range for a match
+                             */
+                            for (int i1 = 0; i1 < contourLabeling.getIncrement()
+                                    .size() && !found; i1++) {
+                                IncrementLabelingPreferences currentPref = contourLabeling
+                                        .getIncrement().get(i1);
                                 float min = currentPref.getMin();
                                 float max = currentPref.getMax();
 
                                 if (contourValue <= max
                                         && contourValue >= min) {
-                                    if (currentPref.noStylesSet()) {
-                                        if (contourValue >= 0) {
-                                            shapeToAddTo = contourGroup.posValueShape;
-                                        } else {
-                                            shapeToAddTo = contourGroup.negValueShape;
-                                        }
-                                    } else {
+                                    if (!currentPref.noStylesSet()) {
                                         shapeToAddTo = contourGroup.labeledValuesMap
                                                 .get(currentPref);
                                     }
-                                    shapeToAddTo.addLineSegment(
-                                            contourWorldPointsArr);
                                     found = true;
-                                    prepareLabel = true;
                                 }
                             }
                         }
-                        /*
-                         * can happen if there is no labeling specification in
-                         * the XML.
-                         */
-                        if (!hasLabelingPrefs) {
-                            if (contourValue >= 0) {
-                                shapeToAddTo = contourGroup.posValueShape;
-                            } else {
-                                shapeToAddTo = contourGroup.negValueShape;
-                            }
-                            shapeToAddTo.addLineSegment(contourWorldPointsArr);
-                            prepareLabel = true;
-                        }
 
-                        // process contour labels
+                        // Add the line to the selected shaped
+                        shapeToAddTo.addLineSegment(contourWorldPointsArr);
+
+                        // Process contour labels
                         // TODO perform formatting
                         tZ0 = System.currentTimeMillis();
-                        // prepare Label only if this value is going to be in
-                        // play.
-                        if (prepareLabel) {
-                            prepareLabel(shapeToAddTo, zoom, label, labelPoints,
-                                    contourWorldPointsArr);
-                        }
+                        prepareLabel(shapeToAddTo, zoom, label, labelPoints,
+                                contourWorldPointsArr);
+
                         tZ1 = System.currentTimeMillis();
                         tLabelAccum += tZ1 - tZ0;
                     } catch (TransformException e) {
@@ -1008,18 +1002,18 @@ public class ContourSupport {
         contourGroup.negValueShape = target.createWireframeShape(false,
                 pixelGeom);
         contourGroup.negValueShape.allocate(1000);
-        boolean haslabelingXML = true;
+        ContourLabelingPreferences contourLabeling = null;
         if (prefs != null && prefs.getContourLabeling() != null) {
-
-            for (ValuesLabelingPreferences labelPrefs : prefs
-                    .getContourLabeling().getValues()) {
+            contourLabeling = prefs.getContourLabeling();
+            for (ValuesLabelingPreferences labelPrefs : contourLabeling
+                    .getValues()) {
                 contourGroup.labeledValuesMap.put(labelPrefs,
                         target.createWireframeShape(false, pixelGeom));
 
             }
 
-            for (IncrementLabelingPreferences labelPrefs : prefs
-                    .getContourLabeling().getIncrement()) {
+            for (IncrementLabelingPreferences labelPrefs : contourLabeling
+                    .getIncrement()) {
                 contourGroup.labeledValuesMap.put(labelPrefs,
                         target.createWireframeShape(false, pixelGeom));
 
@@ -1073,8 +1067,7 @@ public class ContourSupport {
             }
 
             // If nothing provided, attempt to get approximately 50 contours
-            if (prefs == null || prefs.getContourLabeling() == null) {
-                haslabelingXML = false;
+            if (contourLabeling == null) {
                 float interval = XFormFunctions.newDataIntervalFromZoom(0.5f,
                         (float) ((level + 1) * contourGroup.lastDensity), true,
                         "", 10);
@@ -1083,8 +1076,6 @@ public class ContourSupport {
                 config.mode = -50;
                 contours = FortConBuf.contour(subgriddedData, config);
             } else {
-                ContourLabelingPreferences contourLabeling = prefs
-                        .getContourLabeling();
                 if (contourLabeling.getLabelSpacing() > 0) {
                     config.labelSpacingLine = subgriddedData.length
                             / contourLabeling.getLabelSpacing();
@@ -1113,8 +1104,8 @@ public class ContourSupport {
                     config.minMaxRadius = 7;
                 }
 
-                for (IncrementLabelingPreferences labelPrefs : prefs
-                        .getContourLabeling().getIncrement()) {
+                for (IncrementLabelingPreferences labelPrefs : contourLabeling
+                        .getIncrement()) {
                     // interval provided
                     float initialInterval = labelPrefs.getValues()[0];
                     float interval;
@@ -1172,13 +1163,13 @@ public class ContourSupport {
                     contours = concatContourContainers(contours,
                             FortConBuf.contour(subgriddedData, config));
                 }
-                if (prefs.getContourLabeling().getValues().size() > 0) {
+                if (contourLabeling.getValues().size() > 0) {
                     // explicit contouring values provided
 
                     // convert Float[] to float[]
                     float[] vals = {};
-                    for (ValuesLabelingPreferences labelPrefs : prefs
-                            .getContourLabeling().getValues()) {
+                    for (ValuesLabelingPreferences labelPrefs : contourLabeling
+                            .getValues()) {
 
                         vals = ArrayUtils.addAll(vals, labelPrefs.getValues());
                     }
@@ -1196,7 +1187,7 @@ public class ContourSupport {
                         }
                         vals = newVals;
                     }
-                    if (prefs.getContourLabeling().isCreateNegativeValues()) {
+                    if (contourLabeling.isCreateNegativeValues()) {
                         float[] newVals = new float[vals.length * 2];
                         for (int i = 0; i < vals.length; i++) {
                             newVals[vals.length + i] = vals[i];
@@ -1266,7 +1257,6 @@ public class ContourSupport {
                     tMinMaxAccum += tZ1 - tZ0;
 
                     for (int i = 0; i < size; i++) {
-                        boolean prepareLabel = false;
                         float[] contourGridPoints = contours.xyContourPoints
                                 .get(i);
                         float[] contourWorldPoints = new float[contourGridPoints.length];
@@ -1287,109 +1277,110 @@ public class ContourSupport {
                                 index += 1;
                             }
                             contourValue = contours.contourVals.get(i);
+
+                            /*
+                             * Set a default label and shapeToAddTo to ensure
+                             * contours are drawn.
+                             */
                             IWireframeShape shapeToAddTo = null;
                             String label = dfLabel.format(contourValue);
-                            if (prefs != null
-                                    && prefs.getContourLabeling() != null
-                                    && prefs.getContourLabeling().getValues()
-                                            .size() > 0) {
-                                // If we have explicit values and no explicit
-                                // format
-                                // use the default String representation of the
-                                // given values
+                            if (contourValue >= 0) {
+                                shapeToAddTo = contourGroup.posValueShape;
+                            } else {
+                                shapeToAddTo = contourGroup.negValueShape;
+                            }
+
+                            /*
+                             * If preferences specify at least one values group,
+                             * check all to see if the contourValue matches and
+                             * apply the correct label and shape.
+                             */
+                            if (contourLabeling != null
+                                    && contourLabeling.getValues().size() > 0) {
                                 boolean found = false;
 
+                                /*
+                                 * If createNegativeValues is true, we also need
+                                 * to match the negative of the specified
+                                 * values.
+                                 */
                                 float compareValue = contourValue;
-                                if (prefs.getContourLabeling()
-                                        .isCreateNegativeValues()) {
+                                if (contourLabeling.isCreateNegativeValues()) {
                                     compareValue = Math.abs(compareValue);
                                 }
-                                for (int i1 = 0; i1 < prefs.getContourLabeling()
-                                        .getValues().size() && !found; i1++) {
-                                    ValuesLabelingPreferences currentPref = prefs
-                                            .getContourLabeling().getValues()
-                                            .get(i1);
-                                    float[] values = currentPref.getValues();
-                                    for (float value : values) {
-                                        if (Float.compare(compareValue,
-                                                value) == 0) {
-                                            label = dfLabel.format(value);
-                                            if (currentPref.noStylesSet()) {
-                                                if (contourValue >= 0) {
-                                                    shapeToAddTo = contourGroup.posValueShape;
-                                                } else {
-                                                    shapeToAddTo = contourGroup.negValueShape;
-                                                }
-                                            }
 
-                                            else {
+                                /*
+                                 * Loop over all values tags in the preferences
+                                 * and check the specified values for a match
+                                 */
+                                for (int i1 = 0; i1 < contourLabeling
+                                        .getValues().size() && !found; i1++) {
+                                    ValuesLabelingPreferences currentPref = contourLabeling
+                                            .getValues().get(i1);
+                                    /*
+                                     * If we have explicit values and no
+                                     * explicit format use the default String
+                                     * representation of the given values. Else
+                                     * add to the shape for the current
+                                     * preferences.
+                                     */
+                                    if (!currentPref.noStylesSet()) {
+                                        float[] values = currentPref
+                                                .getValues();
+                                        for (float value : values) {
+                                            if (Float.compare(compareValue,
+                                                    value) == 0) {
+
                                                 shapeToAddTo = contourGroup.labeledValuesMap
                                                         .get(currentPref);
+
+                                                found = true;
+                                                break;
                                             }
-                                            shapeToAddTo.addLineSegment(
-                                                    contourWorldPointsArr);
-                                            found = true;
-                                            prepareLabel = true;
-                                            break;
                                         }
                                     }
-
                                 }
                             }
-                            if (prefs != null
-                                    && prefs.getContourLabeling() != null
-                                    && prefs.getContourLabeling().getIncrement()
-                                            .size() > 0) {
-                                // pick only values that are within the min/max
-                                // set
-                                // in contourLabeling.increment element
+
+                            /*
+                             * If preferences specify at least one increment
+                             * group, check all to see if the contourValue
+                             * matches and apply the correct label and shape.
+                             */
+                            if (contourLabeling != null && contourLabeling
+                                    .getIncrement().size() > 0) {
                                 boolean found = false;
-                                for (int i1 = 0; i1 < prefs.getContourLabeling()
+                                /*
+                                 * Loop over all increment tags in the
+                                 * preferences and check the specified range for
+                                 * a match
+                                 */
+                                for (int i1 = 0; i1 < contourLabeling
                                         .getIncrement().size()
                                         && !found; i1++) {
-                                    IncrementLabelingPreferences currentPref = prefs
-                                            .getContourLabeling().getIncrement()
-                                            .get(i1);
+                                    IncrementLabelingPreferences currentPref = contourLabeling
+                                            .getIncrement().get(i1);
                                     float min = currentPref.getMin();
                                     float max = currentPref.getMax();
 
                                     if (contourValue <= max
                                             && contourValue >= min) {
-                                        if (currentPref.noStylesSet()) {
-                                            if (contourValue >= 0) {
-                                                shapeToAddTo = contourGroup.posValueShape;
-                                            } else {
-                                                shapeToAddTo = contourGroup.negValueShape;
-                                            }
-                                        } else {
+                                        if (!currentPref.noStylesSet()) {
                                             shapeToAddTo = contourGroup.labeledValuesMap
                                                     .get(currentPref);
                                         }
-                                        shapeToAddTo.addLineSegment(
-                                                contourWorldPointsArr);
                                         found = true;
-                                        prepareLabel = true;
                                     }
                                 }
                             }
-                            /*
-                             * can happen only if there is no labeling
-                             * specification in the XML.
-                             */
-                            if (!haslabelingXML) {
-                                if (contourValue >= 0) {
-                                    shapeToAddTo = contourGroup.posValueShape;
-                                } else {
-                                    shapeToAddTo = contourGroup.negValueShape;
-                                }
-                                shapeToAddTo
-                                        .addLineSegment(contourWorldPointsArr);
-                                prepareLabel = true;
-                            }
-                            if (prepareLabel) {
-                                prepareLabel(shapeToAddTo, levelOffset, label,
-                                        labelPoints, contourWorldPointsArr);
-                            }
+
+                            // Add the line to the selected shaped
+                            shapeToAddTo.addLineSegment(contourWorldPointsArr);
+
+                            // Process contour labels
+                            prepareLabel(shapeToAddTo, levelOffset, label,
+                                    labelPoints, contourWorldPointsArr);
+
                         } catch (TransformException e) {
                             statusHandler.handle(Priority.PROBLEM,
                                     "Error transforming points: " + Arrays

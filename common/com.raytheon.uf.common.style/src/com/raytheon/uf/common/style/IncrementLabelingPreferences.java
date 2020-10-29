@@ -31,20 +31,19 @@ import javax.xml.bind.annotation.XmlAttribute;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- ------------------
- *May 07, 2019  64008    ksunil  Initial Creation..
- *
+ * ------------- -------- --------- ------------------------------------
+ * May 07, 2019  64008    ksunil    Initial Creation..
+ * Oct 28, 2020  83998    tjensen   Corrected default min
  *
  * </pre>
  *
  * @author ksunil
  */
 @XmlAccessorType(XmlAccessType.NONE)
-public class IncrementLabelingPreferences
-        extends BaseLabelingPreferences {
+public class IncrementLabelingPreferences extends BaseLabelingPreferences {
 
     @XmlAttribute
-    private float min = Float.MIN_VALUE;
+    private float min = -Float.MAX_VALUE;
 
     @XmlAttribute
     private float max = Float.MAX_VALUE;
@@ -53,8 +52,7 @@ public class IncrementLabelingPreferences
         super();
     }
 
-    public IncrementLabelingPreferences(
-            IncrementLabelingPreferences prefs) {
+    public IncrementLabelingPreferences(IncrementLabelingPreferences prefs) {
         if (prefs.values != null) {
             this.values = new float[prefs.values.length];
             System.arraycopy(prefs.values, 0, this.values, 0,
@@ -96,12 +94,15 @@ public class IncrementLabelingPreferences
 
     @Override
     public boolean equals(Object obj) {
-        if (this == obj)
+        if (this == obj) {
             return true;
-        if (!super.equals(obj))
+        }
+        if (!super.equals(obj)) {
             return false;
-        if (getClass() != obj.getClass())
+        }
+        if (getClass() != obj.getClass()) {
             return false;
+        }
 
         return true;
     }
