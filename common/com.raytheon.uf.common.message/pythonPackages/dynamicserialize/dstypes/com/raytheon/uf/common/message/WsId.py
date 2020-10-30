@@ -28,9 +28,12 @@
 # Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
 # Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
 #                                  network address.
+# Oct 29, 2020  8239     randerso  Undo change to use hostName instead of 
+#                                  integer network address
 #
 ##    
 
+import struct
 import socket
 import os
 import pwd
@@ -38,10 +41,10 @@ import threading
 
 class WsId(object):
 
-    def __init__(self, hostName=None, userName=None, progName=None):
-        self.hostName = hostName
-        if hostName is None:
-            self.hostName = socket.gethostname()
+    def __init__(self, networkId=None, userName=None, progName=None):
+        self.networkId = networkId
+        if networkId is None:
+            self.networkId = str(struct.unpack('<L',socket.inet_aton(socket.gethostbyname(socket.gethostname())))[0])
         
         self.userName = userName
         if userName is None:
@@ -55,11 +58,11 @@ class WsId(object):
         
         self.threadId = threading.current_thread().ident
 
-    def getHostName(self):
-        return self.hostName
+    def getNetworkId(self):
+        return self.networkId
 
-    def setHostName(self, hostName):
-        self.hostName = hostName
+    def setNetworkId(self, networkId):
+        self.networkId = networkId
 
     def getUserName(self):
         return self.userName
@@ -86,10 +89,11 @@ class WsId(object):
         self.threadId = threadId
         
     def toPrettyString(self):        
+        hostname = socket.gethostbyaddr(socket.inet_ntoa(struct.pack('<L', int(self.networkId))))[0]
         return self.userName + "@" + hostname + ":" + self.progName + ":" + str(self.pid) + ":" + str(self.threadId)
     
     def __str__(self):
-        s = ":".join([self.hostName, self.userName, self.progName, str(self.pid), str(self.threadId)])
+        s = ":".join([self.networkId, self.userName, self.progName, str(self.pid), str(self.threadId)])
         return s
     
     def __repr__(self):
