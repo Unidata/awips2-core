@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.message;
 
 import java.io.Serializable;
+import java.net.InetAddress;
 
 import com.raytheon.uf.common.message.adapter.WsIdAdapter;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
@@ -44,8 +45,11 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Sep 12, 2014  3583     bclement  removed ISerializableObject
  * Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
  *                                  network address. Changed pid to long.
- * Oct 01, 2020  8239     randerso  Added getClientId() to match the JMS
- *                                  client ID string.
+ * Oct 01, 2020  8239     randerso  Added getClientId() to match the JMS client
+ *                                  ID string.
+ * Oct 29, 2020  8239     randerso  Restore previous toString() format for
+ *                                  backward compatibility with previous
+ *                                  releases.
  *
  * </pre>
  *
@@ -55,8 +59,9 @@ import com.raytheon.uf.common.util.SystemUtil;
 @DynamicSerialize
 @DynamicSerializeTypeAdapter(factory = WsIdAdapter.class)
 public class WsId implements Serializable {
-
     private static final long serialVersionUID = 1L;
+
+    private final InetAddress networkId;
 
     private final String hostName;
 
@@ -64,7 +69,7 @@ public class WsId implements Serializable {
 
     private final String progName;
 
-    private long pid;
+    private final long pid;
 
     private final long threadId;
 
@@ -76,7 +81,8 @@ public class WsId implements Serializable {
     }
 
     /**
-     * Constructs a WsId from a string
+     * Constructs a WsId from a string. The format of this string must match
+     * that returned by {@link #toString()}
      */
     public WsId(String s) {
         String[] token = s.split(":");
@@ -86,7 +92,22 @@ public class WsId implements Serializable {
                     "argument not of proper format for WsId");
         }
 
-        this.hostName = token[0];
+        try {
+            long addr = Long.parseLong(token[0]);
+            byte[] bytes = new byte[addr > 0xFFFFFFFFL ? 6 : 4];
+
+            for (int i = 0; i < bytes.length; i++) {
+                bytes[i] = (byte) (addr & 0xff);
+                addr >>= 8;
+            }
+
+            this.networkId = InetAddress.getByAddress(bytes);
+            this.hostName = SystemUtil.getHostName(this.networkId);
+        } catch (Exception e) {
+            throw new IllegalArgumentException(
+                    "networkId argument not of proper format for WsId", e);
+        }
+
         this.userName = token[1];
         this.progName = token[2];
         try {
@@ -102,9 +123,9 @@ public class WsId implements Serializable {
     /**
      * Constructor for WsId taking the networkId, user name, progName.
      *
-     * @param hostName
-     *            If null local host name will be used if available, otherwise
-     *            will use localhost
+     * @param networkId
+     *            If null local IP address will be used if available, otherwise
+     *            will use 0.0.0.0
      * @param userName
      *            if null current login name will be used
      *
@@ -112,7 +133,8 @@ public class WsId implements Serializable {
      *            if null "unknown" will be used
      *
      */
-    public WsId(String hostName, final String userName, final String progName) {
+    public WsId(InetAddress networkId, final String userName,
+            final String progName) {
 
         if (userName != null) {
             this.userName = userName;
@@ -130,17 +152,31 @@ public class WsId implements Serializable {
 
         this.threadId = Thread.currentThread().getId();
 
-        if (hostName != null) {
-            this.hostName = hostName;
+        if (networkId != null) {
+            this.networkId = networkId;
         } else {
-            this.hostName = SystemUtil.getHostName();
+            this.networkId = SystemUtil.getLocalAddress();
         }
+        this.hostName = SystemUtil.getHostName(this.networkId);
     }
 
+    /**
+     * NOTE: this string is used by the database and serialization type
+     * adapters. Changing the format could cause compatibility issues with
+     * previous releases.
+     *
+     * Also the {@link #WsId(String)} constructor must be able to use this
+     * string as its argument.
+     */
     @Override
     public String toString() {
+        long addr = 0;
+        byte[] bytes = networkId.getAddress();
+        for (int i = bytes.length - 1; i >= 0; i--) {
+            addr = (addr << 8) | (0xff & bytes[i]);
+        }
 
-        String s = String.join(":", hostName, userName, progName,
+        String s = String.join(":", Long.toString(addr), userName, progName,
                 Long.toString(pid), Long.toString(threadId));
         return s;
     }
@@ -204,7 +240,7 @@ public class WsId implements Serializable {
         final int prime = 31;
         int result = 1;
         result = prime * result
-                + ((hostName == null) ? 0 : hostName.hashCode());
+                + ((networkId == null) ? 0 : networkId.hashCode());
         result = prime * result + (int) (pid ^ (pid >>> 32));
         result = prime * result
                 + ((progName == null) ? 0 : progName.hashCode());
@@ -226,11 +262,11 @@ public class WsId implements Serializable {
             return false;
         }
         WsId other = (WsId) obj;
-        if (hostName == null) {
-            if (other.hostName != null) {
+        if (networkId == null) {
+            if (other.networkId != null) {
                 return false;
             }
-        } else if (!hostName.equals(other.hostName)) {
+        } else if (!networkId.equals(other.networkId)) {
             return false;
         }
         if (pid != other.pid) {
