@@ -321,7 +321,7 @@
          id="org.springframework"
          download-size="0"
          install-size="0"
-         version="5.1.18"/>
+         version="4.3.20"/>
 
    <plugin
          id="com.raytheon.uf.common.pypies"

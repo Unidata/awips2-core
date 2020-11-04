@@ -21,7 +21,7 @@
 package com.raytheon.uf.edex.database.dao;
 
 import org.hibernate.SessionFactory;
-import org.springframework.orm.hibernate5.HibernateTransactionManager;
+import org.springframework.orm.hibernate4.HibernateTransactionManager;
 
 import com.raytheon.uf.edex.core.EDEXUtil;
 
