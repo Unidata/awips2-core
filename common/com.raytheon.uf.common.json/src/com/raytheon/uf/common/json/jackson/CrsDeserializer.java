@@ -27,7 +27,7 @@
 * ------------ ---------- ----------- --------------------------
 * Dec 1, 2011            bclement     Initial creation
 *
-*/ 
+*/
 package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
@@ -44,35 +44,35 @@ import com.fasterxml.jackson.databind.JsonDeserializer;
 
 /**
  * Deserialization adapter for CoordinateReferenceSystem objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            bclement    Initial creation
- * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
- * 
+ * Jan 19, 2016 5067       bclement    upgrade jackson to 2.6
+ * Nov 29, 2017 6531       mapeters    upgrade jackson to 2.8
+ *
  * </pre>
- * 
+ *
  */
-public class CrsDeserializer extends
-        JsonDeserializer<CoordinateReferenceSystem> {
+public class CrsDeserializer
+        extends JsonDeserializer<CoordinateReferenceSystem> {
 
-	@Override
-	public CoordinateReferenceSystem deserialize(JsonParser jp,
-			DeserializationContext ctxt) throws IOException,
-			JsonProcessingException {
-		JsonToken tok = jp.getCurrentToken();
-		if (tok != JsonToken.VALUE_STRING) {
-			throw ctxt.mappingException(CoordinateReferenceSystem.class);
-		}
-		try {
-			return CRS.parseWKT(jp.getText());
-		} catch (FactoryException e) {
-			throw new IOException(e);
-		}
-	}
+    @Override
+    public CoordinateReferenceSystem deserialize(JsonParser jp,
+            DeserializationContext ctxt)
+            throws IOException, JsonProcessingException {
+        if (jp.getCurrentToken() != JsonToken.VALUE_STRING) {
+            ctxt.handleUnexpectedToken(CoordinateReferenceSystem.class, jp);
+        }
+        try {
+            return CRS.parseWKT(jp.getText());
+        } catch (FactoryException e) {
+            throw new IOException(e);
+        }
+    }
 
 }

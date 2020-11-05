@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,32 +22,37 @@ package com.raytheon.uf.common.util;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
  * This class is for static methods that manipulate strings.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Oct 20, 2011            rferrel     Initial creation
- * Jul 13, 2012 740        djohnson    Add join.
- * Nov 09, 2012 1322       djohnson    Add NEWLINE, createMessage.
- * Mar 02, 2013 1970       bgonzale    Added fast string replacement method.
- * Apr 02, 2014 2915       dgilling    Added left and right trim methods.
- * Aug 07, 2014 3502       bclement    reimplemented split()
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Oct 20, 2011           rferrel   Initial creation
+ * Jul 13, 2012  740      djohnson  Add join.
+ * Nov 09, 2012  1322     djohnson  Add NEWLINE, createMessage.
+ * Mar 02, 2013  1970     bgonzale  Added fast string replacement method.
+ * Apr 02, 2014  2915     dgilling  Added left and right trim methods.
+ * Aug 07, 2014  3502     bclement  reimplemented split()
+ * Feb 16, 2018  7122     randerso  Deprecated the join() functions and
+ *                                  documented non-standard behavior.
+ *
  * </pre>
- * 
+ *
  * @author rferrel
- * @version 1.0
  */
 public final class StringUtil {
 
+    /**
+     * Platform specific new line separator
+     */
     public static final String NEWLINE = System.getProperty("line.separator");
 
     private StringUtil() {
@@ -57,16 +62,16 @@ public final class StringUtil {
     /**
      * Splits a string using given separator character; strings are trimmed and
      * empty entries removed.
-     * 
+     *
      * @param str
      *            the string to split
      * @param separatorChar
      *            Character to use as separator
      * @return An array of trimmed non-empty strings or empty array
-     * 
+     *
      */
     public static String[] split(final String str, final char separatorChar) {
-        ArrayList<String> rval = new ArrayList<String>();
+        List<String> rval = new ArrayList<>();
         if (str != null) {
             int prev = 0;
             /* trim separators from beginning of string */
@@ -99,14 +104,17 @@ public final class StringUtil {
     /**
      * Concatenate an array of object into a single string with each array
      * element's toString() value separated by the joinCharacter.
-     * 
+     *
      * @param portions
      *            the array of objects
      * @param joinCharacter
      *            the character to join them with
-     * @return the concatenated string
+     * @return the concatenated string. NOTE returns null if portions is empty!
+     * @deprecated Use {@link String#join(CharSequence, Iterable)} instead.
      */
-    public static <T> String join(final T[] portions, final char joinCharacter) {
+    @Deprecated
+    public static <T> String join(final T[] portions,
+            final char joinCharacter) {
         StringBuilder stringBuilder = new StringBuilder();
 
         if (CollectionUtil.isNullOrEmpty(portions)) {
@@ -125,13 +133,15 @@ public final class StringUtil {
     /**
      * Concatenate a collection of objects into a single string with each
      * object's toString() value separated by the joinCharacter.
-     * 
+     *
      * @param portions
      *            the collections of objects
      * @param joinCharacter
      *            the character to join them with
-     * @return the concatenated string
+     * @return the concatenated string. NOTE returns null if portions is empty!
+     * @deprecated Use {@link String#join(CharSequence, Iterable)} instead.
      */
+    @Deprecated
     public static <T> String join(final Collection<T> portions,
             final char joinCharacter) {
         StringBuilder stringBuilder = new StringBuilder();
@@ -152,7 +162,7 @@ public final class StringUtil {
     /**
      * Creates a message based on the preamble and the provided iterables, each
      * iterable will be displayed on its own line.
-     * 
+     *
      * @param preamble
      *            the preamble message, such as
      *            <code>String preamble = "The following are numbers:"</code>
@@ -168,7 +178,7 @@ public final class StringUtil {
     /**
      * Creates a message based on the preamble and the provided iterables, each
      * iterable will be displayed on its own line.
-     * 
+     *
      * @param preamble
      *            the preamble message, such as
      *            <code>String preamble = "The following are numbers:"</code>
@@ -200,7 +210,7 @@ public final class StringUtil {
     /**
      * Fast replacement of all String target elements in String source with
      * String replacement.
-     * 
+     *
      * @param source
      *            String that instances will be replaced in.
      * @param target
@@ -222,7 +232,7 @@ public final class StringUtil {
 
     /**
      * Get a string as a separated list showing up to the limit of items.
-     * 
+     *
      * @param list
      *            List of items to put in the "list"
      * @param delimiter
@@ -256,7 +266,7 @@ public final class StringUtil {
 
     /**
      * Create a list with all the lines except the first indented.
-     * 
+     *
      * @param list
      *            list of items
      * @param indent
@@ -287,7 +297,7 @@ public final class StringUtil {
      * empty string in output).<br>
      * Example: printString("test") would display "[test]"<br>
      * printString(null) would display "[null]"
-     * 
+     *
      * @param obj
      *            An object instance
      * @return The object's {@link Object#toString()} value
@@ -298,7 +308,7 @@ public final class StringUtil {
 
     /**
      * Simple check if str is null or empty.
-     * 
+     *
      * @param str
      *            A string to check
      * @return true if string is null or empty, false otherwise
@@ -309,7 +319,7 @@ public final class StringUtil {
 
     /**
      * Determines if the given string is all alpha-numeric characters
-     * 
+     *
      * @param str
      *            The string to test
      * @return True if the string is alpha-numeric
@@ -336,7 +346,7 @@ public final class StringUtil {
      * <p>
      * Like String.trim(), whitespace is defined as any character with a code
      * less than or equal to <code>'&#92;u0020'</code> (the space character).
-     * 
+     *
      * @param s
      *            The <code>String</code> to trim.
      * @return A copy of this string with leading white space removed, or the
@@ -355,7 +365,7 @@ public final class StringUtil {
      * <p>
      * Like String.trim(), whitespace is defined as any character with a code
      * less than or equal to <code>'&#92;u0020'</code> (the space character).
-     * 
+     *
      * @param s
      *            The <code>String</code> to trim.
      * @return A copy of this string with trailing white space removed, or the

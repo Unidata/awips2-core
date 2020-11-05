@@ -40,18 +40,24 @@ import com.raytheon.uf.common.status.UFStatus;
 
 /**
  * JsonService implementation with pooled ObjectMappers
- * 
+ *
+ * NOTE: This class, along with the com.raytheon.uf.common.json.jackson
+ * packages, is not currently used, as everything uses BasicJsonService instead.
+ * Consider removing this class in the future, especially if maintaining
+ * compatibility with jackson upgrades becomes non-trivial.
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug  9, 2011            bclement    Initial creation
  * Oct 27, 2015  4767      bclement    upgraded jackson to 1.9
- * 
+ * Nov 30, 2017  6531      mapeters    Added class javadoc note, cleanup
+ *
  * </pre>
- * 
+ *
  * @author bclement
  */
 public class JsonSrvImpl implements JsonService {
@@ -81,7 +87,7 @@ public class JsonSrvImpl implements JsonService {
         long id = Thread.currentThread().getId();
         ObjectMapper mapper = null;
         try {
-            mapper = (ObjectMapper) pool.borrowObject(id);
+            mapper = pool.borrowObject(id);
             getWriter(mapper, pretty).writeValue(out, obj);
         } catch (Exception e) {
             throw new JsonException("Problem serializing object to JSON", e);
@@ -91,8 +97,8 @@ public class JsonSrvImpl implements JsonService {
     }
 
     protected ObjectWriter getWriter(ObjectMapper mapper, boolean pretty) {
-        return pretty ? mapper.writerWithDefaultPrettyPrinter() : mapper
-                .writer();
+        return pretty ? mapper.writerWithDefaultPrettyPrinter()
+                : mapper.writer();
     }
 
     protected void returnObject(long key, ObjectMapper mapper) {
@@ -111,7 +117,7 @@ public class JsonSrvImpl implements JsonService {
         Object rval;
         ObjectMapper mapper = null;
         try {
-            mapper = (ObjectMapper) pool.borrowObject(id);
+            mapper = pool.borrowObject(id);
             rval = mapper.readValue(json, c);
         } catch (Exception e) {
             throw new JsonException("Problem deserializing object to JSON", e);
@@ -127,7 +133,7 @@ public class JsonSrvImpl implements JsonService {
         Object rval;
         ObjectMapper mapper = null;
         try {
-            mapper = (ObjectMapper) pool.borrowObject(id);
+            mapper = pool.borrowObject(id);
             rval = mapper.readValue(in, c);
         } catch (Exception e) {
             throw new JsonException("Problem deserializing object to JSON", e);
@@ -144,7 +150,7 @@ public class JsonSrvImpl implements JsonService {
         Map<String, Object> rval;
         ObjectMapper mapper = null;
         try {
-            mapper = (ObjectMapper) pool.borrowObject(id);
+            mapper = pool.borrowObject(id);
             rval = mapper.convertValue(obj, TreeMap.class);
         } catch (Exception e) {
             throw new JsonException("Problem extracting object to map", e);
@@ -161,7 +167,7 @@ public class JsonSrvImpl implements JsonService {
         Object rval;
         ObjectMapper mapper = null;
         try {
-            mapper = (ObjectMapper) pool.borrowObject(id);
+            mapper = pool.borrowObject(id);
             rval = mapper.convertValue(map, c);
         } catch (Exception e) {
             throw new JsonException("Problem extracting object to map", e);

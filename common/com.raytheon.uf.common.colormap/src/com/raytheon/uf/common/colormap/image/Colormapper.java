@@ -47,16 +47,20 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Aug 13, 2010            mschenke    Initial creation
- * Feb 15, 2013 1638       mschenke    Moved IndexColorModel creation to common.colormap utility
- * Nov  4, 2013 2492       mschenke    Rewritten to model glsl equivalent
- * Apr 15, 2014 3016       randerso    Check in Max's fix for getColorByIndex
- * Apr 22, 2014 2996       dgilling    Rewrite colorMap() to output images with
- *                                     proper transparency for GFE data.
- * Apr 27, 2015 4425       nabowle     Handle ColorMapDataType.DOUBLE.
- * Nov 02, 2016 5957       bsteffen    Fix indexing to include last color more.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Aug 13, 2010           mschenke  Initial creation
+ * Feb 15, 2013  1638     mschenke  Moved IndexColorModel creation to
+ *                                  common.colormap utility
+ * Nov 04, 2013  2492     mschenke  Rewritten to model glsl equivalent
+ * Apr 15, 2014  3016     randerso  Check in Max's fix for getColorByIndex
+ * Apr 22, 2014  2996     dgilling  Rewrite colorMap() to output images with
+ *                                  proper transparency for GFE data.
+ * Apr 27, 2015  4425     nabowle   Handle ColorMapDataType.DOUBLE.
+ * Nov 02, 2016  5957     bsteffen  Fix indexing to include last color more.
+ * Feb 07, 2018  6816     randerso  Implemented getLinearValue and
+ *                                  getLogFactorValue functions.
  *
  * </pre>
  *
@@ -64,6 +68,10 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  */
 public class Colormapper {
 
+    /*
+     * These constants are public as they are used in the OGC and possibly other
+     * plugins
+     */
     public static final int COLOR_MODEL_NUMBER_BITS = 8;
 
     public static final float MAX_VALUE = 255.0f;
@@ -74,10 +82,9 @@ public class Colormapper {
      * This method will color map a Buffer to a RenderedImage given size and
      * parameters
      *
-     * @param buf
-     * @param datasetBounds
+     * @param cmapData
      * @param parameters
-     * @return
+     * @return the color mapped image
      */
     public static RenderedImage colorMap(ColorMapData cmapData,
             ColorMapParameters parameters) {
@@ -95,8 +102,8 @@ public class Colormapper {
         UnitConverter converter = null;
         if (dataUnit != null && colorMapUnit != null
                 && parameters.getDataMapping() == null
-                && dataUnit.equals(colorMapUnit) == false
-                && dataUnit.isCompatible(colorMapUnit) == true) {
+                && !dataUnit.equals(colorMapUnit)
+                && dataUnit.isCompatible(colorMapUnit)) {
             converter = dataUnit.getConverterTo(colorMapUnit);
         }
 
@@ -142,7 +149,7 @@ public class Colormapper {
      * Builds a color model from a color map
      *
      * @param aColorMap
-     * @return
+     * @return the color model
      */
     public static IndexColorModel buildColorModel(IColorMap aColorMap) {
         int size = aColorMap.getSize();
@@ -172,7 +179,7 @@ public class Colormapper {
      * @param buffer
      * @param idx
      * @param dataType
-     * @return
+     * @return the double value
      */
     public static double getDataValue(Buffer buffer, int idx,
             ColorMapDataType dataType) {
@@ -204,6 +211,9 @@ public class Colormapper {
 
     /**
      * This function takes an index value and caps it to the range 0-1
+     *
+     * @param index
+     * @return index capped to the range 0-1
      */
     public static double capIndex(double index) {
         if (index < 0.0) {
@@ -220,11 +230,26 @@ public class Colormapper {
      * @param cmapValue
      * @param cmapMin
      * @param cmapMax
-     * @return
+     * @return the index
      */
     public static double getLinearIndex(double cmapValue, double cmapMin,
             double cmapMax) {
         return (cmapValue - cmapMin) / (cmapMax - cmapMin);
+    }
+
+    /**
+     * Given a linear color map index, compute the corresponding value.
+     *
+     * This is the inverse of getLinearIndex
+     *
+     * @param index
+     * @param cmapMin
+     * @param cmapMax
+     * @return the value
+     */
+    public static double getLinearValue(double index, double cmapMin,
+            double cmapMax) {
+        return (index * (cmapMax - cmapMin)) + cmapMin;
     }
 
     /**
@@ -235,7 +260,7 @@ public class Colormapper {
      * @param cmapMin
      * @param cmapMax
      * @param mirror
-     * @return
+     * @return the index
      */
     public static double getLogIndex(double cmapValue, double cmapMin,
             double cmapMax, boolean mirror) {
@@ -251,7 +276,7 @@ public class Colormapper {
             rangeMax = tmp;
         }
 
-        double index = 0.0;
+        double index;
         // Flag if min/max values are on opposite sides of zero
         boolean minMaxOpposite = (cmapMin < 0 && cmapMax > 0)
                 || (cmapMin > 0 && cmapMax < 0);
@@ -310,27 +335,55 @@ public class Colormapper {
 
     /**
      * This function calculates a new index to use based on the logFactor and
-     * passed in index
+     * passed in value
      *
-     * @param index
+     * @param cmapValue
+     * @param cmapMin
+     * @param cmapMax
      * @param logFactor
-     * @return
+     * @return the index
+     *
      */
-    public static double getLogFactorIndex(double index, double logFactor) {
+    public static double getLogFactorIndex(double cmapValue, double cmapMin,
+            double cmapMax, double logFactor) {
+        double index = getLinearIndex(cmapValue, cmapMin, cmapMax);
+
         if (logFactor > 0.0) {
             double minLog = Math.log(logFactor);
             double maxLog = Math.log(logFactor + 1.0);
 
             double lg = Math.log(logFactor + index);
 
-            index = (lg - minLog) / (maxLog - minLog);
-            if (index < 0.0) {
-                index = 0.0;
-            } else if (index > 1.0) {
-                index = 1.0;
-            }
+            index = capIndex((lg - minLog) / (maxLog - minLog));
         }
         return index;
+    }
+
+    /**
+     * Given a log factor color map index, compute the corresponding value
+     *
+     * This is the inverse of getLogFactorIndex
+     *
+     * @param index
+     * @param cmapMin
+     * @param cmapMax
+     * @param logFactor
+     * @return the value
+     */
+    public static double getLogFactorValue(double index, double cmapMin,
+            double cmapMax, double logFactor) {
+
+        index = capIndex(index);
+        if (logFactor > 0.0) {
+            double minLog = Math.log(logFactor);
+            double maxLog = Math.log(logFactor + 1.0);
+
+            double lg = (index * (maxLog - minLog)) + minLog;
+
+            index = Math.exp(lg) - logFactor;
+
+        }
+        return getLinearValue(index, cmapMin, cmapMax);
     }
 
     /**
@@ -338,8 +391,8 @@ public class Colormapper {
      * {@link ColorMapParameters}
      *
      * @param cmapValue
-     * @param colorMapping
-     * @return
+     * @param colorMapParameters
+     * @return color mapping index between 0.0 and 1.0
      */
     public static double getColorMappingIndex(double cmapValue,
             ColorMapParameters colorMapParameters) {
@@ -351,14 +404,15 @@ public class Colormapper {
         if (colorMapParameters.isLogarithmic()) {
             index = getLogIndex(cmapValue, cmapMin, cmapMax,
                     colorMapParameters.isMirror());
+
+        } else if (logFactor > 0.0) {
+            // Apply logFactor if set
+            index = getLogFactorIndex(cmapValue, cmapMin, cmapMax, logFactor);
+
         } else {
             index = getLinearIndex(cmapValue, cmapMin, cmapMax);
         }
 
-        // Apply logFactor if set
-        if (logFactor > 0.0) {
-            index = getLogFactorIndex(index, logFactor);
-        }
         return index;
     }
 
@@ -368,7 +422,7 @@ public class Colormapper {
      *
      * @param index
      * @param colorMapParameters
-     * @return
+     * @return the color
      */
     public static com.raytheon.uf.common.colormap.Color getColorByIndex(
             double index, ColorMapParameters colorMapParameters) {
@@ -406,7 +460,7 @@ public class Colormapper {
      *
      * @param cmapValue
      * @param colorMapParameters
-     * @return
+     * @return the color
      */
     public static com.raytheon.uf.common.colormap.Color getColorByValue(
             double cmapValue, ColorMapParameters colorMapParameters) {

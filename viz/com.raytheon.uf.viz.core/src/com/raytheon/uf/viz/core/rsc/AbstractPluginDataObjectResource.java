@@ -20,7 +20,6 @@
 package com.raytheon.uf.viz.core.rsc;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -45,44 +44,38 @@ import com.raytheon.uf.viz.core.rsc.capabilities.AbstractCapability;
  * 
  * SOFTWARE HISTORY
  * 
- * Date          Ticket#    Engineer    Description
- * ------------- ---------- ----------- --------------------------
- * Dec 21, 2011             mschenke    Initial creation
- * Jun 24, 2013  2122       mschenke    Made use built in resource data changed
- *                                      listener updates will not be lost from
- *                                      construction to initInternal
- * Nov 18, 2013  2544       bsteffen    Clear dataTimes in disposeInternal to
- *                                      fix recycle.
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Dec 21, 2011           mschenke  Initial creation
+ * Jun 24, 2013  2122     mschenke  Made use built in resource data changed
+ *                                  listener updates will not be lost from
+ *                                  construction to initInternal
+ * Nov 18, 2013  2544     bsteffen  Clear dataTimes in disposeInternal to fix
+ *                                  recycle.
+ * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * 
  * </pre>
  * 
  * @author mschenke
- * @version 1.0
  */
-
 public abstract class AbstractPluginDataObjectResource<T extends AbstractResourceData, D extends IDescriptor>
         extends AbstractVizResource<T, D> {
 
     private static class Frame {
-        boolean disposed = false;
+        public boolean disposed = false;
 
-        Object lock = new Object();
+        public Object lock = new Object();
 
-        List<PluginDataObject> records = new ArrayList<PluginDataObject>();
+        public List<PluginDataObject> records = new ArrayList<>();
 
-        IRenderable renderable;
+        public IRenderable renderable;
     }
 
-    private Map<DataTime, Frame> frames = new HashMap<DataTime, Frame>();
+    private Map<DataTime, Frame> frames = new HashMap<>();
 
-    /**
-     * @param resourceData
-     * @param loadProperties
-     */
     protected AbstractPluginDataObjectResource(T resourceData,
             LoadProperties loadProperties) {
-        super(resourceData, loadProperties);
-        dataTimes = new ArrayList<DataTime>();
+        super(resourceData, loadProperties, false);
     }
 
     @Override
@@ -93,13 +86,13 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
             } else if (object instanceof PluginDataObject[]) {
                 addDataObject((PluginDataObject[]) object);
             } else if (object instanceof Object[]) {
-                List<PluginDataObject> pdos = new ArrayList<PluginDataObject>();
+                List<PluginDataObject> pdos = new ArrayList<>();
                 for (Object obj : (Object[]) object) {
                     if (obj instanceof PluginDataObject) {
                         pdos.add((PluginDataObject) obj);
                     }
                 }
-                if (pdos.isEmpty() == false) {
+                if (!pdos.isEmpty()) {
                     addDataObject(pdos.toArray(new PluginDataObject[0]));
                 }
             }
@@ -124,12 +117,12 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
      */
     protected final void addDataObject(PluginDataObject... pdos) {
         // Organize PDOs by time
-        Map<DataTime, List<PluginDataObject>> pdoMap = new HashMap<DataTime, List<PluginDataObject>>();
+        Map<DataTime, List<PluginDataObject>> pdoMap = new HashMap<>();
         for (PluginDataObject pdo : pdos) {
             DataTime time = getDataObjectTime(pdo);
             List<PluginDataObject> list = pdoMap.get(time);
             if (list == null) {
-                list = new ArrayList<PluginDataObject>();
+                list = new ArrayList<>();
                 pdoMap.put(time, list);
             }
             list.add(pdo);
@@ -156,18 +149,15 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
                         frame.records.add(pdo);
                     }
                     if (frame.renderable != null) {
-                        if (updateRenderable(frame.renderable,
-                                pdoList.toArray(new PluginDataObject[0])) == false) {
+                        if (!updateRenderable(frame.renderable,
+                                pdoList.toArray(new PluginDataObject[0]))) {
                             dispose(frame.renderable);
                             frame.renderable = null;
                         }
                     }
                 }
 
-                if (!dataTimes.contains(dataTimes)) {
-                    dataTimes.add(time);
-                    Collections.sort(dataTimes);
-                }
+                dataTimes.add(time);
             }
         }
     }
@@ -197,10 +187,10 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
         }
         if (frame != null) {
             synchronized (frame.lock) {
-                return new ArrayList<PluginDataObject>(frame.records);
+                return new ArrayList<>(frame.records);
             }
         }
-        return new ArrayList<PluginDataObject>();
+        return new ArrayList<>();
     }
 
     /**
@@ -232,8 +222,7 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
                     renderable = frame.renderable;
                     if (renderable == null) {
                         frame.renderable = renderable = constructRenderable(
-                                time, new ArrayList<PluginDataObject>(
-                                        frame.records));
+                                time, new ArrayList<>(frame.records));
                     }
                 }
             }
@@ -261,13 +250,6 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
         return null;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#remove(com.raytheon.
-     * uf.common.time.DataTime)
-     */
     @Override
     public final void remove(DataTime dataTime) {
         Frame frame = null;
@@ -299,7 +281,7 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
             throws VizException {
         Map<DataTime, Frame> frames = null;
         synchronized (this) {
-            frames = new HashMap<DataTime, Frame>(this.frames);
+            frames = new HashMap<>(this.frames);
         }
 
         for (Frame frame : frames.values()) {
@@ -320,14 +302,6 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
         // Default no-op
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.viz.core.rsc.AbstractVizResource#paintInternal(com.raytheon
-     * .uf.viz.core.IGraphicsTarget,
-     * com.raytheon.uf.viz.core.drawables.PaintProperties)
-     */
     @Override
     protected void paintInternal(IGraphicsTarget target,
             PaintProperties paintProps) throws VizException {
@@ -345,17 +319,12 @@ public abstract class AbstractPluginDataObjectResource<T extends AbstractResourc
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.viz.core.rsc.AbstractVizResource#disposeInternal()
-     */
     @Override
     protected final void disposeInternal() {
         Map<DataTime, Frame> frames = null;
         synchronized (this) {
             // Copy Frames and clear member
-            frames = new HashMap<DataTime, Frame>(this.frames);
+            frames = new HashMap<>(this.frames);
             this.frames.clear();
 
             /* Must clear dataTimes for recycle to work correctly. */
