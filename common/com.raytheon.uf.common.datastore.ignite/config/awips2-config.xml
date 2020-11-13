@@ -17,6 +17,12 @@
         <property name="ignoreUnresolvablePlaceholders" value="true" />
     </bean>
 
+    <bean id="ignitePasswordStore" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordStore">
+        <constructor-arg value="${IGNITE_HOME}/tls/passwords.properties"/>
+    </bean>
+    <bean id="igniteKeystorePassword" factory-bean="ignitePasswordStore" factory-method="getKeystorePassword" />
+    <bean id="igniteTruststorePassword" factory-bean="ignitePasswordStore" factory-method="getTruststorePassword" />
+
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
@@ -138,6 +144,17 @@
                 <property name="defaultTxTimeout" value="${IGNITE_DEFAULT_TX_TIMEOUT:120000}"/>
             </bean>
         </property>
+
+        <property name="sslContextFactory">
+            <bean class="org.apache.ignite.ssl.SslContextFactory">
+                <property name="keyStoreFilePath" value="${IGNITE_HOME}/tls/keystore.p12"/>
+                <property name="keyStorePassword" ref="igniteKeystorePassword" />
+                <property name="trustStoreFilePath" value="${IGNITE_HOME}/tls/truststore.p12"/>
+                <property name="trustStorePassword" ref="igniteTruststorePassword"/>
+                <property name="protocol" value="TLSv1.3"/>
+            </bean>
+        </property>
+
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="messageQueueLimit" value="1024"/>

@@ -1,0 +1,4 @@
+# This is the same as the Java 11 default value for this parameter, except with
+# TLSv1.2 and below added.
+jdk.tls.disabledAlgorithms=SSLv3, RC4, DES, MD5withRSA, DH keySize < 1024, \
+    EC keySize < 224, 3DES_EDE_CBC, anon, NULL, TLSv1, TLSv1.1, TLSv1.2

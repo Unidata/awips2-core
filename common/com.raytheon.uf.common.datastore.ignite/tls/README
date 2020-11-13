@@ -1,0 +1,9 @@
+truststore.p12 contains the root CA certificate used to sign client and server
+certificates used with Ignite.
+
+keystore.p12 contains the server certificate and private key.
+
+root.key is the private key for the root CA.
+
+The baseline versions of these files are for testing purposes only and NOT to
+be used in an operational environment!

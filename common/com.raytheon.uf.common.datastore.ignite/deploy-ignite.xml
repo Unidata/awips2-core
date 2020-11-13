@@ -4,6 +4,7 @@
     </description>
     <property name="ignite.root.directory" location="/awips2/ignite" />
     <property name="ignite.config.directory" location="${ignite.root.directory}/config" />
+    <property name="ignite.tls.directory" location="${ignite.root.directory}/tls" />
     <property name="ignite.bin.directory" location="${ignite.root.directory}/bin" />
 
 
@@ -11,11 +12,17 @@
         <copy todir="${ignite.config.directory}" overwrite="true">
             <fileset dir="${basedir}/config" />
         </copy>
+        <copy todir="${ignite.tls.directory}" overwrite="true">
+            <fileset dir="${basedir}/tls" />
+        </copy>
         <copy todir="${ignite.bin.directory}" overwrite="true">
             <fileset dir="${basedir}/scripts" />
         </copy>
         <chmod perm="ugo+rx">
             <fileset dir="${ignite.bin.directory}" />
+        </chmod>
+        <chmod perm="o-rwx">
+            <fileset dir="${ignite.tls.directory}" />
         </chmod>
     	<!--
     	  Most users cannot write systemd units so you will need extra permissions if you want to do this:
