@@ -70,17 +70,20 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  * <pre>
  *
  *    SOFTWARE HISTORY
- *
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Sep 11, 2007             chammack    Initial Creation.
- *    Mar 02, 2015  4204       njensen     Set bundle name to part name
- *    Jun 02, 2015  4401       bkowal      It is now also possible to load displays from
- *                                         localization. Renamed class; originally SaveProcedure.
- *    Jun 10, 2015  4401       bkowal      Extend {@link AbstractVizPerspectiveLocalizationHandler}.
- *    Dec 21, 2015  5191       bsteffen    Updated layout handling for Eclipse 4.
- *    Jun 22, 2017  4818       mapeters    Changed setCloseCallback to addCloseCallback
- *
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 11, 2007           chammack  Initial Creation.
+ * Mar 02, 2015  4204     njensen   Set bundle name to part name
+ * Jun 02, 2015  4401     bkowal    It is now also possible to load displays
+ *                                  from localization. Renamed class; originally
+ *                                  SaveProcedure.
+ * Jun 10, 2015  4401     bkowal    Extend {@link
+ *                                  AbstractVizPerspectiveLocalizationHandler}.
+ * Dec 21, 2015  5191     bsteffen  Updated layout handling for Eclipse 4.
+ * Jun 22, 2017  4818     mapeters  Changed setCloseCallback to addCloseCallback
+ * Oct 12, 2020  8241     randerso  Removed obsolete tag
+ * 
  * </pre>
  *
  * @author chammack
@@ -311,7 +314,6 @@ public class SavePerspectiveHandler
                         ratioLeft / (float) (ratioRight + ratioLeft));
                 IMemento folder = rightInfo
                         .createChild(IWorkbenchConstants.TAG_FOLDER);
-                folder.putInteger(IWorkbenchConstants.TAG_APPEARANCE, 1);
                 folder.putInteger(IWorkbenchConstants.TAG_EXPANDED, 2);
                 IMemento presentation = folder
                         .createChild(IWorkbenchConstants.TAG_PRESENTATION);
