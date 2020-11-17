@@ -134,7 +134,8 @@
                 <!-- This should help recover from an issue we are seeing where
                      OutOfMemory exceptions are causing stuck partition map
                      exchange that requires a restart. -->
-                <property name="TxTimeoutOnPartitionMapExchange" value="60000"/>
+                <property name="txTimeoutOnPartitionMapExchange" value="${IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE:30000}"/>
+                <property name="defaultTxTimeout" value="${IGNITE_DEFAULT_TX_TIMEOUT:120000}"/>
             </bean>
         </property>
         <property name="communicationSpi">
