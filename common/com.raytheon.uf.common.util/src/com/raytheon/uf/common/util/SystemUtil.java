@@ -26,6 +26,8 @@ import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import com.raytheon.uf.common.util.collections.BoundedMap;
 
@@ -47,6 +49,7 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  *                                  first address found.
  * Jun 24, 2020  8187     randerso  Added getClientID. Change to use
  *                                  ProcessHandle to get pid.
+ * Nov 19, 2020  8239     randerso  Use short hostname instead of FQDN
  *
  * </pre>
  *
@@ -56,6 +59,9 @@ public class SystemUtil {
 
     private static final Map<InetAddress, String> hostNameCache = Collections
             .synchronizedMap(new BoundedMap<InetAddress, String>(100));
+
+    private static final Pattern DOTTED_DECIMAL_PATTERN = Pattern
+            .compile("\\d+\\.\\d+\\.\\d+\\.\\d+");
 
     protected static String hostName;
 
@@ -139,9 +145,19 @@ public class SystemUtil {
         String hostName = hostNameCache.get(address);
         if (hostName == null) {
             hostName = address.getHostName();
+
+            /* if host name is not a dotted decimal IP address */
+            Matcher m = DOTTED_DECIMAL_PATTERN.matcher(hostName);
+            if (!m.matches()) {
+                /* if hostName is FQDN remove domain */
+                int dot = hostName.indexOf('.');
+                if (dot != -1) {
+                    hostName = hostName.substring(0, dot);
+                }
+            }
+
             hostNameCache.put(address, hostName);
         }
-
         return hostName;
     }
 

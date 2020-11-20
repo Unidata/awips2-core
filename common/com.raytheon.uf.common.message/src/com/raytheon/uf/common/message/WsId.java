@@ -197,6 +197,7 @@ public class WsId implements Serializable {
     }
 
     public String getClientId() {
+        // hostname:username:program:processID
         String s = String.join(":", hostName, userName, progName,
                 Long.toString(pid));
 
