@@ -1,18 +1,18 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract EA133W-17-CQ-0082 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     2120 South 72nd Street, Suite 900
  *                         Omaha, NE 68124
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -56,18 +56,16 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
-import com.raytheon.uf.common.datastore.ignite.processor.DeleteDatasetProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.GetDatasetNamesProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.RetrieveProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.StoreProcessor;
-import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
 
 /**
- * 
+ *
  * {@link IDataStore} implementation that stores data in an {@link IgniteCache}.
  * This supports using ignite persistent store functionality or simply acting as
  * a caching layer in front of another IDataStore.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -79,6 +77,7 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  *                                  duplicate records.
  * Mar 30, 2020  8073     bsteffen  Make deleteFiles query lazy to prevent OOM.
  * Apr 02, 2020  8075     bsteffen  Handle updates in fastStore.
+ * Dec  8, 2020  8299     tgurney   Receive the through-datastore in constructor
  *
  * </pre>
  *
@@ -101,9 +100,13 @@ public class IgniteDataStore implements IDataStore {
 
     protected Map<String, List<IDataRecord>> recordsByGroup = new HashMap<>();
 
+    private IDataStore throughDataStore;
+
     public IgniteDataStore(File file,
-            IgniteCache<DataStoreKey, DataStoreValue> cache) {
+            IgniteCache<DataStoreKey, DataStoreValue> cache,
+            IDataStore throughDataStore) {
         path = file.getPath();
+        this.throughDataStore = throughDataStore;
         this.cache = cache;
     }
 
@@ -112,18 +115,8 @@ public class IgniteDataStore implements IDataStore {
      * delete operations so we don't have to load data into cache before
      * deletion.
      */
-    protected IDataStore getThroughDataStore() {
-        if (cache.metrics().isReadThrough()) {
-            @SuppressWarnings("unchecked")
-            CacheConfiguration<?, ?> config = cache
-                    .getConfiguration(CacheConfiguration.class);
-            Object factory = config.getCacheStoreFactory();
-            if (factory instanceof DataStoreCacheStoreFactory) {
-                return ((DataStoreCacheStoreFactory) factory)
-                        .getDataStore(new File(path));
-            }
-        }
-        return null;
+    private IDataStore getThroughDataStore() {
+        return throughDataStore;
     }
 
     @Override
@@ -259,7 +252,7 @@ public class IgniteDataStore implements IDataStore {
 
     /**
      * Restore correlation objects for any records referenced in exceptions.
-     * 
+     *
      * @param exceptions
      * @param correlationObjects
      */
@@ -278,7 +271,7 @@ public class IgniteDataStore implements IDataStore {
     /**
      * Alternative implementation of store that is optimized for the common case
      * where all of the data in a group is stored in a single operation.
-     * 
+     *
      * This implementation is not as good for more complex operations such as
      * append, detecting duplicates, and partial inserts(including inserting
      * different datasets in a group with multiple store operations). For these
@@ -288,7 +281,7 @@ public class IgniteDataStore implements IDataStore {
      * {@link StoreProcessor} to move the new data to the node responsible for
      * storing the data so this method is not recommended if these operations
      * are performed often.
-     * 
+     *
      * For the complex operations described above the exact behavior of this
      * method is dependent on the value of
      * {@link CacheConfiguration#isLoadPreviousValue()}. When this setting is
@@ -298,7 +291,7 @@ public class IgniteDataStore implements IDataStore {
      * value is loaded with the {@link CacheLoader} which is slower but
      * guarantees the existing data will not be overwritten unless this is a
      * REPLACE operation.
-     * 
+     *
      * @param storeOp
      * @return
      * @throws StorageException
@@ -357,14 +350,9 @@ public class IgniteDataStore implements IDataStore {
             throws StorageException, FileNotFoundException {
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        if (through != null) {
-            IgniteFuture<Void> future = cache.clearAsync(key);
-            through.deleteDatasets(datasets);
-            future.get();
-        } else {
-            cache.invoke(key, new DeleteDatasetProcessor(),
-                    (Object[]) datasets);
-        }
+        IgniteFuture<Void> future = cache.clearAsync(key);
+        through.deleteDatasets(datasets);
+        future.get();
     }
 
     @Override
@@ -376,17 +364,13 @@ public class IgniteDataStore implements IDataStore {
         }
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        if (through != null) {
-            IgniteFuture<Void> future = cache.clearAsync(key);
-            /*
-             * The cache store is not writing removal of records so manually
-             * pass it through.
-             */
-            through.deleteGroups(groups);
-            future.get();
-        } else {
-            cache.removeAll(keys);
-        }
+        IgniteFuture<Void> future = cache.clearAsync(key);
+        /*
+         * The cache store is not writing removal of records so manually pass it
+         * through.
+         */
+        through.deleteGroups(groups);
+        future.get();
     }
 
     @Override
@@ -529,10 +513,6 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public void repack(Compression compression) throws StorageException {
         IDataStore dataStore = getThroughDataStore();
-        if (dataStore == null) {
-            throw new UnsupportedOperationException(
-                    "Ignite does not support repack yet.");
-        }
         dataStore.repack(compression);
     }
 
@@ -541,10 +521,6 @@ public class IgniteDataStore implements IDataStore {
             int minMillisSinceLastChange, int maxMillisSinceLastChange)
             throws StorageException {
         IDataStore dataStore = getThroughDataStore();
-        if (dataStore == null) {
-            throw new UnsupportedOperationException(
-                    "Ignite does not support archiving yet.");
-        }
         dataStore.copy(outputDir, compression, minMillisSinceLastChange,
                 maxMillisSinceLastChange);
     }
@@ -594,9 +570,7 @@ public class IgniteDataStore implements IDataStore {
         }
 
         IDataStore dataStore = getThroughDataStore();
-        if (dataStore != null) {
-            dataStore.deleteOrphanData(dateMap);
-        }
+        dataStore.deleteOrphanData(dateMap);
     }
 
     @Override
@@ -630,9 +604,7 @@ public class IgniteDataStore implements IDataStore {
             cache.query(query);
         }
         IDataStore dataStore = getThroughDataStore();
-        if (dataStore != null) {
-            dataStore.deleteFiles(datesToDelete);
-        }
+        dataStore.deleteFiles(datesToDelete);
     }
 
 }
