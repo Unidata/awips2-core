@@ -30,6 +30,7 @@
 #                                  network address.
 # Oct 29, 2020  8239     randerso  Undo change to use hostName instead of 
 #                                  integer network address
+# Dec 08, 2020  8239     randerso  Add ability to set all fields in __init__ 
 #
 ##    
 
@@ -41,7 +42,7 @@ import threading
 
 class WsId(object):
 
-    def __init__(self, networkId=None, userName=None, progName=None):
+    def __init__(self, networkId=None, userName=None, progName=None, pid=None, threadId=None):
         self.networkId = networkId
         if networkId is None:
             self.networkId = str(struct.unpack('<L',socket.inet_aton(socket.gethostbyname(socket.gethostname())))[0])
@@ -54,9 +55,13 @@ class WsId(object):
         if progName is None:
             self.progName = "unknown"
         
-        self.pid = os.getpid()
+        self.pid = pid
+        if self.pid is None:
+            self.pid = os.getpid()
         
-        self.threadId = threading.current_thread().ident
+        self.threadId = threadId
+        if self.threadId is None:
+            self.threadId = threading.current_thread().ident
 
     def getNetworkId(self):
         return self.networkId
