@@ -21,12 +21,12 @@ package com.raytheon.uf.common.pypies;
 
 import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.http.conn.HttpHostConnectException;
 import org.slf4j.Logger;
@@ -90,14 +90,13 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  * Sep 19, 2018  7435      ksunil      Eliminate compression/decompression on HDF5
  * Jan 15, 2020  8005      drogalla    Update sendRequest to keep trying until there's a response.
  * Jan 28, 2020  7985      ksunil      Removed the compression changes introduced in 7435
+ * Dec 11, 2020  8299      tgurney     Log before and after each request is sent
  *
  * </pre>
  *
  * @author njensen
  */
 public class PyPiesDataStore implements IDataStore {
-
-    private static final long SIMPLE_LOG_TIME = 300;
 
     private static final long HUGE_REQUEST = BytesFormat
             .parseSystemProperty("pypies.limits.streaming", "25MiB");
@@ -114,6 +113,8 @@ public class PyPiesDataStore implements IDataStore {
     protected PypiesProperties props;
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
+
+    private static final AtomicLong requestSequence = new AtomicLong(0);
 
     public PyPiesDataStore(final File file, final boolean useLocking,
             final PypiesProperties props) {
@@ -307,9 +308,13 @@ public class PyPiesDataStore implements IDataStore {
         long t0 = System.currentTimeMillis();
 
         boolean logged = false;
+        long seqNum = requestSequence.getAndIncrement();
         while (ret == null) {
 
             try {
+                logger.info("Sending " + obj.getClass().getSimpleName()
+                        + " (request " + seqNum + ") on file "
+                        + obj.getFilename());
                 ret = doSendRequest(obj, huge);
             } catch (CommunicationException ce) {
                 if (ce.getCause() instanceof HttpHostConnectException) {
@@ -335,14 +340,13 @@ public class PyPiesDataStore implements IDataStore {
 
         long time = System.currentTimeMillis() - t0;
 
-        if (time >= SIMPLE_LOG_TIME) {
-            logger.info("Took " + time + " ms to receive response for "
-                    + obj.getClass().getSimpleName() + " on file "
-                    + obj.getFilename());
-        }
+        logger.info("Took " + time + " ms to receive response for "
+                + obj.getClass().getSimpleName() + " (request " + seqNum
+                + ") on file " + obj.getFilename());
 
         if (ret instanceof ErrorResponse) {
-            throw new StorageException(((ErrorResponse) ret).getError(), null);
+            throw new StorageException("(request " + seqNum + ") "
+                    + ((ErrorResponse) ret).getError(), null);
         }
 
         return ret;
@@ -351,20 +355,15 @@ public class PyPiesDataStore implements IDataStore {
     protected Object doSendRequest(final AbstractRequest obj, boolean huge)
             throws Exception {
         if (huge) {
-            byte[] resp = HttpClient.getInstance().postBinary(address,
-                    new HttpClient.OStreamHandler() {
-                        @Override
-                        public void writeToStream(OutputStream os)
-                                throws CommunicationException {
-                            try {
-                                DynamicSerializationManager
-                                        .getManager(SerializationType.Thrift)
-                                        .serialize(obj, os);
-                            } catch (SerializationException e) {
-                                throw new CommunicationException(e);
-                            }
-                        }
-                    });
+            byte[] resp = HttpClient.getInstance().postBinary(address, os -> {
+                try {
+                    DynamicSerializationManager
+                            .getManager(SerializationType.Thrift)
+                            .serialize(obj, os);
+                } catch (SerializationException e) {
+                    throw new CommunicationException(e);
+                }
+            });
             return SerializationUtil.transformFromThrift(Object.class, resp);
         } else {
             // can't stream to pypies due to WSGI spec not handling chunked http
