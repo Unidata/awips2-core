@@ -32,6 +32,9 @@
 # Feb 06, 2017  5959     randerso  Removed Java .toString() calls 
 # Jun 24, 2020  8187     randerso  Changed to use hostName instead of integer
 #                                  network address.
+# Dec 08, 2020  8239     randerso  Undo change to use hostName instead of 
+#                                  integer network address.
+#                                  Re-implemented for greater efficiency
 # 
 ##
 
@@ -49,12 +52,11 @@ def deserialize(context):
     wsIdString = context.readString()
     wsIdParts = wsIdString.split(":", 5)
     
-    wsId = WsId()
-    wsId.setHostName(wsIdParts[0])
-    wsId.setUserName(wsIdParts[1])
-    wsId.setProgName(wsIdParts[2])
-    wsId.setPid(int(wsIdParts[3]))
-    wsId.setThreadId(int(wsIdParts[4]))
+    wsId = WsId(networkId=wsIdParts[0], 
+                userName=wsIdParts[1], 
+                progName=wsIdParts[2], 
+                pid=int(wsIdParts[3]), 
+                threadId=int(wsIdParts[4]))
     
     return wsId
 
