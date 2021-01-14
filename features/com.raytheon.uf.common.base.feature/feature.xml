@@ -462,6 +462,12 @@
          unpack="false"/>
 
    <plugin
+         id="org.checkerframework"
+         download-size="0"
+         install-size="0"
+         version="3.5.0"/>
+
+   <plugin
          id="org.postgres"
          download-size="0"
          install-size="0"
