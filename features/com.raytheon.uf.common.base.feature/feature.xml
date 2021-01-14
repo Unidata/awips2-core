@@ -31,7 +31,7 @@
          id="com.mchange"
          download-size="0"
          install-size="0"
-         version="0.9.5.3"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.apache.thrift"
@@ -331,13 +331,13 @@
          id="org.javassist"
          download-size="0"
          install-size="0"
-         version="3.24.0.GA"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.hibernate"
          download-size="0"
          install-size="0"
-         version="5.4.2"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.jep"
