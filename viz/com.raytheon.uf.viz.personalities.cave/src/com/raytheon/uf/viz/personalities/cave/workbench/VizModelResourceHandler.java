@@ -32,6 +32,7 @@ import org.eclipse.e4.ui.model.application.MApplication;
 import org.eclipse.e4.ui.model.application.ui.MElementContainer;
 import org.eclipse.e4.ui.model.application.ui.MUIElement;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPerspective;
+import org.eclipse.e4.ui.model.application.ui.advanced.MPerspectiveStack;
 import org.eclipse.e4.ui.model.application.ui.advanced.MPlaceholder;
 import org.eclipse.e4.ui.model.application.ui.basic.MPart;
 import org.eclipse.e4.ui.model.application.ui.basic.MWindow;
@@ -46,10 +47,10 @@ import org.eclipse.ui.views.IViewDescriptor;
  * https://bugs.eclipse.org/bugs/show_bug.cgi?id=486073
  * 
  * This implementation is based off of WorkbenchWindow#hideNonRestorableViews()
- * but it is executed against a copy of the model during period background save
- * tasks. It also contains checks similar to those in the CleanupAddon for
- * remving empty containers since the Addon is not run against unrendered copies
- * of the model.
+ * but it is executed against a copy of the model during periodic background
+ * save tasks. It also contains checks similar to those in the CleanupAddon for
+ * removing empty containers since the Addon is not run against unrendered
+ * copies of the model.
  * 
  * <pre>
  *
@@ -58,6 +59,7 @@ import org.eclipse.ui.views.IViewDescriptor;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Nov 23, 2016  6004     bsteffen  Initial creation
+ * Jun 15, 2020  8000     bsteffen  Ensure perspectives are not hidden.
  * 
  * </pre>
  *
@@ -202,8 +204,15 @@ public class VizModelResourceHandler extends ResourceHandler {
                 || !selectedElement.isToBeRendered())) {
             container.setSelectedElement(null);
         }
+
+        /*
+         * According to the comments in CleanupAddon "These elements should
+         * neither be shown nor hidden based on their containment state"
+         */
         if (!modelService.isLastEditorStack(container)
-                && modelService.countRenderableChildren(container) == 0) {
+                && modelService.countRenderableChildren(container) == 0
+                && !(container instanceof MPerspective)
+                && !(container instanceof MPerspectiveStack)) {
             container.setToBeRendered(false);
         }
     }
