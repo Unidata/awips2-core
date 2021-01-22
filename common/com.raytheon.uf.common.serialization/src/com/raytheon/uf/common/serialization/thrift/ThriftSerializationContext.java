@@ -108,6 +108,7 @@ import net.sf.cglib.reflect.FastClass;
  *                                    overflow/underflow
  * Jul 12, 2019  7888     tgurney     Do not check integer for truncation if it
  *                                    would assigned to a Number or Object field
+ * Jan 21, 2021  8319     randerso    Updated for thrift 0.13.0
  *
  * </pre>
  *
@@ -1295,13 +1296,13 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     Object val = this.serializationManager.deserialize(this);
                     map.put(key, val);
                 }
+                protocol.readMapEnd();
             } catch (CriticalSerializationException e) {
                 throw e;
             } catch (Exception e) {
                 throw new MapDeserializationException(tmap, i,
                         "Error deserializing map of field " + fieldName, e);
             }
-            protocol.readMapEnd();
             return map;
         }
         case TType.SET: {
@@ -1590,7 +1591,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     @Override
     public void writeMessageEnd() throws SerializationException {
-        this.protocol.writeMessageEnd();
+        try {
+            this.protocol.writeMessageEnd();
+        } catch (Exception e) {
+            throw new SerializationException(e.getLocalizedMessage(), e);
+        }
     }
 
     @Override
@@ -1606,8 +1611,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     @Override
     public void readMessageEnd() throws SerializationException {
-        this.protocol.readMessageEnd();
-
+        try {
+            this.protocol.readMessageEnd();
+        } catch (Exception e) {
+            throw new SerializationException(e.getLocalizedMessage(), e);
+        }
     }
 
     @Override
