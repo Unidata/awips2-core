@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import com.google.common.util.concurrent.FutureCallback;
 import com.google.common.util.concurrent.Futures;
 import com.google.common.util.concurrent.ListenableFutureTask;
+import com.google.common.util.concurrent.MoreExecutors;
 import com.raytheon.uf.common.python.PythonInterpreter;
 
 /**
@@ -183,7 +184,8 @@ class PythonInterpreterThreadPoolExecutor<P extends PythonInterpreter> extends
                     .create(getCallable(executor));
             if (listener != null) {
                 FutureCallback<R> callback = getCallback(listener);
-                Futures.addCallback(this.futureDelegate, callback);
+                Futures.addCallback(this.futureDelegate, callback,
+                        MoreExecutors.directExecutor());
             }
             this.threadPython = null;
         }
