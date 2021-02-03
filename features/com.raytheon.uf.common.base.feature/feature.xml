@@ -40,12 +40,6 @@
          version="0.0.0"/>
 
    <plugin
-         id="com.google.guava"
-         download-size="0"
-         install-size="0"
-         version="27.1.0"/>
-
-   <plugin
          id="com.raytheon.uf.common.alertmonitor"
          download-size="0"
          install-size="0"
@@ -512,5 +506,11 @@
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
+   <plugin
+         id="com.google.guava"
+         download-size="0"
+         install-size="0"
+         version="30.0.0"/>
 
 </feature>
