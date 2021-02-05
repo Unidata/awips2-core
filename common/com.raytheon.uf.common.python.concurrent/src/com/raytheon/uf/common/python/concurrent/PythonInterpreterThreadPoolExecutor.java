@@ -186,7 +186,8 @@ class PythonInterpreterThreadPoolExecutor<P extends PythonInterpreter> extends
                     .create(getCallable(executor));
             if (listener != null) {
                 FutureCallback<R> callback = getCallback(listener);
-                Futures.addCallback(this.futureDelegate, callback, MoreExecutors.directExecutor());
+                Futures.addCallback(this.futureDelegate, callback,
+                        MoreExecutors.directExecutor());
             }
             this.threadPython = null;
         }
