@@ -17,16 +17,24 @@
 # See the AWIPS II Master Rights File ("Master Rights File.pdf") for
 # further licensing information.
 ###
-
+# SOFTWARE HISTORY
+#
+# Date          Ticket#  Engineer  Description
+# ------------- -------- --------- --------------------------------------------
+# Feb 05, 2021  8291     randerso  Updated for Python3/numpy update in 20.3.1
+#                                  Thanks to Tim Barker for supplying the changes
+#                                  and Mark Loeffelbein for confirming the new
+#                                  calculations match the previous baseline code.
+##
 
 import numpy as np
 import AdiabaticTemp
 
 # create an array of base pressures
-pBases = np.array([200,350,500,600,700,850,1000], dtype=np.float32)
+pBases = np.array([200, 350, 500, 600, 700, 850, 1000], dtype=np.float32)
 
 # create an array of splitpoints for pressure bins
-pSplits = np.array([250,400,550,650,750,900], dtype=np.float32)
+pSplits = np.array([250, 400, 550, 650, 750, 900], dtype=np.float32)
 
 tmax = 333
 tmin = 193
@@ -36,6 +44,7 @@ parr, tarr = np.ogrid[0:len(pBases), tmin:tmax]
 parr = pBases[parr]
 tarr = np.array(tarr, dtype=np.float32)
 lookupTable = AdiabaticTemp.execute(tarr, parr)
+
 
 ##
 # Calculate the saturation temperature of an equivalent temperature at
@@ -48,7 +57,7 @@ lookupTable = AdiabaticTemp.execute(tarr, parr)
 # @type P: Numpy array of float32
 # @return: TofTe
 # @rtype: Numpy array
-def execute(T,P):
+def execute(T, P):
     "Find Tans such that AdiabaticTemp.execute(Tans,P) == T."
     if np.shape(T) != np.shape(P):
         bcastOnes = np.ones(T.shape, dtype=np.float32) * np.ones(np.shape(P), dtype=np.float32)
@@ -56,19 +65,19 @@ def execute(T,P):
         P = P * bcastOnes
     pBaseIdx = np.searchsorted(pSplits, P)
     # find cells that are too low or too high
-    lowTMask = T<lookupTable[pBaseIdx,1]
-    goodhighTMask = ((T<=lookupTable[pBaseIdx,-1]) & ~(T<=tmax)) # NaNs in T are True in highTMask
+    lowTMask = T < lookupTable[pBaseIdx, 1]
+    goodhighTMask = ((T <= lookupTable[pBaseIdx, -1]) & ~(T <= tmax)) # NaNs in T are True in highTMask
     Tgood = np.array(T, dtype=np.float32)
     Tgood[goodhighTMask] = tmax
-    highTMask = ~(Tgood<=lookupTable[pBaseIdx,-1])
-    goodMask = ~( lowTMask | highTMask)
-    Tgood = Tgood[goodMask]
-    pBaseIdx = pBaseIdx[goodMask]
+    highTMask = ~(Tgood <= lookupTable[pBaseIdx, -1])
+    goodMask = ~(lowTMask | highTMask)
+    TgoodOnly = Tgood[goodMask]
+    pBaseIdxOnly = pBaseIdx[goodMask]
 
     # find t1 and t2, lower/upper integer estimate arrays
-    t1 = np.ones(Tgood.shape, dtype=np.integer) * tmin
-    t2 = np.array(Tgood, dtype=np.integer)
-    TMask = t2-t1>=3
+    t1 = np.ones(TgoodOnly.shape, dtype=np.integer) * tmin
+    t2 = np.array(TgoodOnly, dtype=np.integer)
+    TMask = t2 - t1 >= 3
     t1Mask = np.ones(np.shape(TMask), dtype=np.bool)
     t2Mask = np.ones(np.shape(TMask), dtype=np.bool)
     # Tgood cells just above the lower threshold can result in False TMask cells.
@@ -77,39 +86,39 @@ def execute(T,P):
     t2Mask[:] = TMask
     while(np.any(TMask)):
         # t = (int)((t1+t2)/2), for cells where TMask is True
-        tEst = np.array((t1[TMask]+t2[TMask])/2, dtype=np.integer)
-        telu = lookupTable[pBaseIdx[TMask], tEst-tmin]
+        tEst = np.array((t1[TMask] + t2[TMask]) / 2, dtype=np.integer)
+        telu = lookupTable[pBaseIdxOnly[TMask], tEst - tmin]
 
         # where adiabaticTemp(t,pBase) is > T, adjust t2 down.
-        cmpMask = telu > Tgood[TMask]
+        cmpMask = telu > TgoodOnly[TMask]
         t2Mask[TMask] = cmpMask
         t2[t2Mask] = tEst[cmpMask]
 
         # where adiabaticTemp(t,pBase) is < T, adjust t1 up.
-        cmpMask = telu < Tgood[TMask]
+        cmpMask = telu < TgoodOnly[TMask]
         t1Mask[TMask] = cmpMask
         t1[t1Mask] = tEst[cmpMask]
 
         # where we hit it exactly, set t1 and t2 to one-off.
-        cmpMask = (telu == Tgood[TMask])
+        cmpMask = (telu == TgoodOnly[TMask])
         t1Mask[TMask] = cmpMask
         t2Mask[TMask] = cmpMask
-        t1[t1Mask] = tEst[cmpMask]-1
-        t2[t2Mask] = tEst[cmpMask]+1
+        t1[t1Mask] = tEst[cmpMask] - 1
+        t2[t2Mask] = tEst[cmpMask] + 1
 
         # Clean up t1Mask and t2Mask for next iteration.
         # Without this, t?[t?Mask] could expect too many values.
         t1Mask[TMask] = False
         t2Mask[TMask] = False
         # figure out which cells still need the estimate narrowed.
-        TMask[TMask] = t2[TMask]-t1[TMask]>=3
+        TMask[TMask] = t2[TMask] - t1[TMask] >= 3
 
     # weight t1 and t2 by the ratio of base pressure to P
     # (t1 and t2 become floating-pt here)
-    pBase = pBases[pBaseIdx]
-    weight = np.sqrt(pBase/P[goodMask])
-    t1 = (1-weight) * lookupTable[pBaseIdx, t1-tmin] + weight * t1.astype(T.dtype)
-    t2 = (1-weight) * lookupTable[pBaseIdx, t2-tmin] + weight * t2.astype(T.dtype)
+    pBase = pBases[pBaseIdxOnly]
+    weight = np.sqrt(pBase / P[goodMask])
+    t1 = (1 - weight) * lookupTable[pBaseIdxOnly, t1 - tmin] + weight * t1.astype(T.dtype)
+    t2 = (1 - weight) * lookupTable[pBaseIdxOnly, t2 - tmin] + weight * t2.astype(T.dtype)
 
     # now find a new weight based on the difference between T and
     # the adiabatic temperature of t1 and t2.
@@ -117,11 +126,11 @@ def execute(T,P):
         PP = P
     else:
         PP = P[goodMask]
-    diff1 = T[goodMask] - AdiabaticTemp.execute(t1,PP)
-    diff2 = AdiabaticTemp.execute(t2,PP) - T[goodMask]
-    weight = diff2/(diff1+diff2)
-    Tans = weight*t1 + (1-weight)*t2
-    diff = AdiabaticTemp.execute(Tans,PP) - T[goodMask]
+    diff1 = T[goodMask] - AdiabaticTemp.execute(t1, PP)
+    diff2 = AdiabaticTemp.execute(t2, PP) - T[goodMask]
+    weight = diff2 / (diff1 + diff2)
+    Tans = weight * t1 + (1 - weight) * t2
+    diff = AdiabaticTemp.execute(Tans, PP) - T[goodMask]
 
     # Iterate to find result to nearest .01 degree K
     TMask[:] = True # all cells still to calculate
@@ -144,9 +153,9 @@ def execute(T,P):
                 PPP = P
             else:
                 PPP = PP[TMask]
-            weight[TMask] = diff2[TMask]/(diff1[TMask]+diff2[TMask])
-            Tans[TMask] = weight[TMask]*t1[TMask] + (1-weight[TMask])*t2[TMask]
-            diff[TMask] = AdiabaticTemp.execute(Tans[TMask], PPP) - T[TMask]
+            weight[TMask] = diff2[TMask] / (diff1[TMask] + diff2[TMask])
+            Tans[TMask] = weight[TMask] * t1[TMask] + (1 - weight[TMask]) * t2[TMask]
+            diff[TMask] = AdiabaticTemp.execute(Tans[TMask], PPP) - TgoodOnly[TMask]
             # eliminate cells we've finished
             TMask[TMask] = t1Mask[TMask] | t2Mask[TMask]
         else:
