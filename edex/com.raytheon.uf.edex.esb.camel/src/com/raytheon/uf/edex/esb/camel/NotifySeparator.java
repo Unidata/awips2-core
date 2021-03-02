@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -24,24 +24,25 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 import org.apache.camel.Body;
+import org.apache.camel.Exchange;
 import org.apache.camel.Header;
 import org.apache.camel.Message;
-import org.apache.camel.impl.DefaultMessage;
+import org.apache.camel.support.DefaultMessage;
 
 /**
  * TODO Add Description
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 3, 2009            brockwoo     Initial creation
- * 
+ * Mar  4, 2021  8326     tgurney      Fixes for Camel 3 API changes
+ *
  * </pre>
- * 
+ *
  * @author brockwoo
- * @version 1.0
  */
 
 public class NotifySeparator {
@@ -53,9 +54,9 @@ public class NotifySeparator {
             @Header(value = "enqueueTime") Long queuetime, @Body String body) {
         String[] headers = notificationSplit.split(header);
         String[] locations = notificationSplit.split(body);
-        List<Message> answer = new ArrayList<Message>();
+        List<Message> answer = new ArrayList<>();
         for (int i = 0; i < locations.length; i++) {
-            DefaultMessage message = new DefaultMessage();
+            DefaultMessage message = new DefaultMessage((Exchange) null);
             if (locations.length == headers.length) {
                 message.setHeader("header", headers[i]);
             } else {

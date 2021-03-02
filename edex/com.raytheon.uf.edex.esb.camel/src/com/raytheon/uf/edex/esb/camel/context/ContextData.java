@@ -37,19 +37,19 @@ import com.raytheon.uf.edex.core.EdexException;
 
 /**
  * Contains all known contexts and parsed data about the contexts.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation.
- * 
+ * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class ContextData {
     private final List<CamelContext> contexts;
@@ -67,7 +67,7 @@ public class ContextData {
 
     /**
      * Parses passed contexts for route and endpoint data about all contexts.
-     * 
+     *
      * @param contexts
      * @throws ConfigurationException
      */
@@ -76,12 +76,12 @@ public class ContextData {
         this.contexts = Collections.unmodifiableList(contexts);
         this.consumerRouteMapping = Collections
                 .unmodifiableMap(generateRouteMappings(this.contexts));
-        Map<String, String> idUriMapping = new HashMap<String, String>(
+        Map<String, String> idUriMapping = new HashMap<>(
                 consumerRouteMapping.size(), 1);
         for (CamelContext ctx : this.contexts) {
             for (Route route : ctx.getRoutes()) {
-                idUriMapping.put(route.getId(), route.getEndpoint()
-                        .getEndpointUri());
+                idUriMapping.put(route.getId(),
+                        route.getEndpoint().getEndpointUri());
             }
         }
 
@@ -91,22 +91,22 @@ public class ContextData {
     /**
      * Populates an endpointName to {@code Route} mapping for the passed
      * {@code CamelContext}s.
-     * 
+     *
      * @return
      * @throws ConfigurationException
      */
     protected static Map<String, Route> generateRouteMappings(
             List<CamelContext> contexts) throws ConfigurationException {
-        Map<String, Route> routeMapping = new HashMap<String, Route>(
-                contexts.size() * 2, 1);
+        Map<String, Route> routeMapping = new HashMap<>(contexts.size() * 2, 1);
 
         // populate the consumer definitions
         for (CamelContext context : contexts) {
             List<Route> routes = context.getRoutes();
-            if ((routes != null) && (routes.size() > 0)) {
+            if ((routes != null) && (!routes.isEmpty())) {
                 for (Route route : routes) {
                     String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = getEndpointTypeAndName(uri);
+                    Pair<String, String> typeAndName = getEndpointTypeAndName(
+                            uri);
                     if (typeAndName != null) {
                         String endpointName = typeAndName.getSecond();
 
@@ -117,10 +117,9 @@ public class ContextData {
                                     "Two contexts listen to the same endpoint name ["
                                             + endpointName
                                             + "].  ContextManager cannot handle this situation.  Double check configuration.  Conflicting contexts ["
-                                            + prev.getRouteContext()
-                                                    .getCamelContext()
-                                                    .getName() + "] and ["
-                                            + context.getName() + "]");
+                                            + prev.getCamelContext().getName()
+                                            + "] and [" + context.getName()
+                                            + "]");
                         }
                     }
                 }
@@ -131,7 +130,7 @@ public class ContextData {
 
     /**
      * Returns the known contexts.
-     * 
+     *
      * @return
      */
     public List<CamelContext> getContexts() {
@@ -140,7 +139,7 @@ public class ContextData {
 
     /**
      * Parses URI for component type and endpoint name.
-     * 
+     *
      * @param uri
      * @return
      */
@@ -151,7 +150,7 @@ public class ContextData {
         if (m.find()) {
             String endpointType = m.group(1);
             String endpointName = m.group(2);
-            rval = new Pair<String, String>(endpointType, endpointName);
+            rval = new Pair<>(endpointType, endpointName);
         }
 
         return rval;
@@ -160,22 +159,23 @@ public class ContextData {
     /**
      * Scans the camel context and associated routes. Groups the routes by
      * consumer type.
-     * 
+     *
      * @return
      */
     public Map<String, List<Route>> getContextRoutesByEndpointType()
             throws ConfigurationException {
-        Map<String, List<Route>> routesByType = new HashMap<String, List<Route>>();
+        Map<String, List<Route>> routesByType = new HashMap<>();
         for (CamelContext context : contexts) {
             List<Route> routes = context.getRoutes();
-            if ((routes != null) && (routes.size() > 0)) {
+            if ((routes != null) && (!routes.isEmpty())) {
                 for (Route route : routes) {
                     String uri = route.getEndpoint().getEndpointUri();
-                    Pair<String, String> typeAndName = getEndpointTypeAndName(uri);
+                    Pair<String, String> typeAndName = getEndpointTypeAndName(
+                            uri);
                     String type = typeAndName.getFirst();
                     List<Route> routesForType = routesByType.get(type);
                     if (routesForType == null) {
-                        routesForType = new LinkedList<Route>();
+                        routesForType = new LinkedList<>();
                         routesByType.put(type, routesForType);
                     }
                     routesForType.add(route);
@@ -189,12 +189,13 @@ public class ContextData {
     /**
      * Returns the uri for the consumer endpoint of the route with the specified
      * routeId.
-     * 
+     *
      * @param routeId
      * @return
      * @throws EdexException
      */
-    public String getEndpointUriForRouteId(String routeId) throws EdexException {
+    public String getEndpointUriForRouteId(String routeId)
+            throws EdexException {
         String uri = routeIdUriMapping.get(routeId);
         if (uri == null) {
             throw new EdexException("Route id " + routeId
@@ -207,7 +208,7 @@ public class ContextData {
     /**
      * Returns the route for the endpoint with the passed name as returned from
      * getEndpointTypeAndName().
-     * 
+     *
      * @param endpointName
      * @return
      * @throws EdexException

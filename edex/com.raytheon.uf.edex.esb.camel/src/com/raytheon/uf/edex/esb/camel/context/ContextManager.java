@@ -38,7 +38,6 @@ import javax.naming.ConfigurationException;
 
 import org.apache.camel.CamelContext;
 import org.apache.camel.Route;
-import org.apache.camel.model.RouteDefinition;
 import org.springframework.beans.BeansException;
 import org.springframework.beans.factory.config.BeanFactoryPostProcessor;
 import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
@@ -73,6 +72,7 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  * Jul 17, 2017  5570     tgurney   Move external route stopping to
  *                                  DefaultContextStateManager
  * Jul 28, 2017  5570     rjpeter   Fix dependency generation on shutdown
+ * Mar  4, 2021  8326     tgurney   Fixes for Camel 3 API changes
  *
  * </pre>
  *
@@ -289,13 +289,11 @@ public class ContextManager
                     Pair<String, String> typeAndName = ContextData
                             .getEndpointTypeAndName(uri);
                     String type = typeAndName.getFirst();
-                    RouteDefinition def = route.getRouteContext().getRoute();
-
                     if (INTERNAL_ENDPOINT_TYPES.contains(type)) {
-                        def.setStartupOrder(internalCount);
+                        route.setStartupOrder(internalCount);
                         internalCount--;
                     } else {
-                        def.setStartupOrder(externalCount);
+                        route.setStartupOrder(externalCount);
                         externalCount--;
                     }
                 }
@@ -310,32 +308,26 @@ public class ContextManager
                      * Have the ExecutorService start the context to allow for
                      * quicker startup.
                      */
-                    callbacks.add(service.submit(
-                            new Callable<Pair<CamelContext, Boolean>>() {
-                                @Override
-                                public Pair<CamelContext, Boolean> call()
-                                        throws Exception {
-                                    boolean rval = false;
-                                    try {
-                                        rval = stateManager
-                                                .startContext(context);
+                    callbacks.add(service.submit(() -> {
+                        boolean rval = false;
+                        try {
+                            rval = stateManager.startContext(context);
 
-                                        if (!rval) {
-                                            statusHandler.error("Context ["
-                                                    + context.getName()
-                                                    + "] failed to start, shutting down");
-                                            System.exit(1);
-                                        }
-                                    } catch (Throwable e) {
-                                        statusHandler
-                                                .fatal("Error occurred starting context: "
-                                                        + context.getName(), e);
-                                        System.exit(1);
-                                    }
+                            if (!rval) {
+                                statusHandler.error("Context ["
+                                        + context.getName()
+                                        + "] failed to start, shutting down");
+                                System.exit(1);
+                            }
+                        } catch (Throwable e) {
+                            statusHandler
+                                    .fatal("Error occurred starting context: "
+                                            + context.getName(), e);
+                            System.exit(1);
+                        }
 
-                                    return new Pair<>(context, rval);
-                                }
-                            }));
+                        return new Pair<>(context, rval);
+                    }));
                 }
             }
 

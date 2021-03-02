@@ -59,7 +59,7 @@
          -->
         <route id="notificationAggregation">
             <from uri="direct-vm:stageNotification"/>
-            <bean ref="pluginNotifier" method="notify" />
+            <bean ref="pluginNotifier" method="notifyRoutes" />
         </route>
 
         <route id="notificationTimer">

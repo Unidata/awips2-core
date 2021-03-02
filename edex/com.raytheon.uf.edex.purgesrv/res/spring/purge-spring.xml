@@ -50,12 +50,12 @@
 
         <!-- schedule the timer to purge outgoing directory -->
         <route id="purgeOutgoingScheduled">
-            <from ref="purgeOutgoingCron" />
+            <from uri="purgeOutgoingCron" />
             <bean ref="purgeOutgoing" method="purge" />
         </route>
 
         <route id="purgeOrphanScheduled">
-            <from ref="purgeOrphanTimer" />
+            <from uri="purgeOrphanTimer" />
             <doTry>
                 <bean ref="purgeManager" method="purgeOrphanedData" />
                 <doCatch>
@@ -74,7 +74,7 @@
 
         <!-- Purge on Scheduled timer -->
         <route id="purgeScheduled">
-            <from ref="purgeCron" />
+            <from uri="purgeCron" />
             <doTry>
                 <bean ref="purgeManager" method="executePurge" />
                 <doCatch>

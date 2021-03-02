@@ -22,7 +22,6 @@ package com.raytheon.uf.edex.esb.camel.context;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
-import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
@@ -33,19 +32,19 @@ import org.apache.camel.Route;
  * Implementation of IContextStateManager that handles dependencies between
  * contexts so that contexts start/stop in the correct order. Can be given an
  * ExecutorService to use to start/stop dependent contexts.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Apr 10, 2014 2726       rjpeter     Initial creation
- * 
+ * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
+ *
  * </pre>
- * 
+ *
  * @author rjpeter
- * @version 1.0
  */
 public class DependencyContextStateManager extends DefaultContextStateManager {
 
@@ -63,12 +62,6 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
         this.service = service;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.esb.camel.context.DefaultContextStateManager#
-     * isContextStartable(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean isContextStartable(CamelContext context) throws Exception {
         if (!super.isContextStartable(context)) {
@@ -84,8 +77,8 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
                     return false;
                 } else {
                     for (Route rRoute : rContext.getRoutes()) {
-                        if (!rContext.getRouteStatus(rRoute.getId())
-                                .isStarted()) {
+                        if (!rContext.getRouteController()
+                                .getRouteStatus(rRoute.getId()).isStarted()) {
                             return false;
                         }
                     }
@@ -96,12 +89,6 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.esb.camel.context.DefaultContextStateManager#
-     * startContext(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean startContext(CamelContext context) throws Exception {
         boolean rval = super.startContext(context);
@@ -119,16 +106,11 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
                     if (stateMgr.isContextStartable(dCtx)) {
                         if (service != null) {
                             if (callbacks == null) {
-                                callbacks = new LinkedList<Future<Boolean>>();
+                                callbacks = new LinkedList<>();
                             }
 
                             callbacks.add(service
-                                    .submit(new Callable<Boolean>() {
-                                        @Override
-                                        public Boolean call() throws Exception {
-                                            return stateMgr.startContext(dCtx);
-                                        }
-                                    }));
+                                    .submit(() -> stateMgr.startContext(dCtx)));
                         } else {
                             stateMgr.startContext(dCtx);
                         }
@@ -146,12 +128,6 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
         return rval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.edex.esb.camel.context.DefaultContextStateManager#
-     * isContextStoppable(org.apache.camel.CamelContext)
-     */
     @Override
     public boolean isContextStoppable(CamelContext context) throws Exception {
         if (!super.isContextStoppable(context)) {
@@ -176,13 +152,6 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
         return true;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.edex.esb.camel.context.DefaultContextStateManager#stopContext
-     * (org.apache.camel.CamelContext)
-     */
     @Override
     public boolean stopContext(CamelContext context) throws Exception {
         boolean rval = super.stopContext(context);
@@ -200,16 +169,11 @@ public class DependencyContextStateManager extends DefaultContextStateManager {
                     if (stateMgr.isContextStoppable(rCtx)) {
                         if (service != null) {
                             if (callbacks == null) {
-                                callbacks = new LinkedList<Future<Boolean>>();
+                                callbacks = new LinkedList<>();
                             }
 
                             callbacks.add(service
-                                    .submit(new Callable<Boolean>() {
-                                        @Override
-                                        public Boolean call() throws Exception {
-                                            return stateMgr.stopContext(rCtx);
-                                        }
-                                    }));
+                                    .submit(() -> stateMgr.stopContext(rCtx)));
                         } else {
                             stateMgr.stopContext(rCtx);
                         }

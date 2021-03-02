@@ -52,6 +52,7 @@ import com.raytheon.uf.edex.core.IContextStateProcessor;
  *                                     startup
  * Jan 26, 2017 6092       randerso    Allow multiple context state processors per context
  * Jul 17, 2017 5570       tgurney     Always stop external routes first
+ * Mar  4, 2021 8326       tgurney     Fixes for Camel 3 API changes
  *
  * </pre>
  *
@@ -87,7 +88,8 @@ public class DefaultContextStateManager implements IContextStateManager {
         boolean rval = status.isStarted();
         if (rval && !context.isAutoStartup()) {
             for (Route route : context.getRoutes()) {
-                rval &= context.getRouteStatus(route.getId()).isStarted();
+                rval &= context.getRouteController()
+                        .getRouteStatus(route.getId()).isStarted();
             }
         }
 
@@ -117,17 +119,8 @@ public class DefaultContextStateManager implements IContextStateManager {
                 List<Route> routes = new ArrayList<>();
                 routes.addAll(context.getRoutes());
 
-                Collections.sort(routes, new Comparator<Route>() {
-                    @Override
-                    public int compare(Route r1, Route r2) {
-                        int order1 = r1.getRouteContext().getRoute()
-                                .getStartupOrder();
-                        int order2 = r2.getRouteContext().getRoute()
-                                .getStartupOrder();
-                        return order1 - order2;
-                    }
-                });
-
+                Collections.sort(routes,
+                        Comparator.comparingInt(r -> r.getStartupOrder()));
                 for (Route route : routes) {
                     rval &= startRoute(route);
                 }
@@ -152,11 +145,11 @@ public class DefaultContextStateManager implements IContextStateManager {
     @Override
     public boolean startRoute(Route route) throws Exception {
         String routeId = route.getId();
-        CamelContext ctx = route.getRouteContext().getCamelContext();
-        ServiceStatus status = ctx.getRouteStatus(routeId);
+        CamelContext ctx = route.getCamelContext();
+        ServiceStatus status = ctx.getRouteController().getRouteStatus(routeId);
         if (STARTABLE_STATES.contains(status)) {
-            ctx.startRoute(routeId);
-            status = ctx.getRouteStatus(routeId);
+            ctx.getRouteController().startRoute(routeId);
+            status = ctx.getRouteController().getRouteStatus(routeId);
         }
 
         return status.isStarted();
@@ -226,11 +219,11 @@ public class DefaultContextStateManager implements IContextStateManager {
     @Override
     public boolean stopRoute(Route route) throws Exception {
         String routeId = route.getId();
-        CamelContext ctx = route.getRouteContext().getCamelContext();
-        ServiceStatus status = ctx.getRouteStatus(routeId);
+        CamelContext ctx = route.getCamelContext();
+        ServiceStatus status = ctx.getRouteController().getRouteStatus(routeId);
         if (STOPPABLE_STATES.contains(status)) {
-            ctx.stopRoute(routeId);
-            status = ctx.getRouteStatus(routeId);
+            ctx.getRouteController().stopRoute(routeId);
+            status = ctx.getRouteController().getRouteStatus(routeId);
         }
 
         return status.isStopped();
