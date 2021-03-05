@@ -57,6 +57,7 @@ import com.raytheon.uf.common.util.file.IOPermissionsHelper;
  * Jun 12, 2012 00609      djohnson    Use EDEXUtil for EDEX_HOME.
  * Oct 16, 2018 #7522      dgilling    Move file to
  *                                     ${data.archive.root}/manual/edex_processing.
+ * Mar  4, 2021  8326      tgurney     Fix for Camel 3 removal of fault API
  *
  * </pre>
  *
@@ -97,7 +98,7 @@ public class FileToString implements Processor {
             arg0.getIn().setBody(newFile.toString());
             arg0.getIn().setHeader("enqueueTime", System.currentTimeMillis());
         } else {
-            arg0.getOut().setFault(true);
+            arg0.setRouteStop(true);
         }
     }
 
@@ -142,10 +143,9 @@ public class FileToString implements Processor {
 
             statusHandler.info("edex_processing: " + inFile.getAbsolutePath());
         } catch (IOException e) {
-            statusHandler.error(
-                    "Failed to move file [" + inFile.getAbsolutePath()
-                            + "] to edex_processing dir. File will be discarded.",
-                            e);
+            statusHandler.error("Failed to move file ["
+                    + inFile.getAbsolutePath()
+                    + "] to edex_processing dir. File will be discarded.", e);
             inFile.delete();
             return null;
         }

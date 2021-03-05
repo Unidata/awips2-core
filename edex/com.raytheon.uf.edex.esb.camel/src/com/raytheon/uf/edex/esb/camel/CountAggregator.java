@@ -19,9 +19,9 @@
  **/
 package com.raytheon.uf.edex.esb.camel;
 
+import org.apache.camel.AggregationStrategy;
 import org.apache.camel.Exchange;
 import org.apache.camel.Message;
-import org.apache.camel.processor.aggregate.AggregationStrategy;
 
 /**
  *
@@ -34,6 +34,7 @@ import org.apache.camel.processor.aggregate.AggregationStrategy;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jun 28, 2017 6130       tjensen     Initial creation
+ * Mar  4, 2021 8326       tgurney     Fix import for Camel 3
  *
  * </pre>
  *

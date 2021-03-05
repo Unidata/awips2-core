@@ -39,7 +39,7 @@
         <endpoint id="statsPurgeTimer" uri="quartz://stats/purge/?cron=${stats.purge.cron}"/>
 
         <route id="statsTableScan">
-            <from ref="statsScanTimer"/>
+            <from uri="statsScanTimer"/>
             <doTry>
                 <bean ref="aggregateManager" method="scan"/>
                 <doCatch>
@@ -51,7 +51,7 @@
         </route>
 
         <route id="statsAggrToCsv">
-            <from ref="aggrToCsvTimer"/>
+            <from uri="aggrToCsvTimer"/>
             <doTry>
                 <bean ref="aggregateManager" method="offlineAggregates"/>
                 <doCatch>
@@ -63,7 +63,7 @@
         </route>
 
         <route id="statsPurgeRoute">
-            <from ref="statsPurgeTimer"/>
+            <from uri="statsPurgeTimer"/>
             <doTry>
                 <bean ref="statsPurge" method="purge"/>
                 <doCatch>

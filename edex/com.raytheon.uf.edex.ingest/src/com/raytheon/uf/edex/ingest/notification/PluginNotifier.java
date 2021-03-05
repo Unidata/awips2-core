@@ -82,6 +82,7 @@ import com.raytheon.uf.edex.ingest.notification.router.PdoRouter;
  * Jun 28, 2016  5679     rjpeter   Moved PluginNotifierConfig to common.
  * May 22, 2017  6130     tjensen   Update notify to return the number of PDOs
  *                                  processed
+ * Mar  4, 2021  8326     tgurney   Camel 3 method naming fix
  *
  * </pre>
  *
@@ -312,8 +313,8 @@ public class PluginNotifier implements IContextStateProcessor {
         EndpointType type = config.getEndpointType();
         if (type == null) {
             StringBuilder msg = new StringBuilder(180);
-            msg.append("PluginConfiguration ").append(endpoint)
-                    .append(": missing required field endpointType.  Valid values for ")
+            msg.append("PluginConfiguration ").append(endpoint).append(
+                    ": missing required field endpointType.  Valid values for ")
                     .append(NotifyFormat.PDO).append(" format are ")
                     .append(EndpointType.DIRECTVM).append(" and ")
                     .append(EndpointType.VM).append(".  Valid values for ")
@@ -371,7 +372,12 @@ public class PluginNotifier implements IContextStateProcessor {
      * @param pdos
      * @return
      */
-    public int notify(PluginDataObject... pdos) {
+    /*
+     * NOTE: Previously this method was called "notify", had to change it after
+     * upgrade to Camel 3 due to failure to resolve references to this method
+     * from XML. Maybe due to name conflict with Object.notify()
+     */
+    public int notifyRoutes(PluginDataObject... pdos) {
         lock.readLock().lock();
         try {
             if ((pdos != null) && (pdos.length > 0)) {

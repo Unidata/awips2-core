@@ -19,7 +19,7 @@
 
         <!-- schedule the timer to purge log directories -->
         <route id="purgeLogScheduled">
-            <from ref="purgeLogsCron" />
+            <from uri="purgeLogsCron" />
             <bean ref="purgeLogs" method="purge" />
         </route>
 

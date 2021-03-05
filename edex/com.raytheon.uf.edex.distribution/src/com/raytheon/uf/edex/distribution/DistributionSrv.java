@@ -59,6 +59,7 @@ import org.slf4j.LoggerFactory;
  * Aug 30, 2017  6381     randerso  Fix ClassCastException when no header is
  *                                  present
  * Oct 10, 2019  7724     randerso  Fix to be compatible with javax.jms
+ * Mar  4, 2021  8326     tgurney   Fix for Camel 3 removal of fault API
  *
  * </pre>
  *
@@ -147,7 +148,7 @@ public class DistributionSrv {
         File file = new File(bodyString);
         if (!file.exists()) {
             logger.error("File does not exist : " + bodyString);
-            exchange.getOut().setFault(true);
+            exchange.setRouteStop(true);
         } else {
             in.setHeader("ingestFileName", file.toString());
         }

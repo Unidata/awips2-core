@@ -23,6 +23,7 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -34,11 +35,12 @@ import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
 import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
+import org.apache.camel.NamedNode;
 import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.Route;
-import org.apache.camel.model.ProcessorDefinition;
 import org.apache.camel.spi.InterceptStrategy;
+import org.apache.camel.support.AsyncCallbackToCompletableFutureAdapter;
 
 import com.raytheon.uf.common.message.IMessage;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -69,6 +71,7 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Oct 08, 2014  3684     randerso    Added sendAsyncThriftUri
  * Jul 28, 2017  5570     rjpeter     Fix dependency generation on shutdown
  * Jan 24, 2019  7714     mrichardson Added overloaded sendAsyncUri
+ * Mar  4, 2021  8326     tgurney     Fixes for Camel 3 API changes
  *
  * </pre>
  *
@@ -172,9 +175,10 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                     + message + " to uri: " + uri, e);
         }
     }
-    
+
     @Override
-    public void sendAsyncUri(String uri, Object body, Map<String, Object> headers) throws EdexException {
+    public void sendAsyncUri(String uri, Object body,
+            Map<String, Object> headers) throws EdexException {
         if (!started && queueWaitingMessage(WaitingType.URI, uri, body)) {
             return;
         }
@@ -243,10 +247,10 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
             Endpoint ep = ctxAndTemplate.getSecond();
 
             if (headers != null) {
-                return template.sendBodyAndHeaders(ep, ExchangePattern.OutIn,
+                return template.sendBodyAndHeaders(ep, ExchangePattern.InOut,
                         message, headers);
             } else {
-                return template.sendBody(ep, ExchangePattern.OutIn, message);
+                return template.sendBody(ep, ExchangePattern.InOut, message);
             }
         } catch (Exception e) {
             throw new EdexException("Error sending synchronous message: "
@@ -299,7 +303,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                 Route route = contextData
                         .getRouteForEndpointName(typeAndName.getSecond());
                 if (route != null) {
-                    ctx = route.getRouteContext().getCamelContext();
+                    ctx = route.getCamelContext();
                 }
             }
 
@@ -360,8 +364,8 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                 ep = endpointMap.get(uri);
                 if (ep == null) {
                     if (endpointMap.size() == URI_CACHE_SIZE) {
-                        statusHandler
-                                .error("Context URI mapping has exceeded number of URIs limit ["
+                        statusHandler.error(
+                                "Context URI mapping has exceeded number of URIs limit ["
                                         + URI_CACHE_SIZE
                                         + "]. Possible Endpoint leak in Camel Context. Consider increasing System property ["
                                         + URI_CACHE_SIZE_PROPERTY + "]");
@@ -431,7 +435,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
      */
     @Override
     public Processor wrapProcessorInInterceptors(final CamelContext context,
-            final ProcessorDefinition<?> definition, final Processor target,
+            final NamedNode definition, final Processor target,
             final Processor nextTarget) throws Exception {
         return new AsyncProcessor() {
             @Override
@@ -477,6 +481,14 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                         + "]";
             }
 
+            @Override
+            public CompletableFuture<Exchange> processAsync(Exchange exchange) {
+                AsyncCallbackToCompletableFutureAdapter<Exchange> callback = new AsyncCallbackToCompletableFutureAdapter<>(
+                        exchange);
+                process(exchange, callback);
+                return callback.getFuture();
+            }
+
         };
     }
 
@@ -485,7 +497,7 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
      */
     private enum WaitingType {
         ID, URI, THRIFT_URI
-    };
+    }
 
     /**
      * Inner class for handling messages sent before edex is up.
