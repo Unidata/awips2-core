@@ -1,18 +1,18 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract EA133W-17-CQ-0082 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     2120 South 72nd Street, Suite 900
  *                         Omaha, NE 68124
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -66,6 +66,7 @@ import com.raytheon.uf.common.pypies.request.RepackRequest;
 import com.raytheon.uf.common.pypies.request.RetrieveRequest;
 import com.raytheon.uf.common.pypies.request.StoreRequest;
 import com.raytheon.uf.common.pypies.response.DeleteResponse;
+import com.raytheon.uf.common.pypies.response.ErrorResponse;
 import com.raytheon.uf.common.pypies.response.FileActionResponse;
 import com.raytheon.uf.common.pypies.response.RetrieveResponse;
 import com.raytheon.uf.common.pypies.response.StoreResponse;
@@ -75,18 +76,19 @@ import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
 
 /**
- * 
+ *
  * A servlet that can handle requests sent by a PyPies client and handles them
  * with an underlying {@link IDataStore}
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- -------------------------------------------
  * Apr 18, 2019  7628     bsteffen  Initial creation
- * 
+ * Mar 18, 2021  8349     randerso  Return ErrorResponse for StorageExceptions
+ *
  * </pre>
  *
  * @author bsteffen
@@ -102,14 +104,35 @@ public class PyPiesServlet extends HttpServlet {
 
     private final boolean useLocking;
 
+    /**
+     * Nullary Constructor
+     *
+     * Uses underlying DataStore Factory and file locking is enabled by default
+     */
     public PyPiesServlet() {
         this(DataStoreFactory.getInstance().getUnderlyingFactory());
     }
 
+    /**
+     * Constructor
+     *
+     * File locking is enabled by default
+     *
+     * @param factory
+     *            the DataStoreFactory to use
+     */
     public PyPiesServlet(IDataStoreFactory factory) {
         this(factory, true);
     }
 
+    /**
+     * Constructor
+     *
+     * @param factory
+     *            the DataStoreFactory to use
+     * @param useLocking
+     *            true to enable file locking
+     */
     public PyPiesServlet(IDataStoreFactory factory, boolean useLocking) {
         this.factory = factory;
         this.useLocking = useLocking;
@@ -124,43 +147,49 @@ public class PyPiesServlet extends HttpServlet {
                     AbstractRequest.class, req.getInputStream());
             long t1 = System.currentTimeMillis();
             Object response = null;
-            IDataStore dataStore = factory
-                    .getDataStore(new File(request.getFilename()), useLocking);
-            if (request instanceof CopyRequest) {
-                response = handleCopyRequest(dataStore, (CopyRequest) request);
-            } else if (request instanceof CreateDatasetRequest) {
-                response = handleCreateDatasetRequest(dataStore,
-                        (CreateDatasetRequest) request);
-            } else if (request instanceof DatasetDataRequest) {
-                response = handleDatasetDataRequest(dataStore,
-                        (DatasetDataRequest) request);
-            } else if (request instanceof DatasetNamesRequest) {
-                response = handleDatasetNamesRequest(dataStore,
-                        (DatasetNamesRequest) request);
-            } else if (request instanceof DeleteFilesRequest) {
-                response = handleDeleteFilesRequest(dataStore,
-                        (DeleteFilesRequest) request);
-            } else if (request instanceof DeleteOrphansRequest) {
-                response = handleDeleteOrphansRequest(dataStore,
-                        (DeleteOrphansRequest) request);
-            } else if (request instanceof DeleteRequest) {
-                response = handleDeleteRequest(dataStore,
-                        (DeleteRequest) request);
-            } else if (request instanceof GroupsRequest) {
-                response = handleGroupsRequest(dataStore,
-                        (GroupsRequest) request);
-            } else if (request instanceof RepackRequest) {
-                response = handleRepackRequest(dataStore,
-                        (RepackRequest) request);
-            } else if (request instanceof RetrieveRequest) {
-                response = handleRetrieveRequest(dataStore,
-                        (RetrieveRequest) request);
-            } else if (request instanceof StoreRequest) {
-                response = handleStoreRequest(dataStore,
-                        (StoreRequest) request);
-            } else {
-                throw new ServletException(
-                        "Unhandled request of type: " + request.getClass());
+
+            try {
+                IDataStore dataStore = factory.getDataStore(
+                        new File(request.getFilename()), useLocking);
+                if (request instanceof CopyRequest) {
+                    response = handleCopyRequest(dataStore,
+                            (CopyRequest) request);
+                } else if (request instanceof CreateDatasetRequest) {
+                    response = handleCreateDatasetRequest(dataStore,
+                            (CreateDatasetRequest) request);
+                } else if (request instanceof DatasetDataRequest) {
+                    response = handleDatasetDataRequest(dataStore,
+                            (DatasetDataRequest) request);
+                } else if (request instanceof DatasetNamesRequest) {
+                    response = handleDatasetNamesRequest(dataStore,
+                            (DatasetNamesRequest) request);
+                } else if (request instanceof DeleteFilesRequest) {
+                    response = handleDeleteFilesRequest(dataStore,
+                            (DeleteFilesRequest) request);
+                } else if (request instanceof DeleteOrphansRequest) {
+                    response = handleDeleteOrphansRequest(dataStore,
+                            (DeleteOrphansRequest) request);
+                } else if (request instanceof DeleteRequest) {
+                    response = handleDeleteRequest(dataStore,
+                            (DeleteRequest) request);
+                } else if (request instanceof GroupsRequest) {
+                    response = handleGroupsRequest(dataStore,
+                            (GroupsRequest) request);
+                } else if (request instanceof RepackRequest) {
+                    response = handleRepackRequest(dataStore,
+                            (RepackRequest) request);
+                } else if (request instanceof RetrieveRequest) {
+                    response = handleRetrieveRequest(dataStore,
+                            (RetrieveRequest) request);
+                } else if (request instanceof StoreRequest) {
+                    response = handleStoreRequest(dataStore,
+                            (StoreRequest) request);
+                } else {
+                    response = new ErrorResponse(
+                            "Unhandled request of type: " + request.getClass());
+                }
+            } catch (StorageException e) {
+                response = new ErrorResponse(e);
             }
             long t2 = System.currentTimeMillis();
             if (response != null) {
@@ -178,7 +207,7 @@ public class PyPiesServlet extends HttpServlet {
                         + deserializeTime + ", " + processTime + ", "
                         + serializeTime + ") on " + request.getFilename());
             }
-        } catch (SerializationException | StorageException e) {
+        } catch (SerializationException e) {
             throw new ServletException(e);
         }
     }
@@ -317,12 +346,13 @@ public class PyPiesServlet extends HttpServlet {
     }
 
     /**
-     * The uncompression of CompressedDataRecord is handled by the server so
+     * The decompression of CompressedDataRecord is handled by the server so
      * there isn't an existing java implementation.
-     * 
+     *
      * @param record
      *            a compressed record.
      * @return an uncompressed record.
+     * @throws IOException
      */
     protected static IDataRecord uncompress(CompressedDataRecord record)
             throws IOException {

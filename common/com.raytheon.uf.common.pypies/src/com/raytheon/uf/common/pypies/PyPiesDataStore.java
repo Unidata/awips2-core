@@ -73,24 +73,32 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  * <pre>
  *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * May 27, 2010            njensen     Initial creation
- * Oct 01, 2010            rjpeter     Added logging of requests over 300ms
- * Mon 07, 2013  DR 15294  D. Friedman Stream large requests
- * Feb 11, 2013  1526      njensen     use HttpClient.postDynamicSerialize() for memory efficiency
- * Feb 12, 2013  1608      randerso    Added explicit deletes for groups and datasets
- * Nov 14, 2013  2393      bclement    removed interpolation
- * Jul 30, 2015  1574      nabowle     Add #deleteOrphanData(Date[])
- * Jan 27, 2016  5170      tjensen     Added logging of stats to doSendRequests
- * Feb 24, 2016  5389      nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
- * Feb 29, 2016  5420      tgurney     Remove timestampCheck arg from copy()
- * Nov 15, 2016  5992      bsteffen    Compress large records
- * Oct 19, 2017  6367      tgurney     Use logger instead of stdout
- * Sep 19, 2018  7435      ksunil      Eliminate compression/decompression on HDF5
- * Jan 15, 2020  8005      drogalla    Update sendRequest to keep trying until there's a response.
- * Jan 28, 2020  7985      ksunil      Removed the compression changes introduced in 7435
- * Dec 11, 2020  8299      tgurney     Log before and after each request is sent
+ *
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * May 27, 2010           njensen      Initial creation
+ * Oct 01, 2010           rjpeter      Added logging of requests over 300ms
+ * Mon 07, 2013  15294    D. Friedman  Stream large requests
+ * Feb 11, 2013  1526     njensen      use HttpClient.postDynamicSerialize() for
+ *                                     memory efficiency
+ * Feb 12, 2013  1608     randerso     Added explicit deletes for groups and
+ *                                     datasets
+ * Nov 14, 2013  2393     bclement     removed interpolation
+ * Jul 30, 2015  1574     nabowle      Add #deleteOrphanData(Date[])
+ * Jan 27, 2016  5170     tjensen      Added logging of stats to doSendRequests
+ * Feb 24, 2016  5389     nabowle      Refactor to
+ *                                     #deleteOrphanData(Map<String,Date>)
+ * Feb 29, 2016  5420     tgurney      Remove timestampCheck arg from copy()
+ * Nov 15, 2016  5992     bsteffen     Compress large records
+ * Oct 19, 2017  6367     tgurney      Use logger instead of stdout
+ * Sep 19, 2018  7435     ksunil       Eliminate compression/decompression on
+ *                                     HDF5
+ * Jan 15, 2020  8005     drogalla     Update sendRequest to keep trying until
+ *                                     there's a response.
+ * Jan 28, 2020  7985     ksunil       Removed the compression changes
+ *                                     introduced in 7435
+ * Dec 11, 2020  8299     tgurney      Log before and after each request is sent
+ * Mar 18, 2021  8349     randerso     Code cleanup
  *
  * </pre>
  *
@@ -116,6 +124,16 @@ public class PyPiesDataStore implements IDataStore {
 
     private static final AtomicLong requestSequence = new AtomicLong(0);
 
+    /**
+     * Constructor
+     *
+     * @param file
+     *            the hdf5 file
+     * @param useLocking
+     *            true to enable file locking
+     * @param props
+     *            PyPies DataStore properties
+     */
     public PyPiesDataStore(final File file, final boolean useLocking,
             final PypiesProperties props) {
         this.filename = FileUtil.edexPath(file.getPath()); // Win32
@@ -318,7 +336,7 @@ public class PyPiesDataStore implements IDataStore {
                 ret = doSendRequest(obj, huge);
             } catch (CommunicationException ce) {
                 if (ce.getCause() instanceof HttpHostConnectException) {
-                    if (logged == false) {
+                    if (!logged) {
                         logger.error(
                                 "Unable to connect with pypies. Check the PyPies logs to see if it is running. Waiting 6 seconds to try again...",
                                 ce);
@@ -327,7 +345,7 @@ public class PyPiesDataStore implements IDataStore {
 
                 } else {
                     logger.error(
-                            "A CommunnicationException occurred trying to communicate with pypies.",
+                            "A CommunicationException occurred trying to communicate with pypies.",
                             ce);
                     break;
                 }
@@ -385,7 +403,7 @@ public class PyPiesDataStore implements IDataStore {
      * implementations that cache data responses..
      *
      * @param obj
-     * @return
+     * @return response object
      * @throws StorageException
      */
     protected Object cachedRequest(final AbstractRequest obj)
@@ -413,7 +431,7 @@ public class PyPiesDataStore implements IDataStore {
         }
     }
 
-    protected void initializeProperties() {
+    protected synchronized void initializeProperties() {
         if (address == null) {
             address = props.getAddress();
         }
@@ -441,9 +459,12 @@ public class PyPiesDataStore implements IDataStore {
         req.setFilename(this.filename);
         req.setCompression(compression);
         FileActionResponse resp = (FileActionResponse) sendRequest(req);
-        // TODO do we really want to make this an exception?
-        // reasoning is if the repack fails for some reason, the original file
-        // is left as is, just isn't as efficiently packed
+
+        /*
+         * TODO do we really want to make this an exception? reasoning is if the
+         * repack fails for some reason, the original file is left as is, just
+         * isn't as efficiently packed
+         */
         if ((resp != null) && (resp.getFailedFiles() != null)
                 && (resp.getFailedFiles().length > 0)) {
             StringBuilder sb = new StringBuilder();
