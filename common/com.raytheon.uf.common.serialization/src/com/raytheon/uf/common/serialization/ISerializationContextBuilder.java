@@ -32,6 +32,7 @@ import java.io.OutputStream;
  * ------------	----------	-----------	--------------------------
  * Aug 12, 2008				chammack	Initial creation
  * Aug 06, 2013    2228     njensen     Added buildDeserializationContext(byte[], dsm)
+ * Mar 24, 2021    22551    zalberts    Updated for thrift 0.14.0
  * 
  * </pre>
  * 
@@ -48,9 +49,10 @@ public interface ISerializationContextBuilder {
      * @param manager
      *            the serialization manager
      * @return a serialization context
+     * @throws SerializationException
      */
     public ISerializationContext buildSerializationContext(OutputStream data,
-            DynamicSerializationManager manager);
+            DynamicSerializationManager manager) throws SerializationException;
 
     /**
      * Build a deserialization context
@@ -60,9 +62,10 @@ public interface ISerializationContextBuilder {
      * @param manager
      *            the serialization manager
      * @return a deserialization context
+     * @throws SerializationException
      */
     public IDeserializationContext buildDeserializationContext(
-            InputStream data, DynamicSerializationManager manager);
+            InputStream data, DynamicSerializationManager manager) throws SerializationException;
 
     /**
      * Build a deserialization context
@@ -72,8 +75,9 @@ public interface ISerializationContextBuilder {
      * @param manager
      *            the serialization manager
      * @return a deserialization context
+     * @throws SerializationException
      */
     public IDeserializationContext buildDeserializationContext(byte[] data,
-            DynamicSerializationManager manager);
+            DynamicSerializationManager manager) throws SerializationException;
 
 }
