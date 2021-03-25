@@ -56,7 +56,7 @@
          id="org.apache.batik"
          download-size="0"
          install-size="0"
-         version="1.13.0"/>
+         version="1.14.0"/>
 
    <plugin
          id="com.raytheon.viz.core"
