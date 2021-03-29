@@ -45,7 +45,7 @@ do
     case "${arg}" in
         production)
             IGNITE_SERVERS=${IGNITE_SERVERS:-cache1,cache2,cache3}
-            JVM_OPTS+=" -Xms8g -Xmx8g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
+            JVM_OPTS+=" -Xms16g -Xmx16g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
             IGNITE_DATA_REGION_MAX_SIZE_GB=${IGNITE_DATA_REGION_MAX_SIZE_GB:-64}
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-64}
             # The largest objects I have seen are about 374MiB, ignite documentation suggests we need enough pages to
