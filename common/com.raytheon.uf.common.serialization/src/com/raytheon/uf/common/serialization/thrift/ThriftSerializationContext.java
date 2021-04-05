@@ -103,6 +103,7 @@ import net.sf.cglib.reflect.FastClass;
  * Jun 17, 2015  4564     njensen     Added date/time conversion in deserializeField()
  * Jul 16, 2015  4561     njensen     Improved read and ignore of collection types
  * Oct 19, 2017  6316     njensen     Improved serialization error message
+ * Mar 24, 2021  22551    zalberts    Updated for thrift 0.14.0
  * 
  * </pre>
  * 
@@ -399,7 +400,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             throw new SerializationException(
                     "Error occurred during serialization of base type, object was "
                             + val,
-                    e);
+                            e);
         }
 
     }
@@ -414,7 +415,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * @throws SerializationException
      */
     protected void serializeArray(Object val) throws TException,
-            SerializationException {
+    SerializationException {
         Iterator<?> iterator;
         Class<?> valClass = val.getClass();
         if (valClass.isArray()) {
@@ -546,7 +547,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             }
             if (b == null
                     || (b == TType.STRUCT && metadata == null && !obj
-                            .getClass().isEnum())) {
+                    .getClass().isEnum())) {
                 throw new SerializationException(
                         "Don't know how to serialize class: " + obj.getClass());
             }
@@ -663,7 +664,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      */
     protected void serializeField(Object val, byte type, String keyStr,
             ISerializationTypeAdapter adapter, short id) throws TException,
-            SerializationException {
+    SerializationException {
         TField field = new TField(keyStr, type, id);
         protocol.writeFieldBegin(field);
 
@@ -777,17 +778,17 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                             break;
                         case TType.LIST:
                             ListDeserializationException lde = (ListDeserializationException) e
-                                    .getCause();
+                            .getCause();
                             readAndIgnoreList(lde.getTlist(), lde.getIndex());
                             break;
                         case TType.MAP:
                             MapDeserializationException mde = (MapDeserializationException) e
-                                    .getCause();
+                            .getCause();
                             readAndIgnoreMap(mde.getTmap(), mde.getIndex());
                             break;
                         case TType.SET:
                             SetDeserializationException sde = (SetDeserializationException) e
-                                    .getCause();
+                            .getCause();
                             readAndIgnoreSet(sde.getTset(), sde.getIndex());
                             break;
                         default:
@@ -849,11 +850,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
              */
             deserializeType(fieldToSkip.type, null, fieldToSkip.name);
             break;
-        /*
-         * handle the types below differently to ensure the entire
-         * structure/object is read off the stream regardless of if we know
-         * about and understand its types
-         */
+            /*
+             * handle the types below differently to ensure the entire
+             * structure/object is read off the stream regardless of if we know
+             * about and understand its types
+             */
         case TType.STRUCT:
             TStruct tstruct = protocol.readStructBegin();
             readAndIgnoreStruct(tstruct);
@@ -922,7 +923,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
      * @throws SerializationException
      */
     protected void readAndIgnoreStructFields() throws TException,
-            SerializationException {
+    SerializationException {
         boolean moreFields = true;
         while (moreFields) {
             // read a field off the structure
@@ -1154,7 +1155,7 @@ public class ThriftSerializationContext extends BaseSerializationContext {
             rval = BigDecimal.valueOf(source.doubleValue());
         } else {
             throw new ClassCastException("Unable to cast " + source.getClass()
-                    + " to " + targetClass);
+            + " to " + targetClass);
         }
         return rval;
     }
@@ -1239,11 +1240,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
                     Object val = this.serializationManager.deserialize(this);
                     map.put(key, val);
                 }
+                protocol.readMapEnd();
             } catch (Exception e) {
                 throw new MapDeserializationException(tmap, i,
                         "Error deserializing map of field " + fieldName, e);
             }
-            protocol.readMapEnd();
             return map;
         }
         case TType.SET: {
@@ -1530,7 +1531,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     @Override
     public void writeMessageEnd() throws SerializationException {
-        this.protocol.writeMessageEnd();
+        try {
+            this.protocol.writeMessageEnd();
+        } catch (Exception e) {
+            throw new SerializationException(e.getLocalizedMessage(), e);
+        }
     }
 
     @Override
@@ -1546,8 +1551,11 @@ public class ThriftSerializationContext extends BaseSerializationContext {
 
     @Override
     public void readMessageEnd() throws SerializationException {
-        this.protocol.readMessageEnd();
-
+        try {
+            this.protocol.readMessageEnd();
+        } catch (Exception e) {
+            throw new SerializationException(e.getLocalizedMessage(), e);
+        }
     }
 
     @Override
