@@ -20,6 +20,7 @@
 package com.raytheon.uf.common.dataaccess.impl;
 
 import java.math.BigDecimal;
+import java.math.BigInteger;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -35,11 +36,11 @@ import com.vividsolutions.jts.geom.Geometry;
 /**
  * A default geometry data object if factory developers do not wish to create
  * their own IGeometryData implementations.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------------------------
  * Nov 09, 2012           njensen   Initial creation
@@ -49,9 +50,12 @@ import com.vividsolutions.jts.geom.Geometry;
  * Aug 21, 2015  4409     mapeters  Support Short data type.
  * Jun 13, 2016  5574     mapeters  Support BigDecimal data type (convert to
  *                                  double)
- * 
+ * Mar 25, 2021  8398     randerso  Support BigInteger data type (convert to
+ *                                  long). Added exception when unsupported type
+ *                                  is encountered.
+ *
  * </pre>
- * 
+ *
  * @author njensen
  */
 
@@ -172,12 +176,12 @@ public class DefaultGeometryData implements IGeometryData {
             if (data.unit != null) {
                 if (data.unit.isCompatible(unit)) {
                     Number orig = getNumber(param);
-                    result = data.unit.getConverterTo(unit).convert(
-                            orig.doubleValue());
+                    result = data.unit.getConverterTo(unit)
+                            .convert(orig.doubleValue());
                 } else {
-                    throw new ConversionException("Requested unit " + unit
-                            + " is incompatible with " + param
-                            + " data's unit " + data.unit);
+                    throw new ConversionException(
+                            "Requested unit " + unit + " is incompatible with "
+                                    + param + " data's unit " + data.unit);
                 }
             } else {
                 throw new ConversionException(
@@ -215,7 +219,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -227,7 +231,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -241,7 +245,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -255,7 +259,7 @@ public class DefaultGeometryData implements IGeometryData {
 
     /**
      * Adds data for this IGeometryData
-     * 
+     *
      * @param parameter
      *            the parameter name
      * @param value
@@ -265,7 +269,8 @@ public class DefaultGeometryData implements IGeometryData {
      * @param unit
      *            the unit of the value
      */
-    public void addData(String parameter, Object value, Type type, Unit<?> unit) {
+    public void addData(String parameter, Object value, Type type,
+            Unit<?> unit) {
         GeomData data = new GeomData();
         data.value = value;
         data.unit = unit;
@@ -287,8 +292,26 @@ public class DefaultGeometryData implements IGeometryData {
                 // Convert to double so dynamic serialize can handle it
                 data.value = ((BigDecimal) data.value).doubleValue();
                 data.type = Type.DOUBLE;
+            } else if (data.value instanceof BigInteger) {
+                /*
+                 * Convert to long so dynamic serialize can handle it.
+                 *
+                 * NOTE: longValueExact() will throw an ArithmeticException if
+                 * the value is too large to fit in a long.
+                 */
+                data.value = ((BigInteger) data.value).longValueExact();
+                data.type = Type.LONG;
             } else if (data.value == null) {
                 data.type = Type.NULL;
+            } else {
+                /*
+                 * throw an exception indicating the source of the issue rather
+                 * than allowing a null type to be returned and cause a
+                 * NullPointerException somewhere downstream
+                 */
+                throw new IllegalArgumentException(
+                        "Unsupported data type for value: "
+                                + value.getClass().getName());
             }
         }
         this.dataMap.put(parameter, data);
@@ -297,7 +320,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Add a key/value pair to the attributes map. Attributes are metadata
      * providing additional information on the dataset.
-     * 
+     *
      * @param key
      * @param value
      */
@@ -324,7 +347,7 @@ public class DefaultGeometryData implements IGeometryData {
     /**
      * Replace the attribute map with attrs. Attributes are metadata providing
      * additional information on the dataset.
-     * 
+     *
      * @param attrs
      */
     public void setAttributes(Map<String, Object> attrs) {
