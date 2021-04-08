@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -43,20 +43,20 @@ import tec.uom.se.format.SimpleUnitFormat;
  * the masterlevel database, which is initially populated from masterLevels. As
  * well as providing name mapping it is also possible to map level objects with
  * unit conversion.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 29, 2012            bsteffen    Initial creation
  * Sep 09, 2014  3356      njensen     Remove CommunicationException
- * 
+ * Apr 08, 2021  8415      dgilling    Add null check to lookupLevel.
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 
 public class LevelMapper extends Mapper {
@@ -69,16 +69,15 @@ public class LevelMapper extends Mapper {
     private LevelMapper() {
         IPathManager pathMgr = PathManagerFactory.getPathManager();
         // read in the namespace map
-        LocalizationFile[] files = pathMgr.listStaticFiles("level"
-                + IPathManager.SEPARATOR + "alias", new String[] { ".xml" },
-                true, true);
+        LocalizationFile[] files = pathMgr.listStaticFiles(
+                "level" + IPathManager.SEPARATOR + "alias",
+                new String[] { ".xml" }, true, true);
         for (LocalizationFile file : files) {
             try {
                 addAliasList(file.getFile());
             } catch (JAXBException e) {
-                statusHandler.error(
-                        "Error reading level aliases: " + file.getName()
-                                + " has been ignored.", e);
+                statusHandler.error("Error reading level aliases: "
+                        + file.getName() + " has been ignored.", e);
             }
         }
     }
@@ -86,14 +85,14 @@ public class LevelMapper extends Mapper {
     /**
      * same functionality as lookupBaseNames but also maps those baseNames to
      * MasterLevel objects.
-     * 
+     *
      * @param alias
      * @param namespace
      * @return
      */
     public Set<MasterLevel> lookupMasterLevels(String alias, String namespace) {
         Set<String> baseNames = super.lookupBaseNames(alias, namespace);
-        Set<MasterLevel> result = new HashSet<MasterLevel>(
+        Set<MasterLevel> result = new HashSet<>(
                 (int) (baseNames.size() / 0.75) + 1, 0.75f);
         for (String baseName : baseNames) {
             result.add(factory.getMasterLevel(baseName));
@@ -104,7 +103,7 @@ public class LevelMapper extends Mapper {
     /**
      * same functionality as lookupBaseName but also maps the baseName to a
      * MasterLevel object.
-     * 
+     *
      * @param alias
      * @param namespace
      * @return
@@ -118,14 +117,22 @@ public class LevelMapper extends Mapper {
     public Level lookupLevel(String masterLevelAlias, String namespace,
             double levelone, double leveltwo, Unit<?> unit)
             throws MultipleLevelMappingException {
+        String unitString = (unit != null)
+                ? SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .format(unit)
+                : null;
         return lookupLevel(masterLevelAlias, namespace, levelone, leveltwo,
-                SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
+                unitString);
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
-            double levelone, Unit<?> unit) throws MultipleLevelMappingException {
-        return lookupLevel(masterLevelAlias, namespace, levelone, SimpleUnitFormat
-                .getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
+            double levelone, Unit<?> unit)
+            throws MultipleLevelMappingException {
+        String unitString = (unit != null)
+                ? SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .format(unit)
+                : null;
+        return lookupLevel(masterLevelAlias, namespace, levelone, unitString);
     }
 
     public Level lookupLevel(String masterLevelAlias, String namespace,
@@ -142,22 +149,28 @@ public class LevelMapper extends Mapper {
         if (levels.size() == 1) {
             return levels.iterator().next();
         } else {
-            throw new MultipleLevelMappingException(masterLevelAlias,
-                    namespace, lookupBaseNames(masterLevelAlias, namespace),
-                    levels);
+            throw new MultipleLevelMappingException(masterLevelAlias, namespace,
+                    lookupBaseNames(masterLevelAlias, namespace), levels);
         }
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
             double levelone, double leveltwo, Unit<?> unit) {
+        String unitString = (unit != null)
+                ? SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .format(unit)
+                : null;
         return lookupLevels(masterLevelAlias, namespace, levelone, leveltwo,
-                SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
+                unitString);
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
             double levelone, Unit<?> unit) {
-        return lookupLevels(masterLevelAlias, namespace, levelone, SimpleUnitFormat
-                .getInstance(SimpleUnitFormat.Flavor.ASCII).format(unit));
+        String unitString = (unit != null)
+                ? SimpleUnitFormat.getInstance(SimpleUnitFormat.Flavor.ASCII)
+                        .format(unit)
+                : null;
+        return lookupLevels(masterLevelAlias, namespace, levelone, unitString);
     }
 
     public Set<Level> lookupLevels(String masterLevelAlias, String namespace,
@@ -170,8 +183,8 @@ public class LevelMapper extends Mapper {
             double levelone, double leveltwo, String unit) {
         Set<String> baseNames = super.lookupBaseNames(masterLevelAlias,
                 namespace);
-        Set<Level> result = new HashSet<Level>(
-                (int) (baseNames.size() / 0.75) + 1, 0.75f);
+        Set<Level> result = new HashSet<>((int) (baseNames.size() / 0.75) + 1,
+                0.75f);
         for (String baseName : baseNames) {
             result.add(factory.getLevel(baseName, levelone, leveltwo, unit));
         }
