@@ -15,7 +15,9 @@ Type=simple
 Restart=always
 SuccessExitStatus=143
 ExecStart=/awips2/ignite/bin/a2_ignite.sh %I
-ExecStop=/awips2/ignite/bin/bypass_watchdog.sh
+ExecStop=/bin/bash -c '\
+	source /etc/watchdog.d/utilities/watchdogutils.sh; \
+	bypass_watchdog ignite@production'
 
 [Install]
 WantedBy=multi-user.target

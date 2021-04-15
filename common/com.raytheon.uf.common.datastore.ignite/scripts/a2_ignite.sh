@@ -42,16 +42,13 @@ THRIFT_STREAM_MAXSIZE=${THRIFT_STREAM_MAXSIZE:-2000}
 IGNITE_DEFAULT_TX_TIMEOUT=${IGNITE_DEFAULT_TX_TIMEOUT:-120000}
 IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE=${IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE:-30000}
 
-# where to indicate to watchdog that this service is manually shutdown
-watchdog_status=/tmp/watchdog_status
+source /etc/watchdog.d/utilities/watchdogutils.sh
 
 for arg in "${ARGS[@]}"
 do
     case "${arg}" in
         production)
-            if [ -f "$watchdog_status/ignite" ]; then
-                rm "$watchdog_status/ignite"
-            fi
+            remove_watchdog_bypass "ignite@production"
             JVM_OPTS+=" -Xms16g -Xmx16g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
             IGNITE_DATA_REGION_MAX_SIZE_GB=${IGNITE_DATA_REGION_MAX_SIZE_GB:-64}
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-64}
