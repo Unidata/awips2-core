@@ -20,8 +20,11 @@
 
 package com.raytheon.viz.core.gl.internal;
 
+import java.awt.geom.AffineTransform;
 import java.awt.geom.Rectangle2D;
+import java.awt.image.AffineTransformOp;
 import java.awt.image.BufferedImage;
+import java.awt.image.DataBufferByte;
 import java.io.File;
 import java.nio.Buffer;
 import java.nio.ByteBuffer;
@@ -36,7 +39,6 @@ import java.util.Map;
 import java.util.Map.Entry;
 
 import com.jogamp.opengl.GL2;
-import com.jogamp.opengl.GLAutoDrawable;
 import com.jogamp.opengl.glu.gl2.GLUgl2;
 import com.jogamp.opengl.glu.GLUquadric;
 
@@ -96,7 +98,6 @@ import com.raytheon.viz.core.gl.glsl.GLShaderProgram;
 import com.raytheon.viz.core.gl.images.GLBufferCMTextureData;
 import com.raytheon.viz.core.gl.images.GLImage;
 import com.raytheon.viz.core.gl.objects.GLTextureObject;
-import com.jogamp.opengl.util.awt.AWTGLReadBufferUtil;
 import com.jogamp.opengl.util.awt.TextRenderer;
 
 /**
@@ -1245,8 +1246,22 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         BufferedImage bi = Screenshot.readToBufferedImage(bounds.width,
                 bounds.height, false);
         */
-        AWTGLReadBufferUtil glReadBufferUtil = new AWTGLReadBufferUtil(gl.getGLProfile(), false);
-        BufferedImage image = glReadBufferUtil.readPixelsToBufferedImage(gl.getGL(), true);
+//        AWTGLReadBufferUtil glReadBufferUtil = new AWTGLReadBufferUtil(gl.getGLProfile(), false);
+//        BufferedImage image = glReadBufferUtil.readPixelsToBufferedImage(gl, true);
+        
+        // get and write out same image but WITHOUT alpha channel
+        int w = this.canvasSize.width;
+        int h = this.canvasSize.height;
+        BufferedImage image = new BufferedImage(w, h, BufferedImage.TYPE_3BYTE_BGR);
+        DataBufferByte buffer = (DataBufferByte) image.getRaster().getDataBuffer();
+        Buffer b = ByteBuffer.wrap(buffer.getData());
+        gl.glPixelStorei(GL2.GL_PACK_ALIGNMENT, 1);
+        gl.glReadPixels(0, 0,w, h, GL2.GL_BGR, GL2.GL_UNSIGNED_BYTE, b);
+        AffineTransform tx = AffineTransform.getScaleInstance(1, -1);
+        tx.translate(0, -image.getHeight());
+        AffineTransformOp op = new AffineTransformOp(tx, AffineTransformOp.TYPE_NEAREST_NEIGHBOR);
+        image = op.filter(image, null);
+        
         
         if (theCanvas != null) {
             theCanvas.swapBuffers();
