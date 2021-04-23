@@ -19,6 +19,7 @@
 ##
 
 from numpy import add,array,zeros_like
+from functools import reduce
 
 import Vector
 

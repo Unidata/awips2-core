@@ -1555,9 +1555,13 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
     	//gLContext = gLCanvas.getContext();
     	//gLContext.makeCurrent();
     	theContext.makeContextCurrent();
-    	IGLFont font = (IGLFont) parameters.font;
 
+    	IGLFont font = new GLFont(dpi, string, textMagnification, null);
 
+    	if (parameters.font != null) {
+    		font = (IGLFont) parameters.font;
+    	}
+    	
         double fontPercentage = this.calculateFontResizePercentage(font)
                 * parameters.magnification;
 
