@@ -29,18 +29,19 @@
 # ------------   ----------   -----------   -----------
 #                             ????          Initial creation
 # Aug 05, 2015   4703         njensen       cast scalars in where() to float32
+# Oct 19, 2017   6289         njensen       Fix numpy import
 #
 
-from numpy import power, where, float32, exp, NaN
+from numpy import where, float32, exp, NaN
 
 const1 = 0.0091379024
 const2 = 6106.396
 
 def calculate(T, DpT):
     # T and DpT have to be in C for the below calculation
-    badValue = numpy.where(T < 26.5,
-                           float32(1),
-                           where(DpT > T, float32(1), float32(0)))
+    badValue = where(T < 26.5,
+                     float32(1),
+                     where(DpT > T, float32(1), float32(0)))
 
     TK = T + 273.15
     DpTK = DpT + 273.15

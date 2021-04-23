@@ -55,6 +55,7 @@ import com.raytheon.uf.viz.core.IExtent;
 import com.raytheon.uf.viz.core.VizConstants;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
+import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
 import com.raytheon.uf.viz.core.rsc.IResourceGroup;
 import com.raytheon.uf.viz.core.rsc.ResourceGroup;
@@ -80,6 +81,7 @@ import com.raytheon.uf.viz.core.time.TimeMatchingJob;
  * May 13, 2015  4461     bsteffen    Add setFrameCoordinator
  * Nov 03, 2016  5976     bsteffen    Remove unused deprecated methods.
  * Jun 12, 2017  6297     bsteffen    Make listeners thread safe.
+ * Jan 04, 2018  6753     bsteffen    Remove unneccesary time matcher operations.
  * 
  * </pre>
  * 
@@ -182,16 +184,18 @@ public abstract class AbstractDescriptor extends ResourceGroup
             @Override
             public void notifyRemove(ResourcePair rp) throws VizException {
                 postRemoveListener(rp.getResource());
-
-                TimeMatchingJob.scheduleTimeMatch(AbstractDescriptor.this);
-                if ((renderableDisplay != null)
-                        && (renderableDisplay.getContainer() != null)) {
+                if (!resourceList.isEmpty()) {
+                    TimeMatchingJob.scheduleTimeMatch(AbstractDescriptor.this);
+                }
+                if ((renderableDisplay != null)) {
                     IDisplayPaneContainer container = renderableDisplay
                             .getContainer();
-                    for (IDisplayPane pane : container.getDisplayPanes()) {
-                        if (pane.getDescriptor() != AbstractDescriptor.this) {
-                            TimeMatchingJob
-                                    .scheduleTimeMatch(pane.getDescriptor());
+                    if (container != null) {
+                        for (IDisplayPane pane : container.getDisplayPanes()) {
+                            IDescriptor descriptor = pane.getDescriptor();
+                            if (descriptor != AbstractDescriptor.this) {
+                                TimeMatchingJob.scheduleTimeMatch(descriptor);
+                            }
                         }
                     }
                 }
@@ -241,10 +245,19 @@ public abstract class AbstractDescriptor extends ResourceGroup
     }
 
     protected void postRemoveListener(AbstractVizResource<?, ?> resource) {
+        /*
+         * If this resource still exists somewhere on the descriptor then don't
+         * process it. This occurs when a resource is moved from the descriptors
+         * list to a resource group on the descriptor such as during an image
+         * combine.
+         */
+        if (rscInGroup(this, resource)) {
+            return;
+        }
+
         if (getTimeMatcher() != null) {
             getTimeMatcher().handleRemove(resource, this);
         }
-        // Remove autoupdating references
 
         if (resource != null) {
             synchronized (timeManager) {
@@ -752,6 +765,34 @@ public abstract class AbstractDescriptor extends ResourceGroup
         return new GridGeometry2D(new GeneralGridEnvelope(new int[] { 0, 0 },
                 new int[] { (int) extent.getWidth(), (int) extent.getHeight() },
                 false), envelope);
+    }
+
+    /**
+     * Check if a resource is in the given group or any IResourceGroups that are
+     * in the provided group. If any resourceData in the group is an
+     * IResourceGroup then that group is also checked.
+     * 
+     * @param group
+     *            the group to check
+     * @param resource
+     *            the resource to check for.
+     * @return true if the resource is present in the group or a subgroup.
+     */
+    private static boolean rscInGroup(IResourceGroup group,
+            AbstractVizResource<?, ?> resource) {
+
+        for (ResourcePair pair : group.getResourceList()) {
+            if (pair.getResource() == resource) {
+                return true;
+            }
+            AbstractResourceData resourceData = pair.getResourceData();
+            if (resourceData instanceof IResourceGroup) {
+                if (rscInGroup((IResourceGroup) resourceData, resource)) {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
 }

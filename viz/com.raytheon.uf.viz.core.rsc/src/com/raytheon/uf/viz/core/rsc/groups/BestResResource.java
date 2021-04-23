@@ -19,7 +19,6 @@
  **/
 package com.raytheon.uf.viz.core.rsc.groups;
 
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -62,6 +61,7 @@ import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
  * Jun 10, 2014  3263     bsteffen  Null check keys before accessing map.
  * Sep 12, 2016  3241     bsteffen  Move to uf.viz.core.rsc plugin, implement
  *                                  Interrogatable
+ * Nov 28, 2017  5863     bsteffen  Change dataTimes to a NavigableSet
  * 
  * </pre>
  * 
@@ -76,7 +76,7 @@ public class BestResResource
     private ResourceOrder highestResourceOrder = null;
 
     public BestResResource(BestResResourceData data, LoadProperties props) {
-        super(data, props);
+        super(data, props, false);
         data.addChangeListener(this);
     }
 
@@ -86,8 +86,8 @@ public class BestResResource
         if (displayedDate == null) {
             return "";
         }
-        AbstractVizResource<?, ?> rsc = this.resourceData.getMap().get(
-                displayedDate);
+        AbstractVizResource<?, ?> rsc = this.resourceData.getMap()
+                .get(displayedDate);
         if (rsc == null) {
             return "";
         } else {
@@ -140,8 +140,8 @@ public class BestResResource
                         getCapabilities().addCapability(capability);
                         for (AbstractVizResource<?, ?> rcs : getResourceData()
                                 .getRscs()) {
-                            rcs.getLoadProperties().setCapabilities(
-                                    getCapabilities());
+                            rcs.getLoadProperties()
+                                    .setCapabilities(getCapabilities());
                         }
                     }
                 }
@@ -155,9 +155,8 @@ public class BestResResource
                 resource.registerListener(this);
             }
         }
-
-        this.dataTimes = new ArrayList<>(resourceData.getMap().keySet());
-
+        
+        dataTimes.addAll(resourceData.getMap().keySet());
     }
 
     @Override
@@ -280,8 +279,8 @@ public class BestResResource
         super.remove(dataTime);
 
         if (resourceData != null) {
-            AbstractVizResource<?, ?> rsc = resourceData.getMap().remove(
-                    dataTime);
+            AbstractVizResource<?, ?> rsc = resourceData.getMap()
+                    .remove(dataTime);
             if (rsc != null) {
                 rsc.remove(dataTime);
             }

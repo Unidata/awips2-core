@@ -10,3 +10,4 @@ scipy.constants
 scipy.interpolate
 scipy.sparse.linalg
 scipy.ndimage
+h5py
