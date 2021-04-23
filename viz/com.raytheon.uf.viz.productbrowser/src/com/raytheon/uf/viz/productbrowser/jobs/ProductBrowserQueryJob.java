@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -37,15 +37,15 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserLabel;
 import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
 
 /**
- * 
+ *
  * Job for performing the population of the {@link ProductBrowserView} tree
  * asynchronously. To avoid querying multiple times on the same item all
  * instances of this class should be started with {@link #startJob(TreeItem)}.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- --------------------------
  * May 13, 2014  3135     bsteffen  Initial creation
@@ -56,11 +56,11 @@ import com.raytheon.uf.viz.productbrowser.ProductBrowserView;
  * Aug 13, 2015  4717     mapeters  Moved copyItem() to ProductBrowserView, only allow
  *                                  8 jobs to run concurrently.
  * Sep 11, 2015  4717     mapeters  Moved copyItem() back to here.
- * 
+ * Apr 06, 2018  5714     tjensen   Force refresh of non-products with no children
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
- * @version 1.0
  */
 public class ProductBrowserQueryJob extends Job implements Runnable {
 
@@ -158,6 +158,17 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
                         .getLabel(childItem);
                 if (childLabel != null && childLabel.equals(label)) {
                     create = false;
+                    /**
+                     * If the child exists, is not a product, and doesn't have
+                     * children, re-add a loading child to allow data to be
+                     * refreshed.
+                     */
+                    if (!label.isProduct() && childItem.getItemCount() == 0) {
+                        TreeItem loading = new TreeItem(childItem, SWT.NONE);
+                        loading.setText("Loading...");
+                        loading.setGrayed(true);
+                        childItem.setExpanded(false);
+                    }
                     break;
                 } else if (results.contains(childLabel)) {
                     for (int j = i + 1; j < item.getItemCount(); j += 1) {
@@ -201,7 +212,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
     /**
      * Recursively copy a TreeItem. This is only needed if a query is repeated
      * and returns items in a new order.
-     * 
+     *
      * @param oldItem
      * @param newItem
      */
@@ -251,7 +262,7 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
     /**
      * Start a new query job for the provided item only if there is not
      * currently a job running.
-     * 
+     *
      * @param item
      *            a TreeItem from the {@link ProductBrowserView}
      */
@@ -281,10 +292,10 @@ public class ProductBrowserQueryJob extends Job implements Runnable {
      * Get the list of {@value #maxConcurrentJobs} SchedulingRule instances,
      * used to prevent more than {@value #maxConcurrentJobs} jobs from running
      * concurrently.
-     * 
+     *
      * @return the list of SchedulingRules
      */
-    protected static SchedulingRule[] getSchedulingRules() {
+    protected static synchronized SchedulingRule[] getSchedulingRules() {
         if (schedulingRules == null) {
             schedulingRules = new SchedulingRule[maxConcurrentJobs];
             for (int i = 0; i < maxConcurrentJobs; i++) {

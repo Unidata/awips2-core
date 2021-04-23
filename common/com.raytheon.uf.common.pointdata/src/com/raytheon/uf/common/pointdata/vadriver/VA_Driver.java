@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -22,161 +22,165 @@ package com.raytheon.uf.common.pointdata.vadriver;
 import java.io.BufferedReader;
 import java.io.BufferedWriter;
 import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStreamReader;
-import java.io.OutputStreamWriter;
+import java.nio.file.Files;
 import java.util.HashMap;
 import java.util.Map;
 
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.vividsolutions.jts.geom.Coordinate;
 
 /**
  * Driver for using the VA_Advanced progressive disclosure to generate
  * localizaed spi files.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Feb 24, 2011           bfarmer     Initial creation
  * Dec 02, 2013  2537     bsteffen    Ensure streams are closed.
- * 
+ * Jan 10, 2018  6713     dgilling    Cleanup file I/O error handling in
+ *                                    vaStationsFile.
+ *
  * </pre>
- * 
+ *
  * @author bfarmer
- * @version 1.0
  */
 
 public class VA_Driver {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(VA_Driver.class);
 
-    Map<String, Integer> nameIndexMap = new HashMap<String, Integer>();
+    private static final int MNS = 150_000;
 
-    int ns;
+    private final Map<String, Integer> nameIndexMap = new HashMap<>();
 
-    private Integer MNS = 150000;
+    private int ns = 0;
 
-    Coordinate[] latLon = new Coordinate[MNS];
+    private final Coordinate[] latLon = new Coordinate[MNS];
 
-    int[] elevs = new int[MNS];
+    private final int[] elevs = new int[MNS];
 
-    int[] nums = new int[MNS];
+    private final int[] nums = new int[MNS];
 
-    String[] nams = new String[MNS];
+    private final String[] nams = new String[MNS];
 
-    String[] ids = new String[MNS];
+    private final String[] ids = new String[MNS];
 
-    String[] namIdData;
+    private final Integer[] goodness = new Integer[MNS];
 
-    Integer[] goodness = new Integer[MNS];
+    private final Double[] dist = new Double[MNS];
 
-    Double[] dist = new Double[MNS];
+    private int max_name = 0;
 
-    int oorder;
+    private int stn_fmt = 0;
 
-    Map<String, Integer> namePositionMap = new HashMap<String, Integer>();
+    private int loc_fmt = 0;
 
-    int nn = 0;
+    private int pass = 0;
 
-    int max_name = 0;
+    private int cities_file = 0;
 
-    int stn_fmt = 0;
+    private int verify = 0;
 
-    int loc_fmt = 0;
+    private int just_check = 0;
 
-    int pass = 0;
+    private int advanced = 0;
 
-    int cities_file = 0;
+    private int recomp = 0;
 
-    int verify = 0;
+    private float weight = 0;
 
-    int just_check = 0;
+    private int uniqueFlag = 1;
 
-    int advanced = 0;
+    private int use_aspect = 0;
 
-    int recomp = 0;
+    private int dist_test = 0;
 
-    float weight = 0;
-
-    float maxDist = 3.4028235E38f;
-
-    float minDist = 0;
-
-    int uniqueFlag = 1;
-
-    int filarg = 0;
-
-    int use_aspect = 0;
-
-    int dist_test = 0;
-
-    int accum_good = 0;
+    private int accum_good = 0;
 
     /*
      * defaults to 100 km
      */
-    float dist_thresh = (float) (100. * 100. / (111. * 111.));
+    private float dist_thresh = (float) (100. * 100. / (111. * 111.));
 
     public void vaStationsFile(File goodnessFile, File primary, File output) {
-        String line;
-        String[] splitLine;
-        ns = 0;
-        BufferedReader fis = null;
-        BufferedReader pis = null;
-        BufferedWriter fos = null;
-        try {
-            fis = new BufferedReader(new InputStreamReader(
-                    new FileInputStream(goodnessFile)));
-            for (line = fis.readLine(); line != null; line = fis.readLine()) {
-                if (line.startsWith("#"))
+        try (BufferedReader fis = Files
+                .newBufferedReader(goodnessFile.toPath())) {
+            for (String line = fis.readLine(); line != null; line = fis.readLine()) {
+                if (line.startsWith("#")) {
                     continue;
+                }
                 int comment = line.indexOf("//", 0);
                 if (comment != -1) {
                     line = line.substring(0, comment);
                 }
-                splitLine = line.trim().split("\\s+");
+                String[] splitLine = line.trim().split("\\s+");
                 if (splitLine.length == 2) {
-                    minDist = Float.valueOf(splitLine[0]);
-                    maxDist = Float.valueOf(splitLine[1]);
-                    latLon[ns].y = minDist; // Lat = Y
-                    latLon[ns].x = maxDist; // Lon = X
+                    try {
+                        double minDist = Double.valueOf(splitLine[0]);
+                        double maxDist = Double.valueOf(splitLine[1]);
+                        // Lat = Y
+                        latLon[ns].y = minDist;
+                        // Lon = X
+                        latLon[ns].x = maxDist;
+                    } catch (NumberFormatException e) {
+                        String errorMsg = String.format(
+                                "Invalid number format in file [%s]: invalid line [%s]",
+                                goodnessFile, line);
+                        statusHandler.warn(errorMsg, e);
+                    }
                     continue;
                 } else if (splitLine.length >= 6) {
-                    nums[ns] = Integer.valueOf(splitLine[0]);
-                    nams[ns] = splitLine[1];
-                    latLon[ns] = new Coordinate(Float.valueOf(splitLine[3]),
-                            Float.valueOf(splitLine[2]));
-                    elevs[ns] = Integer.valueOf(splitLine[4]);
-                    goodness[ns] = Float.valueOf(splitLine[5]).intValue();
-                    if (splitLine.length >= 7) {
-                        ids[ns] = splitLine[6];
-                    } else {
-                        ids[ns] = "";
+                    try {
+                        nums[ns] = Integer.valueOf(splitLine[0]);
+                        nams[ns] = splitLine[1];
+                        latLon[ns] = new Coordinate(Float.valueOf(splitLine[3]),
+                                Float.valueOf(splitLine[2]));
+                        elevs[ns] = Integer.valueOf(splitLine[4]);
+                        goodness[ns] = Float.valueOf(splitLine[5]).intValue();
+                        if (splitLine.length >= 7) {
+                            ids[ns] = splitLine[6];
+                        } else {
+                            ids[ns] = "";
+                        }
+                    } catch (NumberFormatException e) {
+                        String errorMsg = String.format(
+                                "Invalid number format in file [%s]: invalid line [%s]",
+                                goodnessFile, line);
+                        statusHandler.warn(errorMsg, e);
+                        continue;
                     }
                 } else {
+                    if (splitLine.length > 0) {
+                        String errorMsg = String.format(
+                                "Invalid number of data tokens [%d] found in line in file [%s]. Expected 2 or 6 or more. Invalid line [%s]",
+                                goodnessFile, splitLine.length, line);
+                        statusHandler.warn(errorMsg);
+                    }
                     continue;
                 }
                 if ((latLon[ns].y == 0.0 && latLon[ns].x == 0.0)
                         || latLon[ns].y > 90.0 || latLon[ns].y < -90.0
                         || latLon[ns].x > 180.0 || latLon[ns].x < -180.0) {
+                    String errorMsg = String.format(
+                            "Invalid lat/lon combination (%.1f, %.1f) found in file [%s]. Invalid line [%s]",
+                            latLon[ns].y, latLon[ns].x, goodnessFile, line);
+                    statusHandler.warn(errorMsg);
                     continue;
                 }
-                if (splitLine.length <= 6 || ids[ns].equals("")) {
+                if (splitLine.length <= 6 || ids[ns].isEmpty()) {
                     ids[ns] = nams[ns];
                 }
                 if (splitLine.length < 6) {
                     goodness[ns] = -1000 * (nums[ns] / 1000);
                 } else {
-                    dist[ns] = -1.0;// = goodness[ns].doubleValue();
+                    dist[ns] = -1.0;
+                    // = goodness[ns].doubleValue();
                 }
                 nameIndexMap.put(ids[ns], ns);
                 if (nams[ns].length() > max_name) {
@@ -184,34 +188,46 @@ public class VA_Driver {
                 }
                 ++ns;
             }
-            if (primary != null) {
-                pis = new BufferedReader(new InputStreamReader(
-                        new FileInputStream(primary)));
+        } catch (IOException e) {
+            statusHandler
+                    .error("Error reading from file [" + goodnessFile + "]", e);
+            return;
+        }
+
+        if (primary != null) {
+            try (BufferedReader fis = Files
+                    .newBufferedReader(primary.toPath())) {
                 int g = 0x7FFFFFFF;
-                for (String pline = pis.readLine(); pline != null; pline = pis
+                for (String pline = fis.readLine(); pline != null; pline = fis
                         .readLine()) {
                     pline = pline.trim();
                     Integer index = nameIndexMap.get(pline);
                     if (index != null) {
-                        goodness[index] = g--;
+                        goodness[index] = g;
+                        g--;
                     }
                 }
+            } catch (IOException e) {
+                statusHandler.error("Error reading from file [" + primary + "]",
+                        e);
+                return;
             }
-            Coordinate[] latLonInput = new Coordinate[ns];
-            Integer[] goodnessInput = new Integer[ns];
-            Double[] distInput = new Double[ns];
-            System.arraycopy(latLon, 0, latLonInput, 0, ns);
-            System.arraycopy(goodness, 0, goodnessInput, 0, ns);
-            System.arraycopy(dist, 0, distInput, 0, ns);
-            VA_Advanced vaa = new VA_Advanced();
-            vaa.setVaDistPass(true);
-            vaa.setVaRecomp(false);
-            vaa.setVaWeighting(weight);
-            distInput = vaa
-                    .getVaAdvanced(latLonInput, goodnessInput, distInput);
-            // Write the output.
-            fos = new BufferedWriter(new OutputStreamWriter(
-                    new FileOutputStream(output)));
+        }
+
+        Coordinate[] latLonInput = new Coordinate[ns];
+        Integer[] goodnessInput = new Integer[ns];
+        Double[] distInput = new Double[ns];
+        System.arraycopy(latLon, 0, latLonInput, 0, ns);
+        System.arraycopy(goodness, 0, goodnessInput, 0, ns);
+        System.arraycopy(dist, 0, distInput, 0, ns);
+        VA_Advanced vaa = new VA_Advanced();
+        vaa.setVaDistPass(true);
+        vaa.setVaRecomp(false);
+        vaa.setVaWeighting(weight);
+        distInput = vaa.getVaAdvanced(latLonInput, goodnessInput, distInput);
+
+        // Write the output.
+        try (BufferedWriter fos = Files.newBufferedWriter(output.toPath())) {
             String nameFormat = String.format("%s%ds", "%", max_name);
             for (int i = 0; i < ns; ++i) {
                 fos.write(String.format("%5d ", nums[i]));
@@ -221,42 +237,9 @@ public class VA_Driver {
                         distInput[i]));
                 fos.newLine();
             }
-        } catch (FileNotFoundException e) {
-            // TODO Auto-generated catch block. Please revise as appropriate.
-            statusHandler.handle(Priority.PROBLEM, "Could not read File ", e);
-
         } catch (IOException e) {
-        } finally {
-            if (fis != null) {
-                try {
-                    fis.close();
-                } catch (IOException ioe) {
-                    statusHandler.handle(Priority.SIGNIFICANT,
-                            "Error closing input file ["
-                                    + goodnessFile.getName() + "]");
-                }
-            }
-            if (pis != null) {
-                try {
-                    pis.close();
-                } catch (IOException ioe) {
-                    statusHandler.handle(
-                            Priority.SIGNIFICANT,
-                            "Error closing input file ["
-                                    + primary.getName() + "]");
-                }
-            }
-            if (fos != null) {
-                try {
-                    fos.close();
-                } catch (IOException ioe) {
-                    statusHandler.handle(Priority.SIGNIFICANT,
-                            "Error closing output file [" + output.getName()
-                                    + "]");
-                }
-            }
+            statusHandler.error("Error writing to file [" + output + "]", e);
         }
-
     }
 
     /**

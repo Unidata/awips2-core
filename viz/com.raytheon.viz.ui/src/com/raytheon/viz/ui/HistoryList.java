@@ -34,26 +34,28 @@ import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.procedures.Bundle;
 import com.raytheon.uf.viz.core.rsc.IResourceGroup;
 import com.raytheon.uf.viz.core.rsc.ResourceList;
+import com.raytheon.uf.viz.core.rsc.capabilities.Capabilities;
 
 /**
  * HistoryList
  *
  * <pre>
  *
- *    SOFTWARE HISTORY
- *
- *    Date         Ticket#     Engineer    Description
- *    ------------ ----------  ----------- --------------------------
- *    Sep 12, 2007             chammack    Initial Creation.
- *    Jan 06, 2015 3879        nabowle     Use the map layers' names if only map
- *                                         layers are displayed. If nothing is
- *                                         displayed, disallow the entry.
- *    Feb 27, 2015 3879        nabowle     Handle null resource names
- *
+ * SOFTWARE HISTORY
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Sep 12, 2007           chammack  Initial Creation.
+ * Jan 06, 2015  3879     nabowle   Use the map layers' names if only map layers
+ *                                  are displayed. If nothing is displayed,
+ *                                  disallow the entry.
+ * Feb 27, 2015  3879     nabowle   Handle null resource names
+ * Jan 08, 2018  7091     bsteffen  Remove resources from history list entries
+ *                                  to prevent time matching operations.
+ * 
  * </pre>
  *
  * @author chammack
- * @version 1
  */
 public class HistoryList {
 
@@ -75,8 +77,8 @@ public class HistoryList {
     }
 
     private HistoryList() {
-        this.backingList = new LinkedList<HistoryEntry>();
-        this.historyListeners = new ArrayList<IHistoryListener>();
+        this.backingList = new LinkedList<>();
+        this.historyListeners = new ArrayList<>();
     }
 
     public void addHistoryListener(IHistoryListener hl) {
@@ -102,13 +104,12 @@ public class HistoryList {
         }
 
         this.backingList.add(0, he);
-        List<HistoryEntry> toRemove = new ArrayList<HistoryEntry>(
-                this.backingList.size());
+        List<HistoryEntry> toRemove = new ArrayList<>(this.backingList.size());
 
         // Check for any blank entries that are not entry 0
         for (int i = 1; i < backingList.size(); i++) {
             HistoryEntry e = backingList.get(i);
-            if (e.name.trim().equals("")) {
+            if (e.name.trim().isEmpty()) {
                 toRemove.add(e);
             } else if (e.bundle != null) {
                 e.xml = e.bundle.toXML();
@@ -138,7 +139,7 @@ public class HistoryList {
 
     public void refreshLatestBundle(Bundle b) throws VizException {
         HistoryEntry first = null;
-        if (backingList.size() > 0) {
+        if (!backingList.isEmpty()) {
             first = backingList.remove(0);
         }
 
@@ -148,29 +149,30 @@ public class HistoryList {
         }
     }
 
-    private HistoryEntry buildEntry(Bundle b) throws VizException {
+    private HistoryEntry buildEntry(Bundle b) {
         HistoryEntry he = new HistoryEntry();
-        StringBuffer sb = new StringBuffer();
+        StringBuilder sb = new StringBuilder();
         boolean first = true;
-        Set<String> names = new HashSet<String>();
+        Set<String> names = new HashSet<>();
         for (AbstractRenderableDisplay display : b.getDisplays()) {
             if (!first) {
                 sb.append(", ");
             } else {
                 first = false;
             }
-            sb.append(recursiveBuildName(display.getDescriptor()
-                    .getResourceList(), names, null));
+            sb.append(recursiveBuildName(
+                    display.getDescriptor().getResourceList(), names, null));
         }
         he.name = sb.toString();
         if (b.getName() == null || "".equals(b.getName())) {
             b.setName(he.name);
         }
-        he.bundle = b;
+        he.bundle = disconnectBundle(b);
         return he;
     }
 
-    private String recursiveBuildName(ResourceList list, Set<String> names, StringBuilder ml) {
+    private String recursiveBuildName(ResourceList list, Set<String> names,
+            StringBuilder ml) {
         StringBuilder sb = new StringBuilder();
         StringBuilder mapLayers = ml == null ? new StringBuilder() : ml;
         String name;
@@ -218,7 +220,6 @@ public class HistoryList {
         return sb.toString();
     }
 
-
     private void buildMapLayersName(Set<String> names, StringBuilder mapLayers,
             ResourcePair rp) {
         // If "clear" is clicked, resources will be null so we try to use the
@@ -258,8 +259,6 @@ public class HistoryList {
             Bundle bundle = Bundle.unmarshalBundle(xml, null);
             return bundle;
         } catch (Exception e) {
-            System.out.println("Bad bundle: " + xml);
-            e.printStackTrace();
             throw new VizException("Error loading bundle", e);
         }
     }
@@ -319,30 +318,68 @@ public class HistoryList {
             Bundle b = new Bundle();
             com.raytheon.uf.viz.core.IDisplayPane[] panes = cont
                     .getDisplayPanes();
-            List<AbstractRenderableDisplay> rds = new ArrayList<AbstractRenderableDisplay>();
+            List<AbstractRenderableDisplay> rds = new ArrayList<>();
             for (IDisplayPane p : panes) {
                 IRenderableDisplay rd = p.getRenderableDisplay();
                 if (rd instanceof AbstractRenderableDisplay) {
-                    AbstractRenderableDisplay newDisplay = (AbstractRenderableDisplay) rd
-                            .createNewDisplay();
-                    for (ResourcePair rp : rd.getDescriptor().getResourceList()) {
-                        ResourcePair newPair = new ResourcePair();
-                        newPair.setLoadProperties(rp.getLoadProperties());
-                        newPair.setProperties(rp.getProperties());
-                        newPair.setResourceData(rp.getResourceData());
-                        newDisplay.getDescriptor().getResourceList()
-                                .add(newPair);
-                        // Add resource to pair AFTER adding to resource list to
-                        // avoid firing listeners
-                        newPair.setResource(rp.getResource());
-                    }
-                    rds.add(newDisplay);
+                    rds.add((AbstractRenderableDisplay) rd);
                 }
             }
-            b.setDisplays(rds.toArray(new AbstractRenderableDisplay[rds.size()]));
+            b.setDisplays(
+                    rds.toArray(new AbstractRenderableDisplay[rds.size()]));
             return b;
         }
         return null;
+    }
+
+    /**
+     * Copy a bundle for safe storage in the history list. The assumption is
+     * that the bundle coming in may contain an AbstractRenderableDisplay that
+     * the user is currently interacting with. This method will copy the display
+     * so that if a user adds or removes resources, those changes are not
+     * reflected on the returned bundle, which is going to be part of the
+     * history list. This method cannot simply use
+     * {@link AbstractRenderableDisplay#cloneDisplay()} because when things
+     * within the resources are changed, such as {@link Capabilities} then those
+     * changes should be automatically applied to the bundle in the history
+     * entry. This method therefore loads the same resource information onto a
+     * new display so that resource changes are automatic and display changes
+     * are not.
+     * 
+     * @param currentBundle
+     *            the incoming bundle which may contain displays the user is
+     *            interacting with
+     * @return a copy of the bundle with the same resource information but a new
+     *         display.
+     */
+    private static Bundle disconnectBundle(Bundle currentBundle) {
+        List<AbstractRenderableDisplay> newDisplays = new ArrayList<>();
+        for (AbstractRenderableDisplay currentDisplay : currentBundle.getDisplays()) {
+            AbstractRenderableDisplay newDisplay = (AbstractRenderableDisplay) currentDisplay
+                    .createNewDisplay();
+            for (ResourcePair currentPair : currentDisplay.getDescriptor().getResourceList()) {
+                ResourcePair newPair = new ResourcePair();
+                newPair.setLoadProperties(currentPair.getLoadProperties());
+                newPair.setProperties(currentPair.getProperties());
+                newPair.setResourceData(currentPair.getResourceData());
+                /*
+                 * Do not copy the resource. Adding the resource makes this
+                 * display behave too much like a living display, things like
+                 * time matching will start running.
+                 */
+                newDisplay.getDescriptor().getResourceList().add(newPair);
+            }
+            newDisplays.add(newDisplay);
+        }
+        Bundle newBundle = new Bundle();
+        newBundle.setDisplays(
+                newDisplays.toArray(new AbstractRenderableDisplay[newDisplays.size()]));
+        newBundle.setEditor(currentBundle.getEditor());
+        newBundle.setLayoutId(currentBundle.getLayoutId());
+        newBundle.setLoopProperties(currentBundle.getLoopProperties());
+        newBundle.setName(currentBundle.getName());
+        newBundle.setView(currentBundle.getView());
+        return newBundle;
     }
 
 }

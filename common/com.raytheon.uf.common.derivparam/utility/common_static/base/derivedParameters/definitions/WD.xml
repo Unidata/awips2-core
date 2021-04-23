@@ -57,7 +57,4 @@
     <Method name="Alias" levels="Surface">
         <Field abbreviation="MaxWindSpeed" level="Station" />
     </Method>
-    <Method name="Alias" models="profiler" levels="Surface">
-        <Field abbreviation="windDirSfc" level="Station" />
-    </Method>
 </DerivedParameter>

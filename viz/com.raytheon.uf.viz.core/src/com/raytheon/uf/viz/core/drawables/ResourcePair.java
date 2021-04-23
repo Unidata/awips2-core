@@ -19,6 +19,8 @@
  **/
 package com.raytheon.uf.viz.core.drawables;
 
+import java.util.List;
+
 import javax.xml.bind.annotation.XmlAccessType;
 import javax.xml.bind.annotation.XmlAccessorType;
 import javax.xml.bind.annotation.XmlElement;
@@ -26,6 +28,7 @@ import javax.xml.bind.annotation.XmlType;
 
 import org.apache.commons.lang3.Validate;
 
+import com.raytheon.uf.viz.core.AbstractTimeMatcher;
 import com.raytheon.uf.viz.core.exception.VizException;
 import com.raytheon.uf.viz.core.rsc.AbstractResourceData;
 import com.raytheon.uf.viz.core.rsc.AbstractVizResource;
@@ -41,16 +44,16 @@ import com.raytheon.uf.viz.core.rsc.ResourceProperties;
  * <pre>
  * 
  *    SOFTWARE HISTORY
- *   
- * Date          Ticket#  Engineer    Description
- * ------------- -------- ----------- --------------------------
- * Sep 05, 2007           chammack    Initial Creation.
- * Oct 22, 2013  2491     bsteffen    Remove ISerializableObject
+ * 
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------------------
+ * Sep 05, 2007           chammack  Initial Creation.
+ * Oct 22, 2013  2491     bsteffen  Remove ISerializableObject
+ * Jan 04, 2018  6753     bsteffen  Instantiate resources in a group in order.
  * 
  * </pre>
  * 
  * @author chammack
- * @version 1
  */
 @XmlAccessorType(XmlAccessType.NONE)
 @XmlType(name = "pair")
@@ -187,7 +190,7 @@ public class ResourcePair {
             return false;
         } else if (ours == null && theirs != null) {
             return false;
-        } else if (ours != null && ours.equals(theirs) == false) {
+        } else if (ours != null && !ours.equals(theirs)) {
             return false;
         }
 
@@ -198,7 +201,7 @@ public class ResourcePair {
             return false;
         } else if (one == null && two != null) {
             return false;
-        } else if (one != null && one.equals(two) == false) {
+        } else if (one != null && !one.equals(two)) {
             return false;
         }
 
@@ -231,8 +234,9 @@ public class ResourcePair {
     public boolean instantiateResource(IDescriptor descriptor,
             boolean fireListeners) throws VizException {
         boolean success;
-        Validate.isTrue(this.resource == null
-                || this.resource.getStatus() == ResourceStatus.DISPOSED,
+        Validate.isTrue(
+                this.resource == null
+                        || this.resource.getStatus() == ResourceStatus.DISPOSED,
                 "Resource is already instantiated");
         Validate.notNull(descriptor, "Must provide descriptor");
         Validate.notNull(this.resourceData, "resourceData is null");
@@ -241,8 +245,8 @@ public class ResourcePair {
             this.loadProperties = new LoadProperties();
         }
 
-        AbstractVizResource rsc = this.resourceData.construct(
-                this.loadProperties, descriptor);
+        AbstractVizResource rsc = this.resourceData
+                .construct(this.loadProperties, descriptor);
         if (rsc == null) {
             success = false;
         } else {
@@ -250,7 +254,12 @@ public class ResourcePair {
             if (this.resourceData instanceof IResourceGroup) {
                 ResourceList rscList = ((IResourceGroup) this.resourceData)
                         .getResourceList();
-                for (ResourcePair rp : rscList) {
+                AbstractTimeMatcher timeMatcher = descriptor.getTimeMatcher();
+                List<ResourcePair> orderedList = rscList;
+                if (timeMatcher != null) {
+                    orderedList = timeMatcher.getResourceLoadOrder(rscList);
+                }
+                for (ResourcePair rp : orderedList) {
                     if (rp.getResource() == null) {
                         rp.instantiateResource(descriptor, false);
                         rscList.firePostAddListeners(rp);

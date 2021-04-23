@@ -248,7 +248,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      *         <ul>
      *         <li>directory: false</li>
      *         <li>date: 0ms since epoch</li>
-     *         <li>checksum: null</li>
+     *         <li>checksum: NON_EXISTENT_CHECKSUM</li>
      *         </ul>
      */
     private ListResponse createListResponse(LocalizationContext ctx,
