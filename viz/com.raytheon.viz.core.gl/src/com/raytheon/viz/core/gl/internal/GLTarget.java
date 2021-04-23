@@ -1241,13 +1241,6 @@ public class GLTarget extends AbstractGraphicsTarget implements IGLTarget {
         if (theCanvas != null) {
             theCanvas.swapBuffers();
         }
-        /*
-        Rectangle bounds = this.canvasSize;
-        BufferedImage bi = Screenshot.readToBufferedImage(bounds.width,
-                bounds.height, false);
-        */
-//        AWTGLReadBufferUtil glReadBufferUtil = new AWTGLReadBufferUtil(gl.getGLProfile(), false);
-//        BufferedImage image = glReadBufferUtil.readPixelsToBufferedImage(gl, true);
         
         // get and write out same image but WITHOUT alpha channel
         int w = this.canvasSize.width;
