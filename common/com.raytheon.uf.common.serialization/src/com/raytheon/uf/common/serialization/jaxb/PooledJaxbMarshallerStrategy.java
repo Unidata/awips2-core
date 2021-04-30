@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -39,58 +39,60 @@ import com.raytheon.uf.common.util.stream.CountingReader;
 /**
  * JAXB Marshaller strategy that uses a pool for marshaller and unmarshaller
  * objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 14, 2014 3373       bclement     Initial creation
- * Jul 25, 2014 3378       bclement     removed uf prefix from system properties
- * 
+ * Jul 14, 2014 3373       bclement    Initial creation
+ * Jul 25, 2014 3378       bclement    removed uf prefix from system properties
+ * Nov 09, 2017 6511       tgurney     Add useValidation constructor
+ *
  * </pre>
- * 
+ *
  * @author bclement
- * @version 1.0
  */
 public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
 
-    public static final int DEFAULT_POOL_SIZE = Integer.getInteger(
-            "jaxb.pool.size", 10);
+    public static final int DEFAULT_POOL_SIZE = Integer
+            .getInteger("jaxb.pool.size", 10);
 
-    public static final int DEFAULT_OBJ_SIZE_LIMIT = Integer.getInteger(
-            "jaxb.pool.object.limit", 1024 * 200); // 200KB
+    public static final int DEFAULT_OBJ_SIZE_LIMIT = Integer
+            .getInteger("jaxb.pool.object.limit", 1024 * 200); // 200KB
 
     private final int poolSize;
 
     private final int sizeLimit;
 
-    protected final Queue<Unmarshaller> unmarshallers = new ConcurrentLinkedQueue<Unmarshaller>();
+    protected final Queue<Unmarshaller> unmarshallers = new ConcurrentLinkedQueue<>();
 
-    protected final Queue<Marshaller> marshallers = new ConcurrentLinkedQueue<Marshaller>();
+    protected final Queue<Marshaller> marshallers = new ConcurrentLinkedQueue<>();
 
-    /**
-     * 
-     */
     public PooledJaxbMarshallerStrategy() {
-        this(DEFAULT_POOL_SIZE, DEFAULT_OBJ_SIZE_LIMIT);
+        this(DEFAULT_POOL_SIZE, DEFAULT_OBJ_SIZE_LIMIT, true);
     }
 
+    public PooledJaxbMarshallerStrategy(boolean useValidation) {
+        this(DEFAULT_POOL_SIZE, DEFAULT_OBJ_SIZE_LIMIT, useValidation);
+    }
 
-    /**
-     * @param poolSize
-     * @param pooledObjectSizeLimit
-     */
-    public PooledJaxbMarshallerStrategy(int poolSize, int pooledObjectSizeLimit) {
+    public PooledJaxbMarshallerStrategy(int poolSize,
+            int pooledObjectSizeLimit) {
+        this(poolSize, pooledObjectSizeLimit, true);
+    }
+
+    public PooledJaxbMarshallerStrategy(int poolSize, int pooledObjectSizeLimit,
+            boolean useValidation) {
+        super(useValidation);
         this.poolSize = poolSize;
         this.sizeLimit = pooledObjectSizeLimit;
     }
 
-
     /**
      * Gets a marshaller, creating one if one is not currently available.
-     * 
+     *
      * @return
      * @throws JAXBException
      */
@@ -105,7 +107,7 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
 
     /**
      * Gets an unmarshaller, creating one if one is not currently available.
-     * 
+     *
      * @return an unmarshaller
      * @throws JAXBException
      */
@@ -132,7 +134,7 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
 
     /**
      * attempt to return unmarshaller to pool
-     * 
+     *
      * @param unmarshaller
      * @param objSize
      */
@@ -144,7 +146,7 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
 
     /**
      * attempt to return marshaller to pool
-     * 
+     *
      * @param marshaller
      * @param objSize
      */
@@ -154,12 +156,6 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy#
-     * unmarshalFromReader(javax.xml.bind.JAXBContext, java.io.Reader)
-     */
     @Override
     public Object unmarshalFromReader(JAXBContext context, Reader reader)
             throws JAXBException {
@@ -174,12 +170,6 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy#
-     * unmarshalFromInputStream(javax.xml.bind.JAXBContext, java.io.InputStream)
-     */
     @Override
     public Object unmarshalFromInputStream(JAXBContext context, InputStream is)
             throws JAXBException {
@@ -193,13 +183,6 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy#marshalToXml
-     * (javax.xml.bind.JAXBContext, java.lang.Object, boolean)
-     */
     @Override
     public String marshalToXml(JAXBContext context, Object obj,
             MarshalOptions options) throws JAXBException {
@@ -210,16 +193,9 @@ public class PooledJaxbMarshallerStrategy extends JaxbMarshallerStrategy {
         return rval;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.uf.common.serialization.jaxb.JaxbMarshallerStrategy#
-     * marshalToStream(javax.xml.bind.JAXBContext, java.lang.Object,
-     * java.io.OutputStream, boolean)
-     */
     @Override
     public void marshalToStream(JAXBContext context, Object obj,
-            OutputStream out,MarshalOptions options) throws JAXBException {
+            OutputStream out, MarshalOptions options) throws JAXBException {
         Marshaller marshaller = getMarshaller(context);
         CountingOutputStream wrappedOut = new CountingOutputStream(out);
         try {

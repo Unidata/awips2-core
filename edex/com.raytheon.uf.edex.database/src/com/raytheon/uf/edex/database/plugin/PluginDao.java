@@ -128,6 +128,8 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Feb 24, 2016  5389     nabowle     Purge orphans based on purgeKeys and pathKeys.
  * Apr 14, 2017  6003     tgurney     Fix modTimeToWait behavior for rules that
  *                                    match multiple keys
+ * Feb 20, 2018  7123     bsteffen    Add postPurge() method
+ * 
  * </pre>
  *
  * @author bphillip
@@ -684,6 +686,16 @@ public abstract class PluginDao extends CoreDao {
     }
 
     /**
+     * Called after purging records to allow subtypes to perform additional
+     * cleanup tasks. Default behavior is to do nothing.
+     * 
+     * @throws PluginException
+     */
+    protected void postPurge() throws PluginException {
+
+    }
+
+    /**
      * Purges all data associated with the owning plugin based on criteria
      * specified by the owning plugin
      *
@@ -738,6 +750,7 @@ public abstract class PluginDao extends CoreDao {
             throw new PluginException(
                     "Error purging all data for " + pluginName + " plugin.", e);
         }
+        postPurge();
     }
 
     /**
@@ -817,6 +830,7 @@ public abstract class PluginDao extends CoreDao {
             messageBuffer.append(" total.");
 
             PurgeLogger.logInfo(messageBuffer.toString(), pluginName);
+            postPurge();
             return new PurgeResults(timesKept, timesPurged);
         } catch (EdexException e) {
             throw new PluginException("Error applying purge rule!!", e);
@@ -839,8 +853,8 @@ public abstract class PluginDao extends CoreDao {
         if (rules == null) {
             PurgeLogger.logWarn("No rules found for purgeKeys: "
                     + Arrays.toString(purgeKeys), pluginName);
-            return new RuleResult(Collections.<Date>emptySet(),
-                    Collections.<Date>emptySet(), 0);
+            return new RuleResult(Collections.<Date> emptySet(),
+                    Collections.<Date> emptySet(), 0);
         }
         /*
          * This section applies the purge rule
@@ -905,8 +919,8 @@ public abstract class PluginDao extends CoreDao {
                     if (maxRefTime == null) {
                         PurgeLogger.logInfo("No data available to purge",
                                 pluginName);
-                        return new RuleResult(Collections.<Date>emptySet(),
-                                Collections.<Date>emptySet(), 0);
+                        return new RuleResult(Collections.<Date> emptySet(),
+                                Collections.<Date> emptySet(), 0);
                     } else {
                         periodCutoffTime = new Date(maxRefTime.getTime()
                                 - rule.getPeriodInMillis());
@@ -1517,9 +1531,9 @@ public abstract class PluginDao extends CoreDao {
      * @throws DataAccessLayerException
      */
     @SuppressWarnings("unchecked")
-    public int purgeDataByRefTime(Date refTime, Map<String, String> productKeys,
-            boolean trackHdf5, boolean trackToUri,
-            Map<String, List<String>> hdf5FileToUriPurged)
+    protected int purgeDataByRefTime(Date refTime,
+            Map<String, String> productKeys, boolean trackHdf5,
+            boolean trackToUri, Map<String, List<String>> hdf5FileToUriPurged)
             throws DataAccessLayerException {
 
         int results = 0;

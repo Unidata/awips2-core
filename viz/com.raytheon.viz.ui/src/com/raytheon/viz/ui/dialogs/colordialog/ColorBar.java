@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 
 import javax.measure.converter.UnitConverter;
 
@@ -52,6 +53,7 @@ import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Event;
 import org.eclipse.swt.widgets.Listener;
 
+import com.raytheon.uf.common.colormap.image.Colormapper;
 import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
 
 /**
@@ -62,14 +64,21 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  *
  * SOFTWARE HISTORY
  *
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 08, 2014 2950       bsteffen    Support dynamic color counts and resizing.
- *                                     for color editor's color bar for radar correlation coefficient.
- * Apr 11, 2014 DR 15811   Qinglu Lin  Added decimalPlaceMap and logic to have 4 decimal places
- * May 7, 2015  DCS 17219  jgerth      Allow user to interpolate alpha only
- * Feb 04, 2016 5301       tgurney     Fix undoColorBar and redoColorBar return values
- * Feb 27, 2017 6116       mapeters    Don't hardcode size of nav buttons
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- ------------------------------------------
+ * Apr 08, 2014  2950     bsteffen    Support dynamic color counts and resizing.
+ *                                    for color editor's color bar for radar
+ *                                    correlation coefficient.
+ * Apr 11, 2014  15811    Qinglu Lin  Added decimalPlaceMap and logic to have 4
+ *                                    decimal places
+ * May 07, 2015  17219    jgerth      Allow user to interpolate alpha only
+ * Feb 04, 2016  5301     tgurney     Fix undoColorBar and redoColorBar return
+ *                                    values
+ * Feb 27, 2017  6116     mapeters    Don't hardcode size of nav buttons
+ * Feb 07, 2018  6816     randerso    Fix colorbar labeling for GFE logFactor
+ *                                    color maps
+ * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
+ * Jul 31, 2018  6668     bsteffen    Fix slider labels.
  *
  * </pre>
  *
@@ -198,10 +207,11 @@ public class ColorBar extends Composite
         this.enabledColorMask = enableColorMask;
         this.cmapParams = cmapParams;
 
-        for (String s : decimalPlaceMap.keySet()) {
-            if (parent.getShell().getText().toLowerCase().contains(s)) {
+        for (Entry<String, String> entry : decimalPlaceMap.entrySet()) {
+            if (parent.getShell().getText().toLowerCase()
+                    .contains(entry.getKey())) {
                 numberFormat = new DecimalFormat(
-                        "###,###,##0." + decimalPlaceMap.get(s));
+                        "###,###,##0." + entry.getValue());
                 break;
             }
         }
@@ -438,6 +448,11 @@ public class ColorBar extends Composite
             gc.setAlpha(colorData.alphaValue);
             int topSliderX = reIndex(getColorCount(), bar.width,
                     topSliderIndex);
+            /*
+             * reIndex positions it at the middle, additional math is needed to
+             * shift it to the left edge of the color
+             */
+            topSliderX -= bar.width / getColorCount() / 2;
             int[] topArrowPolygon = calcTopArrow(topSliderX);
             gc.fillPolygon(topArrowPolygon);
             gc.setAlpha(255);
@@ -467,6 +482,11 @@ public class ColorBar extends Composite
             gc.setAlpha(colorData.alphaValue);
             int bottomSliderX = reIndex(getColorCount(), bar.width,
                     bottomSliderIndex);
+            /*
+             * reIndex positions it at the middle, additional math is needed to
+             * shift it to the right edge of the color
+             */
+            bottomSliderX += bar.width / getColorCount() / 2;
             int[] bottomArrowPolygon = calcBottomArrow(bottomSliderX);
             gc.fillPolygon(bottomArrowPolygon);
             gc.setAlpha(255);
@@ -475,7 +495,7 @@ public class ColorBar extends Composite
 
             /* Draw text that is displayed next to the bottom slider arrow. */
             gc.setForeground(white);
-            text = getSliderText(bottomSliderIndex);
+            text = getSliderText(bottomSliderIndex + 1);
             x = bottomSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (bottomSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -549,7 +569,7 @@ public class ColorBar extends Composite
      * @param colors
      */
     protected void setCurrentColors(List<ColorData> colors) {
-        if (colors.equals(getCurrentColors()) == false) {
+        if (!colors.equals(getCurrentColors())) {
             int oldCount = getColorCount();
             colorHistory.subList(currentColorIndex + 1, colorHistory.size())
                     .clear();
@@ -900,20 +920,17 @@ public class ColorBar extends Composite
      * @param index
      * @return
      */
-    protected String getSliderText(int index) {
+    protected String getSliderText(double index) {
         int size = getColorCount();
         UnitConverter unitConv = cmapParams.getColorMapToDisplayConverter();
 
         float max = cmapParams.getColorMapMax();
         float min = cmapParams.getColorMapMin();
-        float range = max - min;
         double lastVal = Double.NaN;
-        float increment = range / (size - 1);
-        double value = cmapParams.getColorMapMin() + (increment * index);
-        if (index > 0) {
-            lastVal = value - increment;
-        }
+        double value = Double.NaN;
         if (cmapParams.isLogarithmic()) {
+            // TODO: implement the full inverse of Colormapper.getLogIndex() and
+            // use it here
             if (max >= 0 && min >= 0) {
                 double i = (float) index / size;
                 double logMin = Math.log(min);
@@ -925,6 +942,23 @@ public class ColorBar extends Composite
                 }
             }
 
+        } else if (cmapParams.getLogFactor() > 0.0) {
+            double idx = index / size;
+            value = Colormapper.getLogFactorValue(idx, min, max,
+                    cmapParams.getLogFactor());
+            if (index > 0) {
+                idx = (index - 1) / size;
+                lastVal = Colormapper.getLogFactorValue(idx, min, max,
+                        cmapParams.getLogFactor());
+            }
+        } else {
+            // linear color mapping
+            double idx = index / size;
+            value = Colormapper.getLinearValue(idx, min, max);
+            if (index > 0) {
+                idx = (index - 1) / size;
+                lastVal = Colormapper.getLinearValue(idx, min, max);
+            }
         }
 
         if (unitConv != null) {

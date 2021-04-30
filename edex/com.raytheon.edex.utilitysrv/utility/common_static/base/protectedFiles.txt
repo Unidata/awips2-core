@@ -1,15 +1,19 @@
-# The layout of this file is a line that starts with '#' is treated as a
-# comment and any other line is treated as a protected base file in the format
-# localization_level:localization_type/subpath/to/file
+# The layout of this file is:
+# - A line that starts with '#' is treated as a comment
+# - A line in this format is treated as a protected localization file:
+#   localization_level:localization_type/subpath/to/file
+# - A line in this format (note the trailing slash) is a protected directory
+#   localization_level:localization_type/subpath/to/directory/
 #
-# A simple example would be 
+# Example of protected file:
 # BASE:common_static/textdb/textCategoryClass.txt
-
-#SCAN_COMMON files
-SITE:common_static/scan/SCANRunSiteConfig.xml
+#
+# Example of protected directory:
+# SITE:common_static/aviation/configuration/tafs/
 
 #AvnFPS files
 SITE:common_static/aviation/avnwatch/aviationForecasterConfig.xml
+SITE:common_static/aviation/config/tafs/
 
 #D2D files
 BASE:cave_static/derivedParameters/DerivedParameterInterface.py
@@ -17,10 +21,10 @@ BASE:cave_static/derivedParameters/DerivedParameterInterface.py
 # GFE protected files
 BASE:cave_static/gfe/userPython/textProducts/HLSTCV_Common.py
 BASE:cave_static/gfe/userPython/textProducts/MultipleElementTable.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/DefaultCallToActions.py
+BASE:cave_static/gfe/userPython/textUtilities/DefaultCallToActions.py
 
-CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultAreaDictionary.py
-CONFIGURED:cave_static/gfe/userPython/textUtilities/regular/DefaultCityLocation.py
+CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultAreaDictionary.py
+CONFIGURED:cave_static/gfe/userPython/textUtilities/DefaultCityLocation.py
 
 BASE:common_static/gfe/config/serverConfig.py
 BASE:common_static/gfe/config/Maps.py
@@ -29,7 +33,6 @@ SITE:common_static/gfe/config/siteConfig.py
 SITE:common_static/gfe/config/localConfig.py
 SITE:common_static/gfe/config/localMaps.py
 SITE:common_static/gfe/config/localWxConfig.py
-SITE:common_static/gfe/config/svcbu.properties
 
 BASE:common_static/gfe/textproducts/templates/product/AFD.py
 BASE:common_static/gfe/textproducts/templates/product/PFM.py
@@ -77,34 +80,34 @@ BASE:common_static/gfe/textproducts/templates/utility/FireWxZones_EA_Site_MultiP
 BASE:common_static/gfe/textproducts/templates/utility/MarineZones_EA_Site_MultiPil_Definition.py
 BASE:common_static/gfe/textproducts/templates/utility/PublicZones_EA_Site_MultiPil_Definition.py
 
-BASE:cave_static/gfe/userPython/textUtilities/regular/VTECMessageType.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/CombinedPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/CommonUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigurableIssuance.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ConfigVariables.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/DiscretePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/EditAreaUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/FirePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Header.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Holidays.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/Interfaces.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/MarinePhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ModuleAccessor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/PhraseBuilder.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SAF_Overrides.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/FWS_Overrides.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SampleAnalysis.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/ScalarPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/SimpleTableUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/StringUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TableBuilder.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TextRules.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TextUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TimeDescriptor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/TimeRangeUtils.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/UnitConvertor.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/VectorRelatedPhrases.py
-BASE:cave_static/gfe/userPython/textUtilities/regular/WxPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/VTECMessageType.py
+BASE:cave_static/gfe/userPython/textUtilities/CombinedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/CommonUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/ConfigurableIssuance.py
+BASE:cave_static/gfe/userPython/textUtilities/ConfigVariables.py
+BASE:cave_static/gfe/userPython/textUtilities/DiscretePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/EditAreaUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/FirePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/Header.py
+BASE:cave_static/gfe/userPython/textUtilities/Holidays.py
+BASE:cave_static/gfe/userPython/textUtilities/Interfaces.py
+BASE:cave_static/gfe/userPython/textUtilities/MarinePhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/ModuleAccessor.py
+BASE:cave_static/gfe/userPython/textUtilities/PhraseBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/SAF_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/FWS_Overrides.py
+BASE:cave_static/gfe/userPython/textUtilities/SampleAnalysis.py
+BASE:cave_static/gfe/userPython/textUtilities/ScalarPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/SimpleTableUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/StringUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/TableBuilder.py
+BASE:cave_static/gfe/userPython/textUtilities/TextRules.py
+BASE:cave_static/gfe/userPython/textUtilities/TextUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/TimeDescriptor.py
+BASE:cave_static/gfe/userPython/textUtilities/TimeRangeUtils.py
+BASE:cave_static/gfe/userPython/textUtilities/UnitConvertor.py
+BASE:cave_static/gfe/userPython/textUtilities/VectorRelatedPhrases.py
+BASE:cave_static/gfe/userPython/textUtilities/WxPhrases.py
 
 BASE:cave_static/gfe/userPython/utilities/ISC_Utility.py
 BASE:cave_static/gfe/userPython/utilities/SmartScript.py
@@ -126,18 +129,9 @@ BASE:cave_static/gfe/userPython/smartTools/Assign_Value.py
 BASE:cave_static/gfe/userPython/smartTools/Smooth.py
 
 # smartInits
-BASE:common_static/gfe/smartinit/AKNAM40.py
-BASE:common_static/gfe/smartinit/AKWAVE.py
 BASE:common_static/gfe/smartinit/NAM12.py
 BASE:common_static/gfe/smartinit/NAM40.py
-BASE:common_static/gfe/smartinit/NAM80.py
-BASE:common_static/gfe/smartinit/NAM95.py
-BASE:common_static/gfe/smartinit/GFS190.py
-BASE:common_static/gfe/smartinit/GFS80.py
-BASE:common_static/gfe/smartinit/GFS40.py
-BASE:common_static/gfe/smartinit/GFS75.py
-BASE:common_static/gfe/smartinit/gfsLR.py
-BASE:common_static/gfe/smartinit/GLERL.py
+BASE:common_static/gfe/smartinit/GFS20.py
 BASE:common_static/gfe/smartinit/GWW.py
 BASE:common_static/gfe/smartinit/HPCGuide.py
 BASE:common_static/gfe/smartinit/HPCQPF.py
@@ -145,33 +139,15 @@ BASE:common_static/gfe/smartinit/RFCQPF.py
 BASE:common_static/gfe/smartinit/Init.py
 BASE:common_static/gfe/smartinit/LAPS.py
 BASE:common_static/gfe/smartinit/MOSGuide.py
-BASE:common_static/gfe/smartinit/AKMOSGuide.py
-BASE:common_static/gfe/smartinit/OPCTAFBE.py
-BASE:common_static/gfe/smartinit/OPCTAFBNW.py
-BASE:common_static/gfe/smartinit/OPCTAFBSW.py
 BASE:common_static/gfe/smartinit/MSAS.py
-BASE:common_static/gfe/smartinit/NGM80.py
-BASE:common_static/gfe/smartinit/NGM95.py
-BASE:common_static/gfe/smartinit/RUC80.py
+BASE:common_static/gfe/smartinit/RAP13.py
 BASE:common_static/gfe/smartinit/SAT.py
 BASE:common_static/gfe/smartinit/TPCtcm.py
-BASE:common_static/gfe/smartinit/DGEX.py
-BASE:common_static/gfe/smartinit/WNAWAVE.py
 BASE:common_static/gfe/smartinit/WW3.py
-BASE:common_static/gfe/smartinit/AKwave10.py
-BASE:common_static/gfe/smartinit/AKwave4.py
-BASE:common_static/gfe/smartinit/EPwave10.py
 BASE:common_static/gfe/smartinit/GlobalWave.py
 BASE:common_static/gfe/smartinit/GLWM.py
-BASE:common_static/gfe/smartinit/HIRESWarw.py
-BASE:common_static/gfe/smartinit/HIRESWnmm.py
-BASE:common_static/gfe/smartinit/SREF.py
-BASE:common_static/gfe/smartinit/WCwave4.py
-BASE:common_static/gfe/smartinit/WCwave10.py
-BASE:common_static/gfe/smartinit/WNAwave4.py
-BASE:common_static/gfe/smartinit/WNAwave10.py                       
 BASE:common_static/gfe/smartinit/RTMA.py
-BASE:common_static/gfe/smartinit/NamDNG5.py
+BASE:common_static/gfe/smartinit/NamDNG.py
 
 #gfeConfig files
 BASE:cave_static/gfe/userPython/gfeConfig/gfeConfig.py
@@ -195,3 +171,6 @@ SITE:common_static/vtec/remote-etn-partners.properties
 
 # Radar Files
 SITE:common_static/rpgenvdata/EnvironParamsLevelTable.xml
+
+# AlertViz files
+SITE:cave_static/alertViz/AlertVizForced.xml

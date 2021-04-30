@@ -54,11 +54,12 @@ import com.raytheon.uf.common.serialization.MarshalOptions;
  * Jun 02, 2015 4496       nabowle      Unmarshal from XMLStreamReader if not
  *                                      using the CustomJAXBUnmarshaller to
  *                                      prevent XEE attacks.
+ * Sep 02, 2011 ????       ekladstrup   Add MaintainEventsValidationHandler
+ * Nov 08, 2017 6511       tgurney      Add constructor with useValidation flag
  *
  * </pre>
  *
  * @author bclement
- * @version 1.0
  */
 public class JaxbMarshallerStrategy {
 
@@ -73,29 +74,24 @@ public class JaxbMarshallerStrategy {
     private static final Logger log = Logger
             .getLogger(JaxbMarshallerStrategy.class.getName());
 
+    private boolean useValidation = true;
+
+    public JaxbMarshallerStrategy() {
+        this(true);
+    }
+
+    public JaxbMarshallerStrategy(boolean useValidation) {
+        this.useValidation = useValidation;
+    }
+
     /**
-     *
      * Saves all validation events so if an error is caught handlers have an
      * option of getting more accurate information about what happened
-     *
-     * <pre>
-     *
-     * SOFTWARE HISTORY
-     *
-     * Date         Ticket#    Engineer    Description
-     * ------------ ---------- ----------- --------------------------
-     * Sep 2, 2011            ekladstrup     Initial creation
-     *
-     * </pre>
-     *
-     * @author ekladstrup
-     * @version 1.0
      */
-    protected static class MaintainEventsValidationHandler implements
-            ValidationEventHandler {
+    protected static class MaintainEventsValidationHandler
+            implements ValidationEventHandler {
 
-        private final ArrayList<ValidationEvent> events = new ArrayList<ValidationEvent>(
-                0);
+        private final ArrayList<ValidationEvent> events = new ArrayList<>(0);
 
         @Override
         public boolean handleEvent(ValidationEvent event) {
@@ -105,7 +101,7 @@ public class JaxbMarshallerStrategy {
 
         public ArrayList<ValidationEvent> getEvents() {
             synchronized (events) {
-                return new ArrayList<ValidationEvent>(events);
+                return new ArrayList<>(events);
             }
         }
 
@@ -139,7 +135,8 @@ public class JaxbMarshallerStrategy {
      * @return
      * @throws JAXBException
      */
-    public Object unmarshalFromReader(JAXBContext context, Reader reader) throws JAXBException {
+    public Object unmarshalFromReader(JAXBContext context, Reader reader)
+            throws JAXBException {
         Unmarshaller unmarshaller = createUnmarshaller(context);
         return unmarshalFromReader(unmarshaller, reader);
     }
@@ -170,9 +167,8 @@ public class JaxbMarshallerStrategy {
             try {
                 reader.close();
             } catch (IOException e) {
-                log.log(Level.WARNING,
-                        "Unable to close JAXB reader: "
-                                + e.getLocalizedMessage());
+                log.log(Level.WARNING, "Unable to close JAXB reader: "
+                        + e.getLocalizedMessage());
             }
         }
     }
@@ -220,9 +216,8 @@ public class JaxbMarshallerStrategy {
                 try {
                     is.close();
                 } catch (IOException e) {
-                    log.log(Level.WARNING,
-                            "Unable to close JAXB stream: "
-                                    + e.getLocalizedMessage());
+                    log.log(Level.WARNING, "Unable to close JAXB stream: "
+                            + e.getLocalizedMessage());
                 }
             }
         }
@@ -249,7 +244,11 @@ public class JaxbMarshallerStrategy {
             throws JAXBException {
         Unmarshaller m = context.createUnmarshaller();
         // set event handler to be able to retrieve ValidationEvents
-        m.setEventHandler(new MaintainEventsValidationHandler());
+        if (useValidation) {
+            m.setEventHandler(new MaintainEventsValidationHandler());
+        } else {
+            m.setEventHandler((ValidationEvent e) -> true);
+        }
         return m;
     }
 
@@ -309,8 +308,8 @@ public class JaxbMarshallerStrategy {
      *            formatting options applied to marshaller
      * @throws JAXBException
      */
-    protected void marshalToStream(Marshaller msh, Object obj,
-            OutputStream out, MarshalOptions options) throws JAXBException {
+    protected void marshalToStream(Marshaller msh, Object obj, OutputStream out,
+            MarshalOptions options) throws JAXBException {
         options.apply(msh);
         msh.marshal(obj, out);
     }
@@ -349,12 +348,10 @@ public class JaxbMarshallerStrategy {
                             break;
                         }
                     }
-                    log.log(l,
-                            (name != null ? name : "") + ": "
-                                    + event.getMessage() + " on line "
-                                    + event.getLocator().getLineNumber()
-                                    + " column "
-                                    + event.getLocator().getColumnNumber(),
+                    log.log(l, (name != null ? name : "") + ": "
+                            + event.getMessage() + " on line "
+                            + event.getLocator().getLineNumber() + " column "
+                            + event.getLocator().getColumnNumber(),
                             event.getLinkedException());
                 }
                 mh.clearEvents();

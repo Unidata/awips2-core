@@ -42,11 +42,11 @@ import com.raytheon.uf.common.numeric.source.FilteredDataSource;
  * Date          Ticket#  Engineer    Description
  * ------------- -------- ----------- --------------------------
  * Mar 06, 2014  2791     bsteffen    Initial creation
+ * Jan 16, 2018  7011     bsteffen    Fix X wrapping.
  * 
  * </pre>
  * 
  * @author bsteffen
- * @version 1.0
  */
 public class GeographicDataSource implements DataSource {
 
@@ -95,8 +95,8 @@ public class GeographicDataSource implements DataSource {
     }
 
     protected int fixX(int x) {
-        if (wrapX > 0 && (x < 0 || x > nx - 1)) {
-            while (x > nx) {
+        if (wrapX > 0) {
+            while (x >= nx) {
                 x -= wrapX;
             }
             while (x < 0) {

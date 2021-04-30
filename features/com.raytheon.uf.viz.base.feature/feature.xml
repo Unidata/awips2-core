@@ -38,7 +38,7 @@
          id="org.apache.activemq"
          download-size="0"
          install-size="0"
-         version="5.14.2"/>
+         version="5.15.7"/>
 
    <plugin
          id="org.apache.xmlgraphics"
@@ -50,7 +50,7 @@
          id="org.apache.batik"
          download-size="0"
          install-size="0"
-         version="1.9.0"/>
+         version="1.10.0"/>
 
    <plugin
          id="com.raytheon.viz.core"
@@ -259,7 +259,7 @@
          id="org.apache.xerces"
          download-size="0"
          install-size="0"
-         version="2.9.1"
+         version="2.12.0"
          unpack="false"/>
 
    <plugin

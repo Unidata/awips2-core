@@ -23,7 +23,7 @@
 *
 **********************************************************************/
 /**
- * 
+ *
  */
 package com.raytheon.uf.common.json.jackson;
 
@@ -41,40 +41,41 @@ import com.vividsolutions.jts.io.WKTReader;
 
 /**
  * Deserialization adapter for JTS Geometry objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            bclement    Initial creation
- * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
- * 
+ * Jan 19, 2016 5067       bclement    upgrade jackson to 2.6
+ * Nov 29, 2017 6531       mapeters    upgrade jackson to 2.8
+ *
  * </pre>
- * 
+ *
  */
 public class GeometryDeserializer extends JsonDeserializer<Geometry> {
 
-	@Override
-	public Geometry deserialize(JsonParser jp, DeserializationContext ctxt)
-			throws IOException, JsonProcessingException {
-		if (jp.getCurrentToken() != JsonToken.VALUE_STRING) {
-			throw ctxt.mappingException(Geometry.class);
-		}
-		WKTReader reader = new WKTReader();
-		try {
-			return reader.read(jp.getText());
-		} catch (ParseException e) {
-			throw new IOException(e);
-		}
-	}
+    @Override
+    public Geometry deserialize(JsonParser jp, DeserializationContext ctxt)
+            throws IOException, JsonProcessingException {
+        if (jp.getCurrentToken() != JsonToken.VALUE_STRING) {
+            ctxt.handleUnexpectedToken(Geometry.class, jp);
+        }
+        WKTReader reader = new WKTReader();
+        try {
+            return reader.read(jp.getText());
+        } catch (ParseException e) {
+            throw new IOException(e);
+        }
+    }
 
-	@Override
-	public Object deserializeWithType(JsonParser jp,
-			DeserializationContext ctxt, TypeDeserializer typeDeserializer)
-			throws IOException, JsonProcessingException {
-		return super.deserializeWithType(jp, ctxt, typeDeserializer);
-	}
+    @Override
+    public Object deserializeWithType(JsonParser jp,
+            DeserializationContext ctxt, TypeDeserializer typeDeserializer)
+            throws IOException, JsonProcessingException {
+        return super.deserializeWithType(jp, ctxt, typeDeserializer);
+    }
 
 }
