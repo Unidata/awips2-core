@@ -27,7 +27,7 @@
          id="com.google.guava"
          download-size="0"
          install-size="0"
-         version="18.0.0"/>
+         version="24.1.1"/>
 
    <plugin
          id="com.raytheon.uf.common.alertmonitor"
@@ -316,13 +316,13 @@
          id="org.slf4j"
          download-size="0"
          install-size="0"
-         version="1.7.21"/>
+         version="1.7.25"/>
 
    <plugin
          id="org.springframework"
          download-size="0"
          install-size="0"
-         version="4.2.9"/>
+         version="4.3.18"/>
 
    <plugin
          id="com.raytheon.uf.common.pypies"
@@ -419,7 +419,7 @@
          id="org.apache.xerces"
          download-size="0"
          install-size="0"
-         version="2.9.1"/>
+         version="2.12.0"/>
 
    <plugin
          id="com.raytheon.uf.common.convert"
@@ -432,7 +432,7 @@
          id="org.postgres"
          download-size="0"
          install-size="0"
-         version="9.3.5"/>
+         version="42.2.5"/>
 
    <plugin
          id="javax.persistence"

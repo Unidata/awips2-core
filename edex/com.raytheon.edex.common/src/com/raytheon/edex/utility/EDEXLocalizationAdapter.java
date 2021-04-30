@@ -47,7 +47,6 @@ import com.raytheon.uf.common.localization.LocalizationFile;
 import com.raytheon.uf.common.localization.LocalizationFileKey;
 import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
-import com.raytheon.uf.common.localization.region.RegionLookup;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.edex.core.EDEXUtil;
@@ -99,6 +98,7 @@ import com.raytheon.uf.edex.core.EDEXUtil;
  * Aug 04, 2017 6379        njensen     Removed protected-ness from responses
  * Aug 07, 2017 5731        bsteffen    Implement getContextList
  * Sep  8, 2017 6255        tgurney     Check ownership before setting permissions
+ * Feb 04, 2019             mjames@ucar Remove REGION and WORKSTATION levels.
  *
  * </pre>
  *
@@ -126,38 +126,28 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         this.contexts = new HashMap<>();
     }
 
-    @Override
+    @SuppressWarnings("null")
+	@Override
     public LocalizationContext[] getLocalSearchHierarchy(
             LocalizationType type) {
-
+    	
         synchronized (this.contexts) {
             LocalizationContext[] ctx = this.contexts.get(type);
             if (ctx == null) {
-                ctx = new LocalizationContext[4];
+                ctx = new LocalizationContext[3];
                 ctx[0] = getContext(type, LocalizationLevel.SITE);
-                ctx[1] = getContext(type, LocalizationLevel.REGION);
-                ctx[2] = getContext(type, LocalizationLevel.CONFIGURED);
-                ctx[3] = getContext(type, LocalizationLevel.BASE);
-
-                if (RegionLookup.getWfoRegion(getSiteName()) == null) {
-                    // remove REGION from the contexts array
-                    List<LocalizationContext> c = new ArrayList<>();
-                    for (LocalizationContext con : ctx) {
-                        if (con.getLocalizationLevel() != LocalizationLevel.REGION) {
-                            c.add(con);
-                        }
-                    }
-                    ctx = c.toArray(new LocalizationContext[0]);
-                }
+                ctx[1] = getContext(type, LocalizationLevel.CONFIGURED);
+                ctx[2] = getContext(type, LocalizationLevel.BASE);
                 this.contexts.put(type, ctx);
             }
+	    return ctx;
             // return a copy for safety in case someone messes with references
             // to the returned values
-            LocalizationContext[] cloned = new LocalizationContext[ctx.length];
-            for (int i = 0; i < ctx.length; i++) {
-                cloned[i] = (LocalizationContext) ctx[i].clone();
-            }
-            return cloned;
+            //LocalizationContext[] cloned = new LocalizationContext[ctx.length];
+            //for (int i = 0; i < ctx.length; i++) {
+            //    cloned[i] = (LocalizationContext) ctx[i].clone();
+            //}
+            //return cloned;
         }
     }
 
@@ -258,7 +248,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
      *         <ul>
      *         <li>directory: false</li>
      *         <li>date: 0ms since epoch</li>
-     *         <li>checksum: null</li>
+     *         <li>checksum: NON_EXISTENT_CHECKSUM</li>
      *         </ul>
      */
     private ListResponse createListResponse(LocalizationContext ctx,
@@ -446,17 +436,9 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
         String contextName = null;
         if (level == LocalizationLevel.BASE) {
             // nothing to add
-        } else if (level == LocalizationLevel.SITE
-                || level == LocalizationLevel.CONFIGURED) {
+        } else if (level == LocalizationLevel.SITE || level == LocalizationLevel.CONFIGURED) {
             // fill in site name
             contextName = getSiteName();
-        } else if (level == LocalizationLevel.REGION) {
-            contextName = RegionLookup.getWfoRegion(getSiteName());
-            if (contextName == null) {
-                handler.debug("Site " + getSiteName()
-                        + " is not in regions.xml file, region will default to none");
-                contextName = "none";
-            }
         } else {
             // EDEX has no concept of current user or personality
             contextName = "none";
@@ -500,12 +482,7 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public LocalizationLevel[] getAvailableLevels() {
         LocalizationLevel[] levels = new LocalizationLevel[] {
-                LocalizationLevel.BASE, LocalizationLevel.REGION,
-                LocalizationLevel.CONFIGURED, LocalizationLevel.SITE };
-
-        if (RegionLookup.getWfoRegion(getSiteName()) == null) {
-            levels = ArrayUtils.removeElement(levels, LocalizationLevel.REGION);
-        }
+                LocalizationLevel.BASE, LocalizationLevel.CONFIGURED, LocalizationLevel.SITE };
 
         return levels;
     }

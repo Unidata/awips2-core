@@ -5,10 +5,10 @@
          point="org.eclipse.ui.menus">
       <menuContribution
             allPopups="false"
-            locationURI="menu:CAVE?after=group1">
+            locationURI="menu:CAVE">
          <command
                commandId="com.raytheon.uf.viz.auth.userAdmin"
-               label="User Administration..."
+               label="User Administration"
                style="push">
          </command>
       </menuContribution>

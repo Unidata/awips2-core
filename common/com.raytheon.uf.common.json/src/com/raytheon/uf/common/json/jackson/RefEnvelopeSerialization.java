@@ -27,7 +27,7 @@
 * ------------ ---------- ----------- --------------------------
 * Dec 7, 2011            bclement     Initial creation
 *
-*/ 
+*/
 package com.raytheon.uf.common.json.jackson;
 
 import java.io.IOException;
@@ -50,88 +50,88 @@ import com.raytheon.uf.common.json.jackson.util.ArrayDecoder;
 
 /**
  * Serialization adapter for ReferencedEnvelope objects
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Aug 10, 2011            bclement    Initial creation
- * Jan 19, 2016  5067      bclement    upgrade jackson to 2.6
- * 
+ * Jan 19, 2016 5067       bclement    upgrade jackson to 2.6
+ * Nov 29, 2017 6531       mapeters    upgrade jackson to 2.8
+ *
  * </pre>
- * 
+ *
  */
 public class RefEnvelopeSerialization {
 
-	public static class Deserializer extends
-			JsonDeserializer<ReferencedEnvelope> {
+    public static class Deserializer
+            extends JsonDeserializer<ReferencedEnvelope> {
 
-		@Override
-		public ReferencedEnvelope deserialize(JsonParser jp,
-				DeserializationContext ctxt) throws IOException,
-				JsonProcessingException {
-			JsonToken tok = jp.getCurrentToken();
-			ArrayDecoder.checkArrayStart(tok, ctxt);
-			double minx = getDouble(jp, ctxt);
-			double miny = getDouble(jp, ctxt);
-			double maxx = getDouble(jp, ctxt);
-			double maxy = getDouble(jp, ctxt);
-			tok = jp.nextToken();
-			if ( tok != JsonToken.VALUE_STRING){
-				throw ctxt.mappingException(ReferencedEnvelope.class);
-			}
-			String wkt = jp.getText();
-			CoordinateReferenceSystem crs;
-			if (wkt.isEmpty()) {
-				crs = null;
-			} else {
-				try {
-					crs = CRS.parseWKT(wkt);
-				} catch (FactoryException e) {
-					throw new IOException("Unable to parse CRS WKT", e);
-				}
-			}
-			tok = jp.nextToken();
-			ArrayDecoder.checkArrayEnd(tok, ctxt);
-			return new ReferencedEnvelope(minx, maxx, miny, maxy, crs);
-		}
+        @Override
+        public ReferencedEnvelope deserialize(JsonParser jp,
+                DeserializationContext ctxt)
+                throws IOException, JsonProcessingException {
+            ArrayDecoder.checkArrayStart(jp, ctxt);
+            double minx = getDouble(jp, ctxt);
+            double miny = getDouble(jp, ctxt);
+            double maxx = getDouble(jp, ctxt);
+            double maxy = getDouble(jp, ctxt);
+            JsonToken tok = jp.nextToken();
+            if (tok != JsonToken.VALUE_STRING) {
+                ctxt.handleUnexpectedToken(ReferencedEnvelope.class, jp);
+            }
+            String wkt = jp.getText();
+            CoordinateReferenceSystem crs;
+            if (wkt.isEmpty()) {
+                crs = null;
+            } else {
+                try {
+                    crs = CRS.parseWKT(wkt);
+                } catch (FactoryException e) {
+                    throw new IOException("Unable to parse CRS WKT", e);
+                }
+            }
+            tok = jp.nextToken();
+            ArrayDecoder.checkArrayEnd(jp, ctxt);
+            return new ReferencedEnvelope(minx, maxx, miny, maxy, crs);
+        }
 
-		protected double getDouble(JsonParser jp, DeserializationContext ctxt)
-				throws JsonParseException, IOException {
-			JsonToken tok = jp.nextToken();
-			if (tok != JsonToken.VALUE_NUMBER_FLOAT) {
-				throw ctxt.mappingException(ReferencedEnvelope.class);
-			}
-			return jp.getDoubleValue();
-		}
+        protected double getDouble(JsonParser jp, DeserializationContext ctxt)
+                throws JsonParseException, IOException {
+            JsonToken tok = jp.nextToken();
+            if (tok != JsonToken.VALUE_NUMBER_FLOAT) {
+                ctxt.handleUnexpectedToken(ReferencedEnvelope.class, jp);
+            }
+            return jp.getDoubleValue();
+        }
 
-	}
+    }
 
-	public static class Serializer extends JsonSerializer<ReferencedEnvelope> {
+    public static class Serializer extends JsonSerializer<ReferencedEnvelope> {
 
-		@Override
-		public Class<ReferencedEnvelope> handledType() {
-			return ReferencedEnvelope.class;
-		}
+        @Override
+        public Class<ReferencedEnvelope> handledType() {
+            return ReferencedEnvelope.class;
+        }
 
-		@Override
-		public void serialize(ReferencedEnvelope value, JsonGenerator jgen,
-				SerializerProvider provider) throws IOException,
-				JsonProcessingException {
-			jgen.writeStartArray();
-			jgen.writeNumber(value.getMinX());
-			jgen.writeNumber(value.getMinY());
-			jgen.writeNumber(value.getMaxX());
-			jgen.writeNumber(value.getMaxY());
-			CoordinateReferenceSystem crs = value
-					.getCoordinateReferenceSystem();
-			String wkt = (crs == null ? "" : crs.toWKT());
-			jgen.writeString(wkt);
-			jgen.writeEndArray();
-			
-		}
+        @Override
+        public void serialize(ReferencedEnvelope value, JsonGenerator jgen,
+                SerializerProvider provider)
+                throws IOException, JsonProcessingException {
+            jgen.writeStartArray();
+            jgen.writeNumber(value.getMinX());
+            jgen.writeNumber(value.getMinY());
+            jgen.writeNumber(value.getMaxX());
+            jgen.writeNumber(value.getMaxY());
+            CoordinateReferenceSystem crs = value
+                    .getCoordinateReferenceSystem();
+            String wkt = (crs == null ? "" : crs.toWKT());
+            jgen.writeString(wkt);
+            jgen.writeEndArray();
 
-	}
+        }
+
+    }
 }

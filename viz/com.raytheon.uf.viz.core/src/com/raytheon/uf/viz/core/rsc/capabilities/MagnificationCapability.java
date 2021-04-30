@@ -44,7 +44,7 @@ import com.raytheon.uf.viz.core.globals.VizGlobalsManager;
 @XmlAccessorType(XmlAccessType.NONE)
 public class MagnificationCapability extends AbstractCapability {
 
-    private static final double[] DEFAULT_MAGNIFICATION_VALUES = { 0.0, 0.8,
+    private static final double[] DEFAULT_MAGNIFICATION_VALUES = { 0.0, 0.5, 0.75,
             1.0, 1.25, 1.5, 2.0, 2.5 };
 
     @XmlAttribute
