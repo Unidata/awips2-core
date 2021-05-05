@@ -2,46 +2,70 @@
 <mapScales>
 	<mapScale displayName="CONUS" fileName="CONUS.xml" areaScale="false">
 		<partId view="false" id="com.raytheon.viz.ui.glmap.GLMapEditor"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
+		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
 	</mapScale>
 	<mapScale displayName="N. Hemisphere" fileName="NHemisphere.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="WFO" fileName="WFO/BOU.xml" areaScale="false">
-		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView4"/>
+	<mapScale displayName="WFO" fileName="WFO.xml" areaScale="false">
 	</mapScale>
+	<mapScale displayName="Regional" fileName="Regional.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="GOES East Full Disk" fileName="GOESEastFullDisk.xml" areaScale="false">
+	</mapScale>
+	<mapScale displayName="GOES West Full Disk" fileName="GOESWestFullDisk.xml" areaScale="false">
+	</mapScale>
+        <mapScale displayName="US Regional - Northwest" fileName="NorthWest_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Southwest" fileName="SouthWest_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Northern Plains" fileName="NrnPlains_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Southern Plains" fileName="SrnPlains_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Great Lakes" fileName="GreatLakes_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Ozark-Tennessee Valley" fileName="OzarkTennV_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Gulf Coast" fileName="GulfCoast_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Northeast" fileName="NorthEast_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Mid-Atlanic" fileName="Mid-Atlantic_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Southeast" fileName="SouthEast_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Alaska" fileName="Alaska_Reg.xml" areaScale="false">
+        </mapScale>
+        <mapScale displayName="US Regional - Hawaii" fileName="Hawaii_state.xml" areaScale="false">
+        </mapScale>
 	<mapScale displayName="World - Mercator" fileName="WorldMercator.xml" areaScale="false">
-		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView3"/>
 	</mapScale>
 	<mapScale displayName="World - CED" fileName="World.xml" areaScale="false">
 	</mapScale>
 	<mapScale displayName="World - Mollweide" fileName="WorldMollweide.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="GOES East Full Disk" fileName="GOESEastFullDisk.xml" areaScale="false">
-		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView1"/>
+	<mapScale displayName="World Regional - Africa" fileName="Africa.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="GOES West Full Disk" fileName="GOESWestFullDisk.xml" areaScale="false">
-		<partId id="com.raytheon.uf.viz.d2d.ui.map.SideView:sideView2"/>
+	<mapScale displayName="World Regional - Alaska" fileName="Alaska.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Africa" fileName="Africa.xml" areaScale="false">
+	<mapScale displayName="World Regional - Antarctica" fileName="Antarctic.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Alaska" fileName="Alaska.xml" areaScale="true">
+	<mapScale displayName="World Regional - Arctic" fileName="Arctic.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Antarctica" fileName="Antarctic.xml" areaScale="true">
+	<mapScale displayName="World Regional - Australia,New Zealand" fileName="AustraliaNZ.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Arctic" fileName="Arctic.xml" areaScale="true">
+	<mapScale displayName="World Regional - Europe" fileName="Europe.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Australia,New Zealand" fileName="AustraliaNZ.xml" areaScale="false">
+	<mapScale displayName="World Regional - Japan" fileName="Japan.xml" areaScale="false">
 	</mapScale>
-	<mapScale displayName="Regional - Europe" fileName="Europe.xml" areaScale="false">
+	<mapScale displayName="World Regional - Pacific Ocean" fileName="Pacific.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Hawaii" fileName="Hawaii.xml" areaScale="false">
+	<mapScale displayName="World Regional - Puerto Rico" fileName="Puerto-Rico.xml" areaScale="true">
 	</mapScale>
-	<mapScale displayName="Regional - Japan" fileName="Japan.xml" areaScale="false">
-	</mapScale>
-	<mapScale displayName="Regional - Pacific Ocean" fileName="Pacific.xml" areaScale="true">
-	</mapScale>
-	<mapScale displayName="Regional - Puerto Rico" fileName="Puerto-Rico.xml" areaScale="true">
-	</mapScale>
-	<mapScale displayName="Regional - South America" fileName="SouthAmerica.xml" areaScale="true">
+	<mapScale displayName="World Regional - South America" fileName="SouthAmerica.xml" areaScale="true">
 	</mapScale>
         <mapScale displayName="WFO/ABQ" fileName="WFO/ABQ.xml">
         </mapScale>
