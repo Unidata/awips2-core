@@ -23,24 +23,17 @@ import java.util.HashMap;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.naming.ConfigurationException;
 
-import org.apache.camel.AsyncCallback;
-import org.apache.camel.AsyncProcessor;
 import org.apache.camel.CamelContext;
 import org.apache.camel.Endpoint;
-import org.apache.camel.Exchange;
 import org.apache.camel.ExchangePattern;
-import org.apache.camel.NamedNode;
-import org.apache.camel.Processor;
 import org.apache.camel.ProducerTemplate;
 import org.apache.camel.Route;
 import org.apache.camel.spi.InterceptStrategy;
-import org.apache.camel.support.AsyncCallbackToCompletableFutureAdapter;
 
 import com.raytheon.uf.common.message.IMessage;
 import com.raytheon.uf.common.serialization.SerializationException;
@@ -72,13 +65,15 @@ import com.raytheon.uf.edex.esb.camel.context.ContextManager;
  * Jul 28, 2017  5570     rjpeter     Fix dependency generation on shutdown
  * Jan 24, 2019  7714     mrichardson Added overloaded sendAsyncUri
  * Mar  4, 2021  8326     tgurney     Fixes for Camel 3 API changes
+ * May 12, 2021  8436     tgurney     Change CamelContext detection -- always
+ *                                    get the context of the endpoint uri
  *
  * </pre>
  *
  * @author njensen
  */
 
-public class MessageProducer implements IMessageProducer, InterceptStrategy {
+public class MessageProducer implements IMessageProducer {
     private final IUFStatusHandler statusHandler = UFStatus
             .getHandler(MessageProducer.class);
 
@@ -86,13 +81,6 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
 
     private static final int URI_CACHE_SIZE = Integer
             .getInteger(URI_CACHE_SIZE_PROPERTY, 256);
-
-    /*
-     * setup via an interceptor used for tracking what context the current
-     * thread is participating in for dependency management of runtime
-     * IMessageProducer message sends.
-     */
-    private final ThreadLocal<CamelContext> currentThreadContext = new ThreadLocal<>();
 
     private final ConcurrentMap<CamelContext, ProducerTemplate> contextProducerMap = new ConcurrentHashMap<>();
 
@@ -284,36 +272,31 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
     }
 
     /**
-     * Returns the a producer template for the CamelContext this thread is
-     * currently a part of and the endpoint for the URI. If thread is not part
-     * of a context, will use context of the uri. If the uri is not registered
-     * in this jvm, will use the first context available.
+     * Returns the a producer template for the CamelContext of the uri. If the
+     * uri is not registered in this jvm, will use the first context available.
      *
      * @return
      */
     protected Pair<ProducerTemplate, Endpoint> getProducerTemplateAndEndpointForUri(
             String uri) throws ConfigurationException, EdexException {
-        CamelContext ctx = currentThreadContext.get();
+        CamelContext ctx = null;
+        ContextData contextData = getContextData();
+        Pair<String, String> typeAndName = ContextData
+                .getEndpointTypeAndName(uri);
+        if (typeAndName != null) {
+            Route route = contextData
+                    .getRouteForEndpointName(typeAndName.getSecond());
+            if (route != null) {
+                ctx = route.getCamelContext();
+            }
+        }
 
         if (ctx == null) {
-            ContextData contextData = getContextData();
-            Pair<String, String> typeAndName = ContextData
-                    .getEndpointTypeAndName(uri);
-            if (typeAndName != null) {
-                Route route = contextData
-                        .getRouteForEndpointName(typeAndName.getSecond());
-                if (route != null) {
-                    ctx = route.getCamelContext();
-                }
-            }
-
-            if (ctx == null) {
-                // this jvm does not consume from this route, use first context
-                List<CamelContext> contexts = contextData.getContexts();
-                if (!contexts.isEmpty()) {
-                    // should always be a context defined
-                    ctx = contexts.iterator().next();
-                }
+            // this jvm does not consume from this route, use first context
+            List<CamelContext> contexts = contextData.getContexts();
+            if (!contexts.isEmpty()) {
+                // should always be a context defined
+                ctx = contexts.get(0);
             }
         }
 
@@ -427,69 +410,6 @@ public class MessageProducer implements IMessageProducer, InterceptStrategy {
                 }
             }
         }
-    }
-
-    /**
-     * Setup for use with MessageProducer to track what context the current
-     * operating thread is using.
-     */
-    @Override
-    public Processor wrapProcessorInInterceptors(final CamelContext context,
-            final NamedNode definition, final Processor target,
-            final Processor nextTarget) throws Exception {
-        return new AsyncProcessor() {
-            @Override
-            public void process(Exchange exchange) throws Exception {
-                /*
-                 * track the thread this context is using for proper dependency
-                 * management.
-                 */
-                CamelContext prev = MessageProducer.this.currentThreadContext
-                        .get();
-                MessageProducer.this.currentThreadContext.set(context);
-                try {
-                    target.process(exchange);
-                } finally {
-                    MessageProducer.this.currentThreadContext.set(prev);
-                }
-            }
-
-            @Override
-            public boolean process(Exchange exchange, AsyncCallback callback) {
-                /*
-                 * track the thread this context is using for proper dependency
-                 * management.
-                 */
-                CamelContext prev = MessageProducer.this.currentThreadContext
-                        .get();
-                MessageProducer.this.currentThreadContext.set(context);
-
-                try {
-                    target.process(exchange);
-                } catch (Throwable e) {
-                    exchange.setException(e);
-                } finally {
-                    MessageProducer.this.currentThreadContext.set(prev);
-                }
-                callback.done(true);
-                return true;
-            }
-
-            @Override
-            public String toString() {
-                return "MessageProducer - ContainerWideInterceptor[" + target
-                        + "]";
-            }
-
-            @Override
-            public CompletableFuture<Exchange> processAsync(Exchange exchange) {
-                AsyncCallbackToCompletableFutureAdapter<Exchange> callback = new AsyncCallbackToCompletableFutureAdapter<>(
-                        exchange);
-                process(exchange, callback);
-                return callback.getFuture();
-            }
-
-        };
     }
 
     /**
