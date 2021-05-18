@@ -1,24 +1,26 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 
 package com.raytheon.uf.common.datastorage;
+
+import java.io.Serializable;
 
 import org.apache.commons.lang3.Validate;
 
@@ -27,23 +29,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Options used that determine how data is stored in the datastore
- * 
+ *
  * <pre>
- * 
+ *
  *   SOFTWARE HISTORY
- *  
- *   Date         Ticket#     Engineer    Description
- *   ------------ ----------  ----------- --------------------------
- *   Feb 8, 2007              chammack    Initial Creation.
- *   Nov 14, 2013  2393     bclement    removed interpolation
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------------
+ * Feb 08, 2007           chammack  Initial Creation.
+ * Nov 14, 2013  2393     bclement  removed interpolation
+ * Jun 10, 2021  8450     mapeters  Implement {@link Serializable}
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 @DynamicSerialize
-public class StorageProperties implements Cloneable {
+public class StorageProperties implements Cloneable, Serializable {
+
+    private static final long serialVersionUID = -6698742345326911532L;
 
     /**
      * Compression types:
@@ -54,9 +58,9 @@ public class StorageProperties implements Cloneable {
      * by h5dump)
      * </UL>
      */
-    public static enum Compression {
+    public enum Compression {
         NONE, ZLIB, LZF
-    };
+    }
 
     /** The compression flag */
     @DynamicSerializeElement
@@ -98,7 +102,7 @@ public class StorageProperties implements Cloneable {
     /**
      * @param compression
      *            the compression to set
-     * 
+     *
      *            NOTE: chunking will also be turned on
      */
     public void setCompression(Compression compression) {
@@ -110,11 +114,6 @@ public class StorageProperties implements Cloneable {
         }
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see java.lang.Object#clone()
-     */
     @Override
     public StorageProperties clone() {
         StorageProperties sp = new StorageProperties();

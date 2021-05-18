@@ -1,18 +1,18 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract EA133W-17-CQ-0082 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     2120 South 72nd Street, Suite 900
  *                         Omaha, NE 68124
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -28,6 +28,10 @@ import javax.cache.processor.EntryProcessor;
 import javax.cache.processor.EntryProcessorException;
 import javax.cache.processor.MutableEntry;
 
+import org.apache.ignite.resources.CacheNameResource;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.IDataStore.StoreOp;
@@ -37,22 +41,27 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.datastore.ignite.DataStoreKey;
 import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
+import com.raytheon.uf.common.time.util.IPerformanceTimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
- * 
+ *
  * Store data in a group. The arguments are the new {@link IDataRecord}s which
  * should be added to the entry.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- --------------------------------------------
  * Jun 03, 2019  7628     bsteffen  Initial creation
  * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
  *                                  duplicate records.
  * Apr 02, 2020  8075     bsteffen  Extract merge for reuse elsewhere.
+ * Jun 10, 2021  8450     mapeters  Add logging
  *
  * </pre>
  *
@@ -61,6 +70,15 @@ import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
 public class StoreProcessor
         implements EntryProcessor<DataStoreKey, DataStoreValue, StorageStatus> {
 
+    private static final Logger logger = LoggerFactory
+            .getLogger(StoreProcessor.class);
+
+    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler(StoreProcessor.class.getSimpleName() + ":");
+
+    @CacheNameResource
+    private String cacheName;
+
     private StoreOp op = StoreOp.STORE_ONLY;
 
     public StoreProcessor() {
@@ -68,7 +86,6 @@ public class StoreProcessor
     }
 
     public StoreProcessor(StoreOp op) {
-
         this.op = op;
     }
 
@@ -84,6 +101,13 @@ public class StoreProcessor
     public StorageStatus process(
             MutableEntry<DataStoreKey, DataStoreValue> entry, Object... args)
             throws EntryProcessorException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
+        DataStoreKey key = entry.getKey();
+        String msg = "Processing " + cacheName + " key: " + key;
+        logger.info(msg);
+
         StorageStatus status = new StorageStatus();
         status.setOperationPerformed(op);
         IDataRecord[] records = new IDataRecord[args.length];
@@ -110,6 +134,9 @@ public class StoreProcessor
         } catch (StorageException e) {
             status.setExceptions(new StorageException[] { e });
         }
+
+        timer.stop();
+        perfLog.logDuration(msg, timer.getElapsedTime());
         return status;
     }
 
@@ -199,7 +226,7 @@ public class StoreProcessor
 
     /**
      * Insert a partial record into a larger full record.
-     * 
+     *
      * @param full
      *            - The full record to inert into, may be null which creates a
      *            new record.
