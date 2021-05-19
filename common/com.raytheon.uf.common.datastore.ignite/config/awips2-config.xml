@@ -158,6 +158,12 @@
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="messageQueueLimit" value="1024"/>
+                <!-- This causes clients to keep the last x messages up to this 
+                     threshold per connection in heap memory in case a connection 
+                     fails to resend the messages. Limiting this will cause more 
+                     acknowledgements to be sent but also reduce client heap 
+                     footprint. Default value is 32. -->
+                <property name="ackSendThreshold" value="2"/>                 
             </bean>
         </property>
     </bean>
