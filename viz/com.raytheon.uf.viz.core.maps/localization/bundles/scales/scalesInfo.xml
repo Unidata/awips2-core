@@ -139,8 +139,6 @@
         </mapScale>
         <mapScale displayName="WFO/EWX" fileName="WFO/EWX.xml">
         </mapScale>
-        <mapScale displayName="WFO/EYW" fileName="WFO/EYW.xml">
-        </mapScale>
         <mapScale displayName="WFO/FFC" fileName="WFO/FFC.xml">
         </mapScale>
         <mapScale displayName="WFO/FGF" fileName="WFO/FGF.xml">
@@ -165,7 +163,7 @@
         </mapScale>
         <mapScale displayName="WFO/GSP" fileName="WFO/GSP.xml">
         </mapScale>
-        <mapScale displayName="WFO/GUA" fileName="WFO/GUA.xml">
+        <mapScale displayName="WFO/GUM" fileName="WFO/GUM.xml">
         </mapScale>
         <mapScale displayName="WFO/GYX" fileName="WFO/GYX.xml">
         </mapScale>
@@ -194,6 +192,8 @@
         <mapScale displayName="WFO/JAX" fileName="WFO/JAX.xml">
         </mapScale>
         <mapScale displayName="WFO/JKL" fileName="WFO/JKL.xml">
+        </mapScale>
+        <mapScale displayName="WFO/KEY" fileName="WFO/KEY.xml">
         </mapScale>
         <mapScale displayName="WFO/LBF" fileName="WFO/LBF.xml">
         </mapScale>
@@ -242,6 +242,8 @@
         <mapScale displayName="WFO/MSO" fileName="WFO/MSO.xml">
         </mapScale>
         <mapScale displayName="WFO/MTR" fileName="WFO/MTR.xml">
+        </mapScale>
+        <mapScale displayName="WFO/OAX" fileName="WFO/OAX.xml">
         </mapScale>
         <mapScale displayName="WFO/OHX" fileName="WFO/OHX.xml">
         </mapScale>
@@ -294,6 +296,8 @@
         <mapScale displayName="WFO/STO" fileName="WFO/STO.xml">
         </mapScale>
         <mapScale displayName="WFO/TAE" fileName="WFO/TAE.xml">
+        </mapScale>
+        <mapScale displayName="WFO/TBW" fileName="WFO/TBW.xml">
         </mapScale>
         <mapScale displayName="WFO/TFX" fileName="WFO/TFX.xml">
         </mapScale>
