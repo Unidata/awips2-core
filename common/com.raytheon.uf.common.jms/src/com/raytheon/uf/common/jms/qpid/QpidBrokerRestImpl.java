@@ -69,6 +69,8 @@ import com.raytheon.uf.common.status.UFStatus;
  *                                    for queue creation. Set JSON content type
  * Oct 23, 2019  7724     tgurney     Put created queue names into a set to
  *                                    avoid repeated REST API calls
+ * May 27, 2021  8469     dgilling    Pass broker REST service port through
+ *                                    JMSConnectionInfo.
  *
  * </pre>
  *
@@ -80,8 +82,6 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
             .getHandler(getClass());
 
     private static final String HTTP_SCHEME = "https";
-
-    private static final String BROKER_REST_PORT = "8180";
 
     private HttpClient httpClient;
 
@@ -112,18 +112,23 @@ public class QpidBrokerRestImpl implements IBrokerRestProvider {
 
     private static final Object queueUrlCacheLock = new Object();
 
-    public QpidBrokerRestImpl(String hostname, String vhost)
+    public QpidBrokerRestImpl(String hostname, String vhost, String servicePort)
             throws JMSConfigurationException {
         HttpClientConfigBuilder configBuilder = new HttpClientConfigBuilder();
         configBuilder.setHttpAuthHandler(new QpidCertificateAuthHandler());
         configBuilder.setMaxConnections(1);
         httpClient = new HttpClient(configBuilder.build());
-        jmsConnUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
-                + "/api/latest/connection";
-        jmsExcUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
-                + "/api/latest/exchange/" + vhost + "/" + vhost;
-        jmsQueueUrl = HTTP_SCHEME + "://" + hostname + ":" + BROKER_REST_PORT
-                + "/api/latest/queue/" + vhost + "/" + vhost;
+        this.jmsConnUrl = new StringBuilder(HTTP_SCHEME).append("://")
+                .append(hostname).append(':').append(servicePort)
+                .append("/api/latest/connection").toString();
+        this.jmsExcUrl = new StringBuilder(HTTP_SCHEME).append("://")
+                .append(hostname).append(':').append(servicePort)
+                .append("/api/latest/exchange/").append(vhost).append('/')
+                .append(vhost).toString();
+        this.jmsQueueUrl = new StringBuilder(HTTP_SCHEME).append("://")
+                .append(hostname).append(':').append(servicePort)
+                .append("/api/latest/queue/").append(vhost).append('/')
+                .append(vhost).toString();
         synchronized (queueUrlCacheLock) {
             if (queueUrlCache == null) {
                 queueUrlCache = new HashSet<>();

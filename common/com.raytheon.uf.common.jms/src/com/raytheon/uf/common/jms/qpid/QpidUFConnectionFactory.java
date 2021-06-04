@@ -44,6 +44,8 @@ import com.raytheon.uf.common.jms.JmsSslConfiguration;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Oct 11, 2019 7724       tgurney     Initial creation
+ * May 27, 2021 8469       dgilling    Pass broker REST service port through
+ *                                     JMSConnectionInfo.
  * </pre>
  *
  * @author tgurney
@@ -61,7 +63,7 @@ public class QpidUFConnectionFactory implements ConnectionFactory {
         String url = QpidUFConnectionFactory.getConnectionURL(connectionInfo);
         this.connectionFactory = new JmsConnectionFactory(url);
         this.jmsAdmin = new QpidBrokerRestImpl(connectionInfo.getHost(),
-                connectionInfo.getVhost());
+                connectionInfo.getVhost(), connectionInfo.getServicePort());
     }
 
     @Override
