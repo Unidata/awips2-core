@@ -1,18 +1,18 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract EA133W-17-CQ-0082 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     2120 South 72nd Street, Suite 900
  *                         Omaha, NE 68124
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -34,6 +34,7 @@ import org.apache.ignite.IgniteCluster;
 import org.apache.ignite.cluster.ClusterMetrics;
 import org.apache.ignite.cluster.ClusterNode;
 
+import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager;
 import com.raytheon.uf.common.util.SizeUtil;
 
 /**
@@ -41,7 +42,7 @@ import com.raytheon.uf.common.util.SizeUtil;
  * about an instance of {@link Ignite}. The resulting page attempts to be
  * similar to the metrics that ignite periodically logs, however not all those
  * stats are available through the public API so it is not as good.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -49,6 +50,7 @@ import com.raytheon.uf.common.util.SizeUtil;
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Mar 27, 2020  8071     bsteffen  Initial creation
+ * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management
  *
  * </pre>
  *
@@ -58,16 +60,16 @@ public class IgniteStatusServlet extends HttpServlet {
 
     private static final long serialVersionUID = 1L;
 
-    private final Ignite ignite;
+    private final AbstractIgniteManager igniteManager;
 
-    public IgniteStatusServlet(Ignite ignite) {
-        this.ignite = ignite;
+    public IgniteStatusServlet(AbstractIgniteManager igniteManager) {
+        this.igniteManager = igniteManager;
     }
 
     @Override
     protected void doGet(HttpServletRequest req, HttpServletResponse resp)
             throws ServletException, IOException {
-        IgniteCluster cluster = ignite.cluster();
+        IgniteCluster cluster = igniteManager.getIgnite().cluster();
         if (!cluster.active()) {
             resp.setStatus(503);
         }
@@ -109,12 +111,14 @@ public class IgniteStatusServlet extends HttpServlet {
                 ? ((double) ((heapMax - heapUsed) * 100)) / heapMax
                 : -1;
 
-        boolean storageMetricsEnabled = ignite.configuration()
-                .getDataStorageConfiguration().isMetricsEnabled();
+        boolean storageMetricsEnabled = igniteManager.getIgnite()
+                .configuration().getDataStorageConfiguration()
+                .isMetricsEnabled();
 
         long offHeapUsed = 0;
         long offHeapComm = 0;
-        Collection<DataRegionMetrics> regions = ignite.dataRegionMetrics();
+        Collection<DataRegionMetrics> regions = igniteManager.getIgnite()
+                .dataRegionMetrics();
         for (DataRegionMetrics region : regions) {
             offHeapUsed += region.getOffheapUsedSize();
             offHeapComm += region.getOffHeapSize();

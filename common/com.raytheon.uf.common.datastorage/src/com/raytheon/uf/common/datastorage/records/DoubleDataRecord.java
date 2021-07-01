@@ -27,21 +27,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Provides an interface to datasets of type double
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Sept 8, 2014             kustert     Initial Creation.
- * Apr 24, 2015 4425        nabowle     Bring in.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- ---------------------
+ * Sep 08, 2014           kustert   Initial Creation.
+ * Apr 24, 2015  4425     nabowle   Bring in.
+ * Jun 10, 2021  8450     mapeters  Add serialVersionUID
+ *
  * </pre>
- * 
+ *
  * @author kustert
- * @version 1
  */
 @DynamicSerialize
 public class DoubleDataRecord extends AbstractStorageRecord {
+
+    private static final long serialVersionUID = -7277425766726168679L;
 
     @DynamicSerializeElement
     protected double[] doubleData;
@@ -102,21 +106,11 @@ public class DoubleDataRecord extends AbstractStorageRecord {
         this.doubleData = doubleData;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.edex.storage.records.AbstractDataRecord#getDataObject()
-     */
     @Override
     public Object getDataObject() {
         return this.doubleData;
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.edex.storage.records.IDataRecord#validateDataSet()
-     */
     @Override
     public boolean validateDataSet() {
 
@@ -142,11 +136,6 @@ public class DoubleDataRecord extends AbstractStorageRecord {
                 + this.doubleData.length + "]";
     }
 
-    /*
-     * (non-Javadoc)
-     *
-     * @see com.raytheon.edex.storage.records.IDataRecord#reduce(int[])
-     */
     @Override
     public void reduce(int[] indices) {
         double[] reducedData = new double[indices.length];

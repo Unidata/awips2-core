@@ -41,6 +41,11 @@ THRIFT_STREAM_MAXSIZE=${THRIFT_STREAM_MAXSIZE:-2000}
 
 IGNITE_DEFAULT_TX_TIMEOUT=${IGNITE_DEFAULT_TX_TIMEOUT:-120000}
 IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE=${IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE:-30000}
+IGNITE_QUIET=${IGNITE_QUIET:-false}
+
+# Note that these same properties are in ignite.client.properties for the edex side
+IGNITE_CACHE_OP_NUM_ATTEMPTS=2
+IGNITE_CACHE_OP_TIMEOUT_SECS=300
 
 source /etc/watchdog.d/utilities/watchdogutils.sh
 
@@ -49,7 +54,7 @@ do
     case "${arg}" in
         production)
             remove_watchdog_bypass "ignite@production"
-            JVM_OPTS+=" -Xms16g -Xmx16g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
+            JVM_OPTS+=" -Xms24g -Xmx24g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
             IGNITE_DATA_REGION_MAX_SIZE_GB=${IGNITE_DATA_REGION_MAX_SIZE_GB:-64}
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-64}
             # The largest objects I have seen are about 374MiB, ignite documentation suggests we need enough pages to
@@ -87,14 +92,37 @@ done
 
 set -x
 
-exec ${JAVA_HOME}/bin/java \
-            ${JVM_OPTS} \
-            -DIGNITE_HOME=${IGNITE_HOME} \
-            -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-            -Djava.security.properties=/awips2/ignite/config/java.security \
-            -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
-            -Djava.net.preferIPv4Stack=true \
-            -Dlogback.configurationFile=${IGNITE_HOME}/config/ignite-logback.xml \
-            org.apache.ignite.startup.cmdline.CommandLineStartup \
-            config/awips2-config.xml
+RANDOM_NUMBER=$(${JAVA_HOME}/bin/java org.apache.ignite.startup.cmdline.CommandLineRandomNumberGenerator)
+RESTART_SUCCESS_FILE="${IGNITE_HOME}/work/ignite_success_${RANDOM_NUMBER}"
+RESTART_SUCCESS_OPT="-DIGNITE_SUCCESS_FILE=${RESTART_SUCCESS_FILE}"
+
+ERRORCODE="-1"
+
+while [ "${ERRORCODE}" -ne "130" ]
+do
+    exec ${JAVA_HOME}/bin/java \
+                ${JVM_OPTS} \
+                -DIGNITE_HOME=${IGNITE_HOME} \
+                -DIGNITE_QUIET=${IGNITE_QUIET} \
+                ${RESTART_SUCCESS_OPT} \
+                -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true \
+                -Dignite.cache.op.num.attempts=${IGNITE_CACHE_OP_NUM_ATTEMPTS} \
+                -Dignite.cache.op.timeout.secs=${IGNITE_CACHE_OP_TIMEOUT_SECS} \
+                -Djava.security.properties=/awips2/ignite/config/java.security \
+                -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
+                -Djava.net.preferIPv4Stack=true \
+                -Dlogback.configurationFile=${IGNITE_HOME}/config/ignite-logback.xml \
+                org.apache.ignite.startup.cmdline.CommandLineStartup \
+                config/awips2-config.xml && ERRORCODE="$?" || ERRORCODE="$?"
+
+    if [ ! -f "${RESTART_SUCCESS_FILE}" ] ; then
+        break
+    else
+        rm -f "${RESTART_SUCCESS_FILE}"
+    fi
+done
+
+if [ -f "${RESTART_SUCCESS_FILE}" ] ; then
+    rm -f "${RESTART_SUCCESS_FILE}"
+fi
 

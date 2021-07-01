@@ -23,7 +23,47 @@
     <bean id="igniteKeystorePassword" factory-bean="ignitePasswordStore" factory-method="getKeystorePassword" />
     <bean id="igniteTruststorePassword" factory-bean="ignitePasswordStore" factory-method="getTruststorePassword" />
 
+    <bean id="defaultCacheConfig" class="org.apache.ignite.configuration.CacheConfiguration" scope="prototype">
+        <!-- Changing this from wildcard to "defaultDataStore" could help us identify
+             issues by making bad config fail more loudly, but it seems to cause some
+             sort of race condition where some ignite clients fail to connect to this
+             server, even though the "defaultDataStore" cache does in fact appear to be
+             the only cache using this config. -->
+        <property name="name" value="*" />
+        <property name="cacheMode" value="PARTITIONED" />
+        <property name="backups" value="${IGNITE_CACHE_BACKUPS:0}" />
+        <!-- Rebalancing is unnecessary, missing entries will read
+            from the underlying datastore instead of being copied
+            preemptively. Attempting to rebalance will load the entire
+            cache in the heap and results in OOM.
+        -->
+        <property name="rebalanceMode" value="NONE" />
+        <property name="readThrough" value="true" />
+        <property name="writeThrough" value="true" />
+        <property name="writeBehindEnabled" value="true" />
+        <property name="writeBehindFlushFrequency" value="5000" />
+        <property name="writeBehindFlushThreadCount" value="4" />
+        <property name="writeBehindBatchSize" value="20" />
+        <property name="writeBehindFlushSize" value="100" />
+        <property name="sqlIndexMaxInlineSize" value="350" />
+        <property name="cacheStoreFactory">
+            <bean
+                class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
+                <constructor-arg ref="pypiesFactory" />
+            </bean>
+        </property>
+        <property name="indexedTypes">
+            <list>
+                <value>com.raytheon.uf.common.datastore.ignite.DataStoreKey</value>
+                <value>com.raytheon.uf.common.datastore.ignite.DataStoreValue</value>
+            </list>
+        </property>
+    </bean>
+
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.RestartProcessFailureHandler" />
+        </property>
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
@@ -76,38 +116,38 @@
         </property>
         <property name="cacheConfiguration">
             <list>
+                <ref bean="defaultCacheConfig" />
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="*" />
-                    <property name="cacheMode" value="PARTITIONED" />
-                    <property name="backups" value="${IGNITE_CACHE_BACKUPS:0}" />
-                    <!-- Rebalancing is unnecessary, missing entries will read
-                        from the underlying datastore instead of being copied
-                        preemptively. Attempting to rebalance will load the entire
-                        cache in the heap and results in OOM.
-                    -->
-                    <property name="rebalanceMode" value="NONE" />
-                    <property name="readThrough" value="true" />
-                    <property name="writeThrough" value="true" />
-                    <property name="writeBehindEnabled" value="true" />
-                    <property name="writeBehindFlushFrequency"
-                        value="30000" />
-                    <property name="writeBehindFlushThreadCount"
-                        value="16" />
-                    <property name="sqlIndexMaxInlineSize" value="350" />
-                    <property name="cacheStoreFactory">
-                        <bean
-                            class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
-                            <constructor-arg ref="pypiesFactory" />
-                        </bean>
-                    </property>
-                    <property name="indexedTypes">
-                        <list>
-                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreKey
-                            </value>
-                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreValue
-                            </value>
-                        </list>
-                    </property>
+                    <constructor-arg ref="defaultCacheConfig" />
+                    <property name="name" value="gridDataStore" />
+                    <property name="writeBehindFlushFrequency" value="1000" />
+                    <property name="writeBehindFlushThreadCount" value="12" />
+                    <property name="writeBehindBatchSize" value="5" />
+                    <property name="writeBehindFlushSize" value="60" />
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <constructor-arg ref="defaultCacheConfig" />
+                    <property name="name" value="satelliteDataStore" />
+                    <property name="writeBehindFlushFrequency" value="5000" />
+                    <property name="writeBehindFlushThreadCount" value="4" />
+                    <property name="writeBehindBatchSize" value="5" />
+                    <property name="writeBehindFlushSize" value="20" />
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <constructor-arg ref="defaultCacheConfig" />
+                    <property name="name" value="radarDataStore" />
+                    <property name="writeBehindFlushFrequency" value="5000" />
+                    <property name="writeBehindFlushThreadCount" value="4" />
+                    <property name="writeBehindBatchSize" value="10" />
+                    <property name="writeBehindFlushSize" value="40" />
+                </bean>
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <constructor-arg ref="defaultCacheConfig" />
+                    <property name="name" value="pointDataStore" />
+                    <property name="writeBehindFlushFrequency" value="10000" />
+                    <property name="writeBehindFlushThreadCount" value="4" />
+                    <property name="writeBehindBatchSize" value="20" />
+                    <property name="writeBehindFlushSize" value="80" />
                 </bean>
                 <bean class="org.apache.ignite.configuration.CacheConfiguration">
                     <property name="name" value="data-store-cache-name-map" />
@@ -158,12 +198,15 @@
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="messageQueueLimit" value="1024"/>
-                <!-- This causes clients to keep the last x messages up to this 
-                     threshold per connection in heap memory in case a connection 
-                     fails to resend the messages. Limiting this will cause more 
-                     acknowledgements to be sent but also reduce client heap 
+                <!-- This causes clients to keep the last x messages up to this
+                     threshold per connection in heap memory in case a connection
+                     fails to resend the messages. Limiting this will cause more
+                     acknowledgements to be sent but also reduce client heap
                      footprint. Default value is 32. -->
-                <property name="ackSendThreshold" value="2"/>                 
+                <property name="ackSendThreshold" value="2"/>
+                <property name="socketWriteTimeout" value="30000"/>
+                <property name="usePairedConnections" value="true"/>
+                <property name="connectionsPerNode" value="4"/>
             </bean>
         </property>
     </bean>
@@ -187,7 +230,7 @@
     <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
         <property name="socketTimeout" value="330000" />
         <property name="connectionTimeout" value="10000" />
-        <property name="maxConnections" value="24" />
+        <property name="maxConnections" value="100" />
     </bean>
 
     <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder"
