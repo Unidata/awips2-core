@@ -528,9 +528,12 @@ public abstract class AbstractRenderableDisplay implements IRenderableDisplay {
         try {
             pair.getResource().paint(target, paintProps);
         } catch (Throwable e) {
+//        	pair.getResource().dispose();
             pair.getProperties().setVisible(false);
+            pair.getResource().dispose();
+            String name = pair.getResource().getSafeName();
             throw new VizException("Paint error: " + e.getMessage()
-                    + ":: The resource [" + pair.getResource().getSafeName()
+                    + ":: The resource [" + name
                     + "] has been disabled.", e);
         }
     }
