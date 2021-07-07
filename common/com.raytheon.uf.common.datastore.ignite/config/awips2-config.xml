@@ -23,43 +23,6 @@
     <bean id="igniteKeystorePassword" factory-bean="ignitePasswordStore" factory-method="getKeystorePassword" />
     <bean id="igniteTruststorePassword" factory-bean="ignitePasswordStore" factory-method="getTruststorePassword" />
 
-    <bean id="defaultCacheConfig" class="org.apache.ignite.configuration.CacheConfiguration" scope="prototype">
-        <!-- Changing this from wildcard to "defaultDataStore" could help us identify
-             issues by making bad config fail more loudly, but it seems to cause some
-             sort of race condition where some ignite clients fail to connect to this
-             server, even though the "defaultDataStore" cache does in fact appear to be
-             the only cache using this config. -->
-        <property name="name" value="*" />
-        <property name="cacheMode" value="PARTITIONED" />
-        <property name="backups" value="${IGNITE_CACHE_BACKUPS:0}" />
-        <!-- Rebalancing is unnecessary, missing entries will read
-            from the underlying datastore instead of being copied
-            preemptively. Attempting to rebalance will load the entire
-            cache in the heap and results in OOM.
-        -->
-        <property name="rebalanceMode" value="NONE" />
-        <property name="readThrough" value="true" />
-        <property name="writeThrough" value="true" />
-        <property name="writeBehindEnabled" value="true" />
-        <property name="writeBehindFlushFrequency" value="5000" />
-        <property name="writeBehindFlushThreadCount" value="4" />
-        <property name="writeBehindBatchSize" value="20" />
-        <property name="writeBehindFlushSize" value="100" />
-        <property name="sqlIndexMaxInlineSize" value="350" />
-        <property name="cacheStoreFactory">
-            <bean
-                class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
-                <constructor-arg ref="pypiesFactory" />
-            </bean>
-        </property>
-        <property name="indexedTypes">
-            <list>
-                <value>com.raytheon.uf.common.datastore.ignite.DataStoreKey</value>
-                <value>com.raytheon.uf.common.datastore.ignite.DataStoreValue</value>
-            </list>
-        </property>
-    </bean>
-
     <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
         <property name="failureHandler">
             <bean class="org.apache.ignite.failure.RestartProcessFailureHandler" />
@@ -114,63 +77,27 @@
                 </property>
             </bean>
         </property>
-        <property name="cacheConfiguration">
-            <list>
-                <ref bean="defaultCacheConfig" />
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <constructor-arg ref="defaultCacheConfig" />
-                    <property name="name" value="gridDataStore" />
-                    <property name="writeBehindFlushFrequency" value="1000" />
-                    <property name="writeBehindFlushThreadCount" value="12" />
-                    <property name="writeBehindBatchSize" value="5" />
-                    <property name="writeBehindFlushSize" value="60" />
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <constructor-arg ref="defaultCacheConfig" />
-                    <property name="name" value="satelliteDataStore" />
-                    <property name="writeBehindFlushFrequency" value="5000" />
-                    <property name="writeBehindFlushThreadCount" value="4" />
-                    <property name="writeBehindBatchSize" value="5" />
-                    <property name="writeBehindFlushSize" value="20" />
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <constructor-arg ref="defaultCacheConfig" />
-                    <property name="name" value="radarDataStore" />
-                    <property name="writeBehindFlushFrequency" value="5000" />
-                    <property name="writeBehindFlushThreadCount" value="4" />
-                    <property name="writeBehindBatchSize" value="10" />
-                    <property name="writeBehindFlushSize" value="40" />
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <constructor-arg ref="defaultCacheConfig" />
-                    <property name="name" value="pointDataStore" />
-                    <property name="writeBehindFlushFrequency" value="10000" />
-                    <property name="writeBehindFlushThreadCount" value="4" />
-                    <property name="writeBehindBatchSize" value="20" />
-                    <property name="writeBehindFlushSize" value="80" />
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="data-store-cache-name-map" />
-                    <property name="dataRegionName" value="data-store-cache-name-region"/>
-                    <property name="cacheMode" value="REPLICATED" />
-                    <property name="onheapCacheEnabled" value="true"/>
-                </bean>
-            </list>
-        </property>
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
         </property>
         <property name="serviceConfiguration">
             <list>
                 <bean class="org.apache.ignite.services.ServiceConfiguration">
-                    <property name="name" value="PyPiesCompatibilityService" />
+                    <property name="name" value="IgniteStatusService" />
                     <property name="maxPerNodeCount" value="1" />
                     <property name="service">
                         <bean
-                            class="com.raytheon.uf.common.datastore.ignite.pypies.PyPiesCompatibilityService">
+                            class="com.raytheon.uf.common.datastore.ignite.pypies.IgniteStatusService">
                             <property name="port"
-                                value="${PYPIES_COMPATIBILITY_PORT:9585}" />
+                                value="${IGNITE_STATUS_PORT:9585}" />
                         </bean>
+                    </property>
+                </bean>
+                <bean class="org.apache.ignite.services.ServiceConfiguration">
+                    <property name="name" value="CachePluginRegistryPersistenceService" />
+                    <property name="maxPerNodeCount" value="1" />
+                    <property name="service">
+                        <bean class="com.raytheon.uf.common.datastore.ignite.CachePluginRegistryPersistenceService" />
                     </property>
                 </bean>
             </list>
@@ -209,12 +136,6 @@
                 <property name="connectionsPerNode" value="4"/>
             </bean>
         </property>
-    </bean>
-
-    <bean id="pypiesFactory"
-        class="com.raytheon.uf.common.datastore.ignite.pypies.SerializablePyPiesDataStoreFactory">
-        <constructor-arg name="address"
-            value="http://${PYPIES_HOST:localhost}:${PYPIES_PORT:9582}/" />
     </bean>
 
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">

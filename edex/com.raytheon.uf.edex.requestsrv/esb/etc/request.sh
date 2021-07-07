@@ -39,10 +39,13 @@ export SERIALIZE_POOL_MAX_SIZE=24
 export SERIALIZE_STREAM_INIT_SIZE_MB=2
 export SERIALIZE_STREAM_MAX_SIZE_MB=8
 
-
 export EDEX_DEBUG_PORT=5005
 export HTTP_PORT=9581
 
+export IGNITE_COMM_PORT=47101
+export IGNITE_DISCO_PORT=47501
+export SECOND_IGNITE_COMM_PORT=47106
+export SECOND_IGNITE_DISCO_PORT=47506
 
 #clean up leftover processes from last run of request
 pkill -f sendAT

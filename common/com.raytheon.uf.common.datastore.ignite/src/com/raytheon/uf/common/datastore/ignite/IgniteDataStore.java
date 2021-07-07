@@ -286,6 +286,9 @@ public class IgniteDataStore implements IDataStore {
     }
 
     /**
+     * TODO move into IgniteCacheAccessor, don't allow any direct interaction
+     * with IgniteCache outside of there
+     *
      * Execute the given cache operation and return its result. This retries the
      * operation if it times out or throws an exception.
      *

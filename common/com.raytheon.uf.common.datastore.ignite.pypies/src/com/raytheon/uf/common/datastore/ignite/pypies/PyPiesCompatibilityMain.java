@@ -28,7 +28,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 
 import com.raytheon.uf.common.datastore.ignite.IIgniteConfigGenerator;
-import com.raytheon.uf.common.datastore.ignite.IgniteClientManager;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteDataStore;
 import com.raytheon.uf.common.datastore.ignite.IgniteDataStoreFactory;
 import com.raytheon.uf.common.datastore.ignite.plugin.CachePluginRegistry;
@@ -64,20 +64,20 @@ public class PyPiesCompatibilityMain {
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
-        IgniteClientManager igniteManager = new IgniteClientManager(
+        IgniteClusterManager clusterManager = new IgniteClusterManager(
                 new IIgniteConfigGenerator() {
 
                     @Override
                     public IgniteConfiguration getNewConfig() {
                         return getDefaultConfig();
                     }
-                });
+                }, null);
         context.addServlet(new ServletHolder(
-                new PyPiesServlet(new IgniteDataStoreFactory(igniteManager,
+                new PyPiesServlet(new IgniteDataStoreFactory(clusterManager,
                         new CachePluginRegistry()))),
                 "/");
-        context.addServlet(
-                new ServletHolder(new IgniteStatusServlet(igniteManager)),
+        context.addServlet(new ServletHolder(
+                new IgniteStatusServlet(clusterManager.getIgniteManager(1))),
                 "/status");
         server.setHandler(context);
 

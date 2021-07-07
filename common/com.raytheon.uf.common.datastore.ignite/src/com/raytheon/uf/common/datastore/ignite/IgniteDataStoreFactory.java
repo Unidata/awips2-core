@@ -60,32 +60,30 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private static final String NO_CACHE_NAME = "none";
-
-    private final AbstractIgniteManager igniteManager;
+    private final IgniteClusterManager clusterManager;
 
     private final CachePluginRegistry pluginRegistry;
 
-    public IgniteDataStoreFactory(AbstractIgniteManager igniteManager,
+    public IgniteDataStoreFactory(IgniteClusterManager clusterManager,
             CachePluginRegistry pluginRegistry) {
         String name = getClass().getSimpleName();
         logger.info("Creating " + name);
-        this.igniteManager = igniteManager;
-        this.igniteManager.initialize();
+        this.clusterManager = clusterManager;
+        this.clusterManager.initialize();
         this.pluginRegistry = pluginRegistry;
-        this.pluginRegistry.initialize(this.igniteManager);
+        this.pluginRegistry.initialize(this.clusterManager);
         logger.info("Created " + name);
     }
 
     @Override
     public IDataStore getDataStore(File file, boolean useLocking) {
         String cacheName = pluginRegistry.getCacheName(file);
-        if (NO_CACHE_NAME.equalsIgnoreCase(cacheName)) {
-            IgniteCache<?, ?> defaultCache = igniteManager
-                    .getCache(CachePluginRegistry.DEFAULT_CACHE);
+        if (IgniteUtils.NO_CACHE_NAME.equalsIgnoreCase(cacheName)) {
+            IgniteCache<?, ?> defaultCache = clusterManager
+                    .getCache(IgniteUtils.DEFAULT_CACHE);
             return getThroughDataStore(file, defaultCache);
         } else {
-            IgniteCache<DataStoreKey, DataStoreValue> cache = igniteManager
+            IgniteCache<DataStoreKey, DataStoreValue> cache = clusterManager
                     .getCache(cacheName);
             IDataStore throughStore = new LazyDataStore() {
                 @Override
@@ -94,7 +92,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
                 }
             };
             IgniteDataStore dataStore = new IgniteDataStore(file,
-                    igniteManager.getCacheAccessor(cacheName), throughStore);
+                    clusterManager.getCacheAccessor(cacheName), throughStore);
             return dataStore;
         }
     }
@@ -108,7 +106,8 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
             return ((DataStoreCacheStoreFactory) factory).getDataStore(file);
         } else {
             String cacheName = cache.getName();
-            IgniteCompute compute = igniteManager.getIgnite().compute();
+            IgniteCompute compute = clusterManager.getIgniteManager(cacheName)
+                    .getIgnite().compute();
             GetCacheStoreFactoryTask task = new GetCacheStoreFactoryTask(
                     cacheName);
             factory = compute.call(task);
@@ -148,5 +147,4 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
             return config.getCacheStoreFactory();
         }
     }
-
 }
