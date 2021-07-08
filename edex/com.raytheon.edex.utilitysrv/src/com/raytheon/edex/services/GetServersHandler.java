@@ -56,6 +56,8 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  * Oct 16, 2019 7724      tgurney      Replace connection string and info map
  *                                     with a single {@link JMSConnectionInfo}
  *                                     object
+ * May 27, 2021 8469      dgilling     Read broker REST service port from
+ *                                     BROKER_HTTP env. variable.
  *
  * </pre>
  *
@@ -76,6 +78,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
         String pypiesServer = System.getenv("PYPIES_SERVER");
         String brokerHost = System.getenv("BROKER_HOST");
         String brokerPort = System.getenv("BROKER_PORT");
+        String brokerServicePort = System.getenv("BROKER_HTTP");
         logger.info("http.server=" + httpServer);
         logger.info("broker host=" + brokerHost);
         logger.info("broker port=" + brokerPort);
@@ -83,7 +86,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
         logger.info("pypies.server=" + pypiesServer);
         logger.info("server locations=" + registry);
         JMSConnectionInfo connectionInfo = createJmsConnectionInfo(brokerHost,
-                brokerPort, jmsVirtualHost);
+                brokerPort, jmsVirtualHost, brokerServicePort);
         response.setJmsConnectionInfo(connectionInfo);
         response.setHttpServer(httpServer);
         response.setPypiesServer(pypiesServer);
@@ -93,7 +96,7 @@ public class GetServersHandler extends GenericRegistry<String, String>
     }
 
     private static JMSConnectionInfo createJmsConnectionInfo(String hostname,
-            String port, String vhost) {
+            String port, String vhost, String servicePort) {
         /*
          * Do not enable retry/connectdelay connection and factory will silently
          * reconnect and user will never be notified qpid is down and cave/text
@@ -109,7 +112,8 @@ public class GetServersHandler extends GenericRegistry<String, String>
         parameters.put("jms.prefetchPolicy.all", "0");
         parameters.put("jms.connectTimeout", connTimeout);
         parameters.put("jms.forceSyncSend", forceSyncSend);
-        return new JMSConnectionInfo(hostname, port, vhost, parameters);
+        return new JMSConnectionInfo(hostname, port, vhost, servicePort,
+                parameters);
     }
 
     @Override

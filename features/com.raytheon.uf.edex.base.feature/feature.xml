@@ -155,7 +155,7 @@
          id="org.eclipse.jetty"
          download-size="0"
          install-size="0"
-         version="9.4.36.v20210114"/>
+         version="0.0.0"/>
 
    <plugin
          id="javax.servlet"

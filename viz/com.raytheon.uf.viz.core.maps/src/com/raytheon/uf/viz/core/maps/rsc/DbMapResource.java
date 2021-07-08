@@ -36,6 +36,12 @@ import java.util.Set;
 import org.eclipse.core.runtime.jobs.Job;
 import org.eclipse.swt.graphics.RGB;
 import org.eclipse.swt.graphics.Rectangle;
+import org.locationtech.jts.geom.Coordinate;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.geom.GeometryFactory;
+import org.locationtech.jts.geom.Point;
+import org.locationtech.jts.geom.TopologyException;
+import org.locationtech.jts.io.WKBReader;
 import org.opengis.referencing.FactoryException;
 import org.opengis.referencing.crs.CoordinateReferenceSystem;
 import org.opengis.referencing.operation.TransformException;
@@ -80,11 +86,6 @@ import com.raytheon.uf.viz.core.rsc.interrogation.InterrogationKey;
 import com.raytheon.uf.viz.core.rsc.interrogation.Interrogator;
 import com.raytheon.uf.viz.core.rsc.interrogation.StringInterrogationKey;
 import com.raytheon.uf.viz.core.spatial.GeometryCache;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.geom.GeometryFactory;
-import org.locationtech.jts.geom.Point;
-import org.locationtech.jts.geom.TopologyException;
-import org.locationtech.jts.io.WKBReader;
 
 /**
  * Databased map resource for line and polygon data
@@ -119,6 +120,9 @@ import org.locationtech.jts.io.WKBReader;
  * Feb 27, 2818  7012     tgurney   Dedupe map query fields
  * Mar 15, 2018  6967     randerso  Set paint status to incomplete until first
  *                                  painted
+ * May 19, 2021  8468     randerso  Catch TopologyException from
+ *                                  getInteriorPoint() and place label at the
+ *                                  point of the exception.
  *
  * </pre>
  *
@@ -151,11 +155,10 @@ public class DbMapResource
 
         private final double[] location;
 
-        public LabelNode(String label, Point c, IGraphicsTarget target,
+        public LabelNode(String label, Coordinate c, IGraphicsTarget target,
                 IFont font) {
             this.label = label;
-            this.location = descriptor.worldToPixel(
-                    new double[] { c.getCoordinate().x, c.getCoordinate().y });
+            this.location = descriptor.worldToPixel(new double[] { c.x, c.y });
             DrawableString ds = new DrawableString(label, null);
             ds.font = font;
             rect = target.getStringsBounds(ds);
@@ -426,9 +429,14 @@ public class DbMapResource
 
                     for (Geometry poly : gList) {
                         try {
-                            Point point = poly.getInteriorPoint();
-                            if (point.getCoordinate() != null) {
-                                LabelNode node = new LabelNode(label, point,
+                            Coordinate c = null;
+                            try {
+                                c = poly.getInteriorPoint().getCoordinate();
+                            } catch (TopologyException e) {
+                                c = e.getCoordinate();
+                            }
+                            if (c != null) {
+                                LabelNode node = new LabelNode(label, c,
                                         req.getTarget(), req.getResource()
                                                 .getFont(req.getTarget()));
                                 newLabels.add(node);

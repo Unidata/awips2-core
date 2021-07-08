@@ -43,6 +43,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * Oct 16, 2019 7724       tgurney     Move connection URL and SSL logic to
  *                                     the connection factory. Add serialization
  *                                     annotations
+ * May 27, 2021 8469       dgilling    Add servicePort field.
  *
  * </pre>
  *
@@ -67,6 +68,10 @@ public class JMSConnectionInfo {
     private String vhost;
 
     @DynamicSerializeElement
+    @XmlElement(name = "servicePort", required = true)
+    private String servicePort;
+
+    @DynamicSerializeElement
     @XmlElement(name = "parameters")
     private Map<String, String> parameters = new HashMap<>();
 
@@ -75,10 +80,11 @@ public class JMSConnectionInfo {
     }
 
     public JMSConnectionInfo(String host, String port, String vhost,
-            Map<String, String> parameters) {
+            String servicePort, Map<String, String> parameters) {
         this.host = host;
         this.port = port;
         this.vhost = vhost;
+        this.servicePort = servicePort;
         this.parameters = parameters;
     }
 
@@ -114,16 +120,17 @@ public class JMSConnectionInfo {
         this.vhost = vhost;
     }
 
+    public String getServicePort() {
+        return servicePort;
+    }
+
+    public void setServicePort(String servicePort) {
+        this.servicePort = servicePort;
+    }
+
     @Override
     public int hashCode() {
-        final int prime = 31;
-        int result = 1;
-        result = prime * result + (host == null ? 0 : host.hashCode());
-        result = prime * result
-                + (parameters == null ? 0 : parameters.hashCode());
-        result = prime * result + (port == null ? 0 : port.hashCode());
-        result = prime * result + (vhost == null ? 0 : vhost.hashCode());
-        return result;
+        return Objects.hash(host, parameters, port, servicePort, vhost);
     }
 
     @Override
@@ -139,14 +146,19 @@ public class JMSConnectionInfo {
         }
         JMSConnectionInfo other = (JMSConnectionInfo) obj;
         return Objects.equals(host, other.host)
+                && Objects.equals(parameters, other.parameters)
                 && Objects.equals(port, other.port)
-                && Objects.equals(vhost, other.vhost)
-                && Objects.equals(parameters, other.parameters);
+                && Objects.equals(servicePort, other.servicePort)
+                && Objects.equals(vhost, other.vhost);
     }
 
     @Override
     public String toString() {
-        return "JMSConnectionInfo [host=" + host + ", port=" + port + ", vhost="
-                + vhost + ", parameters=" + parameters + "]";
+        StringBuilder builder = new StringBuilder();
+        builder.append("JMSConnectionInfo [host=").append(host)
+                .append(", port=").append(port).append(", vhost=").append(vhost)
+                .append(", servicePort=").append(servicePort)
+                .append(", parameters=").append(parameters).append("]");
+        return builder.toString();
     }
 }
