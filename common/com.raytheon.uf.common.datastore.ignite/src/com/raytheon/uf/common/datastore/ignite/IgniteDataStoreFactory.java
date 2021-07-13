@@ -19,18 +19,15 @@
 package com.raytheon.uf.common.datastore.ignite;
 
 import java.io.File;
-import java.util.Arrays;
 
 import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
-import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
 import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi;
-import org.apache.ignite.spi.discovery.tcp.ipfinder.multicast.TcpDiscoveryMulticastIpFinder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.IDataStoreFactory;
@@ -53,6 +50,7 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  * Dec  8, 2020  8299     tgurney   Add code to get the through-datastore from
  *                                  a server node if it is not found in the
  *                                  client's configuration
+ * Jun 25, 2021  8450     mapeters  Centralize ignite instance/cache management
  *
  * </pre>
  *
@@ -60,53 +58,44 @@ import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
  */
 public class IgniteDataStoreFactory implements IDataStoreFactory {
 
+    private final Logger logger = LoggerFactory.getLogger(getClass());
+
     private static final String NO_CACHE_NAME = "none";
 
-    private final Ignite ignite;
+    private final AbstractIgniteManager igniteManager;
 
     private final CachePluginRegistry pluginRegistry;
 
-    public IgniteDataStoreFactory() {
-        this(getDefaultConfig());
-    }
-
-    public IgniteDataStoreFactory(IgniteConfiguration config) {
-        this(Ignition.getOrStart(config));
-    }
-
-    public IgniteDataStoreFactory(Ignite ignite) {
-        this(ignite, new CachePluginRegistry());
-    }
-
-    public IgniteDataStoreFactory(IgniteConfiguration config,
+    public IgniteDataStoreFactory(AbstractIgniteManager igniteManager,
             CachePluginRegistry pluginRegistry) {
-        this(Ignition.getOrStart(config), pluginRegistry);
-    }
-
-    public IgniteDataStoreFactory(Ignite ignite,
-            CachePluginRegistry pluginRegistry) {
-        this.ignite = ignite;
+        String name = getClass().getSimpleName();
+        logger.info("Creating " + name);
+        this.igniteManager = igniteManager;
+        this.igniteManager.initialize();
         this.pluginRegistry = pluginRegistry;
-        this.pluginRegistry.setIgnite(ignite);
+        this.pluginRegistry.initialize(this.igniteManager);
+        logger.info("Created " + name);
     }
 
     @Override
     public IDataStore getDataStore(File file, boolean useLocking) {
         String cacheName = pluginRegistry.getCacheName(file);
         if (NO_CACHE_NAME.equalsIgnoreCase(cacheName)) {
-            IgniteCache<?, ?> defaultCache = ignite
-                    .getOrCreateCache(CachePluginRegistry.DEFAULT_CACHE);
+            IgniteCache<?, ?> defaultCache = igniteManager
+                    .getCache(CachePluginRegistry.DEFAULT_CACHE);
             return getThroughDataStore(file, defaultCache);
         } else {
-            IgniteCache<DataStoreKey, DataStoreValue> cache = ignite
-                    .getOrCreateCache(cacheName);
+            IgniteCache<DataStoreKey, DataStoreValue> cache = igniteManager
+                    .getCache(cacheName);
             IDataStore throughStore = new LazyDataStore() {
                 @Override
                 protected IDataStore createDataStore() {
                     return getThroughDataStore(file, cache);
                 }
             };
-            return new IgniteDataStore(file, cache, throughStore);
+            IgniteDataStore dataStore = new IgniteDataStore(file,
+                    igniteManager.getCacheAccessor(cacheName), throughStore);
+            return dataStore;
         }
     }
 
@@ -119,7 +108,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
             return ((DataStoreCacheStoreFactory) factory).getDataStore(file);
         } else {
             String cacheName = cache.getName();
-            IgniteCompute compute = ignite.compute();
+            IgniteCompute compute = igniteManager.getIgnite().compute();
             GetCacheStoreFactoryTask task = new GetCacheStoreFactoryTask(
                     cacheName);
             factory = compute.call(task);
@@ -133,20 +122,6 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
                         + factory + ")");
             }
         }
-    }
-
-    private static IgniteConfiguration getDefaultConfig() {
-        IgniteConfiguration config = new IgniteConfiguration();
-        config.setClassLoader(IgniteDataStoreFactory.class.getClassLoader());
-        config.setClientMode(true);
-        TcpDiscoverySpi discoSpi = new TcpDiscoverySpi();
-        discoSpi.setJoinTimeout(5000);
-        TcpDiscoveryMulticastIpFinder ipFinder = new TcpDiscoveryMulticastIpFinder();
-        ipFinder.setAddresses(Arrays.asList("localhost"));
-        discoSpi.setIpFinder(ipFinder);
-        config.setDiscoverySpi(discoSpi);
-
-        return config;
     }
 
     private static class GetCacheStoreFactoryTask

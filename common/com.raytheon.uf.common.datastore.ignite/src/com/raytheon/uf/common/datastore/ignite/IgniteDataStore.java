@@ -33,6 +33,9 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
+import java.util.TreeSet;
+import java.util.concurrent.TimeUnit;
+import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -40,7 +43,7 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessorException;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.cache.CacheMetrics;
+import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
@@ -56,9 +59,14 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager.IgniteCacheAccessor;
 import com.raytheon.uf.common.datastore.ignite.processor.GetDatasetNamesProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.RetrieveProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.StoreProcessor;
+import com.raytheon.uf.common.status.IPerformanceStatusHandler;
+import com.raytheon.uf.common.status.PerformanceStatus;
+import com.raytheon.uf.common.time.util.IPerformanceTimer;
+import com.raytheon.uf.common.time.util.TimeUtil;
 
 /**
  *
@@ -71,13 +79,16 @@ import com.raytheon.uf.common.datastore.ignite.processor.StoreProcessor;
  * SOFTWARE HISTORY
  *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- -----------------
+ * ------------- -------- --------- --------------------------------------------
  * May 29, 2019  7628     bsteffen  Initial creation
  * Mar 27, 2020  8099     bsteffen  Throw DuplicateRecordStorageException for
  *                                  duplicate records.
  * Mar 30, 2020  8073     bsteffen  Make deleteFiles query lazy to prevent OOM.
  * Apr 02, 2020  8075     bsteffen  Handle updates in fastStore.
- * Dec  8, 2020  8299     tgurney   Receive the through-datastore in constructor
+ * Dec 08, 2020  8299     tgurney   Receive the through-datastore in constructor
+ * Jun 10, 2021  8450     mapeters  Make cache ops retry on error/timeout and be
+ *                                  effectively synchronous, close query
+ *                                  cursors, add extra logging
  *
  * </pre>
  *
@@ -88,26 +99,35 @@ public class IgniteDataStore implements IDataStore {
     private static final Logger logger = LoggerFactory
             .getLogger(IgniteDataStore.class);
 
+    private static final IPerformanceStatusHandler perfLog = PerformanceStatus
+            .getHandler(IgniteDataStore.class.getSimpleName() + ":");
+
     /* matches the date formats used in hdf5 filenames. */
     private static final Pattern ORPHAN_REGEX = Pattern.compile(
             "(19|20)(\\d\\d)-?(0[1-9]|1[012])-?(0[1-9]|[12][0-9]|3[01])");
+
+    private static final int CACHE_OP_NUM_ATTEMPTS = Integer
+            .parseInt(System.getProperty("ignite.cache.op.num.attempts"));
+
+    private static final long CACHE_OP_TIMEOUT_SECS = Long
+            .parseLong(System.getProperty("ignite.cache.op.timeout.secs"));
 
     private boolean fastStore = true;
 
     private final String path;
 
-    protected final IgniteCache<DataStoreKey, DataStoreValue> cache;
+    protected final IgniteCacheAccessor<DataStoreKey, DataStoreValue> igniteCacheAccessor;
 
     protected Map<String, List<IDataRecord>> recordsByGroup = new HashMap<>();
 
     private IDataStore throughDataStore;
 
     public IgniteDataStore(File file,
-            IgniteCache<DataStoreKey, DataStoreValue> cache,
+            IgniteCacheAccessor<DataStoreKey, DataStoreValue> igniteCacheAccessor,
             IDataStore throughDataStore) {
         path = file.getPath();
+        this.igniteCacheAccessor = igniteCacheAccessor;
         this.throughDataStore = throughDataStore;
-        this.cache = cache;
     }
 
     /**
@@ -142,92 +162,89 @@ public class IgniteDataStore implements IDataStore {
 
     @Override
     public StorageStatus store() throws StorageException {
-        long t0 = System.currentTimeMillis();
-        StorageStatus ss = store(StoreOp.STORE_ONLY);
-        long t1 = System.currentTimeMillis();
-        long time = t0 - t1;
-        if (time > 10_000) {
-            logger.warn("Took " + time + "ms to store in " + path);
-            logMetrics();
-        }
-        return ss;
-    }
-
-    protected void logMetrics() {
-        CacheMetrics metrics = cache.metrics();
-        StringBuilder message = new StringBuilder();
-        message.append("Cache metrics for ").append(path).append("{\n");
-        message.append("  CacheMissPercentage = ")
-                .append(metrics.getCacheMissPercentage()).append('\n');
-        message.append("  EntryProcessorMissPercentage = ")
-                .append(metrics.getEntryProcessorMissPercentage()).append('\n');
-        message.append("  EntryProcessorAverageInvocationTime = ")
-                .append(metrics.getEntryProcessorAverageInvocationTime())
-                .append('\n');
-        message.append("  EntryProcessorMaxInvocationTime = ")
-                .append(metrics.getEntryProcessorMaxInvocationTime())
-                .append('\n');
-        message.append("  WriteBehindTotalCriticalOverflowCount = ")
-                .append(metrics.getWriteBehindTotalCriticalOverflowCount())
-                .append('\n');
-        message.append("}");
-        logger.info(message.toString());
+        return store(StoreOp.STORE_ONLY);
     }
 
     @Override
-    public StorageStatus store(StoreOp storeOp) throws StorageException {
-        if (fastStore && storeOp != StoreOp.APPEND) {
-            return fastStore(storeOp);
-        }
-        fastStore = true;
-        List<IgniteFuture<StorageStatus>> futures = new ArrayList<>();
-        List<Map<String, Object>> correlationObjects = new ArrayList<>();
+    public StorageStatus store(StoreOp storeOp) {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
 
-        StoreProcessor processor = new StoreProcessor(storeOp);
-        for (Entry<String, List<IDataRecord>> entry : recordsByGroup
-                .entrySet()) {
-            DataStoreKey key = new DataStoreKey(path, entry.getKey());
-            Map<String, Object> corrObjs = unsetCorrelationObjects(
-                    entry.getValue());
-            Object[] records = entry.getValue().toArray();
-            futures.add(cache.invokeAsync(key, processor, records));
-            correlationObjects.add(corrObjs);
+        long totalSizeInBytes = 0L;
+        for (List<IDataRecord> records : recordsByGroup.values()) {
+            for (IDataRecord record : records) {
+                totalSizeInBytes += record.getSizeInBytes();
+            }
         }
-        recordsByGroup.clear();
-        long[] indexOfAppend = null;
-        StorageException[] exceptions = new StorageException[0];
-        for (int i = 0; i < futures.size(); i += 1) {
-            IgniteFuture<StorageStatus> future = futures.get(i);
-            StorageStatus status = future.get();
-            long[] moreIndices = status.getIndexOfAppend();
-            if (moreIndices != null) {
-                if (indexOfAppend == null) {
-                    indexOfAppend = moreIndices;
-                } else {
-                    int oldLength = indexOfAppend.length;
-                    indexOfAppend = Arrays.copyOf(indexOfAppend,
-                            oldLength + moreIndices.length);
-                    System.arraycopy(moreIndices, 0, indexOfAppend, oldLength,
-                            moreIndices.length);
+        logger.info("Storing " + path + " (fastStore=" + fastStore
+                + ", storeOp=" + storeOp + ", size=" + totalSizeInBytes + "B)");
+
+        StorageStatus storageStatus;
+        boolean doingFastStore = fastStore && storeOp != StoreOp.APPEND;
+        if (doingFastStore) {
+            storageStatus = fastStore(storeOp);
+        } else {
+            /*
+             * We are not doing a fast store, but the value of fastStore isn't
+             * used in the rest of this store operation so reset it back to its
+             * starting value of true for the next store operation
+             */
+            fastStore = true;
+            List<StorageException> exceptions = new ArrayList<>();
+            long[] indexOfAppend = null;
+
+            StoreProcessor processor = new StoreProcessor(storeOp);
+            for (Entry<String, List<IDataRecord>> entry : recordsByGroup
+                    .entrySet()) {
+                DataStoreKey key = new DataStoreKey(path, entry.getKey());
+                Map<String, Object> corrObjs = unsetCorrelationObjects(
+                        entry.getValue());
+                Object[] records = entry.getValue().toArray();
+                StorageStatus status;
+                try {
+                    status = doCacheOp(
+                            c -> c.invokeAsync(key, processor, records));
+                    if (status.hasExceptions()) {
+                        for (StorageException e : status.getExceptions()) {
+                            resetCorrelationObjects(corrObjs, e);
+                            exceptions.add(e);
+                        }
+                    }
+                    long[] moreIndices = status.getIndexOfAppend();
+                    if (moreIndices != null) {
+                        if (indexOfAppend == null) {
+                            indexOfAppend = moreIndices;
+                        } else {
+                            int oldLength = indexOfAppend.length;
+                            indexOfAppend = Arrays.copyOf(indexOfAppend,
+                                    oldLength + moreIndices.length);
+                            System.arraycopy(moreIndices, 0, indexOfAppend,
+                                    oldLength, moreIndices.length);
+                        }
+                    }
+
+                } catch (StorageException e) {
+                    resetCorrelationObjects(corrObjs, e);
+                    exceptions.add(e);
                 }
             }
-            StorageException[] moreEx = status.getExceptions();
-            if (moreEx != null && moreEx.length > 0) {
-                resetCorrelationObjects(correlationObjects.get(i), moreEx);
-                int oldLength = exceptions.length;
-                exceptions = Arrays.copyOf(exceptions,
-                        oldLength + moreEx.length);
-                System.arraycopy(moreIndices, 0, exceptions, oldLength,
-                        moreEx.length);
-            }
+            recordsByGroup.clear();
+
+            storageStatus = new StorageStatus();
+            storageStatus.setOperationPerformed(storeOp);
+            storageStatus
+                    .setExceptions(exceptions.toArray(new StorageException[0]));
+            storageStatus.setIndexOfAppend(indexOfAppend);
         }
 
-        StorageStatus status = new StorageStatus();
-        status.setOperationPerformed(storeOp);
-        status.setExceptions(exceptions);
-        status.setIndexOfAppend(indexOfAppend);
+        timer.stop();
+        long time = timer.getElapsedTime();
+        perfLog.logDuration("Storing " + path, time);
+        if (time > 10_000) {
+            logger.warn("Storing " + path + " took " + time + " ms");
+        }
 
-        return status;
+        return storageStatus;
     }
 
     /**
@@ -269,6 +286,50 @@ public class IgniteDataStore implements IDataStore {
     }
 
     /**
+     * Execute the given cache operation and return its result. This retries the
+     * operation if it times out or throws an exception.
+     *
+     * @param <T>
+     *            the cache operation return value type
+     * @param cacheAsyncOpFunction
+     *            a function that starts the async cache operation when applied
+     *            to the cache and returns a future for it
+     * @return the cache operation result
+     * @throws StorageException
+     *             if the operation still fails after retrying
+     */
+    private <T> T doCacheOp(
+            Function<IgniteCache<DataStoreKey, DataStoreValue>, IgniteFuture<T>> cacheAsyncOpFunction)
+            throws StorageException {
+        Exception exception = null;
+        for (int i = 0; i < CACHE_OP_NUM_ATTEMPTS; ++i) {
+            IgniteFuture<T> cacheOpFuture = null;
+            try {
+                cacheOpFuture = cacheAsyncOpFunction
+                        .apply(igniteCacheAccessor.getCache());
+                return cacheOpFuture.get(CACHE_OP_TIMEOUT_SECS,
+                        TimeUnit.SECONDS);
+            } catch (Exception e) {
+                exception = e;
+                logger.error(
+                        "Error executing ignite cache operation on attempt "
+                                + (i + 1) + "/" + CACHE_OP_NUM_ATTEMPTS,
+                        e);
+                if (cacheOpFuture != null) {
+                    try {
+                        cacheOpFuture.cancel();
+                    } catch (IgniteException e2) {
+                        logger.warn("Error cancelling ignite future", e2);
+                    }
+                }
+            }
+        }
+
+        throw new StorageException("Ignite cache operation failed to complete",
+                null, exception);
+    }
+
+    /**
      * Alternative implementation of store that is optimized for the common case
      * where all of the data in a group is stored in a single operation.
      *
@@ -292,52 +353,45 @@ public class IgniteDataStore implements IDataStore {
      * guarantees the existing data will not be overwritten unless this is a
      * REPLACE operation.
      *
+     * Note that this method does various cache key-value operations here
+     * instead of using an entry processor, because a processor automatically
+     * tries to read through the value from the underlying datastore if it is
+     * not in the cache. That is unnecessary for the common case and hurts
+     * performance.
+     *
      * @param storeOp
      * @return
      * @throws StorageException
      */
-    protected StorageStatus fastStore(StoreOp storeOp) throws StorageException {
-        Map<String, IgniteFuture<DataStoreValue>> storeResults = new HashMap<>();
-        Map<String, Map<String, Object>> storeCorrObjs = new HashMap<>();
-        List<IgniteFuture<Void>> replaceResults = new ArrayList<>();
+    protected StorageStatus fastStore(StoreOp storeOp) {
+        StorageStatus result = new StorageStatus();
+        List<StorageException> exceptions = new ArrayList<>();
+        result.setOperationPerformed(storeOp);
+
         for (Entry<String, List<IDataRecord>> entry : recordsByGroup
                 .entrySet()) {
             Map<String, Object> corrObjs = unsetCorrelationObjects(
                     entry.getValue());
             DataStoreKey key = new DataStoreKey(path, entry.getKey());
             DataStoreValue value = new DataStoreValue(entry.getValue());
-            if (storeOp == StoreOp.REPLACE) {
-                replaceResults.add(cache.putAsync(key, value));
-            } else {
-                storeResults.put(entry.getKey(),
-                        cache.getAndPutIfAbsentAsync(key, value));
-                storeCorrObjs.put(entry.getKey(), corrObjs);
-            }
-        }
-
-        StorageStatus result = new StorageStatus();
-        List<StorageException> exceptions = new ArrayList<>();
-        result.setOperationPerformed(storeOp);
-        for (Entry<String, IgniteFuture<DataStoreValue>> entry : storeResults
-                .entrySet()) {
-            DataStoreValue previous = entry.getValue().get();
-            if (previous != null) {
-                List<IDataRecord> updated = recordsByGroup.get(entry.getKey());
-                try {
-                    DataStoreValue value = StoreProcessor.merge(previous,
-                            updated, storeOp, result);
-                    DataStoreKey key = new DataStoreKey(path, entry.getKey());
-                    replaceResults.add(cache.putAsync(key, value));
-                } catch (StorageException e) {
-                    resetCorrelationObjects(storeCorrObjs.get(entry.getKey()),
-                            e);
-                    exceptions.add(e);
+            try {
+                if (storeOp == StoreOp.REPLACE) {
+                    doCacheOp(c -> c.putAsync(key, value));
+                } else {
+                    DataStoreValue previous = doCacheOp(
+                            c -> c.getAndPutIfAbsentAsync(key, value));
+                    if (previous != null) {
+                        List<IDataRecord> updated = recordsByGroup
+                                .get(entry.getKey());
+                        DataStoreValue mergedValue = StoreProcessor
+                                .merge(previous, updated, storeOp, result);
+                        doCacheOp(c -> c.putAsync(key, mergedValue));
+                    }
                 }
-
+            } catch (StorageException e) {
+                resetCorrelationObjects(corrObjs, e);
+                exceptions.add(e);
             }
-        }
-        for (IgniteFuture<Void> future : replaceResults) {
-            future.get();
         }
 
         result.setExceptions(exceptions.toArray(new StorageException[0]));
@@ -348,38 +402,62 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public void deleteDatasets(String... datasets)
             throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
+        String msg = "Deleting " + path + " datasets: " + datasets;
+        logger.info(msg);
+
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        IgniteFuture<Void> future = cache.clearAsync(key);
+        doCacheOp(c -> c.clearAsync(key));
         through.deleteDatasets(datasets);
-        future.get();
+
+        timer.stop();
+        perfLog.logDuration(msg, timer.getElapsedTime());
     }
 
     @Override
     public void deleteGroups(String... groups)
             throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
+        String msg = "Deleting " + path + " groups: " + groups;
+        logger.info(msg);
+
         Set<DataStoreKey> keys = new HashSet<>();
         for (String group : groups) {
             keys.add(new DataStoreKey(path, group));
         }
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        IgniteFuture<Void> future = cache.clearAsync(key);
+        doCacheOp(c -> c.clearAsync(key));
         /*
          * The cache store is not writing removal of records so manually pass it
          * through.
          */
         through.deleteGroups(groups);
-        future.get();
+
+        timer.stop();
+        perfLog.logDuration(msg, timer.getElapsedTime());
     }
 
     @Override
     public IDataRecord[] retrieve(String group)
             throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         DataStoreKey key = new DataStoreKey(path, group);
         try {
-            List<IDataRecord> result = cache.invoke(key,
-                    new RetrieveProcessor());
+            List<IDataRecord> result = doCacheOp(
+                    c -> c.invokeAsync(key, new RetrieveProcessor()));
+
+            timer.stop();
+            perfLog.logDuration("Retrieving records for " + group,
+                    timer.getElapsedTime());
+
             return result.toArray(new IDataRecord[0]);
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
@@ -389,6 +467,9 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public IDataRecord retrieve(String group, String dataset, Request request)
             throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         if (DataStoreFactory.DEF_SEPARATOR.equals(group)) {
             group = "";
         }
@@ -410,8 +491,9 @@ public class IgniteDataStore implements IDataStore {
 
         DataStoreKey key = new DataStoreKey(path, group);
         try {
-            List<IDataRecord> result = cache.invoke(key,
-                    new RetrieveProcessor(dataset, request));
+            final String finalDataset = dataset;
+            List<IDataRecord> result = doCacheOp(c -> c.invokeAsync(key,
+                    new RetrieveProcessor(finalDataset, request)));
             if (result == null || result.isEmpty()) {
                 throw new StorageException("No data found for " + group + " "
                         + dataset + " in " + path, null);
@@ -419,6 +501,11 @@ public class IgniteDataStore implements IDataStore {
                 throw new IllegalStateException("Too many records found for "
                         + group + " " + dataset + " in " + path);
             }
+
+            timer.stop();
+            perfLog.logDuration("Retrieving record for " + group + " and "
+                    + dataset + " and " + request, timer.getElapsedTime());
+
             return result.get(0);
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
@@ -429,6 +516,9 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public IDataRecord[] retrieveDatasets(String[] datasetGroupPath,
             Request request) throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         Map<String, Set<String>> dataSetsByGroup = new LinkedHashMap<>();
         for (String path : datasetGroupPath) {
             String group = "";
@@ -445,21 +535,23 @@ public class IgniteDataStore implements IDataStore {
             }
             dataSets.add(dataset);
         }
-        List<IgniteFuture<List<IDataRecord>>> futures = new ArrayList<>();
-        for (Entry<String, Set<String>> entry : dataSetsByGroup.entrySet()) {
-            DataStoreKey key = new DataStoreKey(this.path, entry.getKey());
-            RetrieveProcessor processor = new RetrieveProcessor(
-                    entry.getValue(), request);
-            futures.add(cache.invokeAsync(key, processor));
-        }
         List<IDataRecord> records = new ArrayList<>();
         try {
-            for (IgniteFuture<List<IDataRecord>> future : futures) {
-                records.addAll(future.get());
+            for (Entry<String, Set<String>> entry : dataSetsByGroup
+                    .entrySet()) {
+                DataStoreKey key = new DataStoreKey(this.path, entry.getKey());
+                RetrieveProcessor processor = new RetrieveProcessor(
+                        entry.getValue(), request);
+                records.addAll(doCacheOp(c -> c.invokeAsync(key, processor)));
             }
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
         }
+
+        timer.stop();
+        perfLog.logDuration("Retrieving records for " + datasetGroupPath
+                + " and " + request, timer.getElapsedTime());
+
         return records.toArray(new IDataRecord[0]);
 
     }
@@ -467,28 +559,42 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public IDataRecord[] retrieveGroups(String[] groups, Request request)
             throws StorageException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         RetrieveProcessor processor = new RetrieveProcessor(request);
-        List<IgniteFuture<List<IDataRecord>>> futures = new ArrayList<>();
-        for (String group : groups) {
-            DataStoreKey key = new DataStoreKey(path, group);
-            futures.add(cache.invokeAsync(key, processor));
-        }
         List<IDataRecord> records = new ArrayList<>();
         try {
-            for (IgniteFuture<List<IDataRecord>> future : futures) {
-                records.addAll(future.get());
+            for (String group : groups) {
+                DataStoreKey key = new DataStoreKey(path, group);
+                records.addAll(doCacheOp(c -> c.invokeAsync(key, processor)));
             }
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
         }
+
+        timer.stop();
+        perfLog.logDuration(
+                "Retrieving records for " + groups + " and " + request,
+                timer.getElapsedTime());
+
         return records.toArray(new IDataRecord[0]);
     }
 
     @Override
     public String[] getDatasets(String group)
             throws StorageException, FileNotFoundException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         DataStoreKey key = new DataStoreKey(path, group);
-        Set<String> names = cache.invoke(key, new GetDatasetNamesProcessor());
+        Set<String> names = doCacheOp(
+                c -> c.invokeAsync(key, new GetDatasetNamesProcessor()));
+
+        timer.stop();
+        perfLog.logDuration("Getting datasets for " + group,
+                timer.getElapsedTime());
+
         return names.toArray(new String[0]);
     }
 
@@ -500,14 +606,27 @@ public class IgniteDataStore implements IDataStore {
     }
 
     @Override
-    public void createDataset(IDataRecord rec)
-            throws StorageException, FileNotFoundException {
-        if (rec.getCorrelationObject() != null) {
-            rec = rec.clone();
-            rec.setCorrelationObject(null);
-        }
+    public void createDataset(IDataRecord rec) throws StorageException {
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
         DataStoreKey key = new DataStoreKey(path, rec.getGroup());
-        cache.invoke(key, new StoreProcessor(), rec);
+        String msg = "Creating dataset for " + key;
+        logger.info(msg);
+
+        Map<String, Object> corrObjs = unsetCorrelationObjects(List.of(rec));
+
+        final IDataRecord finalRec = rec;
+        StorageStatus result = doCacheOp(
+                c -> c.invokeAsync(key, new StoreProcessor(), finalRec));
+        if (result.hasExceptions()) {
+            StorageException e = result.getExceptions()[0];
+            resetCorrelationObjects(corrObjs, e);
+            throw e;
+        }
+
+        timer.stop();
+        perfLog.logDuration(msg, timer.getElapsedTime());
     }
 
     @Override
@@ -528,34 +647,42 @@ public class IgniteDataStore implements IDataStore {
     @Override
     public void deleteOrphanData(Map<String, Date> dateMap)
             throws StorageException {
-        QueryCursor<List<?>> cursor = null;
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
+        logger.info("Deleting " + path + " orphan data: " + dateMap);
+
         SqlFieldsQuery query = new SqlFieldsQuery(
                 "select distinct path from DataStoreValue;");
-        cursor = cache.query(query);
 
         List<String> pathsToPurge = new ArrayList<>();
-        for (List<?> row : cursor) {
-            String path = (String) row.get(0);
-            for (java.util.Map.Entry<String, Date> entry : dateMap.entrySet()) {
-                Pattern p = Pattern.compile(entry.getKey());
-                if (p.matcher(path).find()) {
-                    Matcher dateM = ORPHAN_REGEX.matcher(path);
-                    if (dateM.find()) {
-                        int year = Integer
-                                .parseInt(dateM.group(1) + dateM.group(2));
-                        int month = Integer.parseInt(dateM.group(3));
-                        int day = Integer.parseInt(dateM.group(4));
-                        OffsetDateTime pathTime = OffsetDateTime.of(year, month,
-                                day, 0, 0, 0, 0, ZoneOffset.UTC);
-                        OffsetDateTime purgeTime = OffsetDateTime.ofInstant(
-                                entry.getValue().toInstant(), ZoneOffset.UTC);
-                        if (pathTime.isBefore(purgeTime)) {
-                            pathsToPurge.add(path);
+        try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
+                .query(query)) {
+            for (List<?> row : cursor) {
+                String path = (String) row.get(0);
+                for (java.util.Map.Entry<String, Date> entry : dateMap
+                        .entrySet()) {
+                    Pattern p = Pattern.compile(entry.getKey());
+                    if (p.matcher(path).find()) {
+                        Matcher dateM = ORPHAN_REGEX.matcher(path);
+                        if (dateM.find()) {
+                            int year = Integer
+                                    .parseInt(dateM.group(1) + dateM.group(2));
+                            int month = Integer.parseInt(dateM.group(3));
+                            int day = Integer.parseInt(dateM.group(4));
+                            OffsetDateTime pathTime = OffsetDateTime.of(year,
+                                    month, day, 0, 0, 0, 0, ZoneOffset.UTC);
+                            OffsetDateTime purgeTime = OffsetDateTime.ofInstant(
+                                    entry.getValue().toInstant(),
+                                    ZoneOffset.UTC);
+                            if (pathTime.isBefore(purgeTime)) {
+                                pathsToPurge.add(path);
+                            }
                         }
+                        break;
                     }
-                    break;
-                }
 
+                }
             }
         }
         if (!pathsToPurge.isEmpty()) {
@@ -566,11 +693,18 @@ public class IgniteDataStore implements IDataStore {
             query = new SqlFieldsQuery(
                     "delete from DataStoreValue where path in "
                             + pathsSql.toString());
-            cache.query(query);
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
+                    .query(query)) {
+                // do nothing
+            }
         }
 
         IDataStore dataStore = getThroughDataStore();
         dataStore.deleteOrphanData(dateMap);
+
+        timer.stop();
+        perfLog.logDuration("Deleting " + path + " orphan data",
+                timer.getElapsedTime());
     }
 
     @Override
@@ -580,6 +714,13 @@ public class IgniteDataStore implements IDataStore {
             throw new UnsupportedOperationException(
                     "Ignite does not support deleting dates yet.");
         }
+
+        IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
+        timer.start();
+
+        String msg = "Deleting " + path + " for dates: " + datesToDelete;
+        logger.info(msg);
+
         /*
          * Delete SQL seems simpler but runs out of memory for large files.
          * https://issues.apache.org/jira/browse/IGNITE-9182
@@ -590,21 +731,31 @@ public class IgniteDataStore implements IDataStore {
                     "select distinct recgroup from DataStoreValue where path = ?");
             query.setArgs(path);
             query.setLazy(true);
-            QueryCursor<List<?>> cursor = cache.query(query);
-            Set<DataStoreKey> keysToDelete = new HashSet<>();
-            for (List<?> row : cursor) {
-                String group = (String) row.get(0);
-                keysToDelete.add(new DataStoreKey(path, group));
+            Set<DataStoreKey> keysToDelete = new TreeSet<>();
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
+                    .query(query)) {
+                for (List<?> row : cursor) {
+                    String group = (String) row.get(0);
+                    keysToDelete.add(new DataStoreKey(path, group));
+                }
             }
-            cache.removeAll(keysToDelete);
+            logger.info("Deleting " + keysToDelete.size() + " keys for path: "
+                    + path);
+            doCacheOp(c -> c.removeAllAsync(keysToDelete));
         } else {
             SqlFieldsQuery query = new SqlFieldsQuery(
                     "delete from DataStoreValue where path = ?");
             query.setArgs(path);
-            cache.query(query);
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
+                    .query(query)) {
+                // do nothing
+            }
         }
         IDataStore dataStore = getThroughDataStore();
         dataStore.deleteFiles(datesToDelete);
+
+        timer.stop();
+        perfLog.logDuration(msg, timer.getElapsedTime());
     }
 
 }

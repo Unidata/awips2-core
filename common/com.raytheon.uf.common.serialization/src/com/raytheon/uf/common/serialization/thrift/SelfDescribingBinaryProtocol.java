@@ -14,6 +14,7 @@ import org.apache.thrift.protocol.TProtocolException;
 import org.apache.thrift.protocol.TStruct;
 import org.apache.thrift.protocol.TType;
 import org.apache.thrift.transport.TTransport;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -66,6 +67,9 @@ import org.slf4j.LoggerFactory;
  *                                  read too much
  * Jul 13, 2015  4589     bsteffen  Copy arrays in chunks to save memory.
  * Mar 08, 2017  6167     nabowle   Updated for thrift 0.10.0
+ * Jun 28, 2021  8470     lsingh    Updated for thrift 0.14.1, overrode
+ *                                  getMinSerializedSize() to add support for
+ *                                  FLOAT.
  *
  * </pre>
  *
@@ -583,6 +587,17 @@ public class SelfDescribingBinaryProtocol extends TBinaryProtocol {
             throw new TProtocolException(TProtocolException.SIZE_LIMIT,
                     "Incoming length " + length + " exceeds limit of "
                             + MAX_READ_LENGTH);
+        }
+    }
+
+    @Override
+    public int getMinSerializedSize(byte type) throws TTransportException {
+        switch (type) {
+        // AWIPS FLOAT
+        case FLOAT:
+            return 4; 
+        default:
+            return super.getMinSerializedSize(type);
         }
     }
 

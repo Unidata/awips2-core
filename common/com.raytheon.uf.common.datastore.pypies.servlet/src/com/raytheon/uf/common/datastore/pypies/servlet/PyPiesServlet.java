@@ -70,7 +70,6 @@ import com.raytheon.uf.common.pypies.response.ErrorResponse;
 import com.raytheon.uf.common.pypies.response.FileActionResponse;
 import com.raytheon.uf.common.pypies.response.RetrieveResponse;
 import com.raytheon.uf.common.pypies.response.StoreResponse;
-import com.raytheon.uf.common.serialization.SerializationException;
 import com.raytheon.uf.common.serialization.SerializationUtil;
 import com.raytheon.uf.common.util.ByteArrayOutputStreamPool;
 import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
@@ -88,6 +87,7 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * ------------- -------- --------- -------------------------------------------
  * Apr 18, 2019  7628     bsteffen  Initial creation
  * Mar 18, 2021  8349     randerso  Return ErrorResponse for StorageExceptions
+ * Jul 01, 2021  8450     mapeters  Ensure errors are reported
  *
  * </pre>
  *
@@ -207,8 +207,9 @@ public class PyPiesServlet extends HttpServlet {
                         + deserializeTime + ", " + processTime + ", "
                         + serializeTime + ") on " + request.getFilename());
             }
-        } catch (SerializationException e) {
-            throw new ServletException(e);
+        } catch (Throwable t) {
+            logger.error("Error processing PyPies request: " + req, t);
+            throw new ServletException(t);
         }
     }
 

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,23 +26,26 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Provides an interface to datasets of type long [] (signed 64 bit).
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * 20070913            379  jkorman     Initial Creation.
- * 24 Nov 2007        555   garmendariz Added method to check dataset dimensions and override toString
- * 
+ *
+ * Date          Ticket#  Engineer     Description
+ * ------------- -------- ------------ -----------------------------------------
+ * Sep 13, 2007  379      jkorman      Initial Creation.
+ * Nov 24, 2007  555      garmendariz  Added method to check dataset dimensions
+ *                                     and override toString
+ * Jun 10, 2021  8450     mapeters     Add serialVersionUID
+ *
  * </pre>
- * 
+ *
  * @author jkorman
- * @version 1
  */
 @DynamicSerialize
 public class LongDataRecord extends AbstractStorageRecord {
+
+    private static final long serialVersionUID = 3625819214525745995L;
 
     @DynamicSerializeElement
     protected long[] longData;
@@ -52,7 +55,7 @@ public class LongDataRecord extends AbstractStorageRecord {
     }
 
     /**
-     * 
+     *
      * @param name
      * @param group
      * @param longData
@@ -70,7 +73,7 @@ public class LongDataRecord extends AbstractStorageRecord {
 
     /**
      * Convenience constructor for single dimension long data
-     * 
+     *
      * @param name
      * @param group
      * @param longData
@@ -82,7 +85,7 @@ public class LongDataRecord extends AbstractStorageRecord {
 
     /**
      * Get a reference to the internal data array.
-     * 
+     *
      * @return A reference to the internal data array.
      */
     public long[] getLongData() {
@@ -91,7 +94,7 @@ public class LongDataRecord extends AbstractStorageRecord {
 
     /**
      * Set the data array.
-     * 
+     *
      * @param longData
      *            The internal data to set.
      */
@@ -101,7 +104,7 @@ public class LongDataRecord extends AbstractStorageRecord {
 
     /**
      * Get a reference to the internal data.
-     * 
+     *
      * @return The internal data reference.
      */
     @Override
@@ -109,11 +112,7 @@ public class LongDataRecord extends AbstractStorageRecord {
         return longData;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#validateDataSet()
-     */
+    @Override
     public boolean validateDataSet() {
 
         long size = 1;
@@ -139,11 +138,6 @@ public class LongDataRecord extends AbstractStorageRecord {
                 + this.longData.length + "]";
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#reduce(int[])
-     */
     @Override
     public void reduce(int[] indices) {
         long[] reducedData = new long[indices.length];

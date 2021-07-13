@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -30,22 +30,25 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
  * Defines an abstract dataset
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Feb 8, 2007              chammack    Initial Creation.
- * Dec 31, 2008             chammack    Added correlation object
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -------------------------
+ * Feb 08, 2007           chammack  Initial Creation.
+ * Dec 31, 2008           chammack  Added correlation object
+ * Jun 10, 2021  8450     mapeters  Add serialVersionUID
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1
  */
 @DynamicSerialize
 public abstract class AbstractStorageRecord implements IDataRecord {
+
+    private static final long serialVersionUID = -8156857671855801312L;
 
     @DynamicSerializeElement
     protected String name;
@@ -83,6 +86,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      */
     protected Object correlationObject;
 
+    @Override
     public void setIntSizes(int[] sizes) {
         long[] longSizes = new long[sizes.length];
         for (int i = 0; i < sizes.length; i++) {
@@ -91,87 +95,63 @@ public abstract class AbstractStorageRecord implements IDataRecord {
         this.setSizes(longSizes);
     }
 
+    @Override
     public StorageProperties getProperties() {
         return this.props;
     }
 
+    @Override
     public void setMinIndex(long[] minIndex) {
         this.minIndex = minIndex;
     }
 
+    @Override
     public long[] getMinIndex() {
         return minIndex;
     }
 
+    @Override
     public void setProperties(StorageProperties props) {
         this.props = props;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#getDimension()
-     */
+    @Override
     public int getDimension() {
         return dimension;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#setDimension(int)
-     */
+    @Override
     public void setDimension(int dimensions) {
         this.dimension = dimensions;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#getName()
-     */
+    @Override
     public String getName() {
         return name;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see
-     * com.raytheon.edex.storage.records.IDataRecord#setName(java.lang.String)
-     */
+    @Override
     public void setName(String name) {
         this.name = name;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#getSizes()
-     */
+    @Override
     public long[] getSizes() {
         return sizes;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#setSizes(int[])
-     */
+    @Override
     public void setSizes(long[] sizes) {
         this.sizes = sizes;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#getDataObject()
-     */
+    @Override
     public abstract Object getDataObject();
 
     /**
      * @return the group
      */
+    @Override
     public String getGroup() {
         return group;
     }
@@ -180,6 +160,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param group
      *            the group to set
      */
+    @Override
     public void setGroup(String group) {
         this.group = group;
     }
@@ -187,6 +168,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * @return the correlationObject
      */
+    @Override
     public Object getCorrelationObject() {
         return correlationObject;
     }
@@ -195,6 +177,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param correlationObject
      *            the correlationObject to set
      */
+    @Override
     public void setCorrelationObject(Object correlationObject) {
         this.correlationObject = correlationObject;
     }
@@ -202,6 +185,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * @return the dataAttributes
      */
+    @Override
     public Map<String, Object> getDataAttributes() {
         return dataAttributes;
     }
@@ -210,6 +194,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param dataAttributes
      *            the dataAttributes to set
      */
+    @Override
     public void setDataAttributes(Map<String, Object> dataAttributes) {
         this.dataAttributes = dataAttributes;
     }
@@ -217,6 +202,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * @return the fillValue
      */
+    @Override
     public Number getFillValue() {
         return fillValue;
     }
@@ -225,6 +211,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param fillValue
      *            the fillValue to set
      */
+    @Override
     public void setFillValue(Number fillValue) {
         this.fillValue = fillValue;
     }
@@ -232,6 +219,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * @return the maxSizes
      */
+    @Override
     public long[] getMaxSizes() {
         return maxSizes;
     }
@@ -240,6 +228,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param maxSizes
      *            the maxSizes to set
      */
+    @Override
     public void setMaxSizes(long[] maxSizes) {
         this.maxSizes = maxSizes;
     }
@@ -247,6 +236,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * @return the maxChunkSize
      */
+    @Override
     public int getMaxChunkSize() {
         return maxChunkSize;
     }
@@ -255,6 +245,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
      * @param maxChunkSize
      *            the maxChunkSize to set
      */
+    @Override
     public void setMaxChunkSize(int maxChunkSize) {
         this.maxChunkSize = maxChunkSize;
     }
@@ -278,7 +269,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
         }
         record.group = group;
         if (dataAttributes != null) {
-            record.dataAttributes = new HashMap<String, Object>(dataAttributes);
+            record.dataAttributes = new HashMap<>(dataAttributes);
         }
         record.fillValue = fillValue;
         record.maxChunkSize = maxChunkSize;
@@ -289,7 +280,7 @@ public abstract class AbstractStorageRecord implements IDataRecord {
     /**
      * Create a new Record Object and clone/copy all members of the object where
      * possibly, do not just set references
-     * 
+     *
      * @return cloned record
      */
     protected abstract AbstractStorageRecord cloneInternal();
