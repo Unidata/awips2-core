@@ -30,7 +30,8 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager.IgniteCacheAccessor;
+import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastore.ignite.IgniteCacheAccessor;
 import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 
@@ -75,8 +76,8 @@ public class CachePluginRegistry {
             .getLogger(CachePluginRegistry.class);
 
     private static final long REFRESH_INTERVAL = Duration
-            .ofSeconds(Long.parseLong(System.getProperty(
-                    "ignite.cache.plugin.registry.refresh.interval.secs")))
+            .ofSeconds(IgniteUtils.getLongProperty(
+                    "ignite.cache.plugin.registry.refresh.interval.secs"))
             .toMillis();
 
     private final AtomicLong nextRefresh = new AtomicLong(
@@ -96,7 +97,15 @@ public class CachePluginRegistry {
         lock.readLock().lock();
         try {
             if (cacheAccessor != null) {
-                cacheAccessor.getCache().put(plugin, cacheName);
+                try {
+                    cacheAccessor
+                            .doAsyncCacheOp(c -> c.putAsync(plugin, cacheName));
+                } catch (StorageException e) {
+                    logger.error(
+                            "Error storing plugin cache name mapping to ignite server: "
+                                    + plugin + " -> " + cacheName,
+                            e);
+                }
             }
 
             String prev = cacheNamesByPlugin.put(plugin, cacheName);
@@ -119,7 +128,14 @@ public class CachePluginRegistry {
         try {
             this.cacheAccessor = clusterManager
                     .getCacheAccessor(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
-            cacheAccessor.getCache().putAll(cacheNamesByPlugin);
+            try {
+                cacheAccessor
+                        .doAsyncCacheOp(c -> c.putAllAsync(cacheNamesByPlugin));
+            } catch (StorageException e) {
+                logger.error(
+                        "Error storing plugin cache name mappings to ignite server",
+                        e);
+            }
         } finally {
             lock.writeLock().unlock();
         }
@@ -132,11 +148,22 @@ public class CachePluginRegistry {
         if (cacheNamesByPlugin.containsKey(plugin)) {
             return cacheNamesByPlugin.get(plugin);
         } else {
-            String name = cacheAccessor.getCache().get(plugin);
+            String name = null;
+            boolean errorOccurred = false;
+            try {
+                name = cacheAccessor.doAsyncCacheOp(c -> c.getAsync(plugin));
+            } catch (StorageException e) {
+                logger.error("Error retrieving cache name to use for plugin "
+                        + plugin + ", temporarily falling back to "
+                        + IgniteUtils.DEFAULT_CACHE, e);
+                errorOccurred = true;
+            }
             if (name == null) {
                 name = IgniteUtils.DEFAULT_CACHE;
             }
-            cacheNamesByPlugin.put(plugin, name);
+            if (!errorOccurred) {
+                cacheNamesByPlugin.put(plugin, name);
+            }
             return name;
         }
     }
@@ -157,8 +184,8 @@ public class CachePluginRegistry {
 
     /**
      * Clear the local mapping to be sure it matches the ignite cache when it
-     * repopulates. On server nodes this will also save the current ignite cache
-     * into a file if it has changed.
+     * repopulates (if we haven't already cleared it within the refresh
+     * interval).
      */
     protected void refreshCache() {
         long currentTime = System.currentTimeMillis();

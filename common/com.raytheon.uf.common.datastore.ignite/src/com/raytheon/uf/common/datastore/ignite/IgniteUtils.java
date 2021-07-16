@@ -18,8 +18,18 @@
  **/
 package com.raytheon.uf.common.datastore.ignite;
 
+import java.util.concurrent.TimeUnit;
+
+import org.apache.ignite.IgniteCacheRestartingException;
+import org.apache.ignite.IgniteClientDisconnectedException;
+import org.apache.ignite.IgniteException;
+import org.apache.ignite.cluster.ClusterTopologyException;
+import org.apache.ignite.lang.IgniteFuture;
+import org.slf4j.Logger;
+
 /**
- * Contains various constants and utilities used with ignite.
+ * Contains various constants and utilities used with ignite on both the client
+ * and server side.
  *
  * <pre>
  *
@@ -27,7 +37,7 @@ package com.raytheon.uf.common.datastore.ignite;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jul 8, 2021  8450       mapeters     Initial creation
+ * Jul 8, 2021  8450       mapeters    Initial creation
  *
  * </pre>
  *
@@ -43,9 +53,47 @@ public class IgniteUtils {
 
     public static final String NO_CACHE_NAME = "none";
 
-    public static final String IGNITE_CLUSTER_SERVERS = "IGNITE_CLUSTER_SERVERS";
+    public static final String IGNITE_CLUSTER_1_SERVERS = "IGNITE_CLUSTER_1_SERVERS";
 
-    public static final String SECOND_IGNITE_CLUSTER_SERVERS = "SECOND_IGNITE_CLUSTER_SERVERS";
+    public static final String IGNITE_CLUSTER_2_SERVERS = "IGNITE_CLUSTER_2_SERVERS";
+
+    public static final long OP_NUM_ATTEMPTS = getLongProperty(
+            "ignite.op.num.attempts");
+
+    public static final long OP_TIMEOUT_SECS = getLongProperty(
+            "ignite.op.timeout.secs");
+
+    private static final long EXCEPTION_RECOVERY_TIMEOUT_SECS = getLongProperty(
+            "ignite.op.exception.recovery.timeout.secs");
+
+    private static final long OP_RETRY_DELAY_SECS = getLongProperty(
+            "ignite.op.retry.delay.secs");
+
+    /**
+     * Prevent instantiation.
+     */
+    private IgniteUtils() {
+    }
+
+    /**
+     * Get the long integer value of the given property.
+     *
+     * @param name
+     *            the property name
+     * @return the long value
+     * @throws IllegalStateException
+     *             if the property is not set to a valid long value
+     */
+    public static long getLongProperty(String name) {
+        Long value = Long.getLong(name);
+        if (value == null) {
+            throw new IllegalStateException(
+                    "Invalid long integer value for property " + name + ": '"
+                            + System.getProperty(name) + "'");
+        }
+
+        return value;
+    }
 
     /**
      * @return true if ignite is active/being used, false if only pypies is
@@ -56,8 +104,91 @@ public class IgniteUtils {
     }
 
     /**
-     * Prevent instantiation.
+     * Handle an exception performing an ignite operation.
+     *
+     * @param logger
+     *            the logger to use
+     * @param e
+     *            the exception
+     * @param attemptNum
+     *            the operation attempt number
+     * @param asyncCacheOpFuture
+     *            the async cache op future that the exception occurred during,
+     *            or null if it was not such an operation
      */
-    private IgniteUtils() {
+    public static void handleException(Logger logger, Exception e,
+            int attemptNum, IgniteFuture<?> asyncCacheOpFuture) {
+        logger.error("Error executing ignite operation on attempt "
+                + (attemptNum + 1) + "/" + OP_NUM_ATTEMPTS, e);
+
+        /*
+         * Some ignite exceptions provide a future that is supposed to complete
+         * when the cause of the exception is resolved. Check for that and wait
+         * for it to complete/recover if available.
+         */
+        IgniteFuture<?> recoveryFuture = getExceptionRecoveryFuture(e);
+        boolean recovered = false;
+        if (recoveryFuture != null) {
+            logger.info("Attempting to wait up to "
+                    + EXCEPTION_RECOVERY_TIMEOUT_SECS
+                    + "s for exception to tell us that its cause has been resolved: "
+                    + recoveryFuture);
+            try {
+                recoveryFuture.get(EXCEPTION_RECOVERY_TIMEOUT_SECS,
+                        TimeUnit.SECONDS);
+                recovered = true;
+                logger.info("Recovered from " + e.getClass().getSimpleName());
+            } catch (IgniteException e2) {
+                logger.error(
+                        "Error recovering from " + e.getClass().getSimpleName(),
+                        e2);
+            }
+        }
+
+        if (asyncCacheOpFuture != null) {
+            logger.info("Cancelling failed async cache operation: "
+                    + asyncCacheOpFuture);
+            try {
+                asyncCacheOpFuture.cancel();
+                logger.info("Cancelled failed async cache operation");
+            } catch (IgniteException e2) {
+                logger.warn("Error cancelling ignite future", e2);
+            }
+        }
+
+        if (!recovered && attemptNum < OP_NUM_ATTEMPTS - 1) {
+            // Give ignite time to hopefully fix itself
+            try {
+                logger.info("Waiting " + OP_RETRY_DELAY_SECS
+                        + "s before retrying the operation");
+                TimeUnit.SECONDS.sleep(OP_RETRY_DELAY_SECS);
+            } catch (InterruptedException e2) {
+                logger.error("Interrupted while delaying retry", e);
+            }
+        }
+    }
+
+    /**
+     * Some ignite exceptions provide an {@link IgniteFuture} that is supposed
+     * to complete when the cause of the exception is resolved. Extract the
+     * recovery future from the given exception if it has one, otherwise return
+     * null.
+     *
+     * @param e
+     *            the exception to check for a recovery future
+     * @return the recovery future, or null
+     */
+    private static IgniteFuture<?> getExceptionRecoveryFuture(Exception e) {
+        if (e instanceof IgniteClientDisconnectedException) {
+            return ((IgniteClientDisconnectedException) e).reconnectFuture();
+        }
+        if (e instanceof IgniteCacheRestartingException) {
+            return ((IgniteCacheRestartingException) e).restartFuture();
+        }
+        if (e instanceof ClusterTopologyException) {
+            return ((ClusterTopologyException) e).retryReadyFuture();
+        }
+
+        return null;
     }
 }

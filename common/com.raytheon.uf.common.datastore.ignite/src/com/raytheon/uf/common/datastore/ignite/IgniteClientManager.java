@@ -29,9 +29,9 @@ import org.apache.ignite.Ignition;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.configuration.IgniteConfiguration;
 import org.apache.ignite.failure.FailureContext;
-import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastore.ignite.IgniteClientFailureHandler.IgniteClientFailureListener;
 
 /**
@@ -55,8 +55,6 @@ public class IgniteClientManager extends AbstractIgniteManager
 
     private static final long serialVersionUID = 1L;
 
-    private final Logger logger;
-
     private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private final Map<String, CacheConfiguration<?, ?>> cacheConfigs = new HashMap<>();
@@ -76,8 +74,8 @@ public class IgniteClientManager extends AbstractIgniteManager
     public IgniteClientManager(IIgniteConfigGenerator configGenerator,
             int clusterNum) {
         this.configGenerator = configGenerator;
-        this.logger = LoggerFactory
-                .getLogger(getClass().getSimpleName() + "-" + clusterNum);
+        setLogger(LoggerFactory
+                .getLogger(getClass().getSimpleName() + "-" + clusterNum));
     }
 
     @Override
@@ -91,7 +89,7 @@ public class IgniteClientManager extends AbstractIgniteManager
     }
 
     @Override
-    public Ignite getIgnite() {
+    protected Ignite getIgnite() {
         lock.readLock().lock();
         try {
             throwIfUninitialized();
@@ -103,17 +101,26 @@ public class IgniteClientManager extends AbstractIgniteManager
 
     @SuppressWarnings("unchecked")
     @Override
-    public <K, V> IgniteCache<K, V> getCache(String cacheName) {
+    protected <K, V> IgniteCache<K, V> getCache(String cacheName) {
         lock.readLock().lock();
         try {
             throwIfUninitialized();
-            CacheConfiguration<?, ?> config = cacheConfigs.get(cacheName);
-            if (config == null) {
+            IgniteCache<K, V> cache = null;
+            if (IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME.equals(cacheName)) {
+                // Needs to already have a config on the server side
+                cache = (IgniteCache<K, V>) ignite.cache(cacheName);
+            } else {
+                CacheConfiguration<?, ?> config = cacheConfigs.get(cacheName);
+                if (config != null) {
+                    cache = (IgniteCache<K, V>) ignite.getOrCreateCache(config);
+                }
+            }
+
+            if (cache == null) {
                 throw new IllegalArgumentException(
                         "Cache does not exist: " + cacheName);
             }
-            IgniteCache<K, V> cache = (IgniteCache<K, V>) ignite
-                    .getOrCreateCache(config);
+
             return cache;
         } finally {
             lock.readLock().unlock();
@@ -136,7 +143,12 @@ public class IgniteClientManager extends AbstractIgniteManager
                         + failedIgnite);
             }
             logger.info("Stopping failed ignite client...");
-            ignite.close();
+
+            try {
+                doVoidIgniteOp(ignite -> ignite.close());
+            } catch (StorageException e) {
+                logger.error("Error stopping failed ignite client", e);
+            }
 
             internalInitIgnite();
         } finally {
@@ -168,7 +180,11 @@ public class IgniteClientManager extends AbstractIgniteManager
             }
 
             if (ignite != null) {
-                ignite.getOrCreateCache(config);
+                try {
+                    doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config));
+                } catch (StorageException e) {
+                    logger.error("Error creating cache: " + config, e);
+                }
             }
 
             logger.info("Added cache config: " + config);
@@ -189,12 +205,16 @@ public class IgniteClientManager extends AbstractIgniteManager
 
         IgniteConfiguration igniteConfig = configGenerator.getNewConfig();
         ignite = Ignition.start(igniteConfig);
-        for (CacheConfiguration<?, ?> config : cacheConfigs.values()) {
-            ignite.getOrCreateCache(config);
-        }
-
         ((IgniteClientFailureHandler) igniteConfig.getFailureHandler())
                 .addListener(this);
+
+        for (CacheConfiguration<?, ?> config : cacheConfigs.values()) {
+            try {
+                doVoidIgniteOp(ignite -> ignite.getOrCreateCache(config));
+            } catch (StorageException e) {
+                logger.error("Error creating cache: " + config, e);
+            }
+        }
 
         logger.info("Successfully started ignite client '"
                 + igniteConfig.getIgniteInstanceName() + "'");

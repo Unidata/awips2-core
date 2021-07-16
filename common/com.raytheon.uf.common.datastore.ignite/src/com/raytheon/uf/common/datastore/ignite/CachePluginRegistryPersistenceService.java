@@ -28,13 +28,13 @@ import javax.cache.Cache.Entry;
 import javax.xml.bind.JAXB;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.resources.IgniteInstanceResource;
 import org.apache.ignite.services.Service;
 import org.apache.ignite.services.ServiceContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig;
 import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.ConfigEntry;
 
@@ -67,7 +67,13 @@ public class CachePluginRegistryPersistenceService implements Service {
     private static final Logger logger = LoggerFactory
             .getLogger(CachePluginRegistryPersistenceService.class);
 
-    private IgniteServerManager igniteManager;
+    /**
+     * Lock object to just ensure that execute() finishes before cancel() is
+     * called, since the ignite javadoc indicates that that is not guaranteed.
+     */
+    private final Object lock = new Object();
+
+    private IgniteCacheAccessor<String, String> cacheAccessor;
 
     private Path configFilePath;
 
@@ -75,9 +81,21 @@ public class CachePluginRegistryPersistenceService implements Service {
 
     @IgniteInstanceResource
     public void setIgnite(Ignite ignite) {
-        this.igniteManager = new IgniteServerManager(ignite);
-        this.configFilePath = Paths.get(ignite.configuration().getIgniteHome(),
-                "config", "pluginRegistry.xml");
+        synchronized (lock) {
+            /*
+             * For some reason this gets called again with a null ignite when
+             * cancelling the service, so make sure we only set things the first
+             * time
+             */
+            if (cacheAccessor == null) {
+                cacheAccessor = new IgniteServerManager(ignite)
+                        .getCacheAccessor(
+                                IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
+                configFilePath = Paths.get(
+                        ignite.configuration().getIgniteHome(), "config",
+                        "pluginRegistry.xml");
+            }
+        }
     }
 
     @Override
@@ -87,12 +105,16 @@ public class CachePluginRegistryPersistenceService implements Service {
 
     @Override
     public void execute(ServiceContext ctx) throws Exception {
-        loadFromFile();
+        synchronized (lock) {
+            loadFromFile();
+        }
     }
 
     @Override
     public void cancel(ServiceContext ctx) {
-        saveToFile();
+        synchronized (lock) {
+            saveToFile();
+        }
     }
 
     /**
@@ -103,12 +125,18 @@ public class CachePluginRegistryPersistenceService implements Service {
         if (Files.isReadable(configFilePath)) {
             PluginRegistryConfig config = JAXB.unmarshal(
                     configFilePath.toFile(), PluginRegistryConfig.class);
-            IgniteCache<String, String> cache = igniteManager
-                    .getCache(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
             for (ConfigEntry entry : config.getEntries()) {
                 String plugin = entry.getPlugin();
                 String cacheName = entry.getCache();
-                cache.putIfAbsent(plugin, cacheName);
+                try {
+                    cacheAccessor.doAsyncCacheOp(
+                            c -> c.putIfAbsentAsync(plugin, cacheName));
+                } catch (StorageException e) {
+                    logger.error(
+                            "Error storing plugin cache name mapping to cache: "
+                                    + plugin + " -> " + cacheName,
+                            e);
+                }
             }
             logger.info("Loaded cache plugin registry: {}", config);
             loadedConfig = config;
@@ -143,16 +171,26 @@ public class CachePluginRegistryPersistenceService implements Service {
             writable = Files.isWritable(configFilePath.getParent());
         }
         if (writable) {
-            PluginRegistryConfig config = new PluginRegistryConfig();
-            IgniteCache<String, String> cache = igniteManager
-                    .getCache(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
-            Iterator<Entry<String, String>> it = cache.iterator();
-            while (it.hasNext()) {
-                Entry<String, String> entry = it.next();
-                String plugin = entry.getKey();
-                String cacheName = entry.getValue();
-                config.addEntry(plugin, cacheName);
+            PluginRegistryConfig outerConfig;
+            try {
+                outerConfig = cacheAccessor.doSyncCacheOp(c -> {
+                    PluginRegistryConfig config = new PluginRegistryConfig();
+                    Iterator<Entry<String, String>> it = c.iterator();
+                    while (it.hasNext()) {
+                        Entry<String, String> entry = it.next();
+                        String plugin = entry.getKey();
+                        String cacheName = entry.getValue();
+                        config.addEntry(plugin, cacheName);
+                    }
+                    return config;
+                });
+            } catch (StorageException e) {
+                logger.error(
+                        "Cannot write cache plugin registry to file due to error reading entries from cache",
+                        e);
+                return;
             }
+            PluginRegistryConfig config = outerConfig;
             config.sortByPlugin();
             if (!config.isEmpty() && !config.equals(loadedConfig)) {
                 JAXB.marshal(config, configFilePath.toFile());

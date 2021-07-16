@@ -18,15 +18,13 @@
  **/
 package com.raytheon.uf.common.datastore.ignite;
 
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager.IgniteCacheAccessor;
 
 /**
  * Manages access to clients for the active ignite cluster(s) and maps caches to
@@ -62,14 +60,14 @@ public class IgniteClusterManager {
      *            ignite config generator for the first cluster
      * @param clusterConfigGenerator2
      *            ignite config generator for the second cluster, ignored if
-     *            null or "SECOND_IGNITE_CLUSTER_SERVERS" env variable is empty
+     *            null or "IGNITE_CLUSTER_2_SERVERS" env variable is empty
      */
     public IgniteClusterManager(IIgniteConfigGenerator clusterConfigGenerator1,
             IIgniteConfigGenerator clusterConfigGenerator2) {
         ignite1 = new IgniteClientManager(clusterConfigGenerator1, 1);
 
         String clusterServers2 = System
-                .getenv(IgniteUtils.SECOND_IGNITE_CLUSTER_SERVERS);
+                .getenv(IgniteUtils.IGNITE_CLUSTER_2_SERVERS);
         if (clusterConfigGenerator2 != null && clusterServers2 != null
                 && !clusterServers2.isEmpty()) {
             ignite2 = new IgniteClientManager(clusterConfigGenerator2, 2);
@@ -83,12 +81,12 @@ public class IgniteClusterManager {
      */
     public void initialize() {
         String clusterServers1 = System
-                .getenv(IgniteUtils.IGNITE_CLUSTER_SERVERS);
+                .getenv(IgniteUtils.IGNITE_CLUSTER_1_SERVERS);
         ignite1.initialize();
         if (ignite2 != null) {
             ignite2.initialize();
             String clusterServers2 = System
-                    .getenv(IgniteUtils.SECOND_IGNITE_CLUSTER_SERVERS);
+                    .getenv(IgniteUtils.IGNITE_CLUSTER_2_SERVERS);
             logger.info("Running ignite with two clusters: " + clusterServers1
                     + " and " + clusterServers2);
         } else {
@@ -103,20 +101,15 @@ public class IgniteClusterManager {
      *            the cache name
      * @return the ignite client manager
      */
-    public IgniteClientManager getIgniteManager(String cacheName) {
-        return getIgniteManager(getClusterNum(cacheName));
+    public IgniteClientManager getIgniteClientManager(String cacheName) {
+        return getIgniteClientManager(getClusterNum(cacheName));
     }
 
     /**
-     * Get the ignite client manager for the given cluster.
-     *
-     * @param clusterNum
-     *            the cluster number
-     * @return the ignite client manager.
+     * @return the ignite client managers for all clusters
      */
-    public IgniteClientManager getIgniteManager(int clusterNum) {
-        clusterNum = getValidClusterNum(clusterNum);
-        return clusterNum == 1 ? ignite1 : ignite2;
+    public List<IgniteClientManager> getIgniteClientManagers() {
+        return ignite2 == null ? List.of(ignite1) : List.of(ignite1, ignite2);
     }
 
     /**
@@ -127,18 +120,7 @@ public class IgniteClusterManager {
      * @return the cache accessor
      */
     public <K, V> IgniteCacheAccessor<K, V> getCacheAccessor(String cacheName) {
-        return getIgniteManager(cacheName).getCacheAccessor(cacheName);
-    }
-
-    /**
-     * Get the given cache.
-     *
-     * @param cacheName
-     *            the cache name
-     * @return the cache
-     */
-    public <K, V> IgniteCache<K, V> getCache(String cacheName) {
-        return this.<K, V> getCacheAccessor(cacheName).getCache();
+        return getIgniteClientManager(cacheName).getCacheAccessor(cacheName);
     }
 
     /**
@@ -156,6 +138,25 @@ public class IgniteClusterManager {
      */
     public String addCache(CacheConfiguration<?, ?> config, int clusterNum) {
         String cacheName = config.getName();
+        clusterNum = setCacheCluster(cacheName, clusterNum);
+        getIgniteClientManager(clusterNum).addCache(config);
+
+        return cacheName;
+    }
+
+    /**
+     * Set the cache that maps plugins to caches to use the given cluster.
+     *
+     * @param clusterNum
+     *            the ignite cluster to set the cache to
+     * @return the cluster number
+     */
+    public int setPluginMapCacheCluster(int clusterNum) {
+        return setCacheCluster(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME,
+                clusterNum);
+    }
+
+    private int setCacheCluster(String cacheName, int clusterNum) {
         clusterNum = getValidClusterNum(clusterNum);
         Integer prev = clusterNumsByCache.put(cacheName, clusterNum);
         if (prev == null) {
@@ -163,12 +164,10 @@ public class IgniteClusterManager {
                     clusterNum, cacheName);
         } else {
             throw new IllegalStateException(
-                    "Attempted to add multiple cache configs for " + cacheName);
+                    "Attempted to set cluster multiple times for " + cacheName);
         }
 
-        getIgniteManager(clusterNum).addCache(config);
-
-        return config.getName();
+        return clusterNum;
     }
 
     private int getValidClusterNum(int clusterNum) {
@@ -184,10 +183,22 @@ public class IgniteClusterManager {
 
     private int getClusterNum(String cacheName) {
         Integer clusterNum = clusterNumsByCache.get(cacheName);
+
         if (clusterNum == null) {
             throw new IllegalArgumentException("No cluster for " + cacheName);
         }
-
         return getValidClusterNum(clusterNum);
+    }
+
+    /**
+     * Get the ignite client manager for the given cluster.
+     *
+     * @param clusterNum
+     *            the cluster number
+     * @return the ignite client manager.
+     */
+    private IgniteClientManager getIgniteClientManager(int clusterNum) {
+        clusterNum = getValidClusterNum(clusterNum);
+        return clusterNum == 1 ? ignite1 : ignite2;
     }
 }

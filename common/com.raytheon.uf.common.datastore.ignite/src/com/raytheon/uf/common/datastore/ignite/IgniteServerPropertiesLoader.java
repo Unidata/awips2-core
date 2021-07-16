@@ -18,12 +18,14 @@
  **/
 package com.raytheon.uf.common.datastore.ignite;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.slf4j.LoggerFactory;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 /**
- * Manager for an ignite server instance.
+ * Loads in the ignite.server.properties system properties in an ignite server.
  *
  * <pre>
  *
@@ -31,39 +33,30 @@ import org.slf4j.LoggerFactory;
  *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
- * Jun 25, 2021 8450       mapeters    Initial creation
+ * Jul 21, 2021 8450       mapeters    Initial creation
  *
  * </pre>
  *
  * @author mapeters
  */
-public class IgniteServerManager extends AbstractIgniteManager {
+public class IgniteServerPropertiesLoader {
 
-    private static final long serialVersionUID = 1L;
+    private static final Path PROPS_FILE_PATH = Paths.get(
+            IgniteServerUtils.IGNITE_HOME, "config",
+            "ignite.server.properties");
 
-    private final Ignite ignite;
-
-    public IgniteServerManager(Ignite ignite) {
-        this.ignite = ignite;
-        setLogger(LoggerFactory.getLogger(getClass()));
-    }
-
-    @Override
-    public void initialize() {
-        // Nothing to do
-    }
-
-    @Override
-    protected Ignite getIgnite() {
-        return ignite;
-    }
-
-    @Override
-    protected <K, V> IgniteCache<K, V> getCache(String cacheName) {
-        IgniteCache<K, V> cache = ignite.cache(cacheName);
-        if (cache == null) {
-            throw new IllegalStateException("Unknown cache: " + cacheName);
+    /**
+     * Load the ignite.server.properties into the system properties.
+     *
+     * @return null (spring requires a return value)
+     */
+    public static Object load() {
+        try (InputStream is = Files.newInputStream(PROPS_FILE_PATH)) {
+            System.getProperties().load(is);
+        } catch (IOException e) {
+            throw new IllegalStateException(
+                    "Unable to read ignite server properties", e);
         }
-        return cache;
+        return null;
     }
 }

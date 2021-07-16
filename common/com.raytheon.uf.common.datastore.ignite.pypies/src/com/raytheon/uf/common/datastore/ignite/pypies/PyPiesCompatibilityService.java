@@ -30,6 +30,7 @@ import org.springframework.context.event.ContextRefreshedEvent;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStoreFactory;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteDataStore;
 import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
@@ -59,11 +60,15 @@ public class PyPiesCompatibilityService
 
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    private final int port;
-
     private final AtomicBoolean initialized = new AtomicBoolean();
 
-    public PyPiesCompatibilityService(int port) {
+    private final IgniteClusterManager clusterManager;
+
+    private final int port;
+
+    public PyPiesCompatibilityService(IgniteClusterManager clusterManager,
+            int port) {
+        this.clusterManager = clusterManager;
         this.port = port;
     }
 
@@ -89,6 +94,10 @@ public class PyPiesCompatibilityService
                 ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
         context.addServlet(new ServletHolder(new PyPiesServlet(factory)), "/");
+        // Status servlet is needed for IPVS to use for load balancing
+        context.addServlet(
+                new ServletHolder(new IgniteStatusServlet(clusterManager)),
+                "/status");
         server.setHandler(context);
 
         try {

@@ -21,7 +21,6 @@ package com.raytheon.uf.common.datastore.ignite;
 import java.io.File;
 
 import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
 import org.apache.ignite.IgniteCompute;
 import org.apache.ignite.configuration.CacheConfiguration;
 import org.apache.ignite.lang.IgniteCallable;
@@ -32,6 +31,7 @@ import org.slf4j.LoggerFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.IDataStoreFactory;
 import com.raytheon.uf.common.datastorage.LazyDataStore;
+import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastore.ignite.plugin.CachePluginRegistry;
 import com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory;
 
@@ -79,12 +79,12 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
     public IDataStore getDataStore(File file, boolean useLocking) {
         String cacheName = pluginRegistry.getCacheName(file);
         if (IgniteUtils.NO_CACHE_NAME.equalsIgnoreCase(cacheName)) {
-            IgniteCache<?, ?> defaultCache = clusterManager
-                    .getCache(IgniteUtils.DEFAULT_CACHE);
-            return getThroughDataStore(file, defaultCache);
+            IgniteCacheAccessor<?, ?> defaultCacheAccessor = clusterManager
+                    .getCacheAccessor(IgniteUtils.DEFAULT_CACHE);
+            return getThroughDataStore(file, defaultCacheAccessor);
         } else {
-            IgniteCache<DataStoreKey, DataStoreValue> cache = clusterManager
-                    .getCache(cacheName);
+            IgniteCacheAccessor<DataStoreKey, DataStoreValue> cache = clusterManager
+                    .getCacheAccessor(cacheName);
             IDataStore throughStore = new LazyDataStore() {
                 @Override
                 protected IDataStore createDataStore() {
@@ -97,27 +97,43 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
         }
     }
 
-    private IDataStore getThroughDataStore(File file, IgniteCache<?, ?> cache) {
-        @SuppressWarnings("unchecked")
-        CacheConfiguration<?, ?> config = cache
-                .getConfiguration(CacheConfiguration.class);
-        Object factory = config.getCacheStoreFactory();
+    @SuppressWarnings("unchecked")
+    private IDataStore getThroughDataStore(File file,
+            IgniteCacheAccessor<?, ?> cacheAccessor) {
+
+        CacheConfiguration<?, ?> config;
+        Object factory = null;
+        try {
+            config = cacheAccessor.doSyncCacheOp(
+                    c -> c.getConfiguration(CacheConfiguration.class));
+            factory = config.getCacheStoreFactory();
+        } catch (StorageException e) {
+            logger.error("Error getting cache configuration", e);
+        }
         if (factory instanceof DataStoreCacheStoreFactory) {
             return ((DataStoreCacheStoreFactory) factory).getDataStore(file);
         } else {
-            String cacheName = cache.getName();
-            IgniteCompute compute = clusterManager.getIgniteManager(cacheName)
-                    .getIgnite().compute();
-            GetCacheStoreFactoryTask task = new GetCacheStoreFactoryTask(
-                    cacheName);
-            factory = compute.call(task);
+            String cacheName = cacheAccessor.getCacheName();
+            try {
+                factory = clusterManager.getIgniteClientManager(cacheName)
+                        .doIgniteOp(ignite -> {
+                            IgniteCompute compute = ignite.compute();
+                            GetCacheStoreFactoryTask task = new GetCacheStoreFactoryTask(
+                                    cacheName);
+                            return compute.call(task);
+                        });
+            } catch (StorageException e) {
+                logger.error(
+                        "Error retrieving cache store factory for " + cacheName,
+                        e);
+            }
             if (factory instanceof DataStoreCacheStoreFactory) {
                 return ((DataStoreCacheStoreFactory) factory)
                         .getDataStore(file);
             } else {
                 throw new IllegalStateException(cacheName
                         + " does not have a DataStoreCacheStoreFactory "
-                        + "configured as the CacheStoreFactory. (got instead: "
+                        + "configured as the cache store factory. (got instead: "
                         + factory + ")");
             }
         }
@@ -128,8 +144,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
 
         private static final long serialVersionUID = 1L;
 
-        @IgniteInstanceResource
-        private Ignite ignite;
+        private IgniteCacheAccessor<?, ?> cacheAccessor;
 
         private String cacheName;
 
@@ -137,14 +152,20 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
             this.cacheName = cacheName;
         }
 
+        @IgniteInstanceResource
+        public void setIgnite(Ignite ignite) {
+            this.cacheAccessor = new IgniteServerManager(ignite)
+                    .getCacheAccessor(cacheName);
+        }
+
         @Override
-        public Object call() {
-            IgniteCache<DataStoreKey, DataStoreValue> cache = ignite
-                    .getOrCreateCache(cacheName);
-            @SuppressWarnings("unchecked")
-            CacheConfiguration<?, ?> config = cache
-                    .getConfiguration(CacheConfiguration.class);
-            return config.getCacheStoreFactory();
+        public Object call() throws StorageException {
+            return cacheAccessor.doSyncCacheOp(c -> {
+                @SuppressWarnings("unchecked")
+                CacheConfiguration<?, ?> config = c
+                        .getConfiguration(CacheConfiguration.class);
+                return config.getCacheStoreFactory();
+            });
         }
     }
 }
