@@ -64,25 +64,28 @@ import com.raytheon.uf.common.colormap.prefs.ColorMapParameters;
  *
  * SOFTWARE HISTORY
  *
- * Date          Ticket#     Engineer     Description
- * ------------- ----------- ------------ --------------------------
- * Apr 08, 2014  2950        bsteffen     Support dynamic color counts and
- *                                        resizing. for color editor's color bar
- *                                        for radar correlation coefficient.
- * Apr 11, 2014  15811       Qinglu Lin   Added decimalPlaceMap and logic to
- *                                        have 4 decimal places
- * May 07, 2015  17219       jgerth       Allow user to interpolate alpha only
- * Feb 04, 2016  5301        tgurney      Fix undoColorBar and redoColorBar
- *                                        return values
- * Feb 27, 2017  6116        mapeters     Don't hardcode size of nav buttons
- * Feb 07, 2018  6816        randerso     Fix colorbar labeling for GFE
- *                                        logFactor color maps
- * Feb 22, 2018  6668        bsteffen     Move sliders to color edges.
- * Mar 19, 2018  6738        tgurney      Add getHistory, setHistory
- * Apr 17, 2018  6972        bsteffen     Correctly label log colormaps.
- * May 03, 2018  7285        randerso     Added contrastStretch. Changed
- *                                        setColors to use contrastStretch.
- * Jul 31, 2018  6668        bsteffen     Fix slider labels.
+ * Date          Ticket#  Engineer    Description
+ * ------------- -------- ----------- ------------------------------------------
+ * Apr 08, 2014  2950     bsteffen    Support dynamic color counts and resizing.
+ *                                    for color editor's color bar for radar
+ *                                    correlation coefficient.
+ * Apr 11, 2014  15811    Qinglu Lin  Added decimalPlaceMap and logic to have 4
+ *                                    decimal places
+ * May 07, 2015  17219    jgerth      Allow user to interpolate alpha only
+ * Feb 04, 2016  5301     tgurney     Fix undoColorBar and redoColorBar return
+ *                                    values
+ * Feb 27, 2017  6116     mapeters    Don't hardcode size of nav buttons
+ * Feb 07, 2018  6816     randerso    Fix colorbar labeling for GFE logFactor
+ *                                    color maps
+ * Feb 22, 2018  6668     bsteffen    Move sliders to color edges.
+ * Mar 19, 2018  6738     tgurney     Add getHistory, setHistory
+ * Apr 17, 2018  6972     bsteffen    Correctly label log colormaps.
+ * May 03, 2018  7285     randerso    Added contrastStretch. Changed setColors
+ *                                    to use contrastStretch.
+ * Jul 31, 2018  6668     bsteffen    Fix slider labels.
+ * Jul 16, 2021  8591     randerso    Increased width of color bar for easier
+ *                                    color selection. Changed bottom slider
+ *                                    text to match the color of the arrow.
  *
  * </pre>
  *
@@ -97,7 +100,7 @@ public class ColorBar extends Composite
     protected final Point MARGIN_SIZE = new Point(6, 6);
 
     /** Size of the bar. */
-    protected final Point BAR_SIZE = new Point(343, 50);
+    protected final Point BAR_SIZE = new Point(686, 50);
 
     /** Callback used to update the color wheel. */
     protected IColorBarAction callBack;
@@ -521,7 +524,7 @@ public class ColorBar extends Composite
 
             /* Draw text that is displayed next to the bottom slider arrow. */
             gc.setForeground(white);
-            text = getSliderText(bottomSliderIndex + 1);
+            text = getSliderText(bottomSliderIndex);
             x = bottomSliderX + MARGIN_SIZE.x + ARROW_SIZE.x;
             if (bottomSliderIndex < getColorCount() / 2) {
                 x += ARROW_SIZE.x + 5;
@@ -614,7 +617,7 @@ public class ColorBar extends Composite
      *         current color list.
      */
     protected ColorData getCurrentColor(int index) {
-        return colorHistory.get(currentColorIndex).get(index);
+        return getCurrentColors().get(index);
     }
 
     /**
