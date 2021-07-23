@@ -324,9 +324,8 @@ public class ConnectivityPreferenceDialog {
         localizationLabel.setLayoutData(gd);
 
         String[] pastOptions =  {
-        		"localhost",
-        		"edex",
-        		"edex-cloud.unidata.ucar.edu"
+        		"edex-cloud.unidata.ucar.edu",
+        		"localhost"
         		};
         String[] serverOptions = getServerOptions();
 
