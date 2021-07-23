@@ -323,9 +323,15 @@ public class ConnectivityPreferenceDialog {
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
+        String unidataUrl = "edex-cloud.unidata.ucar.edu";
         String[] pastOptions =  {
+<<<<<<< HEAD
         		"edex-cloud.unidata.ucar.edu",
         		"localhost"
+=======
+        		"localhost",
+        		unidataUrl
+>>>>>>> eaf74105a471483b7e0354c6afae5a9c8cd6caf2
         		};
         String[] serverOptions = getServerOptions();
 
@@ -334,7 +340,7 @@ public class ConnectivityPreferenceDialog {
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
         localization = shortServerName(localization);
-        localizationSrv.setText(localization == null ? "" : localization);
+        localizationSrv.setText(localization == null || localization.equals("") ? unidataUrl : localization);
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
