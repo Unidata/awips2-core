@@ -323,9 +323,10 @@ public class ConnectivityPreferenceDialog {
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
 
+        String unidataUrl = "edex-cloud.unidata.ucar.edu";
         String[] pastOptions =  {
-        		"edex-cloud.unidata.ucar.edu",
-        		"localhost"
+        		"localhost",
+        		unidataUrl
         		};
         String[] serverOptions = getServerOptions();
 
@@ -334,7 +335,7 @@ public class ConnectivityPreferenceDialog {
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
         localization = shortServerName(localization);
-        localizationSrv.setText(localization == null ? "" : localization);
+        localizationSrv.setText(localization == null || localization.equals("") ? unidataUrl : localization);
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
@@ -483,8 +484,7 @@ public class ConnectivityPreferenceDialog {
                     .openError(
                             shell,
                             "Connectivity Error",
-                            "Unable to validate localization preferences, "
-                            + "please enter valid options or quit the application");
+                            "Unable to validate localization preferences, please enter valid options or quit the application");
             shell.setVisible(true);
         }
         return valid;
