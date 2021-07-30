@@ -33,8 +33,6 @@ AWIPS_HOME=${AWIPS_HOME:-`dirname $IGNITE_HOME`}
 JAVA_HOME=${JAVA_HOME:-${AWIPS_HOME}/java}
 EDEX_HOME=${EDEX_HOME:-${AWIPS_HOME}/edex}
 
-PYPIES_PORT=${PYPIES_PORT:-9582}
-PYPIES_COMPATIBILITY_PORT=${PYPIES_COMPATIBILITY_PORT:-9585}
 DEBUG_PORT=${DEBUG_PORT:-5102}
 
 THRIFT_STREAM_MAXSIZE=${THRIFT_STREAM_MAXSIZE:-2000}
@@ -42,10 +40,6 @@ THRIFT_STREAM_MAXSIZE=${THRIFT_STREAM_MAXSIZE:-2000}
 IGNITE_DEFAULT_TX_TIMEOUT=${IGNITE_DEFAULT_TX_TIMEOUT:-120000}
 IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE=${IGNITE_TX_TIMEOUT_ON_PARTITION_MAP_EXCHANGE:-30000}
 IGNITE_QUIET=${IGNITE_QUIET:-false}
-
-# Note that these same properties are in ignite.client.properties for the edex side
-IGNITE_CACHE_OP_NUM_ATTEMPTS=2
-IGNITE_CACHE_OP_TIMEOUT_SECS=300
 
 source /etc/watchdog.d/utilities/watchdogutils.sh
 
@@ -62,7 +56,6 @@ do
             # to grow.
             IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE=${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:-65536}
             IGNITE_CACHE_BACKUPS=${IGNITE_CACHE_BACKUPS:-1}
-            PYPIES_HOST=${PYPIES_HOST:-dv2}
             ;;
         developer)
             JVM_OPTS+=" -Xms1g -Xmx4g -server -XX:MaxMetaspaceSize=256m -XX:+UseG1GC"
@@ -70,7 +63,6 @@ do
             IGNITE_DATA_REGION_INITIAL_SIZE_GB=${IGNITE_DATA_REGION_INITIAL_SIZE_GB:-1}
             IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE=${IGNITE_DATA_REGION_EMPTY_PAGES_POOL_SIZE:-8192}
             IGNITE_CACHE_BACKUPS=${IGNITE_CACHE_BACKUPS:-0}
-            PYPIES_HOST=${PYPIES_HOST:-localhost}
             ;;
         debug)
             JVM_OPTS+=" -Xdebug -Xrunjdwp:transport=dt_socket,address=${DEBUG_PORT},server=y,suspend=n"
@@ -106,8 +98,6 @@ do
                 -DIGNITE_QUIET=${IGNITE_QUIET} \
                 ${RESTART_SUCCESS_OPT} \
                 -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-                -Dignite.cache.op.num.attempts=${IGNITE_CACHE_OP_NUM_ATTEMPTS} \
-                -Dignite.cache.op.timeout.secs=${IGNITE_CACHE_OP_TIMEOUT_SECS} \
                 -Djava.security.properties=/awips2/ignite/config/java.security \
                 -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
                 -Djava.net.preferIPv4Stack=true \

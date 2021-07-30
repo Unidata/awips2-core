@@ -45,27 +45,14 @@ import org.slf4j.LoggerFactory;
  */
 public class IgniteClientFailureHandler extends AbstractFailureHandler {
 
-    private static final IgniteClientFailureHandler instance = new IgniteClientFailureHandler();
-
     private final Logger logger = LoggerFactory.getLogger(getClass());
 
     private final List<IgniteClientFailureListener> listeners = new ArrayList<>();
 
-    /**
-     * Private constructor to prevent instantiation.
-     */
-    private IgniteClientFailureHandler() {
-    }
-
-    /**
-     * @return the singleton instance
-     */
-    public static IgniteClientFailureHandler getInstance() {
-        return instance;
-    }
-
     @Override
     protected boolean handle(Ignite ignite, FailureContext failureCtx) {
+        String threadName = "awips-ignite-client-failure-handler-"
+                + ignite.configuration().getIgniteInstanceName();
         new Thread(new Runnable() {
             @Override
             public void run() {
@@ -78,7 +65,7 @@ public class IgniteClientFailureHandler extends AbstractFailureHandler {
                     }
                 }
             }
-        }, "awips-ignite-client-failure-handler").start();
+        }, threadName).start();
 
         return true;
     }

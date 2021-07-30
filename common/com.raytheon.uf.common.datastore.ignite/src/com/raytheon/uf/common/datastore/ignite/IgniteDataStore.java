@@ -34,8 +34,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 import java.util.StringJoiner;
 import java.util.TreeSet;
-import java.util.concurrent.TimeUnit;
-import java.util.function.Function;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -43,11 +41,9 @@ import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessorException;
 
 import org.apache.ignite.IgniteCache;
-import org.apache.ignite.IgniteException;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
-import org.apache.ignite.lang.IgniteFuture;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,7 +55,6 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
-import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager.IgniteCacheAccessor;
 import com.raytheon.uf.common.datastore.ignite.processor.GetDatasetNamesProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.RetrieveProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.StoreProcessor;
@@ -105,12 +100,6 @@ public class IgniteDataStore implements IDataStore {
     /* matches the date formats used in hdf5 filenames. */
     private static final Pattern ORPHAN_REGEX = Pattern.compile(
             "(19|20)(\\d\\d)-?(0[1-9]|1[012])-?(0[1-9]|[12][0-9]|3[01])");
-
-    private static final int CACHE_OP_NUM_ATTEMPTS = Integer
-            .parseInt(System.getProperty("ignite.cache.op.num.attempts"));
-
-    private static final long CACHE_OP_TIMEOUT_SECS = Long
-            .parseLong(System.getProperty("ignite.cache.op.timeout.secs"));
 
     private boolean fastStore = true;
 
@@ -202,7 +191,7 @@ public class IgniteDataStore implements IDataStore {
                 Object[] records = entry.getValue().toArray();
                 StorageStatus status;
                 try {
-                    status = doCacheOp(
+                    status = igniteCacheAccessor.doAsyncCacheOp(
                             c -> c.invokeAsync(key, processor, records));
                     if (status.hasExceptions()) {
                         for (StorageException e : status.getExceptions()) {
@@ -286,50 +275,6 @@ public class IgniteDataStore implements IDataStore {
     }
 
     /**
-     * Execute the given cache operation and return its result. This retries the
-     * operation if it times out or throws an exception.
-     *
-     * @param <T>
-     *            the cache operation return value type
-     * @param cacheAsyncOpFunction
-     *            a function that starts the async cache operation when applied
-     *            to the cache and returns a future for it
-     * @return the cache operation result
-     * @throws StorageException
-     *             if the operation still fails after retrying
-     */
-    private <T> T doCacheOp(
-            Function<IgniteCache<DataStoreKey, DataStoreValue>, IgniteFuture<T>> cacheAsyncOpFunction)
-            throws StorageException {
-        Exception exception = null;
-        for (int i = 0; i < CACHE_OP_NUM_ATTEMPTS; ++i) {
-            IgniteFuture<T> cacheOpFuture = null;
-            try {
-                cacheOpFuture = cacheAsyncOpFunction
-                        .apply(igniteCacheAccessor.getCache());
-                return cacheOpFuture.get(CACHE_OP_TIMEOUT_SECS,
-                        TimeUnit.SECONDS);
-            } catch (Exception e) {
-                exception = e;
-                logger.error(
-                        "Error executing ignite cache operation on attempt "
-                                + (i + 1) + "/" + CACHE_OP_NUM_ATTEMPTS,
-                        e);
-                if (cacheOpFuture != null) {
-                    try {
-                        cacheOpFuture.cancel();
-                    } catch (IgniteException e2) {
-                        logger.warn("Error cancelling ignite future", e2);
-                    }
-                }
-            }
-        }
-
-        throw new StorageException("Ignite cache operation failed to complete",
-                null, exception);
-    }
-
-    /**
      * Alternative implementation of store that is optimized for the common case
      * where all of the data in a group is stored in a single operation.
      *
@@ -376,16 +321,17 @@ public class IgniteDataStore implements IDataStore {
             DataStoreValue value = new DataStoreValue(entry.getValue());
             try {
                 if (storeOp == StoreOp.REPLACE) {
-                    doCacheOp(c -> c.putAsync(key, value));
+                    igniteCacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
                 } else {
-                    DataStoreValue previous = doCacheOp(
+                    DataStoreValue previous = igniteCacheAccessor.doAsyncCacheOp(
                             c -> c.getAndPutIfAbsentAsync(key, value));
                     if (previous != null) {
                         List<IDataRecord> updated = recordsByGroup
                                 .get(entry.getKey());
                         DataStoreValue mergedValue = StoreProcessor
                                 .merge(previous, updated, storeOp, result);
-                        doCacheOp(c -> c.putAsync(key, mergedValue));
+                        igniteCacheAccessor
+                                .doAsyncCacheOp(c -> c.putAsync(key, mergedValue));
                     }
                 }
             } catch (StorageException e) {
@@ -410,7 +356,7 @@ public class IgniteDataStore implements IDataStore {
 
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        doCacheOp(c -> c.clearAsync(key));
+        igniteCacheAccessor.doAsyncCacheOp(c -> c.clearAsync(key));
         through.deleteDatasets(datasets);
 
         timer.stop();
@@ -432,7 +378,7 @@ public class IgniteDataStore implements IDataStore {
         }
         DataStoreKey key = new DataStoreKey(path, "");
         IDataStore through = getThroughDataStore();
-        doCacheOp(c -> c.clearAsync(key));
+        igniteCacheAccessor.doAsyncCacheOp(c -> c.clearAsync(key));
         /*
          * The cache store is not writing removal of records so manually pass it
          * through.
@@ -451,7 +397,7 @@ public class IgniteDataStore implements IDataStore {
 
         DataStoreKey key = new DataStoreKey(path, group);
         try {
-            List<IDataRecord> result = doCacheOp(
+            List<IDataRecord> result = igniteCacheAccessor.doAsyncCacheOp(
                     c -> c.invokeAsync(key, new RetrieveProcessor()));
 
             timer.stop();
@@ -492,8 +438,9 @@ public class IgniteDataStore implements IDataStore {
         DataStoreKey key = new DataStoreKey(path, group);
         try {
             final String finalDataset = dataset;
-            List<IDataRecord> result = doCacheOp(c -> c.invokeAsync(key,
-                    new RetrieveProcessor(finalDataset, request)));
+            List<IDataRecord> result = igniteCacheAccessor
+                    .doAsyncCacheOp(c -> c.invokeAsync(key,
+                            new RetrieveProcessor(finalDataset, request)));
             if (result == null || result.isEmpty()) {
                 throw new StorageException("No data found for " + group + " "
                         + dataset + " in " + path, null);
@@ -542,7 +489,8 @@ public class IgniteDataStore implements IDataStore {
                 DataStoreKey key = new DataStoreKey(this.path, entry.getKey());
                 RetrieveProcessor processor = new RetrieveProcessor(
                         entry.getValue(), request);
-                records.addAll(doCacheOp(c -> c.invokeAsync(key, processor)));
+                records.addAll(igniteCacheAccessor
+                        .doAsyncCacheOp(c -> c.invokeAsync(key, processor)));
             }
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
@@ -567,7 +515,8 @@ public class IgniteDataStore implements IDataStore {
         try {
             for (String group : groups) {
                 DataStoreKey key = new DataStoreKey(path, group);
-                records.addAll(doCacheOp(c -> c.invokeAsync(key, processor)));
+                records.addAll(igniteCacheAccessor
+                        .doAsyncCacheOp(c -> c.invokeAsync(key, processor)));
             }
         } catch (EntryProcessorException e) {
             throw new StorageException(e.getLocalizedMessage(), null, e);
@@ -588,7 +537,7 @@ public class IgniteDataStore implements IDataStore {
         timer.start();
 
         DataStoreKey key = new DataStoreKey(path, group);
-        Set<String> names = doCacheOp(
+        Set<String> names = igniteCacheAccessor.doAsyncCacheOp(
                 c -> c.invokeAsync(key, new GetDatasetNamesProcessor()));
 
         timer.stop();
@@ -617,7 +566,7 @@ public class IgniteDataStore implements IDataStore {
         Map<String, Object> corrObjs = unsetCorrelationObjects(List.of(rec));
 
         final IDataRecord finalRec = rec;
-        StorageStatus result = doCacheOp(
+        StorageStatus result = igniteCacheAccessor.doAsyncCacheOp(
                 c -> c.invokeAsync(key, new StoreProcessor(), finalRec));
         if (result.hasExceptions()) {
             StorageException e = result.getExceptions()[0];
@@ -652,12 +601,12 @@ public class IgniteDataStore implements IDataStore {
 
         logger.info("Deleting " + path + " orphan data: " + dateMap);
 
-        SqlFieldsQuery query = new SqlFieldsQuery(
+        SqlFieldsQuery selectQuery = new SqlFieldsQuery(
                 "select distinct path from DataStoreValue;");
 
         List<String> pathsToPurge = new ArrayList<>();
-        try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
-                .query(query)) {
+        try (QueryCursor<List<?>> cursor = igniteCacheAccessor
+                .doSyncCacheOp(c -> c.query(selectQuery))) {
             for (List<?> row : cursor) {
                 String path = (String) row.get(0);
                 for (java.util.Map.Entry<String, Date> entry : dateMap
@@ -690,11 +639,11 @@ public class IgniteDataStore implements IDataStore {
             for (String path : pathsToPurge) {
                 pathsSql.add(path);
             }
-            query = new SqlFieldsQuery(
+            SqlFieldsQuery deleteQuery = new SqlFieldsQuery(
                     "delete from DataStoreValue where path in "
                             + pathsSql.toString());
-            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
-                    .query(query)) {
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor
+                    .doSyncCacheOp(c -> c.query(deleteQuery))) {
                 // do nothing
             }
         }
@@ -732,8 +681,8 @@ public class IgniteDataStore implements IDataStore {
             query.setArgs(path);
             query.setLazy(true);
             Set<DataStoreKey> keysToDelete = new TreeSet<>();
-            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
-                    .query(query)) {
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor
+                    .doSyncCacheOp(c -> c.query(query))) {
                 for (List<?> row : cursor) {
                     String group = (String) row.get(0);
                     keysToDelete.add(new DataStoreKey(path, group));
@@ -741,13 +690,13 @@ public class IgniteDataStore implements IDataStore {
             }
             logger.info("Deleting " + keysToDelete.size() + " keys for path: "
                     + path);
-            doCacheOp(c -> c.removeAllAsync(keysToDelete));
+            igniteCacheAccessor.doAsyncCacheOp(c -> c.removeAllAsync(keysToDelete));
         } else {
             SqlFieldsQuery query = new SqlFieldsQuery(
                     "delete from DataStoreValue where path = ?");
             query.setArgs(path);
-            try (QueryCursor<List<?>> cursor = igniteCacheAccessor.getCache()
-                    .query(query)) {
+            try (QueryCursor<List<?>> cursor = igniteCacheAccessor
+                    .doSyncCacheOp(c -> c.query(query))) {
                 // do nothing
             }
         }

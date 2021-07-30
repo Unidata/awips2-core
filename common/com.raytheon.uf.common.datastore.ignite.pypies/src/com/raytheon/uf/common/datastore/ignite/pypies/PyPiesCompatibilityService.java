@@ -18,25 +18,26 @@
  **/
 package com.raytheon.uf.common.datastore.ignite.pypies;
 
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteLogger;
-import org.apache.ignite.resources.IgniteInstanceResource;
-import org.apache.ignite.resources.LoggerResource;
-import org.apache.ignite.services.Service;
-import org.apache.ignite.services.ServiceContext;
+import java.util.concurrent.atomic.AtomicBoolean;
+
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.context.ApplicationListener;
+import org.springframework.context.event.ContextRefreshedEvent;
 
+import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.IDataStoreFactory;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
 import com.raytheon.uf.common.datastore.ignite.IgniteDataStore;
-import com.raytheon.uf.common.datastore.ignite.IgniteDataStoreFactory;
-import com.raytheon.uf.common.datastore.ignite.IgniteServerManager;
-import com.raytheon.uf.common.datastore.ignite.plugin.CachePluginRegistry;
+import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
 
 /**
- * Ignite {@link Service} which uses Jetty and {@link PyPiesServlet} to handle
- * http requests that are normally handled by PyPies and handle them with an
+ * EDEX service that uses Jetty and {@link PyPiesServlet} to handle http
+ * requests that are normally handled by PyPies and handle them with an
  * {@link IgniteDataStore} instead.
  *
  * <pre>
@@ -47,72 +48,82 @@ import com.raytheon.uf.common.datastore.pypies.servlet.PyPiesServlet;
  * ------------- -------- --------- -----------------
  * May 14, 2019  7628     bsteffen  Initial creation
  * Mar 27, 2020  8071     bsteffen  Add handling for /status
- * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management
+ * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management,
+ *                                  moved from ignite server to edex
  *
  * </pre>
  *
  * @author bsteffen
  */
-public class PyPiesCompatibilityService implements Service {
+public class PyPiesCompatibilityService
+        implements ApplicationListener<ContextRefreshedEvent> {
 
-    private static final long serialVersionUID = 1L;
+    private final Logger logger = LoggerFactory.getLogger(getClass());
 
-    @IgniteInstanceResource
-    private Ignite ignite;
+    private final AtomicBoolean initialized = new AtomicBoolean();
 
-    @LoggerResource
-    private IgniteLogger log;
+    private final IgniteClusterManager clusterManager;
 
-    private int port = 9582;
+    private final int port;
 
-    private transient Server server;
-
-    @Override
-    public void cancel(ServiceContext arg0) {
-        try {
-            server.stop();
-            server.join();
-        } catch (Exception e) {
-            log.warning("Unable to stop server.", e);
-        }
+    public PyPiesCompatibilityService(IgniteClusterManager clusterManager,
+            int port) {
+        this.clusterManager = clusterManager;
+        this.port = port;
     }
 
     @Override
-    public void execute(ServiceContext arg0) throws Exception {
-        log.info("Starting PyPies compatibility service on port " + port
-                + "...");
-        server = new Server(port);
+    public void onApplicationEvent(ContextRefreshedEvent event) {
+        if (initialized.getAndSet(true)) {
+            return;
+        }
+        if (!IgniteUtils.isIgniteActive()) {
+            logger.info("Doing nothing since ignite is not active");
+            return;
+        }
 
-        IgniteServerManager igniteManager = new IgniteServerManager(ignite);
-        IgniteDataStoreFactory factory = new IgniteDataStoreFactory(
-                igniteManager, new CachePluginRegistry());
+        logger.info("Starting PyPies compatibility service on port " + port
+                + "...");
+
+        Server server = new Server(port);
+
+        IDataStoreFactory factory = DataStoreFactory.getInstance()
+                .getUnderlyingFactory();
 
         ServletContextHandler context = new ServletContextHandler(
                 ServletContextHandler.NO_SESSIONS);
         context.setContextPath("/");
         context.addServlet(new ServletHolder(new PyPiesServlet(factory)), "/");
+        // Status servlet is needed for IPVS to use for load balancing
         context.addServlet(
-                new ServletHolder(new IgniteStatusServlet(igniteManager)),
+                new ServletHolder(new IgniteStatusServlet(clusterManager)),
                 "/status");
         server.setHandler(context);
 
-        server.start();
-        log.info("Successfully started PyPies compatibility service");
-    }
-
-    @Override
-    public void init(ServiceContext arg0) throws Exception {
-        String prop = System.getProperty("thrift.stream.maxsize");
-        if (prop == null) {
-            System.setProperty("thrift.stream.maxsize", "200");
+        try {
+            server.start();
+        } catch (Exception e) {
+            logger.error("Error starting PyPies/ignite compatibility service",
+                    e);
+            return;
         }
-    }
 
-    public int getPort() {
-        return port;
-    }
+        logger.info("Successfully started PyPies/ignite compatibility service");
 
-    public void setPort(int port) {
-        this.port = port;
+        Runtime.getRuntime().addShutdownHook(new Thread() {
+            @Override
+            public void run() {
+                logger.info("Stopping server...");
+                try {
+                    if (server.isRunning()) {
+                        server.stop();
+                        server.join();
+                    }
+                } catch (Exception e) {
+                    logger.error("Error shutting down server", e);
+                }
+                logger.info("Server stopped");
+            }
+        });
     }
 }
