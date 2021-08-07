@@ -58,6 +58,7 @@ import com.raytheon.uf.common.util.registry.RegistryException;
  *                                     object
  * May 27, 2021 8469      dgilling     Read broker REST service port from
  *                                     BROKER_HTTP env. variable.
+ * Jul 21, 2021 8450      mapeters     Updated ignite/pypies env. variables
  *
  * </pre>
  *
@@ -75,7 +76,12 @@ public class GetServersHandler extends GenericRegistry<String, String>
         GetServersResponse response = new GetServersResponse();
         String httpServer = System.getenv("HTTP_SERVER");
         String jmsVirtualHost = System.getenv("JMS_VIRTUALHOST");
-        String pypiesServer = System.getenv("PYPIES_SERVER");
+        String dataStoreServer;
+        if ("ignite".equals(System.getenv("DATASTORE_PROVIDER"))) {
+            dataStoreServer = System.getenv("PYPIES_COMPATIBILITY_SERVER");
+        } else {
+            dataStoreServer = System.getenv("PYPIES_SERVER");
+        }
         String brokerHost = System.getenv("BROKER_HOST");
         String brokerPort = System.getenv("BROKER_PORT");
         String brokerServicePort = System.getenv("BROKER_HTTP");
@@ -83,13 +89,13 @@ public class GetServersHandler extends GenericRegistry<String, String>
         logger.info("broker host=" + brokerHost);
         logger.info("broker port=" + brokerPort);
         logger.info("jms.virtualhost=" + jmsVirtualHost);
-        logger.info("pypies.server=" + pypiesServer);
+        logger.info("pypies.server=" + dataStoreServer);
         logger.info("server locations=" + registry);
         JMSConnectionInfo connectionInfo = createJmsConnectionInfo(brokerHost,
                 brokerPort, jmsVirtualHost, brokerServicePort);
         response.setJmsConnectionInfo(connectionInfo);
         response.setHttpServer(httpServer);
-        response.setPypiesServer(pypiesServer);
+        response.setPypiesServer(dataStoreServer);
         response.setServerLocations(Collections.unmodifiableMap(this.registry));
 
         return response;

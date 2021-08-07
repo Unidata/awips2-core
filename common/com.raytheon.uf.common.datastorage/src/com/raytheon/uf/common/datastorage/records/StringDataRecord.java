@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,23 +26,26 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerialize;
 import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
 
 /**
- * 
+ *
  * Provides an interface to datasets of type ascii String
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Apr 14, 2009            chammack     Initial creation
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- -----------------
+ * Apr 14, 2009           chammack  Initial creation
+ * Jun 10, 2021  8450     mapeters  Add serialVersionUID
+ *
  * </pre>
- * 
+ *
  * @author chammack
- * @version 1.0
  */
 @DynamicSerialize
 public class StringDataRecord extends AbstractStorageRecord {
+
+    private static final long serialVersionUID = -3266477736393942349L;
 
     @DynamicSerializeElement
     protected String[] stringData;
@@ -55,7 +58,7 @@ public class StringDataRecord extends AbstractStorageRecord {
     }
 
     /**
-     * 
+     *
      * @param name
      * @param group
      * @param stringData
@@ -73,7 +76,7 @@ public class StringDataRecord extends AbstractStorageRecord {
 
     /**
      * Convenience constructor for single dimension String data
-     * 
+     *
      * @param name
      * @param group
      * @param stringData
@@ -97,21 +100,12 @@ public class StringDataRecord extends AbstractStorageRecord {
         this.stringData = stringData;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.AbstractDataRecord#getDataObject()
-     */
     @Override
     public Object getDataObject() {
         return this.stringData;
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#validateDataSet()
-     */
+    @Override
     public boolean validateDataSet() {
 
         long size = 1;
@@ -137,11 +131,6 @@ public class StringDataRecord extends AbstractStorageRecord {
                 + this.stringData.length + "]";
     }
 
-    /*
-     * (non-Javadoc)
-     * 
-     * @see com.raytheon.edex.storage.records.IDataRecord#reduce(int[])
-     */
     @Override
     public void reduce(int[] indices) {
         String[] reducedData = new String[indices.length];
@@ -184,8 +173,8 @@ public class StringDataRecord extends AbstractStorageRecord {
                 System.arraycopy(d, 0, padded, 0, d.length);
                 padded[padded.length - 1] = '\0';
 
-                System.arraycopy(padded, 0, mydata, i * sz, Math.min(sz,
-                        padded.length));
+                System.arraycopy(padded, 0, mydata, i * sz,
+                        Math.min(sz, padded.length));
 
             }
         }

@@ -12,6 +12,8 @@ Require-Bundle: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.datastore.ignite,
  com.raytheon.uf.common.datastore.pypies.servlet,
  com.raytheon.uf.common.pypies,
- com.raytheon.uf.common.util
+ com.raytheon.uf.common.util,
+ org.slf4j,
+ org.springframework
 Export-Package: com.raytheon.uf.common.datastore.ignite.pypies
 Import-Package: com.raytheon.uf.common.datastore.pypies.servlet

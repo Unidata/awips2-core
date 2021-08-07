@@ -17,20 +17,90 @@
         <property name="ignoreUnresolvablePlaceholders" value="true" />
     </bean>
 
+    <bean id="propsLoaded" class="com.raytheon.uf.common.datastore.ignite.IgniteServerPropertiesLoader" factory-method="load" />
+
     <bean id="ignitePasswordStore" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordStore">
         <constructor-arg value="${IGNITE_HOME}/tls/passwords.properties"/>
     </bean>
     <bean id="igniteKeystorePassword" factory-bean="ignitePasswordStore" factory-method="getKeystorePassword" />
     <bean id="igniteTruststorePassword" factory-bean="ignitePasswordStore" factory-method="getTruststorePassword" />
 
-    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration">
+    <!-- Determine cluster-specific ignite config values -->
+
+    <bean id="dataRegionConfigurations" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+        <constructor-arg value="1" />
+        <constructor-arg>
+            <list></list>
+        </constructor-arg>
+        <constructor-arg>
+            <list>
+                <!-- The data-store-cache-name-map gets a dedicated
+                     region so entries are never purged.
+                -->
+                <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
+                    <property name="name" value="data-store-cache-name-region"/>
+                     <!-- Documented min size is 10MB but I was still
+                          getting OutOfMemory so max is slightly larger.
+                    -->
+                    <property name="initialSize" value="#{10 * 1024 * 1024}"/>
+                    <property name="maxSize" value="#{32 * 1024 * 1024}"/>
+                    <property name="emptyPagesPoolSize" value="1" />
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <bean id="cacheConfiguration" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+        <constructor-arg value="1" />
+        <constructor-arg>
+            <list></list>
+        </constructor-arg>
+        <constructor-arg>
+            <list>
+                <!-- This has to be set on the server side here so that it's
+                     available right away for CachePluginRegistryPersistenceService -->
+                <bean class="org.apache.ignite.configuration.CacheConfiguration">
+                    <property name="name" value="data-store-cache-name-map" />
+                    <property name="dataRegionName" value="data-store-cache-name-region"/>
+                    <property name="cacheMode" value="REPLICATED" />
+                    <property name="onheapCacheEnabled" value="true"/>
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <bean id="serviceConfiguration" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+        <constructor-arg value="1" />
+        <constructor-arg>
+            <list></list>
+        </constructor-arg>
+        <constructor-arg>
+            <list>
+                <bean class="org.apache.ignite.services.ServiceConfiguration">
+                    <property name="name" value="CachePluginRegistryPersistenceService" />
+                    <property name="maxPerNodeCount" value="1" />
+                    <property name="service">
+                        <bean class="com.raytheon.uf.common.datastore.ignite.CachePluginRegistryPersistenceService" />
+                    </property>
+                </bean>
+            </list>
+        </constructor-arg>
+    </bean>
+
+    <!-- End cluster-specific values -->
+
+    <bean id="grid.cfg" class="org.apache.ignite.configuration.IgniteConfiguration" depends-on="propsLoaded">
+        <property name="localHost" value="${LOCAL_ADDRESS}"/>
+        <property name="failureHandler">
+            <bean class="org.apache.ignite.failure.RestartProcessFailureHandler" />
+        </property>
         <property name="discoverySpi">
             <bean class="org.apache.ignite.spi.discovery.tcp.TcpDiscoverySpi">
                 <property name="ipFinder">
                     <bean
                         class="org.apache.ignite.spi.discovery.tcp.ipfinder.vm.TcpDiscoveryVmIpFinder">
                         <property name="addresses"
-                            value="#{'${IGNITE_SERVERS:localhost}'.split(',')}" />
+                            value="#{'${IGNITE_CLUSTER_SERVERS:localhost}'.split(',')}" />
                     </bean>
                 </property>
             </bean>
@@ -57,83 +127,18 @@
                     </bean>
                 </property>
                 <property name="dataRegionConfigurations">
-                    <list>
-                        <!-- The data-store-cache-name-map gets a dedicated
-                             region so entries are never purged.
-                        -->
-                        <bean class="org.apache.ignite.configuration.DataRegionConfiguration">
-                            <property name="name" value="data-store-cache-name-region"/>
-                             <!-- Documented min size is 10MB but I was still
-                                  getting OutOfMemory so max is slightly larger.
-                            -->
-                            <property name="initialSize" value="#{10 * 1024 * 1024}"/>
-                            <property name="maxSize" value="#{32 * 1024 * 1024}"/>
-                            <property name="emptyPagesPoolSize" value="1" />
-                        </bean>
-                    </list>
+                    <ref bean="dataRegionConfigurations" />
                 </property>
             </bean>
-        </property>
-        <property name="cacheConfiguration">
-            <list>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="*" />
-                    <property name="cacheMode" value="PARTITIONED" />
-                    <property name="backups" value="${IGNITE_CACHE_BACKUPS:0}" />
-                    <!-- Rebalancing is unnecessary, missing entries will read
-                        from the underlying datastore instead of being copied
-                        preemptively. Attempting to rebalance will load the entire
-                        cache in the heap and results in OOM.
-                    -->
-                    <property name="rebalanceMode" value="NONE" />
-                    <property name="readThrough" value="true" />
-                    <property name="writeThrough" value="true" />
-                    <property name="writeBehindEnabled" value="true" />
-                    <property name="writeBehindFlushFrequency"
-                        value="30000" />
-                    <property name="writeBehindFlushThreadCount"
-                        value="16" />
-                    <property name="sqlIndexMaxInlineSize" value="350" />
-                    <property name="cacheStoreFactory">
-                        <bean
-                            class="com.raytheon.uf.common.datastore.ignite.store.DataStoreCacheStoreFactory">
-                            <constructor-arg ref="pypiesFactory" />
-                        </bean>
-                    </property>
-                    <property name="indexedTypes">
-                        <list>
-                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreKey
-                            </value>
-                            <value>com.raytheon.uf.common.datastore.ignite.DataStoreValue
-                            </value>
-                        </list>
-                    </property>
-                </bean>
-                <bean class="org.apache.ignite.configuration.CacheConfiguration">
-                    <property name="name" value="data-store-cache-name-map" />
-                    <property name="dataRegionName" value="data-store-cache-name-region"/>
-                    <property name="cacheMode" value="REPLICATED" />
-                    <property name="onheapCacheEnabled" value="true"/>
-                </bean>
-            </list>
         </property>
         <property name="gridLogger">
             <bean class="org.apache.ignite.logger.slf4j.Slf4jLogger" />
         </property>
+        <property name="cacheConfiguration">
+            <ref bean="cacheConfiguration" />
+        </property>
         <property name="serviceConfiguration">
-            <list>
-                <bean class="org.apache.ignite.services.ServiceConfiguration">
-                    <property name="name" value="PyPiesCompatibilityService" />
-                    <property name="maxPerNodeCount" value="1" />
-                    <property name="service">
-                        <bean
-                            class="com.raytheon.uf.common.datastore.ignite.pypies.PyPiesCompatibilityService">
-                            <property name="port"
-                                value="${PYPIES_COMPATIBILITY_PORT:9585}" />
-                        </bean>
-                    </property>
-                </bean>
-            </list>
+            <ref bean="serviceConfiguration" />
         </property>
         <property name="transactionConfiguration">
             <bean class="org.apache.ignite.configuration.TransactionConfiguration">
@@ -158,20 +163,17 @@
         <property name="communicationSpi">
             <bean class="org.apache.ignite.spi.communication.tcp.TcpCommunicationSpi">
                 <property name="messageQueueLimit" value="1024"/>
-                <!-- This causes clients to keep the last x messages up to this 
-                     threshold per connection in heap memory in case a connection 
-                     fails to resend the messages. Limiting this will cause more 
-                     acknowledgements to be sent but also reduce client heap 
+                <!-- This causes clients to keep the last x messages up to this
+                     threshold per connection in heap memory in case a connection
+                     fails to resend the messages. Limiting this will cause more
+                     acknowledgements to be sent but also reduce client heap
                      footprint. Default value is 32. -->
-                <property name="ackSendThreshold" value="2"/>                 
+                <property name="ackSendThreshold" value="2"/>
+                <property name="socketWriteTimeout" value="30000"/>
+                <property name="usePairedConnections" value="true"/>
+                <property name="connectionsPerNode" value="4"/>
             </bean>
         </property>
-    </bean>
-
-    <bean id="pypiesFactory"
-        class="com.raytheon.uf.common.datastore.ignite.pypies.SerializablePyPiesDataStoreFactory">
-        <constructor-arg name="address"
-            value="http://${PYPIES_HOST:localhost}:${PYPIES_PORT:9582}/" />
     </bean>
 
     <bean id="appInfo" class="com.raytheon.uf.common.util.app.AppInfo" factory-method="initialize">
@@ -187,7 +189,7 @@
     <bean id="httpClientConfigBuilder" class="com.raytheon.uf.common.comm.HttpClientConfigBuilder">
         <property name="socketTimeout" value="330000" />
         <property name="connectionTimeout" value="10000" />
-        <property name="maxConnections" value="24" />
+        <property name="maxConnections" value="100" />
     </bean>
 
     <bean id="httpClientConfig" factory-bean="httpClientConfigBuilder"

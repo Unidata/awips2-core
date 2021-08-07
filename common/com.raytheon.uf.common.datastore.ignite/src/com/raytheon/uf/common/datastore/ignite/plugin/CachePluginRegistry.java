@@ -1,53 +1,45 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract EA133W-17-CQ-0082 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     2120 South 72nd Street, Suite 900
  *                         Omaha, NE 68124
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.datastore.ignite.plugin;
 
 import java.io.File;
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.Iterator;
-import java.util.List;
+import java.util.Collections;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.TreeMap;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import javax.cache.Cache;
-import javax.cache.Cache.Entry;
-import javax.xml.bind.JAXB;
-
-import org.apache.ignite.Ignite;
-import org.apache.ignite.IgniteCache;
-import org.apache.ignite.configuration.CacheConfiguration;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.ConfigEntry;
+import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastore.ignite.IgniteCacheAccessor;
+import com.raytheon.uf.common.datastore.ignite.IgniteClusterManager;
+import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 
 /**
  * Registry of cache configuration for plugins. Plugins can specify a custom
  * cache per plugin and optionally register a custom cache configuration for the
  * plugin cache.
- * 
+ *
  * The plugin configuration is managed in three places:
  * <ol>
  * <li>An ignite cache is used to keep all ignite nodes using the same cacheName
@@ -58,22 +50,22 @@ import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.Confi
  * configuration rarely changes it saves time to keep the mapping local. This
  * local mapping is periodically refreshed to ensure it is in sync with the
  * ignite cache.
- * <li>The config file is used on server nodes to repopulate the ignite cache
- * during startup. This allows consistent cacheNames even if all server nodes
- * are restarted. Since plugin registration can originate from client nodes this
- * allows the server nodes to remember the correct settings even if the client
- * is not available or does not re-register after a restart.
- * 
+ * <li>A config file is used on server nodes to repopulate the ignite cache
+ * during startup. See CachePluginRegistryPersisterService.
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Feb 03, 2020  7628     bsteffen  Initial creation
  * Mar 26, 2020  8074     bsteffen  Parse plugin from filenames that start with '/'
  * Apr 01, 2020  8072     bsteffen  Store cache to file on server nodes.
- * 
+ * Jun 25, 2021  8450     mapeters  Updated for centralized ignite instance management,
+ *                                  moved persistence to file on server side to
+ *                                  CachePluginRegistryPersistenceService
+ *
  * </pre>
  *
  * @author bsteffen
@@ -83,85 +75,95 @@ public class CachePluginRegistry {
     private static final Logger logger = LoggerFactory
             .getLogger(CachePluginRegistry.class);
 
-    private static final String CACHE_NAME = "data-store-cache-name-map";
-
-    public static final String DEFAULT_CACHE = "defaultDataStore";
-
-    private static final long REFRESH_INTERVAL = Duration.ofMinutes(5)
+    private static final long REFRESH_INTERVAL = Duration
+            .ofSeconds(IgniteUtils.getLongProperty(
+                    "ignite.cache.plugin.registry.refresh.interval.secs"))
             .toMillis();
 
     private final AtomicLong nextRefresh = new AtomicLong(
             System.currentTimeMillis() + REFRESH_INTERVAL);
 
-    private final Map<String, String> cacheNamesByPlugin = new ConcurrentHashMap<>();
+    private final Map<String, String> cacheNamesByPlugin = Collections
+            .synchronizedMap(new TreeMap<>());
 
-    private final List<CacheConfiguration<?, ?>> configs = new CopyOnWriteArrayList<>();
+    private final ReadWriteLock lock = new ReentrantReadWriteLock();
 
-    private Ignite ignite;
+    private IgniteCacheAccessor<String, String> cacheAccessor;
 
-    protected IgniteCache<String, String> cache;
-
-    protected PluginRegistryConfig savedConfig;
+    public CachePluginRegistry() {
+    }
 
     public String registerPluginCacheName(String plugin, String cacheName) {
-        if (cache != null) {
-            cache.put(plugin, cacheName);
+        lock.readLock().lock();
+        try {
+            if (cacheAccessor != null) {
+                try {
+                    cacheAccessor
+                            .doAsyncCacheOp(c -> c.putAsync(plugin, cacheName));
+                } catch (StorageException e) {
+                    logger.error(
+                            "Error storing plugin cache name mapping to ignite server: "
+                                    + plugin + " -> " + cacheName,
+                            e);
+                }
+            }
+
+            String prev = cacheNamesByPlugin.put(plugin, cacheName);
+            if (prev == null) {
+                logger.info("Ignite cache name has been set to {} for {}",
+                        cacheName, plugin);
+            } else if (!prev.equals(cacheName)) {
+                logger.warn("Ignite cache name has changed for {}: {} -> {}",
+                        plugin, prev, cacheName);
+            }
+        } finally {
+            lock.readLock().unlock();
         }
-        String prev = cacheNamesByPlugin.put(plugin, cacheName);
-        if (prev == null) {
-            logger.info("Ignite cache name has been set to {} for {}",
-                    cacheName, plugin);
-        } else if (!prev.equals(cacheName)) {
-            logger.warn("Ignite cache name has changed for {} {} -> {}", plugin,
-                    prev, cacheName);
-        }
+
         return cacheName;
     }
 
-    /**
-     * Plugins that need a custom cache configuration will need to use this
-     * method to create the cache and then
-     * {@link #registerPluginCacheName(String, String)} to associate the cache
-     * with the plugin.
-     * 
-     * @param config
-     * @return
-     */
-    public String addCache(CacheConfiguration<?, ?> config) {
-        if (ignite == null) {
-            configs.add(config);
-            return config.getName();
-        } else {
-            Cache<?, ?> cache = ignite.getOrCreateCache(config);
-            return cache.getName();
+    public void initialize(IgniteClusterManager clusterManager) {
+        lock.writeLock().lock();
+        try {
+            this.cacheAccessor = clusterManager
+                    .getCacheAccessor(IgniteUtils.PLUGIN_REGISTRY_CACHE_NAME);
+            try {
+                cacheAccessor
+                        .doAsyncCacheOp(c -> c.putAllAsync(cacheNamesByPlugin));
+            } catch (StorageException e) {
+                logger.error(
+                        "Error storing plugin cache name mappings to ignite server",
+                        e);
+            }
+        } finally {
+            lock.writeLock().unlock();
         }
-    }
-
-    public Ignite setIgnite(Ignite ignite) {
-        for (CacheConfiguration<?, ?> config : configs) {
-            ignite.getOrCreateCache(config);
-        }
-        configs.clear();
-        cache = ignite.getOrCreateCache(CACHE_NAME);
-        cache.putAll(cacheNamesByPlugin);
-        this.ignite = ignite;
-        if (!ignite.configuration().isClientMode()) {
-            loadFromFile();
-        }
-        return ignite;
     }
 
     public String getCacheName(File file) {
+        throwIfUninitialized();
         refreshCache();
         String plugin = getPlugin(file);
         if (cacheNamesByPlugin.containsKey(plugin)) {
             return cacheNamesByPlugin.get(plugin);
         } else {
-            String name = cache.get(plugin);
-            if (name == null) {
-                name = DEFAULT_CACHE;
+            String name = null;
+            boolean errorOccurred = false;
+            try {
+                name = cacheAccessor.doAsyncCacheOp(c -> c.getAsync(plugin));
+            } catch (StorageException e) {
+                logger.error("Error retrieving cache name to use for plugin "
+                        + plugin + ", temporarily falling back to "
+                        + IgniteUtils.DEFAULT_CACHE, e);
+                errorOccurred = true;
             }
-            cacheNamesByPlugin.put(plugin, name);
+            if (name == null) {
+                name = IgniteUtils.DEFAULT_CACHE;
+            }
+            if (!errorOccurred) {
+                cacheNamesByPlugin.put(plugin, name);
+            }
             return name;
         }
     }
@@ -182,17 +184,14 @@ public class CachePluginRegistry {
 
     /**
      * Clear the local mapping to be sure it matches the ignite cache when it
-     * repopulates. On server nodes this will also save the current ignite cache
-     * into a file if it has changed.
+     * repopulates (if we haven't already cleared it within the refresh
+     * interval).
      */
     protected void refreshCache() {
         long currentTime = System.currentTimeMillis();
-        if (cache != null && nextRefresh.get() < currentTime) {
+        if (nextRefresh.get() < currentTime) {
             cacheNamesByPlugin.clear();
             nextRefresh.set(currentTime + REFRESH_INTERVAL);
-            if (!ignite.configuration().isClientMode()) {
-                saveToFile();
-            }
         }
         long runTime = System.currentTimeMillis() - currentTime;
         if (runTime > 500) {
@@ -200,83 +199,15 @@ public class CachePluginRegistry {
         }
     }
 
-    /**
-     * Load the previously saved configuration from a file. This should only be
-     * called on server nodes.
-     */
-    protected void loadFromFile() {
-        Path registryFile = getConfigFilePath();
-        if (Files.isReadable(registryFile)) {
-            PluginRegistryConfig config = JAXB.unmarshal(registryFile.toFile(),
-                    PluginRegistryConfig.class);
-            for (ConfigEntry entry : config.getEntries()) {
-                String plugin = entry.getPlugin();
-                String cacheName = entry.getCache();
-                if (cache.putIfAbsent(plugin, cacheName)) {
-                    cacheNamesByPlugin.put(plugin, cacheName);
-                }
+    private void throwIfUninitialized() {
+        lock.readLock().lock();
+        try {
+            if (cacheAccessor == null) {
+                throw new IllegalStateException(
+                        "Cache plugin registry has not been initialized");
             }
-            logger.info("Loaded cache plugin registry: {}", config);
-            savedConfig = config;
-        } else if (Files.exists(registryFile)) {
-            logger.warn("Unable to read cache plugin registry from {}",
-                    registryFile);
-        } else {
-            logger.info("Cache plugin registry does not exist at {}",
-                    registryFile);
+        } finally {
+            lock.readLock().unlock();
         }
     }
-
-    /**
-     * Save the current configuration in the ignite node to a file if it is
-     * different from the previously saved configuration. This should only be
-     * done on server nodes. Since this requires iterating the entire ignite
-     * cache the local mapping is also updated to match the ignite cache.
-     */
-    protected void saveToFile() {
-        Path registryFile = getConfigFilePath();
-        boolean writable = Files.isWritable(registryFile);
-        if (!writable) {
-            if (!Files.exists(registryFile)) {
-                Path parent = registryFile.getParent();
-                if (!Files.isDirectory(parent)) {
-                    try {
-                        Files.createDirectories(parent);
-                    } catch (IOException e) {
-                        logger.error("Cannot write cache plugin registry to {}",
-                                registryFile, e);
-                        return;
-                    }
-                }
-            }
-            writable = Files.isWritable(registryFile.getParent());
-        }
-        if (writable) {
-            PluginRegistryConfig config = new PluginRegistryConfig();
-            Iterator<Entry<String, String>> it = cache.iterator();
-            while (it.hasNext()) {
-                Entry<String, String> entry = it.next();
-                String plugin = entry.getKey();
-                String cacheName = entry.getValue();
-                cacheNamesByPlugin.put(plugin, cacheName);
-                config.addEntry(plugin, cacheName);
-            }
-            config.sortByPlugin();
-            if (!config.isEmpty() && !config.equals(savedConfig)) {
-                logger.info("Saving cache plugin registry: {}", config);
-                JAXB.marshal(config, registryFile.toFile());
-                savedConfig = config;
-            }
-        } else {
-            logger.error("Cannot write cache plugin registry to {}",
-                    registryFile);
-
-        }
-    }
-
-    protected Path getConfigFilePath() {
-        return Paths.get(ignite.configuration().getIgniteHome(), "config",
-                "pluginRegistry.xml");
-    }
-
 }
