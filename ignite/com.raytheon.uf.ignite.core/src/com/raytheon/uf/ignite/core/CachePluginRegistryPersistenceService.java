@@ -16,7 +16,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.datastore.ignite;
+package com.raytheon.uf.ignite.core;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,6 +35,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datastorage.StorageException;
+import com.raytheon.uf.common.datastore.ignite.IgniteCacheAccessor;
+import com.raytheon.uf.common.datastore.ignite.IgniteServerManager;
+import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig;
 import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.ConfigEntry;
 
@@ -55,6 +58,7 @@ import com.raytheon.uf.common.datastore.ignite.plugin.PluginRegistryConfig.Confi
  * ------------ ---------- ----------- --------------------------------
  * Jul 15, 2021 8450       mapeters    Initial creation (extracted from
  *                                     CachePluginRegistry)
+ * Sep 23, 2021 8608       mapeters    Moved from com.raytheon.uf.common.datastorage.ignite
  *
  * </pre>
  *

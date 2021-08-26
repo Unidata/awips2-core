@@ -25,6 +25,7 @@ import java.io.FileNotFoundException;
 import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -46,7 +47,9 @@ import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
+import com.raytheon.uf.common.datastorage.records.NoMetadataIdentifier;
 import com.raytheon.uf.common.pointdata.IPointData;
 import com.raytheon.uf.common.pointdata.PointDataContainer;
 import com.raytheon.uf.common.pointdata.PointDataDescription;
@@ -80,6 +83,7 @@ import net.sf.cglib.beans.BeanMap;
  * Jan 09, 2014  1998     bclement    fixed NPE in persistToHDF5 when store failed
  * Nov 20, 2014  3853     njensen     Improved javadoc of getPointDataDescription()
  * Nov 16, 2017  6367     tgurney     Send timing information to log file
+ * Sep 23, 2021  8608     mapeters    Add metadata id handling
  *
  * </pre>
  *
@@ -91,7 +95,7 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
     private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(PointDataPluginDao.class);
 
-    public static enum LevelRequest {
+    public enum LevelRequest {
         ALL, NONE, SPECIFIC;
 
         private String parameter;
@@ -175,11 +179,17 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                             StorageProperties.Compression.valueOf(compression));
                 }
 
+                /*
+                 * The append indices make it hard to track the metadata here or
+                 * properly handle errors with write behind
+                 */
+                IMetadataIdentifier metaId = new NoMetadataIdentifier(false,
+                        true);
                 Set<String> params = container.getParameters();
                 for (String param : params) {
                     try {
                         IDataRecord idr = container.getParameterRecord(param);
-                        ds.addDataRecord(idr, sp);
+                        ds.addDataRecord(idr, metaId, sp);
                     } catch (StorageException e) {
                         throw new PluginException("Error adding record", e);
                     }
@@ -281,20 +291,10 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         return hdf5DataDescription;
     }
 
-    private static class IndexIdPair implements Comparable<IndexIdPair> {
+    private static class IndexIdPair {
         public int index;
 
         public int id;
-
-        @Override
-        public int compareTo(IndexIdPair o) {
-            if (index == o.index) {
-                return 0;
-            }
-
-            return index < o.index ? -1 : 1;
-        }
-
     }
 
     public PointDataContainer getPointData(File file, int[] indexes, int[] ids,
@@ -308,7 +308,8 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
             iip[i].id = ids[i];
         }
 
-        Arrays.sort(iip);
+        Arrays.sort(iip,
+                Comparator.comparingInt(indexIdPair -> indexIdPair.index));
 
         for (int i = 0; i < iip.length; i++) {
             indexes[i] = iip[i].index;
@@ -384,16 +385,13 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                 int dimY = (int) rec.getSizes()[1];
 
                 int idx = 0;
-                double v = 0;
                 for (int i = 0; i < dimY; i++) {
-                    nextData: for (int j = 0; j < dimX; j++) {
+                    for (int j = 0; j < dimX; j++) {
                         idx = dimX * dimY + j;
-                        v = intData[idx];
-                        for (int k = 0; k < vals.length; k++) {
-                            if (v == vals[k]) {
-                                indices[i] = idx;
-                                break nextData;
-                            }
+                        double v = intData[idx];
+                        if (Arrays.stream(vals).anyMatch(val -> val == v)) {
+                            indices[i] = idx;
+                            break;
                         }
                     }
 
@@ -404,16 +402,13 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
                 int dimY = (int) rec.getSizes()[1];
 
                 int idx = 0;
-                double v = 0;
                 for (int i = 0; i < dimY; i++) {
-                    nextData: for (int j = 0; j < dimX; j++) {
+                    for (int j = 0; j < dimX; j++) {
                         idx = dimX * dimY + j;
-                        v = floatData[idx];
-                        for (int k = 0; k < vals.length; k++) {
-                            if (v == vals[k]) {
-                                indices[i] = idx;
-                                break nextData;
-                            }
+                        double v = floatData[idx];
+                        if (Arrays.stream(vals).anyMatch(val -> val == v)) {
+                            indices[i] = idx;
+                            break;
                         }
                     }
 
@@ -447,23 +442,24 @@ public abstract class PointDataPluginDao<T extends PluginDataObject>
         int originalPointer = 0;
         for (int i = 0; i < correlatedIds.length; i++) {
             int k;
-            search: for (k = originalPointer; k < iip.length; k++) {
+            for (k = originalPointer; k < iip.length; k++) {
                 if (iip[k].index == retrievedIndexes[i]) {
                     correlatedIds[i] = iip[k].id;
                     originalPointer = k + 1;
-                    break search;
+                    break;
                 }
             }
 
             if (k >= iip.length) {
-                // went off the end of search. double check the other half of
-                // the array
+                /*
+                 * went off the end of search. double check the other half of
+                 * the array
+                 */
                 boolean found = false;
-                search2: for (k = 0; (k < originalPointer)
-                        && (k < iip.length); k++) {
+                for (k = 0; (k < originalPointer) && (k < iip.length); k++) {
                     if (iip[k].index == retrievedIndexes[i]) {
                         correlatedIds[i] = iip[k].id;
-                        break search2;
+                        break;
                     }
                 }
 

@@ -22,12 +22,19 @@
 
 class ErrorResponse(object):
 
-    def __init__(self):
-        self.error = None
+    def __init__(self, error=None, errorType='OTHER'):
+        self.error = error
+        self.type = errorType
 
     def getError(self):
         return self.error
 
     def setError(self, error):
         self.error = error
+
+    def getType(self):
+        return self.type
+
+    def setType(self, errorType):
+        self.type = errorType
 

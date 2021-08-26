@@ -22,10 +22,13 @@ package com.raytheon.uf.common.pypies;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.http.conn.HttpHostConnectException;
@@ -42,8 +45,11 @@ import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.pypies.records.CompressedDataRecord;
 import com.raytheon.uf.common.pypies.request.AbstractRequest;
+import com.raytheon.uf.common.pypies.request.AbstractRequest.RequestType;
 import com.raytheon.uf.common.pypies.request.CopyRequest;
 import com.raytheon.uf.common.pypies.request.CreateDatasetRequest;
 import com.raytheon.uf.common.pypies.request.DatasetDataRequest;
@@ -56,6 +62,7 @@ import com.raytheon.uf.common.pypies.request.RepackRequest;
 import com.raytheon.uf.common.pypies.request.RetrieveRequest;
 import com.raytheon.uf.common.pypies.request.StoreRequest;
 import com.raytheon.uf.common.pypies.response.ErrorResponse;
+import com.raytheon.uf.common.pypies.response.ErrorResponse.ErrorType;
 import com.raytheon.uf.common.pypies.response.FileActionResponse;
 import com.raytheon.uf.common.pypies.response.RetrieveResponse;
 import com.raytheon.uf.common.pypies.response.StoreResponse;
@@ -99,6 +106,8 @@ import com.raytheon.uf.common.util.format.BytesFormat;
  *                                     introduced in 7435
  * Dec 11, 2020  8299     tgurney      Log before and after each request is sent
  * Mar 18, 2021  8349     randerso     Code cleanup
+ * Sep 23, 2021  8608     mapeters     Add metadata identifier handling, retry
+ *                                     stores on disk space or permissions errors
  *
  * </pre>
  *
@@ -112,9 +121,24 @@ public class PyPiesDataStore implements IDataStore {
     private static final long COMPRESSION_LIMIT = BytesFormat
             .parseSystemProperty("pypies.limits.compression", "5MiB");
 
+    /*
+     * Default values should only be used by CAVE, don't retry from CAVE
+     */
+    private static final long DISK_SPACE_ERROR_NUM_ATTEMPTS = Long
+            .getLong("pypies.store.disk.space.error.num.attempts", 1);
+
+    private static final long PERMISSIONS_ERROR_NUM_ATTEMPTS = Long
+            .getLong("pypies.store.disk.space.error.num.attempts", 1);
+
+    private static final long DISK_SPACE_RETRY_INTERVAL = Long
+            .getLong("pypies.store.disk.space.error.retry.interval.secs", 120);
+
+    private static final long PERMISSIONS_RETRY_INTERVAL = Long
+            .getLong("pypies.store.disk.space.error.retry.interval.secs", 120);
+
     protected static String address = null;
 
-    protected List<IDataRecord> records = new ArrayList<>();
+    protected List<RecordAndMetadata> recordsAndMetadata = new ArrayList<>();
 
     protected String filename;
 
@@ -141,26 +165,41 @@ public class PyPiesDataStore implements IDataStore {
     }
 
     @Override
-    public void addDataRecord(IDataRecord dataset, StorageProperties properties)
+    public void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier,
+            StorageProperties properties) throws StorageException {
+        addDataRecord(dataset, Set.of(metadataIdentifier), properties);
+    }
+
+    @Override
+    public void addDataRecord(final IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier) throws StorageException {
+        addDataRecord(dataset, metadataIdentifier, dataset.getProperties());
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers)
             throws StorageException {
+        addDataRecord(dataset, metadataIdentifiers, dataset.getProperties());
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers,
+            StorageProperties properties) throws StorageException {
         if (dataset.validateDataSet()) {
             if (dataset.getSizeInBytes() > COMPRESSION_LIMIT) {
                 dataset = CompressedDataRecord.convert(dataset);
             }
             dataset.setProperties(properties);
-            records.add(dataset);
+            recordsAndMetadata
+                    .add(new RecordAndMetadata(dataset, metadataIdentifiers));
         } else {
             throw new StorageException(
                     "Invalid dataset " + dataset.getName() + " :" + dataset,
                     null);
         }
-
-    }
-
-    @Override
-    public void addDataRecord(final IDataRecord dataset)
-            throws StorageException {
-        addDataRecord(dataset, dataset.getProperties());
     }
 
     @Override
@@ -248,11 +287,12 @@ public class PyPiesDataStore implements IDataStore {
     public StorageStatus store(final StoreOp storeOp) throws StorageException {
         StoreRequest req = new StoreRequest();
         req.setOp(storeOp);
-        req.setRecords(records);
+        req.setRecordsAndMetadata(recordsAndMetadata);
 
         boolean huge = false;
         long totalSize = 0;
-        for (IDataRecord rec : records) {
+        for (RecordAndMetadata rm : recordsAndMetadata) {
+            IDataRecord rec = rm.getRecord();
             totalSize += rec.getSizeInBytes();
             if (totalSize >= HUGE_REQUEST) {
                 huge = true;
@@ -270,21 +310,22 @@ public class PyPiesDataStore implements IDataStore {
             // need to set the correlation object
             if (failed != null) {
                 for (IDataRecord rec : failed) {
-                    Iterator<IDataRecord> recordIter = records.iterator();
-                    while (recordIter.hasNext()) {
-                        IDataRecord oldRec = recordIter.next();
+                    Iterator<RecordAndMetadata> rmIter = recordsAndMetadata
+                            .iterator();
+                    while (rmIter.hasNext()) {
+                        IDataRecord oldRec = rmIter.next().getRecord();
                         if (oldRec.getGroup().equals(rec.getGroup())
                                 && oldRec.getName().equals(rec.getName())) {
                             rec.setCorrelationObject(
                                     oldRec.getCorrelationObject());
-                            recordIter.remove();
+                            rmIter.remove();
                             break;
                         }
                     }
                 }
             }
 
-            records.clear();
+            recordsAndMetadata.clear();
             StorageException[] jexc = new StorageException[exc.length];
             for (int i = 0; i < exc.length; i++) {
                 // checking for duplicates based on what is in the string...
@@ -300,11 +341,11 @@ public class PyPiesDataStore implements IDataStore {
         } catch (StorageException e) {
             ss = new StorageStatus();
             ss.setOperationPerformed(storeOp);
-            int size = records.size();
+            int size = recordsAndMetadata.size();
             StorageException[] jexc = new StorageException[size];
             for (int i = 0; i < size; i++) {
-                jexc[i] = new StorageException(e.getMessage(), records.get(i),
-                        e);
+                jexc[i] = new StorageException(e.getMessage(),
+                        recordsAndMetadata.get(i).getRecord(), e);
             }
             ss.setExceptions(jexc);
         }
@@ -327,6 +368,8 @@ public class PyPiesDataStore implements IDataStore {
 
         boolean logged = false;
         long seqNum = requestSequence.getAndIncrement();
+        int numDiskSpaceAttempts = 0;
+        int numPermissionsAttempts = 0;
         while (ret == null) {
 
             try {
@@ -334,6 +377,60 @@ public class PyPiesDataStore implements IDataStore {
                         + " (request " + seqNum + ") on file "
                         + obj.getFilename());
                 ret = doSendRequest(obj, huge);
+                if (obj.getType() == RequestType.STORE
+                        && ret instanceof ErrorResponse) {
+                    ErrorResponse errorResponse = (ErrorResponse) ret;
+                    ErrorType type = errorResponse.getType();
+                    if (type != null) {
+                        switch (type) {
+                        case DISK_SPACE:
+                        case PERMISSIONS:
+                            boolean retry;
+                            long sleepSeconds;
+                            if (type == ErrorType.DISK_SPACE) {
+                                ++numDiskSpaceAttempts;
+                                sleepSeconds = DISK_SPACE_RETRY_INTERVAL;
+                                retry = DISK_SPACE_ERROR_NUM_ATTEMPTS <= 0
+                                        || numDiskSpaceAttempts < DISK_SPACE_ERROR_NUM_ATTEMPTS;
+                            } else {
+                                ++numPermissionsAttempts;
+                                sleepSeconds = PERMISSIONS_RETRY_INTERVAL;
+                                retry = PERMISSIONS_ERROR_NUM_ATTEMPTS <= 0
+                                        || numPermissionsAttempts < PERMISSIONS_ERROR_NUM_ATTEMPTS;
+                            }
+
+                            if (!retry) {
+                                /*
+                                 * Just let the error response cause an
+                                 * exception to be thrown down below
+                                 */
+                                break;
+                            }
+
+                            logger.error("Pypies " + type
+                                    + " error, retrying in " + sleepSeconds
+                                    + "s: " + errorResponse.getError());
+
+                            try {
+                                TimeUnit.SECONDS.sleep(sleepSeconds);
+                            } catch (InterruptedException e) {
+                                logger.warn(
+                                        "Interrupted while waiting to retry",
+                                        e);
+                            }
+
+                            // Set to null so we retry
+                            ret = null;
+                            break;
+                        case OTHER:
+                            break;
+                        default:
+                            throw new UnsupportedOperationException(
+                                    "Unexpected error type: " + type);
+                        }
+                    }
+
+                }
             } catch (CommunicationException ce) {
                 if (ce.getCause() instanceof HttpHostConnectException) {
                     if (!logged) {
@@ -535,5 +632,4 @@ public class PyPiesDataStore implements IDataStore {
             throw new StorageException(sb.toString(), null);
         }
     }
-
 }

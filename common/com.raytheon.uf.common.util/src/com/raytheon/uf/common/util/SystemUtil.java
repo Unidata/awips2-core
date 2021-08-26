@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import com.raytheon.uf.common.util.app.AppInfo;
 import com.raytheon.uf.common.util.collections.BoundedMap;
 
 /**
@@ -50,6 +51,7 @@ import com.raytheon.uf.common.util.collections.BoundedMap;
  * Jun 24, 2020  8187     randerso  Added getClientID. Change to use
  *                                  ProcessHandle to get pid.
  * Nov 19, 2020  8239     randerso  Use short hostname instead of FQDN
+ * Sep 29, 2021  8608     mapeters  Added no-arg {@link #getClientID()}
  *
  * </pre>
  *
@@ -113,17 +115,21 @@ public class SystemUtil {
                 if (addrToUse != null) {
                     addr = addrToUse;
                 }
-            } catch (SocketException e) {
-                // ignore
+            } catch (@SuppressWarnings("squid:S1166")
+            SocketException e) {
+                // ignore and just fall back to other options below
             } finally {
                 if (addr == null) {
                     try {
                         addr = InetAddress.getLocalHost();
-                    } catch (UnknownHostException e) {
+                    } catch (@SuppressWarnings("squid:S1166")
+                    UnknownHostException e) {
+                        // ignore exception and just fall back to 0.0.0.0
                         try {
                             return InetAddress
                                     .getByAddress(new byte[] { 0, 0, 0, 0 });
-                        } catch (UnknownHostException e1) {
+                        } catch (@SuppressWarnings("squid:S1166")
+                        UnknownHostException e1) {
                             // won't happen
                         }
                     }
@@ -185,6 +191,36 @@ public class SystemUtil {
         return hostName;
     }
 
+    /**
+     * Unique process identifier in the form of
+     * hostname:username:program:processID, where program is auto-determined
+     * from {@link AppInfo}, which must be initialized for this to be called.
+     *
+     * @return the unique ID
+     */
+    public static String getClientID() {
+        AppInfo appInfo = AppInfo.getInstance();
+        String programName;
+        if (appInfo == null) {
+            programName = "unknown";
+        } else {
+            programName = appInfo.getName();
+            String mode = appInfo.getMode();
+            if (mode != null) {
+                programName += "-" + mode;
+            }
+        }
+        return getClientID(programName);
+    }
+
+    /**
+     * Unique process identifier in the form of
+     * hostname:username:program:processID
+     *
+     * @param program
+     *            program name to use
+     * @return the unique ID
+     */
     public static String getClientID(String program) {
         // hostname:username:program:processID
         String clientID = String.join(":", getHostName(),

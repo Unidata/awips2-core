@@ -38,9 +38,11 @@ import com.raytheon.uf.common.datastorage.IDataStore.StoreOp;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.datastorage.records.StringDataRecord;
 import com.raytheon.uf.common.datastore.ignite.DataStoreKey;
 import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
+import com.raytheon.uf.common.datastore.ignite.IgniteUtils;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
@@ -62,6 +64,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                  duplicate records.
  * Apr 02, 2020  8075     bsteffen  Extract merge for reuse elsewhere.
  * Jun 10, 2021  8450     mapeters  Add logging
+ * Sep 23, 2021  8608     mapeters  Add metadata handling
  *
  * </pre>
  *
@@ -110,26 +113,27 @@ public class StoreProcessor
 
         StorageStatus status = new StorageStatus();
         status.setOperationPerformed(op);
-        IDataRecord[] records = new IDataRecord[args.length];
+        RecordAndMetadata[] recordsAndMetadata = new RecordAndMetadata[args.length];
         for (int i = 0; i < args.length; i += 1) {
-            records[i] = (IDataRecord) args[i];
+            recordsAndMetadata[i] = (RecordAndMetadata) args[i];
         }
         if (op == StoreOp.APPEND) {
-            status.setIndexOfAppend(new long[records.length]);
+            status.setIndexOfAppend(new long[recordsAndMetadata.length]);
         }
         try {
             if (entry.exists()) {
-                DataStoreValue oldValue = entry.getValue();
-                DataStoreValue newValue = merge(oldValue,
-                        Arrays.asList(records), op, status);
+                DataStoreValue newValue = merge(
+                        Arrays.asList(entry.getValue().getRecordsAndMetadata()),
+                        Arrays.asList(recordsAndMetadata), op, status);
                 entry.setValue(newValue);
             } else {
-                for (int i = 0; i < records.length; i += 1) {
-                    if (isPartial(records[i])) {
-                        records[i] = expandPartial(records[i]);
+                for (RecordAndMetadata rm : recordsAndMetadata) {
+                    IDataRecord record = rm.getRecord();
+                    if (isPartial(record)) {
+                        rm.setRecord(expandPartial(record));
                     }
                 }
-                entry.setValue(new DataStoreValue(records));
+                entry.setValue(new DataStoreValue(recordsAndMetadata));
             }
         } catch (StorageException e) {
             status.setExceptions(new StorageException[] { e });
@@ -140,37 +144,45 @@ public class StoreProcessor
         return status;
     }
 
-    public static DataStoreValue merge(DataStoreValue oldValue,
-            List<IDataRecord> newRecords, StoreOp op, StorageStatus status)
+    public static DataStoreValue merge(List<RecordAndMetadata> oldValues,
+            List<RecordAndMetadata> newValues, StoreOp op, StorageStatus status)
             throws StorageException {
         Map<String, IDataRecord> byName = new HashMap<>();
-        for (IDataRecord record : oldValue.getRecords()) {
+        for (RecordAndMetadata rm : oldValues) {
+            IDataRecord record = rm.getRecord();
             byName.put(record.getName(), record);
         }
-        for (int i = 0; i < newRecords.size(); i += 1) {
-            IDataRecord record = newRecords.get(i);
+
+        for (int i = 0; i < newValues.size(); i++) {
+            IDataRecord record = newValues.get(i).getRecord();
+            String name = record.getName();
             boolean partial = isPartial(record);
-            IDataRecord previous = null;
+            IDataRecord previous;
             if (partial) {
-                previous = byName.get(record.getName());
+                previous = byName.get(name);
             } else {
-                previous = byName.put(record.getName(), record);
+                previous = byName.put(name, record);
             }
             if (previous != null) {
                 if (op == StoreOp.STORE_ONLY) {
                     throw new DuplicateRecordStorageException(
-                            "Duplicate record: " + record.getName(), record);
+                            "Duplicate record: " + name, record);
                 } else if (op == StoreOp.APPEND) {
                     IDataRecord merged = append(status, i, previous, record);
-                    byName.put(record.getName(), merged);
+                    byName.put(name, merged);
                 } else if (partial) {
                     insertPartial(previous, record);
                 }
             } else if (partial) {
-                byName.put(record.getName(), expandPartial(record));
+                byName.put(name, expandPartial(record));
             }
         }
-        return new DataStoreValue(byName.values());
+
+        DataStoreValue value = DataStoreValue
+                .createWithoutMetadata(byName.values());
+        IgniteUtils.updateMetadata(value, oldValues);
+        IgniteUtils.updateMetadata(value, newValues);
+        return value;
     }
 
     protected static IDataRecord append(StorageStatus status, int recordIndex,

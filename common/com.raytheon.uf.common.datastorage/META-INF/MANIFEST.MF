@@ -6,7 +6,10 @@ Bundle-Version: 1.15.2.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.common.datastorage,
+ com.raytheon.uf.common.datastorage.audit,
  com.raytheon.uf.common.datastorage.records
 Require-Bundle: com.raytheon.uf.common.serialization,
- org.apache.commons.lang3;bundle-version="3.4.0"
+ org.apache.commons.lang3;bundle-version="3.4.0",
+ com.raytheon.uf.common.dataplugin,
+ com.raytheon.uf.common.util
 Import-Package: com.raytheon.uf.common.status

@@ -34,6 +34,7 @@ import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.Request.Type;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.datastore.ignite.DataStoreKey;
 import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
@@ -54,6 +55,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jun 03, 2019  7628     bsteffen  Initial creation
  * Mar 26, 2020  8074     bsteffen  Ensure fill value is copied.
  * Jun 10, 2021  8450     mapeters  Add performance logging
+ * Sep 23, 2021  8608     mapeters  Add metadata handling
  *
  * </pre>
  *
@@ -116,15 +118,17 @@ public class RetrieveProcessor implements
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
 
-        IDataRecord[] records = entry.getValue().getRecords();
+        RecordAndMetadata[] rms = entry.getValue().getRecordsAndMetadata();
         List<IDataRecord> result = new ArrayList<>();
 
         if (datasets == null) {
-            for (IDataRecord record : records) {
+            for (RecordAndMetadata rm : rms) {
+                IDataRecord record = rm.getRecord();
                 result.add(applyRequest(record));
             }
         } else {
-            for (IDataRecord record : entry.getValue().getRecords()) {
+            for (RecordAndMetadata rm : rms) {
+                IDataRecord record = rm.getRecord();
                 if (datasets.contains(record.getName())) {
                     result.add(applyRequest(record));
                 }

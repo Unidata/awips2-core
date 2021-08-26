@@ -92,6 +92,7 @@ public class IgniteDataStoreFactory implements IDataStoreFactory {
                 }
             };
             IgniteDataStore dataStore = new IgniteDataStore(file,
+                    clusterManager.getIgniteClientManager(cacheName),
                     clusterManager.getCacheAccessor(cacheName), throughStore);
             return dataStore;
         }

@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -26,6 +26,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -34,6 +35,8 @@ import com.raytheon.uf.common.dataplugin.PluginDataObject;
 import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
+import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
+import com.raytheon.uf.common.datastorage.audit.MetadataStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
@@ -45,7 +48,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
 
 /**
  * Performs persistence services to non-database stores
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
  * Date         Ticket#    Engineer    Description
@@ -57,7 +60,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Dec 17, 2015 5166       kbisanz     Update logging to use SLF4J
  * Apr 25, 2016 5604       rjpeter     Added dupElim checking by dataURI.
  * </pre>
- * 
+ *
  * @author chammack
  * @version 1.0
  */
@@ -95,10 +98,41 @@ public class PersistSrv {
             timer.start();
             StorageStatus ss = dao.persistToHDF5(pdos);
             timer.stop();
-            perfLog.logDuration(pluginName + ": Persisted " + pdos.length
-                    + " record(s): Time to Persist", timer.getElapsedTime());
+            perfLog.logDuration(
+                    pluginName + ": Persisted " + pdos.length
+                            + " record(s): Time to Persist",
+                    timer.getElapsedTime());
             StorageException[] se = ss.getExceptions();
             pdoSet.addAll(Arrays.asList(pdos));
+
+            /*
+             * The above conversion of the pdos to a set can discard some PDOs.
+             * For example, if there are 2 partial UKMET GridRecords in pdos,
+             * only one will be retained in pdoSet. Any that are discarded like
+             * this won't be returned by this method regardless of how their
+             * storage went, and so they won't have their metadata stored.
+             * That's okay in general since the retained duplicate PDO in pdoSet
+             * has the same metadata. But to prevent the auditer from
+             * complaining about uncompleted data storage routes, report any
+             * that were discarded like this.
+             */
+            List<PluginDataObject> discardedPdos = new ArrayList<>();
+            for (PluginDataObject pdo : pdos) {
+                boolean discarded = pdoSet.stream().noneMatch(
+                        possiblyReturnedPdo -> possiblyReturnedPdo == pdo);
+                if (discarded) {
+                    discardedPdos.add(pdo);
+                }
+            }
+            if (!discardedPdos.isEmpty()) {
+                Map<String, MetadataStatus> traceIdsToStatus = discardedPdos
+                        .stream()
+                        .collect(Collectors.toMap(pdo -> pdo.getTraceId(),
+                                pdo -> MetadataStatus.NA));
+                DataStorageAuditerContainer.getInstance().getAuditer()
+                        .processMetadataStatuses(traceIdsToStatus);
+            }
+
             if (se != null) {
                 Map<PluginDataObject, StorageException> pdosThatFailed = new HashMap<>(
                         se.length, 1);
@@ -132,15 +166,17 @@ public class PersistSrv {
                     PluginDataObject failedPdo = e.getKey();
 
                     if (errCnt > 50) {
-                        logger.warn("More than 50 errors occurred in this batch.  The remaining errors will be suppressed.");
+                        logger.warn(
+                                "More than 50 errors occurred in this batch.  The remaining errors will be suppressed.");
                         suppressed = true;
                         continue;
                     }
 
                     if (!suppressed) {
                         if (e.getValue() instanceof DuplicateRecordStorageException) {
-                            logger.warn("Duplicate record encountered (duplicate skipped): "
-                                    + failedPdo.getDataURI());
+                            logger.warn(
+                                    "Duplicate record encountered (duplicate skipped): "
+                                            + failedPdo.getDataURI());
 
                         } else {
                             logger.error("Error persisting record " + failedPdo
@@ -161,8 +197,7 @@ public class PersistSrv {
                     "Critical persistence error occurred.  Individual records that failed will be logged separately.",
                     e1);
             for (PluginDataObject p : pdos) {
-                logger.error("Record "
-                        + p
+                logger.error("Record " + p
                         + " failed persistence due to critical error logged above.");
             }
         }
@@ -172,7 +207,7 @@ public class PersistSrv {
 
     /**
      * Checks pdos for any duplicates based on dataURI.
-     * 
+     *
      * @param pdos
      * @return
      */
@@ -196,8 +231,9 @@ public class PersistSrv {
 
             if (dataUris.contains(dataUri) && !pdo.isOverwriteAllowed()) {
                 pdosRemoved = true;
-                logger.warn("Duplicate record encountered in batched persist (duplicate skipped): "
-                        + pdo.getDataURI());
+                logger.warn(
+                        "Duplicate record encountered in batched persist (duplicate skipped): "
+                                + pdo.getDataURI());
             } else {
                 dataUris.add(dataUri);
                 pdosToStore.add(pdo);

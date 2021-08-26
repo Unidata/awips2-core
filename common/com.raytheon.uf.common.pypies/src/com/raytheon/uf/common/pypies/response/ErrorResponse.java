@@ -35,6 +35,7 @@ import com.raytheon.uf.common.serialization.annotations.DynamicSerializeElement;
  * ------------- -------- --------- --------------------------------------------
  * Aug 17, 2010           njensen   Initial creation
  * Mar 18, 2021  8349     randerso  Added constructors for String and Throwable
+ * Sep 23, 2021  8608     mapeters  Add {@link ErrorType}
  *
  * </pre>
  *
@@ -46,6 +47,9 @@ public class ErrorResponse {
 
     @DynamicSerializeElement
     private String error;
+
+    @DynamicSerializeElement
+    private ErrorType type;
 
     /**
      * Nullary constructor
@@ -90,4 +94,16 @@ public class ErrorResponse {
         this.error = error;
     }
 
+    public ErrorType getType() {
+        return type;
+    }
+
+    public void setType(ErrorType type) {
+        this.type = type;
+    }
+
+    @DynamicSerialize
+    public enum ErrorType {
+        DISK_SPACE, PERMISSIONS, OTHER
+    }
 }
