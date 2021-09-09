@@ -10,28 +10,56 @@
       <encoder>
          <pattern>%-5p %d %4.4lsn [%t] %c{0}: %m%n</pattern>
       </encoder>
-
    </appender>
 
-   <appender name="asyncFile" class="ch.qos.logback.classic.AsyncAppender">
-      <appender-ref ref="file" />
-   </appender>
-   
-   <appender name="console" class="ch.qos.logback.core.ConsoleAppender"> 
+   <appender name="pypiesFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+          <fileNamePattern>${IGNITE_HOME}/logs/ignite-pypies-%d{yyyMMdd}.log.gz</fileNamePattern>
+          <totalSizeCap>5GB</totalSizeCap>
+          <maxHistory>60</maxHistory>
+      </rollingPolicy>
       <encoder>
          <pattern>%-5p %d %4.4lsn [%t] %c{0}: %m%n</pattern>
       </encoder>
    </appender>
 
-   <appender name="asyncConsole" class="ch.qos.logback.classic.AsyncAppender">
-      <appender-ref ref="console" />
+   <appender name="performanceFile" class="ch.qos.logback.core.rolling.RollingFileAppender">
+      <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
+          <fileNamePattern>${IGNITE_HOME}/logs/ignite-performance-%d{yyyMMdd}.log.gz</fileNamePattern>
+          <totalSizeCap>5GB</totalSizeCap>
+          <maxHistory>60</maxHistory>
+      </rollingPolicy>
+      <encoder>
+         <pattern>%-5p %d %4.4lsn [%t] %c{0}: %m%n</pattern>
+      </encoder>
+   </appender>
+
+   <appender name="asyncFile" class="ch.qos.logback.classic.AsyncAppender">
+      <appender-ref ref="file" />
+   </appender>
+
+   <appender name="asyncPypiesFile" class="ch.qos.logback.classic.AsyncAppender">
+      <appender-ref ref="pypiesFile" />
+   </appender>
+
+   <appender name="asyncPerformanceFile" class="ch.qos.logback.classic.AsyncAppender">
+      <appender-ref ref="performanceFile" />
    </appender>
 
    <logger name="org.eclipse.jetty" level="ERROR" />
 
+   <logger name="com.raytheon.uf.common.pypies" additivity="false">
+      <level value="INFO"/>
+      <appender-ref ref="asyncPypiesFile"/>
+   </logger>
+
+   <logger name="PerformanceLogger" additivity="false">
+      <level value="DEBUG"/>
+      <appender-ref ref="asyncPerformanceFile"/>
+   </logger>
+
    <root>
       <level value="INFO"/>
-      <appender-ref ref="asyncConsole"/>
       <appender-ref ref="asyncFile"/>
    </root>
 </configuration>
