@@ -204,7 +204,9 @@ public class IniRealm extends org.apache.shiro.realm.text.IniRealm
             out.println(header);
 
             for (Section section : ini.getSections()) {
-                out.println(String.format("[%s]", section.getName()));
+            	String userName = section.getName();
+            	userName = userName.replaceAll(" ", ".");
+                out.println(String.format("[%s]", userName));
                 for (Entry<String, String> entry : section.entrySet()) {
                     out.println(String.format("%s = %s", entry.getKey(),
                             entry.getValue()));
