@@ -1,47 +1,56 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
 package com.raytheon.uf.common.python;
 
 import java.io.File;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
+import java.util.function.Predicate;
+import java.util.stream.Collectors;
 
 /**
  * Utilities for the python bridge
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * Feb 25, 2008            njensen     Initial creation
- * Jun  3, 2008 1164       jelkins     listToList fixes for null and empty list
- * Jun 13, 2008 1164       jelkins     mapToDictionary fixes for dict, list, and tuple values
- * Jun 16, 2008 1164       jelkins     mapToDictionary support for integer and float values
- * Jun 19, 2008 1164       jelkins     sanitize Strings before being added to dict() and list()
- * 
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 25, 2008           njensen   Initial creation
+ * Jun 03, 2008  1164     jelkins   listToList fixes for null and empty list
+ * Jun 13, 2008  1164     jelkins   mapToDictionary fixes for dict, list, and
+ *                                  tuple values
+ * Jun 16, 2008  1164     jelkins   mapToDictionary support for integer and
+ *                                  float values
+ * Jun 19, 2008  1164     jelkins   sanitize Strings before being added to
+ *                                  dict() and list()
+ * Oct 07, 2021  8673     randerso  Exclude nulls from include path in
+ *                                  buildJepIncludePath
+ *
  * </pre>
- * 
+ *
  * @author njensen
- * @version 1.0
  */
 
 public class PyUtil {
@@ -51,7 +60,7 @@ public class PyUtil {
     /**
      * Transforms a Java map into a String declaring a python dictionary that
      * can be used by a python interpreter
-     * 
+     *
      * @param map
      * @return
      */
@@ -59,7 +68,7 @@ public class PyUtil {
         Set<String> keys = map.keySet();
         Iterator<String> itr = keys.iterator();
 
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         s.append("{");
         while (itr.hasNext()) {
             s.append("'");
@@ -103,13 +112,13 @@ public class PyUtil {
     /**
      * Transforms a Java List of Strings to a Python list of Strings that can be
      * used by a python interpreter
-     * 
+     *
      * @param list
      *            the list of strings
      * @return a python statement in string format
      */
     public static String listToList(List<String> list) {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         s.append("[");
         if (list != null) {
 
@@ -132,13 +141,13 @@ public class PyUtil {
     /**
      * Transforms a Java List of Strings to a Python tuple of Strings that can
      * be used by a python interpreter
-     * 
+     *
      * @param list
      *            the list of strings
      * @return a python statement in string format
      */
     public static String listToTuple(List<String> list) {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         s.append("(");
         if (list != null) {
 
@@ -161,13 +170,13 @@ public class PyUtil {
     /**
      * Transforms a Java List of Objects to a Python list of Strings that can be
      * used by a python interpreter
-     * 
+     *
      * @param list
      *            the list of objects
      * @return a python statement in string format
      */
     public static String objListToList(List<? extends Object> list) {
-        StringBuffer s = new StringBuffer();
+        StringBuilder s = new StringBuilder();
         s.append("[");
         if (list != null) {
 
@@ -190,7 +199,7 @@ public class PyUtil {
     /**
      * This method prevents ' characters from corrupting the python data
      * structures
-     * 
+     *
      * @param str
      *            contains possible ' characters
      * @return a new string with all ' characters escaped
@@ -208,7 +217,7 @@ public class PyUtil {
 
     /**
      * Builds a jep python include path, separating directories with a :
-     * 
+     *
      * @param includeDirs
      *            the dirs that should be added to the python path
      * @return a string representing the include path
@@ -219,25 +228,21 @@ public class PyUtil {
 
     /**
      * Builds a jep python include path, separating directories with a :
-     * 
+     *
      * @param createDirs
      *            if true create any non-existent directories
-     * 
+     *
      * @param includeDirs
      *            the dirs that should be added to the python path
      * @return a string representing the include path
      */
     public static String buildJepIncludePath(boolean createDirs,
             String... includeDirs) {
-        StringBuffer sb = new StringBuffer();
-        for (int i = 0; i < includeDirs.length; i++) {
-            sb.append(includeDirs[i]);
-            if (i < includeDirs.length - 1) {
-                sb.append(SEPARATOR);
-            }
-        }
 
-        String s = sb.toString();
+        /* join list of includeDirs while filtering out null or empty values */
+        String s = Arrays.stream(includeDirs).filter(Objects::nonNull)
+                .filter(Predicate.not(String::isEmpty))
+                .collect(Collectors.joining(SEPARATOR));
         if (createDirs) {
             createDirs(s);
         }

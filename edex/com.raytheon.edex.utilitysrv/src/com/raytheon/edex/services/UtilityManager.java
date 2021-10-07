@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -41,20 +41,21 @@ import com.raytheon.uf.common.localization.checksum.ChecksumIO;
 import com.raytheon.uf.common.localization.msgs.DeleteUtilityResponse;
 import com.raytheon.uf.common.localization.msgs.ListResponseEntry;
 import com.raytheon.uf.common.localization.msgs.ListUtilityResponse;
+import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.edex.core.EDEXUtil;
 import com.raytheon.uf.edex.core.EdexException;
 
 /**
- * 
+ *
  * Utility manager
- * 
+ *
  * Provides the business logic for the utility service
- * 
+ *
  * <pre>
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
- * ------------- -------- --------- --------------------------------------
+ * ------------- -------- --------- --------------------------------------------
  * Apr 23, 2007           chammack  Initial Creation.
  * Jul 24, 2007           njensen   Updated putFile()
  * Jul 30, 2007           njensen   Added deleteFile()
@@ -63,13 +64,16 @@ import com.raytheon.uf.edex.core.EdexException;
  * Dec 17, 2015  5166     kbisanz   Update logging to use SLF4J
  * Feb 05, 2016  4754     bsteffen  Use PathManager for checksums
  * Aug 15, 2016  5834     njensen   Always return entry in addEntry, even if
- *                                   file is protected
- * June 22, 2017 6339     njensen   Refactored validation of files to reduce
- *                                   calls to underlying filesystem
+ *                                  file is protected
+ * Jun 22, 2017  6339     njensen   Refactored validation of files to reduce
+ *                                  calls to underlying filesystem
  * Aug 04, 2017  6379     njensen   Removed protected-ness from responses
- * 
+ * Oct 08, 2021  8673     randerso  Added AlertViz/log message if a
+ *                                  file/directory in the utility tree is
+ *                                  unreadable by EDEX.
+ *
  * </pre>
- * 
+ *
  * @author chammack
  */
 public class UtilityManager {
@@ -85,9 +89,9 @@ public class UtilityManager {
     }
 
     /**
-     * 
+     *
      * List available files in a context
-     * 
+     *
      * @param baseDir
      *            the base directory
      * @param context
@@ -115,7 +119,9 @@ public class UtilityManager {
 
             recursiveFileBuild(localizedSite, context, file, subPath,
                     fileExtension, recursive, filesOnly, entries, 0);
-        } catch (EdexException e) {
+        } catch (@SuppressWarnings("squid:S1166")
+        EdexException e) {
+            /* Error is sent in the response */
             msg = e.getMessage();
         }
 
@@ -125,7 +131,7 @@ public class UtilityManager {
 
     /**
      * Deletes a file in a context
-     * 
+     *
      * @param baseDir
      *            the base dir
      * @param context
@@ -173,7 +179,9 @@ public class UtilityManager {
                     md5File.delete();
                 }
             }
-        } catch (Exception e) {
+        } catch (@SuppressWarnings("squid:S1166")
+        Exception e) {
+            /* Error is sent in the response */
             return new DeleteUtilityResponse(context, e.getMessage(), fileName,
                     System.currentTimeMillis());
         }
@@ -181,8 +189,7 @@ public class UtilityManager {
         long timeStamp = System.currentTimeMillis();
         // send notification
         try {
-            EDEXUtil.getMessageProducer().sendAsync(
-                    NOTIFY_ID,
+            EDEXUtil.getMessageProducer().sendAsync(NOTIFY_ID,
                     new FileUpdatedMessage(context, fileName,
                             FileChangeType.DELETED, timeStamp,
                             ILocalizationFile.NON_EXISTENT_CHECKSUM));
@@ -195,7 +202,7 @@ public class UtilityManager {
 
     /**
      * Sanity check the user-provided parameters
-     * 
+     *
      * @param baseDir
      *            the base directory
      * @param context
@@ -291,6 +298,15 @@ public class UtilityManager {
         }
 
         if (!isValidEntry(file, fileExtension)) {
+            if (file.exists()) {
+                String message = file + " is hidden and/or unreadable by user "
+                        + System.getProperty("user.name")
+                        + ". Please correct this immediately.";
+                logger.error(message);
+                EDEXUtil.sendMessageAlertViz(Priority.ERROR,
+                        "com.raytheon.edex.utilitySrv", "Localization",
+                        "DEFAULT", message, null, null);
+            }
             return;
         }
 
@@ -327,7 +343,7 @@ public class UtilityManager {
      * valid entry if the filename matches the fileExtension (if provided). This
      * method is optimized to do the least number of operations against the
      * underlying filesystem as possible.
-     * 
+     *
      * @param file
      *            the file to verify
      * @param fileExtension
@@ -386,9 +402,11 @@ public class UtilityManager {
                 for (File file : files) {
                     LocalizationContext context = new LocalizationContext(type,
                             level, file.getName());
-                    addEntry(null, context, type.name().toLowerCase()
-                            + File.separator + level.name().toLowerCase()
-                            + File.separator + file.getName(), file, entries);
+                    addEntry(null, context,
+                            type.name().toLowerCase() + File.separator
+                                    + level.name().toLowerCase()
+                                    + File.separator + file.getName(),
+                            file, entries);
                 }
             }
         }
