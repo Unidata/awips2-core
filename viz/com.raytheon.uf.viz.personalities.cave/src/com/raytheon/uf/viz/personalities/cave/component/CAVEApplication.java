@@ -1,19 +1,19 @@
 /**
  * This software was developed and / or modified by Raytheon Company,
  * pursuant to Contract DG133W-05-CQ-1067 with the US Government.
- * 
+ *
  * U.S. EXPORT CONTROLLED TECHNICAL DATA
  * This software product contains export-restricted data whose
  * export/transfer/disclosure is restricted by U.S. law. Dissemination
  * to non-U.S. persons whether in the United States or abroad requires
  * an export license or other authorization.
- * 
+ *
  * Contractor Name:        Raytheon Company
  * Contractor Address:     6825 Pine Street, Suite 340
  *                         Mail Stop B8
  *                         Omaha, NE 68106
  *                         402.291.0100
- * 
+ *
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
@@ -54,7 +54,6 @@ import com.raytheon.uf.common.pypies.PyPiesDataStoreFactory;
 import com.raytheon.uf.common.pypies.PypiesProperties;
 import com.raytheon.uf.common.status.IUFStatusHandler;
 import com.raytheon.uf.common.status.UFStatus;
-import com.raytheon.uf.common.status.UFStatus.Priority;
 import com.raytheon.uf.common.time.SimulatedTime;
 import com.raytheon.uf.viz.application.component.IStandaloneComponent;
 import com.raytheon.uf.viz.core.ProgramArguments;
@@ -76,11 +75,11 @@ import com.raytheon.viz.core.units.UnitRegistrar;
 
 /**
  * {@link IStandaloneComponent} that starts and initializes the CAVE Workbench
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Mar 20, 2013            mschenke    Initial creation
@@ -89,15 +88,16 @@ import com.raytheon.viz.core.units.UnitRegistrar;
  * Jun 26, 2015 4474       bsteffen    Register the PathManager as an OSGi service.
  * Jan 11, 2016 5232       njensen     Apply css style at startup
  * Jun 27, 2017 6316       njensen     Pass along start time
- * 
+ * Oct 07, 2021 8673       randerso    Eliminate MessageDialog during startup.
+ *
  * </pre>
- * 
+ *
  * @author mschenke
  */
 
 public class CAVEApplication implements IStandaloneComponent {
 
-    protected static final transient IUFStatusHandler statusHandler = UFStatus
+    protected static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(CAVEApplication.class, "CAVE");
 
     /** The name of the component launched */
@@ -132,10 +132,8 @@ public class CAVEApplication implements IStandaloneComponent {
             initializeLocalization();
         } catch (Exception e) {
             e.printStackTrace();
-            statusHandler.handle(
-                    Priority.CRITICAL,
-                    "Could not connect to localization server: "
-                            + e.getLocalizedMessage(), e);
+            statusHandler.fatal("Could not connect to localization server: "
+                    + e.getLocalizedMessage(), e);
             // we return EXIT_OK here so eclipse doesn't try to pop up an error
             // dialog which would break gfeClient-based cron jobs.
             return IApplication.EXIT_OK;
@@ -161,9 +159,8 @@ public class CAVEApplication implements IStandaloneComponent {
                 ((VizWorkbenchAdvisor) workbenchAdvisor)
                         .setWorkbenchStartTime(workbenchStartTime);
                 ((VizWorkbenchAdvisor) workbenchAdvisor)
-                        .setAppStartTime(
-                        com.raytheon.uf.viz.spring.dm.Activator.getDefault()
-                                .getApplicationStartTime());
+                        .setAppStartTime(com.raytheon.uf.viz.spring.dm.Activator
+                                .getDefault().getApplicationStartTime());
                 // Only initialize the procedure XML if the workbench advisor is
                 // a VizWorkbenchAdvisor meaning the CAVE display will be up
                 ProcedureXmlManager.inititializeAsync();
@@ -174,11 +171,9 @@ public class CAVEApplication implements IStandaloneComponent {
                         this.applicationDisplay, workbenchAdvisor);
             }
         } catch (Throwable t) {
-            t.printStackTrace();
-            MessageDialog
-                    .openError(
-                            null,
-                            "Error!", "Error instantiating workbench: " + t.getMessage()); //$NON-NLS-1$" +
+            statusHandler.fatal(
+                    "Error instantiating workbench: " + t.getLocalizedMessage(),
+                    t);
         } finally {
             cleanup();
         }
@@ -196,9 +191,12 @@ public class CAVEApplication implements IStandaloneComponent {
         try {
             // disconnect from JMS
             NotificationManagerJob.disconnect();
-        } catch (RuntimeException e) {
-            // catch any exceptions to ensure rest of finally block
-            // executes
+        } catch (@SuppressWarnings("squid:S1166")
+        RuntimeException e) {
+            /*
+             * catch any exceptions to ensure the rest of the finally block in
+             * the calling method executes
+             */
         }
 
         if (this.applicationDisplay != null) {
@@ -229,6 +227,7 @@ public class CAVEApplication implements IStandaloneComponent {
     protected ILogListener getEclipseLogListener() {
         return new ILogListener() {
             @Override
+            @SuppressWarnings("squid:S106")
             public void logging(IStatus status, String plugin) {
                 if (status.getMessage() != null) {
                     System.out.println(status.getMessage());
@@ -251,7 +250,7 @@ public class CAVEApplication implements IStandaloneComponent {
      * Creates the {@link Display} for use within the application. Uses
      * {@link PlatformUI#createDisplay()} in {@link CAVEApplication}
      * implementation
-     * 
+     *
      * @return The {@link Display}
      */
     protected Display createDisplay() {
@@ -265,7 +264,7 @@ public class CAVEApplication implements IStandaloneComponent {
      * Method called when the spring plugin fails to initialize,
      * {@link CAVEApplication} implementation will prompt user for what to do
      * (restart or exit)
-     * 
+     *
      * @return An {@link IApplication} exit value depending on action that
      *         should be taken due to spring initialization failure
      */
@@ -287,7 +286,7 @@ public class CAVEApplication implements IStandaloneComponent {
      * Initializes localization API for use within CAVE. Calls
      * {@link #initializeLocalization(boolean, boolean)} with true, false in
      * {@link CAVEApplication} implementation
-     * 
+     *
      * @throws Exception
      */
     protected void initializeLocalization() throws Exception {
@@ -298,11 +297,8 @@ public class CAVEApplication implements IStandaloneComponent {
             boolean checkAlertServer) throws Exception {
         PathManagerFactory.setAdapter(new CAVELocalizationAdapter());
         new LocalizationInitializer(promptUI, checkAlertServer).run();
-        FrameworkUtil
-                .getBundle(getClass())
-                .getBundleContext()
-                .registerService(IPathManager.class,
-                        PathManagerFactory.getPathManager(), null);
+        FrameworkUtil.getBundle(getClass()).getBundleContext().registerService(
+                IPathManager.class, PathManagerFactory.getPathManager(), null);
     }
 
     /**
@@ -311,8 +307,8 @@ public class CAVEApplication implements IStandaloneComponent {
     protected void initializeDataStoreFactory() {
         PypiesProperties pypiesProps = new PypiesProperties();
         pypiesProps.setAddress(VizApp.getPypiesServer());
-        DataStoreFactory.getInstance().setUnderlyingFactory(
-                new PyPiesDataStoreFactory(pypiesProps));
+        DataStoreFactory.getInstance()
+                .setUnderlyingFactory(new PyPiesDataStoreFactory(pypiesProps));
     }
 
     /**
@@ -327,7 +323,8 @@ public class CAVEApplication implements IStandaloneComponent {
     protected void registerProductAlerts() {
         // Register product observers
         ProductAlertObserver.addObserver(null, new MenuUpdater());
-        for (String plugin : RecordFactory.getInstance().getSupportedPlugins()) {
+        for (String plugin : RecordFactory.getInstance()
+                .getSupportedPlugins()) {
             // Create separate AutoUpdater per plugin
             ProductAlertObserver.addObserver(plugin, new AutoUpdater());
         }
@@ -341,8 +338,8 @@ public class CAVEApplication implements IStandaloneComponent {
 
         // If CorePlugin.getDefault() == null, assume running from a unit test
         if (CorePlugin.getDefault() != null) {
-            String dateString = ProgramArguments.getInstance().getString(
-                    "-time");
+            String dateString = ProgramArguments.getInstance()
+                    .getString("-time");
             if (dateString != null && !dateString.isEmpty()) {
                 try {
                     DateFormat dateParser = new SimpleDateFormat(
@@ -351,10 +348,9 @@ public class CAVEApplication implements IStandaloneComponent {
                     Date newSimTime = dateParser.parse(dateString);
                     timeValue = newSimTime.getTime();
                 } catch (ParseException e) {
-                    statusHandler
-                            .handle(Priority.WARN,
-                                    "Invalid argument specified for command-line parameter '-time'.",
-                                    e);
+                    statusHandler.warn(
+                            "Invalid argument specified for command-line parameter '-time'.",
+                            e);
                 }
             }
         }
@@ -370,13 +366,13 @@ public class CAVEApplication implements IStandaloneComponent {
 
     /**
      * Get the workbench advisor for the application
-     * 
+     *
      * @return the {@link WorkbenchAdvisor}
      */
     protected WorkbenchAdvisor getWorkbenchAdvisor() {
         return new VizWorkbenchAdvisor();
     }
-    
+
     @SuppressWarnings("restriction")
     protected void applyCssStyle(Display display) throws IOException {
         CAVEMode mode = CAVEMode.getMode();

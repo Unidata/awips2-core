@@ -59,24 +59,38 @@ import com.raytheon.uf.common.status.UFStatus.Priority;
  *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#    Engineer    Description
- * ------------ ---------- ----------- --------------------------
- * 02/12/2008              chammack    Initial Creation.
- * Oct 23, 2012 1322       djohnson    Allow test code in the same package to clear fileCache.
- * Jul 24, 2014 3378       bclement    cache implementation provided by localization adapter
- * Jul 25, 2014 3378       bclement    implements ILocalizationFileObserver
- * Sep 08, 2014 3592       randerso    Added single type listStaticFiles,
- *                                     getStaticLocalizationFile, and getStaticFile APIs
- * Feb 17, 2015 4137       reblum      no longer implements ILocalizationFileObserver
- * Aug 24, 2015 4393       njensen     Added field observer
- * Oct 14, 2015 4410       bsteffen    listStaticFiles will now merge different types.
- * Nov 12, 2015 4834       njensen     PathManager takeover of watching for localization file changes
- * Jan 28, 2016 4834       njensen     Pass along FileChangeType to old style observers
- * Jun 21, 2016 5695       njensen     Clear parent directories from cache on file add
- * Aug 15, 2016 5834       njensen     Reuse protected file level in fireListeners()
- * Jun 22, 2017 6339       njensen     listFiles() now has an eager filter
- * Aug 04, 2017 6379       njensen     Updated LocalizationFile constructor signature
- * Dec 07, 2017 6355       nabowle     Normalize observed paths that end with SEPARATOR.
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Feb 12, 2008           chammack  Initial Creation.
+ * Oct 23, 2012  1322     djohnson  Allow test code in the same package to clear
+ *                                  fileCache.
+ * Jul 24, 2014  3378     bclement  cache implementation provided by
+ *                                  localization adapter
+ * Jul 25, 2014  3378     bclement  implements ILocalizationFileObserver
+ * Sep 08, 2014  3592     randerso  Added single type listStaticFiles,
+ *                                  getStaticLocalizationFile, and getStaticFile
+ *                                  APIs
+ * Feb 17, 2015  4137     reblum    no longer implements
+ *                                  ILocalizationFileObserver
+ * Aug 24, 2015  4393     njensen   Added field observer
+ * Oct 14, 2015  4410     bsteffen  listStaticFiles will now merge different
+ *                                  types.
+ * Nov 12, 2015  4834     njensen   PathManager takeover of watching for
+ *                                  localization file changes
+ * Jan 28, 2016  4834     njensen   Pass along FileChangeType to old style
+ *                                  observers
+ * Jun 21, 2016  5695     njensen   Clear parent directories from cache on file
+ *                                  add
+ * Aug 15, 2016  5834     njensen   Reuse protected file level in
+ *                                  fireListeners()
+ * Jun 22, 2017  6339     njensen   listFiles() now has an eager filter
+ * Aug 04, 2017  6379     njensen   Updated LocalizationFile constructor
+ *                                  signature
+ * Dec 07, 2017  6355     nabowle   Normalize observed paths that end with
+ *                                  SEPARATOR.
+ * Oct 07, 2021  8673     randerso  Add logging to attempt to determine why
+ *                                  LocalizationFile.isNull() is returning true.
  *
  * </pre>
  *
@@ -254,8 +268,9 @@ public class PathManager implements IPathManager {
                 return file;
             }
         }
-        statusHandler.debug("getLocalizationFile is returning null for file(s): "
-            + Arrays.toString(files));
+        statusHandler
+                .debug("getLocalizationFile is returning null for file(s): "
+                        + Arrays.toString(files));
         return null;
     }
 
@@ -273,6 +288,21 @@ public class PathManager implements IPathManager {
             if (cached != null) {
                 if (!cached.isNull()) {
                     availableFiles.put(ctx, cached);
+                } else {
+                    StringBuilder sb = new StringBuilder(
+                            "LocalizationFile.isNull() returned true for: ");
+                    sb.append(cached);
+                    sb.append("\n[adapter=").append(cached.getAdapter());
+                    sb.append(" path=").append(cached.getPath());
+                    sb.append(" context=").append(cached.getContext());
+                    try {
+                        sb.append(" file=").append(cached.getFile(false));
+                    } catch (@SuppressWarnings("squid:S1166")
+                    LocalizationException e) {
+                        /* can only happen when getFile(true) is called */
+                    }
+                    sb.append(']');
+                    statusHandler.warn(sb.toString());
                 }
             } else {
                 ctxToCheck.add(ctx);
@@ -288,9 +318,10 @@ public class PathManager implements IPathManager {
                         name);
             } catch (LocalizationException e) {
                 // Error on server, no files will be returned
-                statusHandler
-                        .error("Error retrieving localization file metadata for "
-                                + name, e);
+                statusHandler.error(
+                        "Error retrieving localization file metadata for "
+                                + name,
+                        e);
             }
 
             if (entry != null) {

@@ -27,9 +27,10 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.attribute.PosixFilePermission;
 import java.nio.file.attribute.PosixFilePermissions;
+import java.util.Collections;
 import java.util.Date;
+import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
@@ -38,6 +39,8 @@ import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationType;
 import com.raytheon.uf.common.localization.exception.LocalizationException;
 import com.raytheon.uf.common.serialization.JAXBManager;
+import com.raytheon.uf.common.status.IUFStatusHandler;
+import com.raytheon.uf.common.status.UFStatus;
 import com.raytheon.uf.common.util.file.Files;
 
 /**
@@ -72,37 +75,47 @@ import com.raytheon.uf.common.util.file.Files;
  *
  * <pre>
  * SOFTWARE HISTORY
- * Date         Ticket#     Engineer    Description
- * ------------ ----------  ----------- --------------------------
- * Mar 27, 2008             njensen     Initial creation
- * May 01, 2008             chammack    Added Localization synchronization information
- * May 15, 2008 #878        chammack    Refactor
- * Mar 24, 2010 #2866       randerso    Removed conditional around call to retrieve.
- *                                      This was added as part of an effort to improve
- *                                      localization performance but caused updated
- *                                      files on the server not to be retrieved.
- * Jan 17, 2013 1412        djohnson    Add jaxbMarshal.
- * Apr 12, 2013 1903        rjpeter     Updated getFile to check parentFile for existence.
- * Jun 05, 2014 3301        njensen     Improved locking efficiency of read()
- * Sep 29, 2014 2975        njensen     Correct usage of mkDirs in getFile(boolean)
- * Feb 11, 2015 4108        randerso    Implemented hashCode()
- * Feb 24, 2015 3978        njensen     Changed openInputStream() return type to InputStream
- *                                       Removed read() method
- * Aug 18, 2015 3806        njensen     Implements ILocalizationFile, deprecated bad
- *                                       methods, extracted jaxb convenience logic
- * Aug 24, 2015 4393        njensen     Added IPathManager to constructor args
- * Aug 26, 2015 4691        njensen     Safely skip file locking on most read operations
- * Nov 12, 2015 4834        njensen     Remove ModifiableLocalizationFile
- *                                       Deprecated and changed add/removeFileUpdatedObserver()
- * Dec 03, 2015 4834        njensen     Updated for ILocalizationFile changes
- * Jan 07, 2016 4834        njensen     Filter notifications using deprecated ILocalizationFileObserver
- * Jan 15, 2016 4834        njensen     More advanced filtering of notifications
- * Jan 28, 2016 4834        njensen     Extracted compatibility logic for old ILocalizationFileObserver API
- * Apr 07, 2016 5540        njensen     Updated isAvailableOnServer() for compatibility with older servers
- * Jun 15, 2016 5695        njensen     Rewrote delete() to delegate to adapter
- * Aug 15, 2016 5834        njensen     Check protection level in openOutputStream()
- * Apr 26, 2017 6258        tgurney     Add default file and dir permissions
- * Aug 04, 2017 6379        njensen     Remove protected level concept
+ *
+ * Date          Ticket#  Engineer  Description
+ * ------------- -------- --------- --------------------------------------------
+ * Mar 27, 2008           njensen   Initial creation
+ * May 01, 2008           chammack  Added Localization synchronization
+ *                                  information
+ * May 15, 2008  878      chammack  Refactor
+ * Mar 24, 2010  2866     randerso  Removed conditional around call to retrieve.
+ *                                  This was added as part of an effort to
+ *                                  improve localization performance but caused
+ *                                  updated files on the server not to be
+ *                                  retrieved.
+ * Jan 17, 2013  1412     djohnson  Add jaxbMarshal.
+ * Apr 12, 2013  1903     rjpeter   Updated getFile to check parentFile for
+ *                                  existence.
+ * Jun 05, 2014  3301     njensen   Improved locking efficiency of read()
+ * Sep 29, 2014  2975     njensen   Correct usage of mkDirs in getFile(boolean)
+ * Feb 11, 2015  4108     randerso  Implemented hashCode()
+ * Feb 24, 2015  3978     njensen   Changed openInputStream() return type to
+ *                                  InputStream Removed read() method
+ * Aug 18, 2015  3806     njensen   Implements ILocalizationFile, deprecated bad
+ *                                  methods, extracted jaxb convenience logic
+ * Aug 24, 2015  4393     njensen   Added IPathManager to constructor args
+ * Aug 26, 2015  4691     njensen   Safely skip file locking on most read
+ *                                  operations
+ * Nov 12, 2015  4834     njensen   Remove ModifiableLocalizationFile Deprecated
+ *                                  and changed add/removeFileUpdatedObserver()
+ * Dec 03, 2015  4834     njensen   Updated for ILocalizationFile changes
+ * Jan 07, 2016  4834     njensen   Filter notifications using deprecated
+ *                                  ILocalizationFileObserver
+ * Jan 15, 2016  4834     njensen   More advanced filtering of notifications
+ * Jan 28, 2016  4834     njensen   Extracted compatibility logic for old
+ *                                  ILocalizationFileObserver API
+ * Apr 07, 2016  5540     njensen   Updated isAvailableOnServer() for
+ *                                  compatibility with older servers
+ * Jun 15, 2016  5695     njensen   Rewrote delete() to delegate to adapter
+ * Aug 15, 2016  5834     njensen   Check protection level in openOutputStream()
+ * Apr 26, 2017  6258     tgurney   Add default file and dir permissions
+ * Aug 04, 2017  6379     njensen   Remove protected level concept
+ * Oct 07, 2021  8673     randerso  Add logging to attempt to determine why
+ *                                  LocalizationFile.isNull() is returning true.
  *
  * </pre>
  *
@@ -111,20 +124,22 @@ import com.raytheon.uf.common.util.file.Files;
 
 public final class LocalizationFile
         implements Comparable<LocalizationFile>, ILocalizationFile {
+    private static final IUFStatusHandler statusHandler = UFStatus
+            .getHandler(LocalizationFile.class);
 
-    public static final Set<PosixFilePermission> FILE_PERMISSIONS = new HashSet<>();
+    // in octal: 0640
+    public static final Set<PosixFilePermission> FILE_PERMISSIONS = Collections
+            .unmodifiableSet(EnumSet.of(PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.GROUP_READ));
 
-    public static final Set<PosixFilePermission> DIR_PERMISSIONS = new HashSet<>();
-    static {
-        // in octal: 0640
-        FILE_PERMISSIONS.add(PosixFilePermission.OWNER_READ);
-        FILE_PERMISSIONS.add(PosixFilePermission.OWNER_WRITE);
-        FILE_PERMISSIONS.add(PosixFilePermission.GROUP_READ);
-        // directories have 0750
-        DIR_PERMISSIONS.addAll(FILE_PERMISSIONS);
-        DIR_PERMISSIONS.add(PosixFilePermission.OWNER_EXECUTE);
-        DIR_PERMISSIONS.add(PosixFilePermission.GROUP_EXECUTE);
-    }
+    // directories have 0750
+    public static final Set<PosixFilePermission> DIR_PERMISSIONS = Collections
+            .unmodifiableSet(EnumSet.of(PosixFilePermission.OWNER_READ,
+                    PosixFilePermission.OWNER_WRITE,
+                    PosixFilePermission.OWNER_EXECUTE,
+                    PosixFilePermission.GROUP_READ,
+                    PosixFilePermission.GROUP_EXECUTE));
 
     /**
      * the max file size of a localization file to attempt to read without
@@ -168,9 +183,9 @@ public final class LocalizationFile
                 && file == null;
     }
 
-    LocalizationFile(ILocalizationAdapter adapter,
-            LocalizationContext context, File file, Date date, String path,
-            String checkSum, boolean isDirectory) {
+    LocalizationFile(ILocalizationAdapter adapter, LocalizationContext context,
+            File file, Date date, String path, String checkSum,
+            boolean isDirectory) {
         this.adapter = adapter;
         this.context = context;
         this.file = file;
@@ -178,6 +193,19 @@ public final class LocalizationFile
         this.fileTimestamp = date;
         this.isDirectory = isDirectory;
         this.path = LocalizationUtil.getSplitUnique(path);
+
+        if (this.isNull()) {
+            StackTraceElement[] stackTrace = Thread.currentThread()
+                    .getStackTrace();
+            StringBuilder stackTraceBuilder = new StringBuilder(
+                    "LocalizationFile.isNull() returns true in constructor\n");
+            for (StackTraceElement traceElement : stackTrace) {
+                stackTraceBuilder.append("\tat ").append(traceElement)
+                        .append('\n');
+            }
+
+            statusHandler.warn(stackTraceBuilder.toString());
+        }
     }
 
     /**
@@ -187,7 +215,7 @@ public final class LocalizationFile
      * @return the file time stamp, may be null if file doesn't exist yet
      */
     @Override
-    public final Date getTimeStamp() {
+    public Date getTimeStamp() {
         return fileTimestamp;
     }
 
@@ -198,7 +226,7 @@ public final class LocalizationFile
      *         {@value #DIRECTORY_CHECKSUM}
      */
     @Override
-    public final String getCheckSum() {
+    public String getCheckSum() {
         return fileCheckSum;
     }
 
@@ -237,7 +265,7 @@ public final class LocalizationFile
              * necessary, and will fail loudly if it cannot.
              */
             try {
-                if (isDirectory) {
+                if (isDirectory && !file.exists()) {
                     Files.createDirectories(file.toPath(), PosixFilePermissions
                             .asFileAttribute(DIR_PERMISSIONS));
                 } else if (!file.getParentFile().exists()) {
@@ -246,7 +274,10 @@ public final class LocalizationFile
                                     .asFileAttribute(DIR_PERMISSIONS));
                 }
             } catch (IOException e) {
-                // ignore
+                statusHandler.error(
+                        "Error creating directories for "
+                                + (isDirectory ? file : file.getParentFile()),
+                        e);
             }
             if (isAvailableOnServer()) {
                 adapter.retrieve(this);
@@ -281,7 +312,9 @@ public final class LocalizationFile
     public File getFile() {
         try {
             return getFile(true);
-        } catch (LocalizationException e) {
+        } catch (@SuppressWarnings("squid:S1166")
+        LocalizationException e) {
+            // just return the file path if it could not be retrieved
             return adapter.getPath(context, path);
         }
     }
@@ -355,7 +388,8 @@ public final class LocalizationFile
                             bais.reset();
                             return bais;
                         }
-                    } catch (Exception e) {
+                    } catch (@SuppressWarnings("squid:S1166")
+                    Exception e) {
                         // ignore, fallback to the other behavior
                     }
                 }
@@ -433,8 +467,12 @@ public final class LocalizationFile
      * @return the context
      */
     @Override
-    public final LocalizationContext getContext() {
+    public LocalizationContext getContext() {
         return context;
+    }
+
+    public ILocalizationAdapter getAdapter() {
+        return adapter;
     }
 
     /**
@@ -463,7 +501,7 @@ public final class LocalizationFile
      * @return true if the file is actually a directory
      */
     @Override
-    public final boolean isDirectory() {
+    public boolean isDirectory() {
         return isDirectory;
     }
 
@@ -484,9 +522,14 @@ public final class LocalizationFile
             String checksum = "";
             try {
                 checksum = Checksum.getMD5Checksum(file);
-            } catch (IOException e) {
-                // Ignore
+            } catch (@SuppressWarnings("squid:S1166")
+            IOException e) {
+                /*
+                 * if checksum can't be computed just save the file
+                 * unconditionally
+                 */
             }
+
             // Check if file differs from server file
             if (!checksum.equals(fileCheckSum)) {
                 return adapter.save(this);
@@ -508,12 +551,12 @@ public final class LocalizationFile
      * @return the file path
      */
     @Deprecated
-    public final String getName() {
+    public String getName() {
         return getPath();
     }
 
     @Override
-    public final String getPath() {
+    public String getPath() {
         return path;
     }
 
@@ -556,9 +599,16 @@ public final class LocalizationFile
         synchronized (observers) {
             ILocalizationPathObserver old = observers.put(observer, pathObs);
             if (old != null) {
-                System.err.println(
-                        "Developer error: added the same observer to the same file twice");
-                new Throwable().printStackTrace();
+                StackTraceElement[] stackTrace = Thread.currentThread()
+                        .getStackTrace();
+                StringBuilder stackTraceBuilder = new StringBuilder(
+                        "Developer error: added the same observer to the same file twice\n");
+                for (StackTraceElement traceElement : stackTrace) {
+                    stackTraceBuilder.append("\tat ").append(traceElement)
+                            .append('\n');
+                }
+
+                statusHandler.warn(stackTraceBuilder.toString());
             }
         }
 
