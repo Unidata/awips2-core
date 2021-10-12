@@ -20,7 +20,6 @@
 package com.raytheon.uf.common.localization;
 
 import java.util.Arrays;
-import java.util.function.Predicate;
 
 import com.raytheon.uf.common.localization.LocalizationContext.LocalizationLevel;
 
@@ -82,8 +81,8 @@ public class LocalizationUtil {
     public static String[] splitUnique(String filePath) {
         String[] split = filePath.split("[/\\\\]"); // Win32
 
-        String[] parts = Arrays.stream(split)
-                .filter(Predicate.not(String::isEmpty)).toArray(String[]::new);
+        String[] parts = Arrays.stream(split).filter(item -> !item.isEmpty())
+                .toArray(String[]::new);
 
         return parts;
     }
