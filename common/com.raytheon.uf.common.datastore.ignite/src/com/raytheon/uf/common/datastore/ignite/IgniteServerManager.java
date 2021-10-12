@@ -22,6 +22,8 @@ import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
 import org.slf4j.LoggerFactory;
 
+import com.raytheon.uf.common.datastore.ignite.AbstractIgniteManager;
+
 /**
  * Manager for an ignite server instance.
  *

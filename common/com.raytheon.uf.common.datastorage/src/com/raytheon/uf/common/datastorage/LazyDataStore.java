@@ -20,11 +20,13 @@
 package com.raytheon.uf.common.datastorage;
 
 import java.io.FileNotFoundException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
 
 /**
  * Lazily-created {@link IDataStore}. Underlying datastore is not created until
@@ -37,12 +39,12 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Dec 9, 2020  8299      tgurney     Initial creation
+ * Sep 23, 2021 8608      mapeters    Add metadata identifier handling
  *
  * </pre>
  *
  * @author tgurney
  */
-
 public abstract class LazyDataStore implements IDataStore {
 
     private volatile IDataStore delegate;
@@ -61,14 +63,30 @@ public abstract class LazyDataStore implements IDataStore {
     }
 
     @Override
-    public void addDataRecord(IDataRecord dataset, StorageProperties properties)
-            throws StorageException {
-        getDelegate().addDataRecord(dataset, properties);
+    public void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier,
+            StorageProperties properties) throws StorageException {
+        getDelegate().addDataRecord(dataset, metadataIdentifier, properties);
     }
 
     @Override
-    public void addDataRecord(IDataRecord dataset) throws StorageException {
-        getDelegate().addDataRecord(dataset);
+    public void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier) throws StorageException {
+        getDelegate().addDataRecord(dataset, metadataIdentifier);
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers,
+            StorageProperties properties) throws StorageException {
+        getDelegate().addDataRecord(dataset, metadataIdentifiers, properties);
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers)
+            throws StorageException {
+        getDelegate().addDataRecord(dataset, metadataIdentifiers);
     }
 
     @Override

@@ -26,6 +26,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.Date;
@@ -45,7 +46,6 @@ import javax.persistence.PersistenceException;
 
 import org.apache.commons.beanutils.PropertyUtils;
 import org.hibernate.Criteria;
-import org.hibernate.QueryException;
 import org.hibernate.Session;
 import org.hibernate.Transaction;
 import org.hibernate.criterion.Projections;
@@ -66,6 +66,8 @@ import com.raytheon.uf.common.datastorage.IDataStore.StoreOp;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
+import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
+import com.raytheon.uf.common.datastorage.audit.MetadataStatus;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.localization.ILocalizationFile;
 import com.raytheon.uf.common.localization.IPathManager;
@@ -134,6 +136,9 @@ import com.raytheon.uf.edex.database.query.DatabaseQuery;
  * Mar 08, 2018  6961     tgurney     Update purge versionsToKeep handling,
  *                                    treat 0 as "keep no data"
  * Mar 25, 2020  8103     randerso    Fixed ContraintViolationException handling
+ * Sep 23, 2021  8608     mapeters    Add auditing and {@link #getPlugin()}, re-write
+ *                                    {@link #getMetadata(String)} to work with data objects
+ *                                    that don't have a dataURI table column
  *
  * </pre>
  *
@@ -158,9 +163,6 @@ public abstract class PluginDao extends CoreDao {
     protected static final int COMMIT_INTERVAL = 100;
 
     protected static final ConcurrentMap<Class<?>, DuplicateCheckStat> pluginDupCheckRate = new ConcurrentHashMap<>();
-
-    // Map for tracking which PDOs store dataURI as a column in the DB.
-    protected static final ConcurrentMap<Class<?>, Boolean> pluginDataURIColumn = new ConcurrentHashMap<>();
 
     /**
      * The base path of the folder containing HDF5 data for the owning plugin
@@ -243,9 +245,7 @@ public abstract class PluginDao extends CoreDao {
         int dupCommitCount = 0;
         int noDupCommitCount = 0;
 
-        Session session = null;
-        try {
-            session = getSession();
+        try (Session session = getSession()) {
             // process them all in fixed sized batches.
             for (int i = 0; i < objects.size(); i += COMMIT_INTERVAL) {
                 List<PluginDataObject> subList = objects.subList(i,
@@ -402,9 +402,7 @@ public abstract class PluginDao extends CoreDao {
             dupStat.updateRate(
                     noDupCommitCount / (noDupCommitCount + dupCommitCount));
         } finally {
-            if (session != null) {
-                session.close();
-            }
+            auditMetadataStorageStatus(persisted, duplicates, objects);
         }
 
         if (!duplicates.isEmpty()) {
@@ -415,29 +413,60 @@ public abstract class PluginDao extends CoreDao {
                 }
             }
         }
+
         return persisted.toArray(new PluginDataObject[persisted.size()]);
+    }
+
+    /**
+     * Audit the metadata storage status of the given PDOs.
+     *
+     * @param persisted
+     *            PDOs that successfully persisted
+     * @param duplicates
+     *            PDOs that were not persisted due to being duplicates
+     * @param all
+     *            all PDOs that were attempted to be persisted
+     */
+    @SuppressWarnings("rawtypes")
+    private void auditMetadataStorageStatus(
+            Collection<? extends PersistableDataObject> persisted,
+            Collection<? extends PersistableDataObject> duplicates,
+            Collection<? extends PersistableDataObject> all) {
+        Map<String, MetadataStatus> traceIdToStatuses = new HashMap<>();
+        persisted.forEach(pdo -> traceIdToStatuses.put(pdo.getTraceId(),
+                MetadataStatus.SUCCESS));
+        duplicates.forEach(pdo -> traceIdToStatuses.put(pdo.getTraceId(),
+                MetadataStatus.DUPLICATE));
+        for (PersistableDataObject<?> pdo : all) {
+            String traceId = pdo.getTraceId();
+            traceIdToStatuses.putIfAbsent(traceId, MetadataStatus.FAILURE);
+        }
+        DataStorageAuditerContainer.getInstance().getAuditer()
+                .processMetadataStatuses(traceIdToStatuses);
+    }
+
+    private boolean hasDataUriColumn(Class<?> pdoClazz) {
+        return getSessionFactory().getMetamodel().entity(pdoClazz)
+                .getAttributes().stream()
+                .anyMatch(attr -> PluginDataObject.DATAURI_ID
+                        .equals(attr.getName()));
     }
 
     private void populateDatauriCriteria(Criteria criteria,
             PluginDataObject pdo) throws PluginException {
         Class<? extends PluginDataObject> pdoClazz = pdo.getClass();
-        Boolean hasDataURIColumn = pluginDataURIColumn.get(pdoClazz);
-        if (!Boolean.FALSE.equals(hasDataURIColumn)) {
-            try {
-                getSessionFactory().getClassMetadata(pdoClazz)
-                        .getPropertyType("dataURI");
-                criteria.add(Restrictions.eq("dataURI", pdo.getDataURI()));
-                return;
-            } catch (QueryException e) {
-                hasDataURIColumn = Boolean.FALSE;
-                pluginDataURIColumn.put(pdoClazz, hasDataURIColumn);
-            }
+
+        if (hasDataUriColumn(pdoClazz)) {
+            criteria.add(Restrictions.eq(PluginDataObject.DATAURI_ID,
+                    pdo.getDataURI()));
+            return;
         }
+
         // This means dataURI is not a column.
         for (Entry<String, Object> uriEntry : DataURIUtil.createDataURIMap(pdo)
                 .entrySet()) {
             String key = uriEntry.getKey();
-            if ("pluginName".equals(key)) {
+            if (DataURIUtil.PLUGIN_NAME_KEY.equals(key)) {
                 // this is not in the db, only used internally.
                 continue;
             }
@@ -448,7 +477,8 @@ public abstract class PluginDao extends CoreDao {
                 try {
                     value = PropertyUtils.getProperty(pdo, key);
                 } catch (Exception e) {
-                    throw new PluginException(e);
+                    throw new PluginException("Error getting property " + key
+                            + " from " + pdoClazz.getName(), e);
                 }
             }
             if (value == null) {
@@ -543,6 +573,7 @@ public abstract class PluginDao extends CoreDao {
                     // add exceptions to a list for aggregation
                     exceptions.addAll(Arrays.asList(s.getExceptions()));
                 } catch (StorageException e) {
+                    exceptions.add(e);
                     logger.error("Error persisting to HDF5", e);
                 }
             }
@@ -552,6 +583,7 @@ public abstract class PluginDao extends CoreDao {
                     // add exceptions to a list for aggregation
                     exceptions.addAll(Arrays.asList(s.getExceptions()));
                 } catch (StorageException e) {
+                    exceptions.add(e);
                     logger.error("Error persisting replace records to HDF5", e);
                 }
             }
@@ -588,25 +620,38 @@ public abstract class PluginDao extends CoreDao {
      * Retrieves the complete set of metadata from the database for the record
      * with the provided dataURI
      *
-     * @param dataURI
+     * @param dataUri
      *            The dataURI of the record for which to retrieve metadata
      * @return The record populated with a complete set of metadata
      * @throws DataAccessLayerException
      *             If problems occur while interacting with the database
      */
-    @SuppressWarnings("unchecked")
-    public PluginDataObject getMetadata(String dataURI) throws PluginException {
-        List<PluginDataObject> result;
-        try {
-            result = (List<PluginDataObject>) queryBySingleCriteria("dataURI",
-                    dataURI);
-        } catch (DataAccessLayerException e) {
-            throw new PluginException("Error getting metadata", e);
+    public PluginDataObject getMetadata(String dataUri) throws PluginException {
+        DatabaseQuery dbQuery = new DatabaseQuery(getDaoClass());
+        if (hasDataUriColumn(getDaoClass())) {
+            dbQuery.addQueryParam(PluginDataObject.DATAURI_ID, dataUri);
+        } else {
+            Map<String, Object> dataUriMap = DataURIUtil
+                    .createDataURIMap(dataUri);
+            String plugin = (String) dataUriMap
+                    .remove(PluginDataObject.PLUGIN_NAME_ID);
+            if (!getPlugin().equals(plugin)) {
+                logger.error("Data URI plugin '" + plugin
+                        + "' does not match DAO plugin '" + getPlugin() + "'");
+            }
+
+            dataUriMap.forEach((k, v) -> dbQuery.addQueryParam(k, v));
         }
-        if (result.isEmpty()) {
+
+        PluginDataObject[] pdos = getMetadata(dbQuery);
+        if (pdos == null || pdos.length == 0) {
             return null;
         }
-        return result.get(0);
+        if (pdos.length > 1) {
+            logger.error("Multiple metadata objects retrieved for '" + dataUri
+                    + "', using first: " + Arrays.toString(pdos));
+        }
+        return pdos[0];
     }
 
     /**
@@ -671,8 +716,7 @@ public abstract class PluginDao extends CoreDao {
      */
     public IDataRecord[] getHDF5Data(PluginDataObject object, int tile)
             throws PluginException {
-        return getHDF5Data(Arrays.asList(new PluginDataObject[] { object }),
-                tile).get(0);
+        return getHDF5Data(Arrays.asList(object), tile).get(0);
     }
 
     /**
@@ -1863,6 +1907,13 @@ public abstract class PluginDao extends CoreDao {
      */
     public void delete(final List<PluginDataObject> objs) {
         super.deleteAll(objs);
+    }
+
+    /**
+     * @return the name of the plugin this DAO is for
+     */
+    public String getPlugin() {
+        return pluginName;
     }
 
     public static PurgeRuleSet getPurgeRulesForPlugin(String pluginName) {

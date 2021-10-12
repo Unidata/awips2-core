@@ -24,6 +24,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -36,25 +37,38 @@ import java.util.StringJoiner;
 import java.util.TreeSet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.cache.integration.CacheLoader;
 import javax.cache.processor.EntryProcessorException;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.IgniteCache;
+import org.apache.ignite.IgniteLogger;
 import org.apache.ignite.cache.query.QueryCursor;
 import org.apache.ignite.cache.query.SqlFieldsQuery;
 import org.apache.ignite.configuration.CacheConfiguration;
+import org.apache.ignite.lang.IgniteCallable;
+import org.apache.ignite.resources.IgniteInstanceResource;
+import org.apache.ignite.resources.LoggerResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
+import com.raytheon.uf.common.datastorage.DuplicateRecordStorageException;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageProperties;
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.StorageStatus;
+import com.raytheon.uf.common.datastorage.audit.DataId;
+import com.raytheon.uf.common.datastorage.audit.DataStatus;
+import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
+import com.raytheon.uf.common.datastorage.audit.MetadataAndDataId;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.datastore.ignite.processor.GetDatasetNamesProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.RetrieveProcessor;
 import com.raytheon.uf.common.datastore.ignite.processor.StoreProcessor;
@@ -84,6 +98,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Jun 10, 2021  8450     mapeters  Make cache ops retry on error/timeout and be
  *                                  effectively synchronous, close query
  *                                  cursors, add extra logging
+ * Sep 23, 2021  8608     mapeters  Add auditing to prevent metadata/data from
+ *                                  getting out of sync
  *
  * </pre>
  *
@@ -105,16 +121,19 @@ public class IgniteDataStore implements IDataStore {
 
     private final String path;
 
+    protected final IgniteClientManager igniteClientManager;
+
     protected final IgniteCacheAccessor<DataStoreKey, DataStoreValue> igniteCacheAccessor;
 
-    protected Map<String, List<IDataRecord>> recordsByGroup = new HashMap<>();
+    protected Map<String, List<RecordAndMetadata>> recordsByGroup = new HashMap<>();
 
     private IDataStore throughDataStore;
 
-    public IgniteDataStore(File file,
+    public IgniteDataStore(File file, IgniteClientManager igniteClientManager,
             IgniteCacheAccessor<DataStoreKey, DataStoreValue> igniteCacheAccessor,
             IDataStore throughDataStore) {
         path = file.getPath();
+        this.igniteClientManager = igniteClientManager;
         this.igniteCacheAccessor = igniteCacheAccessor;
         this.throughDataStore = throughDataStore;
     }
@@ -130,23 +149,38 @@ public class IgniteDataStore implements IDataStore {
 
     @Override
     public void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier,
             StorageProperties properties) {
-        dataset.setProperties(properties);
-        addDataRecord(dataset);
+        addDataRecord(dataset, Set.of(metadataIdentifier), properties);
     }
 
     @Override
-    public void addDataRecord(IDataRecord dataset) {
+    public void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier) {
+        addDataRecord(dataset, Set.of(metadataIdentifier));
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers,
+            StorageProperties properties) {
+        dataset.setProperties(properties);
+        addDataRecord(dataset, metadataIdentifiers);
+    }
+
+    @Override
+    public void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers) {
         if (StoreProcessor.isPartial(dataset)) {
             fastStore = false;
         }
         String group = dataset.getGroup();
-        List<IDataRecord> records = recordsByGroup.get(group);
+        List<RecordAndMetadata> records = recordsByGroup.get(group);
         if (records == null) {
             records = new ArrayList<>();
             recordsByGroup.put(group, records);
         }
-        records.add(dataset);
+        records.add(new RecordAndMetadata(dataset, metadataIdentifiers));
     }
 
     @Override
@@ -159,14 +193,34 @@ public class IgniteDataStore implements IDataStore {
         IPerformanceTimer timer = TimeUtil.getPerformanceTimer();
         timer.start();
 
+        Map<String, MetadataAndDataId> traceIdToDataInfo = new HashMap<>();
+
         long totalSizeInBytes = 0L;
-        for (List<IDataRecord> records : recordsByGroup.values()) {
-            for (IDataRecord record : records) {
+        for (Entry<String, List<RecordAndMetadata>> groupRecordsEntry : recordsByGroup
+                .entrySet()) {
+            String group = groupRecordsEntry.getKey();
+            for (RecordAndMetadata rm : groupRecordsEntry.getValue()) {
+                IDataRecord record = rm.getRecord();
+                Set<IMetadataIdentifier> metaIds = rm.getMetadata();
+                for (IMetadataIdentifier metaId : metaIds) {
+                    traceIdToDataInfo
+                            .computeIfAbsent(metaId.getTraceId(),
+                                    traceId -> new MetadataAndDataId(metaId,
+                                            new DataId(traceId, path, group)))
+                            .getDataId().addDataset(record.getName());
+                }
                 totalSizeInBytes += record.getSizeInBytes();
             }
         }
-        logger.info("Storing " + path + " (fastStore=" + fastStore
-                + ", storeOp=" + storeOp + ", size=" + totalSizeInBytes + "B)");
+        String logMsg = "Storing " + path + " (fastStore=" + fastStore
+                + ", storeOp=" + storeOp + ", size=" + totalSizeInBytes + "B)";
+        logger.info(logMsg);
+
+        if (!traceIdToDataInfo.isEmpty()) {
+            DataStorageAuditerContainer.getInstance().getAuditer()
+                    .processDataIds(traceIdToDataInfo.values()
+                            .toArray(MetadataAndDataId[]::new));
+        }
 
         StorageStatus storageStatus;
         boolean doingFastStore = fastStore && storeOp != StoreOp.APPEND;
@@ -183,39 +237,54 @@ public class IgniteDataStore implements IDataStore {
             long[] indexOfAppend = null;
 
             StoreProcessor processor = new StoreProcessor(storeOp);
-            for (Entry<String, List<IDataRecord>> entry : recordsByGroup
-                    .entrySet()) {
-                DataStoreKey key = new DataStoreKey(path, entry.getKey());
-                Map<String, Object> corrObjs = unsetCorrelationObjects(
-                        entry.getValue());
-                Object[] records = entry.getValue().toArray();
-                StorageStatus status;
-                try {
-                    status = igniteCacheAccessor.doAsyncCacheOp(
-                            c -> c.invokeAsync(key, processor, records));
-                    if (status.hasExceptions()) {
-                        for (StorageException e : status.getExceptions()) {
-                            resetCorrelationObjects(corrObjs, e);
-                            exceptions.add(e);
-                        }
-                    }
-                    long[] moreIndices = status.getIndexOfAppend();
-                    if (moreIndices != null) {
-                        if (indexOfAppend == null) {
-                            indexOfAppend = moreIndices;
+            Set<String> successfulGroups = new HashSet<>();
+            Set<String> duplicateGroups = new HashSet<>();
+            try {
+                for (Entry<String, List<RecordAndMetadata>> entry : recordsByGroup
+                        .entrySet()) {
+                    String group = entry.getKey();
+                    DataStoreKey key = new DataStoreKey(path, group);
+                    Map<String, Object> corrObjs = unsetCorrelationObjects2(
+                            entry.getValue());
+                    Object[] records = entry.getValue().toArray();
+                    StorageStatus status;
+                    try {
+                        status = igniteCacheAccessor.doAsyncCacheOp(
+                                c -> c.invokeAsync(key, processor, records));
+                        if (status.hasExceptions()) {
+                            for (StorageException e : status.getExceptions()) {
+                                resetCorrelationObjects(corrObjs, e);
+                                exceptions.add(e);
+                                if (e instanceof DuplicateRecordStorageException) {
+                                    duplicateGroups.add(group);
+                                }
+                            }
                         } else {
-                            int oldLength = indexOfAppend.length;
-                            indexOfAppend = Arrays.copyOf(indexOfAppend,
-                                    oldLength + moreIndices.length);
-                            System.arraycopy(moreIndices, 0, indexOfAppend,
-                                    oldLength, moreIndices.length);
+                            successfulGroups.add(group);
                         }
+                        long[] moreIndices = status.getIndexOfAppend();
+                        if (moreIndices != null) {
+                            if (indexOfAppend == null) {
+                                indexOfAppend = moreIndices;
+                            } else {
+                                int oldLength = indexOfAppend.length;
+                                indexOfAppend = Arrays.copyOf(indexOfAppend,
+                                        oldLength + moreIndices.length);
+                                System.arraycopy(moreIndices, 0, indexOfAppend,
+                                        oldLength, moreIndices.length);
+                            }
+                        }
+                    } catch (DuplicateRecordStorageException e) {
+                        resetCorrelationObjects(corrObjs, e);
+                        exceptions.add(e);
+                        duplicateGroups.add(group);
+                    } catch (StorageException e) {
+                        resetCorrelationObjects(corrObjs, e);
+                        exceptions.add(e);
                     }
-
-                } catch (StorageException e) {
-                    resetCorrelationObjects(corrObjs, e);
-                    exceptions.add(e);
                 }
+            } finally {
+                auditDataStatuses(successfulGroups, duplicateGroups);
             }
             recordsByGroup.clear();
 
@@ -228,12 +297,22 @@ public class IgniteDataStore implements IDataStore {
 
         timer.stop();
         long time = timer.getElapsedTime();
-        perfLog.logDuration("Storing " + path, time);
+        perfLog.logDuration(logMsg, time);
         if (time > 10_000) {
             logger.warn("Storing " + path + " took " + time + " ms");
         }
 
         return storageStatus;
+    }
+
+    /**
+     * See {@link #unsetCorrelationObjects}.
+     */
+    protected Map<String, Object> unsetCorrelationObjects2(
+            List<RecordAndMetadata> records) {
+        return unsetCorrelationObjects(
+                records.stream().map(RecordAndMetadata::getRecord)
+                        .collect(Collectors.toList()));
     }
 
     /**
@@ -298,11 +377,11 @@ public class IgniteDataStore implements IDataStore {
      * guarantees the existing data will not be overwritten unless this is a
      * REPLACE operation.
      *
-     * Note that this method does various cache key-value operations here
-     * instead of using an entry processor, because a processor automatically
-     * tries to read through the value from the underlying datastore if it is
-     * not in the cache. That is unnecessary for the common case and hurts
-     * performance.
+     * Note that this method uses {@link Ignite#compute()} calls and various
+     * cache key-value operations here instead of using an entry processor,
+     * because a processor automatically tries to read through the value from
+     * the underlying datastore if it is not in the cache. That is unnecessary
+     * for the common case and hurts performance.
      *
      * @param storeOp
      * @return
@@ -313,36 +392,78 @@ public class IgniteDataStore implements IDataStore {
         List<StorageException> exceptions = new ArrayList<>();
         result.setOperationPerformed(storeOp);
 
-        for (Entry<String, List<IDataRecord>> entry : recordsByGroup
-                .entrySet()) {
-            Map<String, Object> corrObjs = unsetCorrelationObjects(
-                    entry.getValue());
-            DataStoreKey key = new DataStoreKey(path, entry.getKey());
-            DataStoreValue value = new DataStoreValue(entry.getValue());
-            try {
-                if (storeOp == StoreOp.REPLACE) {
-                    igniteCacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
-                } else {
-                    DataStoreValue previous = igniteCacheAccessor.doAsyncCacheOp(
-                            c -> c.getAndPutIfAbsentAsync(key, value));
-                    if (previous != null) {
-                        List<IDataRecord> updated = recordsByGroup
-                                .get(entry.getKey());
-                        DataStoreValue mergedValue = StoreProcessor
-                                .merge(previous, updated, storeOp, result);
-                        igniteCacheAccessor
-                                .doAsyncCacheOp(c -> c.putAsync(key, mergedValue));
+        Set<String> successfulGroups = new HashSet<>();
+        Set<String> duplicateGroups = new HashSet<>();
+        try {
+            for (Entry<String, List<RecordAndMetadata>> entry : recordsByGroup
+                    .entrySet()) {
+                String group = entry.getKey();
+                Map<String, Object> corrObjs = unsetCorrelationObjects2(
+                        entry.getValue());
+                DataStoreKey key = new DataStoreKey(path, group);
+                DataStoreValue value = new DataStoreValue(entry.getValue());
+                try {
+                    if (storeOp == StoreOp.REPLACE) {
+                        String cacheName = igniteCacheAccessor.getCacheName();
+                        igniteClientManager.doVoidIgniteOp(
+                                ignite -> ignite.compute().affinityCall(
+                                        cacheName, key, new FastReplaceCallable(
+                                                cacheName, key, value)));
+                    } else {
+                        DataStoreValue previous = igniteCacheAccessor
+                                .doAsyncCacheOp(c -> c
+                                        .getAndPutIfAbsentAsync(key, value));
+                        if (previous != null) {
+                            List<RecordAndMetadata> updated = recordsByGroup
+                                    .get(group);
+                            DataStoreValue mergedValue = StoreProcessor.merge(
+                                    Arrays.asList(
+                                            previous.getRecordsAndMetadata()),
+                                    updated, storeOp, result);
+                            igniteCacheAccessor.doAsyncCacheOp(
+                                    c -> c.putAsync(key, mergedValue));
+                        }
                     }
+                    successfulGroups.add(group);
+                } catch (DuplicateRecordStorageException e) {
+                    resetCorrelationObjects(corrObjs, e);
+                    exceptions.add(e);
+                    duplicateGroups.add(group);
+                } catch (StorageException e) {
+                    resetCorrelationObjects(corrObjs, e);
+                    exceptions.add(e);
                 }
-            } catch (StorageException e) {
-                resetCorrelationObjects(corrObjs, e);
-                exceptions.add(e);
             }
+        } finally {
+            auditDataStatuses(successfulGroups, duplicateGroups);
         }
 
         result.setExceptions(exceptions.toArray(new StorageException[0]));
         recordsByGroup.clear();
         return result;
+    }
+
+    private void auditDataStatuses(Set<String> successfulGroups,
+            Set<String> duplicateGroups) {
+        Map<String, DataStatus> traceIdsToStatus = new HashMap<>();
+        for (Entry<String, List<RecordAndMetadata>> groupRecordsEntry : recordsByGroup
+                .entrySet()) {
+            String group = groupRecordsEntry.getKey();
+            if (successfulGroups.contains(group)) {
+                continue;
+            }
+
+            DataStatus status = duplicateGroups.contains(group)
+                    ? DataStatus.DUPLICATE_SYNC
+                    : DataStatus.FAILURE_SYNC;
+            for (RecordAndMetadata rm : groupRecordsEntry.getValue()) {
+                for (IMetadataIdentifier metaId : rm.getMetadata()) {
+                    traceIdsToStatus.put(metaId.getTraceId(), status);
+                }
+            }
+        }
+        DataStorageAuditerContainer.getInstance().getAuditer()
+                .processDataStatuses(traceIdsToStatus);
     }
 
     @Override
@@ -690,7 +811,8 @@ public class IgniteDataStore implements IDataStore {
             }
             logger.info("Deleting " + keysToDelete.size() + " keys for path: "
                     + path);
-            igniteCacheAccessor.doAsyncCacheOp(c -> c.removeAllAsync(keysToDelete));
+            igniteCacheAccessor
+                    .doAsyncCacheOp(c -> c.removeAllAsync(keysToDelete));
         } else {
             SqlFieldsQuery query = new SqlFieldsQuery(
                     "delete from DataStoreValue where path = ?");
@@ -707,4 +829,80 @@ public class IgniteDataStore implements IDataStore {
         perfLog.logDuration(msg, timer.getElapsedTime());
     }
 
+    private static class FastReplaceCallable implements IgniteCallable<Object> {
+
+        private static final long serialVersionUID = 1L;
+
+        private static final Map<DataStoreKey, Object> locks = new LinkedHashMap<DataStoreKey, Object>() {
+
+            private static final long serialVersionUID = 1L;
+
+            @Override
+            protected boolean removeEldestEntry(
+                    Map.Entry<DataStoreKey, Object> eldest) {
+                return size() > 256;
+            }
+        };
+
+        @LoggerResource
+        private IgniteLogger logger;
+
+        private IgniteCacheAccessor<DataStoreKey, DataStoreValue> cacheAccessor;
+
+        private String cacheName;
+
+        private DataStoreKey key;
+
+        private DataStoreValue value;
+
+        public FastReplaceCallable(String cacheName, DataStoreKey key,
+                DataStoreValue value) {
+            this.cacheName = cacheName;
+            this.key = key;
+            this.value = value;
+        }
+
+        @IgniteInstanceResource
+        public void setIgnite(Ignite ignite) {
+            this.cacheAccessor = new IgniteServerManager(ignite)
+                    .getCacheAccessor(cacheName);
+        }
+
+        @Override
+        public Object call() throws StorageException {
+            Object lock = getLock(key);
+            /*
+             * A different thread could put a different value for this key in
+             * between the get and put cache operations here. In that case, the
+             * trace IDs in that thread's value could be lost. Synchronize to
+             * prevent this.
+             */
+            synchronized (lock) {
+                DataStoreValue prevValue = null;
+                try {
+                    prevValue = cacheAccessor.doAsyncCacheOp(
+                            cache -> cache.withSkipStore().getAsync(key));
+                } catch (StorageException e) {
+                    logger.error("Error loading previous cache value for: "
+                            + cacheName + ", " + key, e);
+                }
+
+                if (prevValue != null) {
+                    IgniteUtils.updateMetadata(value,
+                            Arrays.asList(prevValue.getRecordsAndMetadata()));
+                }
+
+                cacheAccessor.doAsyncCacheOp(c -> c.putAsync(key, value));
+            }
+
+            // Just a Callable so we can throw an exception
+            return null;
+        }
+
+        private static Object getLock(DataStoreKey key) {
+            synchronized (locks) {
+                return locks.computeIfAbsent(key, k -> new Object());
+            }
+        }
+    }
 }

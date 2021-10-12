@@ -51,6 +51,7 @@ import com.raytheon.uf.common.datastorage.records.FloatDataRecord;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
 import com.raytheon.uf.common.datastorage.records.IntegerDataRecord;
 import com.raytheon.uf.common.datastorage.records.LongDataRecord;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.datastorage.records.ShortDataRecord;
 import com.raytheon.uf.common.pypies.records.CompressedDataRecord;
 import com.raytheon.uf.common.pypies.request.AbstractRequest;
@@ -88,6 +89,7 @@ import com.raytheon.uf.common.util.PooledByteArrayOutputStream;
  * Apr 18, 2019  7628     bsteffen  Initial creation
  * Mar 18, 2021  8349     randerso  Return ErrorResponse for StorageExceptions
  * Jul 01, 2021  8450     mapeters  Ensure errors are reported
+ * Sep 23, 2021  8608     mapeters  Add metadata id handling
  *
  * </pre>
  *
@@ -313,7 +315,8 @@ public class PyPiesServlet extends HttpServlet {
     protected StoreResponse handleStoreRequest(IDataStore dataStore,
             StoreRequest request) throws StorageException {
         long t0 = System.currentTimeMillis();
-        for (IDataRecord record : request.getRecords()) {
+        for (RecordAndMetadata rm : request.getRecordsAndMetadata()) {
+            IDataRecord record = rm.getRecord();
             /*
              * Check for PyPies specific types of Record that are not supported
              * by the IDataStore API and convert them back to something
@@ -328,17 +331,17 @@ public class PyPiesServlet extends HttpServlet {
                 }
             }
 
-            dataStore.addDataRecord(record);
+            dataStore.addDataRecord(record, rm.getMetadata());
         }
         long t1 = System.currentTimeMillis();
         StorageStatus ss = dataStore.store(request.getOp());
         long t2 = System.currentTimeMillis();
         long uncompressTime = t1 - t0;
         long totalTime = t2 - t0;
-        if (uncompressTime > 1000 | totalTime > 5000) {
+        if (uncompressTime > 1000 || totalTime > 5000) {
             logger.warn("Spent " + totalTime + "ms(" + uncompressTime
-                    + "ms uncompressing) storing " + request.getRecords().size()
-                    + " records");
+                    + "ms uncompressing) storing "
+                    + request.getRecordsAndMetadata().size() + " records");
         }
         StoreResponse response = new StoreResponse();
         response.setStatus(ss);

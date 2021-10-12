@@ -16,7 +16,7 @@
  * See the AWIPS II Master Rights File ("Master Rights File.pdf") for
  * further licensing information.
  **/
-package com.raytheon.uf.common.datastore.ignite;
+package com.raytheon.uf.ignite.core;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -34,6 +34,7 @@ import java.nio.file.Paths;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Jul 21, 2021 8450       mapeters    Initial creation
+ * Sep 23, 2021 8608       mapeters    Moved from com.raytheon.uf.common.datastorage.ignite
  *
  * </pre>
  *
@@ -42,8 +43,7 @@ import java.nio.file.Paths;
 public class IgniteServerPropertiesLoader {
 
     private static final Path PROPS_FILE_PATH = Paths.get(
-            IgniteServerUtils.IGNITE_HOME, "config",
-            "ignite.server.properties");
+            System.getenv("IGNITE_HOME"), "config", "ignite.server.properties");
 
     /**
      * Load the ignite.server.properties into the system properties.

@@ -1,7 +1,9 @@
 <beans xmlns="http://www.springframework.org/schema/beans"
     xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-    http://www.springframework.org/schema/beans/spring-beans.xsd">
+    http://www.springframework.org/schema/beans/spring-beans.xsd
+    http://camel.apache.org/schema/spring
+    http://camel.apache.org/schema/spring/camel-spring.xsd">
 
     <bean id="queryData" class="com.raytheon.uf.edex.database.handlers.DbQueryHandler"/>
     <bean id="querySpatialData" class="com.raytheon.uf.edex.database.handlers.SpatialDbQueryHandler"/>
@@ -32,6 +34,14 @@
             <value>setClassMapper</value>
         </property>
         <property name="arguments" ref="pluginFactory" />
+    </bean>
+
+    <bean id="dataStorageAuditerContainer" class="com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer" factory-method="getInstance">
+        <property name="auditer">
+            <bean class="com.raytheon.uf.edex.database.health.EdexDataStorageAuditerProxy">
+                <constructor-arg ref="messageProducer"/>
+            </bean>
+        </property>
     </bean>
 
 </beans>

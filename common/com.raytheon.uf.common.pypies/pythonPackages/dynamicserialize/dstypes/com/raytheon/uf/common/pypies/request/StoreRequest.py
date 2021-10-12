@@ -24,7 +24,7 @@ class StoreRequest(object):
 
     def __init__(self):
         self.op = None
-        self.records = None
+        self.recordsAndMetadata = None
         self.filename = None
 
     def getOp(self):
@@ -33,11 +33,11 @@ class StoreRequest(object):
     def setOp(self, op):
         self.op = op
 
-    def getRecords(self):
-        return self.records
+    def getRecordsAndMetadata(self):
+        return self.recordsAndMetadata
 
-    def setRecords(self, records):
-        self.records = records
+    def setRecordsAndMetadata(self, recordsAndMetadata):
+        self.recordsAndMetadata = recordsAndMetadata
 
     def getFilename(self):
         return self.filename

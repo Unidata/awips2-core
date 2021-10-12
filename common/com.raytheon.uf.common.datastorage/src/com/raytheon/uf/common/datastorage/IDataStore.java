@@ -21,11 +21,13 @@
 package com.raytheon.uf.common.datastorage;
 
 import java.io.FileNotFoundException;
+import java.util.Collection;
 import java.util.Date;
 import java.util.Map;
 
 import com.raytheon.uf.common.datastorage.StorageProperties.Compression;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
 
 /**
  * Defines the interface for operating against a hierarchical datastore
@@ -46,36 +48,75 @@ import com.raytheon.uf.common.datastorage.records.IDataRecord;
  * Jul 30, 2015  1574     nabowle     Add #deleteOrphanData(Date)
  * Feb 24, 2016  5389     nabowle     Refactor to #deleteOrphanData(Map<String,Date>)
  * Feb 29, 2016  5420     tgurney     Remove timestampCheck arg from copy()
+ * Sep 23, 2021  8608     mapeters    Add metadata identifier handling
  *
  * </pre>
  *
  * @author chammack
- * @version 1.0
  */
 public interface IDataStore {
 
-    public static enum HDF5_ITEM {
+    public enum HDF5_ITEM {
         DATASET, GROUP
     }
 
-    public static enum StoreOp {
+    public enum StoreOp {
         STORE_ONLY, REPLACE, APPEND, @Deprecated
         OVERWRITE
     }
 
     /**
-     * Add a datarecord with optional properties.
+     * Add a data record with optional properties.
      *
      * NOTE: Record is not written to disk until store method is called.
      *
      * @param dataset
      *            the data to add to the write
+     * @param metadataIdentifier
+     *            identifies the metadata entry that references the given
+     *            dataset
      * @param properties
      *            the storage characteristics of the data (optional)
      * @throws StorageException
      */
-    public abstract void addDataRecord(IDataRecord dataset,
+    void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier,
             StorageProperties properties) throws StorageException;
+
+    /**
+     * Add a data record
+     *
+     * NOTE: Record is not written to disk until store method is called.
+     *
+     * @param dataset
+     *            the data to add to the write
+     * @param metadataIdentifier
+     *            identifies the metadata entry that references the dataset
+     * @throws StorageException
+     */
+    void addDataRecord(IDataRecord dataset,
+            IMetadataIdentifier metadataIdentifier) throws StorageException;
+
+    /**
+     * Add a data record
+     *
+     * NOTE: Record is not written to disk until store method is called.
+     *
+     * @param dataset
+     *            the data to add to the write
+     * @param metadataIdentifiers
+     *            identifies the metadata entry that references the dataset -
+     *            note that generally there is only one metadata identifier per
+     *            dataset, but an example of where there may be multiple is with
+     *            partial data. Each partial data piece has its own metadata
+     *            identifier that all match except for trace ID, and once the
+     *            pieces all get merged into one dataset, you have multiple
+     *            metadata identifiers for that one dataset.
+     * @throws StorageException
+     */
+    void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers)
+            throws StorageException;
 
     /**
      * Add a datarecord
@@ -83,9 +124,20 @@ public interface IDataStore {
      * NOTE: Record is not written to disk until store method is called.
      *
      * @param dataset
+     *            the data to add to the write
+     * @param metadataIdentifiers
+     *            identifies the metadata entry that references the dataset -
+     *            note that generally there is only one metadata identifier per
+     *            dataset, but an example of where there may be multiple is with
+     *            partial data. Each partial data piece has its own metadata
+     *            identifier that all match except for trace ID, and once the
+     *            pieces all get merged into one dataset, you have multiple
+     *            metadata identifiers for that one dataset.
+     * @throws StorageException
      */
-    public abstract void addDataRecord(IDataRecord dataset)
-            throws StorageException;
+    void addDataRecord(IDataRecord dataset,
+            Collection<IMetadataIdentifier> metadataIdentifiers,
+            StorageProperties properties) throws StorageException;
 
     /**
      * Store all data records
@@ -94,7 +146,7 @@ public interface IDataStore {
      *
      * @throws StorageException
      */
-    public abstract StorageStatus store() throws StorageException;
+    StorageStatus store() throws StorageException;
 
     /**
      * Delete one or more datasets. If all datasets have been deleted from a
@@ -106,7 +158,7 @@ public interface IDataStore {
      *             if deletion fails
      * @throws FileNotFoundException
      */
-    public abstract void deleteDatasets(String... datasets)
+    void deleteDatasets(String... datasets)
             throws StorageException, FileNotFoundException;
 
     /**
@@ -119,7 +171,7 @@ public interface IDataStore {
      *             if deletion fails
      * @throws FileNotFoundException
      */
-    public abstract void deleteGroups(String... groups)
+    void deleteGroups(String... groups)
             throws StorageException, FileNotFoundException;
 
     /**
@@ -131,8 +183,7 @@ public interface IDataStore {
      *            store operation
      * @throws StorageException
      */
-    public abstract StorageStatus store(StoreOp storeOp)
-            throws StorageException;
+    StorageStatus store(StoreOp storeOp) throws StorageException;
 
     /**
      * Convenience method for retrieve.
@@ -145,7 +196,7 @@ public interface IDataStore {
      * @throws StorageException
      * @throws FileNotFoundException
      */
-    public abstract IDataRecord[] retrieve(String group)
+    IDataRecord[] retrieve(String group)
             throws StorageException, FileNotFoundException;
 
     /**
@@ -161,8 +212,8 @@ public interface IDataStore {
      * @throws StorageException
      * @throws FileNotFoundException
      */
-    public abstract IDataRecord retrieve(String group, String dataset,
-            Request request) throws StorageException, FileNotFoundException;
+    IDataRecord retrieve(String group, String dataset, Request request)
+            throws StorageException, FileNotFoundException;
 
     /**
      * Retrieve multiple datasets from a single file
@@ -176,8 +227,8 @@ public interface IDataStore {
      * @throws StorageException
      * @throws FileNotFoundException
      */
-    public IDataRecord[] retrieveDatasets(String[] datasetGroupPath,
-            Request request) throws StorageException, FileNotFoundException;
+    IDataRecord[] retrieveDatasets(String[] datasetGroupPath, Request request)
+            throws StorageException, FileNotFoundException;
 
     /**
      * Retrieve multiple groups from a single file, retrieves all datasets from
@@ -193,8 +244,8 @@ public interface IDataStore {
      * @throws StorageException
      * @throws FileNotFoundException
      */
-    public abstract IDataRecord[] retrieveGroups(String[] groups,
-            Request request) throws StorageException, FileNotFoundException;
+    IDataRecord[] retrieveGroups(String[] groups, Request request)
+            throws StorageException, FileNotFoundException;
 
     /**
      * List all the datasets available inside a group
@@ -206,8 +257,8 @@ public interface IDataStore {
      * @throws FileNotFoundException
      *
      */
-    public String[] getDatasets(String group) throws StorageException,
-            FileNotFoundException;
+    String[] getDatasets(String group)
+            throws StorageException, FileNotFoundException;
 
     public static class LinkLocation {
         /** Optional: Used for when the link is in another file */
@@ -224,7 +275,7 @@ public interface IDataStore {
      * @param links
      *            the links to create
      */
-    public void createLinks(Map<String, LinkLocation> links)
+    void createLinks(Map<String, LinkLocation> links)
             throws StorageException, FileNotFoundException;
 
     /**
@@ -239,8 +290,8 @@ public interface IDataStore {
      * @throws FileNotFoundException
      *             If the HDF5 file does not exist
      */
-    public void deleteFiles(String[] datesToDelete) throws StorageException,
-            FileNotFoundException;
+    void deleteFiles(String[] datesToDelete)
+            throws StorageException, FileNotFoundException;
 
     /**
      * Creates an empty dataset with the specified dimensions, type, and fill
@@ -249,8 +300,8 @@ public interface IDataStore {
      * @param rec
      *            an empty record containing the attributes of the dataset
      */
-    public void createDataset(IDataRecord rec) throws StorageException,
-            FileNotFoundException;
+    void createDataset(IDataRecord rec)
+            throws StorageException, FileNotFoundException;
 
     /**
      * Recursively repacks all files of a certain directory. Presumes that the
@@ -259,7 +310,7 @@ public interface IDataStore {
      * @param compression
      *            the type of compression to repack with
      */
-    public void repack(Compression compression) throws StorageException;
+    void repack(Compression compression) throws StorageException;
 
     /**
      * Recursively copies all files of a certain directory. If compression is
@@ -283,13 +334,13 @@ public interface IDataStore {
      *            used to ignore files that have not changed within a recent
      *            threshold.
      */
-    public void copy(String outputDir, Compression compression,
+    void copy(String outputDir, Compression compression,
             int minMillisSinceLastChange, int maxMillisSinceLastChange)
             throws StorageException;
 
     /**
      * Deletes orphaned data.
-     * 
+     *
      * @param dateMap
      *            A map of the oldest dates which should be kept for distinct
      *            subsets of the plugin's data identified by the keys of this
@@ -304,6 +355,5 @@ public interface IDataStore {
      * @throws StorageException
      *             if any orphan data failed to be deleted.
      */
-    public void deleteOrphanData(Map<String, Date> dateMap)
-            throws StorageException;
+    void deleteOrphanData(Map<String, Date> dateMap) throws StorageException;
 }

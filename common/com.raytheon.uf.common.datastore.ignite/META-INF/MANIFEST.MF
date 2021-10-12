@@ -11,9 +11,9 @@ Require-Bundle: com.raytheon.uf.common.datastorage,
  org.slf4j;bundle-version="1.7.25",
  javax.xml.bind,
  com.raytheon.uf.common.status,
- com.raytheon.uf.common.util,
  com.raytheon.uf.common.time,
- org.springframework
+ org.springframework,
+ com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.common.datastore.ignite,
  com.raytheon.uf.common.datastore.ignite.plugin,
  com.raytheon.uf.common.datastore.ignite.processor,

@@ -104,4 +104,10 @@
         <property name="subClassLocator" ref="vizSubClassLocator" />
     </bean>
 
+    <bean id="dataStorageAuditerContainer" class="com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer" factory-method="getInstance">
+        <property name="auditer">
+            <bean class="com.raytheon.uf.viz.core.status.VizDataStorageAuditerProxy" />
+        </property>
+    </bean>
+
 </beans>

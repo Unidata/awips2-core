@@ -18,6 +18,11 @@
  **/
 package com.raytheon.uf.common.datastore.ignite;
 
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.ignite.IgniteCacheRestartingException;
@@ -26,6 +31,9 @@ import org.apache.ignite.IgniteException;
 import org.apache.ignite.cluster.ClusterTopologyException;
 import org.apache.ignite.lang.IgniteFuture;
 import org.slf4j.Logger;
+
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 
 /**
  * Contains various constants and utilities used with ignite on both the client
@@ -190,5 +198,34 @@ public class IgniteUtils {
         }
 
         return null;
+    }
+
+    /**
+     * Update the metadata identifiers of the given value.
+     *
+     * @param value
+     *            the value to add metadata to (modified by this method)
+     * @param metadataToAdd
+     *            the metadata to add to the value
+     */
+    public static void updateMetadata(DataStoreValue value,
+            List<RecordAndMetadata> metadataToAdd) {
+        Map<String, Set<IMetadataIdentifier>> metadataToAddByName = new HashMap<>();
+        for (RecordAndMetadata rm : metadataToAdd) {
+            String recordName = rm.getRecord().getName();
+            metadataToAddByName
+                    .computeIfAbsent(recordName, name -> new HashSet<>())
+                    .addAll(rm.getMetadata());
+        }
+
+        for (RecordAndMetadata recordAndMetadata : value
+                .getRecordsAndMetadata()) {
+            String name = recordAndMetadata.getRecord().getName();
+            Set<IMetadataIdentifier> metadata = metadataToAddByName.get(name);
+            if (metadata != null) {
+                metadata.forEach(
+                        metaId -> recordAndMetadata.addMetadata(metaId));
+            }
+        }
     }
 }

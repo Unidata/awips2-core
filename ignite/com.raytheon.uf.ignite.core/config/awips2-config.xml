@@ -17,7 +17,7 @@
         <property name="ignoreUnresolvablePlaceholders" value="true" />
     </bean>
 
-    <bean id="propsLoaded" class="com.raytheon.uf.common.datastore.ignite.IgniteServerPropertiesLoader" factory-method="load" />
+    <bean id="propsLoaded" class="com.raytheon.uf.ignite.core.IgniteServerPropertiesLoader" factory-method="load" />
 
     <bean id="ignitePasswordStore" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordStore">
         <constructor-arg value="${IGNITE_HOME}/tls/passwords.properties"/>
@@ -27,7 +27,7 @@
 
     <!-- Determine cluster-specific ignite config values -->
 
-    <bean id="dataRegionConfigurations" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+    <bean id="dataRegionConfigurations" class="com.raytheon.uf.ignite.core.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
         <constructor-arg value="1" />
         <constructor-arg>
             <list></list>
@@ -50,7 +50,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="cacheConfiguration" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+    <bean id="cacheConfiguration" class="com.raytheon.uf.ignite.core.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
         <constructor-arg value="1" />
         <constructor-arg>
             <list></list>
@@ -69,7 +69,7 @@
         </constructor-arg>
     </bean>
 
-    <bean id="serviceConfiguration" class="com.raytheon.uf.common.datastore.ignite.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
+    <bean id="serviceConfiguration" class="com.raytheon.uf.ignite.core.IgniteServerUtils" factory-method="addToListIfClusterIndexMatches">
         <constructor-arg value="1" />
         <constructor-arg>
             <list></list>
@@ -80,7 +80,7 @@
                     <property name="name" value="CachePluginRegistryPersistenceService" />
                     <property name="maxPerNodeCount" value="1" />
                     <property name="service">
-                        <bean class="com.raytheon.uf.common.datastore.ignite.CachePluginRegistryPersistenceService" />
+                        <bean class="com.raytheon.uf.ignite.core.CachePluginRegistryPersistenceService" />
                     </property>
                 </bean>
             </list>
@@ -200,4 +200,41 @@
         <constructor-arg ref="httpClientConfig" />
     </bean>
 
+   <bean id="jmsClientId" class="com.raytheon.uf.common.util.SystemUtil" factory-method="getClientID">
+       <constructor-arg value="ignite" />
+   </bean>
+
+    <bean id="jmsConnectionInfo"
+        class="com.raytheon.uf.common.jms.JMSConnectionInfo">
+        <constructor-arg value="${BROKER_HOST}"/>
+        <constructor-arg value="${BROKER_PORT}"/>
+        <constructor-arg value="${JMS_VIRTUALHOST}"/>
+        <constructor-arg value="${BROKER_HTTP}"/>
+        <constructor-arg>
+            <map>
+                <entry key="jms.prefetchPolicy.all" value="0"/>
+                <entry key="provider.futureType" value="balanced"/>
+                <entry key="jms.clientID" value-ref="jmsClientId"/>
+            </map>
+        </constructor-arg>
+    </bean>
+
+    <bean id="qpidUfConnectionFactory" class="com.raytheon.uf.common.jms.qpid.QpidUFConnectionFactory">
+       <constructor-arg ref="jmsConnectionInfo"/>
+    </bean>
+
+    <bean id="jmsConnectionFactory" class="org.springframework.jms.connection.CachingConnectionFactory">
+       <constructor-arg ref="qpidUfConnectionFactory"/>
+       <!-- The value of 50 is arbitrary. Can be tweaked later based on
+            observed frequency of session creation -->
+       <property name="sessionCacheSize" value="50"/>
+    </bean>
+
+    <bean id="dataStorageAuditerContainer" class="com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer" factory-method="getInstance">
+        <property name="auditer">
+            <bean class="com.raytheon.uf.ignite.core.IgniteDataStorageAuditerProxy">
+                <constructor-arg ref="jmsConnectionFactory"/>
+            </bean>
+        </property>
+    </bean>
 </beans>

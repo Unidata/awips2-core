@@ -21,11 +21,15 @@ package com.raytheon.uf.common.datastore.ignite.store;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.StringJoiner;
 import java.util.stream.Collectors;
 
@@ -33,9 +37,11 @@ import javax.cache.Cache.Entry;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 
+import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.lang.IgniteBiInClosure;
 import org.apache.ignite.resources.CacheNameResource;
+import org.apache.ignite.resources.IgniteInstanceResource;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,13 +51,18 @@ import com.raytheon.uf.common.datastorage.IDataStoreFactory;
 import com.raytheon.uf.common.datastorage.Request;
 import com.raytheon.uf.common.datastorage.StorageException;
 import com.raytheon.uf.common.datastorage.StorageStatus;
+import com.raytheon.uf.common.datastorage.audit.DataStatus;
+import com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer;
 import com.raytheon.uf.common.datastorage.records.IDataRecord;
+import com.raytheon.uf.common.datastorage.records.IMetadataIdentifier;
+import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
 import com.raytheon.uf.common.datastore.ignite.DataStoreKey;
 import com.raytheon.uf.common.datastore.ignite.DataStoreValue;
 import com.raytheon.uf.common.status.IPerformanceStatusHandler;
 import com.raytheon.uf.common.status.PerformanceStatus;
 import com.raytheon.uf.common.time.util.IPerformanceTimer;
 import com.raytheon.uf.common.time.util.TimeUtil;
+import com.raytheon.uf.common.util.Pair;
 
 /**
  *
@@ -66,6 +77,7 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * ------------- -------- --------- ---------------------
  * May 29, 2019  7628     bsteffen  Initial creation
  * Jun 10, 2021  8450     mapeters  Add various logging, improve exception handling
+ * Sep 23, 2021  8608     mapeters  Add metadata id handling and auditing
  *
  * </pre>
  *
@@ -81,6 +93,9 @@ public class DataStoreCacheStore
             .getHandler(DataStoreCacheStore.class.getSimpleName() + ":");
 
     private final IDataStoreFactory factory;
+
+    @IgniteInstanceResource
+    private Ignite ignite;
 
     @CacheNameResource
     private String cacheName;
@@ -121,8 +136,9 @@ public class DataStoreCacheStore
 
         try {
             IDataRecord[] records = store.retrieve(key.getGroup());
-            return new DataStoreValue(records);
-        } catch (FileNotFoundException | StorageException e) {
+            return DataStoreValue.createWithoutMetadata(records);
+        } catch (@SuppressWarnings("squid:S1166")
+                FileNotFoundException | StorageException e) {
             /*
              * CacheLoader is supposed to return null if something can't be
              * loaded. It would be nice to be able to differentiate "not found"
@@ -181,7 +197,8 @@ public class DataStoreCacheStore
         Map<DataStoreKey, DataStoreValue> result = new HashMap<>();
         for (java.util.Map.Entry<DataStoreKey, List<IDataRecord>> entry : recordMap
                 .entrySet()) {
-            result.put(entry.getKey(), new DataStoreValue(entry.getValue()));
+            result.put(entry.getKey(),
+                    DataStoreValue.createWithoutMetadata((entry.getValue())));
         }
         return result;
     }
@@ -256,14 +273,16 @@ public class DataStoreCacheStore
 
         IDataStore store = factory.getDataStore(new File(path), useLocking);
         Object lock = getWriteLock(path);
+        MetadataMap metadataMap = getMetadataMap(List.of(entry));
         try {
             long totalSizeInBytes = 0L;
-            for (IDataRecord record : entry.getValue().getRecords()) {
-                store.addDataRecord(record);
-                totalSizeInBytes += record.getSizeInBytes();
+            for (RecordAndMetadata rm : entry.getValue()
+                    .getRecordsAndMetadata()) {
+                store.addDataRecord(rm.getRecord(), rm.getMetadata());
+                totalSizeInBytes += rm.getRecord().getSizeInBytes();
             }
 
-            logger.info("Writing " + cacheName + " entry: " + path + "(size="
+            logger.info("Writing " + cacheName + " entry: " + path + " (size="
                     + totalSizeInBytes + "B)");
 
             StorageStatus ss;
@@ -273,10 +292,12 @@ public class DataStoreCacheStore
             if (ss.hasExceptions()) {
                 throw ss.getExceptions()[0];
             }
+            auditDataStorage(List.of(), List.of(metadataMap), true);
         } catch (Exception e) {
             logger.error(
                     "Error occurred writing " + cacheName + " entry: " + path,
                     e);
+            auditDataStorage(List.of(metadataMap), List.of(), true);
             throw new CacheWriterException(e);
         }
 
@@ -297,31 +318,41 @@ public class DataStoreCacheStore
                 .stream().collect(Collectors
                         .groupingBy(entry -> entry.getKey().getPath()));
 
-        try {
-            int numPaths = entriesByPath.size();
-            logger.info("Writing " + numCacheEntries + " " + cacheName
-                    + " entries across " + numPaths + " paths");
+        int numPaths = entriesByPath.size();
+        logger.info("Writing " + numCacheEntries + " " + cacheName
+                + " entries across " + numPaths + " paths");
 
-            int i = 1;
-            for (Map.Entry<String, List<Entry<? extends DataStoreKey, ? extends DataStoreValue>>> mapEntry : entriesByPath
-                    .entrySet()) {
-                String path = mapEntry.getKey();
+        List<MetadataMap> successfulStores = new ArrayList<>();
+        List<MetadataMap> failedStores = new ArrayList<>();
+        int i = 1;
+        for (Map.Entry<String, List<Entry<? extends DataStoreKey, ? extends DataStoreValue>>> mapEntry : entriesByPath
+                .entrySet()) {
+            String path = mapEntry.getKey();
+            List<Entry<? extends DataStoreKey, ? extends DataStoreValue>> cacheEntries = mapEntry
+                    .getValue();
+
+            long totalSizeInBytes = 0L;
+            MetadataMap metadataMap = getMetadataMap(cacheEntries);
+            for (Entry<? extends DataStoreKey, ? extends DataStoreValue> cacheEntry : cacheEntries) {
+                for (RecordAndMetadata rm : cacheEntry.getValue()
+                        .getRecordsAndMetadata()) {
+                    totalSizeInBytes += rm.getRecord().getSizeInBytes();
+                }
+            }
+
+            try {
                 IDataStore store = factory.getDataStore(new File(path),
                         useLocking);
 
-                long totalSizeInBytes = 0L;
-                List<Entry<? extends DataStoreKey, ? extends DataStoreValue>> cacheEntries = mapEntry
-                        .getValue();
                 for (Entry<? extends DataStoreKey, ? extends DataStoreValue> cacheEntry : cacheEntries) {
-                    for (IDataRecord record : cacheEntry.getValue()
-                            .getRecords()) {
-                        store.addDataRecord(record);
-                        totalSizeInBytes += record.getSizeInBytes();
+                    for (RecordAndMetadata rm : cacheEntry.getValue()
+                            .getRecordsAndMetadata()) {
+                        store.addDataRecord(rm.getRecord(), rm.getMetadata());
                     }
                 }
 
                 logger.info("Writing " + i + "/" + numPaths + ": " + path
-                        + "(size=" + totalSizeInBytes + "B)");
+                        + " (size=" + totalSizeInBytes + "B)");
                 Object lock = getWriteLock(path);
                 StorageStatus ss;
                 synchronized (lock) {
@@ -330,15 +361,25 @@ public class DataStoreCacheStore
                 if (ss.hasExceptions()) {
                     throw ss.getExceptions()[0];
                 }
+                successfulStores.add(metadataMap);
+            } catch (Exception e) {
+                logger.error("Error occurred writing " + cacheName + " entries",
+                        e);
 
-                // Remove from entries list arg to indicate success
-                entries.removeAll(cacheEntries);
-                ++i;
+                failedStores.add(metadataMap);
             }
-        } catch (Exception e) {
-            logger.error("Error occurred writing " + cacheName + " entries", e);
-            throw new CacheWriterException(e);
+            ++i;
         }
+
+        /*
+         * This writeAll method can be called in a synchronous way if write
+         * behind falls behind enough, but it still doesn't propagate errors
+         * back to edex, so it is still considered async for our purposes here
+         * since it doesn't affect how the data storage route proceeds.
+         */
+        auditDataStorage(failedStores, successfulStores, false);
+
+        entries.clear();
 
         timer.stop();
         perfLog.logDuration(
@@ -358,4 +399,399 @@ public class DataStoreCacheStore
         /* This store is non-transactional. */
     }
 
+    private void auditDataStorage(List<MetadataMap> failedStores,
+            List<MetadataMap> successfulStores, boolean synchronous) {
+        // Audit illegal write behinds
+        if (!synchronous) {
+            List<MetadataMap> illegalWriteBehinds = new ArrayList<>();
+            for (MetadataMap metadataMap : failedStores) {
+                if (!metadataMap.isWriteBehindSupported()) {
+                    illegalWriteBehinds.add(metadataMap);
+                }
+            }
+            for (MetadataMap metadataMap : successfulStores) {
+                if (!metadataMap.isWriteBehindSupported()) {
+                    illegalWriteBehinds.add(metadataMap);
+                }
+            }
+            if (!illegalWriteBehinds.isEmpty()) {
+                logger.error("Illegal write behinds: " + illegalWriteBehinds);
+            }
+        }
+
+        // Audit metadata specificity
+        failedStores.forEach(MetadataMap::validateMetadataSpecificity);
+        successfulStores.forEach(MetadataMap::validateMetadataSpecificity);
+
+        // Audit data storage statuses
+        Pair<Set<String>, Set<String>> failedAndOkayTraceIds = processFailedStores(
+                failedStores);
+        Set<String> failedTraceIds = failedAndOkayTraceIds.getFirst();
+        Set<String> successfulTraceIds = new HashSet<>();
+        successfulTraceIds.addAll(failedAndOkayTraceIds.getSecond());
+        successfulStores.forEach(metadataMap -> successfulTraceIds
+                .addAll(metadataMap.extractTraceIds()));
+
+        if (!Collections.disjoint(failedTraceIds, successfulTraceIds)) {
+            logger.error(
+                    "Some trace IDs reported as both failures and successes:\nFailures: "
+                            + failedTraceIds + "\nSuccesses: "
+                            + successfulTraceIds);
+        }
+
+        Map<String, DataStatus> traceIdToStatuses = new HashMap<>();
+        DataStatus failureStatus = synchronous ? DataStatus.FAILURE_SYNC
+                : DataStatus.FAILURE_ASYNC;
+        failedTraceIds.forEach(id -> traceIdToStatuses.put(id, failureStatus));
+        successfulTraceIds
+                .forEach(id -> traceIdToStatuses.put(id, DataStatus.SUCCESS));
+        DataStorageAuditerContainer.getInstance().getAuditer()
+                .processDataStatuses(traceIdToStatuses);
+    }
+
+    /**
+     * Process the metadata maps of the failed stores. This attempts to load
+     * data in order to double check that the data does not exist.
+     *
+     * @param metadataMaps
+     *            maps of data store keys to metadata identifiers to data record
+     *            names
+     *
+     * @return pair of the failed trace IDs and the okay trace IDs (the data
+     *         existed even though the store said it failed)
+     */
+    private Pair<Set<String>, Set<String>> processFailedStores(
+            List<MetadataMap> metadataMaps) {
+        Set<String> failedTraceIds = new HashSet<>();
+        Set<String> okayTraceIds = new HashSet<>();
+        for (MetadataMap metadataMap : metadataMaps) {
+            for (Map.Entry<DataStoreKey, MetadataRecordNamesMap> metadataMapEntry : metadataMap
+                    .getEntries()) {
+                DataStoreKey key = metadataMapEntry.getKey();
+                Set<String> storedRecordNames = loadRecordNames(key);
+                MetadataRecordNamesMap metadataRecordNamesMap = metadataMapEntry
+                        .getValue();
+                for (Map.Entry<IMetadataIdentifier, Set<String>> metadataRecordNamesEntry : metadataRecordNamesMap
+                        .getEntries()) {
+                    IMetadataIdentifier metaId = metadataRecordNamesEntry
+                            .getKey();
+                    String traceId = metaId.getTraceId();
+                    switch (metaId.getSpecificity()) {
+                    case GROUP:
+                        /*
+                         * Metadata identifies a group, just check if there is
+                         * any data for the group
+                         */
+                        if (storedRecordNames.isEmpty()) {
+                            failedTraceIds.add(traceId);
+                        } else {
+                            okayTraceIds.add(traceId);
+                        }
+                        break;
+                    case DATASET:
+                        /*
+                         * Metadata identifies a dataset, check if metadata
+                         * record names and dataset record names overlap
+                         */
+                        Set<String> metadataRecordNames = metadataRecordNamesEntry
+                                .getValue();
+                        if (Collections.disjoint(storedRecordNames,
+                                metadataRecordNames)) {
+                            failedTraceIds.add(traceId);
+                        } else {
+                            okayTraceIds.add(traceId);
+                        }
+                        break;
+                    case NONE:
+                        break;
+                    default:
+                        throw new UnsupportedOperationException(
+                                "Unexpected metadata specificity value: "
+                                        + metaId.getSpecificity());
+                    }
+                }
+            }
+        }
+        return new Pair<>(failedTraceIds, okayTraceIds);
+    }
+
+    /**
+     * Get map of data store keys to metadata identifiers to data record names.
+     *
+     * @param cacheEntries
+     *            cache entries to get metadata map for
+     * @return metadata map
+     */
+    private static MetadataMap getMetadataMap(
+            List<Entry<? extends DataStoreKey, ? extends DataStoreValue>> cacheEntries) {
+        MetadataMap metadataMap = new MetadataMap();
+        for (Entry<? extends DataStoreKey, ? extends DataStoreValue> cacheEntry : cacheEntries) {
+            DataStoreKey key = cacheEntry.getKey();
+            DataStoreValue value = cacheEntry.getValue();
+            RecordAndMetadata[] recordsAndMetadata = value
+                    .getRecordsAndMetadata();
+            if (recordsAndMetadata != null) {
+                for (RecordAndMetadata rm : recordsAndMetadata) {
+                    String recordName = rm.getRecord().getName();
+                    Set<IMetadataIdentifier> metaIds = rm.getMetadata();
+                    for (IMetadataIdentifier metaId : metaIds) {
+                        metadataMap.getMetadataRecordNamesMap(key)
+                                .getRecordNames(metaId).add(recordName);
+                    }
+                }
+            }
+        }
+        return metadataMap;
+    }
+
+    private Set<String> loadRecordNames(DataStoreKey key) {
+        String[] datasets;
+        try {
+            IDataStore store = factory.getDataStore(new File(key.getPath()),
+                    useLocking);
+            datasets = store.getDatasets(key.getGroup());
+        } catch (Exception e) {
+            logger.error("Error loading datasets for: " + key, e);
+            datasets = null;
+        }
+
+        Set<String> recordNames;
+        if (datasets != null && datasets.length > 0) {
+            recordNames = Arrays.stream(datasets)
+                    .collect(Collectors.toUnmodifiableSet());
+        } else {
+            recordNames = Set.of();
+        }
+        return recordNames;
+    }
+
+    /**
+     * Maps data store keys to metadata identifiers to data record names
+     */
+    private static class MetadataMap {
+
+        private final Map<DataStoreKey, MetadataRecordNamesMap> map = new HashMap<>();
+
+        public Collection<Map.Entry<DataStoreKey, MetadataRecordNamesMap>> getEntries() {
+            return map.entrySet();
+        }
+
+        /**
+         * Get metadata record names maps for the given data store key,
+         * creating/storing a new empty map if none exists.
+         *
+         * @param key
+         *            data store key to get metadata and record names for
+         * @return the metadata record names map (will not be null)
+         */
+        public MetadataRecordNamesMap getMetadataRecordNamesMap(
+                DataStoreKey key) {
+            return map.computeIfAbsent(key, k -> new MetadataRecordNamesMap());
+        }
+
+        public Collection<MetadataRecordNamesMap> getMetadataRecordNamesMaps() {
+            return map.values();
+        }
+
+        /**
+         * @return true if all contained metadata supports write behind, false
+         *         otherwise
+         */
+        public boolean isWriteBehindSupported() {
+            return getMetadataRecordNamesMaps().stream()
+                    .allMatch(MetadataRecordNamesMap::isWriteBehindSupported);
+        }
+
+        /**
+         * @return all trace IDs contained in this metadata map
+         */
+        public Set<String> extractTraceIds() {
+            Set<String> traceIds = new HashSet<>();
+            for (MetadataRecordNamesMap recordNamesMap : getMetadataRecordNamesMaps()) {
+                traceIds.addAll(recordNamesMap.extractTraceIds());
+            }
+            return traceIds;
+        }
+
+        /**
+         * Verify that the metadata specificity and the number of record names
+         * match up for all contained metadata record names maps. This logs
+         * warnings for any mismatches.
+         */
+        public void validateMetadataSpecificity() {
+            for (Map.Entry<DataStoreKey, MetadataRecordNamesMap> entry : getEntries()) {
+                DataStoreKey key = entry.getKey();
+                MetadataRecordNamesMap recordNamesMap = entry.getValue();
+                recordNamesMap.validateMetadataSpecificity(key);
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "MetadataMap [map=" + map + "]";
+        }
+    }
+
+    /**
+     * Maps metadata identifiers to data record names
+     */
+    private static class MetadataRecordNamesMap {
+
+        private final Map<IMetadataIdentifier, Set<String>> map = new HashMap<>();
+
+        public Collection<Map.Entry<IMetadataIdentifier, Set<String>>> getEntries() {
+            return map.entrySet();
+        }
+
+        public Collection<IMetadataIdentifier> getMetadataIds() {
+            return map.keySet();
+        }
+
+        /**
+         * Get record names for the given metadata ID, creating/storing a new
+         * empty set if none exists.
+         *
+         * @param metaId
+         *            metadata identifier to get record names for
+         * @return the record names (will not be null)
+         */
+        public Set<String> getRecordNames(IMetadataIdentifier metaId) {
+            return map.computeIfAbsent(metaId, m -> new HashSet<>());
+        }
+
+        /**
+         * @return true if all contained metadata supports write behind, false
+         *         otherwise
+         */
+        public boolean isWriteBehindSupported() {
+            return getMetadataIds().stream()
+                    .allMatch(IMetadataIdentifier::isWriteBehindSupported);
+        }
+
+        /**
+         * @return all trace IDs contained in this metadata map
+         */
+        public Set<String> extractTraceIds() {
+            return getMetadataIds().stream()
+                    .map(IMetadataIdentifier::getTraceId)
+                    .collect(Collectors.toSet());
+        }
+
+        /**
+         * Verify that the metadata specificity and the number of record names
+         * match up. This logs warnings for any mismatches.
+         *
+         * @param key
+         *            the data store key that this metadata record names map is
+         *            for
+         */
+        public void validateMetadataSpecificity(DataStoreKey key) {
+            /*
+             * Convert the entries into a list of metadata IDs and record names.
+             * This merges metadata identifiers that are the same except for
+             * trace ID.
+             */
+            List<MetaIdsAndRecordNames> metaIdsAndRecordNamesList = new ArrayList<>();
+            for (Map.Entry<IMetadataIdentifier, Set<String>> entry : getEntries()) {
+                IMetadataIdentifier metaId = entry.getKey();
+                Set<String> recordNames = entry.getValue();
+                boolean merged = false;
+                for (MetaIdsAndRecordNames metaIdsAndRecordNames : metaIdsAndRecordNamesList) {
+                    if (metaIdsAndRecordNames.merge(metaId, recordNames)) {
+                        merged = true;
+                        break;
+                    }
+                }
+                if (!merged) {
+                    metaIdsAndRecordNamesList.add(
+                            new MetaIdsAndRecordNames(metaId, recordNames));
+                }
+            }
+
+            boolean firstGroupSpecificity = true;
+            for (MetaIdsAndRecordNames metaIdsAndRecordNames : metaIdsAndRecordNamesList) {
+                Set<IMetadataIdentifier> metaIds = metaIdsAndRecordNames
+                        .getMetaIds();
+                IMetadataIdentifier sampleMetaId = metaIds.iterator().next();
+                switch (sampleMetaId.getSpecificity()) {
+                case GROUP:
+                    /*
+                     * Everything in this map is for the same data store
+                     * key/group, so there should only be one set of metadata
+                     * identifiers with group specificity.
+                     */
+                    if (!firstGroupSpecificity) {
+                        logger.warn(
+                                "Multiple metadata for single group that claims to have one metadata per group: {}, {}",
+                                key, map);
+                    }
+                    firstGroupSpecificity = false;
+                    break;
+                case DATASET:
+                    if (metaIdsAndRecordNames.getRecordNames().size() > 1) {
+                        logger.warn(
+                                "Multiple datasets for single metadata that claims to identify a single dataset: {}, {}",
+                                key, metaIdsAndRecordNames);
+                    }
+
+                    break;
+                case NONE:
+                    break;
+                default:
+                    throw new UnsupportedOperationException(
+                            "Unexpected metadata specificity value: "
+                                    + sampleMetaId.getSpecificity());
+                }
+
+            }
+        }
+
+        @Override
+        public String toString() {
+            return "MetadataRecordNamesMap [map=" + map + "]";
+        }
+    }
+
+    /**
+     * Contains metadata identifiers that are all the same except for their
+     * trace IDs. Also contains all the data record names that those metadata
+     * identifiers reference.
+     */
+    private static class MetaIdsAndRecordNames {
+
+        private final Set<IMetadataIdentifier> metaIds = new HashSet<>();
+
+        private final Set<String> recordNames = new HashSet<>();
+
+        public MetaIdsAndRecordNames(IMetadataIdentifier metaId,
+                Set<String> recordNames) {
+            metaIds.add(metaId);
+            this.recordNames.addAll(recordNames);
+        }
+
+        public boolean merge(IMetadataIdentifier metaId,
+                Set<String> recordNames) {
+            IMetadataIdentifier sampleMetaId = metaIds.iterator().next();
+            if (sampleMetaId.equalsIgnoreTraceId(metaId)) {
+                metaIds.add(metaId);
+                this.recordNames.addAll(recordNames);
+                return true;
+            }
+            return false;
+        }
+
+        public Set<IMetadataIdentifier> getMetaIds() {
+            return Collections.unmodifiableSet(metaIds);
+        }
+
+        public Set<String> getRecordNames() {
+            return Collections.unmodifiableSet(recordNames);
+        }
+
+        @Override
+        public String toString() {
+            return "MetaIdsAndRecordNames [metaIds=" + metaIds
+                    + ", recordNames=" + recordNames + "]";
+        }
+    }
 }

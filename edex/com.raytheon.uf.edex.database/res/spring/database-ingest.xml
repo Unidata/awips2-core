@@ -52,4 +52,31 @@
     <bean factory-bean="contextManager" factory-method="registerClusteredContext">
         <constructor-arg ref="clusteredDatabaseMonitor" />
     </bean>
+
+    <bean id="dataStorageAuditerImpl" class="com.raytheon.uf.edex.database.health.DataStorageAuditer">
+        <constructor-arg ref="messageProducer"/>
+    </bean>
+
+    <camelContext id="clusteredDataStorageAuditContext" xmlns="http://camel.apache.org/schema/spring"
+        errorHandlerRef="errorHandler">
+
+        <endpoint id="cleanupCron" uri="quartz://DataStorageAudit/?cron=${data.storage.auditer.cleanup.cron}"/> 
+
+        <route id="dataStorageAuditInfoRoute">
+            <from uri="jms-generic:queue:data.storage.audit.event?threadName=DataStorageAudit"/>
+            <bean ref="serializationUtil" method="transformFromThrift"/>
+            <bean ref="dataStorageAuditerImpl" method="processEvent"/>
+        </route>
+
+        <route id="dataStorageAuditCleanupRoute">
+            <from uri="cleanupCron"/>
+            <bean ref="dataStorageAuditerImpl" method="cleanup"/>
+        </route>
+
+    </camelContext>
+
+    <bean factory-bean="contextManager" factory-method="registerClusteredContext">
+        <constructor-arg ref="clusteredDataStorageAuditContext"/>
+    </bean>
+
 </beans>

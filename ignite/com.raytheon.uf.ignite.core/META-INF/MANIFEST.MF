@@ -1,0 +1,15 @@
+Manifest-Version: 1.0
+Bundle-ManifestVersion: 2
+Bundle-Name: Ignite Core
+Bundle-SymbolicName: com.raytheon.uf.ignite.core
+Bundle-Version: 1.21.0.qualifier
+Bundle-Vendor: RAYTHEON
+Automatic-Module-Name: com.raytheon.uf.ignite.core
+Bundle-RequiredExecutionEnvironment: JavaSE-11
+Require-Bundle: com.raytheon.uf.common.datastore.ignite,
+ org.apache.ignite,
+ org.slf4j,
+ com.raytheon.uf.common.datastorage,
+ javax.xml.bind;bundle-version="2.4.0",
+ javax.jms,
+ com.raytheon.uf.common.serialization
