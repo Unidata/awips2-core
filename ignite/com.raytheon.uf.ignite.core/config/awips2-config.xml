@@ -19,11 +19,17 @@
 
     <bean id="propsLoaded" class="com.raytheon.uf.ignite.core.IgniteServerPropertiesLoader" factory-method="load" />
 
-    <bean id="ignitePasswordStore" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordStore">
-        <constructor-arg value="${IGNITE_HOME}/tls/passwords.properties"/>
+    <bean id="sslConfig" class="com.raytheon.uf.common.datastore.ignite.IgniteSslConfiguration">
+        <constructor-arg value="server"/>
     </bean>
-    <bean id="igniteKeystorePassword" factory-bean="ignitePasswordStore" factory-method="getKeystorePassword" />
-    <bean id="igniteTruststorePassword" factory-bean="ignitePasswordStore" factory-method="getTruststorePassword" />
+
+    <bean id="igniteKeyStorePath" factory-bean="sslConfig" factory-method="getJavaKeyStorePath" />
+    <bean id="igniteTrustStorePath" factory-bean="sslConfig" factory-method="getJavaTrustStorePath" />
+
+    <bean id="igniteKeyStorePassword" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordUtils"
+        factory-method="getIgniteKeyStorePassword" />
+    <bean id="igniteTrustStorePassword" class="com.raytheon.uf.common.datastore.ignite.IgnitePasswordUtils"
+        factory-method="getIgniteTrustStorePassword" />
 
     <!-- Determine cluster-specific ignite config values -->
 
@@ -152,10 +158,10 @@
 
         <property name="sslContextFactory">
             <bean class="org.apache.ignite.ssl.SslContextFactory">
-                <property name="keyStoreFilePath" value="${IGNITE_HOME}/tls/keystore.p12"/>
-                <property name="keyStorePassword" ref="igniteKeystorePassword" />
-                <property name="trustStoreFilePath" value="${IGNITE_HOME}/tls/truststore.p12"/>
-                <property name="trustStorePassword" ref="igniteTruststorePassword"/>
+                <property name="keyStoreFilePath" ref="igniteKeyStorePath"/>
+                <property name="keyStorePassword" ref="igniteKeyStorePassword" />
+                <property name="trustStoreFilePath" ref="igniteTrustStorePath"/>
+                <property name="trustStorePassword" ref="igniteTrustStorePassword"/>
                 <property name="protocol" value="TLSv1.3"/>
             </bean>
         </property>

@@ -28,10 +28,10 @@ import com.raytheon.uf.common.comm.HttpAuthHandler;
 import com.raytheon.uf.common.jms.JmsSslConfiguration;
 
 /**
- * 
+ *
  * Loads a key store and a trust store to be used when making ssl rest requests
  * to qpid.
- * 
+ *
  * <pre>
  *
  * SOFTWARE HISTORY
@@ -41,6 +41,7 @@ import com.raytheon.uf.common.jms.JmsSslConfiguration;
  * Jan 31, 2017  6083     bsteffen    Initial creation
  * Feb 02, 2017  6085     bsteffen    Extract certificate lookup to JmsSslConfiguration
  * Jul 17, 2019  7724     mrichardson Upgrade Qpid to Qpid Proton.
+ * Oct 29, 2021  8667     mapeters    Updated exception handling
  *
  * </pre>
  *
@@ -63,6 +64,9 @@ public class QpidCertificateAuthHandler implements HttpAuthHandler {
         } catch (GeneralSecurityException | IOException e) {
             throw new JMSConfigurationException(
                     "Failed to load ssl certificates.", e);
+        } catch (Exception e) {
+            throw new JMSConfigurationException(
+                    "Failed to decrypt JMS key store password.", e);
         }
     }
 

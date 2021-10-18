@@ -23,11 +23,11 @@ done
 path_to_script=`readlink -f $0`
 dir=$(dirname $path_to_script)
 
-# Source The File With The Localization Information
-source ${dir}/setup.env
-
 set -a
 IGNITE_HOME=${IGNITE_HOME:-`dirname $dir`}
+
+# Source The File With The Localization Information
+source ${dir}/setup.env
 
 AWIPS_HOME=${AWIPS_HOME:-`dirname $IGNITE_HOME`}
 JAVA_HOME=${JAVA_HOME:-${AWIPS_HOME}/java}
