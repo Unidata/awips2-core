@@ -9,8 +9,8 @@ Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Export-Package: com.raytheon.uf.viz.productbrowser,
  com.raytheon.uf.viz.productbrowser.pref
-Require-Bundle: org.eclipse.core.runtime;bundle-version="3.4.0",
- com.raytheon.viz.ui;bundle-version="1.14.0",
- com.raytheon.uf.viz.core;bundle-version="1.14.3",
+Require-Bundle: org.eclipse.core.runtime,
+ com.raytheon.viz.ui,
+ com.raytheon.uf.viz.core,
  com.raytheon.uf.common.dataplugin
 Bundle-ClassPath: com.raytheon.uf.viz.productbrowser.jar

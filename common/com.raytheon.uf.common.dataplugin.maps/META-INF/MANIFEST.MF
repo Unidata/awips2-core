@@ -5,9 +5,9 @@ Bundle-SymbolicName: com.raytheon.uf.common.dataplugin.maps
 Bundle-Version: 1.15.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.apache.commons.lang3;bundle-version="3.4.0",
+Require-Bundle: org.apache.commons.lang3,
  com.raytheon.uf.common.dataplugin,
- org.geotools;bundle-version="2.6.4",
+ org.geotools,
  com.raytheon.uf.common.dataaccess,
  com.raytheon.uf.common.serialization
 Export-Package: com.raytheon.uf.common.dataplugin.maps.dataaccess.util

@@ -5,10 +5,10 @@ Bundle-SymbolicName: com.raytheon.uf.common.json
 Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Require-Bundle: org.geotools;bundle-version="2.6.4",
- org.apache.commons.pool2;bundle-version="2.4.2",
- com.raytheon.uf.common.status;bundle-version="1.12.1174",
- com.fasterxml.jackson;bundle-version="2.6.5"
+Require-Bundle: org.geotools,
+ org.apache.commons.pool2,
+ com.raytheon.uf.common.status,
+ com.fasterxml.jackson
 Export-Package: com.raytheon.uf.common.json,
  com.raytheon.uf.common.json.geo,
  com.raytheon.uf.common.json.impl,

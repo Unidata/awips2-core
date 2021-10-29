@@ -5,8 +5,8 @@ Bundle-SymbolicName: com.raytheon.uf.edex.purgesrv
 Bundle-Version: 1.15.1.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: com.raytheon.edex.common;bundle-version="1.11.26",
- org.apache.commons.lang3;bundle-version="3.4.0",
- com.raytheon.uf.common.status;bundle-version="1.12.1174",
- javax.persistence;bundle-version="1.0.0"
+Require-Bundle: com.raytheon.edex.common,
+ org.apache.commons.lang3,
+ com.raytheon.uf.common.status,
+ javax.persistence
 Export-Package: com.raytheon.uf.edex.purgesrv

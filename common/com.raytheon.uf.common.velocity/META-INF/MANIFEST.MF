@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.common.velocity
 Bundle-Version: 1.0.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.6
-Require-Bundle: org.apache.velocity;bundle-version="1.7.0";visibility:=reexport,
+Require-Bundle: org.apache.velocity;visibility:=reexport,
  com.raytheon.uf.common.util,
- org.apache.commons.collections;bundle-version="3.2.0"
+ org.apache.commons.collections
 Export-Package: com.raytheon.uf.common.velocity

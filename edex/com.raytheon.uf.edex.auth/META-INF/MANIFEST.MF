@@ -16,7 +16,7 @@ Require-Bundle: com.raytheon.uf.common.localization,
  com.raytheon.uf.edex.core,
  org.springframework,
  org.apache.shiro,
- org.slf4j;bundle-version="1.7.21"
+ org.slf4j
 Export-Package: com.raytheon.uf.edex.auth,
  com.raytheon.uf.edex.auth.req,
  com.raytheon.uf.edex.auth.resp

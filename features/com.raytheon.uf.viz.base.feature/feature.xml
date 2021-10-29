@@ -44,19 +44,19 @@
          id="org.w3c.xml.ext"
          download-size="0"
          install-size="0"
-         version="1.3.4"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.apache.xmlgraphics"
          download-size="0"
          install-size="0"
-         version="2.2.0"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.apache.batik"
          download-size="0"
          install-size="0"
-         version="1.14.0"/>
+         version="0.0.0"/>
 
    <plugin
          id="com.raytheon.viz.core"
@@ -150,7 +150,7 @@
          id="net.sf.swtaddons"
          download-size="0"
          install-size="0"
-         version="0.1.1"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.eclipse.draw2d"
@@ -176,7 +176,7 @@
          id="javax.media.opengl"
          download-size="0"
          install-size="0"
-         version="1.1.1"/>
+         version="0.0.0"/>
 
    <plugin
          id="javax.media.opengl.linux64"
@@ -184,7 +184,7 @@
          arch="x86_64"
          download-size="0"
          install-size="0"
-         version="1.1.1"
+         version="0.0.0"
          fragment="true"/>
 
    <plugin
@@ -193,7 +193,7 @@
          arch="x86"
          download-size="0"
          install-size="0"
-         version="1.1.1"
+         version="0.0.0"
          fragment="true"/>
 
    <plugin
@@ -274,7 +274,7 @@
          id="org.apache.xerces"
          download-size="0"
          install-size="0"
-         version="2.12.0"
+         version="0.0.0"
          unpack="false"/>
 
    <plugin

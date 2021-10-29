@@ -39,4 +39,4 @@ Export-Package: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.derivparam.inv,
  com.raytheon.uf.common.derivparam.library,
  com.raytheon.uf.common.derivparam.tree
-Require-Bundle: org.geotools;bundle-version="10.5.0"
+Require-Bundle: org.geotools

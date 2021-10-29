@@ -10,7 +10,7 @@ Export-Package: com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.colormap.image,
  com.raytheon.uf.common.colormap.prefs
 Require-Bundle: com.raytheon.uf.common.serialization,
- javax.measure;bundle-version="1.0.0",
- com.raytheon.uf.common.units;bundle-version="1.0.0",
- com.raytheon.uf.common.localization;bundle-version="1.14.0"
+ javax.measure,
+ com.raytheon.uf.common.units,
+ com.raytheon.uf.common.localization
 

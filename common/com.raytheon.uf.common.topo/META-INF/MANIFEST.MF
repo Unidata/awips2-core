@@ -7,9 +7,9 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
 Require-Bundle: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.serialization,
- com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
+ com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.status,
- com.raytheon.uf.common.numeric;bundle-version="1.14.0",
- com.raytheon.uf.common.dataaccess;bundle-version="1.15.1",
- com.raytheon.uf.common.util;bundle-version="1.15.0"
+ com.raytheon.uf.common.numeric,
+ com.raytheon.uf.common.dataaccess,
+ com.raytheon.uf.common.util
 Export-Package: com.raytheon.uf.common.topo
