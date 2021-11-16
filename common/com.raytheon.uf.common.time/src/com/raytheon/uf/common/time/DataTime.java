@@ -72,6 +72,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  *                                   constructor.
  * Aug 08, 2016  5807     bsteffen   When forecast minutes are present, always
  *                                   format as 2 digits.
+ * Aug 20, 2020  21952    dhaines    Added support for timematching radar
+ *                                   datasets with negative tilts >= -1
  * 
  * </pre>
  * 
@@ -183,7 +185,7 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     @DynamicSerializeElement
     @XmlAttribute
     @Transient
-    protected Double levelValue = -1.0;
+    protected Double levelValue = -2.0;
 
     private static Pattern datePattern = Pattern.compile(TimeUtil.DATE_STRING);
 
@@ -429,11 +431,11 @@ public class DataTime implements Comparable<DataTime>, Serializable, Cloneable {
     }
 
     public void setLevelValue(Double levelValue) {
-        this.levelValue = levelValue == null ? -1.0 : levelValue;
+        this.levelValue = levelValue == null ? -2.0 : levelValue;
     }
 
     public boolean isSpatial() {
-        return this.levelValue >= 0.0;
+        return this.levelValue >= -1.0;
     }
 
     /*
