@@ -12,6 +12,6 @@ Import-Package: com.raytheon.uf.common.alertmonitor,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.status.slf4j,
  com.raytheon.uf.edex.core
-Require-Bundle: org.slf4j;bundle-version="1.7.21",
+Require-Bundle: org.slf4j,
  javax.xml.bind
 Export-Package: com.raytheon.uf.edex.log

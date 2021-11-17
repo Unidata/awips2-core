@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Require-Bundle: com.raytheon.edex.common,
  com.raytheon.uf.common.dataplugin.notify,
  com.raytheon.uf.common.localization,
- org.slf4j;bundle-version="1.7.5",
+ org.slf4j,
  org.apache.camel,
  javax.xml.bind
 Export-Package: com.raytheon.uf.edex.ingest

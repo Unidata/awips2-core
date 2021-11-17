@@ -8,14 +8,14 @@ Bundle-RequiredExecutionEnvironment: JavaSE-1.8
 Bundle-ActivationPolicy: lazy
 Require-Bundle: com.raytheon.uf.common.derivparam,
  com.raytheon.uf.common.serialization.comm,
- com.raytheon.uf.common.inventory;bundle-version="1.14.0",
+ com.raytheon.uf.common.inventory,
  com.raytheon.uf.common.time,
  com.raytheon.uf.common.dataplugin,
  com.raytheon.uf.common.dataquery,
  com.raytheon.uf.common.datastorage,
- com.raytheon.uf.common.pointdata;bundle-version="1.13.0",
- com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
+ com.raytheon.uf.common.pointdata,
+ com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.status,
- org.slf4j;bundle-version="1.7.21"
+ org.slf4j
 Export-Package: com.raytheon.uf.viz.datacube
 Bundle-ClassPath: com.raytheon.uf.viz.datacube.jar

@@ -143,7 +143,7 @@
          id="org.apache.commons.management"
          download-size="0"
          install-size="0"
-         version="1.0.0"/>
+         version="0.0.0"/>
 
    <plugin
          id="org.dom4j"
@@ -188,7 +188,7 @@
          id="org.apache.shiro"
          download-size="0"
          install-size="0"
-         version="1.3.2"/>
+         version="0.0.0"/>
 
    <plugin
          id="com.raytheon.uf.common.datastore.ignite"

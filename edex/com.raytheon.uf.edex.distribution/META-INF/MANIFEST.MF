@@ -9,7 +9,7 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.localization,
  com.raytheon.uf.common.status,
  org.apache.commons.lang3,
- org.slf4j;bundle-version="1.7.12",
+ org.slf4j,
  javax.xml.bind
 Import-Package: org.apache.camel
 Export-Package: com.raytheon.uf.edex.distribution

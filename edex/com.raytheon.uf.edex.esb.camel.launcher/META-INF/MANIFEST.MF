@@ -6,4 +6,4 @@ Bundle-Version: 1.16.0.qualifier
 Bundle-Vendor: Raytheon
 Main-Class: com.raytheon.uf.edex.esb.Main
 Bundle-RequiredExecutionEnvironment: JavaSE-1.7
-Require-Bundle: org.slf4j;bundle-version="1.7.12"
+Require-Bundle: org.slf4j

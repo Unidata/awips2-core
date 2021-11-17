@@ -10,5 +10,5 @@ Require-Bundle: com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.serialization,
  javax.servlet,
  com.raytheon.uf.common.util,
- org.slf4j;bundle-version="1.7.25"
+ org.slf4j
 Export-Package: com.raytheon.uf.common.datastore.pypies.servlet

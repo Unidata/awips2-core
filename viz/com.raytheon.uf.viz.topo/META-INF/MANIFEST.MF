@@ -6,10 +6,10 @@ Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-ActivationPolicy: lazy
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.14.0",
- com.raytheon.uf.common.topo;bundle-version="1.14.0",
- com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
- com.raytheon.uf.common.datastorage;bundle-version="1.14.0",
+Require-Bundle: com.raytheon.uf.viz.core,
+ com.raytheon.uf.common.topo,
+ com.raytheon.uf.common.geospatial,
+ com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.style,
  com.raytheon.uf.common.time,

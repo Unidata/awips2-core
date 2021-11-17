@@ -8,7 +8,7 @@ Export-Package: com.raytheon.uf.common.status,
  com.raytheon.uf.common.status.slf4j
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-BuddyPolicy: registered
-Require-Bundle: org.slf4j;bundle-version="1.7.21",
+Require-Bundle: org.slf4j,
  javax.xml.bind
 Import-Package: com.raytheon.uf.common.util,
  org.apache.commons.io.output

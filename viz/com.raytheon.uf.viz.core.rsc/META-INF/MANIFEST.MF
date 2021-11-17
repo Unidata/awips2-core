@@ -7,14 +7,14 @@ Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
 Eclipse-BuddyPolicy: registered
-Require-Bundle: com.raytheon.viz.ui;bundle-version="1.14.0",
- com.raytheon.uf.viz.core;bundle-version="1.14.0",
- com.raytheon.uf.common.geospatial;bundle-version="1.14.0",
+Require-Bundle: com.raytheon.viz.ui,
+ com.raytheon.uf.viz.core,
+ com.raytheon.uf.common.geospatial,
  com.raytheon.uf.common.time,
  javax.measure,
  javax.xml.bind,
- org.eclipse.core.runtime;bundle-version="3.8.0",
- com.raytheon.uf.common.dataplugin;bundle-version="1.14.0"
+ org.eclipse.core.runtime,
+ com.raytheon.uf.common.dataplugin
 Import-Package: com.raytheon.viz.core
 Export-Package: com.raytheon.uf.viz.core.rsc,
  com.raytheon.uf.viz.core.rsc.extratext,

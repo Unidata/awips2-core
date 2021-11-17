@@ -5,11 +5,11 @@ Bundle-SymbolicName: com.raytheon.uf.viz.core.point;singleton:=true
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: com.raytheon.uf.viz.core;bundle-version="1.15.0",
- org.apache.batik;bundle-version="1.6.0",
- org.geotools;bundle-version="10.5.0",
+Require-Bundle: com.raytheon.uf.viz.core,
+ org.apache.batik,
+ org.geotools,
  javax.xml.bind,
- org.eclipse.ui;bundle-version="3.8.2"
+ org.eclipse.ui
 Export-Package: com.raytheon.uf.viz.core.point.display,
  com.raytheon.uf.viz.core.point.drawables.ext,
  com.raytheon.uf.viz.core.point.svg

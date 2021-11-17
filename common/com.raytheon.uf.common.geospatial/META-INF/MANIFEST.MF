@@ -6,18 +6,18 @@ Bundle-Version: 1.18.1.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Eclipse-RegisterBuddy: org.geotools
-Require-Bundle: org.geotools;bundle-version="2.5.2";visibility:=reexport,
- org.apache.commons.collections;bundle-version="3.2.0",
- org.apache.commons.lang3;bundle-version="3.4.0",
+Require-Bundle: org.geotools;visibility:=reexport,
+ org.apache.commons.collections,
+ org.apache.commons.lang3,
  javax.measure,
- org.apache.commons.beanutils;bundle-version="1.8.3",
+ org.apache.commons.beanutils,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
  com.raytheon.uf.common.dataquery,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.util,
- com.raytheon.uf.common.numeric;bundle-version="1.14.0",
- com.raytheon.uf.common.convert;bundle-version="1.14.0",
+ com.raytheon.uf.common.numeric,
+ com.raytheon.uf.common.convert,
  com.raytheon.uf.common.localization,
  javax.xml.bind
 Export-Package: com.raytheon.uf.common.geospatial,

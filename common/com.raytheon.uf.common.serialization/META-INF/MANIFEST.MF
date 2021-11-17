@@ -10,7 +10,7 @@ Comment: dependent policy is only here until SerializableManager is no longer us
 Require-Bundle: org.apache.thrift,
  net.sf.cglib;visibility:=reexport,
  com.raytheon.uf.common.util,
- org.slf4j;bundle-version="1.7.21",
+ org.slf4j,
  javax.xml.bind
 Bundle-ActivationPolicy: lazy
 Export-Package: com.raytheon.uf.common.serialization,

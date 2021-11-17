@@ -5,7 +5,7 @@ Bundle-SymbolicName: com.raytheon.uf.edex.esb.camel
 Bundle-Version: 1.19.0.qualifier
 Bundle-Vendor: Raytheon
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: org.apache.camel;bundle-version="2.16.0",
+Require-Bundle: org.apache.camel,
  javax.jms,
  com.raytheon.edex.common,
  org.apache.http,
@@ -14,8 +14,8 @@ Require-Bundle: org.apache.camel;bundle-version="2.16.0",
  com.raytheon.uf.common.util,
  com.raytheon.uf.edex.core,
  com.raytheon.uf.common.stats,
- org.quartz;bundle-version="1.8.6",
- org.slf4j;bundle-version="1.7.25",
+ org.quartz,
+ org.slf4j,
  com.raytheon.uf.common.comm,
  com.raytheon.uf.common.json,
  com.raytheon.uf.common.jms,

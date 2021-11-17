@@ -13,9 +13,9 @@ Export-Package: com.raytheon.uf.common.style,
  com.raytheon.uf.common.style.level
 Require-Bundle: com.raytheon.uf.common.colormap,
  com.raytheon.uf.common.serialization,
- javax.measure;bundle-version="1.0.0",
+ javax.measure,
  com.raytheon.uf.common.status,
  com.raytheon.uf.common.localization,
- org.apache.commons.lang3;bundle-version="3.4.0",
+ org.apache.commons.lang3,
  javax.xml.bind
 Import-Package: com.raytheon.uf.common.util

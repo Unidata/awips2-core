@@ -5,15 +5,15 @@ Bundle-SymbolicName: com.raytheon.uf.edex.localization.http
 Bundle-Version: 1.18.0.qualifier
 Bundle-Vendor: RAYTHEON
 Bundle-RequiredExecutionEnvironment: JavaSE-11
-Require-Bundle: com.raytheon.uf.common.http;bundle-version="1.15.0",
- com.raytheon.uf.common.localization;bundle-version="1.14.1",
- javax.servlet;bundle-version="3.1.0",
- com.raytheon.uf.common.time;bundle-version="1.14.0",
- com.raytheon.uf.edex.auth;bundle-version="1.14.1",
- com.raytheon.uf.common.auth;bundle-version="1.14.0",
+Require-Bundle: com.raytheon.uf.common.http,
+ com.raytheon.uf.common.localization,
+ javax.servlet,
+ com.raytheon.uf.common.time,
+ com.raytheon.uf.edex.auth,
+ com.raytheon.uf.common.auth,
  com.raytheon.uf.common.util,
- com.fasterxml.jackson;bundle-version="2.6.5",
- com.raytheon.uf.common.serialization;bundle-version="1.17.0",
+ com.fasterxml.jackson,
+ com.raytheon.uf.common.serialization,
  javax.xml.bind
 Import-Package: com.raytheon.uf.common.status,
  com.raytheon.uf.edex.core

@@ -7,7 +7,7 @@ Bundle-Vendor: RAYTHEON
 Require-Bundle: com.raytheon.uf.common.localization,
  com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.serialization.comm,
- com.raytheon.uf.common.util;bundle-version="1.15.0",
+ com.raytheon.uf.common.util,
  javax.xml.bind
 Bundle-RequiredExecutionEnvironment: JavaSE-11
 Bundle-ActivationPolicy: lazy
