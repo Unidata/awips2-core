@@ -330,10 +330,10 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean save(LocalizationFile file) throws LocalizationException {
         LocalizationContext context = file.getContext();
-        if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
-            throw new UnsupportedOperationException(
-                    "Saving to the BASE context is not supported.");
-        }
+        //if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
+        //    throw new UnsupportedOperationException(
+        //            "Saving to the BASE context is not supported.");
+        //}
 
         /*
          * TODO Verify file's pre-modification checksum is the non-existent file
