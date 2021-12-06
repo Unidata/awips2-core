@@ -340,11 +340,6 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
             "Saving to the BASE context is not supported.");
         }
 
-        //if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
-        //    throw new UnsupportedOperationException(
-        //            "Saving to the BASE context is not supported.");
-        //}
-
         /*
          * TODO Verify file's pre-modification checksum is the non-existent file
          * checksum or matches the server file's current checksum. If not, throw
