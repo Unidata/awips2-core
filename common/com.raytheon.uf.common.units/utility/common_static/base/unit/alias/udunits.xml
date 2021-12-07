@@ -42,4 +42,6 @@
     <alias base="month">Month</alias>
     <alias base="year">Year</alias>
     <alias base="J*m^-2">J m-2</alias>
+    <alias base="g*10^-6*m^-3">ug m-3</alias>
+    <alias base="MW">MW</alias>
 </aliasList>
