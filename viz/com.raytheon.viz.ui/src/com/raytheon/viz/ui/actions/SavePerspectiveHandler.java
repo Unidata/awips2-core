@@ -81,6 +81,7 @@ import com.raytheon.viz.ui.dialogs.localization.VizLocalizationFileListDlg;
  *    Dec 21, 2015  5191       bsteffen    Updated layout handling for Eclipse 4.
  *    Jun 22, 2017  4818       mapeters    Changed setCloseCallback to addCloseCallback
  *    Jul 14, 2017  ----       mjames@ucar Remove forward slash characters to avoid creating subdirectories.
+ *    Oct 29, 2021  ----     srcarter@ucar Replace "Bundle" with "Display"
  *
  * </pre>
  *
@@ -102,7 +103,7 @@ public class SavePerspectiveHandler
         if (this.saveAsDlg == null || this.saveAsDlg.getShell() == null
                 || this.saveAsDlg.isDisposed()) {
             saveAsDlg = new PerspectiveFileListDlg(
-                    "Save Bundle", shell,
+                    "Save Display", shell,
                     VizLocalizationFileListDlg.Mode.SAVE, PERSPECTIVES_DIR);
             saveAsDlg.addCloseCallback(new ICloseCallback() {
 

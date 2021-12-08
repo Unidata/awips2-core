@@ -45,7 +45,7 @@ def execute(input, dist, dx, dy, times=1):
     if (dist<0):
         npts = -dist;
     else:
-        npts = dist * (1000/dx[input.shape[0]/2,input.shape[1]/2]);
+        npts = dist * (1000//dx[input.shape[0]//2,input.shape[1]//2]);
 
     return executeJava(input, npts, times)
     #return executePython(input, npts, times)
