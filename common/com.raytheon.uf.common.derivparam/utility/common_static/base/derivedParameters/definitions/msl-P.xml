@@ -42,7 +42,7 @@
         displayName="ETA Model MSLP">
         <Field abbreviation="EMSP" level="Surface" />
     </Method>
-    <Method name="Alias" models="GFS20 GFS229 AK-GFS22 GFS20-PAC PR-GFS" levels="Surface"
+    <Method name="Alias" models="GFS20 GFS229 AK-GFS22 GFS20-PAC PR-GFS GFS1p0" levels="Surface"
         displayName="MSLP (Eta Reduction)">
         <Field abbreviation="EMSP" level="MSL" />
     </Method>

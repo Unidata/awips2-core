@@ -111,6 +111,8 @@ implements IPermissionsManager, IRolesAndPermissionsStore {
 
         if (!subject.isAuthenticated()) {
             String userName = user.uniqueId().toString();
+            userName = userName.replaceAll(" ", ".");
+            
             /*
              * TODO: If we ever implement authentication we will need to do
              * something with User.authenticationData.
