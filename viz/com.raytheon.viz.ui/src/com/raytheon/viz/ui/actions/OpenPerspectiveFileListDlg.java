@@ -55,7 +55,8 @@ import com.raytheon.viz.ui.dialogs.localization.VizOpenLocalizationFileListDlg;
  *                                     to localization when loading it.
  * Jun 16, 2015 4401       bkowal      Track local files and make them available for selection.
  * Jun 30, 2015 4401       bkowal      Perspectives are now stored in common static.
- * 
+ * Oct 29, 2021 ----     srcarter@ucar Replace "Bundle" with "Display"
+ *
  * </pre>
  * 
  * @author bkowal
@@ -87,7 +88,7 @@ public class OpenPerspectiveFileListDlg extends VizOpenLocalizationFileListDlg {
      * @param localizationDirectory
      */
     public OpenPerspectiveFileListDlg(Shell parent, String localizationDirectory) {
-        super("Open Bundle", parent, localizationDirectory,
+        super("Open Display", parent, localizationDirectory,
                 "perspectives", LocalizationType.COMMON_STATIC);
     }
 

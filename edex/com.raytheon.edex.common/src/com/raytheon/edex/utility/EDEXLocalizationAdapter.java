@@ -330,9 +330,14 @@ public class EDEXLocalizationAdapter implements ILocalizationAdapter {
     @Override
     public boolean save(LocalizationFile file) throws LocalizationException {
         LocalizationContext context = file.getContext();
-        if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
+        
+        String ext = file.getPath().substring(file.getPath().lastIndexOf(".")+1);
+        if (ext.contentEquals("spi") || ext.contentEquals("goodness") || ext.contentEquals("primary")) {
+          //Allow saving to BASE for NDM files
+        }
+        else if (context.getLocalizationLevel().equals(LocalizationLevel.BASE)) {
             throw new UnsupportedOperationException(
-                    "Saving to the BASE context is not supported.");
+            "Saving to the BASE context is not supported.");
         }
 
         /*
