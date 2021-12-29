@@ -60,6 +60,9 @@ import com.raytheon.uf.edex.database.DataAccessLayerException;
  * Jun 30, 2016  5725      tgurney     Add NOT IN
  * Jun 15, 2018 7310       mapeters    Allow subclasses to contribute
  *                                     additional constraints
+ * Nov 17, 2021 22854      jkelmer     Modified convertParameter to only pull
+ *                                     a string out of a list for IN or NOTIN
+ *                                     
  * </pre>
  *
  * @author bphillip
@@ -912,9 +915,9 @@ public class DatabaseQuery {
         } else {
             returnedClass = metadata.getPropertyType(field).getReturnedClass();
         }
-
+        QueryOperand op = QueryParam.translateOperand(param.getOperand());
         if (value instanceof String) {
-            switch (QueryParam.translateOperand(param.getOperand())) {
+            switch (op) {
             case BETWEEN:
                 String[] tokens = ((String) value).split("--");
                 value = new Object[2];
@@ -942,7 +945,8 @@ public class DatabaseQuery {
                 break;
             }
 
-        } else if (value instanceof List) {
+        } else if (value instanceof List
+                && (op == QueryOperand.IN || op == QueryOperand.NOTIN)) {
             for (int j = 0; j < ((List<?>) value).size(); j++) {
                 if (((List<?>) value).get(0) instanceof String) {
                     ((List) value).add(ConvertUtil.convertObject(
