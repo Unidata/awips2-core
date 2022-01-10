@@ -41,17 +41,19 @@ import com.raytheon.uf.edex.localization.http.scheme.LocalizationAuthorization;
 /**
  * Base class for servicing http requests for localization, subclasses can be
  * created for each specific http method that needs to be processed.
- * 
+ *
  * <pre>
- * 
+ *
  * SOFTWARE HISTORY
- * 
+ *
  * Date          Ticket#  Engineer  Description
  * ------------- -------- --------- -----------------
  * Aug 07, 2017  5731     bsteffen  Initial creation
- * 
+ * Jan 06, 2022  8735     mapeters  Update {@link #sendError} to not use output
+ *                                  stream so it works for HEAD
+ *
  * </pre>
- * 
+ *
  * @author bsteffen
  */
 public abstract class LocalizationHttpDelegate {
@@ -110,20 +112,13 @@ public abstract class LocalizationHttpDelegate {
      */
     protected void sendError(LocalizationHttpException e,
             ProtectiveHttpOutputStream out) throws IOException {
-        if (!out.used()) {
-            HttpServletResponse response = out.getResponse();
-            response.setContentType(TEXT_CONTENT);
-            response.setStatus(e.getErrorCode());
-            if (e.getHeaders() != null) {
-                for (Entry<String, String> entry : e.getHeaders().entrySet()) {
-                    response.addHeader(entry.getKey(), entry.getValue());
-                }
+        HttpServletResponse response = out.getResponse();
+        if (e.getHeaders() != null) {
+            for (Entry<String, String> entry : e.getHeaders().entrySet()) {
+                response.addHeader(entry.getKey(), entry.getValue());
             }
-            out.write(e.getMessage().getBytes());
-        } else {
-            log.error("Unable to send error message to client"
-                    + ", stream already used", e);
         }
+        response.sendError(e.getErrorCode(), e.getMessage());
     }
 
     /**
