@@ -36,12 +36,4 @@
         <property name="arguments" ref="pluginFactory" />
     </bean>
 
-    <bean id="dataStorageAuditerContainer" class="com.raytheon.uf.common.datastorage.audit.DataStorageAuditerContainer" factory-method="getInstance">
-        <property name="auditer">
-            <bean class="com.raytheon.uf.edex.database.health.EdexDataStorageAuditerProxy">
-                <constructor-arg ref="messageProducer"/>
-            </bean>
-        </property>
-    </bean>
-
 </beans>
