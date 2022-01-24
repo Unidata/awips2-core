@@ -50,21 +50,17 @@ import org.eclipse.core.runtime.FileLocator;
 import org.eclipse.core.runtime.Path;
 import org.eclipse.jface.action.Action;
 import org.eclipse.jface.action.IAction;
-import org.eclipse.jface.action.IMenuListener;
 import org.eclipse.jface.action.IMenuManager;
 import org.eclipse.jface.action.IToolBarManager;
 import org.eclipse.jface.action.MenuManager;
 import org.eclipse.jface.action.Separator;
 import org.eclipse.jface.resource.ImageDescriptor;
-import org.eclipse.jface.viewers.DoubleClickEvent;
-import org.eclipse.jface.viewers.IDoubleClickListener;
 import org.eclipse.jface.viewers.TreeViewer;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.dnd.DND;
 import org.eclipse.swt.dnd.FileTransfer;
 import org.eclipse.swt.dnd.Transfer;
 import org.eclipse.swt.events.MouseEvent;
-import org.eclipse.swt.events.MouseMoveListener;
 import org.eclipse.swt.events.MouseTrackAdapter;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
@@ -74,8 +70,6 @@ import org.eclipse.swt.graphics.Point;
 import org.eclipse.swt.layout.GridData;
 import org.eclipse.swt.widgets.Composite;
 import org.eclipse.swt.widgets.Display;
-import org.eclipse.swt.widgets.Event;
-import org.eclipse.swt.widgets.Listener;
 import org.eclipse.swt.widgets.Menu;
 import org.eclipse.swt.widgets.Tree;
 import org.eclipse.swt.widgets.TreeItem;
@@ -187,6 +181,7 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
  *                                  warnings
  * Oct 11, 2019  7949     tgurney   Apply INVALID_MODULE_CHAR_PATTERN to .py
  *                                  files only
+ * Jan 24, 2022  8732     randerso  Fix highlighting issue when file is edited.
  *
  * </pre>
  *
@@ -195,7 +190,7 @@ import com.raytheon.uf.viz.localization.perspective.view.actions.ShowLevelsActio
 public class FileTreeView extends ViewPart
         implements IPartListener2, IWindowListener, ILocalizationService,
         IResourceChangeListener, ILocalizationPathObserver {
-    private static final transient IUFStatusHandler statusHandler = UFStatus
+    private static final IUFStatusHandler statusHandler = UFStatus
             .getHandler(FileTreeView.class);
 
     private class FileUpdateRefresher implements Runnable {
@@ -258,13 +253,8 @@ public class FileTreeView extends ViewPart
 
     }
 
-    private static final Comparator<ILocalizationFile> LOCALIZATION_FILE_LEVEL_COMPARATOR = new Comparator<ILocalizationFile>() {
-        @Override
-        public int compare(ILocalizationFile o1, ILocalizationFile o2) {
-            return o1.getContext().getLocalizationLevel()
-                    .compareTo(o2.getContext().getLocalizationLevel());
-        }
-    };
+    private static final Comparator<ILocalizationFile> LOCALIZATION_FILE_LEVEL_COMPARATOR = Comparator
+            .comparing(lf -> lf.getContext().getLocalizationLevel());
 
     /**
      * Pattern to replace characters in the resource names so that Python files
@@ -407,25 +397,19 @@ public class FileTreeView extends ViewPart
             }
         });
 
-        tree.addMouseMoveListener(new MouseMoveListener() {
-            @Override
-            public void mouseMove(MouseEvent e) {
-                if (toolTip[0] != null) {
-                    getTree().setToolTipText("");
-                    toolTip[0] = null;
-                }
+        tree.addMouseMoveListener(e -> {
+            if (toolTip[0] != null) {
+                getTree().setToolTipText("");
+                toolTip[0] = null;
             }
         });
 
-        tree.addListener(SWT.Expand, new Listener() {
-            @Override
-            public void handleEvent(Event event) {
-                setWaiting();
-                try {
-                    populateNode((TreeItem) event.item);
-                } finally {
-                    setDoneWaiting();
-                }
+        tree.addListener(SWT.Expand, event -> {
+            setWaiting();
+            try {
+                populateNode((TreeItem) event.item);
+            } finally {
+                setDoneWaiting();
             }
         });
 
@@ -468,44 +452,36 @@ public class FileTreeView extends ViewPart
             }
         });
 
-        viewer.addDoubleClickListener(new IDoubleClickListener() {
-            @Override
-            public void doubleClick(DoubleClickEvent event) {
-                setWaiting();
-                try {
-                    Tree tree = getTree();
-                    TreeItem[] selection = tree.getSelection();
-                    if (selection.length == 0) {
-                        return;
-                    }
-                    TreeItem ti = selection[0];
-                    if (ti.getData() instanceof LocalizationFileEntryData) {
-                        LocalizationFileEntryData data = (LocalizationFileEntryData) ti
-                                .getData();
-                        new OpenAction(getSite().getPage(),
-                                new LocalizationFileEntryData[] { data }).run();
-                    } else {
-                        populateNode(ti);
-                        if (!ti.getExpanded()) {
-                            ti.setExpanded(true);
-                        } else {
-                            ti.setExpanded(false);
-                        }
-                    }
-                } finally {
-                    setDoneWaiting();
+        viewer.addDoubleClickListener(event -> {
+            setWaiting();
+            try {
+                Tree tree1 = getTree();
+                TreeItem[] selection = tree1.getSelection();
+                if (selection.length == 0) {
+                    return;
                 }
+                TreeItem ti = selection[0];
+                if (ti.getData() instanceof LocalizationFileEntryData) {
+                    LocalizationFileEntryData data = (LocalizationFileEntryData) ti
+                            .getData();
+                    new OpenAction(getSite().getPage(),
+                            new LocalizationFileEntryData[] { data }).run();
+                } else {
+                    populateNode(ti);
+                    if (!ti.getExpanded()) {
+                        ti.setExpanded(true);
+                    } else {
+                        ti.setExpanded(false);
+                    }
+                }
+            } finally {
+                setDoneWaiting();
             }
         });
 
         MenuManager menuMgr = new MenuManager();
         menuMgr.setRemoveAllWhenShown(true);
-        menuMgr.addMenuListener(new IMenuListener() {
-            @Override
-            public void menuAboutToShow(IMenuManager mgr) {
-                fillContextMenu(mgr);
-            }
-        });
+        menuMgr.addMenuListener(mgr -> fillContextMenu(mgr));
         Menu menu = menuMgr.createContextMenu(tree);
         tree.setMenu(menu);
 
@@ -599,7 +575,6 @@ public class FileTreeView extends ViewPart
             // If item wasn't removed, reselect items
             List<TreeItem> selected = new ArrayList<>();
             select(selected, selectionSet, item);
-            selected.addAll(Arrays.asList(tree.getSelection()));
             tree.setSelection(selected.toArray(new TreeItem[selected.size()]));
         }
     }
@@ -1376,12 +1351,10 @@ public class FileTreeView extends ViewPart
         fileItem.setData(treeData);
         if (file != null) {
             fileItem.setImage(getImage(file));
+        } else if (treeData instanceof LocalizationFileGroupData) {
+            fileItem.setImage(getImage(name));
         } else {
-            if (treeData instanceof LocalizationFileGroupData) {
-                fileItem.setImage(getImage(name));
-            } else {
-                fileItem.setImage(getImage((String) null));
-            }
+            fileItem.setImage(getImage((String) null));
         }
 
         if (file == null) {
@@ -1669,11 +1642,10 @@ public class FileTreeView extends ViewPart
                                     input.refreshLocalizationFile();
                                 }
                             } catch (LocalizationException e) {
-                                statusHandler
-                                        .handle(Priority.ERROR,
-                                                "Error saving file: "
-                                                        + e.getLocalizedMessage(),
-                                                e);
+                                statusHandler.handle(Priority.ERROR,
+                                        "Error saving file: "
+                                                + e.getLocalizedMessage(),
+                                        e);
                             }
                         }
                     }
