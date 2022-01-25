@@ -37,6 +37,7 @@ import javax.cache.Cache.Entry;
 import javax.cache.integration.CacheLoaderException;
 import javax.cache.integration.CacheWriterException;
 
+import org.apache.commons.lang3.ArrayUtils;
 import org.apache.ignite.Ignite;
 import org.apache.ignite.cache.store.CacheStore;
 import org.apache.ignite.lang.IgniteBiInClosure;
@@ -78,6 +79,7 @@ import com.raytheon.uf.common.util.Pair;
  * May 29, 2019  7628     bsteffen  Initial creation
  * Jun 10, 2021  8450     mapeters  Add various logging, improve exception handling
  * Sep 23, 2021  8608     mapeters  Add metadata id handling and auditing
+ * Jan 25, 2022  8608     mapeters  Support write-through appends better
  *
  * </pre>
  *
@@ -276,8 +278,27 @@ public class DataStoreCacheStore
         MetadataMap metadataMap = getMetadataMap(List.of(entry));
         try {
             long totalSizeInBytes = 0L;
-            for (RecordAndMetadata rm : entry.getValue()
-                    .getRecordsAndMetadata()) {
+            DataStoreValue value = entry.getValue();
+            RecordAndMetadata[] lastAppendRms = value
+                    .getLastAppendRecordsAndMetadata();
+            StoreOp storeOp;
+            RecordAndMetadata[] rms;
+            if (!ArrayUtils.isEmpty(lastAppendRms)) {
+                /*
+                 * This method is only used by write-through so we can just
+                 * append the records from the last append operation. The data
+                 * store key is locked the whole time the StoreProcessor runs
+                 * and this write is done for write-through, so this is
+                 * thread-safe.
+                 */
+                rms = lastAppendRms;
+                storeOp = StoreOp.APPEND;
+            } else {
+                rms = value.getRecordsAndMetadata();
+                storeOp = StoreOp.REPLACE;
+            }
+
+            for (RecordAndMetadata rm : rms) {
                 store.addDataRecord(rm.getRecord(), rm.getMetadata());
                 totalSizeInBytes += rm.getRecord().getSizeInBytes();
             }
@@ -287,7 +308,7 @@ public class DataStoreCacheStore
 
             StorageStatus ss;
             synchronized (lock) {
-                ss = store.store(StoreOp.REPLACE);
+                ss = store.store(storeOp);
             }
             if (ss.hasExceptions()) {
                 throw ss.getExceptions()[0];
@@ -334,8 +355,18 @@ public class DataStoreCacheStore
             long totalSizeInBytes = 0L;
             MetadataMap metadataMap = getMetadataMap(cacheEntries);
             for (Entry<? extends DataStoreKey, ? extends DataStoreValue> cacheEntry : cacheEntries) {
-                for (RecordAndMetadata rm : cacheEntry.getValue()
-                        .getRecordsAndMetadata()) {
+                DataStoreValue value = cacheEntry.getValue();
+                if (!ArrayUtils
+                        .isEmpty(value.getLastAppendRecordsAndMetadata())) {
+                    /*
+                     * We don't currently support multiple appends going into a
+                     * single write
+                     */
+                    logger.warn(
+                            "Write behind append operation must be performed as a replace: "
+                                    + cacheEntry.getKey());
+                }
+                for (RecordAndMetadata rm : value.getRecordsAndMetadata()) {
                     totalSizeInBytes += rm.getRecord().getSizeInBytes();
                 }
             }

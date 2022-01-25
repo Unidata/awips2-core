@@ -65,6 +65,8 @@ import com.raytheon.uf.common.time.util.TimeUtil;
  * Apr 02, 2020  8075     bsteffen  Extract merge for reuse elsewhere.
  * Jun 10, 2021  8450     mapeters  Add logging
  * Sep 23, 2021  8608     mapeters  Add metadata handling
+ * Jan 25, 2022  8608     mapeters  Support write-through appends better
+ *
  *
  * </pre>
  *
@@ -137,6 +139,11 @@ public class StoreProcessor
             }
         } catch (StorageException e) {
             status.setExceptions(new StorageException[] { e });
+        }
+
+        if (op == StoreOp.APPEND) {
+            entry.getValue()
+                    .setLastAppendRecordsAndMetadata(recordsAndMetadata);
         }
 
         timer.stop();

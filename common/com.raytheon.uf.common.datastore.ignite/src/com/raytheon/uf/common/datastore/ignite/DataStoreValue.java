@@ -35,6 +35,7 @@ import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
  * ------------- -------- --------- -----------------
  * May 20, 2019  7628     bsteffen  Initial creation
  * Sep 23, 2021  8608     mapeters  Add metadata id handling
+ * Jan 25, 2022  8608     mapeters  Add lastAppendRecordsAndMetadata
  *
  * </pre>
  *
@@ -42,10 +43,20 @@ import com.raytheon.uf.common.datastorage.records.RecordAndMetadata;
  */
 public class DataStoreValue {
 
+    /**
+     * All the records and metadata for this data store value.
+     */
     private RecordAndMetadata[] recordsAndMetadata;
 
-    public DataStoreValue() {
+    /**
+     * The records and metadata that were added to recordsAndMetadata by just
+     * the last append operation. This is only used to help performance by
+     * sending the last append operation through to pypies as an append
+     * operation, instead of a replace operation
+     */
+    private RecordAndMetadata[] lastAppendRecordsAndMetadata;
 
+    public DataStoreValue() {
     }
 
     public DataStoreValue(RecordAndMetadata[] records) {
@@ -64,6 +75,15 @@ public class DataStoreValue {
         this.recordsAndMetadata = records;
     }
 
+    public RecordAndMetadata[] getLastAppendRecordsAndMetadata() {
+        return lastAppendRecordsAndMetadata;
+    }
+
+    public void setLastAppendRecordsAndMetadata(
+            RecordAndMetadata[] lastAppendRecordAndMetadata) {
+        this.lastAppendRecordsAndMetadata = lastAppendRecordAndMetadata;
+    }
+
     public static DataStoreValue createWithoutMetadata(
             Collection<IDataRecord> records) {
         return createWithoutMetadata(records.toArray(new IDataRecord[0]));
@@ -79,6 +99,7 @@ public class DataStoreValue {
     public int hashCode() {
         final int prime = 31;
         int result = 1;
+        result = prime * result + Arrays.hashCode(lastAppendRecordsAndMetadata);
         result = prime * result + Arrays.hashCode(recordsAndMetadata);
         return result;
     }
@@ -95,32 +116,16 @@ public class DataStoreValue {
             return false;
         }
         DataStoreValue other = (DataStoreValue) obj;
-        if (!Arrays.equals(recordsAndMetadata, other.recordsAndMetadata)) {
-            return false;
-        }
-        return true;
+        return Arrays.equals(lastAppendRecordsAndMetadata,
+                other.lastAppendRecordsAndMetadata)
+                && Arrays.equals(recordsAndMetadata, other.recordsAndMetadata);
     }
 
     @Override
     public String toString() {
-        StringBuilder s = new StringBuilder(getClass().getSimpleName());
-        s.append(" [records={");
-        boolean first = true;
-        for (RecordAndMetadata recordAndMetadata : recordsAndMetadata) {
-            IDataRecord record = recordAndMetadata.getRecord();
-            if (first) {
-                first = false;
-            } else {
-                s.append(", ");
-            }
-            s.append(record.getClass().getSimpleName());
-            s.append(" [group=").append(record.getGroup());
-            s.append(" , name=").append(record.getName());
-            s.append(" , sizes=").append(Arrays.toString(record.getSizes()));
-            s.append(" , metadata=").append(recordAndMetadata.getMetadata());
-            s.append("]");
-        }
-        s.append("}]");
-        return s.toString();
+        return "DataStoreValue [recordsAndMetadata="
+                + Arrays.toString(recordsAndMetadata)
+                + ", lastAppendRecordsAndMetadata="
+                + Arrays.toString(lastAppendRecordsAndMetadata) + "]";
     }
 }
