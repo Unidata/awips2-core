@@ -1,0 +1,78 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<feature
+      id="com.raytheon.uf.edex.foss.feature"
+      label="EDEX FOSS Feature"
+      version="1.0.0.qualifier"
+      provider-name="RAYTHEON">
+
+   <description url="http://www.example.com/description">
+      [Enter Feature Description here.]
+   </description>
+
+   <copyright url="http://www.example.com/copyright">
+      [Enter Copyright Description here.]
+   </copyright>
+
+   <license url="http://www.example.com/license">
+      [Enter License Description here.]
+   </license>
+
+   <requires>
+       <import feature="com.raytheon.uf.common.base.feature" version="1.0.0.qualifier"/>
+       <import feature="com.raytheon.uf.edex.foss.com.sun.xml.bind.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.com.mchange.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.net.sf.ehcache.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.management.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.camel.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.dom4j.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.eclipse.jetty.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.com.fasterxml.jackson.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.servlet.feature" version="3.1.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.shiro.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.activation.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.mail.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.javax.media.opengl.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.activemq.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.validator.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.objectweb.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.itadaki.bzip2.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.com.sun.jna.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.cli.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.owasp.esapi.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.ssl.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.opensaml.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.cxf.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.joda.time.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.bouncycastle.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.xalan.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.xml.serializer.feature" version="2.7.1"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.xml.resolver.feature" version="1.2.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.ws.commons.schema.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.xml.security.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.net.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.jfreechart.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.jasypt.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.ws.security.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.edu.mit.ll.netcdf.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.com.beust.jcommander.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.com.google.protobuf.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.jdom2.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.ucar.nc2.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.net.opengis.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.net.opengis_v2.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.w3.xmlschema.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.ogc.tools.gml.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.net.dods.feature" version="0.0.0"/>
+       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.compress.feature" version="0.0.0"/>
+   </requires>
+  
+   <!-- need to have at least one plugin in the feature. This one was
+        previously in the uf.edex.cots.feature which no longer exists -->
+   <plugin
+         id="com.raytheon.uf.common.nc4"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
+</feature>

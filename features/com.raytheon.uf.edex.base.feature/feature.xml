@@ -134,37 +134,7 @@
          unpack="false"/>
 
    <plugin
-         id="org.apache.camel"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.apache.commons.management"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.dom4j"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="org.eclipse.jetty"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
-         id="javax.servlet"
-         download-size="0"
-         install-size="0"
-         version="3.1.0"/>
-
-   <plugin
-         id="com.raytheon.uf.edex.requestsrv"
+         id="com.raytheon.uf.common.json"
          download-size="0"
          install-size="0"
          version="0.0.0"
@@ -185,17 +155,12 @@
          unpack="false"/>
 
    <plugin
-         id="org.apache.shiro"
-         download-size="0"
-         install-size="0"
-         version="0.0.0"/>
-
-   <plugin
          id="com.raytheon.uf.common.datastore.ignite"
          download-size="0"
          install-size="0"
          version="0.0.0"
          unpack="false"/>
+
    <plugin
          id="com.raytheon.uf.common.datastore.pypies.servlet"
          download-size="0"
