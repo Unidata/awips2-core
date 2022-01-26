@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.javax.activation.feature"
       label="javax.activation Feature"
-      version="3.2.6"
+      version="1.2.0"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="javax.activation"
          download-size="0"
          install-size="0"
-         version="3.2.6"/>
+         version="1.2.0"/>
 
 </feature>

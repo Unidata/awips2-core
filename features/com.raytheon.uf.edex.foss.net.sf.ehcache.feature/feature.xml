@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.net.sf.ehcache.feature"
       label="net.sf.ehcache Feature"
-      version="2.4.3"
+      version="2.10.6"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="net.sf.ehcache"
          download-size="0"
          install-size="0"
-         version="2.4.3"/>
+         version="2.10.6"/>
 
 </feature>

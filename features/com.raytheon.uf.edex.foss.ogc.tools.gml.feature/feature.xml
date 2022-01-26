@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.ogc.tools.gml.feature"
       label="ogc.tools.gml Feature"
-      version="1.0.2"
+      version="1.1.90"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="ogc.tools.gml"
          download-size="0"
          install-size="0"
-         version="1.0.2"/>
+         version="1.1.90"/>
 
 </feature>

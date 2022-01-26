@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.opensaml.feature"
       label="org.opensaml Feature"
-      version="3.1.1"
+      version="3.3.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.opensaml"
          download-size="0"
          install-size="0"
-         version="3.1.1"/>
+         version="3.3.1"/>
 
 </feature>

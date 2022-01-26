@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.ws.commons.schema.feature"
       label="org.apache.ws.commons.schema Feature"
-      version="2.1.0"
+      version="2.2.5"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.apache.ws.commons.schema"
          download-size="0"
          install-size="0"
-         version="2.1.0"/>
+         version="2.2.5"/>
 
 </feature>

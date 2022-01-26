@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.ws.security.feature"
       label="org.apache.ws.security Feature"
-      version="2.1.4"
+      version="2.2.5"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.apache.ws.security"
          download-size="0"
          install-size="0"
-         version="2.1.4"/>
+         version="2.2.5"/>
 
 </feature>

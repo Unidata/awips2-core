@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.jasypt.feature"
       label="org.jasypt Feature"
-      version="1.9.2"
+      version="1.9.3"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.jasypt"
          download-size="0"
          install-size="0"
-         version="1.9.2"/>
+         version="1.9.3"/>
 
 </feature>

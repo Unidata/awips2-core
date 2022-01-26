@@ -40,9 +40,7 @@
        <import feature="com.raytheon.uf.edex.foss.org.owasp.esapi.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.commons.ssl.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.opensaml.feature" version="0.0.0"/>
-       <import feature="com.raytheon.uf.edex.foss.org.apache.commons.cxf.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.joda.time.feature" version="0.0.0"/>
-       <import feature="com.raytheon.uf.edex.foss.org.bouncycastle.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.xalan.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.xml.serializer.feature" version="2.7.1"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.xml.resolver.feature" version="1.2.0"/>

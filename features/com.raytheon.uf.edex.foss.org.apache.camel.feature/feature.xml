@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.apache.camel.feature"
       label="org.apache.camel Feature"
-      version="2.25.2"
+      version="3.7.0"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.apache.camel"
          download-size="0"
          install-size="0"
-         version="2.25.2"/>
+         version="3.7.0"/>
 
 </feature>

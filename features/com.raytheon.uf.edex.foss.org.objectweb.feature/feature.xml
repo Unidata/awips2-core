@@ -2,7 +2,7 @@
 <feature
       id="com.raytheon.uf.edex.foss.org.objectweb.feature"
       label="org.objectweb Feature"
-      version="2.2"
+      version="8.0.1"
       provider-name="RAYTHEON">
 
    <description url="http://www.example.com/description">
@@ -21,6 +21,6 @@
          id="org.objectweb"
          download-size="0"
          install-size="0"
-         version="2.2"/>
+         version="8.0.1"/>
 
 </feature>
