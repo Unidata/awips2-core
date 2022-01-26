@@ -19,7 +19,6 @@
 
    <requires>
        <import feature="com.raytheon.uf.common.base.feature" version="1.0.0.qualifier"/>
-       <import feature="com.raytheon.uf.edex.foss.com.sun.xml.bind.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.com.mchange.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.net.sf.ehcache.feature" version="0.0.0"/>
        <import feature="com.raytheon.uf.edex.foss.org.apache.commons.management.feature" version="0.0.0"/>
