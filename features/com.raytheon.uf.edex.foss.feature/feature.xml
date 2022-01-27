@@ -72,4 +72,13 @@
          version="0.0.0"
          unpack="false"/>
 
+   <!-- TODO: Added this as part of a build/merge fix. Make a new feature for
+        it -->
+   <plugin
+         id="org.apache.cxf"
+         download-size="0"
+         install-size="0"
+         version="0.0.0"
+         unpack="false"/>
+
 </feature>
