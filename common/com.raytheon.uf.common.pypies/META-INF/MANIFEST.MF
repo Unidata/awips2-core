@@ -9,9 +9,9 @@ Require-Bundle: com.raytheon.uf.common.serialization,
  com.raytheon.uf.common.datastorage,
  com.raytheon.uf.common.util,
  com.raytheon.uf.common.comm,
+ org.apache.http,
  org.slf4j
 Export-Package: com.raytheon.uf.common.pypies,
  com.raytheon.uf.common.pypies.records,
  com.raytheon.uf.common.pypies.request,
  com.raytheon.uf.common.pypies.response
-Import-Package: org.apache.http.conn

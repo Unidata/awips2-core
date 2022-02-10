@@ -31,7 +31,6 @@ source ${dir}/setup.env
 
 AWIPS_HOME=${AWIPS_HOME:-`dirname $IGNITE_HOME`}
 JAVA_HOME=${JAVA_HOME:-${AWIPS_HOME}/java}
-EDEX_HOME=${EDEX_HOME:-${AWIPS_HOME}/edex}
 
 DEBUG_PORT=${DEBUG_PORT:-5102}
 
@@ -75,9 +74,9 @@ do
     esac
 done
 
-CLASSPATH=${EDEX_HOME}/lib/plugins/*
+CLASSPATH=${IGNITE_HOME}/lib/plugins/*
 
-for DIRECTORY in ${EDEX_HOME}/lib/dependencies/*
+for DIRECTORY in ${IGNITE_HOME}/lib/dependencies/*
 do
     CLASSPATH+=":$DIRECTORY/*"
 done
@@ -98,7 +97,7 @@ do
                 -DIGNITE_QUIET=${IGNITE_QUIET} \
                 ${RESTART_SUCCESS_OPT} \
                 -DIGNITE_PERFORMANCE_SUGGESTIONS_DISABLED=true \
-                -Djava.security.properties=/awips2/ignite/config/java.security \
+                -Djava.security.properties=${IGNITE_HOME}/config/java.security \
                 -Dthrift.stream.maxsize=${THRIFT_STREAM_MAXSIZE} \
                 -Djava.net.preferIPv4Stack=true \
                 -Dlogback.configurationFile=${IGNITE_HOME}/config/ignite-logback.xml \
