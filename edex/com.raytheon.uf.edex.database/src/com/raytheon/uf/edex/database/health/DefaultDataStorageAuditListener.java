@@ -32,9 +32,9 @@ import com.raytheon.uf.common.dataplugin.annotations.DataURIUtil;
 import com.raytheon.uf.common.datastorage.DataStoreFactory;
 import com.raytheon.uf.common.datastorage.IDataStore;
 import com.raytheon.uf.common.datastorage.StorageException;
-import com.raytheon.uf.common.datastorage.audit.DataId;
 import com.raytheon.uf.common.datastorage.audit.DataStatus;
 import com.raytheon.uf.common.datastorage.audit.DataStorageInfo;
+import com.raytheon.uf.common.datastorage.audit.Hdf5DataIdentifer;
 import com.raytheon.uf.common.datastorage.audit.IDataStorageAuditListener;
 import com.raytheon.uf.common.datastorage.audit.MetadataStatus;
 import com.raytheon.uf.common.datastorage.records.DataUriMetadataIdentifier;
@@ -55,6 +55,7 @@ import com.raytheon.uf.edex.database.plugin.PluginFactory;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 27, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Ignore non-hdf5 data
  *
  * </pre>
  *
@@ -76,19 +77,22 @@ public class DefaultDataStorageAuditListener
     @Override
     public void handleDataStorageResult(DataStorageInfo info,
             Map<String, DataStorageInfo> traceIdToInfo) {
-        if (!(info.getMetaId() instanceof DataUriMetadataIdentifier)) {
-            logger.info(
-                    "Ignoring data storage info with non-dataUri metadata identifier: "
-                            + info);
+        if (!(info.getMetaId() instanceof DataUriMetadataIdentifier)
+                || !(info.getDataId() instanceof Hdf5DataIdentifer)) {
+            logger.debug(
+                    "Ignoring data storage info with non-dataUri metadata identifier and/or non-hdf5 data identifier: {}",
+                    info);
             return;
         }
 
         DataUriMetadataIdentifier metaId = (DataUriMetadataIdentifier) info
                 .getMetaId();
+        Hdf5DataIdentifer dataId = (Hdf5DataIdentifer) info.getDataId();
 
         MetadataStatus metaStatus = info.getMetaStatus();
         DataStatus dataStatus = info.getDataStatus();
-        if (metaStatus == MetadataStatus.NA) {
+        if (metaStatus == MetadataStatus.NA || dataStatus == DataStatus.NA) {
+            // nothing to keep in sync if database-only or datastore-only.
             return;
         }
         if (metaStatus.exists() == dataStatus.exists()) {
@@ -124,7 +128,7 @@ public class DefaultDataStorageAuditListener
                             "Data exists and metadata doesn't for data store, deleting metadata: "
                                     + info);
                     try {
-                        deleteData(info.getDataId(), metaId.getSpecificity());
+                        deleteData(dataId, metaId.getSpecificity());
                         info.setDataStatus(DataStatus.DELETED);
                     } catch (FileNotFoundException | StorageException e) {
                         logger.error("Error deleting data for: " + info, e);
@@ -171,7 +175,8 @@ public class DefaultDataStorageAuditListener
         }
     }
 
-    private void deleteData(DataId dataId, MetadataSpecificity specificity)
+    private void deleteData(Hdf5DataIdentifer dataId,
+            MetadataSpecificity specificity)
             throws FileNotFoundException, StorageException {
         IDataStore store = DataStoreFactory
                 .getDataStore(new File(dataId.getFile()));
@@ -182,7 +187,8 @@ public class DefaultDataStorageAuditListener
         case DATASET:
             store.deleteDatasets(dataId.getFullyQualifiedDatasets());
             break;
-        case NONE:
+        case NO_DATA:
+        case NO_METADATA:
             break;
         default:
             throw new UnsupportedOperationException(

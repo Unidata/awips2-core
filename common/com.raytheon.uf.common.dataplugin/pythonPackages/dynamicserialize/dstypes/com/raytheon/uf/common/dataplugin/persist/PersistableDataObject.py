@@ -19,29 +19,24 @@
 ##
 
 # File auto-generated against equivalent DynamicSerialize Java class
-#
+# 
 #      SOFTWARE HISTORY
-#
+# 
 #     Date            Ticket#       Engineer       Description
 #     ------------    ----------    -----------    --------------------------
-#     Sep 23, 2021    8608          mapeters       Generated
-#
+#     Feb 17, 2022    8608          mapeters       Generated and made abstract
 
-class RecordAndMetadata(object):
+import abc
 
+class PersistableDataObject(abc.ABC):
+
+    @abc.abstractmethod
     def __init__(self):
-        self.metadata = None
-        self.record = None
+        self.traceId = None
 
-    def getMetadata(self):
-        return self.metadata
+    def getTraceId(self):
+        return self.traceId
 
-    def setMetadata(self, metadata):
-        self.metadata = metadata
-
-    def getRecord(self):
-        return self.record
-
-    def setRecord(self, record):
-        self.record = record
+    def setTraceId(self, traceId):
+        self.traceId = traceId
 

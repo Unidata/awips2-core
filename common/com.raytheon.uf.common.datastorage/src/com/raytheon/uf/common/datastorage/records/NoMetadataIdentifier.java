@@ -27,10 +27,8 @@ import com.raytheon.uf.common.util.SystemUtil;
 
 /**
  * Metadata identifier implementation that doesn't actually identify any
- * metadata. Reasons to use this include that the data may in fact have no
- * metadata that references it, or that the metadata can not be adequately
- * identified/tracked (e.g. the indices used by point data can't be easily
- * determined where this is used).
+ * metadata. Used to indicate that the data being stored is not referenced by
+ * any metadata.
  *
  * <pre>
  *
@@ -39,6 +37,7 @@ import com.raytheon.uf.common.util.SystemUtil;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Updates to fix data storage audit errors
  *
  * </pre>
  *
@@ -51,32 +50,10 @@ public class NoMetadataIdentifier implements IMetadataIdentifier {
 
     @DynamicSerializeElement
     private String traceId = String.join(":", SystemUtil.getClientID(),
-            getClass().getSimpleName(), UUID.randomUUID().toString());
-
-    @DynamicSerializeElement
-    private boolean writeBehindSupported = true;
-
-    @DynamicSerializeElement
-    private boolean metadataUsed = false;
+            Thread.currentThread().getName(), getClass().getSimpleName(),
+            UUID.randomUUID().toString());
 
     public NoMetadataIdentifier() {
-    }
-
-    /**
-     * Constructor
-     *
-     * @param writeBehindSupported
-     *            true if the data that this identifies supports being written
-     *            behind asynchronously instead of written through synchronously
-     * @param metadataUsed
-     *            true if the data that this identifies is in fact referenced by
-     *            metadata and we just aren't tracking it, false if the data is
-     *            not referenced by metadata
-     */
-    public NoMetadataIdentifier(boolean writeBehindSupported,
-            boolean metadataUsed) {
-        this.writeBehindSupported = writeBehindSupported;
-        this.metadataUsed = metadataUsed;
     }
 
     @Override
@@ -89,31 +66,18 @@ public class NoMetadataIdentifier implements IMetadataIdentifier {
     }
 
     @Override
-    public boolean isWriteBehindSupported() {
-        return writeBehindSupported;
-    }
-
-    public void setWriteBehindSupported(boolean writeBehindSupported) {
-        this.writeBehindSupported = writeBehindSupported;
-    }
-
-    @Override
-    public boolean isMetadataUsed() {
-        return metadataUsed;
-    }
-
-    public void setMetadataUsed(boolean metadataUsed) {
-        this.metadataUsed = metadataUsed;
-    }
-
-    @Override
     public MetadataSpecificity getSpecificity() {
-        return MetadataSpecificity.NONE;
+        return MetadataSpecificity.NO_METADATA;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(writeBehindSupported, traceId);
+        return Objects.hash(traceId);
+    }
+
+    @Override
+    public int hashCodeIgnoreTraceId() {
+        return NoMetadataIdentifier.class.hashCode();
     }
 
     @Override
@@ -136,13 +100,11 @@ public class NoMetadataIdentifier implements IMetadataIdentifier {
         if (getClass() != obj.getClass()) {
             return false;
         }
-        NoMetadataIdentifier other = (NoMetadataIdentifier) obj;
-        return writeBehindSupported == other.writeBehindSupported;
+        return true;
     }
 
     @Override
     public String toString() {
-        return "NoMetadataIdentifier [traceId=" + traceId
-                + ", writeBehindSupported=" + writeBehindSupported + "]";
+        return "NoMetadataIdentifier [traceId=" + traceId + "]";
     }
 }

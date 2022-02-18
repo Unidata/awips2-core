@@ -39,6 +39,7 @@ import com.raytheon.uf.edex.core.IMessageProducer;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 23, 2022 8608       mapeters    Change queue to durable
  *
  * </pre>
  *
@@ -64,7 +65,7 @@ public class EdexDataStorageAuditerProxy
             return;
         }
 
-        uri = "jms-generic:queue:" + uri;
+        uri = "jms-durable:queue:" + uri;
         try {
             messageProducer.sendAsyncThriftUri(uri, event);
         } catch (EdexException | SerializationException e) {

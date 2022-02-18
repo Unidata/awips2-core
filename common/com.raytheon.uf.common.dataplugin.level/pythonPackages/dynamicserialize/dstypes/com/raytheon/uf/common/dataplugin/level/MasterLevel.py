@@ -29,12 +29,16 @@
 #    05/29/13         2023         dgilling       Initial Creation.
 #    06/29/15         4480         dgilling       Implement __hash__, __eq__
 #                                                 and __str__.
+#    02/17/22         8608         mapeters       Subclass PersistableDataObject
 #
 #
 
-class MasterLevel(object):
+from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.persist import PersistableDataObject
+
+class MasterLevel(PersistableDataObject):
 
     def __init__(self, name=None):
+        super().__init__()
         self.name = name
         self.description = None
         self.unitString = None
@@ -43,7 +47,7 @@ class MasterLevel(object):
 
     def __hash__(self):
         return hash(self.name)
-    
+
     def __eq__(self, other):
         if type(self) != type(other):
             return False
@@ -91,4 +95,3 @@ class MasterLevel(object):
 
     def setIdentifier(self, identifier):
         self.identifier = identifier
-

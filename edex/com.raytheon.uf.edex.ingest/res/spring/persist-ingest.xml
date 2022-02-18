@@ -48,6 +48,7 @@
         -->
         <route id="indexAlert">
             <from uri="direct-vm:indexAlert"/>
+            <bean ref="index" method="auditMissingPiecesForDatabaseOnlyPdos"/>
             <bean ref="index" method="index"/>
             <bean ref="processUtil" method="log"/>
             <to uri="direct-vm:stageNotification"/>

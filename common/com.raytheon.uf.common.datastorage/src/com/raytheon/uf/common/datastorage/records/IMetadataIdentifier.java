@@ -31,6 +31,7 @@ import java.io.Serializable;
  * Date         Ticket#    Engineer    Description
  * ------------ ---------- ----------- --------------------------
  * Sep 23, 2021 8608       mapeters    Initial creation
+ * Feb 17, 2022 8608       mapeters    Updates to fix data storage audit errors
  *
  * </pre>
  *
@@ -47,25 +48,12 @@ public interface IMetadataIdentifier extends Serializable {
     String getTraceId();
 
     /**
-     * @return true if the data identified by this metadata supports write
-     *         behind, false if it requires write through
-     */
-    boolean isWriteBehindSupported();
-
-    /**
      * Get the specificity, or amount/level of data, that this metadata
      * identifies.
      *
      * @return the metadata specificity
      */
     MetadataSpecificity getSpecificity();
-
-    /**
-     * @return true if the data that this corresponds to is in fact referenced
-     *         by metadata and this identifier is tracking it, false if the data
-     *         is not referenced by metadata
-     */
-    boolean isMetadataUsed();
 
     /**
      * Determine if this metadata identifier is equal to the given object,
@@ -76,6 +64,14 @@ public interface IMetadataIdentifier extends Serializable {
      * @return true if equal when ignoring trace ID, false otherwise
      */
     boolean equalsIgnoreTraceId(Object obj);
+
+    /**
+     * Generate a hash code value for this metadata identifier, ignoring its
+     * trace ID.
+     *
+     * @return the hash code
+     */
+    int hashCodeIgnoreTraceId();
 
     public enum MetadataSpecificity {
         /**
@@ -91,6 +87,11 @@ public interface IMetadataIdentifier extends Serializable {
         /**
          * No data is referenced by this metadata
          */
-        NONE
+        NO_DATA,
+
+        /**
+         * No metadata is used to reference the data being stored
+         */
+        NO_METADATA
     }
 }

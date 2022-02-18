@@ -30,21 +30,24 @@
 #    02/12/14         2672         bsteffen       Allow String constructor to parse floats.
 #    06/29/15         4480         dgilling       Implement __hash__, __eq__,
 #                                                 __str__ and rich comparison operators.
+#    02/17/22         8608         mapeters       Subclass PersistableDataObject
 #
-
+#
 
 import numpy
 import re
 
+from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.persist import PersistableDataObject
 from dynamicserialize.dstypes.com.raytheon.uf.common.dataplugin.level import MasterLevel
 
 
 LEVEL_NAMING_REGEX = re.compile("^(\d*(?:\.\d*)?)(?:_(\d*(?:\.\d*)?))?([a-zA-Z]+)$")
 INVALID_VALUE = numpy.float64(-999999)
 
-class Level(object):
+class Level(PersistableDataObject):
 
     def __init__(self, levelString=None):
+        super().__init__()
         self.id = 0
         self.identifier = None
         self.masterLevel = None
