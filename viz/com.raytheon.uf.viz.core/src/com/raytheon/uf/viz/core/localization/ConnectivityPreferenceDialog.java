@@ -30,6 +30,8 @@ import org.eclipse.jface.dialogs.MessageDialog;
 import org.eclipse.jface.preference.IPersistentPreferenceStore;
 import org.eclipse.swt.SWT;
 import org.eclipse.swt.custom.StyledText;
+import org.eclipse.swt.events.ModifyEvent;
+import org.eclipse.swt.events.ModifyListener;
 import org.eclipse.swt.events.SelectionAdapter;
 import org.eclipse.swt.events.SelectionEvent;
 import org.eclipse.swt.events.SelectionListener;
@@ -154,6 +156,10 @@ public class ConnectivityPreferenceDialog {
     protected Text siteText;
 
     private Label statusLabel;
+    
+    private Button ipBtn;
+    
+    private boolean resolveIP = false;
 
     private boolean canceled = false;
 
@@ -322,25 +328,46 @@ public class ConnectivityPreferenceDialog {
         GridData gd = new GridData(SWT.RIGHT, SWT.CENTER, false, true);
         gd.horizontalIndent = 20;
         localizationLabel.setLayoutData(gd);
-
-        String unidataUrl = "edex-cloud.unidata.ucar.edu";
+        String unidataEdexUrl = "edex-cloud.unidata.ucar.edu";
+        
         String[] pastOptions =  {
-        		"localhost",
-        		unidataUrl
+        		unidataEdexUrl,
+        		"localhost"
         		};
-        String[] serverOptions = getServerOptions();
 
         localizationSrv = new TextOrCombo(textBoxComp, SWT.BORDER, pastOptions);
         gd = new GridData(SWT.FILL, SWT.CENTER, true, true);
         gd.minimumWidth = 300;
         localizationSrv.widget.setLayoutData(gd);
         localization = shortServerName(localization);
-        localizationSrv.setText(localization == null || localization.equals("") ? unidataUrl : localization);
+        localizationSrv.addModifyListener(new ModifyListener() {
+			@Override
+			public void modifyText(ModifyEvent e) {
+				//if the ipbtn hasn't been created yet, don't do anything
+				if(ipBtn == null){
+					return;
+				}
+                //set and disable ip resolution if connecting to unidata
+                if(localizationSrv.getText().toLowerCase().contains("unidata.ucar.edu")){
+                	ipBtn.setSelection(false);
+                	ipBtn.setEnabled(false);
+                }
+                else{
+                	ipBtn.setEnabled(true);
+                }
+			}
+		});
         localizationSrv.addSelectionListener(new SelectionListener() {
             @Override
             public void widgetSelected(SelectionEvent e) {
-                // user clicked an option from combo
-                validate();
+                //set and disable ip resolution if connecting to unidata
+                if(localizationSrv.getText().toLowerCase().contains("unidata.ucar.edu")){
+                	ipBtn.setSelection(false);
+                	ipBtn.setEnabled(false);
+                }
+                else{
+                	ipBtn.setEnabled(true);
+                }
             }
 
             @Override
@@ -349,6 +376,7 @@ public class ConnectivityPreferenceDialog {
                 performOk();
             }
         });
+        localizationSrv.setText(localization == null || localization.equals("") ? unidataEdexUrl : localization);
 
         Label label = new Label(textBoxComp, SWT.RIGHT);
         label.setText("Site");
@@ -405,11 +433,25 @@ public class ConnectivityPreferenceDialog {
 
     private void createBottomButtons() {
         Composite centeredComp = new Composite(shell, SWT.NONE);
-        GridLayout gl = new GridLayout(3, false);
+        GridLayout gl = new GridLayout(4, false);
         centeredComp.setLayout(gl);
         GridData gd = new GridData(SWT.RIGHT, SWT.DEFAULT, true, false);
         centeredComp.setLayoutData(gd);
 
+        gd = new GridData(150, SWT.DEFAULT);
+        ipBtn = new Button(centeredComp, SWT.CHECK);
+        //should be unselected by default
+        ipBtn.setSelection(resolveIP);
+        ipBtn.setEnabled(false);
+        ipBtn.setText("Resolve EDEX IP");
+        ipBtn.setLayoutData(gd);
+        ipBtn.addSelectionListener(new SelectionAdapter() {
+        	@Override
+        	public void widgetSelected(SelectionEvent event) {
+        		resolveIP = ipBtn.getSelection();
+        	}
+		});   
+        
         gd = new GridData(80, SWT.DEFAULT);
         Button validateBtn = new Button(centeredComp, SWT.NONE);
         validateBtn.setText("Validate");
@@ -565,7 +607,7 @@ public class ConnectivityPreferenceDialog {
 
     private void validateLocalization() {
         ConnectivityManager.checkLocalizationServer(localization,
-                localizationCallback);
+                localizationCallback, resolveIP);
     }
 
     protected void validateAlertviz() {
