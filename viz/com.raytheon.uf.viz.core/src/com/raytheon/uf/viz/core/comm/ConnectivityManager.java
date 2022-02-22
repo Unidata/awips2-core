@@ -33,6 +33,7 @@ import com.raytheon.uf.common.comm.HttpClient;
 import com.raytheon.uf.common.localization.msgs.GetServersRequest;
 import com.raytheon.uf.common.localization.msgs.GetServersResponse;
 import com.raytheon.uf.viz.core.exception.VizException;
+import com.raytheon.uf.viz.core.localization.LocalizationConstants;
 import com.raytheon.uf.viz.core.requests.ThriftClient;
 
 /**
@@ -55,6 +56,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Aug 02, 2013 2202       bsteffen    Add edex specific connectivity checking.
  * Jan 15, 2014            njensen     Added printConnectivityProblems()
  * Feb 04, 2014 2704       njensen     Check JMS capability, return exceptions with results
+ * Feb 22, 2022		  	srcarter@ucar  Add functionality for overriding the IP resolution 
+ * 									   for the EDEX connection
  * 
  * </pre>
  * 
@@ -115,16 +118,31 @@ public class ConnectivityManager {
 
     /**
      * Checks the connectivity of the given localization server
-     * 
-     * @param server
-     *            server to check
+     * with default behavior (allows resolution of addresses 
+     * for the pypies, http, and server connection based on EDEX's
+     * environment)
+     * @param server The server to check 
      */
     public static void checkLocalizationServer(String server,
-            IConnectivityCallback callback) {
+    		IConnectivityCallback callback){
+    	checkLocalizationServer(server, callback, true);
+    }
+    
+    /**
+     * Checks the connectivity of the given localization server
+     * 
+     * 
+     * @param server  server to check
+     * @param resolveIP	 if true, then allow edex to resolve the 
+     * pypies, http, and server locations based on the environment
+     * in EDEX.  If false, force the use of the defined @param server
+     */
+    public static void checkLocalizationServer(String server,
+            IConnectivityCallback callback, boolean resolveIP) {
         boolean good = false;
         Exception exc = null;
         try {
-            good = checkLocalizationServer(server, true) != null;
+            good = checkLocalizationServer(server, true, resolveIP) != null;
         } catch (Exception e) {
             exc = e;
         }
@@ -137,8 +155,21 @@ public class ConnectivityManager {
      * result is returned, otherwise the localization server is contacted to get
      * the response.
      */
+    public static GetServersResponse checkLocalizationServer(String server, boolean force) throws VizException{
+    	return checkLocalizationServer(server, force, true);
+    }
+    
+    /**
+     * Returns a GetServersResponse for the provided server. If force is false
+     * and this localization server has already been contacted then a cached
+     * result is returned, otherwise the localization server is contacted to get
+     * the response.
+     * 
+     * If resolve IP is false, then override the returned result for the server
+     * localization addresses and use the specified server string as the connection
+     */
     public static GetServersResponse checkLocalizationServer(String server,
-            boolean force) throws VizException {
+            boolean force, boolean resolveIP) throws VizException {
         if (!force) {
             GetServersResponse resp = getServersResponseCache.get(server);
             if (resp != null) {
@@ -149,6 +180,17 @@ public class ConnectivityManager {
         GetServersResponse resp = (GetServersResponse) ThriftClient
                 .sendRequest(req, server);
         getServersResponseCache.put(server, resp);
+        
+        // If not resolving the IP address, then overwrite the http, pypies
+        // and server locations with the original server string 
+        if(!resolveIP){
+        	//trim the suffix off the server
+        	String serverShortName = server.split(LocalizationConstants.LOCALIZATION_SERVER_SUFFIX)[0];
+        	resp.setHttpServer(server);
+	        resp.setPypiesServer(serverShortName+":9582");
+	        resp.getServerLocations().put("request.server", server);
+        }
+        
         return resp;
     }
 
