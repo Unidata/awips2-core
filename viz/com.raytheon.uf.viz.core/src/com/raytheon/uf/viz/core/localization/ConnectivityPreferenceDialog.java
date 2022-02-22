@@ -85,6 +85,7 @@ import com.raytheon.uf.viz.core.comm.IConnectivityCallback;
  * Apr 07, 2016  5281     tjensen     Clear details if status is good.
  * Sep 12, 2016           mjames@ucar Clean formatted server name.
  * Mar 25. 2019           mjameS@ucar Cleaner formatted server name.
+ * Feb 22, 2022			srcarter@ucar Added checkbox for resolving IP address
  * </pre>
  * 
  * @author mschenke

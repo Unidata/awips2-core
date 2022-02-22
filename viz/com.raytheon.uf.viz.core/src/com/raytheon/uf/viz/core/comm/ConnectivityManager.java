@@ -56,6 +56,8 @@ import com.raytheon.uf.viz.core.requests.ThriftClient;
  * Aug 02, 2013 2202       bsteffen    Add edex specific connectivity checking.
  * Jan 15, 2014            njensen     Added printConnectivityProblems()
  * Feb 04, 2014 2704       njensen     Check JMS capability, return exceptions with results
+ * Feb 22, 2022		  srcarter@unidata Add functionality for overriding the IP resolution 
+ * 									   for the EDEX connection
  * 
  * </pre>
  * 
